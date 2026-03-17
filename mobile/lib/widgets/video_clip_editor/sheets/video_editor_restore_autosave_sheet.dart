@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 
 /// Bottom sheet displayed when an autosaved editing session is detected.
@@ -67,12 +66,7 @@ class _Title extends StatelessWidget {
     return Text(
       // TODO(l10n): Replace with context.l10n when localization is added.
       'We found work in progress',
-      style: GoogleFonts.bricolageGrotesque(
-        color: VineTheme.onSurface,
-        fontWeight: .w700,
-        fontSize: 24,
-        height: 1.33,
-      ),
+      style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
       textAlign: .center,
     );
   }
@@ -86,11 +80,7 @@ class _Description extends StatelessWidget {
     return Text(
       // TODO(l10n): Replace with context.l10n when localization is added.
       'Would you like to continue where you left off?',
-      style: VineTheme.bodyFont(
-        color: VineTheme.onSurface,
-        height: 1.5,
-        letterSpacing: 0.15,
-      ),
+      style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
       textAlign: .center,
     );
   }
@@ -116,12 +106,7 @@ class _RestoreButton extends ConsumerWidget {
         // TODO(l10n): Replace with context.l10n when localization is added.
         'Yes, continue',
         textAlign: .center,
-        style: VineTheme.titleFont(
-          color: VineTheme.surfaceBackground,
-          fontSize: 18,
-          height: 1.33,
-          letterSpacing: 0.15,
-        ),
+        style: VineTheme.titleMediumFont(color: VineTheme.surfaceBackground),
       ),
     );
   }
@@ -147,12 +132,7 @@ class _DiscardButton extends ConsumerWidget {
         // TODO(l10n): Replace with context.l10n when localization is added.
         'No, start a new video',
         textAlign: .center,
-        style: VineTheme.titleFont(
-          color: VineTheme.primary,
-          fontSize: 18,
-          height: 1.33,
-          letterSpacing: 0.15,
-        ),
+        style: VineTheme.titleMediumFont(color: VineTheme.primary),
       ),
     );
   }

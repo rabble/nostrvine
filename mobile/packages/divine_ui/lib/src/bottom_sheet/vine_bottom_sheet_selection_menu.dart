@@ -98,11 +98,7 @@ class _VineBottomSheetSelectionOption extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: VineTheme.titleFont(
-                    fontSize: 18,
-                    height: 24 / 18,
-                    color: VineTheme.onSurface,
-                  ),
+                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
                 ),
               ),
               if (isSelected)

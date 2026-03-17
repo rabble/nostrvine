@@ -64,7 +64,9 @@ class CommentOptionsModal {
       expanded: false,
       title: Text(
         'Options',
-        style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(
+          color: VineTheme.onSurface,
+        ),
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
@@ -103,7 +105,7 @@ class CommentOptionsModal {
       expanded: false,
       title: Text(
         'Options',
-        style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
@@ -211,7 +213,7 @@ class _FlagContentSheet extends StatefulWidget {
       isScrollControlled: true,
       title: Text(
         'Flag Content',
-        style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: _FlagContentSheet(
         onSubmit: (result) => Navigator.pop(context, result),

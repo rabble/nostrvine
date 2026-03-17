@@ -1976,7 +1976,7 @@ class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Content labels', style: VineTheme.titleFont(fontSize: 18)),
+              Text('Content labels', style: VineTheme.titleMediumFont()),
               if (_selected.isNotEmpty)
                 TextButton(
                   onPressed: () => setState(_selected.clear),

@@ -116,11 +116,7 @@ class _VineBottomSheetListTile extends StatelessWidget {
       ),
       title: Text(
         data.label,
-        style: VineTheme.titleFont(
-          fontSize: 18,
-          height: 1.33,
-          letterSpacing: 0.15,
-        ),
+        style: VineTheme.titleMediumFont(),
         maxLines: 1,
         overflow: .ellipsis,
       ),

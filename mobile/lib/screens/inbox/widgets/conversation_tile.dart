@@ -97,7 +97,6 @@ class ConversationTile extends ConsumerWidget {
                             child: Text(
                               displayName,
                               style: VineTheme.titleMediumFont(
-                                fontSize: 16,
                                 height: 24 / 16,
                               ),
                               maxLines: 1,

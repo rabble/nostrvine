@@ -75,7 +75,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(widget.listName, style: VineTheme.titleFont()),
+                  Text(widget.listName, style: VineTheme.titleLargeFont()),
                   const SizedBox(height: 2),
                   _buildSubheading(),
                 ],

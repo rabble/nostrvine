@@ -68,7 +68,7 @@ class CommentsEmptyState extends StatelessWidget {
             Text(
               'No comments yet',
               textAlign: TextAlign.center,
-              style: VineTheme.titleFont(color: VineTheme.onSurface),
+              style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
             ),
             const SizedBox(height: 4),
             Text(

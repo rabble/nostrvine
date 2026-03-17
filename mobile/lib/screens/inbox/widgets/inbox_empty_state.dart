@@ -23,7 +23,6 @@ class InboxEmptyState extends StatelessWidget {
             Text(
               'No messages yet',
               style: VineTheme.titleMediumFont(
-                fontSize: 16,
                 height: 24 / 16,
                 color: VineTheme.onSurfaceMuted,
               ),

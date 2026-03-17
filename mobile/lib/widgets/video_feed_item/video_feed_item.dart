@@ -1616,10 +1616,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                             label: 'Video author: $displayName',
                                             child: Text(
                                               displayName,
-                                              style: VineTheme.titleFont(
-                                                fontSize: 14,
-                                                height: 20 / 14,
-                                              ),
+                                              style: VineTheme.titleSmallFont(),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -2429,7 +2426,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'Content Warnings',
-                  style: VineTheme.titleFont(fontSize: 18),
+                  style: VineTheme.titleMediumFont(),
                 ),
               ],
             ),

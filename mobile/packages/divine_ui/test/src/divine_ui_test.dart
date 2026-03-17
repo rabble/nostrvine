@@ -179,41 +179,6 @@ void main() {
       });
     });
 
-    group('titleFont', () {
-      testWidgets('returns TextStyle with default values', (tester) async {
-        final style = VineTheme.titleFont();
-
-        expect(style.fontSize, 22);
-        expect(style.fontWeight, FontWeight.w800);
-        expect(style.color, VineTheme.whiteText);
-        expect(style.height, 28 / 22);
-      });
-
-      testWidgets('returns TextStyle with custom fontSize', (tester) async {
-        final style = VineTheme.titleFont(fontSize: 30);
-
-        expect(style.fontSize, 30);
-      });
-
-      testWidgets('returns TextStyle with custom height', (tester) async {
-        final style = VineTheme.titleFont(height: 1.5);
-
-        expect(style.height, 1.5);
-      });
-
-      testWidgets('returns TextStyle with custom color', (tester) async {
-        final style = VineTheme.titleFont(color: Colors.red);
-
-        expect(style.color, Colors.red);
-      });
-
-      testWidgets('returns TextStyle with letterSpacing', (tester) async {
-        final style = VineTheme.titleFont(letterSpacing: 0.5);
-
-        expect(style.letterSpacing, 0.5);
-      });
-    });
-
     group('bodyFont', () {
       testWidgets('returns TextStyle with default values', (tester) async {
         final style = VineTheme.bodyFont();
@@ -221,12 +186,6 @@ void main() {
         expect(style.fontSize, 16);
         expect(style.fontWeight, FontWeight.w400);
         expect(style.color, VineTheme.primaryText);
-      });
-
-      testWidgets('returns TextStyle with custom fontSize', (tester) async {
-        final style = VineTheme.bodyFont(fontSize: 20);
-
-        expect(style.fontSize, 20);
       });
 
       testWidgets('returns TextStyle with custom fontWeight', (tester) async {

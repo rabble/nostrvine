@@ -109,7 +109,6 @@ class _ToggleButton extends StatelessWidget {
                 Text(
                   label,
                   style: VineTheme.titleMediumFont(
-                    fontSize: 16,
                     height: 24 / 16,
                     color: isSelected
                         ? VineTheme.onPrimaryButton

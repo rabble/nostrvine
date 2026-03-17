@@ -205,7 +205,7 @@ class _DropdownButton extends StatelessWidget {
               ),
               Text(
                 label,
-                style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
+                style: VineTheme.titleMediumFont(height: 1.5),
               ),
             ],
           ),
@@ -283,10 +283,9 @@ class _DropdownMenuItem extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5)
-                .copyWith(
-                  color: isSelected ? VineTheme.primary : VineTheme.onSurface,
-                ),
+            style: VineTheme.titleMediumFont(height: 1.5).copyWith(
+              color: isSelected ? VineTheme.primary : VineTheme.onSurface,
+            ),
           ),
         ),
       ),

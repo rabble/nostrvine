@@ -36,7 +36,7 @@ class UserNotAvailableScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'Account not available',
-                style: VineTheme.titleFont(),
+                style: VineTheme.titleLargeFont(),
               ),
               const SizedBox(height: 8),
               Text(
