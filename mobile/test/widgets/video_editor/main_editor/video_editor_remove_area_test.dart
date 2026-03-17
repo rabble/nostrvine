@@ -45,6 +45,7 @@ void main() {
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: ValueNotifier(const Size(400, 600)),
               onAddStickers: () {},
+              onAdjustVolume: () {},
               onAddEditTextLayer: ([layer]) async => null,
               child: BlocProvider<VideoEditorMainBloc>.value(
                 value: mockBloc,

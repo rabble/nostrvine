@@ -34,7 +34,6 @@ void main() {
                 isPlaying: isPlaying,
                 isEditing: isEditing,
                 isReordering: isReordering,
-                isMuted: isMuted,
               ),
             ),
           ),
@@ -149,9 +148,6 @@ class TestVideoEditorNotifier extends VideoEditorNotifier {
 
   @override
   void togglePlayPause() {}
-
-  @override
-  void toggleMute() {}
 }
 
 class TestClipManagerNotifier extends ClipManagerNotifier {

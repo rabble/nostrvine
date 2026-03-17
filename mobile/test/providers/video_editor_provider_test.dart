@@ -61,7 +61,6 @@ void main() {
           false,
           reason: 'isPlaying should default to false',
         );
-        expect(state.isMuted, false, reason: 'isMuted should default to false');
         expect(
           state.isProcessing,
           false,
@@ -305,25 +304,12 @@ void main() {
       });
     });
 
-    group('audio', () {
-      test('toggleMute should toggle isMuted state', () {
-        // First toggle: unmuted -> muted
-        container.read(videoEditorProvider.notifier).toggleMute();
-        expect(container.read(videoEditorProvider).isMuted, true);
-
-        // Second toggle: muted -> unmuted
-        container.read(videoEditorProvider.notifier).toggleMute();
-        expect(container.read(videoEditorProvider).isMuted, false);
-      });
-    });
-
     group('reset', () {
       test('should reset all state to defaults', () {
         // Modify some state first
         container.read(videoEditorProvider.notifier)
           ..setPlayerReady(true)
-          ..togglePlayPause()
-          ..toggleMute();
+          ..togglePlayPause();
 
         // Verify state changed
         var state = container.read(videoEditorProvider);
@@ -331,11 +317,6 @@ void main() {
           state.isPlaying,
           true,
           reason: 'isPlaying should be true after togglePlayPause',
-        );
-        expect(
-          state.isMuted,
-          true,
-          reason: 'isMuted should be true after toggleMute',
         );
 
         // Reset
@@ -372,7 +353,6 @@ void main() {
           false,
           reason: 'isPlaying should reset to false',
         );
-        expect(state.isMuted, false, reason: 'isMuted should reset to false');
         expect(
           state.isProcessing,
           false,
@@ -667,7 +647,6 @@ void main() {
         isReordering: true,
         isOverDeleteZone: true,
         isPlaying: true,
-        isMuted: true,
         isProcessing: true,
       );
 
@@ -680,7 +659,6 @@ void main() {
       expect(copied.isReordering, true);
       expect(copied.isOverDeleteZone, true);
       expect(copied.isPlaying, true);
-      expect(copied.isMuted, true);
       expect(copied.isProcessing, true);
     });
 
@@ -688,14 +666,12 @@ void main() {
       final original = VideoEditorProviderState(
         currentClipIndex: 2,
         isEditing: true,
-        isMuted: true,
       );
 
       final copied = original.copyWith(currentClipIndex: 5, isEditing: false);
 
       expect(copied.currentClipIndex, 5);
       expect(copied.isEditing, false);
-      expect(copied.isMuted, true); // Unchanged
     });
 
     group('isValidToPost', () {

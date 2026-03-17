@@ -15,7 +15,6 @@ void main() {
       expect(state.isReordering, false);
       expect(state.isOverDeleteZone, false);
       expect(state.isPlaying, false);
-      expect(state.isMuted, false);
       expect(state.isProcessing, false);
     });
 
@@ -25,12 +24,11 @@ void main() {
         isPlaying: true,
       );
 
-      final updated = initial.copyWith(isEditing: true, isMuted: true);
+      final updated = initial.copyWith(isEditing: true);
 
       expect(updated.currentClipIndex, 1);
       expect(updated.isPlaying, true);
       expect(updated.isEditing, true);
-      expect(updated.isMuted, true);
       expect(updated.isReordering, false);
     });
 
@@ -42,7 +40,6 @@ void main() {
         isReordering: true,
         isOverDeleteZone: true,
         isPlaying: true,
-        isMuted: true,
         isProcessing: true,
       );
 
@@ -54,7 +51,6 @@ void main() {
       expect(copied.isReordering, state.isReordering);
       expect(copied.isOverDeleteZone, state.isOverDeleteZone);
       expect(copied.isPlaying, state.isPlaying);
-      expect(copied.isMuted, state.isMuted);
       expect(copied.isProcessing, state.isProcessing);
     });
   });
