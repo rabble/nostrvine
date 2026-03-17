@@ -151,16 +151,55 @@ def extract_thumbnail(video_path: str, thumb_path: str) -> None:
 # ---------------------------------------------------------------------------
 # Blossom upload
 # ---------------------------------------------------------------------------
-def upload_to_blossom(file_path: str, content_type: str = "video/mp4") -> dict:
-    """Upload a file to blossom via PUT /upload. Returns response JSON."""
+def build_upload_auth(privkey_bytes: bytes, pubkey_hex: str) -> str:
+    """Build a kind 24242 Nostr auth header for blossom uploads.
+
+    Returns the full Authorization header value: 'Nostr <base64-event-json>'.
+    """
+    import base64
+
+    now = int(time.time())
+    event = {
+        "kind": 24242,
+        "pubkey": pubkey_hex,
+        "created_at": now,
+        "content": "",
+        "tags": [
+            ["t", "upload"],
+            ["expiration", str(now + 300)],
+        ],
+    }
+    event = sign_event(event, privkey_bytes)
+    event_json = json.dumps(event, separators=(",", ":"), ensure_ascii=False)
+    encoded = base64.b64encode(event_json.encode()).decode()
+    return f"Nostr {encoded}"
+
+
+def upload_to_blossom(
+    file_path: str,
+    content_type: str = "video/mp4",
+    privkey_bytes: bytes | None = None,
+    pubkey_hex: str | None = None,
+) -> dict:
+    """Upload a file to blossom via PUT /upload with kind 24242 auth.
+
+    Returns response JSON. If no keypair is provided, generates one.
+    """
+    if privkey_bytes is None or pubkey_hex is None:
+        privkey_bytes, pubkey_hex = derive_keypair(0)
+
     with open(file_path, "rb") as f:
         data = f.read()
 
+    auth = build_upload_auth(privkey_bytes, pubkey_hex)
     req = Request(
         f"{BLOSSOM_URL}/upload",
         data=data,
         method="PUT",
-        headers={"Content-Type": content_type},
+        headers={
+            "Content-Type": content_type,
+            "Authorization": auth,
+        },
     )
     with urlopen(req, timeout=30) as resp:
         body = json.loads(resp.read().decode())

@@ -4,6 +4,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -17,7 +18,9 @@ class BackgroundPublishBloc
       required OnProgressChanged onProgress,
     })
     videoPublishServiceFactory,
+    required DraftStorageService draftStorageService,
   }) : _videoPublishServiceFactory = videoPublishServiceFactory,
+       _draftStorageService = draftStorageService,
        super(const BackgroundPublishState()) {
     on<BackgroundPublishRequested>(
       _onBackgroundPublishRequested,
@@ -26,12 +29,15 @@ class BackgroundPublishBloc
     on<BackgroundPublishProgressChanged>(_onBackgroundPublishProgressChanged);
     on<BackgroundPublishVanished>(_onBackgroundPublishVanished);
     on<BackgroundPublishRetryRequested>(_onBackgroundPublishRetryRequested);
+    on<BackgroundPublishFailed>(_onBackgroundPublishFailed);
   }
 
   final Future<VideoPublishService> Function({
     required OnProgressChanged onProgress,
   })
   _videoPublishServiceFactory;
+
+  final DraftStorageService _draftStorageService;
 
   Future<void> _onBackgroundPublishRequested(
     BackgroundPublishRequested event,
@@ -61,7 +67,8 @@ class BackgroundPublishBloc
         stackTrace: stackTrace,
       );
       addError(e, stackTrace);
-      result = const PublishError('Failed to publish video. Please try again.');
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      result = const PublishError('Something went wrong. Please try again.');
     }
 
     // Remove the upload if it was successful
@@ -71,6 +78,9 @@ class BackgroundPublishBloc
           .toList();
 
       emit(state.copyWith(uploads: updatedUploads));
+
+      // Draft is no longer needed after successful publish
+      unawaited(_draftStorageService.deleteDraft(event.draft.id));
     } else {
       // Update the upload with the result
       final updatedUploads = state.uploads.map((upload) {
@@ -81,6 +91,16 @@ class BackgroundPublishBloc
       }).toList();
 
       emit(state.copyWith(uploads: updatedUploads));
+
+      // Persist failed status in the database
+      final errorMessage = result is PublishError ? result.userMessage : null;
+      unawaited(
+        _draftStorageService.updatePublishStatus(
+          draftId: event.draft.id,
+          status: PublishStatus.failed,
+          publishError: errorMessage,
+        ),
+      );
     }
   }
 
@@ -120,6 +140,14 @@ class BackgroundPublishBloc
       return upload.draft.id != event.draftId;
     }).toList();
     emit(state.copyWith(uploads: remainingUploads));
+
+    // Reset to draft so resumePendingPublishes won't re-surface it
+    unawaited(
+      _draftStorageService.updatePublishStatus(
+        draftId: event.draftId,
+        status: PublishStatus.draft,
+      ),
+    );
   }
 
   Future<void> _onBackgroundPublishRetryRequested(
@@ -157,5 +185,22 @@ class BackgroundPublishBloc
         publishmentProcess: newPublishProcess,
       ),
     );
+  }
+
+  void _onBackgroundPublishFailed(
+    BackgroundPublishFailed event,
+    Emitter<BackgroundPublishState> emit,
+  ) {
+    final alreadyTracked = state.uploads.any(
+      (upload) => upload.draft.id == event.draft.id,
+    );
+    if (alreadyTracked) return;
+
+    final failedUpload = BackgroundUpload(
+      draft: event.draft,
+      result: PublishError(event.userMessage),
+      progress: 0,
+    );
+    emit(state.copyWith(uploads: [...state.uploads, failedUpload]));
   }
 }

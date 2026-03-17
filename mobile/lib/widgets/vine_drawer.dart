@@ -439,8 +439,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   }
 
   /// Handle bug report submission
-  /// Sets JWT identity via pre-auth token before creating the ticket so it's
-  /// linked to the authenticated user and visible in "View Past Messages".
+  /// JWT identity is set at login by zendeskIdentitySync provider.
   Future<void> _handleBugReportWithServices(
     BuildContext context,
     BugReportService bugReportService,
@@ -450,24 +449,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     required Nip98AuthService nip98Service,
     required String relayManagerUrl,
   }) async {
-    if (userPubkey != null) {
-      final jwtSet = await ZendeskSupportService.setJwtIdentity(
-        nip98Service: nip98Service,
-        relayManagerUrl: relayManagerUrl,
-      );
-      if (!jwtSet) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not authenticate with support'),
-              backgroundColor: VineTheme.error,
-            ),
-          );
-        }
-        return;
-      }
-    }
-
     if (!context.mounted) return;
 
     Log.debug('🐛 Opening bug report dialog', category: LogCategory.ui);
@@ -492,8 +473,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   }
 
   /// Handle feature request submission
-  /// Sets JWT identity via pre-auth token before creating the ticket so it's
-  /// linked to the authenticated user and visible in "View Past Messages".
+  /// JWT identity is set at login by zendeskIdentitySync provider.
   Future<void> _handleFeatureRequest(
     BuildContext context,
     String? userPubkey,
@@ -501,26 +481,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     required Nip98AuthService nip98Service,
     required String relayManagerUrl,
   }) async {
-    if (userPubkey != null) {
-      final jwtSet = await ZendeskSupportService.setJwtIdentity(
-        nip98Service: nip98Service,
-        relayManagerUrl: relayManagerUrl,
-      );
-      if (!jwtSet) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not authenticate with support'),
-              backgroundColor: VineTheme.error,
-            ),
-          );
-        }
-        return;
-      }
-    }
+    if (!context.mounted) return;
 
     Log.debug('💡 Opening feature request dialog', category: LogCategory.ui);
-    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (context) => FeatureRequestDialog(userPubkey: userPubkey),

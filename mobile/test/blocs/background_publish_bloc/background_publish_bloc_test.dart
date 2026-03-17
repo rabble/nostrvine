@@ -3,16 +3,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 
 class _MockVineDraft extends Mock implements DivineVideoDraft {}
 
 class _MockVideoPublishService extends Mock implements VideoPublishService {}
 
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
 void main() {
+  late _MockDraftStorageService mockDraftStorageService;
+
   Future<_MockVideoPublishService> defaultVieoPublishServiceFactory({
     required OnProgressChanged onProgress,
   }) => Future.value(_MockVideoPublishService());
+
+  setUpAll(() {
+    registerFallbackValue(PublishStatus.draft);
+  });
+
+  setUp(() {
+    mockDraftStorageService = _MockDraftStorageService();
+    when(
+      () => mockDraftStorageService.updatePublishStatus(
+        draftId: any(named: 'draftId'),
+        status: any(named: 'status'),
+        publishError: any(named: 'publishError'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockDraftStorageService.deleteDraft(any()),
+    ).thenAnswer((_) async {});
+  });
 
   group('BackgroundPublishState', () {
     group('hasUploadInProgress', () {
@@ -75,6 +98,7 @@ void main() {
       expect(
         BackgroundPublishBloc(
           videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
         ),
         isNotNull,
       );
@@ -94,6 +118,7 @@ void main() {
           'is removed from the uploads list',
           build: () => BackgroundPublishBloc(
             videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
           ),
           act: (bloc) => bloc.add(
             BackgroundPublishRequested(
@@ -117,6 +142,7 @@ void main() {
           'is kept on the uploads list',
           build: () => BackgroundPublishBloc(
             videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
           ),
           act: (bloc) => bloc.add(
             BackgroundPublishRequested(
@@ -148,6 +174,7 @@ void main() {
           'transitions the upload to error state',
           build: () => BackgroundPublishBloc(
             videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
           ),
           act: (bloc) => bloc.add(
             BackgroundPublishRequested(
@@ -170,7 +197,7 @@ void main() {
                 BackgroundUpload(
                   draft: draft,
                   result: const PublishError(
-                    'Failed to publish video. Please try again.',
+                    'Something went wrong. Please try again.',
                   ),
                   progress: 1.0,
                 ),
@@ -185,6 +212,7 @@ void main() {
           'does not add duplicate upload',
           build: () => BackgroundPublishBloc(
             videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
           ),
           seed: () => BackgroundPublishState(
             uploads: [
@@ -218,6 +246,7 @@ void main() {
         'updates the background upload',
         build: () => BackgroundPublishBloc(
           videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
         ),
         seed: () => BackgroundPublishState(
           uploads: [BackgroundUpload(draft: draft, result: null, progress: 0)],
@@ -238,6 +267,7 @@ void main() {
         'ignores progress when it is less than current progress',
         build: () => BackgroundPublishBloc(
           videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
         ),
         seed: () => BackgroundPublishState(
           uploads: [
@@ -254,6 +284,7 @@ void main() {
         'ignores progress when it is equal to the current progress',
         build: () => BackgroundPublishBloc(
           videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
         ),
         seed: () => BackgroundPublishState(
           uploads: [
@@ -270,6 +301,7 @@ void main() {
         'ignores progress when the upload already has a result',
         build: () => BackgroundPublishBloc(
           videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
         ),
         seed: () => BackgroundPublishState(
           uploads: [
@@ -290,6 +322,7 @@ void main() {
         'ignores progress when the draft is not found',
         build: () => BackgroundPublishBloc(
           videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
         ),
         seed: () => const BackgroundPublishState(),
         act: (bloc) => bloc.add(
@@ -311,9 +344,10 @@ void main() {
         when(() => draft.id).thenReturn(draftId);
       });
       blocTest(
-        'removes the background upload',
+        'removes the background upload and resets status to draft',
         build: () => BackgroundPublishBloc(
           videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
         ),
         seed: () => BackgroundPublishState(
           uploads: [
@@ -322,6 +356,14 @@ void main() {
         ),
         act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
         expect: () => [const BackgroundPublishState()],
+        verify: (_) {
+          verify(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: draftId,
+              status: PublishStatus.draft,
+            ),
+          ).called(1);
+        },
       );
     });
 
@@ -344,6 +386,7 @@ void main() {
               ({required OnProgressChanged onProgress}) {
                 return Future.value(mockPublishService);
               },
+          draftStorageService: mockDraftStorageService,
         ),
         setUp: () {
           when(

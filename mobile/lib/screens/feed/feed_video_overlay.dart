@@ -76,24 +76,40 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
+    final overlayLabels = contentWarningOverlayLabels(
+      contentWarningLabels: video.contentWarningLabels,
+      warnLabels: video.warnLabels,
+    );
+    final showContentWarningOverlay = shouldShowContentWarningOverlay(
+      contentWarningLabels: video.contentWarningLabels,
+      warnLabels: video.warnLabels,
+    );
 
     Log.debug(
       'Feed overlay build: eventId=${video.id}, pubkey=${video.pubkey}, '
       'isActive=${widget.isActive}, hasPlayer=${widget.player != null}, '
       'hasFirstFrameFuture=${widget.firstFrameFuture != null}, '
-      'hasSubtitles=${video.hasSubtitles}, hasWarning=${video.shouldShowWarning}, '
+      'hasSubtitles=${video.hasSubtitles}, '
+      'hasWarning=$showContentWarningOverlay, '
       'videoUrl=${video.videoUrl}, thumbnailUrl=${video.thumbnailUrl}',
       name: 'FeedVideoOverlay',
       category: LogCategory.video,
     );
 
     // Content warning blur overlay takes priority over normal overlay
-    if (video.shouldShowWarning && !_contentWarningRevealed) {
+    if (showContentWarningOverlay && !_contentWarningRevealed) {
       return ContentWarningBlurOverlay(
-        labels: video.warnLabels,
+        labels: overlayLabels,
         onReveal: () => setState(() {
           _contentWarningRevealed = true;
         }),
+        onHideSimilar: () {
+          hideContentWarningsLikeThese(
+            context: context,
+            ref: ref,
+            labels: overlayLabels,
+          );
+        },
       );
     }
 

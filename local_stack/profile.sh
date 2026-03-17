@@ -81,6 +81,7 @@ set +e
 PATH="$HOME/.pub-cache/bin:$PATH" patrol test \
     --target "$TEST_PATH" \
     --dart-define=DEFAULT_ENV=LOCAL \
+    --dart-define=INVITE_SERVER_URL=http://10.0.2.2:43004 \
     2>&1 | tee "$APP_LOG"
 TEST_EXIT="${PIPESTATUS[0]}"
 set -e

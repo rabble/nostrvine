@@ -66,6 +66,44 @@ void updateUser(User user) {
 
 ---
 
+## No Hardcoded Values
+
+Never hardcode relay URLs, port numbers, API endpoints, durations, or numeric thresholds directly in BLoCs, repositories, or widgets. Extract them into named constants grouped in a dedicated class or config object.
+
+**Bad:**
+```dart
+class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
+  Future<void> _onShare(...) async {
+    await _client.publish(
+      relays: ['wss://relay.example.com'],  // WRONG — hardcoded relay
+      retries: 3,                            // WRONG — magic number
+    );
+  }
+}
+```
+
+**Good:**
+```dart
+abstract class ShareConstants {
+  static const defaultRelays = ['wss://relay.example.com'];
+  static const maxRetries = 3;
+}
+
+// Or use environment config for environment-specific values
+class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
+  Future<void> _onShare(...) async {
+    await _client.publish(
+      relays: ShareConstants.defaultRelays,
+      retries: ShareConstants.maxRetries,
+    );
+  }
+}
+```
+
+Group related constants together so they are easy to find and update in one place.
+
+---
+
 ## Dart Best Practices
 
 ### Null Safety

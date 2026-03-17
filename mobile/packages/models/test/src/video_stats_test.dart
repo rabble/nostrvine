@@ -859,6 +859,41 @@ void main() {
         expect(videoEvent.originalLoops, equals(1000));
       });
 
+      test(
+        'promotes content warning tags from REST event data into VideoEvent',
+        () {
+          final json = {
+            'event': {
+              'id': 'test-id',
+              'pubkey': 'test-pubkey',
+              'created_at': 1700000000,
+              'kind': 34236,
+              'content': 'Test',
+              'tags': [
+                ['d', 'video-1'],
+                ['url', 'https://example.com/video.mp4'],
+                ['thumb', 'https://example.com/thumb.jpg'],
+                ['content-warning', 'nudity'],
+                ['L', 'content-warning'],
+                ['l', 'nudity', 'content-warning'],
+              ],
+            },
+            'stats': {
+              'reactions': 0,
+              'comments': 0,
+              'reposts': 0,
+              'engagement_score': 0,
+            },
+          };
+
+          final stats = VideoStats.fromJson(json);
+          final event = stats.toVideoEvent();
+
+          expect(event.rawTags['content-warning'], equals('nudity'));
+          expect(event.contentWarningLabels, equals(['nudity']));
+        },
+      );
+
       test('handles empty strings by converting to null', () {
         final stats = VideoStats(
           id: 'test-id',

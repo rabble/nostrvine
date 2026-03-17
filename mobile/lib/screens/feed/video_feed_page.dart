@@ -90,6 +90,7 @@ class VideoFeedPage extends ConsumerWidget {
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
+    final profileRepository = ref.watch(profileRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
     final sharedPreferences = ref.watch(sharedPreferencesProvider);
     final showDivineHostedOnly = ref
@@ -102,6 +103,7 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
+        profileRepository: profileRepository,
         userPubkey: authService.currentPublicKeyHex,
         sharedPreferences: sharedPreferences,
         serveCachedHomeFeed: !showDivineHostedOnly,
@@ -130,8 +132,6 @@ class VideoFeedView extends ConsumerStatefulWidget {
 
 class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     with WidgetsBindingObserver {
-  int? lastPrefetchIndex;
-
   /// Whether the home tab is currently active.
   ///
   /// Used to prevent overlay-close from resuming playback when the user
@@ -259,7 +259,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     }
     controllerMode = null;
     lastPooledVideos = null;
-    lastPrefetchIndex = null;
   }
 
   bool _samePooledVideos(List<VideoItem> previous, List<VideoItem> current) {
@@ -289,31 +288,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     }
 
     return true;
-  }
-
-  void prefetchProfiles(List<VideoEvent> videos, int index) {
-    if (index == lastPrefetchIndex) return;
-    lastPrefetchIndex = index;
-
-    final safeIndex = index.clamp(0, videos.length - 1);
-    final pubkeys = <String>[];
-
-    if (safeIndex > 0) {
-      pubkeys.add(videos[safeIndex - 1].pubkey);
-    }
-
-    if (safeIndex < videos.length - 1) {
-      pubkeys.add(videos[safeIndex + 1].pubkey);
-    }
-
-    if (pubkeys.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref
-            .read(profileRepositoryProvider)
-            ?.fetchBatchProfiles(pubkeys: pubkeys);
-      });
-    }
   }
 
   @override
@@ -438,9 +412,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                     videos: state.videos
                         .where((v) => v.videoUrl != null)
                         .toList(),
-                    onActiveVideoChanged: (video, index) {
-                      prefetchProfiles(state.videos, index);
-                    },
                     onNearEnd: (index) {
                       if (state.hasMore) {
                         context.read<VideoFeedBloc>().add(
@@ -508,7 +479,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                           name: 'VideoFeedPage',
                           category: LogCategory.video,
                         );
-                        prefetchProfiles(state.videos, sourceIndex);
                       }
                     },
                     onNearEnd: (index) {

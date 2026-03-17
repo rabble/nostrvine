@@ -1,0 +1,191 @@
+name: Model Boundary Audit
+description: Find and fix places where canonical source data exists but semantic domain fields are dropped at adapter, cache, hydration, or enrichment boundaries
+title: "fix: audit semantic field loss in "
+labels: ["bug"]
+
+assignees:
+  - NotThatKindOfDrLiz
+projects:
+  - divine/2
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this issue for the anti-pattern where:
+        1. Source data exists upstream.
+        2. Raw payload is preserved somewhere (`rawTags`, `nostrEventTags`, cached JSON, DTOs, etc.).
+        3. The app relies on a promoted semantic/domain field.
+        4. An adapter, merge, cache restore, hydration pass, or `copyWith()` transform fails to carry that semantic field forward.
+        5. UI or filtering logic reads the semantic field and silently behaves incorrectly.
+
+        Known example:
+        - FunnelCake/relay content-warning tags existed upstream.
+        - Raw tags were preserved.
+        - `VideoEvent.contentWarningLabels` was dropped on some paths.
+        - Overlay/filter behavior failed.
+
+        Strong search targets:
+        - `toVideoEvent()`
+        - `fromJson()`
+        - `fromNostrEvent()`
+        - long `copyWith(...)` merges
+        - enrichment/hydration code
+        - code that reads `rawTags` directly because parsed fields are unreliable
+
+        Suggested searches:
+        - `rg -n "toVideoEvent\\(" mobile`
+        - `rg -n "fromJson\\(" mobile`
+        - `rg -n "copyWith\\(" mobile`
+        - `rg -n "rawTags|nostrEventTags|contentWarningLabels|moderationLabels|warnLabels" mobile`
+        - `rg -n "merge|enrich|hydrate|preserve|collect ALL tags|Store every tag" mobile`
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Audit Summary
+      description: What area of the app is being audited, and what semantic/data-loss risk do you suspect?
+      placeholder: |
+        Example:
+        Audit VideoEvent adapter boundaries for places where raw Nostr/FunnelCake data is present but promoted fields are missing or stale.
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-visible-symptom
+    attributes:
+      label: Suspected User-Visible Symptom
+      description: What broken behavior might a user see if this anti-pattern is present?
+      placeholder: |
+        Example:
+        A video shows moderation-related raw tags in debug output, but feed warning/filter logic treats it as clean.
+    validations:
+      required: true
+
+  - type: textarea
+    id: canonical-vs-semantic
+    attributes:
+      label: Canonical Source vs Semantic Field
+      description: Identify the upstream source field and the downstream semantic/domain field the app actually trusts
+      placeholder: |
+        Upstream source:
+        - event.tags / rawTags / cached JSON / API field / relay event
+
+        Semantic field:
+        - VideoEvent.contentWarningLabels / moderationLabels / warnLabels / other parsed field
+
+        Downstream consumers:
+        - feed UI / content filter / analytics / cache / publisher / etc.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: investigation-checklist
+    attributes:
+      label: Investigation Checklist
+      description: Complete these before calling the issue understood
+      options:
+        - label: I identified the exact semantic/domain field downstream code relies on
+          required: true
+        - label: I verified the upstream source already contains the missing information
+          required: true
+        - label: I traced the exact boundary where data is dropped, not just the symptom
+          required: true
+        - label: I compared the broken path with a working path in the same codebase
+          required: true
+        - label: I ruled out a pure UI bug before changing model or adapter code
+          required: true
+
+  - type: textarea
+    id: likely-boundaries
+    attributes:
+      label: Candidate Boundaries
+      description: List the likely adapter, cache, hydration, or enrichment boundaries to inspect
+      placeholder: |
+        Example:
+        - VideoStats.fromJson -> VideoStats.toVideoEvent
+        - enrichVideosWithNostrTags
+        - analytics_api_service cached VideoStats -> VideoEvent
+        - cache restore paths
+        - manual copyWith merges into existing VideoEvent
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: search-areas
+    attributes:
+      label: Search Areas Checked
+      description: Mark every area you actually audited
+      options:
+        - label: DTO or REST adapter conversion (`fromJson`, `toVideoEvent`)
+        - label: Relay parsing parity (`fromNostrEvent` or equivalent)
+        - label: Enrichment or hydration merges
+        - label: Cache serialize/deserialize paths
+        - label: Analytics or stats hydration
+        - label: Repository transformation pipelines
+        - label: Direct `rawTags` consumers that may be bypassing canonical parsed fields
+        - label: Widget or screen logic using stale derived fields
+
+  - type: textarea
+    id: confirmed-instances
+    attributes:
+      label: Confirmed Instances
+      description: For each confirmed bug, record the exact boundary and impact
+      placeholder: |
+        - File:
+        - Broken boundary:
+        - Upstream source:
+        - Dropped semantic field:
+        - User-visible risk:
+        - Planned fix:
+
+        Repeat for each confirmed instance.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: fix-checklist
+    attributes:
+      label: Fix Checklist
+      description: Do not close the issue until each confirmed instance has this coverage
+      options:
+        - label: I fixed the narrowest boundary that drops the semantic field
+          required: true
+        - label: I avoided adding a downstream workaround when the domain model could be made trustworthy
+          required: true
+        - label: I added a focused failing regression test at the broken boundary
+          required: true
+        - label: I added or updated a user-visible behavior test where practical
+          required: true
+        - label: I checked equivalent code paths for the same anti-pattern
+          required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Record the exact commands run and the relevant results
+      placeholder: |
+        Commands:
+        - flutter test ...
+        - flutter analyze --no-pub ...
+
+        Results:
+        - Boundary regression test passes
+        - Behavior test passes
+        - No new analyzer issues in touched files
+    validations:
+      required: true
+
+  - type: textarea
+    id: follow-ups
+    attributes:
+      label: Follow-Ups or Unconfirmed Smells
+      description: Note suspicious patterns you found but did not confirm as bugs
+      placeholder: |
+        Example:
+        - rawTags is still read directly in X service
+        - manual copyWith merge in Y repository looks brittle but no repro yet
+        - cache path Z may need a dedicated audit later
+    validations:
+      required: false

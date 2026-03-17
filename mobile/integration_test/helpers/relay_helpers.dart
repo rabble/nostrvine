@@ -98,19 +98,48 @@ Future<PublishedProfile> publishTestProfileEvent({
   return (pubkey: pubKey, privateKey: privKey);
 }
 
+/// Build a kind 24242 Nostr auth header for blossom uploads.
+String _buildUploadAuth(String privateKey) {
+  final pubKey = getPublicKey(privateKey);
+  final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  final expiration = now + 300;
+
+  final event = Event(
+    pubKey,
+    24242,
+    [
+      ['t', 'upload'],
+      ['expiration', '$expiration'],
+    ],
+    '',
+    createdAt: now,
+  );
+  event.sign(privateKey);
+
+  final eventJson = jsonEncode(event.toJson());
+  return 'Nostr ${base64Encode(utf8.encode(eventJson))}';
+}
+
 /// Upload a small test blob to the local blossom server.
 ///
 /// Returns the sha256 hash of the uploaded file. Blossom serves the file
 /// at `http://{host}:{port}/{sha256}`.
+///
+/// Sends a kind 24242 Nostr auth header as required by divine-blossom.
 Future<String> _uploadTestBlob({
   required Uint8List data,
   String contentType = 'video/mp4',
 }) async {
   final client = HttpClient();
   try {
+    final privKey = _uploadPrivateKey ??= generatePrivateKey();
+    final auth = _buildUploadAuth(privKey);
+
     final uri = Uri.parse('http://$localHost:$localBlossomPort/upload');
     final request = await client.openUrl('PUT', uri);
     request.headers.set('Content-Type', contentType);
+    request.headers.set('Authorization', auth);
+    request.contentLength = data.length;
     request.add(data);
     final response = await request.close().timeout(
       const Duration(seconds: 10),
@@ -127,6 +156,9 @@ Future<String> _uploadTestBlob({
     client.close();
   }
 }
+
+/// Reusable private key for test uploads (generated once per test run).
+String? _uploadPrivateKey;
 
 /// Cached sha256 hashes for test blobs so we only upload once per test run.
 String? _cachedVideoHash;
@@ -196,6 +228,63 @@ Future<Uint8List> _generateTestThumbnail() async {
   image.dispose();
 
   return byteData!.buffer.asUint8List();
+}
+
+/// Query the local relay for events matching [filter].
+///
+/// Opens a WebSocket, sends a REQ, collects EVENT messages until EOSE,
+/// then closes the connection. Returns all matching events.
+Future<List<Event>> queryRelay(Map<String, dynamic> filter) async {
+  final channel = WebSocketChannel.connect(
+    Uri.parse('ws://$localHost:$localRelayPort'),
+  );
+
+  final subId = 'query-${DateTime.now().millisecondsSinceEpoch}';
+  final events = <Event>[];
+  final completer = Completer<List<Event>>();
+
+  final subscription = channel.stream.listen((message) {
+    final decoded = jsonDecode(message as String) as List<dynamic>;
+    if (decoded[0] == 'EVENT' && decoded[1] == subId) {
+      events.add(Event.fromJson(decoded[2] as Map<String, dynamic>));
+    } else if (decoded[0] == 'EOSE' && decoded[1] == subId) {
+      completer.complete(events);
+    }
+  });
+
+  channel.sink.add(jsonEncode(['REQ', subId, filter]));
+
+  try {
+    return await completer.future.timeout(const Duration(seconds: 10));
+  } finally {
+    channel.sink.add(jsonEncode(['CLOSE', subId]));
+    await subscription.cancel();
+    await channel.sink.close();
+  }
+}
+
+/// Publish a NIP-09 kind 5 deletion event targeting [eventId].
+///
+/// Signs with [privateKey] (must be the same author as the target event).
+/// Returns the deletion event ID.
+///
+/// Throws if the relay rejects the event or connection fails.
+Future<String> publishDeleteEvent({
+  required String eventId,
+  required int kind,
+  required String privateKey,
+}) async {
+  final pubKey = getPublicKey(privateKey);
+
+  final deleteEvent = Event(pubKey, 5, [
+    ['e', eventId],
+    ['k', kind.toString()],
+  ], '');
+  deleteEvent.sign(privateKey);
+
+  final deletionId = await _publishEvent(deleteEvent);
+  debugPrint('Published delete event: $deletionId (target: $eventId)');
+  return deletionId;
 }
 
 /// Send an event to the local relay and wait for OK confirmation.

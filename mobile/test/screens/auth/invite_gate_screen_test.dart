@@ -56,12 +56,14 @@ void main() {
   }
 
   group('InviteGateScreen', () {
-    testWidgets('shows waitlist blocker in waitlist-only mode', (tester) async {
+    testWidgets('maps legacy waitlist-only mode to invite entry flow', (
+      tester,
+    ) async {
       when(
         () => mockInviteApiService.getClientConfig(),
       ).thenAnswer(
-        (_) async => const InviteClientConfig(
-          mode: OnboardingMode.waitlistOnly,
+        (_) async => InviteClientConfig(
+          mode: parseOnboardingMode('waitlist_only'),
           supportEmail: 'support@divine.video',
         ),
       );
@@ -69,7 +71,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Divine is currently in private beta.'), findsOneWidget);
+      expect(find.text('Add your invite code'), findsOneWidget);
       expect(find.text('Join waitlist'), findsOneWidget);
     });
 

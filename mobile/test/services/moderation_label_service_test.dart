@@ -8,6 +8,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -36,6 +37,7 @@ void main() {
   });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockNostrClient = _MockNostrClient();
     mockAuthService = _MockAuthService();
     service = ModerationLabelService(
@@ -156,6 +158,65 @@ void main() {
         expect(result.isVerified, isFalse);
       });
 
+      test(
+        'stores content-warning labels by addressable id from a tag',
+        () async {
+          const addressableId =
+              '30311:creator_pubkey_hex:codex-staging-video-replaceable-id';
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              _FakeLabelEvent(
+                pubkey: ModerationLabelService.divineModerationPubkeyHex,
+                tags: [
+                  ['L', 'content-warning'],
+                  ['l', 'nudity', 'content-warning'],
+                  ['a', addressableId],
+                ],
+              ),
+            ],
+          );
+
+          await service.subscribeToLabeler(
+            ModerationLabelService.divineModerationPubkeyHex,
+          );
+
+          final labels = service.getContentWarningsByAddressableId(
+            addressableId,
+          );
+          expect(labels, hasLength(1));
+          expect(labels.first.labelValue, equals('nudity'));
+        },
+      );
+
+      test(
+        'stores content-warning labels by content hash from x tag',
+        () async {
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              _FakeLabelEvent(
+                pubkey: ModerationLabelService.divineModerationPubkeyHex,
+                tags: [
+                  ['L', 'content-warning'],
+                  ['l', 'graphic-media', 'content-warning'],
+                  ['x', 'sha256_content_warning_hash'],
+                ],
+              ),
+            ],
+          );
+
+          await service.subscribeToLabeler(
+            ModerationLabelService.divineModerationPubkeyHex,
+          );
+
+          final labels = service.getContentWarningsByHash(
+            'sha256_content_warning_hash',
+          );
+          expect(labels, hasLength(1));
+          expect(labels.first.labelValue, equals('graphic-media'));
+        },
+      );
+
       test('stores labels by pubkey when p tag present', () async {
         when(() => mockNostrClient.queryEvents(any())).thenAnswer(
           (_) async => [
@@ -266,6 +327,90 @@ void main() {
       test('returns false for unknown event', () {
         expect(service.hasContentWarning('unknown'), isFalse);
       });
+    });
+
+    group('followed labelers', () {
+      test('enables followed pubkeys as trusted labelers', () async {
+        const followedLabeler =
+            'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _FakeLabelEvent(
+              pubkey: followedLabeler,
+              tags: [
+                ['L', 'content-warning'],
+                ['l', 'nudity', 'content-warning'],
+                ['e', 'followed_event'],
+              ],
+            ),
+          ],
+        );
+
+        await service.setFollowingModerationEnabled(
+          true,
+          followedPubkeys: [followedLabeler],
+        );
+
+        expect(service.isFollowingModerationEnabled, isTrue);
+        expect(service.getContentWarnings('followed_event'), hasLength(1));
+      });
+
+      test('disabling followed labelers removes their cached labels', () async {
+        const followedLabeler =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _FakeLabelEvent(
+              pubkey: followedLabeler,
+              tags: [
+                ['L', 'content-warning'],
+                ['l', 'violence', 'content-warning'],
+                ['e', 'followed_event_2'],
+              ],
+            ),
+          ],
+        );
+
+        await service.setFollowingModerationEnabled(
+          true,
+          followedPubkeys: [followedLabeler],
+        );
+        expect(service.getContentWarnings('followed_event_2'), hasLength(1));
+
+        await service.setFollowingModerationEnabled(false);
+
+        expect(service.isFollowingModerationEnabled, isFalse);
+        expect(service.getContentWarnings('followed_event_2'), isEmpty);
+      });
+
+      test(
+        'disabling followed labelers keeps explicitly subscribed labelers',
+        () async {
+          const explicitLabeler =
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              _FakeLabelEvent(
+                pubkey: explicitLabeler,
+                tags: [
+                  ['L', 'content-warning'],
+                  ['l', 'graphic-media', 'content-warning'],
+                  ['e', 'explicit_event'],
+                ],
+              ),
+            ],
+          );
+
+          await service.addLabeler(explicitLabeler);
+          await service.setFollowingModerationEnabled(
+            true,
+            followedPubkeys: [explicitLabeler],
+          );
+          await service.setFollowingModerationEnabled(false);
+
+          expect(service.getContentWarnings('explicit_event'), hasLength(1));
+        },
+      );
     });
   });
 }

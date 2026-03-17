@@ -101,6 +101,39 @@ void main() {
       expect(enriched.first.rawTags, isNotEmpty);
     });
 
+    test(
+      'copies content warning labels from enriched Nostr tags',
+      () async {
+        final testPubkey = 'a' * 64;
+        final nostrEvent = Event(
+          testPubkey,
+          34236,
+          [
+            ['url', 'https://example.com/v1.mp4'],
+            ['content-warning', 'nudity'],
+            ['L', 'content-warning'],
+            ['l', 'nudity', 'content-warning'],
+          ],
+          'Test content',
+          createdAt: 1704067200,
+        );
+        final videos = [_createTestVideo(id: nostrEvent.id)];
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [nostrEvent]);
+
+        final enriched = await enrichVideosWithNostrTags(
+          videos,
+          nostrService: mockNostrService,
+        );
+
+        expect(enriched, hasLength(1));
+        expect(enriched.first.rawTags['content-warning'], equals('nudity'));
+        expect(enriched.first.contentWarningLabels, equals(['nudity']));
+      },
+    );
+
     test('enrichment failure does not affect initial return', () async {
       final videos = [_createTestVideo(id: 'v1')];
 

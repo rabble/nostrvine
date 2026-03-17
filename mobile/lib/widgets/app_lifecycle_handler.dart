@@ -1,12 +1,15 @@
 // ABOUTME: App lifecycle handler that pauses all videos when app goes to background
 // ABOUTME: Ensures videos never play when app is not visible and manages background battery usage
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
@@ -34,9 +37,26 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     _backgroundManager = BackgroundActivityManager();
     WidgetsBinding.instance.addObserver(this);
 
-    // Resume any pending publish drafts after first frame
+    // Resume any pending publish drafts after first frame,
+    // but only once the user is authenticated.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+
+      final authService = ref.read(authServiceProvider);
+      if (!authService.isAuthenticated) {
+        await authService.authStateStream.firstWhere(
+          (state) => state == AuthState.authenticated,
+        );
+        if (!mounted) return;
+      }
+
+      // Defer one more frame so the GoRouter auth-redirect can settle
+      // before we surface pending publish failures.
+      final settled = Completer<void>();
+      WidgetsBinding.instance.addPostFrameCallback((_) => settled.complete());
+      await settled.future;
+      if (!mounted) return;
+
       ref.read(videoPublishProvider.notifier).resumePendingPublishes(context);
       await ref.read(clipLibraryServiceProvider).migrateOldClips();
       await ref.read(draftStorageServiceProvider).migrateOldDrafts();

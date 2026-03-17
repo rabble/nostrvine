@@ -78,7 +78,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
       // Save the draft to the library.
       final draftSuccess = await ref
           .read(videoEditorProvider.notifier)
-          .saveAsDraft();
+          .saveAsDraft(enforceCreateNewDraft: true);
       if (!draftSuccess) {
         throw StateError('Failed to save draft');
       }

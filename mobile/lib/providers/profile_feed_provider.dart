@@ -2,6 +2,7 @@
 // ABOUTME: Manages video lists for individual user profiles with loadMore() capability
 // ABOUTME: Tries REST API first for better performance, falls back to Nostr subscription
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -224,6 +225,23 @@ class ProfileFeed extends _$ProfileFeed {
     );
   }
 
+  /// Staleness threshold — data older than this triggers a background refresh.
+  @visibleForTesting
+  static Duration staleTtl = const Duration(seconds: 30);
+
+  /// Refresh in the background if cached data is stale.
+  /// Returns immediately — UI keeps showing cached data, updates when done.
+  void refreshIfStale() {
+    final current = state.asData?.value;
+    if (current == null) return; // Still loading, don't interfere
+    final lastUpdated = current.lastUpdated;
+    if (lastUpdated != null &&
+        DateTime.now().difference(lastUpdated) < staleTtl) {
+      return; // Data is fresh
+    }
+    refresh();
+  }
+
   /// Get oldest timestamp from videos for cursor pagination
   int? _getOldestTimestamp(List<VideoEvent> videos) {
     if (videos.isEmpty) return null;
@@ -427,14 +445,20 @@ class ProfileFeed extends _$ProfileFeed {
           category: LogCategory.video,
         );
       } else {
-        // REST API returned empty, fall back to Nostr with metadata cache
-        Log.warning(
-          'ProfileFeed: REST API refresh returned empty, using Nostr with cached metadata',
+        // REST API returned empty — this is valid (e.g. all videos deleted)
+        state = AsyncData(
+          VideoFeedState(
+            videos: [],
+            hasMoreContent: false,
+            lastUpdated: DateTime.now(),
+          ),
+        );
+
+        Log.info(
+          'ProfileFeed: REST API returned empty for user=$userId',
           name: 'ProfileFeedProvider',
           category: LogCategory.video,
         );
-        _usingRestApi = false;
-        refreshFromService(); // Will now use Nostr path with metadata cache
       }
     } catch (e) {
       Log.warning(
@@ -690,6 +714,22 @@ class ProfileFeed extends _$ProfileFeed {
 
           Log.info(
             'ProfileFeed: Refreshed ${authorVideos.length} videos from REST API for user=$userId',
+            name: 'ProfileFeedProvider',
+            category: LogCategory.video,
+          );
+          return;
+        } else {
+          // REST API returned empty — valid (e.g. all videos deleted)
+          state = AsyncData(
+            VideoFeedState(
+              videos: [],
+              hasMoreContent: false,
+              lastUpdated: DateTime.now(),
+            ),
+          );
+
+          Log.info(
+            'ProfileFeed: REST API refresh returned empty for user=$userId',
             name: 'ProfileFeedProvider',
             category: LogCategory.video,
           );

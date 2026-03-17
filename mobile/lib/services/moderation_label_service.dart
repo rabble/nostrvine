@@ -16,6 +16,7 @@ class ModerationLabel {
     required this.labelerPubkey,
     required this.labelValue,
     required this.targetEventId,
+    this.targetAddressableId,
     this.targetPubkey,
     this.confidence,
     this.source,
@@ -30,6 +31,9 @@ class ModerationLabel {
 
   /// Target event ID this label applies to, if any.
   final String? targetEventId;
+
+  /// Target addressable id this label applies to, if any.
+  final String? targetAddressableId;
 
   /// Target pubkey this label applies to, if any.
   final String? targetPubkey;
@@ -80,12 +84,19 @@ class ModerationLabelService {
   /// SharedPreferences key for subscribed labeler pubkeys.
   static const String _subscribedLabelersKey = 'subscribed_labeler_pubkeys';
 
+  /// SharedPreferences key for using followed accounts as trusted labelers.
+  static const String _followingModerationEnabledKey =
+      'following_moderation_enabled';
+
   /// Divine official moderation account pubkey (hex).
   static const String divineModerationPubkeyHex =
       '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72';
 
   /// Labels keyed by target event ID.
   final Map<String, List<ModerationLabel>> _labelsByEventId = {};
+
+  /// Labels keyed by target addressable id (`a` tag).
+  final Map<String, List<ModerationLabel>> _labelsByAddressableId = {};
 
   /// Labels keyed by target pubkey.
   final Map<String, List<ModerationLabel>> _labelsByPubkey = {};
@@ -96,14 +107,26 @@ class ModerationLabelService {
   /// Currently subscribed labeler pubkeys.
   final Set<String> _subscribedLabelers = {};
 
+  /// Followed pubkeys currently acting as trusted labelers.
+  final Set<String> _followedLabelers = {};
+
+  /// Labelers whose historical labels have already been loaded.
+  final Set<String> _loadedLabelers = {};
+
   /// Active subscriptions.
   final Map<String, StreamSubscription<dynamic>> _subscriptions = {};
 
   /// Whether the service has been initialized.
   bool _initialized = false;
 
+  /// Whether followed accounts should act as trusted labelers.
+  bool _isFollowingModerationEnabled = false;
+
   /// Get all subscribed labeler pubkeys.
   Set<String> get subscribedLabelers => Set.unmodifiable(_subscribedLabelers);
+
+  /// Whether followed accounts are enabled as trusted labelers.
+  bool get isFollowingModerationEnabled => _isFollowingModerationEnabled;
 
   /// Initialize by loading persisted labeler subscriptions and subscribing.
   Future<void> initialize() async {
@@ -116,6 +139,8 @@ class ModerationLabelService {
       if (saved != null) {
         _subscribedLabelers.addAll(saved);
       }
+      _isFollowingModerationEnabled =
+          prefs.getBool(_followingModerationEnabledKey) ?? false;
 
       // Always subscribe to Divine labeler
       if (!_subscribedLabelers.contains(divineModerationPubkeyHex)) {
@@ -144,7 +169,7 @@ class ModerationLabelService {
 
   /// Subscribe to Kind 1985 events from a labeler pubkey.
   Future<void> subscribeToLabeler(String pubkey) async {
-    if (_subscriptions.containsKey(pubkey)) return;
+    if (_loadedLabelers.contains(pubkey)) return;
 
     try {
       final filter = Filter(
@@ -157,6 +182,8 @@ class ModerationLabelService {
       for (final event in events) {
         _processLabelEvent(event);
       }
+
+      _loadedLabelers.add(pubkey);
 
       Log.debug(
         'Subscribed to labeler $pubkey, '
@@ -186,22 +213,45 @@ class ModerationLabelService {
     if (pubkey == divineModerationPubkeyHex) return;
 
     _subscribedLabelers.remove(pubkey);
-    await _subscriptions[pubkey]?.cancel();
-    _subscriptions.remove(pubkey);
     await _saveSubscribedLabelers();
+    if (!_followedLabelers.contains(pubkey)) {
+      await _unloadLabeler(pubkey);
+    }
+  }
 
-    // Remove labels from this labeler
-    _labelsByEventId.forEach((_, labels) {
-      labels.removeWhere((l) => l.labelerPubkey == pubkey);
-    });
-    _labelsByPubkey.forEach((_, labels) {
-      labels.removeWhere((l) => l.labelerPubkey == pubkey);
-    });
+  /// Enable or disable followed accounts as trusted moderation labelers.
+  Future<void> setFollowingModerationEnabled(
+    bool enabled, {
+    Iterable<String> followedPubkeys = const [],
+  }) async {
+    _isFollowingModerationEnabled = enabled;
+    await _saveFollowingModerationEnabled();
+    await _syncFollowedLabelersInternal(
+      enabled ? followedPubkeys : const <String>[],
+    );
+  }
+
+  /// Sync the currently followed pubkeys that should act as trusted labelers.
+  Future<void> syncFollowedLabelers(Iterable<String> followedPubkeys) async {
+    if (!_isFollowingModerationEnabled) return;
+    await _syncFollowedLabelersInternal(followedPubkeys);
   }
 
   /// Get content-warning labels for a specific event ID.
   List<ModerationLabel> getContentWarnings(String eventId) {
     return _labelsByEventId[eventId] ?? const [];
+  }
+
+  /// Get content-warning labels for a specific addressable id (`a` tag).
+  List<ModerationLabel> getContentWarningsByAddressableId(
+    String addressableId,
+  ) {
+    return _labelsByAddressableId[addressableId] ?? const [];
+  }
+
+  /// Get content-warning labels for a specific content hash (`x` tag).
+  List<ModerationLabel> getContentWarningsByHash(String sha256) {
+    return _labelsByHash[sha256] ?? const [];
   }
 
   /// Get content-warning labels for a specific pubkey (account-level labels).
@@ -263,6 +313,7 @@ class ModerationLabelService {
       bool isContentWarning = false;
       String? labelValue;
       String? targetEventId;
+      String? targetAddressableId;
       String? targetPubkey;
       String? contentHash;
       double? confidence;
@@ -296,6 +347,8 @@ class ModerationLabelService {
             }
           case 'e':
             targetEventId = tagValue;
+          case 'a':
+            targetAddressableId = tagValue;
           case 'p':
             targetPubkey = tagValue;
           case 'x':
@@ -309,6 +362,7 @@ class ModerationLabelService {
         labelerPubkey: labelerPubkey,
         labelValue: labelValue,
         targetEventId: targetEventId,
+        targetAddressableId: targetAddressableId,
         targetPubkey: targetPubkey,
         confidence: confidence,
         source: source,
@@ -317,6 +371,13 @@ class ModerationLabelService {
 
       if (targetEventId != null) {
         _labelsByEventId.putIfAbsent(targetEventId, () => []).add(label);
+      }
+      if (targetAddressableId != null) {
+        _labelsByAddressableId
+            .putIfAbsent(targetAddressableId, () => [])
+            .add(
+              label,
+            );
       }
       if (targetPubkey != null) {
         _labelsByPubkey.putIfAbsent(targetPubkey, () => []).add(label);
@@ -365,6 +426,70 @@ class ModerationLabelService {
         category: LogCategory.system,
       );
     }
+  }
+
+  /// Persist whether followed accounts are trusted moderation sources.
+  Future<void> _saveFollowingModerationEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(
+        _followingModerationEnabledKey,
+        _isFollowingModerationEnabled,
+      );
+    } catch (e) {
+      Log.error(
+        'Error saving following moderation setting: $e',
+        name: 'ModerationLabelService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  Future<void> _syncFollowedLabelersInternal(
+    Iterable<String> followedPubkeys,
+  ) async {
+    final normalized = followedPubkeys
+        .where((pubkey) => pubkey.isNotEmpty)
+        .toSet();
+
+    final toRemove = _followedLabelers.difference(normalized);
+    final toAdd = normalized.difference(_followedLabelers);
+
+    for (final pubkey in toRemove) {
+      _followedLabelers.remove(pubkey);
+      if (!_subscribedLabelers.contains(pubkey)) {
+        await _unloadLabeler(pubkey);
+      }
+    }
+
+    for (final pubkey in toAdd) {
+      _followedLabelers.add(pubkey);
+      if (!_subscribedLabelers.contains(pubkey)) {
+        await subscribeToLabeler(pubkey);
+      }
+    }
+  }
+
+  Future<void> _unloadLabeler(String pubkey) async {
+    await _subscriptions[pubkey]?.cancel();
+    _subscriptions.remove(pubkey);
+    _loadedLabelers.remove(pubkey);
+    _removeLabelsForLabeler(pubkey);
+  }
+
+  void _removeLabelsForLabeler(String pubkey) {
+    _labelsByEventId.forEach((_, labels) {
+      labels.removeWhere((l) => l.labelerPubkey == pubkey);
+    });
+    _labelsByPubkey.forEach((_, labels) {
+      labels.removeWhere((l) => l.labelerPubkey == pubkey);
+    });
+    _labelsByHash.forEach((_, labels) {
+      labels.removeWhere((l) => l.labelerPubkey == pubkey);
+    });
+    _labelsByAddressableId.forEach((_, labels) {
+      labels.removeWhere((l) => l.labelerPubkey == pubkey);
+    });
   }
 
   /// Clean up subscriptions.

@@ -70,7 +70,7 @@ void main() {
       expect(find.byType(IconButton), findsOneWidget);
     });
 
-    testWidgets('renders $DivineIcon with shareFat icon', (tester) async {
+    testWidgets('renders $DivineIcon with shareFatDuo icon', (tester) async {
       await tester.pumpWidget(
         testMaterialApp(
           home: Scaffold(body: ShareActionButton(video: testVideo)),
@@ -82,9 +82,9 @@ void main() {
           .toList();
 
       expect(
-        divineIcons.any((icon) => icon.icon == DivineIconName.shareFat),
+        divineIcons.any((icon) => icon.icon == DivineIconName.shareFatDuo),
         isTrue,
-        reason: 'Should render shareFat DivineIcon',
+        reason: 'Should render shareFatDuo DivineIcon',
       );
     });
 

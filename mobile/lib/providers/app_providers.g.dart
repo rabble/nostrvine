@@ -882,7 +882,7 @@ final class ModerationLabelServiceProvider
 }
 
 String _$moderationLabelServiceHash() =>
-    r'17757c116c5d70c141a10d508898fecda07c923d';
+    r'd792ccdba759d461ff86ca3bd6f62aa46463a85a';
 
 /// Audio sharing preference service for managing whether audio is available
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
@@ -942,6 +942,66 @@ final class AudioSharingPreferenceServiceProvider
 
 String _$audioSharingPreferenceServiceHash() =>
     r'6d09af615c19937bc2842079c368161b513dd323';
+
+/// AI training opt-out preference service. Controls whether the
+/// CAWG training-mining assertion is embedded in C2PA manifests.
+/// keepAlive ensures setting persists across widget rebuilds.
+
+@ProviderFor(aiTrainingPreferenceService)
+const aiTrainingPreferenceServiceProvider =
+    AiTrainingPreferenceServiceProvider._();
+
+/// AI training opt-out preference service. Controls whether the
+/// CAWG training-mining assertion is embedded in C2PA manifests.
+/// keepAlive ensures setting persists across widget rebuilds.
+
+final class AiTrainingPreferenceServiceProvider
+    extends
+        $FunctionalProvider<
+          AiTrainingPreferenceService,
+          AiTrainingPreferenceService,
+          AiTrainingPreferenceService
+        >
+    with $Provider<AiTrainingPreferenceService> {
+  /// AI training opt-out preference service. Controls whether the
+  /// CAWG training-mining assertion is embedded in C2PA manifests.
+  /// keepAlive ensures setting persists across widget rebuilds.
+  const AiTrainingPreferenceServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'aiTrainingPreferenceServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$aiTrainingPreferenceServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AiTrainingPreferenceService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AiTrainingPreferenceService create(Ref ref) {
+    return aiTrainingPreferenceService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AiTrainingPreferenceService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AiTrainingPreferenceService>(value),
+    );
+  }
+}
+
+String _$aiTrainingPreferenceServiceHash() =>
+    r'9b679889e93d0f25cc130290244017d293d5a1ae';
 
 /// Audio device preference service for managing the preferred input device
 /// for recording on macOS. keepAlive ensures preference persists.
@@ -2303,7 +2363,7 @@ final class ZendeskIdentitySyncProvider
 }
 
 String _$zendeskIdentitySyncHash() =>
-    r'ce4114939fc8a9124bc1b657defc0a6eea432d70';
+    r'e49d4f9cedf56ec4131b30a6f1d9d45dada68bed';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -2464,7 +2524,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'b3455a59a241ce1158a1bea7e55cbf29ab907155';
+String _$videoEventServiceHash() => r'b8cf948e728d3680cad3a1fff0e56994df434c8b';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -2512,17 +2572,17 @@ final class HashtagServiceProvider
 
 String _$hashtagServiceHash() => r'5cd38d3c2e8d78a6f7b74a72b650d79e28938fe4';
 
-/// Social service depends on Nostr service, Auth service, and Analytics API
+/// Social service depends on Nostr service, Auth service, and ProfileRepository
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service, Auth service, and Analytics API
+/// Social service depends on Nostr service, Auth service, and ProfileRepository
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service, Auth service, and Analytics API
+  /// Social service depends on Nostr service, Auth service, and ProfileRepository
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2556,7 +2616,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'6bcd6a86c6f0d5b42f84dc8cac32c9de51a3b950';
+String _$socialServiceHash() => r'7f858c18bfb9a531aef63fad0086233718f71a6a';
 
 /// Cached following list loaded directly from SharedPreferences.
 ///
@@ -2690,7 +2750,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'b26951609811714d4830b2c8388b1f168d66b516';
+String _$followRepositoryHash() => r'1f2f6ee87179a7ca7cb52695e4e304ff56704c41';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -3153,7 +3213,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'e5fedc7e9f4a91ea5dcbb1c607b5fa5008b589ba';
+    r'dd7f21326fc6c7cbc8ea291e9e9ca7c337da54f4';
 
 /// Upload manager uses only Blossom upload service
 
@@ -3199,7 +3259,7 @@ final class UploadManagerProvider
   }
 }
 
-String _$uploadManagerHash() => r'0c5355f45e237e8409b806088294fe3a96573249';
+String _$uploadManagerHash() => r'9f636cc37381c17373522cee0ba671657960bfec';
 
 /// API service depends on auth service
 
@@ -4338,7 +4398,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'b4df09d7cd1d332dba8ff7e96d17b37ae4746e98';
+String _$videosRepositoryHash() => r'2111f016dd9fc45c972a42a74f85366077f05fea';
 
 /// Provider for LikesRepository instance
 ///

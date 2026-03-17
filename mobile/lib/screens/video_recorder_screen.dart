@@ -14,6 +14,8 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -47,6 +49,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     with WidgetsBindingObserver {
   VideoRecorderNotifier? _notifier;
   ProviderSubscription<AudioEvent?>? _soundSubscription;
+
+  bool get _isAutosavedDraft =>
+      ref.read(videoEditorProvider.notifier).isAutosavedDraft;
 
   @override
   void initState() {
@@ -84,6 +89,16 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   }
 
   Future<void> _checkAutosavedChanges() async {
+    Log.debug(
+      '📹 isAutosavedDraft: $_isAutosavedDraft',
+      name: 'VideoRecorderScreen',
+      category: LogCategory.video,
+    );
+
+    if (!_isAutosavedDraft) {
+      return;
+    }
+
     final hasClips = ref.read(clipManagerProvider).hasClips;
     if (hasClips) {
       Log.debug(
@@ -279,53 +294,62 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
         return bloc;
       },
-      child: const AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle(
-          statusBarColor: backgroundColor,
-          statusBarIconBrightness: .light,
-          statusBarBrightness: .dark,
-        ),
-        child: Scaffold(
-          backgroundColor: backgroundColor,
-          resizeToAvoidBottomInset: false,
-          body: Stack(
-            fit: .expand,
-            children: [
-              Column(
-                spacing: 12,
-                children: [
-                  Expanded(
-                    child: Stack(
-                      fit: .expand,
-                      children: [
-                        // Camera preview
-                        VideoRecorderCameraPreview(),
+      child: PopScope(
+        onPopInvokedWithResult: (didPop, value) {
+          if (didPop && !_isAutosavedDraft) {
+            ref
+                .read(videoPublishProvider.notifier)
+                .clearAll(keepAutosavedDraft: true);
+          }
+        },
+        child: const AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: backgroundColor,
+            statusBarIconBrightness: .light,
+            statusBarBrightness: .dark,
+          ),
+          child: Scaffold(
+            backgroundColor: backgroundColor,
+            resizeToAvoidBottomInset: false,
+            body: Stack(
+              fit: .expand,
+              children: [
+                Column(
+                  spacing: 12,
+                  children: [
+                    Expanded(
+                      child: Stack(
+                        fit: .expand,
+                        children: [
+                          // Camera preview
+                          VideoRecorderCameraPreview(),
 
-                        // Ghost Frame
-                        VideoRecorderGhostFrame(),
+                          // Ghost Frame
+                          VideoRecorderGhostFrame(),
 
-                        // Audio progress bar (shows during recording with sound)
-                        VideoRecorderAudioProgressBar(),
+                          // Audio progress bar (shows during recording with sound)
+                          VideoRecorderAudioProgressBar(),
 
-                        // Segment bar
-                        VideoRecorderSegmentBar(),
+                          // Segment bar
+                          VideoRecorderSegmentBar(),
 
-                        // Top bar with close-button and confirm-button
-                        VideoRecorderTopBar(),
+                          // Top bar with close-button and confirm-button
+                          VideoRecorderTopBar(),
 
-                        /// Record button
-                        RecordButton(),
-                      ],
+                          /// Record button
+                          RecordButton(),
+                        ],
+                      ),
                     ),
-                  ),
-                  // Bottom controls
-                  VideoRecorderBottomBar(),
-                ],
-              ),
+                    // Bottom controls
+                    VideoRecorderBottomBar(),
+                  ],
+                ),
 
-              // Countdown overlay
-              VideoRecorderCountdownOverlay(),
-            ],
+                // Countdown overlay
+                VideoRecorderCountdownOverlay(),
+              ],
+            ),
           ),
         ),
       ),

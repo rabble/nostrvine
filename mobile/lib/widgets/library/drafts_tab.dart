@@ -1,6 +1,7 @@
 // ABOUTME: Drafts tab widget for the clip library screen
 // ABOUTME: Displays a list of saved video drafts with options to edit or delete
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
@@ -111,7 +113,7 @@ class DraftsTab extends ConsumerWidget {
           iconPath: 'assets/icon/${DivineIconName.trash.fileName}.svg',
           label: 'Delete draft',
           isDestructive: true,
-          onTap: () => _deleteDraft(context, draft),
+          onTap: () => _deleteDraft(context, ref, draft),
         ),
       ],
     );
@@ -147,7 +149,10 @@ class DraftsTab extends ConsumerWidget {
       name: 'DraftsTab',
       category: LogCategory.video,
     );
-    await ref.read(videoPublishProvider.notifier).clearAll();
+
+    await ref
+        .read(videoPublishProvider.notifier)
+        .clearAll(keepAutosavedDraft: true);
 
     if (!context.mounted) return;
 
@@ -156,7 +161,9 @@ class DraftsTab extends ConsumerWidget {
       extra: {'fromLibrary': true},
     );
 
-    await ref.read(videoPublishProvider.notifier).clearAll();
+    await ref
+        .read(videoPublishProvider.notifier)
+        .clearAll(keepAutosavedDraft: true);
 
     // Reload drafts after returning
     if (context.mounted) {
@@ -166,6 +173,7 @@ class DraftsTab extends ConsumerWidget {
 
   Future<void> _deleteDraft(
     BuildContext context,
+    WidgetRef ref,
     DivineVideoDraft draft,
   ) async {
     final confirmed = await showDialog<bool>(
@@ -210,6 +218,13 @@ class DraftsTab extends ConsumerWidget {
       context.read<DraftsLibraryBloc>().add(
         DraftsLibraryDeleteRequested(draft.id),
       );
+      if (draft.id == VideoEditorConstants.autoSaveId) {
+        unawaited(
+          ref
+              .read(videoPublishProvider.notifier)
+              .clearAll(keepAutosavedDraft: true),
+        );
+      }
     }
   }
 }

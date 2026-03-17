@@ -120,7 +120,9 @@ blocTest<MyBloc, MyState>(
 
 ## Error Handling in BLoC
 
-State should never contain error messages or exception objects. Errors are transient events, not stable UI data. Use BLoC's built-in `addError` to report them.
+> **Hard rule**: State must NEVER contain error messages, error strings, or exception objects. This is a frequent review finding — treat any `String? errorMessage` or `Exception?` field in state as a bug.
+
+Errors are transient events, not stable UI data. Use BLoC's built-in `addError` to report them, and use a status enum to drive UI reactions.
 
 ### Correct Pattern
 
@@ -162,6 +164,145 @@ emit(state.copyWith(
 1. **State semantics** — state represents displayable UI data, not transient error info.
 2. **Lifecycle** — `addError` integrates with BLoC's error stream, logging, and `blocTest`'s `errors` parameter.
 3. **Cleaner copyWith** — no `clearError` flags or manual error reset logic.
+4. **l10n readiness** — error messages in state bypass localization; status enums let the UI choose the correct translated string.
+
+---
+
+## No Mutable Instance Variables in BLoC
+
+All mutable data must live in the BLoC's state object, never as private fields on the BLoC class. Private fields bypass the state stream, making them invisible to the UI, untestable via `blocTest`, and prone to desyncing from the actual state.
+
+**Bad:**
+```dart
+class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
+  int _retryCount = 0;            // WRONG — hidden from state
+  bool _isInitialized = false;    // WRONG — not observable
+  List<String> _selectedIds = []; // WRONG — bypasses emit
+
+  Future<void> _onShare(...) async {
+    _retryCount++;
+    // UI has no idea _retryCount changed
+  }
+}
+```
+
+**Good:**
+```dart
+class ShareSheetState extends Equatable {
+  const ShareSheetState({
+    this.retryCount = 0,
+    this.isInitialized = false,
+    this.selectedIds = const [],
+  });
+
+  final int retryCount;
+  final bool isInitialized;
+  final List<String> selectedIds;
+  // ...
+}
+```
+
+**Exception**: Injected dependencies (repositories, clients) are fine as `final` fields — they are immutable configuration, not mutable state.
+
+---
+
+## Use BlocSelector for Granular Rebuilds
+
+When a widget only needs one or a few properties from state, use `BlocSelector` or `context.select` instead of `BlocBuilder` or `context.watch`. Watching the full state rebuilds the widget on every emit, even when the property it cares about hasn't changed.
+
+**Bad — rebuilds on every state change:**
+```dart
+class ConversationView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Rebuilds entire subtree on ANY state change
+    final state = context.watch<ConversationBloc, ConversationState>();
+    return Column(
+      children: [
+        ConversationAppBar(title: state.title),
+        MessageList(messages: state.messages),
+        SendButton(status: state.sendStatus),
+      ],
+    );
+  }
+}
+```
+
+**Good — each widget selects only what it needs:**
+```dart
+class ConversationView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        _AppBar(),
+        _MessageList(),
+        _SendButton(),
+      ],
+    );
+  }
+}
+
+class _SendButton extends StatelessWidget {
+  const _SendButton();
+
+  @override
+  Widget build(BuildContext context) {
+    // Only rebuilds when sendStatus changes
+    final sendStatus = context.select(
+      (ConversationBloc bloc) => bloc.state.sendStatus,
+    );
+    return ElevatedButton(
+      onPressed: sendStatus == SendStatus.ready ? () {} : null,
+      child: const Text('Send'),
+    );
+  }
+}
+```
+
+**When to use which:**
+
+| Widget | Use |
+|--------|-----|
+| `BlocBuilder` | Widget depends on most/all of the state |
+| `BlocSelector` / `context.select` | Widget depends on one or a few properties |
+| `BlocListener` | Side effects (snackbars, navigation) |
+
+---
+
+## Computed Properties on State and Models
+
+When logic derives a display value from state fields, add it as a getter on the state or model class rather than computing it inline in the UI or BLoC. This keeps the UI thin, makes the logic testable, and avoids duplication when the same derivation is needed elsewhere.
+
+**Bad — logic scattered in UI:**
+```dart
+// In widget
+final displayName = state.profile.name.isNotEmpty
+    ? state.profile.name
+    : state.profile.npub.substring(0, 12);
+```
+
+**Good — getter on model or state:**
+```dart
+class UserProfile {
+  // ...
+  String get displayName =>
+      name.isNotEmpty ? name : npub.substring(0, 12);
+}
+
+// In widget — clean and reusable
+Text(state.profile.displayName);
+```
+
+**Good — derived validation on state:**
+```dart
+class CreateAccountState extends Equatable {
+  // ...
+  bool get isValid =>
+      name?.isNotEmpty == true &&
+      email?.isNotEmpty == true;
+}
+```
 
 ---
 

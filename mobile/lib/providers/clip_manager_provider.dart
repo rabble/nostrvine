@@ -556,8 +556,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Remove all clips and reset state.
   ///
   /// Clears all recorded clips and resets to initial state.
-  /// Also deletes the autosave draft and associated files.
-  Future<void> clearAll() async {
+  /// Also deletes the autosave draft unless [keepAutosavedDraft] is true.
+  Future<void> clearAll({bool keepAutosavedDraft = false}) async {
     final clipCount = _clips.length;
     _clips.clear();
     Log.info(
@@ -568,8 +568,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     state = ClipManagerState();
 
     // Delete autosave draft and its associated files
-    final draftService = ref.read(draftStorageServiceProvider);
-    await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
+    if (!keepAutosavedDraft) {
+      final draftService = ref.read(draftStorageServiceProvider);
+      await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
+    }
   }
 
   /// Save clip(s) to library.

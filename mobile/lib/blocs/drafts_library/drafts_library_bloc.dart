@@ -47,7 +47,8 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
           allDrafts
               .where(
                 (d) =>
-                    d.id != VideoEditorConstants.autoSaveId &&
+                    (d.id != VideoEditorConstants.autoSaveId ||
+                        d.clips.isNotEmpty) &&
                     d.publishStatus != PublishStatus.published &&
                     d.publishStatus != PublishStatus.publishing,
               )
