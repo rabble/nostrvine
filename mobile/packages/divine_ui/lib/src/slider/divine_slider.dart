@@ -144,8 +144,7 @@ class DivineSliderTrackShape extends SliderTrackShape {
     canvas.drawRRect(
       inactiveRect,
       Paint()
-        ..color =
-            sliderTheme.inactiveTrackColor ?? VineTheme.onSurfaceDisabled,
+        ..color = sliderTheme.inactiveTrackColor ?? VineTheme.onSurfaceDisabled,
     );
 
     // Active track (left side) — rounded left, flat right
