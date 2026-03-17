@@ -677,20 +677,16 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Update the volume level for the original video audio (0.0 to 1.0).
   void setOriginalAudioVolume(double volume) {
-    if (volume != state.originalAudioVolume) {
-      state = state.copyWith(originalAudioVolume: volume.clamp(0.0, 1.0));
-      invalidateFinalRenderedClip();
-      triggerAutosave();
-    }
+    state = state.copyWith(originalAudioVolume: volume.clamp(0.0, 1.0));
+    invalidateFinalRenderedClip();
+    triggerAutosave();
   }
 
   /// Update the volume level for the custom/added audio track (0.0 to 1.0).
   void setCustomAudioVolume(double volume) {
-    if (volume != state.customAudioVolume) {
-      state = state.copyWith(customAudioVolume: volume.clamp(0.0, 1.0));
-      invalidateFinalRenderedClip();
-      triggerAutosave();
-    }
+    state = state.copyWith(customAudioVolume: volume.clamp(0.0, 1.0));
+    invalidateFinalRenderedClip();
+    triggerAutosave();
   }
 
   /// Preview original audio volume without invalidating render or autosave.
