@@ -66,6 +66,16 @@ void main() {
           false,
           reason: 'isProcessing should default to false',
         );
+        expect(
+          state.originalAudioVolume,
+          1.0,
+          reason: 'originalAudioVolume should default to 1.0',
+        );
+        expect(
+          state.customAudioVolume,
+          1.0,
+          reason: 'customAudioVolume should default to 1.0',
+        );
       });
     });
 
@@ -577,6 +587,294 @@ void main() {
         container.read(videoEditorProvider.notifier).setDraftId(id);
 
         expect(id, container.read(videoEditorProvider.notifier).draftId);
+      });
+    });
+
+    group('setOriginalAudioVolume', () {
+      test('updates originalAudioVolume in state', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .setOriginalAudioVolume(0.5);
+
+        expect(
+          container.read(videoEditorProvider).originalAudioVolume,
+          equals(0.5),
+        );
+      });
+
+      test('clamps value to 0.0 minimum', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .setOriginalAudioVolume(-0.5);
+
+        expect(
+          container.read(videoEditorProvider).originalAudioVolume,
+          equals(0.0),
+        );
+      });
+
+      test('clamps value to 1.0 maximum', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .setOriginalAudioVolume(1.5);
+
+        expect(
+          container.read(videoEditorProvider).originalAudioVolume,
+          equals(1.0),
+        );
+      });
+    });
+
+    group('setCustomAudioVolume', () {
+      test('updates customAudioVolume in state', () {
+        container.read(videoEditorProvider.notifier).setCustomAudioVolume(0.3);
+
+        expect(
+          container.read(videoEditorProvider).customAudioVolume,
+          equals(0.3),
+        );
+      });
+
+      test('clamps value to 0.0 minimum', () {
+        container.read(videoEditorProvider.notifier).setCustomAudioVolume(-1);
+
+        expect(
+          container.read(videoEditorProvider).customAudioVolume,
+          equals(0.0),
+        );
+      });
+
+      test('clamps value to 1.0 maximum', () {
+        container.read(videoEditorProvider.notifier).setCustomAudioVolume(2);
+
+        expect(
+          container.read(videoEditorProvider).customAudioVolume,
+          equals(1.0),
+        );
+      });
+    });
+
+    group('previewOriginalAudioVolume', () {
+      test('updates originalAudioVolume in state', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .previewOriginalAudioVolume(0.7);
+
+        expect(
+          container.read(videoEditorProvider).originalAudioVolume,
+          equals(0.7),
+        );
+      });
+
+      test('clamps value to valid range', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .previewOriginalAudioVolume(5);
+
+        expect(
+          container.read(videoEditorProvider).originalAudioVolume,
+          equals(1.0),
+        );
+      });
+
+      test('is no-op when value unchanged', () {
+        final stateBefore = container.read(videoEditorProvider);
+
+        container
+            .read(videoEditorProvider.notifier)
+            .previewOriginalAudioVolume(1);
+
+        expect(
+          identical(container.read(videoEditorProvider), stateBefore),
+          isTrue,
+        );
+      });
+    });
+
+    group('previewCustomAudioVolume', () {
+      test('updates customAudioVolume in state', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .previewCustomAudioVolume(0.4);
+
+        expect(
+          container.read(videoEditorProvider).customAudioVolume,
+          equals(0.4),
+        );
+      });
+
+      test('clamps value to valid range', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .previewCustomAudioVolume(-0.2);
+
+        expect(
+          container.read(videoEditorProvider).customAudioVolume,
+          equals(0.0),
+        );
+      });
+
+      test('is no-op when value unchanged', () {
+        final stateBefore = container.read(videoEditorProvider);
+
+        container
+            .read(videoEditorProvider.notifier)
+            .previewCustomAudioVolume(1);
+
+        expect(
+          identical(container.read(videoEditorProvider), stateBefore),
+          isTrue,
+        );
+      });
+    });
+  });
+
+  group('getActiveDraft', () {
+    late ProviderContainer container;
+
+    setUp(() {
+      container = ProviderContainer();
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('should use _clips when finalRenderedClip is null', () {
+      // Add clips to the clip manager
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            video: EditorVideo.file('/docs/original.mp4'),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            duration: const Duration(seconds: 2),
+          );
+
+      container.read(videoEditorProvider.notifier).setDraftId('test-draft');
+
+      // finalRenderedClip is null by default, so getActiveDraft should
+      // use _clips for both autosave and non-autosave
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(draft.clips, hasLength(1));
+      expect(draft.id, equals('test-draft'));
+    });
+
+    test('autosave should always use _clips even if '
+        'finalRenderedClip were set', () {
+      // Add clips to the clip manager
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            video: EditorVideo.file('/docs/original.mp4'),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            duration: const Duration(seconds: 2),
+          );
+
+      // Autosave should use _clips
+      final autosaveDraft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft(isAutosave: true);
+
+      expect(autosaveDraft.clips, hasLength(1));
+      expect(autosaveDraft.id, equals(VideoEditorConstants.autoSaveId));
+    });
+  });
+
+  group('VideoEditorProviderState', () {
+    test('copyWith should preserve unchanged values', () {
+      final original = VideoEditorProviderState(
+        currentClipIndex: 2,
+        currentPosition: const Duration(seconds: 3),
+        splitPosition: const Duration(seconds: 1),
+        isEditing: true,
+        isReordering: true,
+        isOverDeleteZone: true,
+        isPlaying: true,
+        isProcessing: true,
+      );
+
+      final copied = original.copyWith();
+
+      expect(copied.currentClipIndex, 2);
+      expect(copied.currentPosition, const Duration(seconds: 3));
+      expect(copied.splitPosition, const Duration(seconds: 1));
+      expect(copied.isEditing, true);
+      expect(copied.isReordering, true);
+      expect(copied.isOverDeleteZone, true);
+      expect(copied.isPlaying, true);
+      expect(copied.isProcessing, true);
+    });
+
+    test('copyWith should update only specified values', () {
+      final original = VideoEditorProviderState(
+        currentClipIndex: 2,
+        isEditing: true,
+      );
+
+      final copied = original.copyWith(currentClipIndex: 5, isEditing: false);
+
+      expect(copied.currentClipIndex, 5);
+      expect(copied.isEditing, false);
+    });
+
+    group('isValidToPost', () {
+      test('returns false when finalRenderedClip is null', () {
+        final state = VideoEditorProviderState();
+
+        expect(state.finalRenderedClip, isNull);
+        expect(state.isValidToPost, isFalse);
+      });
+
+      test('returns true when finalRenderedClip is set and not processing', () {
+        final state = VideoEditorProviderState(
+          finalRenderedClip: DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        expect(state.isValidToPost, isTrue);
+      });
+
+      test('returns false when metadataLimitReached even with clip', () {
+        final state = VideoEditorProviderState(
+          metadataLimitReached: true,
+          finalRenderedClip: DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        expect(state.isValidToPost, isFalse);
+      });
+
+      test('returns false when isProcessing even with clip', () {
+        final state = VideoEditorProviderState(
+          isProcessing: true,
+          finalRenderedClip: DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        expect(state.isValidToPost, isFalse);
       });
     });
   });

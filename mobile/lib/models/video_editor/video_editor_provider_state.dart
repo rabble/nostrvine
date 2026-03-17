@@ -79,8 +79,6 @@ class VideoEditorProviderState {
   /// Used to determine if thumbnail should be hidden.
   final bool hasPlayedOnce;
 
-  /// Whether audio is uted during playback.
-
   /// Whether a long-running operation (e.g., export, processing) is in
   /// progress.
   final bool isProcessing;
