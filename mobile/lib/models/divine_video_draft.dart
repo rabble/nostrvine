@@ -185,8 +185,7 @@ class DivineVideoDraft {
       contentWarning: json['contentWarning'] as String?,
       originalAudioVolume:
           (json['originalAudioVolume'] as num?)?.toDouble() ?? 1.0,
-      customAudioVolume:
-          (json['customAudioVolume'] as num?)?.toDouble() ?? 1.0,
+      customAudioVolume: (json['customAudioVolume'] as num?)?.toDouble() ?? 1.0,
     );
   }
 
