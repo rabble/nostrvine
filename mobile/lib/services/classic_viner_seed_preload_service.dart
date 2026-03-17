@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -30,11 +31,13 @@ class ClassicVinerSeedPreloadService {
 
   final AssetBundle _assetBundle;
   final Future<Directory> Function() _markerDirectoryProvider;
+  _ClassicVinerSeedManifest? _cachedManifest;
 
   Future<void> importProfilesIfNeeded({
     required UserProfilesDao userProfilesDao,
     required ProfileStatsDao profileStatsDao,
   }) async {
+    if (kIsWeb) return;
     try {
       final manifest = await _loadManifest();
       final markerFile = await _markerFile(
@@ -45,8 +48,11 @@ class ClassicVinerSeedPreloadService {
         return;
       }
 
+      await userProfilesDao.upsertProfiles(
+        manifest.profiles.map((p) => p.toUserProfile()).toList(),
+      );
+
       for (final profileSeed in manifest.profiles) {
-        await userProfilesDao.upsertProfile(profileSeed.toUserProfile());
         await profileStatsDao.upsertStats(
           pubkey: profileSeed.pubkey,
           videoCount: profileSeed.archivedStats.videoCount,
@@ -76,6 +82,7 @@ class ClassicVinerSeedPreloadService {
   Future<void> preloadAvatarImagesIfNeeded({
     required ClassicVinerAvatarCacheWriter cacheWriter,
   }) async {
+    if (kIsWeb) return;
     try {
       final manifest = await _loadManifest();
       final markerFile = await _markerFile(
@@ -128,9 +135,13 @@ class ClassicVinerSeedPreloadService {
   }
 
   Future<_ClassicVinerSeedManifest> _loadManifest() async {
+    final cached = _cachedManifest;
+    if (cached != null) return cached;
     final manifestJson = await _assetBundle.loadString(manifestAssetPath);
     final decoded = jsonDecode(manifestJson) as Map<String, dynamic>;
-    return _ClassicVinerSeedManifest.fromJson(decoded);
+    final manifest = _ClassicVinerSeedManifest.fromJson(decoded);
+    _cachedManifest = manifest;
+    return manifest;
   }
 
   Future<File> _markerFile({

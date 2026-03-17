@@ -2,13 +2,29 @@
 // ABOUTME: Verifies service skips load when DB non-empty and loads when empty
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/services/classic_viner_seed_preload_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
+
+class _TrackingClassicVinerService extends ClassicVinerSeedPreloadService {
+  _TrackingClassicVinerService({required super.markerDirectoryProvider});
+
+  bool importProfilesCalled = false;
+
+  @override
+  Future<void> importProfilesIfNeeded({
+    required UserProfilesDao userProfilesDao,
+    required ProfileStatsDao profileStatsDao,
+  }) async {
+    importProfilesCalled = true;
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -133,6 +149,42 @@ VALUES ('seed2234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd', 's
 
       // Database should still be empty (no events inserted)
       expect(await db.nostrEventsDao.getEventCount(), equals(0));
+    });
+
+    test('calls injected ClassicVinerSeedPreloadService', () async {
+      final markerDir = Directory.systemTemp.createTempSync(
+        'seed_data_viner_di_test_',
+      );
+      addTearDown(() async {
+        if (markerDir.existsSync()) {
+          await markerDir.delete(recursive: true);
+        }
+      });
+
+      final trackingService = _TrackingClassicVinerService(
+        markerDirectoryProvider: () async => markerDir,
+      );
+
+      // Insert an event so the SQL seed path is skipped
+      final event = Event(
+        '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        34236,
+        [],
+        'Existing video',
+        createdAt: 1234567890,
+      );
+      event.id =
+          'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+      event.sig =
+          'abc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789';
+      await db.nostrEventsDao.upsertEvent(event);
+
+      await SeedDataPreloadService.loadSeedDataIfNeeded(
+        db,
+        classicVinerService: trackingService,
+      );
+
+      expect(trackingService.importProfilesCalled, isTrue);
     });
   });
 }

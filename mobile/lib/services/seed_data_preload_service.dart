@@ -14,7 +14,10 @@ class SeedDataPreloadService {
   ///
   /// Errors are logged but non-critical - app works normally by fetching
   /// from relay if seed load fails.
-  static Future<void> loadSeedDataIfNeeded(AppDatabase db) async {
+  static Future<void> loadSeedDataIfNeeded(
+    AppDatabase db, {
+    ClassicVinerSeedPreloadService? classicVinerService,
+  }) async {
     try {
       // Check if database already has events
       final count = await db.nostrEventsDao.getEventCount();
@@ -57,7 +60,9 @@ class SeedDataPreloadService {
         );
       }
 
-      await ClassicVinerSeedPreloadService().importProfilesIfNeeded(
+      final vinerService =
+          classicVinerService ?? ClassicVinerSeedPreloadService();
+      await vinerService.importProfilesIfNeeded(
         userProfilesDao: db.userProfilesDao,
         profileStatsDao: db.profileStatsDao,
       );

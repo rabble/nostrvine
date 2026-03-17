@@ -18,7 +18,9 @@ class SeedMediaPreloadService {
   ///
   /// Files are written directly to the cache directory with eventId-based names
   /// so VideoCacheManager can discover and use them through its normal flow.
-  static Future<void> loadSeedMediaIfNeeded() async {
+  static Future<void> loadSeedMediaIfNeeded({
+    ClassicVinerSeedPreloadService? classicVinerService,
+  }) async {
     try {
       // Check if cache already populated
       final tempDir = await getTemporaryDirectory();
@@ -33,7 +35,9 @@ class SeedMediaPreloadService {
           name: 'SeedMediaPreload',
           category: LogCategory.system,
         );
-        await _preloadClassicVinerAvatars();
+        await _preloadClassicVinerAvatars(
+          classicVinerService: classicVinerService,
+        );
         return;
       }
 
@@ -130,7 +134,9 @@ class SeedMediaPreloadService {
         'loaded at ${DateTime.now().toIso8601String()}',
       );
 
-      await _preloadClassicVinerAvatars();
+      await _preloadClassicVinerAvatars(
+        classicVinerService: classicVinerService,
+      );
 
       Log.info(
         '[SEED] ✅ Media preload completed: $videoCount videos, $thumbnailCount thumbnails',
@@ -152,8 +158,11 @@ class SeedMediaPreloadService {
     }
   }
 
-  static Future<void> _preloadClassicVinerAvatars() async {
-    await ClassicVinerSeedPreloadService().preloadAvatarImagesIfNeeded(
+  static Future<void> _preloadClassicVinerAvatars({
+    ClassicVinerSeedPreloadService? classicVinerService,
+  }) async {
+    final service = classicVinerService ?? ClassicVinerSeedPreloadService();
+    await service.preloadAvatarImagesIfNeeded(
       cacheWriter:
           ({
             required String cacheKey,

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
@@ -41,14 +40,14 @@ void main() {
 
   setUp(() async {
     database = AppDatabase.test(NativeDatabase.memory());
-    markerDirectory = await Directory.systemTemp.createTemp(
+    markerDirectory = Directory.systemTemp.createTempSync(
       'classic_viner_seed_test_',
     );
   });
 
   tearDown(() async {
     await database.close();
-    if (await markerDirectory.exists()) {
+    if (markerDirectory.existsSync()) {
       await markerDirectory.delete(recursive: true);
     }
   });
@@ -130,6 +129,120 @@ void main() {
       );
       expect(cachedWrites.map((entry) => entry.extension), everyElement('png'));
     });
+
+    test(
+      'importProfilesIfNeeded is a no-op when marker file already exists',
+      () async {
+        final service = ClassicVinerSeedPreloadService(
+          assetBundle: _FakeAssetBundle(
+            strings: {
+              ClassicVinerSeedPreloadService.manifestAssetPath: _manifestJson,
+            },
+            binaries: const {},
+          ),
+          markerDirectoryProvider: () async => markerDirectory,
+        );
+
+        // First call creates marker
+        await service.importProfilesIfNeeded(
+          userProfilesDao: database.userProfilesDao,
+          profileStatsDao: database.profileStatsDao,
+        );
+
+        // Second call should be a no-op
+        await service.importProfilesIfNeeded(
+          userProfilesDao: database.userProfilesDao,
+          profileStatsDao: database.profileStatsDao,
+        );
+
+        // Profiles should still exist from first call only
+        final profile = await database.userProfilesDao.getProfile(_pubkeyOne);
+        expect(profile, isNotNull);
+      },
+    );
+
+    test(
+      'importProfilesIfNeeded handles asset load error gracefully',
+      () async {
+        final service = ClassicVinerSeedPreloadService(
+          assetBundle: _FakeAssetBundle(
+            strings: const {},
+            binaries: const {},
+          ),
+          markerDirectoryProvider: () async => markerDirectory,
+        );
+
+        // Should not throw — error is caught internally
+        await service.importProfilesIfNeeded(
+          userProfilesDao: database.userProfilesDao,
+          profileStatsDao: database.profileStatsDao,
+        );
+
+        // No profiles should be inserted
+        final profile = await database.userProfilesDao.getProfile(_pubkeyOne);
+        expect(profile, isNull);
+      },
+    );
+
+    test('preloadAvatarImagesIfNeeded skips profiles with null/empty '
+        'pictureUrl or avatarAsset', () async {
+      final cachedWrites =
+          <({String cacheKey, Uint8List bytes, String extension})>[];
+      final service = ClassicVinerSeedPreloadService(
+        assetBundle: _FakeAssetBundle(
+          strings: {
+            ClassicVinerSeedPreloadService.manifestAssetPath:
+                _manifestJsonWithNullFields,
+          },
+          binaries: const {},
+        ),
+        markerDirectoryProvider: () async => markerDirectory,
+      );
+
+      Future<void> cacheWriter({
+        required String cacheKey,
+        required Uint8List bytes,
+        required String fileExtension,
+      }) async {
+        cachedWrites.add((
+          cacheKey: cacheKey,
+          bytes: bytes,
+          extension: fileExtension,
+        ));
+      }
+
+      await service.preloadAvatarImagesIfNeeded(cacheWriter: cacheWriter);
+
+      // No writes because all profiles lack pictureUrl or avatarAsset
+      expect(cachedWrites, isEmpty);
+    });
+
+    test(
+      'preloadAvatarImagesIfNeeded handles asset load error gracefully',
+      () async {
+        final service = ClassicVinerSeedPreloadService(
+          assetBundle: _FakeAssetBundle(
+            strings: const {},
+            binaries: const {},
+          ),
+          markerDirectoryProvider: () async => markerDirectory,
+        );
+
+        var writerCalled = false;
+        Future<void> cacheWriter({
+          required String cacheKey,
+          required Uint8List bytes,
+          required String fileExtension,
+        }) async {
+          writerCalled = true;
+        }
+
+        // Should not throw — error is caught internally
+        await service.preloadAvatarImagesIfNeeded(cacheWriter: cacheWriter);
+
+        expect(writerCalled, isFalse);
+      },
+    );
   });
 }
 
@@ -172,6 +285,33 @@ const _manifestJson =
         "totalLikes": 5400000
       },
       "avatarAsset": "assets/seed_media/classic_viner_avatars/brittany-furlan.png"
+    }
+  ]
+}
+''';
+
+const _pubkeyThree =
+    '3333333333333333333333333333333333333333333333333333333333333333';
+const _pubkeyFour =
+    '4444444444444444444444444444444444444444444444444444444444444444';
+
+const _manifestJsonWithNullFields =
+    '''
+{
+  "version": "2026-03-17-classic-v1",
+  "profiles": [
+    {
+      "pubkey": "$_pubkeyThree",
+      "displayName": "No Picture",
+      "createdAt": "2026-03-17T00:00:00.000Z",
+      "archivedStats": {}
+    },
+    {
+      "pubkey": "$_pubkeyFour",
+      "displayName": "No Avatar Asset",
+      "pictureUrl": "https://cdn.divine.video/classic-viners/someone.png",
+      "createdAt": "2026-03-17T00:00:00.000Z",
+      "archivedStats": {}
     }
   ]
 }
