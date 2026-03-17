@@ -11,12 +11,15 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
+import 'package:openvine/screens/inbox/new_message_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
+import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -122,28 +125,71 @@ class _MessagesContent extends ConsumerWidget {
           target.participantPubkeys,
         );
       },
-      child: Column(
+      child: Stack(
         children: [
-          // Following users horizontal bar
-          FollowingBar(
-            onUserTapped: (pubkey) {
-              Log.info(
-                '👤 User tapped in following bar: $pubkey',
-                name: 'InboxView',
-                category: LogCategory.ui,
-              );
-              context.read<ConversationListBloc>().add(
-                ConversationListNavigateToUser(pubkey),
-              );
-            },
+          Column(
+            children: [
+              // Following users horizontal bar
+              FollowingBar(
+                onUserTapped: (pubkey) {
+                  Log.info(
+                    '👤 User tapped in following bar: $pubkey',
+                    name: 'InboxView',
+                    category: LogCategory.ui,
+                  );
+                  context.read<ConversationListBloc>().add(
+                    ConversationListNavigateToUser(pubkey),
+                  );
+                },
+              ),
+              // Conversation list or empty state
+              Expanded(
+                child: _ConversationListContent(
+                  currentUserPubkey: currentPubkey,
+                ),
+              ),
+            ],
           ),
-          // Conversation list or empty state
-          Expanded(
-            child: _ConversationListContent(currentUserPubkey: currentPubkey),
+          // FAB positioned bottom-right
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: InboxFab(
+              onPressed: () => _onNewConversation(context, ref),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _onNewConversation(BuildContext context, WidgetRef ref) async {
+    final profileRepo = ref.read(profileRepositoryProvider);
+    if (profileRepo == null) {
+      Log.warning(
+        'Cannot open new message: profileRepo is null',
+        name: 'InboxView',
+        category: LogCategory.ui,
+      );
+      return;
+    }
+
+    final selectedUser = await NewMessageSheet.show(
+      context,
+      profileRepository: profileRepo,
+      followRepository: ref.read(followRepositoryProvider),
+    );
+
+    if (selectedUser == null || !context.mounted) return;
+
+    final authService = ref.read(authServiceProvider);
+    final currentPubkey = authService.currentPublicKeyHex;
+    if (currentPubkey == null) return;
+
+    final conversationId = DmRepository.computeConversationId(
+      [currentPubkey, selectedUser.pubkey],
+    );
+    _pushConversation(context, conversationId, [selectedUser.pubkey]);
   }
 }
 
