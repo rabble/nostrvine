@@ -61,7 +61,7 @@ class ShareActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VideoActionButton(
-      icon: .shareFat,
+      icon: .shareFatDuo,
       semanticIdentifier: 'share_button',
       semanticLabel: 'Share video',
       onPressed: () {

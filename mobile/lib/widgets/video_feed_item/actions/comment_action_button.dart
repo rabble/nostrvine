@@ -115,7 +115,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VideoActionButton(
-      icon: .chat,
+      icon: .chatDuo,
       semanticIdentifier: 'comments_button',
       semanticLabel: 'View comments',
       isLoading: isCommentsInProgress,

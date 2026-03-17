@@ -63,7 +63,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VideoActionButton(
-      icon: .heart,
+      icon: .heartDuo,
       semanticIdentifier: 'like_button',
       semanticLabel: isLiked ? 'Unlike video' : 'Like video',
       iconColor: isLiked ? VineTheme.likeRed : VineTheme.whiteText,

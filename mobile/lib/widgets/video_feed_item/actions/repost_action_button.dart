@@ -68,7 +68,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VideoActionButton(
-      icon: .repost,
+      icon: .repeatDuo,
       semanticIdentifier: 'repost_button',
       semanticLabel: isReposted ? 'Remove repost' : 'Repost video',
       iconColor: isReposted ? VineTheme.vineGreen : VineTheme.whiteText,
