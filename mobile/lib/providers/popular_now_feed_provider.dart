@@ -407,6 +407,17 @@ class PopularNowFeed extends _$PopularNowFeed {
     );
 
     final videoEventService = ref.read(videoEventServiceProvider);
+    final currentState = state.asData?.value;
+
+    if (currentState != null && ref.mounted) {
+      state = AsyncData(
+        currentState.copyWith(
+          isRefreshing: true,
+          isInitialLoad: false,
+          error: null,
+        ),
+      );
+    }
 
     // If using REST API, try to refresh from there first
     if (_usingRestApi) {
@@ -437,6 +448,7 @@ class PopularNowFeed extends _$PopularNowFeed {
               videos: filteredVideos,
               hasMoreContent:
                   apiVideos.length >= AppConstants.paginationBatchSize,
+              isRefreshing: false,
               lastUpdated: DateTime.now(),
             ),
           );
@@ -458,12 +470,61 @@ class PopularNowFeed extends _$PopularNowFeed {
       }
     }
 
-    // Reset cursor state before invalidating
+    // Reset cursor state before forced Nostr refresh
     _usingRestApi = false;
     _nextCursor = null;
 
-    // Invalidate to re-run build() which will try REST API then Nostr
-    ref.invalidateSelf();
+    try {
+      await videoEventService.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.popularNow,
+        limit: 100,
+        sortBy: VideoSortField.createdAt,
+        force: true,
+      );
+
+      if (!ref.mounted) return;
+
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
+      var refreshedVideos = videoEventService.popularNowVideos.toList();
+      refreshedVideos = videoEventService.filterVideoList(
+        refreshedVideos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
+            .toList(),
+      );
+      refreshedVideos.sort((a, b) {
+        final timeCompare = b.timestamp.compareTo(a.timestamp);
+        if (timeCompare != 0) return timeCompare;
+        return a.id.compareTo(b.id);
+      });
+
+      state = AsyncData(
+        VideoFeedState(
+          videos: refreshedVideos,
+          hasMoreContent:
+              refreshedVideos.length >= AppConstants.hasMoreContentThreshold,
+          isRefreshing: false,
+          isInitialLoad: false,
+          lastUpdated: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      if (!ref.mounted) return;
+      if (currentState != null) {
+        state = AsyncData(
+          currentState.copyWith(isRefreshing: false, error: e.toString()),
+        );
+        return;
+      }
+
+      state = AsyncData(
+        VideoFeedState(
+          videos: const [],
+          hasMoreContent: false,
+          error: e.toString(),
+        ),
+      );
+    }
   }
 
   /// Get oldest timestamp from videos for cursor pagination

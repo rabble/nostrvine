@@ -72,7 +72,6 @@ class ForYouFeed extends _$ForYouFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
-    final analyticsService = ref.read(analyticsApiServiceProvider);
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -91,10 +90,21 @@ class ForYouFeed extends _$ForYouFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
+    return _fetchRecommendations(limit: _currentLimit);
+  }
+
+  Future<VideoFeedState> _fetchRecommendations({required int limit}) async {
     try {
+      final authService = ref.read(authServiceProvider);
+      final currentUserPubkey = authService.currentPublicKeyHex;
+      if (currentUserPubkey == null) {
+        return const VideoFeedState(videos: [], hasMoreContent: false);
+      }
+
+      final analyticsService = ref.read(analyticsApiServiceProvider);
       final result = await analyticsService.getRecommendations(
         pubkey: currentUserPubkey,
-        limit: _currentLimit,
+        limit: limit,
       );
 
       Log.info(
@@ -217,9 +227,46 @@ class ForYouFeed extends _$ForYouFeed {
       category: LogCategory.video,
     );
 
+    final currentState = state.asData?.value;
+    if (currentState != null && ref.mounted) {
+      state = AsyncData(
+        currentState.copyWith(
+          isRefreshing: true,
+          isInitialLoad: false,
+          error: null,
+        ),
+      );
+    }
+
     _currentLimit = 50; // Reset limit on refresh
-    ref.invalidateSelf();
-    await future; // Wait for rebuild to complete
+
+    try {
+      final refreshedState = await _fetchRecommendations(limit: _currentLimit);
+      if (!ref.mounted) return;
+      state = AsyncData(
+        refreshedState.copyWith(
+          isRefreshing: false,
+          isInitialLoad: false,
+          error: null,
+        ),
+      );
+    } catch (e) {
+      if (!ref.mounted) return;
+      if (currentState != null) {
+        state = AsyncData(
+          currentState.copyWith(isRefreshing: false, error: e.toString()),
+        );
+        return;
+      }
+
+      state = AsyncData(
+        VideoFeedState(
+          videos: const [],
+          hasMoreContent: false,
+          error: e.toString(),
+        ),
+      );
+    }
   }
 }
 

@@ -60,6 +60,10 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       return const VideoFeedState(videos: [], hasMoreContent: true);
     }
 
+    return _loadFirstPage();
+  }
+
+  Future<VideoFeedState> _loadFirstPage() async {
     try {
       final videosRepository = ref.read(videosRepositoryProvider);
       final videos = await videosRepository.getPopularVideos(
@@ -196,8 +200,47 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       name: 'PopularVideosFeedProvider',
       category: LogCategory.video,
     );
+
+    final currentState = state.asData?.value;
+    if (currentState != null && ref.mounted) {
+      state = AsyncData(
+        currentState.copyWith(
+          isRefreshing: true,
+          isInitialLoad: false,
+          error: null,
+        ),
+      );
+    }
+
     _nextCursor = null;
-    ref.invalidateSelf();
+
+    try {
+      final refreshedState = await _loadFirstPage();
+      if (!ref.mounted) return;
+      state = AsyncData(
+        refreshedState.copyWith(
+          isRefreshing: false,
+          isInitialLoad: false,
+          error: null,
+        ),
+      );
+    } catch (e) {
+      if (!ref.mounted) return;
+      if (currentState != null) {
+        state = AsyncData(
+          currentState.copyWith(isRefreshing: false, error: e.toString()),
+        );
+        return;
+      }
+
+      state = AsyncData(
+        VideoFeedState(
+          videos: const [],
+          hasMoreContent: false,
+          error: e.toString(),
+        ),
+      );
+    }
   }
 
   /// Applies platform compatibility, content preference,
