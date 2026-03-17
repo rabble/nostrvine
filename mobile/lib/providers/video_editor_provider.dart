@@ -752,6 +752,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
       proofManifestJson: state.proofManifestJson,
+      originalAudioVolume: state.originalAudioVolume,
+      customAudioVolume: state.customAudioVolume,
     );
   }
 
@@ -1006,6 +1008,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarnings: draft.contentWarnings,
       finalRenderedClip: validFinalRenderedClip,
       clearFinalRenderedClip: validFinalRenderedClip == null,
+      originalAudioVolume: draft.originalAudioVolume,
+      customAudioVolume: draft.customAudioVolume,
     );
     _clipManager.addMultipleClips(clipsWithThumbnails);
     // We set the aspect ratio in the video recorder to match the clips,

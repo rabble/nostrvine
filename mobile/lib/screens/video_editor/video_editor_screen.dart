@@ -172,12 +172,19 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   /// Opens the audio volume adjust sheet.
   Future<void> _adjustVolume() async {
+    final state = ref.read(videoEditorProvider);
+    final initialRecordedVolume = state.originalAudioVolume;
+    final initialCustomVolume = state.customAudioVolume;
+
     final result = await VineBottomSheet.show<AudioAdjustResult>(
       context: context,
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      body: const VideoEditorAudioAdjustSheet(),
+      body: VideoEditorAudioAdjustSheet(
+        initialRecordedVolume: initialRecordedVolume,
+        initialCustomVolume: initialCustomVolume,
+      ),
     );
     if (result == null) return;
 
