@@ -145,7 +145,7 @@ class DivineSliderTrackShape extends SliderTrackShape {
       inactiveRect,
       Paint()
         ..color =
-            sliderTheme.inactiveTrackColor ?? inactiveRect.tlRadius.x as Color,
+            sliderTheme.inactiveTrackColor ?? VineTheme.onSurfaceDisabled,
     );
 
     // Active track (left side) — rounded left, flat right
@@ -200,9 +200,8 @@ class DivineSliderThumbShape extends SliderComponentShape {
     required Size sizeWithOverflow,
   }) {
     final canvas = context.canvas;
-    final adjustedCenter = Offset(center.dx + width / 2, center.dy);
     final rect = Rect.fromCenter(
-      center: adjustedCenter,
+      center: center,
       width: width,
       height: height,
     );
