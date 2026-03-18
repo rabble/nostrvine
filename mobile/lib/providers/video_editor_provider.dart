@@ -820,7 +820,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Combines all clips, applies audio settings, and creates the final
   /// rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    if (state.finalRenderedClip != null) return;
+    if (state.finalRenderedClip != null) {
+      setProcessing(false);
+      return;
+    }
 
     Log.info(
       '🎬 Starting final video render',
