@@ -30,7 +30,10 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
-import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/nostr_settings_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
@@ -77,6 +80,9 @@ enum RouteType {
   discoverLists, // Discover public lists screen
   creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
+  contentPreferences, // Content preferences (language, audio, filters)
+  supportCenter, // Support center (bug reports, logs, FAQ, legal links)
+  nostrSettings, // Nostr settings (relays, media servers, keys, account)
   secureAccount,
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
   videoDetail, // Video detail screen (deep link to specific video)
@@ -265,6 +271,15 @@ RouteContext parseRoute(String path) {
 
     case 'content-filters':
       return const RouteContext(type: RouteType.contentFilters);
+
+    case 'content-preferences':
+      return const RouteContext(type: RouteType.contentPreferences);
+
+    case 'support-center':
+      return const RouteContext(type: RouteType.supportCenter);
+
+    case 'nostr-settings':
+      return const RouteContext(type: RouteType.nostrSettings);
 
     case 'edit-profile':
     case 'setup-profile':
@@ -455,6 +470,15 @@ String buildRoute(RouteContext context) {
 
     case RouteType.contentFilters:
       return ContentFiltersScreen.path;
+
+    case RouteType.contentPreferences:
+      return ContentPreferencesScreen.path;
+
+    case RouteType.supportCenter:
+      return SupportCenterScreen.path;
+
+    case RouteType.nostrSettings:
+      return NostrSettingsScreen.path;
 
     case RouteType.editProfile:
       return ProfileSetupScreen.editPath;

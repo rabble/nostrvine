@@ -54,7 +54,7 @@ class FeedModeSwitch extends StatelessWidget {
               builder: (context, state) {
                 return Row(
                   children: [
-                    _MenuButton(onTap: () => Scaffold.of(context).openDrawer()),
+                    const SizedBox(width: 48),
                     Expanded(
                       child: Center(
                         child: GestureDetector(
@@ -128,23 +128,6 @@ class FeedModeSwitch extends StatelessWidget {
       final mode = FeedMode.values.firstWhere((m) => m.name == selected);
       context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
     }
-  }
-}
-
-class _MenuButton extends StatelessWidget {
-  const _MenuButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return DiVineAppBarIconButton(
-      icon: const SvgIconSource('assets/icon/menu.svg'),
-      onPressed: onTap,
-      iconSize: 24,
-      semanticLabel: 'Open menu',
-      backgroundColor: VineTheme.scrim30,
-    );
   }
 }
 

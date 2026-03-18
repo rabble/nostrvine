@@ -11,7 +11,7 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';

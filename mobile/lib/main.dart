@@ -576,7 +576,9 @@ Future<void> _startOpenVineApp() async {
   // Skip on web — media_kit requires native libraries (libmpv) that are not
   // available in browser environments. Web uses video_player instead.
   if (!kIsWeb) {
-    MediaKit.ensureInitialized();
+    if (!kDebugMode) {
+      MediaKit.ensureInitialized();
+    }
 
     // Initialize the player pool singleton
     await PlayerPool.init();

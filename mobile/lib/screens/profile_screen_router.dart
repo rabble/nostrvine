@@ -13,7 +13,6 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -21,9 +20,11 @@ import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
@@ -32,7 +33,6 @@ import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:openvine/widgets/vine_bottom_nav.dart';
-import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
@@ -160,9 +160,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final profileRepository = ref.watch(profileRepositoryProvider);
 
       if (userIdHex == null || profileRepository == null) {
-        return _ProfileScaffold(
-          body: const ProfileLoadingView(),
-        );
+        return const _ProfileScaffold(body: ProfileLoadingView());
       }
 
       return BlocProvider<MyProfileBloc>(
@@ -195,11 +193,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             };
 
             return _ProfileScaffold(
-              onDrawerChanged: (isOpen) {
-                ref
-                    .read(overlayVisibilityProvider.notifier)
-                    .setDrawerOpen(isOpen);
-              },
               onRefreshPressed: () => _refreshProfile(userIdHex),
               onMorePressed: () => _more(userIdHex),
               appBarColor: profileColor,
@@ -434,11 +427,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 }
 
 class _ProfileScaffold extends ConsumerWidget {
-  _ProfileScaffold({
+  const _ProfileScaffold({
     required this.body,
     this.isRefreshing = false,
     this.appBarColor,
-    this.onDrawerChanged,
     this.onRefreshPressed,
     this.onMorePressed,
   });
@@ -449,32 +441,26 @@ class _ProfileScaffold extends ConsumerWidget {
 
   final Widget body;
 
-  final DrawerCallback? onDrawerChanged;
   final VoidCallback? onRefreshPressed;
   final VoidCallback? onMorePressed;
-
-  /// Key used to open the drawer from the AppBar leading button.
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final environment = ref.watch(currentEnvironmentProvider);
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: VineTheme.backgroundColor,
-      onDrawerChanged: onDrawerChanged,
       appBar: DiVineAppBar(
-        title: 'My Profile',
+        title: '',
         backgroundColor: appBarColor ?? getEnvironmentAppBarColor(environment),
-        showMenuButton: true,
-        onMenuPressed: () {
+        leadingIcon: const SvgIconSource('assets/icon/gear.svg'),
+        onLeadingPressed: () {
           Log.info(
-            '👆 User tapped menu button',
+            'User tapped settings gear',
             name: 'Navigation',
             category: LogCategory.ui,
           );
-          _scaffoldKey.currentState?.openDrawer();
+          context.pushWithVideoPause(SettingsScreen.path);
         },
         actions: [
           DiVineAppBarAction(
@@ -493,7 +479,6 @@ class _ProfileScaffold extends ConsumerWidget {
           ),
         ],
       ),
-      drawer: const VineDrawer(),
       body: body,
       bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );

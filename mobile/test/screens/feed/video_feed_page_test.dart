@@ -152,7 +152,9 @@ void main() {
         final element = tester.element(find.byType(VideoFeedView));
         final container = ProviderScope.containerOf(element);
 
-        container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+        container
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpen(true);
         await tester.pump();
 
         // Drawer overlay retains current player for instant resume
@@ -223,13 +225,17 @@ void main() {
       final element = tester.element(find.byType(VideoFeedView));
       final container = ProviderScope.containerOf(element);
 
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(true);
       await tester.pump();
 
       // Reset the mock to clear previous calls
       clearInteractions(videoFeedController);
 
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(false);
       await tester.pump();
 
       verify(() => videoFeedController.setActive(active: true)).called(1);
@@ -350,9 +356,13 @@ void main() {
         clearInteractions(videoFeedController);
 
         // Open and close overlay while on search tab
-        container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+        container
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpen(true);
         await tester.pump();
-        container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
+        container
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpen(false);
         await tester.pump();
 
         // setActive(active: true) should NOT have been called

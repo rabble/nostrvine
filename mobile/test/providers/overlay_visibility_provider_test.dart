@@ -1,4 +1,4 @@
-// ABOUTME: Tests for overlay visibility provider (drawer, settings, modal tracking)
+// ABOUTME: Tests for overlay visibility provider (settings, modal tracking)
 // ABOUTME: Verifies overlays pause video playback via activeVideoIdProvider integration
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,15 +11,10 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
-  group('OverlayVisibilityState', () {
+  group(OverlayVisibilityState, () {
     test('hasVisibleOverlay returns false when no overlays are open', () {
       const state = OverlayVisibilityState();
       expect(state.hasVisibleOverlay, isFalse);
-    });
-
-    test('hasVisibleOverlay returns true when drawer is open', () {
-      const state = OverlayVisibilityState(isDrawerOpen: true);
-      expect(state.hasVisibleOverlay, isTrue);
     });
 
     test('hasVisibleOverlay returns true when page is open', () {
@@ -33,22 +28,11 @@ void main() {
     });
 
     test(
-      'shouldRetainPlayer returns true for drawer and bottom sheet overlays',
+      'shouldRetainPlayer returns true for bottom sheet overlays',
       () {
         // Only bottom sheet - retain player
         const onlyBottomSheet = OverlayVisibilityState(isBottomSheetOpen: true);
         expect(onlyBottomSheet.shouldRetainPlayer, isTrue);
-
-        // Only drawer - retain player
-        const onlyDrawer = OverlayVisibilityState(isDrawerOpen: true);
-        expect(onlyDrawer.shouldRetainPlayer, isTrue);
-
-        // Bottom sheet with drawer - retain player
-        const withDrawer = OverlayVisibilityState(
-          isBottomSheetOpen: true,
-          isDrawerOpen: true,
-        );
-        expect(withDrawer.shouldRetainPlayer, isTrue);
 
         // Bottom sheet with page - do NOT retain (page takes precedence)
         const withPage = OverlayVisibilityState(
@@ -69,29 +53,15 @@ void main() {
 
     test('copyWith creates correct copy', () {
       const state = OverlayVisibilityState();
-      final withDrawer = state.copyWith(isDrawerOpen: true);
+      final withPage = state.copyWith(isPageOpen: true);
 
-      expect(state.isDrawerOpen, isFalse);
-      expect(withDrawer.isDrawerOpen, isTrue);
-      expect(withDrawer.isPageOpen, isFalse);
-      expect(withDrawer.isBottomSheetOpen, isFalse);
+      expect(state.isPageOpen, isFalse);
+      expect(withPage.isPageOpen, isTrue);
+      expect(withPage.isBottomSheetOpen, isFalse);
     });
   });
 
   group('OverlayVisibility notifier', () {
-    test('setDrawerOpen updates state', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      expect(container.read(overlayVisibilityProvider).isDrawerOpen, isFalse);
-
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
-      expect(container.read(overlayVisibilityProvider).isDrawerOpen, isTrue);
-
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
-      expect(container.read(overlayVisibilityProvider).isDrawerOpen, isFalse);
-    });
-
     test('setPageOpen updates state', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -113,9 +83,7 @@ void main() {
 
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(
-            true,
-          );
+          .setBottomSheetOpen(true);
       expect(
         container.read(overlayVisibilityProvider).isBottomSheetOpen,
         isTrue,
@@ -129,14 +97,6 @@ void main() {
       addTearDown(container.dispose);
 
       expect(container.read(hasVisibleOverlayProvider), isFalse);
-    });
-
-    test('returns true when drawer is opened', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
-      expect(container.read(hasVisibleOverlayProvider), isTrue);
     });
 
     test('returns true when page is opened', () {
@@ -153,9 +113,7 @@ void main() {
 
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(
-            true,
-          );
+          .setBottomSheetOpen(true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
     });
 
@@ -163,14 +121,11 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      // Initially no overlay
       expect(container.read(hasVisibleOverlayProvider), isFalse);
 
-      // Open page (e.g., settings page)
       container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
 
-      // Close page
       container.read(overlayVisibilityProvider.notifier).setPageOpen(false);
       expect(container.read(hasVisibleOverlayProvider), isFalse);
     });
@@ -179,23 +134,16 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      // Initially no overlay
       expect(container.read(hasVisibleOverlayProvider), isFalse);
 
-      // Open bottom sheet (e.g., comments)
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(
-            true,
-          );
+          .setBottomSheetOpen(true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
 
-      // Close bottom sheet
       container
           .read(overlayVisibilityProvider.notifier)
-          .setBottomSheetOpen(
-            false,
-          );
+          .setBottomSheetOpen(false);
       expect(container.read(hasVisibleOverlayProvider), isFalse);
     });
   });
@@ -220,12 +168,9 @@ void main() {
       ];
     });
 
-    /// Creates a ProviderContainer with standard overrides for
-    /// activeVideoIdProvider integration tests.
     ProviderContainer createTestContainer(List<VideoEvent> videos) {
       return ProviderContainer(
         overrides: [
-          // appForegroundProvider defaults to true (Notifier-based)
           pageContextProvider.overrideWithValue(
             const AsyncValue.data(
               RouteContext(type: RouteType.explore, videoIndex: 0),
@@ -246,7 +191,6 @@ void main() {
         final container = createTestContainer(mockVideos);
         addTearDown(container.dispose);
 
-        // Create active subscription to force reactive chain evaluation
         container.listen(
           activeVideoIdProvider,
           (_, _) {},
@@ -255,35 +199,22 @@ void main() {
 
         await pumpEventQueue();
 
-        // No overlays - video should play
         expect(container.read(activeVideoIdProvider), 'v0');
       },
     );
-
-    test('activeVideoIdProvider returns null when drawer is open', () async {
-      final container = createTestContainer(mockVideos);
-      addTearDown(container.dispose);
-
-      // Create active subscription to force reactive chain evaluation
-      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
-
-      await pumpEventQueue();
-
-      // Open drawer - video should pause (return null)
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
-      expect(container.read(activeVideoIdProvider), isNull);
-    });
 
     test('activeVideoIdProvider returns null when page is open', () async {
       final container = createTestContainer(mockVideos);
       addTearDown(container.dispose);
 
-      // Create active subscription to force reactive chain evaluation
-      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
+      container.listen(
+        activeVideoIdProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
 
       await pumpEventQueue();
 
-      // Open page - video should pause (return null)
       container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
       expect(container.read(activeVideoIdProvider), isNull);
     });
@@ -294,7 +225,6 @@ void main() {
         final container = createTestContainer(mockVideos);
         addTearDown(container.dispose);
 
-        // Create active subscription to force reactive chain evaluation
         container.listen(
           activeVideoIdProvider,
           (_, _) {},
@@ -303,12 +233,9 @@ void main() {
 
         await pumpEventQueue();
 
-        // Open bottom sheet - video should pause (return null)
         container
             .read(overlayVisibilityProvider.notifier)
-            .setBottomSheetOpen(
-              true,
-            );
+            .setBottomSheetOpen(true);
         expect(container.read(activeVideoIdProvider), isNull);
       },
     );
@@ -317,20 +244,20 @@ void main() {
       final container = createTestContainer(mockVideos);
       addTearDown(container.dispose);
 
-      // Create active subscription to force reactive chain evaluation
-      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
+      container.listen(
+        activeVideoIdProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
 
       await pumpEventQueue();
 
-      // Initially video plays
       expect(container.read(activeVideoIdProvider), 'v0');
 
-      // Open drawer - video pauses
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
       expect(container.read(activeVideoIdProvider), isNull);
 
-      // Close drawer - video resumes
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
+      container.read(overlayVisibilityProvider.notifier).setPageOpen(false);
       expect(container.read(activeVideoIdProvider), 'v0');
     });
   });

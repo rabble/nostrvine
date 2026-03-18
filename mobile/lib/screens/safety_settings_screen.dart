@@ -6,10 +6,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -32,7 +30,6 @@ class SafetySettingsScreen extends ConsumerStatefulWidget {
 class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   bool _isLoading = true;
   bool _isAgeVerified = false;
-  Set<ContentLabel> _accountLabels = {};
   bool _isDivineLabelerEnabled = true;
   bool _isPeopleIFollowEnabled = false;
   bool _showDivineHostedOnly = false;
@@ -46,13 +43,11 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Future<void> _loadSettings() async {
     final service = ref.read(ageVerificationServiceProvider);
     await service.initialize();
-    final accountLabelService = ref.read(accountLabelServiceProvider);
     final labelService = ref.read(moderationLabelServiceProvider);
     final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
     if (mounted) {
       setState(() {
         _isAgeVerified = service.isAdultContentVerified;
-        _accountLabels = accountLabelService.accountLabels;
         _isDivineLabelerEnabled = labelService.subscribedLabelers.contains(
           ModerationLabelService.divineModerationPubkeyHex,
         );
@@ -111,12 +106,6 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                 _buildAgeVerificationSection(),
                 const SizedBox(height: 8),
                 _buildSectionHeader('SETTINGS'),
-                _buildNavigationTile(
-                  icon: Icons.tune,
-                  title: 'Content Filters',
-                  subtitle: 'Per-category Show, Warn, or Hide',
-                  onTap: () => context.push(ContentFiltersScreen.path),
-                ),
                 SwitchListTile(
                   value: _showDivineHostedOnly,
                   onChanged: _setShowDivineHostedOnly,
@@ -133,14 +122,6 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                     style: TextStyle(color: VineTheme.secondaryText),
                   ),
                   activeThumbColor: VineTheme.vineGreen,
-                ),
-                _buildNavigationTile(
-                  icon: Icons.warning_amber_rounded,
-                  title: 'Account Content Labels',
-                  subtitle: _accountLabels.isNotEmpty
-                      ? _accountLabels.map((l) => l.displayName).join(', ')
-                      : 'Self-label your content',
-                  onTap: _selectAccountLabels,
                 ),
                 _buildSectionHeader('MODERATION'),
                 _buildModerationProvidersSection(),
@@ -189,59 +170,6 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
           controlAffinity: ListTileControlAffinity.leading,
         ),
       ],
-    );
-  }
-
-  Widget _buildNavigationTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: VineTheme.onSurfaceVariant),
-      title: Text(title, style: const TextStyle(color: VineTheme.whiteText)),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: VineTheme.secondaryText),
-      ),
-      trailing: const Icon(
-        Icons.chevron_right,
-        color: VineTheme.onSurfaceDisabled,
-      ),
-      onTap: onTap,
-    );
-  }
-
-  Future<void> _selectAccountLabels() async {
-    FocusManager.instance.primaryFocus?.unfocus();
-
-    final result = await _showAccountLabelMultiSelect(
-      context: context,
-      selected: _accountLabels,
-    );
-
-    if (result != null && mounted) {
-      final service = ref.read(accountLabelServiceProvider);
-      await service.setAccountLabels(result);
-      setState(() {
-        _accountLabels = result;
-      });
-    }
-  }
-
-  Future<Set<ContentLabel>?> _showAccountLabelMultiSelect({
-    required BuildContext context,
-    required Set<ContentLabel> selected,
-  }) {
-    return showModalBottomSheet<Set<ContentLabel>>(
-      context: context,
-      backgroundColor: VineTheme.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      isScrollControlled: true,
-      builder: (_) => _AccountLabelMultiSelect(selected: selected),
     );
   }
 
@@ -536,151 +464,6 @@ class _BlockedUserTile extends ConsumerWidget {
           style: TextStyle(color: VineTheme.vineGreen),
         ),
       ),
-    );
-  }
-}
-
-/// Multi-select bottom sheet for choosing account content warning labels.
-class _AccountLabelMultiSelect extends StatefulWidget {
-  const _AccountLabelMultiSelect({required this.selected});
-
-  final Set<ContentLabel> selected;
-
-  @override
-  State<_AccountLabelMultiSelect> createState() =>
-      _AccountLabelMultiSelectState();
-}
-
-class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
-  late Set<ContentLabel> _selected;
-
-  @override
-  void initState() {
-    super.initState();
-    _selected = Set.of(widget.selected);
-  }
-
-  void _toggle(ContentLabel label) {
-    setState(() {
-      if (_selected.contains(label)) {
-        _selected.remove(label);
-      } else {
-        _selected.add(label);
-      }
-    });
-  }
-
-  void _clearAll() {
-    setState(() {
-      _selected.clear();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      minChildSize: 0.4,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 4),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: VineTheme.onSurfaceMuted,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Account Content Labels',
-                    style: VineTheme.titleFont(fontSize: 18),
-                  ),
-                  if (_selected.isNotEmpty)
-                    TextButton(
-                      onPressed: _clearAll,
-                      child: const Text(
-                        'Clear All',
-                        style: TextStyle(color: VineTheme.vineGreen),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Select all that apply to your account',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: ContentLabel.values.length,
-                itemBuilder: (context, index) {
-                  final label = ContentLabel.values[index];
-                  final isChecked = _selected.contains(label);
-                  return CheckboxListTile(
-                    value: isChecked,
-                    onChanged: (_) => _toggle(label),
-                    title: Text(
-                      label.displayName,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
-                        fontSize: 15,
-                      ),
-                    ),
-                    activeColor: VineTheme.vineGreen,
-                    checkColor: VineTheme.whiteText,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    dense: true,
-                  );
-                },
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(_selected),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: VineTheme.vineGreen,
-                      foregroundColor: VineTheme.whiteText,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      _selected.isEmpty
-                          ? 'Done (No Labels)'
-                          : 'Done (${_selected.length} selected)',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }
