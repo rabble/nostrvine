@@ -72,7 +72,7 @@ void main() {
         ).called(greaterThanOrEqualTo(1));
       },
       skip:
-          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+          'Complex mocking required: VideoFeedBuilder and FunnelcakeApiClient REST API fallback',
     );
 
     test(
@@ -96,7 +96,7 @@ void main() {
         ).called(greaterThanOrEqualTo(1));
       },
       skip:
-          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+          'Complex mocking required: VideoFeedBuilder and FunnelcakeApiClient REST API fallback',
     );
 
     test(
@@ -126,7 +126,7 @@ void main() {
         expect(state.videos[2].id, 'v1'); // Oldest (Jan 1)
       },
       skip:
-          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+          'Complex mocking required: VideoFeedBuilder and FunnelcakeApiClient REST API fallback',
     );
 
     test(
@@ -143,7 +143,7 @@ void main() {
         expect(state.hasMoreContent, false);
       },
       skip:
-          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+          'Complex mocking required: VideoFeedBuilder and FunnelcakeApiClient REST API fallback',
     );
 
     test(
@@ -167,7 +167,7 @@ void main() {
         expect(state.hasMoreContent, true);
       },
       skip:
-          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+          'Complex mocking required: VideoFeedBuilder and FunnelcakeApiClient REST API fallback',
     );
 
     test(
@@ -204,7 +204,7 @@ void main() {
         ).called(1);
       },
       skip:
-          'Complex mocking required: VideoFeedBuilder, AnalyticsApiService REST API fallback, and event count mocking',
+          'Complex mocking required: VideoFeedBuilder, FunnelcakeApiClient REST API fallback, and event count mocking',
     );
 
     test(
@@ -238,7 +238,7 @@ void main() {
         ).called(1);
       },
       skip:
-          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+          'Complex mocking required: VideoFeedBuilder and FunnelcakeApiClient REST API fallback',
     );
 
     test('should return empty state when appReady is false', () async {

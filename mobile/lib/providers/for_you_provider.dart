@@ -102,14 +102,17 @@ class ForYouFeed extends _$ForYouFeed {
         return const VideoFeedState(videos: [], hasMoreContent: false);
       }
 
-      final analyticsService = ref.read(analyticsApiServiceProvider);
-      final result = await analyticsService.getRecommendations(
+      final client = ref.read(funnelcakeApiClientProvider);
+      final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: limit,
       );
+      final resultVideos = response.videos
+          .map((v) => v.toVideoEvent())
+          .toList();
 
       Log.info(
-        '✅ ForYouFeed: Got ${result.videos.length} recommendations, source: ${result.source}',
+        '✅ ForYouFeed: Got ${resultVideos.length} recommendations, source: ${response.source}',
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
@@ -119,7 +122,7 @@ class ForYouFeed extends _$ForYouFeed {
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistService = ref.read(contentBlocklistServiceProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        result.videos
+        resultVideos
             .where((v) => v.isSupportedOnCurrentPlatform)
             .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
             .toList(),
@@ -169,19 +172,22 @@ class ForYouFeed extends _$ForYouFeed {
         return;
       }
 
-      final analyticsService = ref.read(analyticsApiServiceProvider);
+      final client = ref.read(funnelcakeApiClientProvider);
       final newLimit = _currentLimit + 30;
-      final result = await analyticsService.getRecommendations(
+      final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: newLimit,
       );
+      final resultVideos = response.videos
+          .map((v) => v.toVideoEvent())
+          .toList();
 
       if (!ref.mounted) return;
 
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistService = ref.read(contentBlocklistServiceProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        result.videos
+        resultVideos
             .where((v) => v.isSupportedOnCurrentPlatform)
             .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
             .toList(),

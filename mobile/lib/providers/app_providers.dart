@@ -10,6 +10,7 @@ import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
@@ -31,7 +32,6 @@ import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/ai_training_preference_service.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
@@ -735,9 +735,9 @@ AuthService authService(Ref ref) {
   final pendingVerificationService = ref.watch(
     pendingVerificationServiceProvider,
   );
-  // NOTE: We construct AnalyticsApiService directly here instead of using
-  // analyticsApiServiceProvider to avoid a circular dependency:
-  //   authService → analyticsApiService → nostrService → authService
+  // NOTE: We construct FunnelcakeApiClient directly here instead of using
+  // funnelcakeApiClientProvider to avoid a circular dependency:
+  //   authService → funnelcakeApiClient → nostrService → authService
   // Using currentEnvironmentProvider is safe (no auth/nostr dependency).
   final authEnv = ref.read(currentEnvironmentProvider);
   return AuthService(
@@ -755,12 +755,12 @@ AuthService authService(Ref ref) {
       // set, so the router redirect has accurate cache data and sends
       // user to /home not /explore.
       final environmentConfig = ref.read(currentEnvironmentProvider);
-      final analyticsService = AnalyticsApiService(
+      final client = FunnelcakeApiClient(
         baseUrl: environmentConfig.apiBaseUrl,
       );
       final prefs = ref.read(sharedPreferencesProvider);
-      final result = await analyticsService.getFollowing(
-        pubkeyHex,
+      final result = await client.getFollowing(
+        pubkey: pubkeyHex,
         limit: 5000,
       );
       if (result.pubkeys.isNotEmpty) {

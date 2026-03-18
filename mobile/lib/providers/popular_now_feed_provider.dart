@@ -86,7 +86,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     // Try REST API first if available (use centralized availability check)
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
-    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final client = ref.read(funnelcakeApiClientProvider);
     if (funnelcakeAvailable) {
       Log.info(
         '🆕 PopularNowFeed: Trying Funnelcake REST API first',
@@ -95,7 +95,8 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
 
       try {
-        final apiVideos = await analyticsService.getRecentVideos(limit: 100);
+        final stats = await client.getRecentVideos(limit: 100);
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
           // Store cursor for pagination (oldest video timestamp)
@@ -222,7 +223,7 @@ class PopularNowFeed extends _$PopularNowFeed {
 
       // If using REST API, load more using cursor-based pagination
       if (_usingRestApi) {
-        final analyticsService = ref.read(analyticsApiServiceProvider);
+        final client = ref.read(funnelcakeApiClientProvider);
 
         Log.info(
           '🆕 PopularNowFeed: Loading more from REST API with cursor: $_nextCursor',
@@ -231,9 +232,11 @@ class PopularNowFeed extends _$PopularNowFeed {
         );
 
         // Use cursor (before parameter) for pagination
-        final apiVideos = await analyticsService.getRecentVideos(
+        final stats = await client.getRecentVideos(
+          limit: 100,
           before: _nextCursor,
         );
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
 
@@ -392,11 +395,9 @@ class PopularNowFeed extends _$PopularNowFeed {
     // If using REST API, try to refresh from there first
     if (_usingRestApi) {
       try {
-        final analyticsService = ref.read(analyticsApiServiceProvider);
-        final apiVideos = await analyticsService.getRecentVideos(
-          limit: 100,
-          forceRefresh: true,
-        );
+        final client = ref.read(funnelcakeApiClientProvider);
+        final stats = await client.getRecentVideos(limit: 100);
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         // Check if provider is still mounted after async gap
         if (!ref.mounted) return;

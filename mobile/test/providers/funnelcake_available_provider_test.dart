@@ -2,6 +2,7 @@
 // ABOUTME: Verifies Divine relay detection skips probe, unknown relays still probe
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -9,21 +10,20 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:riverpod/riverpod.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 void main() {
   group(FunnelcakeAvailable, () {
     late _MockNostrClient mockNostrClient;
-    late _MockAnalyticsApiService mockAnalyticsService;
+    late _MockFunnelcakeApiClient mockFunnelcakeClient;
 
     setUp(() {
       mockNostrClient = _MockNostrClient();
-      mockAnalyticsService = _MockAnalyticsApiService();
+      mockFunnelcakeClient = _MockFunnelcakeApiClient();
 
       when(() => mockNostrClient.relayStatuses).thenReturn(
         <String, RelayConnectionStatus>{},
@@ -36,14 +36,14 @@ void main() {
       return ProviderContainer(
         overrides: [
           nostrServiceProvider.overrideWithValue(mockNostrClient),
-          analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
+          funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           currentEnvironmentProvider.overrideWithValue(environment),
         ],
       );
     }
 
-    test('returns false when analytics service is not available', () async {
-      when(() => mockAnalyticsService.isAvailable).thenReturn(false);
+    test('returns false when Funnelcake client is not available', () async {
+      when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
       when(() => mockNostrClient.configuredRelays).thenReturn(<String>[]);
 
       final container = createContainer();
@@ -57,7 +57,7 @@ void main() {
     test(
       'returns true immediately for relay.divine.video without probing',
       () async {
-        when(() => mockAnalyticsService.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(() => mockNostrClient.configuredRelays).thenReturn(
           <String>['wss://relay.divine.video'],
         );
@@ -68,54 +68,37 @@ void main() {
         final result = await container.read(funnelcakeAvailableProvider.future);
 
         expect(result, isTrue);
-        // Verify no HTTP probe was made
-        verifyNever(
-          () => mockAnalyticsService.getRecentVideos(
-            limit: 1,
-            timeout: const Duration(seconds: 3),
-          ),
-        );
+        verifyNever(() => mockFunnelcakeClient.getRecentVideos(limit: 1));
       },
     );
 
     test(
       'returns true immediately when fallback apiBaseUrl contains divine.video',
       () async {
-        when(() => mockAnalyticsService.isAvailable).thenReturn(true);
-        // No configured relays, so resolveApiBaseUrlFromRelays uses fallback
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(() => mockNostrClient.configuredRelays).thenReturn(<String>[]);
 
-        // Production environment has apiBaseUrl = https://relay.divine.video
         final container = createContainer();
         addTearDown(container.dispose);
 
         final result = await container.read(funnelcakeAvailableProvider.future);
 
         expect(result, isTrue);
-        verifyNever(
-          () => mockAnalyticsService.getRecentVideos(
-            limit: 1,
-            timeout: const Duration(seconds: 3),
-          ),
-        );
+        verifyNever(() => mockFunnelcakeClient.getRecentVideos(limit: 1));
       },
     );
 
     test(
       'probes API for non-divine relay and returns true on success',
       () async {
-        when(() => mockAnalyticsService.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(() => mockNostrClient.configuredRelays).thenReturn(
           <String>['wss://relay.custom-server.com'],
         );
         when(
-          () => mockAnalyticsService.getRecentVideos(
-            limit: 1,
-            timeout: const Duration(seconds: 3),
-          ),
-        ).thenAnswer((_) async => <VideoEvent>[]);
+          () => mockFunnelcakeClient.getRecentVideos(limit: 1),
+        ).thenAnswer((_) async => <VideoStats>[]);
 
-        // Use a non-divine environment fallback
         const customEnv = EnvironmentConfig(
           environment: AppEnvironment.poc,
         );
@@ -126,27 +109,19 @@ void main() {
         final result = await container.read(funnelcakeAvailableProvider.future);
 
         expect(result, isTrue);
-        verify(
-          () => mockAnalyticsService.getRecentVideos(
-            limit: 1,
-            timeout: const Duration(seconds: 3),
-          ),
-        ).called(1);
+        verify(() => mockFunnelcakeClient.getRecentVideos(limit: 1)).called(1);
       },
     );
 
     test(
       'probes API for non-divine relay and returns false on failure',
       () async {
-        when(() => mockAnalyticsService.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(() => mockNostrClient.configuredRelays).thenReturn(
           <String>['wss://relay.custom-server.com'],
         );
         when(
-          () => mockAnalyticsService.getRecentVideos(
-            limit: 1,
-            timeout: const Duration(seconds: 3),
-          ),
+          () => mockFunnelcakeClient.getRecentVideos(limit: 1),
         ).thenThrow(Exception('Connection refused'));
 
         const customEnv = EnvironmentConfig(
@@ -159,17 +134,12 @@ void main() {
         final result = await container.read(funnelcakeAvailableProvider.future);
 
         expect(result, isFalse);
-        verify(
-          () => mockAnalyticsService.getRecentVideos(
-            limit: 1,
-            timeout: const Duration(seconds: 3),
-          ),
-        ).called(1);
+        verify(() => mockFunnelcakeClient.getRecentVideos(limit: 1)).called(1);
       },
     );
 
     test('refresh invalidates and re-evaluates', () async {
-      when(() => mockAnalyticsService.isAvailable).thenReturn(true);
+      when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
       when(() => mockNostrClient.configuredRelays).thenReturn(
         <String>['wss://relay.divine.video'],
       );
@@ -177,14 +147,11 @@ void main() {
       final container = createContainer();
       addTearDown(container.dispose);
 
-      // First read
       final result1 = await container.read(funnelcakeAvailableProvider.future);
       expect(result1, isTrue);
 
-      // Trigger refresh
       container.read(funnelcakeAvailableProvider.notifier).refresh();
 
-      // Read again after refresh
       final result2 = await container.read(funnelcakeAvailableProvider.future);
       expect(result2, isTrue);
     });
