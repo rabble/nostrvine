@@ -632,43 +632,39 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          PooledVideoPlayer(
-            index: index,
-            isActive: isActive,
-            thumbnailUrl: video.thumbnailUrl,
-            enableTapToPause: isActive,
-            videoBuilder: (context, videoController, player) =>
-                _FittedVideoPlayer(
-                  videoController: videoController,
-                  isPortrait: isPortrait,
-                  alignment: alignment,
-                ),
-            loadingBuilder: (context) => _VideoLoadingPlaceholder(
-              thumbnailUrl: video.thumbnailUrl,
-              isPortrait: isPortrait,
-              videoId: video.id,
-              feedMode: contextTitle,
+      child: PooledVideoPlayer(
+        index: index,
+        isActive: isActive,
+        thumbnailUrl: video.thumbnailUrl,
+        enableTapToPause: isActive,
+        videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
+          videoController: videoController,
+          isPortrait: isPortrait,
+          alignment: alignment,
+        ),
+        loadingBuilder: (context) => _VideoLoadingPlaceholder(
+          thumbnailUrl: video.thumbnailUrl,
+          isPortrait: isPortrait,
+          videoId: video.id,
+          feedMode: contextTitle,
+          index: index,
+          alignment: alignment,
+        ),
+        overlayBuilder: (context, videoController, player) => Stack(
+          children: [
+            FeedVideoOverlay(
+              video: video,
+              isActive: isActive,
+              pagePosition: pagePosition,
               index: index,
-              alignment: alignment,
+              player: player,
+              firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
+              listSources: listSources,
             ),
-            overlayBuilder: (context, videoController, player) =>
-                FeedVideoOverlay(
-                  video: video,
-                  isActive: isActive,
-                  pagePosition: pagePosition,
-                  index: index,
-                  player: player,
-                  firstFrameFuture:
-                      videoController?.waitUntilFirstFrameRendered,
-                  listSources: listSources,
-                ),
-          ),
-          if (!video.isFromDivineServer)
-            _SlowExternalVideoOverlay(index: index),
-        ],
+            if (!video.isFromDivineServer)
+              _SlowExternalVideoOverlay(index: index),
+          ],
+        ),
       ),
     );
   }
@@ -738,19 +734,16 @@ class _SlowExternalVideoOverlay extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.public,
+                const DivineIcon(
+                  icon: DivineIconName.globe,
                   color: VineTheme.secondaryText,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'External video loading slowly',
-                    style: TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 14,
-                    ),
+                    style: VineTheme.bodyMediumFont(),
                   ),
                 ),
                 if (!isLastVideo)

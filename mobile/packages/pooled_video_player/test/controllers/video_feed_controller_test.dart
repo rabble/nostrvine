@@ -3362,6 +3362,118 @@ void main() {
       });
     });
 
+    group('stuck playback watchdog', () {
+      test(
+        'marks error when position stays at 0 for 5 seconds',
+        () async {
+          final videos = createTestVideos(count: 3);
+
+          final setupByUrl = <String, MockPlayerSetup>{};
+          final stuckPool = TestablePlayerPool(
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup();
+              setupByUrl[url] = setup;
+              return createMockPooledPlayerFromSetup(setup);
+            },
+          );
+
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: stuckPool,
+            preloadBehind: 0,
+            preloadAhead: 1,
+          );
+
+          // Wait for async loading to start.
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Make video 1 (preloaded) buffer-ready so it is in ready
+          // state. Position stays at 0 (the default).
+          setupByUrl[videos[1].url]!.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Swipe to video 1 — triggers _playVideo ->
+          // _startStuckPlaybackWatchdog because it is already ready.
+          controller.onPageChanged(1);
+
+          final notifier = controller.getIndexNotifier(1);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Video should be ready (not yet stuck).
+          expect(notifier.value.isReady, isTrue);
+          expect(notifier.value.hasError, isFalse);
+
+          // Wait for 5 ticks of 1-second timer + margin.
+          await Future<void>.delayed(const Duration(milliseconds: 5500));
+
+          // Watchdog should have given up and marked as error.
+          expect(notifier.value.hasError, isTrue);
+          expect(
+            notifier.value.loadState,
+            equals(LoadState.error),
+          );
+
+          controller.dispose();
+          await stuckPool.dispose();
+        },
+      );
+
+      test(
+        'cancels when position advances past threshold',
+        () async {
+          final videos = createTestVideos(count: 3);
+
+          final setupByUrl = <String, MockPlayerSetup>{};
+          final advancingPool = TestablePlayerPool(
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup();
+              setupByUrl[url] = setup;
+              return createMockPooledPlayerFromSetup(setup);
+            },
+          );
+
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: advancingPool,
+            preloadBehind: 0,
+            preloadAhead: 1,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Make video 1 (preloaded) buffer-ready.
+          final setup = setupByUrl[videos[1].url]!;
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Swipe to video 1 to trigger _playVideo and watchdog.
+          controller.onPageChanged(1);
+
+          final notifier = controller.getIndexNotifier(1);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          expect(notifier.value.isReady, isTrue);
+
+          // After 2 seconds, position advances past 100ms —
+          // the watchdog should cancel without marking error.
+          await Future<void>.delayed(const Duration(seconds: 2));
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 200));
+
+          // Wait for remaining ticks that would otherwise trigger error.
+          await Future<void>.delayed(const Duration(seconds: 4));
+
+          // Should still be ready, not error.
+          expect(notifier.value.hasError, isFalse);
+          expect(notifier.value.isReady, isTrue);
+
+          controller.dispose();
+          await advancingPool.dispose();
+        },
+      );
+    });
+
     group('stale position recovery', () {
       test('recovers when position is frozen after play', () async {
         final controller = VideoFeedController(
