@@ -310,16 +310,12 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(widget.pubkey));
-
-    // Watch profile reactively to get display name for AppBar
-    // Use hint as fallback for users without Kind 0 profiles (e.g., classic Viners)
-    final profileAsync = ref.watch(userProfileReactiveProvider(widget.pubkey));
-    final profile = profileAsync.value;
-    // Get profile color for Vine-style colored header
-    final profileColor = profile?.profileBackgroundColor;
+    final statsAsync = ref.watch(
+      userProfileStatsReactiveProvider(widget.pubkey),
+    );
 
     // Track analytics when data is loaded
-    if (videosAsync is AsyncData && profileAsync is AsyncData) {
+    if (videosAsync is AsyncData) {
       ScreenAnalyticsService().markDataLoaded(
         'other_profile',
         dataMetrics: {
@@ -338,15 +334,19 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
     return BlocBuilder<OtherProfileBloc, OtherProfileState>(
       builder: (context, state) {
-        final profile = switch (state) {
+        final headerProfile = switch (state) {
           OtherProfileInitial() => null,
           OtherProfileLoading(:final profile) => profile,
           OtherProfileLoaded(:final profile) => profile,
           OtherProfileError(:final profile) => profile,
         };
+        final profileColor = headerProfile?.profileBackgroundColor;
+        final headerStats = statsAsync.value;
 
         final displayName =
-            profile?.bestDisplayName ?? widget.displayNameHint ?? 'Profile';
+            headerProfile?.bestDisplayName ??
+            widget.displayNameHint ??
+            'Profile';
 
         return Scaffold(
           backgroundColor: VineTheme.backgroundColor,
@@ -382,6 +382,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             AsyncData(:final value) => ProfileGridView(
               userIdHex: widget.pubkey,
               isOwnProfile: false,
+              profile: headerProfile,
+              profileStats: headerStats,
               displayName: displayName,
               videos: value.videos,
               scrollController: _scrollController,

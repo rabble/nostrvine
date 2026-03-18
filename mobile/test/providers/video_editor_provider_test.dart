@@ -308,6 +308,81 @@ void main() {
         );
       });
     });
+
+    group('setProcessing', () {
+      test('sets isProcessing to true', () {
+        container.read(videoEditorProvider.notifier).setProcessing(true);
+
+        expect(
+          container.read(videoEditorProvider).isProcessing,
+          isTrue,
+        );
+      });
+
+      test('sets isProcessing to false', () {
+        container.read(videoEditorProvider.notifier).setProcessing(true);
+        container.read(videoEditorProvider.notifier).setProcessing(false);
+
+        expect(
+          container.read(videoEditorProvider).isProcessing,
+          isFalse,
+        );
+      });
+
+      test('is no-op when value unchanged', () {
+        final stateBefore = container.read(videoEditorProvider);
+
+        container.read(videoEditorProvider.notifier).setProcessing(false);
+
+        expect(
+          identical(container.read(videoEditorProvider), stateBefore),
+          isTrue,
+        );
+      });
+    });
+
+    group('startRenderVideo', () {
+      test(
+        'resets isProcessing to false when finalRenderedClip '
+        'already exists',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          // Simulate the UI calling setProcessing(true) before render
+          notifier.setProcessing(true);
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isTrue,
+            reason: 'isProcessing should be true before startRenderVideo',
+          );
+
+          // Set finalRenderedClip on the notifier state to simulate
+          // a previously completed render
+          notifier.state = notifier.state.copyWith(
+            finalRenderedClip: DivineVideoClip(
+              id: 'already-rendered',
+              video: EditorVideo.file('/docs/rendered.mp4'),
+              duration: const Duration(seconds: 5),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          );
+
+          // Call startRenderVideo — should early-return and reset
+          // isProcessing to false
+          await notifier.startRenderVideo();
+
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isFalse,
+            reason:
+                'isProcessing should be false after early return '
+                'when finalRenderedClip already exists',
+          );
+        },
+      );
+    });
   });
 
   group('getActiveDraft', () {

@@ -176,26 +176,18 @@ class ClipSelectionHeader extends StatelessWidget {
                         // TODO(l10n): Replace with context.l10n when
                         // localization is added.
                         'Clips',
-                        style: VineTheme.titleFont(
+                        style: VineTheme.titleMediumFont(
                           color: VineTheme.onSurface,
-                          fontSize: 18,
-                          height: 1.33,
-                          letterSpacing: 0.15,
                         ),
                       ),
                       Text(
                         '${remainingDuration.toFormattedSeconds()}s remaining',
-                        style:
-                            VineTheme.bodyFont(
-                              color: VineTheme.onSurfaceVariant,
-                              fontSize: 12,
-                              height: 1.33,
-                              letterSpacing: 0.40,
-                            ).copyWith(
-                              fontFeatures: [
-                                const FontFeature.tabularFigures(),
-                              ],
-                            ),
+                        style: VineTheme.bodySmallFont(
+                          color: VineTheme.onSurfaceVariant,
+                          fontFeatures: [
+                            const FontFeature.tabularFigures(),
+                          ],
+                        ),
                       ),
                     ],
                   ),

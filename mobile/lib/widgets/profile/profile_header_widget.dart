@@ -31,6 +31,8 @@ class ProfileHeaderWidget extends ConsumerWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     required this.videoCount,
+    this.profile,
+    this.profileStats,
     this.onSetupProfile,
     this.displayNameHint,
     this.avatarUrlHint,
@@ -46,6 +48,13 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// The number of videos loaded in the profile grid.
   final int videoCount;
 
+  /// Optional profile owned by the parent widget.
+  /// When provided, avoids a second profile fetch path.
+  final UserProfile? profile;
+
+  /// Optional cached stats owned by the parent widget.
+  final ProfileStats? profileStats;
+
   /// Callback when "Set Up" button is tapped on the setup banner.
   /// Only shown for own profile with default name.
   final VoidCallback? onSetupProfile;
@@ -58,30 +67,32 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final UserProfile? profile;
+    final UserProfile? effectiveProfile;
     if (isOwnProfile) {
       final state = context.watch<MyProfileBloc>().state;
-      profile = switch (state) {
+      effectiveProfile = switch (state) {
         MyProfileUpdated(:final profile) => profile,
         _ => null,
       };
+    } else if (profile != null) {
+      effectiveProfile = profile;
     } else {
-      profile = ref.watch(fetchUserProfileProvider(userIdHex)).value;
+      effectiveProfile = ref.watch(fetchUserProfileProvider(userIdHex)).value;
     }
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
-    final profilePictureUrl = (profile?.picture?.isNotEmpty == true)
-        ? profile!.picture
+    final profilePictureUrl = (effectiveProfile?.picture?.isNotEmpty == true)
+        ? effectiveProfile!.picture
         : avatarUrlHint;
-    final displayName = profile?.bestDisplayName ?? displayNameHint;
+    final displayName = effectiveProfile?.bestDisplayName ?? displayNameHint;
     final hasCustomName =
-        profile?.name?.isNotEmpty == true ||
-        profile?.displayName?.isNotEmpty == true ||
+        effectiveProfile?.name?.isNotEmpty == true ||
+        effectiveProfile?.displayName?.isNotEmpty == true ||
         displayNameHint?.isNotEmpty == true;
-    final nip05 = profile?.displayNip05;
-    final about = profile?.about;
-    final profileColor = profile?.profileBackgroundColor;
+    final nip05 = effectiveProfile?.displayNip05;
+    final about = effectiveProfile?.about;
+    final profileColor = effectiveProfile?.profileBackgroundColor;
     final authService = ref.watch(authServiceProvider);
 
     // Watch auth state to rebuild when auth state changes
@@ -121,7 +132,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 // Setup profile banner for new users with default names
                 // (only on own profile)
                 if (isOwnProfile &&
-                    profile != null &&
+                    effectiveProfile != null &&
                     !hasCustomName &&
                     onSetupProfile != null)
                   _SetupProfileBanner(onSetup: onSetupProfile!),
@@ -153,7 +164,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                         children: [
                           Flexible(
                             child: ProfileStatColumn(
-                              count: videoCount,
+                              count: profileStats?.videoCount ?? videoCount,
                               label: 'Videos',
                               isLoading: false,
                             ),
@@ -188,7 +199,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
             child: _ProfileNameAndBio(
-              profile: profile,
+              profile: effectiveProfile,
               userIdHex: userIdHex,
               nip05: nip05,
               about: about,

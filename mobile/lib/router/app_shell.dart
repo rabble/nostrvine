@@ -205,7 +205,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           ? GoogleFonts.pacifico(
               textStyle: const TextStyle(fontSize: 24, letterSpacing: 0.2),
             )
-          : VineTheme.titleFont(),
+          : VineTheme.titleLargeFont(),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );

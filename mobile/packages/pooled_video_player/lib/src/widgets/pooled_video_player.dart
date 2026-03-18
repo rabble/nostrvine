@@ -37,6 +37,7 @@ class PooledVideoPlayer extends StatelessWidget {
     required this.index,
     required this.videoBuilder,
     this.controller,
+    this.isActive = true,
     this.thumbnailUrl,
     this.loadingBuilder,
     this.errorBuilder,
@@ -48,6 +49,13 @@ class PooledVideoPlayer extends StatelessWidget {
 
   /// Optional explicit controller. Falls back to [VideoPoolProvider].
   final VideoFeedController? controller;
+
+  /// Whether this item is the currently active (visible) page.
+  ///
+  /// When `false` the native [Texture] is kept in the widget tree so that
+  /// preloading continues, but it is hidden via [Opacity] to prevent
+  /// media_kit texture bleeding during PageView scroll transitions.
+  final bool isActive;
 
   /// The index of this video in the feed.
   final int index;
@@ -115,10 +123,13 @@ class PooledVideoPlayer extends StatelessWidget {
               _DefaultLoadingState(thumbnailUrl: thumbnailUrl);
           final children = <Widget>[
             loadingPlaceholder,
-            _RevealVideoAfterFirstFrame(
-              videoController: videoController,
-              readyForFallback: loadState == LoadState.ready,
-              child: videoBuilder(context, videoController, player),
+            Opacity(
+              opacity: isActive ? 1 : 0,
+              child: _RevealVideoAfterFirstFrame(
+                videoController: videoController,
+                readyForFallback: loadState == LoadState.ready,
+                child: videoBuilder(context, videoController, player),
+              ),
             ),
             ?overlay,
           ];

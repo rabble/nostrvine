@@ -1,0 +1,35 @@
+{
+  "version": "2026-03-17-classic-v1",
+  "profiles": [
+    {
+      "pubkey": "1111111111111111111111111111111111111111111111111111111111111111",
+      "displayName": "Jerome Jarre",
+      "name": "jeromejarre",
+      "about": "Classic Viner archive profile",
+      "pictureUrl": "https://cdn.divine.video/classic-viners/jerome-jarre.png",
+      "eventId": "classic-viner-seed-jerome-jarre",
+      "createdAt": "2026-03-17T00:00:00.000Z",
+      "archivedStats": {
+        "videoCount": 312,
+        "totalViews": 128000000,
+        "totalLikes": 6400000
+      },
+      "avatarAsset": "assets/seed_media/classic_viner_avatars/jerome-jarre.png"
+    },
+    {
+      "pubkey": "2222222222222222222222222222222222222222222222222222222222222222",
+      "displayName": "Brittany Furlan",
+      "name": "brittanyfurlan",
+      "about": "Classic Viner archive profile",
+      "pictureUrl": "https://cdn.divine.video/classic-viners/brittany-furlan.png",
+      "eventId": "classic-viner-seed-brittany-furlan",
+      "createdAt": "2026-03-17T00:00:00.000Z",
+      "archivedStats": {
+        "videoCount": 247,
+        "totalViews": 99000000,
+        "totalLikes": 5400000
+      },
+      "avatarAsset": "assets/seed_media/classic_viner_avatars/brittany-furlan.png"
+    }
+  ]
+}

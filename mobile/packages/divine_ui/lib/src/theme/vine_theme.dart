@@ -102,18 +102,15 @@ class VineTheme {
         color: color,
       );
 
-  /// Title medium: Bricolage Grotesque 800 18/24/0.15
-  static TextStyle titleMediumFont({
-    Color color = whiteText,
-    double fontSize = 18,
-    double height = 24 / 18,
-  }) => GoogleFonts.bricolageGrotesque(
-    fontSize: fontSize,
-    fontWeight: FontWeight.w800,
-    height: height,
-    letterSpacing: 0.15,
-    color: color,
-  );
+  /// Title medium: Bricolage Grotesque 800 16/24/0.15
+  static TextStyle titleMediumFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        height: 24 / 16,
+        letterSpacing: 0.15,
+        color: color,
+      );
 
   /// Title small: Bricolage Grotesque 800 14/20/0.1
   static TextStyle titleSmallFont({Color color = whiteText}) =>
@@ -134,20 +131,6 @@ class VineTheme {
         letterSpacing: 0.1,
         color: color,
       );
-
-  /// @Deprecated Use [titleLargeFont] instead.
-  static TextStyle titleFont({
-    double fontSize = 22,
-    double? height,
-    Color color = whiteText,
-    double? letterSpacing,
-  }) => GoogleFonts.bricolageGrotesque(
-    fontSize: fontSize,
-    fontWeight: FontWeight.w800,
-    height: height ?? 28 / 22,
-    color: color,
-    letterSpacing: letterSpacing,
-  );
 
   // --------------------------------------------------------------------------
   // Body styles (Inter, weight 400)
@@ -174,28 +157,16 @@ class VineTheme {
       );
 
   /// Body small: Inter 400 12/16/0.4
-  static TextStyle bodySmallFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        height: 16 / 12,
-        letterSpacing: 0.4,
-        color: color,
-      );
-
-  /// @Deprecated Use [bodyLargeFont], [bodyMediumFont], or [bodySmallFont].
-  static TextStyle bodyFont({
-    double fontSize = 16,
-    FontWeight fontWeight = FontWeight.w400,
-    Color color = primaryText,
-    double? height,
-    double? letterSpacing,
+  static TextStyle bodySmallFont({
+    Color color = whiteText,
+    List<FontFeature>? fontFeatures,
   }) => GoogleFonts.inter(
-    fontSize: fontSize,
-    fontWeight: fontWeight,
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 16 / 12,
+    letterSpacing: 0.4,
     color: color,
-    height: height,
-    letterSpacing: letterSpacing,
+    fontFeatures: fontFeatures,
   );
 
   // --------------------------------------------------------------------------

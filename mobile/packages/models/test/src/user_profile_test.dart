@@ -174,6 +174,85 @@ void main() {
       });
     });
 
+    group('fromFunnelcake', () {
+      test('parses complete Funnelcake response', () {
+        final data = <String, dynamic>{
+          'name': 'testname',
+          'display_name': 'Test User',
+          'about': 'Test bio',
+          'picture': 'https://example.com/avatar.png',
+          'banner': 'https://example.com/banner.png',
+          'website': 'https://example.com',
+          'nip05': 'test@example.com',
+          'lud16': 'test@wallet.com',
+        };
+
+        final profile = UserProfile.fromFunnelcake(testPubkey, data);
+
+        expect(profile.pubkey, equals(testPubkey));
+        expect(profile.name, equals('testname'));
+        expect(profile.displayName, equals('Test User'));
+        expect(profile.about, equals('Test bio'));
+        expect(profile.picture, equals('https://example.com/avatar.png'));
+        expect(profile.banner, equals('https://example.com/banner.png'));
+        expect(profile.website, equals('https://example.com'));
+        expect(profile.nip05, equals('test@example.com'));
+        expect(profile.lud16, equals('test@wallet.com'));
+        expect(profile.rawData, equals(data));
+        expect(profile.eventId, equals('rest-$testPubkey'));
+        expect(profile.createdAt, isA<DateTime>());
+      });
+
+      test('handles partial data with null fields', () {
+        final data = <String, dynamic>{
+          'name': 'testname',
+        };
+
+        final profile = UserProfile.fromFunnelcake(testPubkey, data);
+
+        expect(profile.pubkey, equals(testPubkey));
+        expect(profile.name, equals('testname'));
+        expect(profile.displayName, isNull);
+        expect(profile.about, isNull);
+        expect(profile.picture, isNull);
+        expect(profile.banner, isNull);
+        expect(profile.website, isNull);
+        expect(profile.nip05, isNull);
+        expect(profile.lud16, isNull);
+      });
+
+      test('uses default eventIdPrefix when not provided', () {
+        final profile = UserProfile.fromFunnelcake(
+          testPubkey,
+          const <String, dynamic>{},
+        );
+
+        expect(profile.eventId, equals('rest-$testPubkey'));
+      });
+
+      test('uses custom eventIdPrefix', () {
+        final profile = UserProfile.fromFunnelcake(
+          testPubkey,
+          const <String, dynamic>{},
+          eventIdPrefix: 'rest-bulk',
+        );
+
+        expect(profile.eventId, equals('rest-bulk-$testPubkey'));
+      });
+
+      test('preserves rawData from response', () {
+        final data = <String, dynamic>{
+          'name': 'test',
+          'follower_count': 42,
+          'video_count': 10,
+        };
+
+        final profile = UserProfile.fromFunnelcake(testPubkey, data);
+
+        expect(profile.rawData, equals(data));
+      });
+    });
+
     group('fromJson', () {
       test('parses JSON correctly', () {
         final json = {

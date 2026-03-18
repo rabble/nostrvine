@@ -8304,6 +8304,17 @@ class $DirectMessagesTable extends DirectMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8325,6 +8336,7 @@ class $DirectMessagesTable extends DirectMessages
     dimensions,
     blurhash,
     thumbnailUrl,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8488,6 +8500,15 @@ class $DirectMessagesTable extends DirectMessages
         ),
       );
     }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -8573,6 +8594,10 @@ class $DirectMessagesTable extends DirectMessages
         DriftSqlType.string,
         data['${effectivePrefix}thumbnail_url'],
       ),
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
     );
   }
 
@@ -8642,6 +8667,10 @@ class DirectMessageRow extends DataClass
 
   /// URL of an encrypted thumbnail (same key/nonce).
   final String? thumbnailUrl;
+
+  /// Hex public key of the account that received/sent this message.
+  /// NULL for legacy messages created before multi-account support.
+  final String? ownerPubkey;
   const DirectMessageRow({
     required this.id,
     required this.conversationId,
@@ -8662,6 +8691,7 @@ class DirectMessageRow extends DataClass
     this.dimensions,
     this.blurhash,
     this.thumbnailUrl,
+    this.ownerPubkey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8708,6 +8738,9 @@ class DirectMessageRow extends DataClass
     }
     if (!nullToAbsent || thumbnailUrl != null) {
       map['thumbnail_url'] = Variable<String>(thumbnailUrl);
+    }
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
     }
     return map;
   }
@@ -8757,6 +8790,9 @@ class DirectMessageRow extends DataClass
       thumbnailUrl: thumbnailUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(thumbnailUrl),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
     );
   }
 
@@ -8787,6 +8823,7 @@ class DirectMessageRow extends DataClass
       dimensions: serializer.fromJson<String?>(json['dimensions']),
       blurhash: serializer.fromJson<String?>(json['blurhash']),
       thumbnailUrl: serializer.fromJson<String?>(json['thumbnailUrl']),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
   @override
@@ -8812,6 +8849,7 @@ class DirectMessageRow extends DataClass
       'dimensions': serializer.toJson<String?>(dimensions),
       'blurhash': serializer.toJson<String?>(blurhash),
       'thumbnailUrl': serializer.toJson<String?>(thumbnailUrl),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
 
@@ -8835,6 +8873,7 @@ class DirectMessageRow extends DataClass
     Value<String?> dimensions = const Value.absent(),
     Value<String?> blurhash = const Value.absent(),
     Value<String?> thumbnailUrl = const Value.absent(),
+    Value<String?> ownerPubkey = const Value.absent(),
   }) => DirectMessageRow(
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
@@ -8863,6 +8902,7 @@ class DirectMessageRow extends DataClass
     dimensions: dimensions.present ? dimensions.value : this.dimensions,
     blurhash: blurhash.present ? blurhash.value : this.blurhash,
     thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   DirectMessageRow copyWithCompanion(DirectMessagesCompanion data) {
     return DirectMessageRow(
@@ -8905,6 +8945,9 @@ class DirectMessageRow extends DataClass
       thumbnailUrl: data.thumbnailUrl.present
           ? data.thumbnailUrl.value
           : this.thumbnailUrl,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
     );
   }
 
@@ -8929,7 +8972,8 @@ class DirectMessageRow extends DataClass
           ..write('fileSize: $fileSize, ')
           ..write('dimensions: $dimensions, ')
           ..write('blurhash: $blurhash, ')
-          ..write('thumbnailUrl: $thumbnailUrl')
+          ..write('thumbnailUrl: $thumbnailUrl, ')
+          ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
@@ -8955,6 +8999,7 @@ class DirectMessageRow extends DataClass
     dimensions,
     blurhash,
     thumbnailUrl,
+    ownerPubkey,
   );
   @override
   bool operator ==(Object other) =>
@@ -8978,7 +9023,8 @@ class DirectMessageRow extends DataClass
           other.fileSize == this.fileSize &&
           other.dimensions == this.dimensions &&
           other.blurhash == this.blurhash &&
-          other.thumbnailUrl == this.thumbnailUrl);
+          other.thumbnailUrl == this.thumbnailUrl &&
+          other.ownerPubkey == this.ownerPubkey);
 }
 
 class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
@@ -9001,6 +9047,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
   final Value<String?> dimensions;
   final Value<String?> blurhash;
   final Value<String?> thumbnailUrl;
+  final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const DirectMessagesCompanion({
     this.id = const Value.absent(),
@@ -9022,6 +9069,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.dimensions = const Value.absent(),
     this.blurhash = const Value.absent(),
     this.thumbnailUrl = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DirectMessagesCompanion.insert({
@@ -9044,6 +9092,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.dimensions = const Value.absent(),
     this.blurhash = const Value.absent(),
     this.thumbnailUrl = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        conversationId = Value(conversationId),
@@ -9071,6 +9120,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Expression<String>? dimensions,
     Expression<String>? blurhash,
     Expression<String>? thumbnailUrl,
+    Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9094,6 +9144,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       if (dimensions != null) 'dimensions': dimensions,
       if (blurhash != null) 'blurhash': blurhash,
       if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9118,6 +9169,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Value<String?>? dimensions,
     Value<String?>? blurhash,
     Value<String?>? thumbnailUrl,
+    Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
     return DirectMessagesCompanion(
@@ -9140,6 +9192,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       dimensions: dimensions ?? this.dimensions,
       blurhash: blurhash ?? this.blurhash,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9204,6 +9257,9 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     if (thumbnailUrl.present) {
       map['thumbnail_url'] = Variable<String>(thumbnailUrl.value);
     }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9232,6 +9288,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
           ..write('dimensions: $dimensions, ')
           ..write('blurhash: $blurhash, ')
           ..write('thumbnailUrl: $thumbnailUrl, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9360,6 +9417,17 @@ class $ConversationsTable extends Conversations
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9372,6 +9440,7 @@ class $ConversationsTable extends Conversations
     isRead,
     currentUserHasSent,
     createdAt,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9463,6 +9532,15 @@ class $ConversationsTable extends Conversations
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9512,6 +9590,10 @@ class $ConversationsTable extends Conversations
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
       )!,
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
     );
   }
 
@@ -9552,6 +9634,10 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
 
   /// Unix timestamp when the conversation was first created.
   final int createdAt;
+
+  /// Hex public key of the account that owns this conversation view.
+  /// NULL for legacy conversations created before multi-account support.
+  final String? ownerPubkey;
   const ConversationRow({
     required this.id,
     required this.participantPubkeys,
@@ -9563,6 +9649,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     required this.isRead,
     required this.currentUserHasSent,
     required this.createdAt,
+    this.ownerPubkey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9587,6 +9674,9 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     map['is_read'] = Variable<bool>(isRead);
     map['current_user_has_sent'] = Variable<bool>(currentUserHasSent);
     map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    }
     return map;
   }
 
@@ -9610,6 +9700,9 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       isRead: Value(isRead),
       currentUserHasSent: Value(currentUserHasSent),
       createdAt: Value(createdAt),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
     );
   }
 
@@ -9637,6 +9730,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       isRead: serializer.fromJson<bool>(json['isRead']),
       currentUserHasSent: serializer.fromJson<bool>(json['currentUserHasSent']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
   @override
@@ -9655,6 +9749,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       'isRead': serializer.toJson<bool>(isRead),
       'currentUserHasSent': serializer.toJson<bool>(currentUserHasSent),
       'createdAt': serializer.toJson<int>(createdAt),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
 
@@ -9669,6 +9764,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     bool? isRead,
     bool? currentUserHasSent,
     int? createdAt,
+    Value<String?> ownerPubkey = const Value.absent(),
   }) => ConversationRow(
     id: id ?? this.id,
     participantPubkeys: participantPubkeys ?? this.participantPubkeys,
@@ -9686,6 +9782,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     isRead: isRead ?? this.isRead,
     currentUserHasSent: currentUserHasSent ?? this.currentUserHasSent,
     createdAt: createdAt ?? this.createdAt,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   ConversationRow copyWithCompanion(ConversationsCompanion data) {
     return ConversationRow(
@@ -9709,6 +9806,9 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
           ? data.currentUserHasSent.value
           : this.currentUserHasSent,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
     );
   }
 
@@ -9724,7 +9824,8 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
           ..write('subject: $subject, ')
           ..write('isRead: $isRead, ')
           ..write('currentUserHasSent: $currentUserHasSent, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
@@ -9741,6 +9842,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     isRead,
     currentUserHasSent,
     createdAt,
+    ownerPubkey,
   );
   @override
   bool operator ==(Object other) =>
@@ -9755,7 +9857,8 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
           other.subject == this.subject &&
           other.isRead == this.isRead &&
           other.currentUserHasSent == this.currentUserHasSent &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.ownerPubkey == this.ownerPubkey);
 }
 
 class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
@@ -9769,6 +9872,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
   final Value<bool> isRead;
   final Value<bool> currentUserHasSent;
   final Value<int> createdAt;
+  final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const ConversationsCompanion({
     this.id = const Value.absent(),
@@ -9781,6 +9885,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     this.isRead = const Value.absent(),
     this.currentUserHasSent = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ConversationsCompanion.insert({
@@ -9794,6 +9899,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     this.isRead = const Value.absent(),
     this.currentUserHasSent = const Value.absent(),
     required int createdAt,
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        participantPubkeys = Value(participantPubkeys),
@@ -9809,6 +9915,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     Expression<bool>? isRead,
     Expression<bool>? currentUserHasSent,
     Expression<int>? createdAt,
+    Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9826,6 +9933,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
       if (currentUserHasSent != null)
         'current_user_has_sent': currentUserHasSent,
       if (createdAt != null) 'created_at': createdAt,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9841,6 +9949,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     Value<bool>? isRead,
     Value<bool>? currentUserHasSent,
     Value<int>? createdAt,
+    Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
     return ConversationsCompanion(
@@ -9855,6 +9964,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
       isRead: isRead ?? this.isRead,
       currentUserHasSent: currentUserHasSent ?? this.currentUserHasSent,
       createdAt: createdAt ?? this.createdAt,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9894,6 +10004,9 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9913,6 +10026,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
           ..write('isRead: $isRead, ')
           ..write('currentUserHasSent: $currentUserHasSent, ')
           ..write('createdAt: $createdAt, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13918,6 +14032,7 @@ typedef $$DirectMessagesTableCreateCompanionBuilder =
       Value<String?> dimensions,
       Value<String?> blurhash,
       Value<String?> thumbnailUrl,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 typedef $$DirectMessagesTableUpdateCompanionBuilder =
@@ -13941,6 +14056,7 @@ typedef $$DirectMessagesTableUpdateCompanionBuilder =
       Value<String?> dimensions,
       Value<String?> blurhash,
       Value<String?> thumbnailUrl,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 
@@ -14045,6 +14161,11 @@ class $$DirectMessagesTableFilterComposer
 
   ColumnFilters<String> get thumbnailUrl => $composableBuilder(
     column: $table.thumbnailUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14152,6 +14273,11 @@ class $$DirectMessagesTableOrderingComposer
     column: $table.thumbnailUrl,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DirectMessagesTableAnnotationComposer
@@ -14239,6 +14365,11 @@ class $$DirectMessagesTableAnnotationComposer
     column: $table.thumbnailUrl,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
 }
 
 class $$DirectMessagesTableTableManager
@@ -14297,6 +14428,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> dimensions = const Value.absent(),
                 Value<String?> blurhash = const Value.absent(),
                 Value<String?> thumbnailUrl = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DirectMessagesCompanion(
                 id: id,
@@ -14318,6 +14450,7 @@ class $$DirectMessagesTableTableManager
                 dimensions: dimensions,
                 blurhash: blurhash,
                 thumbnailUrl: thumbnailUrl,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14341,6 +14474,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> dimensions = const Value.absent(),
                 Value<String?> blurhash = const Value.absent(),
                 Value<String?> thumbnailUrl = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DirectMessagesCompanion.insert(
                 id: id,
@@ -14362,6 +14496,7 @@ class $$DirectMessagesTableTableManager
                 dimensions: dimensions,
                 blurhash: blurhash,
                 thumbnailUrl: thumbnailUrl,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -14401,6 +14536,7 @@ typedef $$ConversationsTableCreateCompanionBuilder =
       Value<bool> isRead,
       Value<bool> currentUserHasSent,
       required int createdAt,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 typedef $$ConversationsTableUpdateCompanionBuilder =
@@ -14415,6 +14551,7 @@ typedef $$ConversationsTableUpdateCompanionBuilder =
       Value<bool> isRead,
       Value<bool> currentUserHasSent,
       Value<int> createdAt,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 
@@ -14474,6 +14611,11 @@ class $$ConversationsTableFilterComposer
 
   ColumnFilters<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14536,6 +14678,11 @@ class $$ConversationsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ConversationsTableAnnotationComposer
@@ -14586,6 +14733,11 @@ class $$ConversationsTableAnnotationComposer
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
 }
 
 class $$ConversationsTableTableManager
@@ -14629,6 +14781,7 @@ class $$ConversationsTableTableManager
                 Value<bool> isRead = const Value.absent(),
                 Value<bool> currentUserHasSent = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConversationsCompanion(
                 id: id,
@@ -14641,6 +14794,7 @@ class $$ConversationsTableTableManager
                 isRead: isRead,
                 currentUserHasSent: currentUserHasSent,
                 createdAt: createdAt,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14655,6 +14809,7 @@ class $$ConversationsTableTableManager
                 Value<bool> isRead = const Value.absent(),
                 Value<bool> currentUserHasSent = const Value.absent(),
                 required int createdAt,
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConversationsCompanion.insert(
                 id: id,
@@ -14667,6 +14822,7 @@ class $$ConversationsTableTableManager
                 isRead: isRead,
                 currentUserHasSent: currentUserHasSent,
                 createdAt: createdAt,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

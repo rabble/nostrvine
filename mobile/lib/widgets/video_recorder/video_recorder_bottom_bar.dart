@@ -74,7 +74,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
               title: Text(
                 // TODO(l10n): Replace with context.l10n when localization is added.
                 'Show last clip overlay',
-                style: VineTheme.titleMediumFont(fontSize: 16),
+                style: VineTheme.titleMediumFont(),
                 maxLines: 1,
                 overflow: .ellipsis,
               ),
@@ -91,7 +91,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
             clipManager.clipCount > 1
                 ? 'Save clips to Library'
                 : 'Save clip to Library',
-            style: VineTheme.titleMediumFont(fontSize: 16, color: color),
+            style: VineTheme.titleMediumFont(color: color),
             maxLines: 1,
             overflow: .ellipsis,
           ),
@@ -118,10 +118,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
           title: Text(
             // TODO(l10n): Replace with context.l10n when localization is added.
             'Clear all clips',
-            style: VineTheme.titleMediumFont(
-              fontSize: 16,
-              color: destructiveColor,
-            ),
+            style: VineTheme.titleMediumFont(color: destructiveColor),
             maxLines: 1,
             overflow: .ellipsis,
           ),

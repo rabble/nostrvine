@@ -20,7 +20,7 @@ void main() {
 
     setUp(() async {
       // Create real temporary directory for testing
-      tempDir = await Directory.systemTemp.createTemp('seed_media_test_');
+      tempDir = Directory.systemTemp.createTempSync('seed_media_test_');
 
       // Setup mock path provider
       mockPathProvider = MockPathProviderPlatform();

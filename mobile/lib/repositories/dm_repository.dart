@@ -91,21 +91,54 @@ class DmRepository {
   /// Called by the provider when the user's keys become available.
   /// Read methods work before this; send/subscribe require it.
   ///
-  /// Safe to call multiple times — subsequent calls are no-ops when the
-  /// repository is already initialized.
+  /// Safe to call multiple times — subsequent calls for the same user are
+  /// no-ops. If called with a different user, resets and re-initializes.
   void initialize({
     required String userPubkey,
     required NostrSigner signer,
     required NIP17MessageService messageService,
     RumorDecryptor? rumorDecryptor,
   }) {
-    if (isInitialized) return;
+    if (isInitialized && _userPubkey == userPubkey) return;
+
+    // If switching users, stop the old subscription first.
+    if (isInitialized && _userPubkey != userPubkey) {
+      Log.info(
+        'DmRepository: switching user from $_userPubkey to $userPubkey',
+        category: LogCategory.system,
+      );
+      _resetState();
+    }
 
     _userPubkey = userPubkey;
     _signer = signer;
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     startListening();
+  }
+
+  /// Reset internal state so the repository can be re-initialized for a
+  /// different user. Stops the relay subscription and clears credentials.
+  ///
+  /// Synchronous so [initialize] can call it inline. Subscription cancel
+  /// is fire-and-forget — the old subscription filtered by the old pubkey
+  /// so any late arrivals are harmless (dedup rejects them).
+  void _resetState() {
+    _disposed = true;
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    unawaited(_giftWrapSubscription?.cancel());
+    _giftWrapSubscription = null;
+    try {
+      unawaited(_nostrClient.unsubscribe('dm_inbox'));
+    } on Object {
+      // Ignore if subscription doesn't exist
+    }
+    _userPubkey = '';
+    _signer = null;
+    _messageService = null;
+    _disposed = false;
+    _pollInProgress = false;
   }
 
   /// Delay before attempting to re-subscribe after stream closure.
@@ -319,6 +352,7 @@ class DmRepository {
         dimensions: fileMetadata?.dimensions,
         blurhash: fileMetadata?.blurhash,
         thumbnailUrl: fileMetadata?.thumbnailUrl,
+        ownerPubkey: _userPubkey,
       );
 
       // Update or create the conversation
@@ -348,6 +382,7 @@ class DmRepository {
         isRead: isSentByMe,
         currentUserHasSent:
             isSentByMe || (existing?.currentUserHasSent ?? false),
+        ownerPubkey: _userPubkey,
       );
 
       Log.debug(
@@ -411,6 +446,7 @@ class DmRepository {
           createdAt: now,
           giftWrapId: result.messageEventId!,
           replyToId: replyToId,
+          ownerPubkey: _userPubkey,
         );
 
         final existingSend = await _conversationsDao.getConversation(
@@ -425,6 +461,7 @@ class DmRepository {
           lastMessageTimestamp: now,
           lastMessageSenderPubkey: _userPubkey,
           currentUserHasSent: true,
+          ownerPubkey: _userPubkey,
         );
 
         Log.debug(
@@ -506,6 +543,7 @@ class DmRepository {
         createdAt: now,
         giftWrapId: firstSuccess.messageEventId!,
         replyToId: replyToId,
+        ownerPubkey: _userPubkey,
       );
 
       final existingGroup = await _conversationsDao.getConversation(
@@ -520,6 +558,7 @@ class DmRepository {
         lastMessageTimestamp: now,
         lastMessageSenderPubkey: _userPubkey,
         currentUserHasSent: true,
+        ownerPubkey: _userPubkey,
       );
     }
 
@@ -599,6 +638,7 @@ class DmRepository {
         dimensions: fileMetadata.dimensions,
         blurhash: fileMetadata.blurhash,
         thumbnailUrl: fileMetadata.thumbnailUrl,
+        ownerPubkey: _userPubkey,
       );
 
       final existingFile = await _conversationsDao.getConversation(
@@ -613,6 +653,7 @@ class DmRepository {
         lastMessageTimestamp: now,
         lastMessageSenderPubkey: _userPubkey,
         currentUserHasSent: true,
+        ownerPubkey: _userPubkey,
       );
     }
 
@@ -628,8 +669,9 @@ class DmRepository {
   /// When [limit] is provided, only the top [limit] conversations are
   /// watched. Omit for all conversations.
   Stream<List<DmConversation>> watchConversations({int? limit}) {
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
     return _conversationsDao
-        .watchAllConversations(limit: limit)
+        .watchAllConversations(limit: limit, ownerPubkey: pubkey)
         .map(
           (rows) => rows.map(_conversationFromRow).toList(),
         );
@@ -645,7 +687,10 @@ class DmRepository {
 
   /// Get all conversations.
   Future<List<DmConversation>> getConversations() async {
-    final rows = await _conversationsDao.getAllConversations();
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
+    final rows = await _conversationsDao.getAllConversations(
+      ownerPubkey: pubkey,
+    );
     return rows.map(_conversationFromRow).toList();
   }
 
@@ -654,8 +699,9 @@ class DmRepository {
   /// Supports pagination via [limit]. These conversations are never
   /// message requests.
   Stream<List<DmConversation>> watchAcceptedConversations({int? limit}) {
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
     return _conversationsDao
-        .watchAcceptedConversations(limit: limit)
+        .watchAcceptedConversations(limit: limit, ownerPubkey: pubkey)
         .map((rows) => rows.map(_conversationFromRow).toList());
   }
 
@@ -665,9 +711,12 @@ class DmRepository {
   /// follow state) is applied by [classifyPotentialRequests]. Returned
   /// without pagination since the list is typically small and needed in full.
   Stream<List<DmConversation>> watchPotentialRequests() {
-    return _conversationsDao.watchPotentialRequestConversations().map(
-      (rows) => rows.map(_conversationFromRow).toList(),
-    );
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
+    return _conversationsDao
+        .watchPotentialRequestConversations(ownerPubkey: pubkey)
+        .map(
+          (rows) => rows.map(_conversationFromRow).toList(),
+        );
   }
 
   /// Classifies potential request conversations by follow state.
@@ -721,11 +770,16 @@ class DmRepository {
   }
 
   /// Watch unread conversation count (all conversations).
-  Stream<int> watchUnreadCount() => _conversationsDao.watchUnreadCount();
+  Stream<int> watchUnreadCount() {
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
+    return _conversationsDao.watchUnreadCount(ownerPubkey: pubkey);
+  }
 
   /// Watch unread count for accepted conversations only (excludes requests).
-  Stream<int> watchUnreadAcceptedCount() =>
-      _conversationsDao.watchUnreadAcceptedCount();
+  Stream<int> watchUnreadAcceptedCount() {
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
+    return _conversationsDao.watchUnreadAcceptedCount(ownerPubkey: pubkey);
+  }
 
   /// Mark a conversation as read.
   Future<void> markConversationAsRead(String conversationId) {
@@ -773,7 +827,11 @@ class DmRepository {
 
   /// Count the total number of messages in a conversation.
   Future<int> countMessagesInConversation(String conversationId) {
-    return _directMessagesDao.countMessages(conversationId);
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
+    return _directMessagesDao.countMessages(
+      conversationId,
+      ownerPubkey: pubkey,
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -782,8 +840,12 @@ class DmRepository {
 
   /// Watch messages in a conversation (reactive stream).
   Stream<List<DmMessage>> watchMessages(String conversationId) {
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
     return _directMessagesDao
-        .watchMessagesForConversation(conversationId)
+        .watchMessagesForConversation(
+          conversationId,
+          ownerPubkey: pubkey,
+        )
         .map((rows) => rows.map(_messageFromRow).toList());
   }
 
@@ -792,9 +854,11 @@ class DmRepository {
     String conversationId, {
     int? limit,
   }) async {
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
     final rows = await _directMessagesDao.getMessagesForConversation(
       conversationId,
       limit: limit,
+      ownerPubkey: pubkey,
     );
     return rows.map(_messageFromRow).toList();
   }

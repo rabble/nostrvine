@@ -604,7 +604,7 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                 children: [
                   Text(
                     'Account Content Labels',
-                    style: VineTheme.titleFont(fontSize: 18),
+                    style: VineTheme.titleMediumFont(),
                   ),
                   if (_selected.isNotEmpty)
                     TextButton(

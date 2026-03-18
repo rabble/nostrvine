@@ -1,6 +1,7 @@
 // ABOUTME: Data Access Object for conversation metadata persistence.
 // ABOUTME: Provides CRUD, reactive watch streams, and unread counts
 // ABOUTME: for the messages tab conversation list.
+// ABOUTME: All queries are scoped by ownerPubkey for multi-account isolation.
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
@@ -11,6 +12,16 @@ part 'conversations_dao.g.dart';
 class ConversationsDao extends DatabaseAccessor<AppDatabase>
     with _$ConversationsDaoMixin {
   ConversationsDao(super.attachedDatabase);
+
+  /// Build a filter expression that returns rows owned by [ownerPubkey]
+  /// **or** legacy rows with no owner (NULL).
+  Expression<bool> _ownedOrLegacy(
+    GeneratedColumn<String> column,
+    String? ownerPubkey,
+  ) {
+    if (ownerPubkey == null) return const Constant(true);
+    return column.equals(ownerPubkey) | column.isNull();
+  }
 
   /// Upsert a conversation (create or update last-message metadata).
   ///
@@ -28,6 +39,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     String? subject,
     bool isRead = true,
     bool currentUserHasSent = false,
+    String? ownerPubkey,
   }) {
     return into(conversations).insertOnConflictUpdate(
       ConversationsCompanion.insert(
@@ -41,6 +53,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
         subject: Value(subject),
         isRead: Value(isRead),
         currentUserHasSent: Value(currentUserHasSent),
+        ownerPubkey: Value(ownerPubkey),
       ),
     );
   }
@@ -49,8 +62,10 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   Future<List<ConversationRow>> getAllConversations({
     int? limit,
     int? offset,
+    String? ownerPubkey,
   }) {
     final query = select(conversations)
+      ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastMessageTimestamp,
@@ -65,8 +80,10 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   Stream<List<ConversationRow>> watchAllConversations({
     int? limit,
     int? offset,
+    String? ownerPubkey,
   }) {
     final query = select(conversations)
+      ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastMessageTimestamp,
@@ -84,9 +101,14 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   Stream<List<ConversationRow>> watchAcceptedConversations({
     int? limit,
     int? offset,
+    String? ownerPubkey,
   }) {
     final query = select(conversations)
-      ..where((t) => t.currentUserHasSent.equals(true))
+      ..where(
+        (t) =>
+            t.currentUserHasSent.equals(true) &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+      )
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastMessageTimestamp,
@@ -103,9 +125,15 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   /// on follow state, which is applied in the BLoC layer). Returned
   /// without pagination since the count is typically small and needed
   /// in full for accurate badge counts.
-  Stream<List<ConversationRow>> watchPotentialRequestConversations() {
+  Stream<List<ConversationRow>> watchPotentialRequestConversations({
+    String? ownerPubkey,
+  }) {
     final query = select(conversations)
-      ..where((t) => t.currentUserHasSent.equals(false))
+      ..where(
+        (t) =>
+            t.currentUserHasSent.equals(false) &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+      )
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastMessageTimestamp,
@@ -116,9 +144,12 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Watch count of potential request conversations.
-  Stream<int> watchPotentialRequestCount() {
+  Stream<int> watchPotentialRequestCount({String? ownerPubkey}) {
     final query = selectOnly(conversations)
-      ..where(conversations.currentUserHasSent.equals(false))
+      ..where(
+        conversations.currentUserHasSent.equals(false) &
+            _ownedOrLegacy(conversations.ownerPubkey, ownerPubkey),
+      )
       ..addColumns([conversations.id.count()]);
     return query.watchSingle().map(
       (row) => row.read(conversations.id.count()) ?? 0,
@@ -153,18 +184,24 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get unread conversation count.
-  Future<int> getUnreadCount() async {
+  Future<int> getUnreadCount({String? ownerPubkey}) async {
     final query = selectOnly(conversations)
-      ..where(conversations.isRead.equals(false))
+      ..where(
+        conversations.isRead.equals(false) &
+            _ownedOrLegacy(conversations.ownerPubkey, ownerPubkey),
+      )
       ..addColumns([conversations.id.count()]);
     final result = await query.getSingle();
     return result.read(conversations.id.count()) ?? 0;
   }
 
   /// Watch unread conversation count (all conversations).
-  Stream<int> watchUnreadCount() {
+  Stream<int> watchUnreadCount({String? ownerPubkey}) {
     final query = selectOnly(conversations)
-      ..where(conversations.isRead.equals(false))
+      ..where(
+        conversations.isRead.equals(false) &
+            _ownedOrLegacy(conversations.ownerPubkey, ownerPubkey),
+      )
       ..addColumns([conversations.id.count()]);
     return query.watchSingle().map(
       (row) => row.read(conversations.id.count()) ?? 0,
@@ -176,11 +213,12 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   /// Excludes conversations where the user has never sent a message
   /// (potential requests), so the badge on the nav bar reflects only
   /// the "Messages" tab unreads.
-  Stream<int> watchUnreadAcceptedCount() {
+  Stream<int> watchUnreadAcceptedCount({String? ownerPubkey}) {
     final query = selectOnly(conversations)
       ..where(
         conversations.isRead.equals(false) &
-            conversations.currentUserHasSent.equals(true),
+            conversations.currentUserHasSent.equals(true) &
+            _ownedOrLegacy(conversations.ownerPubkey, ownerPubkey),
       )
       ..addColumns([conversations.id.count()]);
     return query.watchSingle().map(
@@ -210,6 +248,13 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   /// Run a callback inside a database transaction.
   Future<T> runInTransaction<T>(Future<T> Function() action) {
     return attachedDatabase.transaction(action);
+  }
+
+  /// Delete all conversations for a specific user.
+  Future<int> clearAllForUser(String ownerPubkey) {
+    return (delete(
+      conversations,
+    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
   }
 
   /// Delete all conversations.

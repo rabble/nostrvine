@@ -1879,12 +1879,8 @@ class _EditContentLabelsSection extends StatelessWidget {
       children: [
         Text(
           'Content labels',
-          style: VineTheme.bodyFont(
+          style: VineTheme.labelSmallFont(
             color: VineTheme.onSurfaceVariant,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            height: 1.45,
-            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 8),
@@ -1904,7 +1900,7 @@ class _EditContentLabelsSection extends StatelessWidget {
                     displayText,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: VineTheme.bodyFont(fontSize: 14),
+                    style: VineTheme.bodyMediumFont(),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1976,7 +1972,7 @@ class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Content labels', style: VineTheme.titleFont(fontSize: 18)),
+              Text('Content labels', style: VineTheme.titleMediumFont()),
               if (_selected.isNotEmpty)
                 TextButton(
                   onPressed: () => setState(_selected.clear),
@@ -2044,12 +2040,8 @@ class _EditCollaboratorsSection extends ConsumerWidget {
     children: [
       Text(
         'Collaborators',
-        style: VineTheme.bodyFont(
+        style: VineTheme.labelSmallFont(
           color: VineTheme.onSurfaceVariant,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          height: 1.45,
-          letterSpacing: 0.5,
         ),
       ),
       const SizedBox(height: 8),
@@ -2091,10 +2083,8 @@ class _EditCollaboratorsSection extends ConsumerWidget {
               const SizedBox(width: 6),
               Text(
                 'Add collaborator',
-                style: VineTheme.bodyFont(
+                style: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceMuted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -2174,10 +2164,7 @@ class _EditCollaboratorChip extends ConsumerWidget {
               profileAsync.value?.bestDisplayName ?? 'Loading...',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: VineTheme.bodyFont(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+              style: VineTheme.labelMediumFont(),
             ),
           ),
           if (!isDisabled) ...[
@@ -2221,12 +2208,8 @@ class _EditInspiredBySection extends ConsumerWidget {
     children: [
       Text(
         'Inspired by',
-        style: VineTheme.bodyFont(
+        style: VineTheme.labelSmallFont(
           color: VineTheme.onSurfaceVariant,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          height: 1.45,
-          letterSpacing: 0.5,
         ),
       ),
       const SizedBox(height: 8),
@@ -2259,10 +2242,8 @@ class _EditInspiredBySection extends ConsumerWidget {
               const SizedBox(width: 6),
               Text(
                 'Add inspiration credit',
-                style: VineTheme.bodyFont(
+                style: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceMuted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -2344,10 +2325,7 @@ class _EditInspiredByDisplay extends ConsumerWidget {
               displayName ?? inspiredByNpub ?? 'Unknown',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: VineTheme.bodyFont(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              style: VineTheme.labelMediumFont(),
             ),
           ),
           if (!isDisabled)

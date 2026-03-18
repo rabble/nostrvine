@@ -7,6 +7,7 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -98,7 +99,7 @@ class PopularNowFeed extends _$PopularNowFeed {
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
           // Store cursor for pagination (oldest video timestamp)
-          _nextCursor = _getOldestTimestamp(apiVideos);
+          _nextCursor = getOldestTimestamp(apiVideos);
           Log.info(
             '✅ PopularNowFeed: Got ${apiVideos.length} videos from REST API, cursor: $_nextCursor',
             name: 'PopularNowFeedProvider',
@@ -120,6 +121,7 @@ class PopularNowFeed extends _$PopularNowFeed {
             videos: filteredVideos,
             hasMoreContent:
                 apiVideos.length >= AppConstants.paginationBatchSize,
+            isInitialLoad: filteredVideos.isEmpty,
             lastUpdated: DateTime.now(),
           );
         }
@@ -152,26 +154,8 @@ class PopularNowFeed extends _$PopularNowFeed {
         );
       },
       getVideos: (service) => service.popularNowVideos,
-      filterVideos: (videos) {
-        // Filter out WebM videos on iOS/macOS (not supported by AVPlayer),
-        // filter by user content preferences, and remove blocked users
-        return videoEventService.filterVideoList(
-          videos
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
-              .toList(),
-        );
-      },
-      sortVideos: (videos) {
-        final sorted = List<VideoEvent>.from(videos);
-        sorted.sort((a, b) {
-          final timeCompare = b.timestamp.compareTo(a.timestamp);
-          if (timeCompare != 0) return timeCompare;
-          // Secondary sort by ID for stable ordering
-          return a.id.compareTo(b.id);
-        });
-        return sorted;
-      },
+      filterVideos: _filterAndSortNostrVideos,
+      sortVideos: (videos) => videos, // Sorting included in filter step
     );
 
     // Build feed using helper
@@ -268,7 +252,7 @@ class PopularNowFeed extends _$PopularNowFeed {
           );
 
           // Update cursor for next pagination
-          _nextCursor = _getOldestTimestamp(apiVideos);
+          _nextCursor = getOldestTimestamp(apiVideos);
 
           if (newVideos.isNotEmpty) {
             final allVideos = [...currentState.videos, ...newVideos];
@@ -370,23 +354,9 @@ class PopularNowFeed extends _$PopularNowFeed {
     if (_usingRestApi) return;
 
     final videoEventService = ref.read(videoEventServiceProvider);
-    var updatedVideos = videoEventService.popularNowVideos.toList();
-
-    // Apply same filtering as build()
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    updatedVideos = videoEventService.filterVideoList(
-      updatedVideos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
-          .toList(),
+    final updatedVideos = _filterAndSortNostrVideos(
+      videoEventService.popularNowVideos.toList(),
     );
-
-    // Sort by timestamp (newest first)
-    updatedVideos.sort((a, b) {
-      final timeCompare = b.timestamp.compareTo(a.timestamp);
-      if (timeCompare != 0) return timeCompare;
-      return a.id.compareTo(b.id);
-    });
 
     state = AsyncData(
       VideoFeedState(
@@ -407,6 +377,17 @@ class PopularNowFeed extends _$PopularNowFeed {
     );
 
     final videoEventService = ref.read(videoEventServiceProvider);
+    final currentState = state.asData?.value;
+
+    if (currentState != null && ref.mounted) {
+      state = AsyncData(
+        currentState.copyWith(
+          isRefreshing: true,
+          isInitialLoad: false,
+          error: null,
+        ),
+      );
+    }
 
     // If using REST API, try to refresh from there first
     if (_usingRestApi) {
@@ -422,7 +403,7 @@ class PopularNowFeed extends _$PopularNowFeed {
 
         if (apiVideos.isNotEmpty) {
           // Reset cursor for pagination
-          _nextCursor = _getOldestTimestamp(apiVideos);
+          _nextCursor = getOldestTimestamp(apiVideos);
 
           final blocklistService = ref.read(contentBlocklistServiceProvider);
           final filteredVideos = videoEventService.filterVideoList(
@@ -458,18 +439,69 @@ class PopularNowFeed extends _$PopularNowFeed {
       }
     }
 
-    // Reset cursor state before invalidating
+    // Reset cursor state before forced Nostr refresh
     _usingRestApi = false;
     _nextCursor = null;
 
-    // Invalidate to re-run build() which will try REST API then Nostr
-    ref.invalidateSelf();
+    try {
+      await videoEventService.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.popularNow,
+        limit: 100,
+        sortBy: VideoSortField.createdAt,
+        force: true,
+      );
+
+      if (!ref.mounted) return;
+
+      final refreshedVideos = _filterAndSortNostrVideos(
+        videoEventService.popularNowVideos.toList(),
+      );
+
+      state = AsyncData(
+        VideoFeedState(
+          videos: refreshedVideos,
+          hasMoreContent:
+              refreshedVideos.length >= AppConstants.hasMoreContentThreshold,
+          lastUpdated: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      if (!ref.mounted) return;
+      if (currentState != null) {
+        state = AsyncData(
+          currentState.copyWith(isRefreshing: false, error: e.toString()),
+        );
+        return;
+      }
+
+      state = AsyncData(
+        VideoFeedState(
+          videos: const [],
+          hasMoreContent: false,
+          error: e.toString(),
+        ),
+      );
+    }
   }
 
-  /// Get oldest timestamp from videos for cursor pagination
-  int? _getOldestTimestamp(List<VideoEvent> videos) {
-    if (videos.isEmpty) return null;
-    return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
+  /// Filters videos for platform compatibility, content preferences,
+  /// and blocked users, then sorts by timestamp (newest first) with
+  /// secondary sort by ID for stable ordering.
+  List<VideoEvent> _filterAndSortNostrVideos(List<VideoEvent> videos) {
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
+    final filtered = videoEventService.filterVideoList(
+      videos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
+          .toList(),
+    );
+    filtered.sort((a, b) {
+      final timeCompare = b.timestamp.compareTo(a.timestamp);
+      if (timeCompare != 0) return timeCompare;
+      return a.id.compareTo(b.id);
+    });
+    return filtered;
   }
 
   void _scheduleRestEnrichment(List<VideoEvent> videos) {
@@ -485,12 +517,12 @@ class PopularNowFeed extends _$PopularNowFeed {
         final currentState = state.value;
         if (currentState == null || currentState.videos.isEmpty) return;
 
-        final mergedVideos = _mergeEnrichedVideos(
+        final mergedVideos = mergeEnrichedVideos(
           existing: currentState.videos,
           enriched: enrichedVideos,
         );
 
-        if (_videoListsEqual(currentState.videos, mergedVideos)) {
+        if (videoListsEqual(currentState.videos, mergedVideos)) {
           return;
         }
 
@@ -508,29 +540,6 @@ class PopularNowFeed extends _$PopularNowFeed {
         );
       },
     );
-  }
-
-  List<VideoEvent> _mergeEnrichedVideos({
-    required List<VideoEvent> existing,
-    required List<VideoEvent> enriched,
-  }) {
-    final enrichedById = {
-      for (final video in enriched) video.id.toLowerCase(): video,
-    };
-
-    return existing.map((video) {
-      return enrichedById[video.id.toLowerCase()] ?? video;
-    }).toList();
-  }
-
-  bool _videoListsEqual(List<VideoEvent> a, List<VideoEvent> b) {
-    if (identical(a, b)) return true;
-    if (a.length != b.length) return false;
-
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 }
 
