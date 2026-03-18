@@ -33,7 +33,6 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -51,7 +50,6 @@ enum RouteType {
   hashtag, // Still supported as push route within explore
   search,
   videoRecorder, // Video recorder screen
-  videoClipEditor, // Video clip editor screen
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
   importKey,
@@ -227,14 +225,11 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.videoRecorder);
 
     case 'video-editor':
-      return const RouteContext(type: RouteType.videoEditor);
-
-    case 'video-clip-editor':
       if (segments.length > 1) {
         final draftId = Uri.decodeComponent(segments[1]);
-        return RouteContext(type: RouteType.videoClipEditor, draftId: draftId);
+        return RouteContext(type: RouteType.videoEditor, draftId: draftId);
       }
-      return const RouteContext(type: RouteType.videoClipEditor);
+      return const RouteContext(type: RouteType.videoEditor);
 
     case 'video-metadata':
       return const RouteContext(type: RouteType.videoMetadata);
@@ -421,13 +416,10 @@ String buildRoute(RouteContext context) {
       return VideoRecorderScreen.path;
 
     case RouteType.videoEditor:
-      return VideoEditorScreen.path;
-
-    case RouteType.videoClipEditor:
       if (context.draftId != null) {
-        return '${VideoClipEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
+        return '${VideoEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
       }
-      return VideoClipEditorScreen.path;
+      return VideoEditorScreen.path;
 
     case RouteType.videoMetadata:
       return VideoMetadataScreen.path;

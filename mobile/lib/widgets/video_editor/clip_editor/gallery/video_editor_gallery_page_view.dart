@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/controllers/clip_reorder_controller.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/extended_sliver_fill_viewport.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_calculations.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_callbacks.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_item.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/extended_sliver_fill_viewport.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_calculations.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_callbacks.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_item.dart';
 
 /// Horizontally scrollable page view for video clip gallery items.
-class VideoEditorGalleryPageView extends ConsumerStatefulWidget {
+class VideoEditorGalleryPageView extends StatefulWidget {
   const VideoEditorGalleryPageView({
     required this.isEditing,
     required this.isReordering,
@@ -48,10 +48,10 @@ class VideoEditorGalleryPageView extends ConsumerStatefulWidget {
   final ClipReorderController reorderController;
 
   @override
-  ConsumerState<VideoEditorGalleryPageView> createState() => _PageViewState();
+  State<VideoEditorGalleryPageView> createState() => _PageViewState();
 }
 
-class _PageViewState extends ConsumerState<VideoEditorGalleryPageView> {
+class _PageViewState extends State<VideoEditorGalleryPageView> {
   int _lastReportedPage = 0;
 
   /// Returns axis direction based on text directionality.
@@ -88,12 +88,10 @@ class _PageViewState extends ConsumerState<VideoEditorGalleryPageView> {
 
   /// Toggles editing or selects clip on tap.
   void _handleItemTap(int index) {
-    final notifier = ref.read(videoEditorProvider.notifier);
-
     if (index == widget.selectedClipIndex) {
-      notifier.toggleClipEditing();
+      context.read<ClipEditorBloc>().add(const ClipEditorEditingToggled());
     } else if (!widget.isEditing) {
-      notifier.selectClipByIndex(index);
+      context.read<ClipEditorBloc>().add(ClipEditorClipSelected(index));
     }
   }
 
@@ -155,7 +153,10 @@ class _PageViewState extends ConsumerState<VideoEditorGalleryPageView> {
                       ? 0.0
                       : calculations.calculateXOffset(index);
                   final reorderOffset = _calculateReorderOffset(index);
+
                   final targetOffset = Offset(targetXOffset + reorderOffset, 0);
+
+                  final isSelected = index == widget.selectedClipIndex;
 
                   return _AnimatedGalleryItem(
                     clip: widget.clips[index],
@@ -165,6 +166,7 @@ class _PageViewState extends ConsumerState<VideoEditorGalleryPageView> {
                     targetOffset: targetOffset,
                     enableTweenOffset: reorderCtrl.enableTweenOffset,
                     canStartReorder: _canStartReorder(index),
+                    isVisible: !widget.isEditing || isSelected,
                     onTap: () => _handleItemTap(index),
                   );
                 }, childCount: widget.clips.length),
@@ -187,6 +189,7 @@ class _AnimatedGalleryItem extends StatelessWidget {
     required this.targetOffset,
     required this.enableTweenOffset,
     required this.canStartReorder,
+    required this.isVisible,
     required this.onTap,
   });
 
@@ -194,6 +197,7 @@ class _AnimatedGalleryItem extends StatelessWidget {
 
   final bool enableTweenOffset;
   final bool canStartReorder;
+  final bool isVisible;
 
   final int index;
 
@@ -215,14 +219,18 @@ class _AnimatedGalleryItem extends StatelessWidget {
           : .zero,
       curve: Curves.easeInOut,
       builder: (context, offset, child) {
-        return VideoEditorGalleryItem(
-          clip: clip,
-          index: index,
-          page: page,
-          scale: scale,
-          xOffset: offset.dx,
-          onTap: onTap,
-          onLongPress: canStartReorder ? callbacks.onStartReordering : null,
+        return AnimatedOpacity(
+          duration: VideoEditorGalleryConstants.scaleAnimationDuration,
+          opacity: isVisible ? 1.0 : 0.0,
+          child: VideoEditorGalleryItem(
+            clip: clip,
+            index: index,
+            page: page,
+            scale: scale,
+            xOffset: offset.dx,
+            onTap: onTap,
+            onLongPress: canStartReorder ? callbacks.onStartReordering : null,
+          ),
         );
       },
     );

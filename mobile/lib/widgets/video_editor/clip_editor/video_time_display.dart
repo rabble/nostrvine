@@ -3,13 +3,12 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
-import 'package:openvine/widgets/video_clip_editor/smooth_time_display.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/smooth_time_display.dart';
 
 /// Displays current video time and total duration with a separator.
-class VideoTimeDisplay extends ConsumerWidget {
+class VideoTimeDisplay extends StatelessWidget {
   /// Creates a video time display.
   const VideoTimeDisplay({
     required this.isPlayingSelector,
@@ -21,11 +20,11 @@ class VideoTimeDisplay extends ConsumerWidget {
     super.key,
   });
 
-  /// Provider selector for playing state
-  final ProviderListenable<bool> isPlayingSelector;
+  /// Selector that extracts playing state from [ClipEditorState].
+  final bool Function(ClipEditorState state) isPlayingSelector;
 
-  /// Provider selector for current position
-  final ProviderListenable<Duration> currentPositionSelector;
+  /// Selector that extracts current position from [ClipEditorState].
+  final Duration Function(ClipEditorState state) currentPositionSelector;
 
   /// Total video duration
   final Duration totalDuration;
@@ -40,7 +39,7 @@ class VideoTimeDisplay extends ConsumerWidget {
   final TextStyle? totalStyle;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final defaultCurrentStyle =
         currentStyle ??
         const TextStyle(

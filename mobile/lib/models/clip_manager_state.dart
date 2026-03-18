@@ -22,6 +22,7 @@ class ClipManagerState {
     this.errorMessage,
     this.muteOriginalAudio = false,
     this.activeRecordingDuration = .zero,
+    this.mergeOutputPath,
   });
 
   /// List of all recorded clips in order.
@@ -47,6 +48,12 @@ class ClipManagerState {
 
   /// Current duration of the active recording in progress.
   final Duration activeRecordingDuration;
+
+  /// Cached merge-render output path.
+  ///
+  /// Set after clips are concatenated into a preview video. Cleared
+  /// automatically whenever clips are added, removed, or reordered.
+  final String? mergeOutputPath;
 
   /// Total combined duration of all clips.
   Duration get totalDuration {
@@ -108,6 +115,8 @@ class ClipManagerState {
     bool clearPreview = false,
     bool clearError = false,
     Duration? activeRecordingDuration,
+    String? mergeOutputPath,
+    bool clearMergeOutputPath = false,
   }) {
     return ClipManagerState(
       clips: clips ?? this.clips,
@@ -123,6 +132,9 @@ class ClipManagerState {
       muteOriginalAudio: muteOriginalAudio ?? this.muteOriginalAudio,
       activeRecordingDuration:
           activeRecordingDuration ?? this.activeRecordingDuration,
+      mergeOutputPath: clearMergeOutputPath
+          ? null
+          : (mergeOutputPath ?? this.mergeOutputPath),
     );
   }
 }

@@ -15,6 +15,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
+import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 
 /// Result of the audio timing screen.
 ///
@@ -216,10 +217,21 @@ class _VideoAudioEditorTimingScreenState
                 child: Column(
                   children: [
                     // Top bar
-                    _TopBar(
-                      sound: widget.sound,
-                      onDelete: _deleteAudio,
-                      onConfirm: _confirmSelection,
+                    VideoEditorToolbar(
+                      closeIcon: DivineIconName.trash,
+                      closeType: DivineIconButtonType.error,
+                      closeSemanticLabel: 'Remove audio',
+                      doneSemanticLabel: 'Confirm audio selection',
+                      onClose: _deleteAudio,
+                      onDone: _confirmSelection,
+                      center: Flexible(
+                        child: IgnorePointer(
+                          child: VideoEditorAudioChip(
+                            selectedSound: widget.sound,
+                            onSoundChanged: (_) {},
+                          ),
+                        ),
+                      ),
                     ),
 
                     const Spacer(),
@@ -243,61 +255,6 @@ class _VideoAudioEditorTimingScreenState
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Top navigation bar with delete button, audio chip, and confirm button.
-class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.sound,
-    required this.onDelete,
-    required this.onConfirm,
-  });
-
-  final AudioEvent sound;
-  final VoidCallback onDelete;
-  final VoidCallback onConfirm;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Row(
-        mainAxisAlignment: .spaceBetween,
-        spacing: 12,
-        children: [
-          // Delete button
-          DivineIconButton(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            semanticLabel: 'Remove audio',
-            icon: .trash,
-            size: .small,
-            type: .error,
-            onPressed: onDelete,
-          ),
-
-          // Audio chip (centered, flexible) - display only, not interactive
-          Flexible(
-            child: IgnorePointer(
-              child: VideoEditorAudioChip(
-                selectedSound: sound,
-                onSoundChanged: (_) {},
-              ),
-            ),
-          ),
-
-          // Confirm button
-          DivineIconButton(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            semanticLabel: 'Confirm audio selection',
-            icon: .check,
-            size: .small,
-            type: .tertiary,
-            onPressed: onConfirm,
-          ),
-        ],
       ),
     );
   }

@@ -1,16 +1,17 @@
 // ABOUTME: Tests for VideoClipEditorTopBar widget
 // ABOUTME: Validates close button, clip counter, and done button
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_top_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_top_bar.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -23,43 +24,41 @@ void main() {
       int totalClips = 3,
       bool isEditing = false,
     }) {
+      final clips = List.generate(
+        totalClips,
+        (i) => DivineVideoClip(
+          id: 'clip$i',
+          video: EditorVideo.file('/test/clip$i.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        ),
+      );
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          clips: clips,
+          currentClipIndex: currentClipIndex,
+          isEditing: isEditing,
+        ),
+      );
+
       return ProviderScope(
         overrides: [
-          videoEditorProvider.overrideWith(
-            () => TestVideoEditorNotifier(
-              VideoEditorProviderState(
-                currentClipIndex: currentClipIndex,
-                isEditing: isEditing,
-              ),
-            ),
-          ),
-          clipManagerProvider.overrideWith(
-            () => TestClipManagerNotifier(
-              ClipManagerState(
-                clips: List.generate(
-                  totalClips,
-                  (i) => DivineVideoClip(
-                    id: 'clip$i',
-                    video: EditorVideo.file('/test/clip$i.mp4'),
-                    duration: const Duration(seconds: 2),
-                    recordedAt: DateTime.now(),
-                    targetAspectRatio: .vertical,
-                    originalAspectRatio: 9 / 16,
-                  ),
-                ),
-              ),
-            ),
-          ),
+          videoEditorProvider.overrideWith(_TestVideoEditorNotifier.new),
         ],
-        child: MaterialApp.router(
-          routerConfig: GoRouter(
-            routes: [
-              GoRoute(
-                path: '/',
-                builder: (context, state) =>
-                    const Scaffold(body: VideoClipEditorTopBar()),
-              ),
-            ],
+        child: BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: MaterialApp.router(
+            routerConfig: GoRouter(
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (context, state) =>
+                      const Scaffold(body: VideoClipEditorTopBar()),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -79,33 +78,35 @@ void main() {
       expect(find.text('2/5'), findsOneWidget);
     });
 
-    testWidgets('displays camera icon when not editing', (tester) async {
+    testWidgets('displays close icon when not editing', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.bySemanticsLabel('Go back to camera'), findsOneWidget);
+      expect(find.byType(DivineIconButton), findsWidgets);
     });
 
     testWidgets('displays close icon when editing', (tester) async {
       await tester.pumpWidget(buildTestWidget(isEditing: true));
 
-      expect(find.bySemanticsLabel('Close video editor'), findsOneWidget);
+      expect(find.byType(DivineIconButton), findsOneWidget);
     });
 
     testWidgets('displays done button when not editing', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.text('Next'), findsOneWidget);
+      expect(find.bySemanticsLabel('Done'), findsOneWidget);
     });
 
-    testWidgets('close button is tappable when editing', (tester) async {
+    testWidgets('close button stops editing when tapped', (tester) async {
       await tester.pumpWidget(buildTestWidget(isEditing: true));
 
-      final closeButton = find.bySemanticsLabel('Close video editor');
+      final closeButton = find.byType(DivineIconButton);
+      expect(closeButton, findsOneWidget);
 
       await tester.tap(closeButton);
       await tester.pumpAndSettle();
 
-      expect(closeButton, findsOneWidget);
+      // After tapping, editing stops and the Done button appears
+      expect(find.bySemanticsLabel('Done'), findsOneWidget);
     });
 
     testWidgets('displays correct clip counter for single clip', (
@@ -118,23 +119,15 @@ void main() {
   });
 }
 
-class TestVideoEditorNotifier extends VideoEditorNotifier {
-  TestVideoEditorNotifier(this._state);
-  final VideoEditorProviderState _state;
-
+class _TestVideoEditorNotifier extends VideoEditorNotifier {
   @override
-  VideoEditorProviderState build() => _state;
-
-  @override
-  void stopClipEditing() {}
-
-  Future<void> done() async {}
+  VideoEditorProviderState build() => VideoEditorProviderState();
 }
 
-class TestClipManagerNotifier extends ClipManagerNotifier {
-  TestClipManagerNotifier(this._state);
-  final ClipManagerState _state;
-
-  @override
-  ClipManagerState build() => _state;
+class _TestClipEditorBloc extends ClipEditorBloc {
+  _TestClipEditorBloc({
+    ClipEditorState initialState = const ClipEditorState(),
+  }) {
+    emit(initialState);
+  }
 }

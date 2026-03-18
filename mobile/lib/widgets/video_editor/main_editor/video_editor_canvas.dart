@@ -21,13 +21,11 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
-import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:video_player/video_player.dart';
 
@@ -82,8 +80,6 @@ class _VideoEditor extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorState extends ConsumerState<_VideoEditor> {
-  static const _renderTaskId = 'Divine_Editor_Merger';
-
   late final ProVideoController _proVideoController;
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
   VideoPlayerController? _videoPlayer;
@@ -112,6 +108,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Guards against seek/play calls while audio is loading.
   bool _isAudioLoading = false;
 
+  /// Cached reference to the output path notifier for cleanup in [dispose].
+  ValueNotifier<String?>? _outputPathNotifier;
+
   @override
   void initState() {
     super.initState();
@@ -120,7 +119,25 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
-    _initializePlayer();
+    _initializeController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final notifier = VideoEditorScope.of(context).videoOutputPathNotifier;
+    if (_outputPathNotifier == notifier) return;
+
+    // Remove old listener if scope changed.
+    _outputPathNotifier?.removeListener(_onOutputPathChanged);
+    _outputPathNotifier = notifier;
+    notifier.addListener(_onOutputPathChanged);
+
+    // If the output path is already available, initialize the player.
+    if (notifier.value != null) {
+      _initializePlayerFromPath(notifier.value!);
+    }
   }
 
   @override
@@ -130,11 +147,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
+    _outputPathNotifier = null;
     _videoPlayer?.removeListener(_onVideoPositionChange);
     _videoPlayer?.dispose();
     _audioService?.dispose();
     _isPlayerReadyNotifier.dispose();
-    ProVideoEditor.instance.cancel(_renderTaskId);
     super.dispose();
   }
 
@@ -220,14 +237,32 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     await _audioService!.play();
   }
 
-  Future<void> _initializePlayer() async {
+  /// Called when the video output path changes.
+  ///
+  /// When `null`, pauses the current player. When a new path is provided,
+  /// disposes the old player and initializes a new one.
+  void _onOutputPathChanged() {
+    final outputPath = VideoEditorScope.of(
+      context,
+    ).videoOutputPathNotifier.value;
+
+    if (outputPath == null) {
+      // Rendering in progress – pause and mark as not ready.
+      _videoPlayer?.pause();
+      _isPlayerReadyNotifier.value = false;
+      context.read<VideoEditorMainBloc>()
+        ..add(const VideoEditorPlaybackChanged(isPlaying: false))
+        ..add(const VideoEditorPlayerReady(isReady: false));
+      return;
+    }
+
+    _initializePlayerFromPath(outputPath);
+  }
+
+  /// Creates the [ProVideoController] (only once, not tied to a file).
+  void _initializeController() {
     final clips = ref.read(clipManagerProvider).clips;
 
-    Log.debug(
-      '🎬 Initializing video player',
-      name: 'VideoEditorCanvas',
-      category: LogCategory.video,
-    );
     _proVideoController = ProVideoController(
       videoPlayer: ValueListenableBuilder(
         valueListenable: _isPlayerReadyNotifier,
@@ -247,13 +282,24 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       fileSize: 0,
       videoDuration: .zero,
     );
+  }
 
-    final outputPath = await VideoEditorRenderService.renderVideo(
-      taskId: _renderTaskId,
-      clips: clips,
+  /// Initializes (or reinitializes) the video player from a rendered file.
+  Future<void> _initializePlayerFromPath(String outputPath) async {
+    // Dispose old player if it exists.
+    _videoPlayer?.removeListener(_onVideoPositionChange);
+    await _videoPlayer?.dispose();
+    _isPlayerReadyNotifier.value = false;
+
+    final clips = ref.read(clipManagerProvider).clips;
+
+    Log.debug(
+      '🎬 Initializing video player from $outputPath',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
     );
 
-    _videoPlayer = VideoPlayerController.file(File(outputPath!));
+    _videoPlayer = VideoPlayerController.file(File(outputPath));
 
     await _videoPlayer!.initialize();
     if (!mounted) return;
@@ -495,7 +541,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 previous.isExternalPauseRequested !=
                 current.isExternalPauseRequested,
             listener: (context, state) {
-              _onExternalPauseChanged(isPaused: state.isExternalPauseRequested);
+              _onExternalPauseChanged(
+                isPaused: state.isExternalPauseRequested,
+              );
             },
           ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
@@ -607,6 +655,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 _isInitialized = true;
                 _hasImportedHistory = true;
                 _syncMainCapabilities(scope, bloc);
+              },
+              onTap: () {
+                context.read<VideoEditorMainBloc>().add(
+                  const VideoEditorPlaybackToggleRequested(),
+                );
               },
               onDone: _handleDone,
               onImportHistoryStart: (state, import) {

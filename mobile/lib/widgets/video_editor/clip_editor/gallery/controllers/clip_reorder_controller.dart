@@ -156,23 +156,21 @@ class ClipReorderController extends ChangeNotifier {
         );
   }
 
-  /// Updates the vertical drag offset so the clip follows the finger downward.
+  /// Updates the vertical drag offset so the clip follows the finger.
   ///
-  /// Clamps upward movement to prevent the clip from leaving upward,
-  /// but allows free downward movement toward the delete zone.
+  /// Clamps upward movement to prevent the clip from leaving the gallery
+  /// area upward. Downward movement is unclamped so the clip can freely
+  /// reach the delete zone regardless of screen size.
   ///
   /// [contentScale] compensates for the outer `AnimatedScale` so the clip
   /// follows the finger 1:1 in screen space.
   void updateVisualDragY(double deltaY, {double contentScale = 1.0}) {
     final compensatedClampUp =
         VideoEditorGalleryConstants.dragYClampUp / contentScale;
-    final compensatedClampDown =
-        VideoEditorGalleryConstants.dragYClampDown / contentScale;
-    dragYOffsetNotifier.value =
-        (dragYOffsetNotifier.value + deltaY / contentScale).clamp(
-          -compensatedClampUp,
-          compensatedClampDown,
-        );
+    final newValue = dragYOffsetNotifier.value + deltaY / contentScale;
+    dragYOffsetNotifier.value = newValue < -compensatedClampUp
+        ? -compensatedClampUp
+        : newValue;
   }
 
   /// Calculates the reorder threshold based on viewport and clip count.
