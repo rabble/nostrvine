@@ -104,33 +104,25 @@ class _ToggleButton extends StatelessWidget {
                   : null,
             ),
             child: Center(
-              child: badgeCount > 0
-                  ? Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Text(
-                          label,
-                          style: VineTheme.titleMediumFont(
-                            color: isSelected
-                                ? VineTheme.onPrimaryButton
-                                : VineTheme.onSurfaceMuted,
-                          ),
-                        ),
-                        Positioned(
-                          top: -4,
-                          right: -24,
-                          child: _NotificationBadge(count: badgeCount),
-                        ),
-                      ],
-                    )
-                  : Text(
-                      label,
-                      style: VineTheme.titleMediumFont(
-                        color: isSelected
-                            ? VineTheme.onPrimaryButton
-                            : VineTheme.onSurfaceMuted,
-                      ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Text(
+                    label,
+                    style: VineTheme.titleMediumFont(
+                      color: isSelected
+                          ? VineTheme.onPrimaryButton
+                          : VineTheme.onSurfaceMuted,
                     ),
+                  ),
+                  if (badgeCount > 0)
+                    Positioned(
+                      top: -4,
+                      right: -24,
+                      child: _NotificationBadge(count: badgeCount),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
