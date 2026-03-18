@@ -28,6 +28,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     required this.videos,
+    this.profile,
+    this.profileStats,
     this.displayName,
     this.onSetupProfile,
     this.onEditProfile,
@@ -54,6 +56,12 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// List of videos to display in the videos tab.
   final List<VideoEvent> videos;
+
+  /// Optional profile owned by the parent widget.
+  final UserProfile? profile;
+
+  /// Optional cached profile stats owned by the parent widget.
+  final ProfileStats? profileStats;
 
   /// Callback when "Set Up" button is tapped (own profile only).
   final VoidCallback? onSetupProfile;
@@ -287,6 +295,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               userIdHex: widget.userIdHex,
               isOwnProfile: widget.isOwnProfile,
               videoCount: widget.videos.length,
+              profile: widget.profile,
+              profileStats: widget.profileStats,
               onSetupProfile: widget.onSetupProfile,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,

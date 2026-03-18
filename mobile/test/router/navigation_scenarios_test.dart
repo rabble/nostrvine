@@ -332,30 +332,6 @@ void main() {
       );
     });
 
-    testWidgets('Edit video-clip route', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      router.go(VideoClipEditorScreen.path);
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        VideoClipEditorScreen.path,
-        reason: 'Edit video-clip route should exist',
-      );
-    });
-
     testWidgets('Home video feed swiping', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);

@@ -106,7 +106,7 @@ class _EmptyState extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Text(
         message,
-        style: VineTheme.bodyFont(color: VineTheme.onSurfaceMuted),
+        style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
         textAlign: .center,
       ),
     );
@@ -158,15 +158,13 @@ class _SearchBarState extends State<_SearchBar> {
           focusNode: _focusNode,
           keyboardType: .text,
           textInputAction: .search,
-          style: VineTheme.bodyFont(height: 1.5, letterSpacing: 0.15),
+          style: VineTheme.bodyLargeFont(),
           onChanged: _setQuery,
           onSubmitted: (_) => _focusNode.unfocus(),
           decoration: InputDecoration(
             // TODO(l10n): Replace with context.l10n when localization is added.
             hintText: 'Search stickers...',
-            hintStyle: VineTheme.bodyFont(
-              height: 1.5,
-              letterSpacing: 0.15,
+            hintStyle: VineTheme.bodyLargeFont(
               color: VineTheme.onSurfaceMuted,
             ),
             filled: true,

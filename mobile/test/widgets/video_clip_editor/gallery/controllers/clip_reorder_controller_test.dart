@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/controllers/clip_reorder_controller.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
 
 void main() {
   group('ClipReorderController', () {
@@ -418,10 +418,10 @@ void main() {
         expect(controller.dragYOffsetNotifier.value, -40);
       });
 
-      test('clamps downward movement to dragYClampDown', () {
-        // dragYClampDown is 200
-        controller.updateVisualDragY(500);
-        expect(controller.dragYOffsetNotifier.value, 200);
+      test('does not clamp downward movement', () {
+        // No downward clamp — clip can freely reach the delete zone
+        controller.updateVisualDragY(1500);
+        expect(controller.dragYOffsetNotifier.value, 1500);
       });
 
       test('compensates delta by contentScale', () {
@@ -437,11 +437,11 @@ void main() {
         expect(controller.dragYOffsetNotifier.value, -80);
       });
 
-      test('compensates downward clamp by contentScale', () {
-        // compensatedClampDown = 200 / 0.5 = 400
-        controller.updateVisualDragY(250, contentScale: 0.5);
-        // delta 250 / 0.5 = 500, clamped to 400
-        expect(controller.dragYOffsetNotifier.value, 400);
+      test('does not clamp downward movement with contentScale', () {
+        // No downward clamp even with contentScale
+        controller.updateVisualDragY(1100, contentScale: 0.5);
+        // delta 1100 / 0.5 = 2200, no clamp
+        expect(controller.dragYOffsetNotifier.value, 2200);
       });
     });
 

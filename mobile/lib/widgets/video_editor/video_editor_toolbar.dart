@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 
 /// Reusable top bar for video editor sub-editors.
 ///
@@ -15,10 +16,14 @@ import 'package:flutter/material.dart';
 class VideoEditorToolbar extends StatelessWidget {
   const VideoEditorToolbar({
     required this.onClose,
-    required this.onDone,
+    this.onDone,
     this.closeIcon = DivineIconName.x,
     this.doneIcon = DivineIconName.check,
+    this.closeType = DivineIconButtonType.ghostSecondary,
+    this.closeSemanticLabel = 'Close',
+    this.doneSemanticLabel = 'Done',
     this.center,
+    this.padding = const EdgeInsets.fromLTRB(16, 12, 16, 0),
     super.key,
   });
 
@@ -26,7 +31,9 @@ class VideoEditorToolbar extends StatelessWidget {
   final VoidCallback onClose;
 
   /// Called when the done button is pressed.
-  final VoidCallback onDone;
+  ///
+  /// When null the done button is rendered in its disabled state.
+  final VoidCallback? onDone;
 
   /// Icon shown on the close button. Defaults to [DivineIconName.x].
   final DivineIconName closeIcon;
@@ -34,35 +41,51 @@ class VideoEditorToolbar extends StatelessWidget {
   /// Icon shown on the done button. Defaults to [DivineIconName.check].
   final DivineIconName doneIcon;
 
+  /// Visual style of the close button. Defaults to [DivineIconButtonType.ghostSecondary].
+  final DivineIconButtonType closeType;
+
+  /// Accessibility label for the close button.
+  final String closeSemanticLabel;
+
+  /// Accessibility label for the done button.
+  final String doneSemanticLabel;
+
   /// Optional widgets displayed between the close and done buttons.
   final Widget? center;
+
+  /// Outer padding around the toolbar row.
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const .fromLTRB(16, 16, 16, 0),
+        padding: padding,
         child: Row(
-          spacing: 8,
+          spacing: 12,
           mainAxisAlignment: .spaceBetween,
           children: [
-            DivineIconButton(
-              icon: closeIcon,
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              semanticLabel: 'Close',
-              size: .small,
-              type: .ghostSecondary,
-              onPressed: onClose,
+            Hero(
+              tag: VideoEditorConstants.heroToolbarLeadingId,
+              child: DivineIconButton(
+                icon: closeIcon,
+                semanticLabel: closeSemanticLabel,
+                size: .small,
+                type: closeType,
+                onPressed: onClose,
+              ),
             ),
             ?center,
-            DivineIconButton(
-              icon: doneIcon,
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              semanticLabel: 'Done',
-              size: .small,
-              type: .tertiary,
-              onPressed: onDone,
+            Hero(
+              tag: VideoEditorConstants.heroToolbarTrailingId,
+              child: DivineIconButton(
+                icon: doneIcon,
+                semanticLabel: doneSemanticLabel,
+                size: .small,
+                type: .tertiary,
+                onPressed: onDone,
+              ),
             ),
           ],
         ),

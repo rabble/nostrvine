@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/utils/string_utils.dart';
 
 /// Base widget for video overlay action buttons (like, comment, repost, share).
@@ -14,7 +13,7 @@ import 'package:openvine/utils/string_utils.dart';
 /// Example usage:
 /// ```dart
 /// VideoActionButton(
-///   iconAsset: 'assets/icon/content-controls/like.svg',
+///   icon: DivineIconName.heart,
 ///   semanticIdentifier: 'like_button',
 ///   semanticLabel: 'Like video',
 ///   onPressed: () => handleLike(),
@@ -24,7 +23,7 @@ import 'package:openvine/utils/string_utils.dart';
 /// ```
 class VideoActionButton extends StatelessWidget {
   const VideoActionButton({
-    required this.iconAsset,
+    required this.icon,
     required this.semanticIdentifier,
     required this.semanticLabel,
     this.onPressed,
@@ -34,8 +33,8 @@ class VideoActionButton extends StatelessWidget {
     super.key,
   });
 
-  /// Path to the SVG icon asset.
-  final String iconAsset;
+  /// The icon to display from the Divine design system.
+  final DivineIconName icon;
 
   /// Semantics identifier for testing (e.g. 'like_button').
   final String semanticIdentifier;
@@ -94,26 +93,26 @@ class VideoActionButton extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: SvgPicture.asset(
-                      iconAsset,
-                      width: 32,
-                      height: 32,
-                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                    child: DivineIcon(
+                      icon: icon,
+                      size: 32,
+                      color: iconColor,
                     ),
                   ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: SizedBox(
-            width: 48,
-            child: Text(
-              count > 0 ? StringUtils.formatCompactNumber(count) : '',
-              style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
-              textAlign: TextAlign.center,
+        if (!isLoading && count > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SizedBox(
+              width: 48,
+              child: Text(
+                count > 0 ? StringUtils.formatCompactNumber(count) : '',
+                style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
-        ),
       ],
     );
   }

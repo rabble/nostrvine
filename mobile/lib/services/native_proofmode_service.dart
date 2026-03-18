@@ -24,7 +24,10 @@ class NativeProofModeService {
   /// Returns [NativeProofData] if proof generation succeeds, null otherwise.
   /// Handles platform availability checks and graceful fallback if ProofMode
   /// is not supported.
-  static Future<NativeProofData?> proofFile(File videoFile) async {
+  static Future<NativeProofData?> proofFile(
+    File videoFile, {
+    bool aiTrainingOptOut = true,
+  }) async {
     try {
       // Check if native ProofMode/C2PA is available on this platform
       final isAvailable = await NativeProofModeService.isAvailable();
@@ -100,6 +103,7 @@ class NativeProofModeService {
       );
       final c2paResult = await c2paSigningService.signVideo(
         videoPath: videoFile.path,
+        aiTrainingOptOut: aiTrainingOptOut,
       );
 
       if (c2paResult.success) {

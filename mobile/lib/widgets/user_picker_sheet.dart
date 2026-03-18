@@ -40,10 +40,7 @@ Future<UserProfile?> showUserPickerSheet(
     title: Column(
       spacing: 2,
       children: [
-        Text(
-          title,
-          style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
-        ),
+        Text(title, style: VineTheme.titleMediumFont()),
         Text(searchText, style: VineTheme.bodySmallFont()),
       ],
     ),
@@ -206,15 +203,13 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               onChanged: _onSearchChanged,
               onSubmitted: _onSearchChanged,
               cursorColor: VineTheme.vineGreen,
-              style: VineTheme.bodyFont(
+              style: VineTheme.bodyLargeFont(
                 color: VineTheme.onSurface,
-                height: 1.5,
               ),
               decoration: InputDecoration(
                 hintText: hintText,
-                hintStyle: VineTheme.bodyFont(
+                hintStyle: VineTheme.bodyLargeFont(
                   color: VineTheme.onSurfaceMuted,
-                  height: 1.5,
                 ),
                 prefixIcon: const Padding(
                   padding: .only(left: 16, right: 8),
@@ -301,10 +296,7 @@ class _UserSearchTile extends StatelessWidget {
                   profile.bestDisplayName,
                   maxLines: 1,
                   overflow: .ellipsis,
-                  style: VineTheme.titleMediumFont(
-                    fontSize: 16,
-                    color: textColor,
-                  ),
+                  style: VineTheme.titleMediumFont(color: textColor),
                 ),
                 if (profile.nip05 != null && profile.nip05!.isNotEmpty)
                   Text(
@@ -391,10 +383,7 @@ class _EmptyFollowList extends StatelessWidget {
                 child: Text(
                   'Go back',
                   textAlign: TextAlign.center,
-                  style: VineTheme.titleMediumFont(
-                    fontSize: 16,
-                    color: VineTheme.primary,
-                  ),
+                  style: VineTheme.titleMediumFont(color: VineTheme.primary),
                 ),
               ),
             ),
@@ -415,9 +404,8 @@ class _EmptyHint extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           'Type a name to search',
-          style: VineTheme.bodyFont(
+          style: VineTheme.bodyMediumFont(
             color: VineTheme.onSurfaceMuted,
-            fontSize: 14,
           ),
         ),
       ),
@@ -435,9 +423,8 @@ class _ErrorState extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           'Search failed. Please try again.',
-          style: VineTheme.bodyFont(
+          style: VineTheme.bodyMediumFont(
             color: VineTheme.onSurfaceMuted,
-            fontSize: 14,
           ),
         ),
       ),
@@ -455,9 +442,8 @@ class _NoResults extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           'No users found',
-          style: VineTheme.bodyFont(
+          style: VineTheme.bodyMediumFont(
             color: VineTheme.onSurfaceMuted,
-            fontSize: 14,
           ),
         ),
       ),

@@ -115,7 +115,7 @@ class VideoEditorMainBloc
     VideoEditorPlayerReady event,
     Emitter<VideoEditorMainState> emit,
   ) {
-    emit(state.copyWith(isPlayerReady: true));
+    emit(state.copyWith(isPlayerReady: event.isReady));
   }
 
   void _onExternalPauseRequested(

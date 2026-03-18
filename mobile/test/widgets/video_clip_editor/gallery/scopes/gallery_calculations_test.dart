@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_calculations.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_calculations.dart';
 
 void main() {
   group('GalleryCalculations', () {

@@ -6,6 +6,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -60,6 +61,10 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       return const VideoFeedState(videos: [], hasMoreContent: true);
     }
 
+    return _loadFirstPage();
+  }
+
+  Future<VideoFeedState> _loadFirstPage() async {
     try {
       final videosRepository = ref.read(videosRepositoryProvider);
       final videos = await videosRepository.getPopularVideos(
@@ -71,7 +76,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       }
 
       if (videos.isNotEmpty) {
-        _nextCursor = _getOldestTimestamp(videos);
+        _nextCursor = getOldestTimestamp(videos);
 
         final filteredVideos = _filterVideos(videos);
         _scheduleEnrichment(filteredVideos);
@@ -135,7 +140,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         return;
       }
 
-      _nextCursor = _getOldestTimestamp(newVideos);
+      _nextCursor = getOldestTimestamp(newVideos);
 
       // Deduplicate against existing videos
       final existingIds = currentState.videos
@@ -196,8 +201,15 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       name: 'PopularVideosFeedProvider',
       category: LogCategory.video,
     );
+
     _nextCursor = null;
-    ref.invalidateSelf();
+
+    await staleWhileRevalidate(
+      getCurrentState: () => state,
+      isMounted: () => ref.mounted,
+      setState: (s) => state = s,
+      fetchFresh: _loadFirstPage,
+    );
   }
 
   /// Applies platform compatibility, content preference,
@@ -213,11 +225,6 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     );
   }
 
-  int? _getOldestTimestamp(List<VideoEvent> videos) {
-    if (videos.isEmpty) return null;
-    return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
-  }
-
   void _scheduleEnrichment(List<VideoEvent> videos) {
     if (videos.isEmpty) return;
 
@@ -231,12 +238,12 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         final currentState = state.value;
         if (currentState == null || currentState.videos.isEmpty) return;
 
-        final mergedVideos = _mergeEnrichedVideos(
+        final mergedVideos = mergeEnrichedVideos(
           existing: currentState.videos,
           enriched: enrichedVideos,
         );
 
-        if (_videoListsEqual(currentState.videos, mergedVideos)) {
+        if (videoListsEqual(currentState.videos, mergedVideos)) {
           return;
         }
 
@@ -254,28 +261,5 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         );
       },
     );
-  }
-
-  List<VideoEvent> _mergeEnrichedVideos({
-    required List<VideoEvent> existing,
-    required List<VideoEvent> enriched,
-  }) {
-    final enrichedById = {
-      for (final video in enriched) video.id.toLowerCase(): video,
-    };
-
-    return existing.map((video) {
-      return enrichedById[video.id.toLowerCase()] ?? video;
-    }).toList();
-  }
-
-  bool _videoListsEqual(List<VideoEvent> a, List<VideoEvent> b) {
-    if (identical(a, b)) return true;
-    if (a.length != b.length) return false;
-
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 }

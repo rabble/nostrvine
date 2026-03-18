@@ -335,28 +335,6 @@ void main() {
       );
     });
 
-    testWidgets('${VideoClipEditorScreen.path} route works', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go(VideoClipEditorScreen.path);
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        VideoClipEditorScreen.path,
-      );
-    });
-
     testWidgets('${VideoMetadataScreen.path} route works', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);

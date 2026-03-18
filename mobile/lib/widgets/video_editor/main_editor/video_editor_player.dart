@@ -31,35 +31,34 @@ class VideoEditorPlayer extends StatelessWidget {
         ? renderSize.aspectRatio
         : targetAspectRatio.value;
 
-    return Center(
-      child: ClipPath(
-        clipper: _RoundedRectClipper(
-          bodySize: bodySize,
-          enableFullScreen: useFullSize,
-          borderRadius: targetAspectRatio == .square ? 0 : 32,
-        ),
-        child: AspectRatio(
-          aspectRatio: aspectRatio,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Video layer
-              if (isPlayerReady)
-                FittedBox(
-                  child: SizedBox(
-                    width: controller!.value.size.width,
-                    height: controller!.value.size.height,
-                    child: VideoPlayer(controller!),
-                  ),
+    return ClipPath(
+      clipper: _RoundedRectClipper(
+        bodySize: bodySize,
+        enableFullScreen: useFullSize,
+        targetAspectRatio: targetAspectRatio.value,
+        borderRadius: targetAspectRatio == .square ? 0 : 32,
+      ),
+      child: AspectRatio(
+        aspectRatio: aspectRatio,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Video layer
+            if (isPlayerReady)
+              FittedBox(
+                child: SizedBox(
+                  width: controller!.value.size.width,
+                  height: controller!.value.size.height,
+                  child: VideoPlayer(controller!),
                 ),
-
-              // Thumbnail layer with fade out
-              VideoEditorThumbnail(
-                isInitialized: isPlayerReady,
-                contentSize: renderSize,
               ),
-            ],
-          ),
+
+            // Thumbnail layer with fade out
+            VideoEditorThumbnail(
+              isInitialized: isPlayerReady,
+              contentSize: renderSize,
+            ),
+          ],
         ),
       ),
     );
@@ -70,31 +69,23 @@ class _RoundedRectClipper extends CustomClipper<Path> {
   const _RoundedRectClipper({
     required this.bodySize,
     required this.enableFullScreen,
+    required this.targetAspectRatio,
     required this.borderRadius,
   });
 
   final Size bodySize;
   final bool enableFullScreen;
+  final double targetAspectRatio;
   final double borderRadius;
 
   @override
   Path getClip(Size size) {
-    final Size clipSize;
-
-    if (enableFullScreen) {
-      // BoxFit.cover: the visible area is bodySize, scaled to widget coordinates.
-      // Calculate the scale that FittedBox.cover applies to make size cover bodySize.
-      final scale = max(
-        bodySize.width / size.width,
-        bodySize.height / size.height,
-      );
-      // The visible region in widget coordinates
-      clipSize = bodySize / scale;
-    } else {
-      // BoxFit.contain: the AspectRatio widget already has correct proportions,
-      // just use its full size
-      clipSize = size;
-    }
+    final clipSize = computeClipSize(
+      widgetSize: size,
+      bodySize: bodySize,
+      enableFullScreen: enableFullScreen,
+      targetAspectRatio: targetAspectRatio,
+    );
 
     // Convert 32px screen radius to widget coordinates
     final radius = Radius.circular(
@@ -119,5 +110,30 @@ class _RoundedRectClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(_RoundedRectClipper oldClipper) =>
       bodySize != oldClipper.bodySize ||
-      enableFullScreen != oldClipper.enableFullScreen;
+      enableFullScreen != oldClipper.enableFullScreen ||
+      targetAspectRatio != oldClipper.targetAspectRatio ||
+      borderRadius != oldClipper.borderRadius;
+}
+
+/// Computes the clipped region for the video player.
+///
+/// Exposed for testing only.
+@visibleForTesting
+Size computeClipSize({
+  required Size widgetSize,
+  required Size bodySize,
+  required bool enableFullScreen,
+  required double targetAspectRatio,
+}) {
+  if (enableFullScreen) {
+    final scale = max(
+      bodySize.width / widgetSize.width,
+      bodySize.height / widgetSize.height,
+    );
+    return bodySize / scale;
+  }
+  if (widgetSize.aspectRatio > targetAspectRatio) {
+    return Size(widgetSize.height * targetAspectRatio, widgetSize.height);
+  }
+  return Size(widgetSize.width, widgetSize.width / targetAspectRatio);
 }

@@ -17,6 +17,7 @@ import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -36,7 +37,6 @@ import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -54,7 +54,6 @@ enum RouteType {
   hashtag, // Still supported as push route within explore
   search,
   videoRecorder, // Video recorder screen
-  videoClipEditor, // Video clip editor screen
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
   importKey,
@@ -87,6 +86,8 @@ enum RouteType {
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
   videoDetail, // Video detail screen (deep link to specific video)
   conversation, // DM conversation detail (pushed from inbox)
+  messageRequests, // Message requests inbox (pushed from inbox)
+  requestPreview, // Message request preview (pushed from requests)
 }
 
 /// Structured representation of a route
@@ -167,12 +168,24 @@ RouteContext parseRoute(String path) {
     case 'inbox':
       // /inbox - inbox screen
       // /inbox/conversation/:id - conversation detail
+      // /inbox/message-requests - message requests inbox
+      // /inbox/message-requests/:id - request preview
       if (segments.length > 2 && segments[1] == 'conversation') {
         final conversationId = Uri.decodeComponent(segments[2]);
         return RouteContext(
           type: RouteType.conversation,
           conversationId: conversationId,
         );
+      }
+      if (segments.length > 1 && segments[1] == 'message-requests') {
+        if (segments.length > 2) {
+          final conversationId = Uri.decodeComponent(segments[2]);
+          return RouteContext(
+            type: RouteType.requestPreview,
+            conversationId: conversationId,
+          );
+        }
+        return const RouteContext(type: RouteType.messageRequests);
       }
       return const RouteContext(type: RouteType.inbox);
 
@@ -233,14 +246,11 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.videoRecorder);
 
     case 'video-editor':
-      return const RouteContext(type: RouteType.videoEditor);
-
-    case 'video-clip-editor':
       if (segments.length > 1) {
         final draftId = Uri.decodeComponent(segments[1]);
-        return RouteContext(type: RouteType.videoClipEditor, draftId: draftId);
+        return RouteContext(type: RouteType.videoEditor, draftId: draftId);
       }
-      return const RouteContext(type: RouteType.videoClipEditor);
+      return const RouteContext(type: RouteType.videoEditor);
 
     case 'video-metadata':
       return const RouteContext(type: RouteType.videoMetadata);
@@ -389,6 +399,13 @@ String buildRoute(RouteContext context) {
     case RouteType.inbox:
       return InboxPage.path;
 
+    case RouteType.messageRequests:
+      return MessageRequestsPage.path;
+
+    case RouteType.requestPreview:
+      final id = Uri.encodeComponent(context.conversationId ?? '');
+      return '/inbox/message-requests/$id';
+
     case RouteType.profile:
       final npub = Uri.encodeComponent(context.npub ?? '');
       if (context.videoIndex != null) {
@@ -436,13 +453,10 @@ String buildRoute(RouteContext context) {
       return VideoRecorderScreen.path;
 
     case RouteType.videoEditor:
-      return VideoEditorScreen.path;
-
-    case RouteType.videoClipEditor:
       if (context.draftId != null) {
-        return '${VideoClipEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
+        return '${VideoEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
       }
-      return VideoClipEditorScreen.path;
+      return VideoEditorScreen.path;
 
     case RouteType.videoMetadata:
       return VideoMetadataScreen.path;

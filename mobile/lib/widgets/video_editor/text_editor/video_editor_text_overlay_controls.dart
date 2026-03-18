@@ -21,13 +21,27 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Stack(
+    final textEditor = VideoTextEditorScope.of(context).editor;
+    final isEmpty = context.select(
+      (VideoEditorTextBloc bloc) => bloc.state.text.isEmpty,
+    );
+
+    return Stack(
+      fit: .expand,
       children: [
+        if (isEmpty)
+          GestureDetector(
+            behavior: .opaque,
+            onTap: textEditor.focusNode.requestFocus,
+            child: const IgnorePointer(
+              child: SizedBox.expand(),
+            ),
+          ),
         // Close/Done buttons at the top
-        Align(alignment: .topCenter, child: _TopBar()),
+        const Align(alignment: .topCenter, child: _TopBar()),
 
         // Vertical slider for font size on the right side
-        Align(
+        const Align(
           alignment: .centerRight,
           child: Padding(
             padding: .fromLTRB(0, 96, 10, 16),

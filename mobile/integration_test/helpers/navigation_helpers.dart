@@ -155,8 +155,8 @@ Future<bool> waitForTextGone(
 
 /// Tap a bottom navigation tab by its semantic identifier.
 ///
-/// Valid identifiers: 'home_tab', 'explore_tab', 'profile_tab',
-/// 'notifications_tab'.
+/// Valid identifiers: 'home_tab', 'explore_tab', 'inbox_tab',
+/// 'profile_tab'.
 Future<void> tapBottomNavTab(
   WidgetTester tester,
   String semanticId,

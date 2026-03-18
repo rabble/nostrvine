@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 DivineVideoClip _createClip({Completer<bool>? processingCompleter}) {

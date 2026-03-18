@@ -19,7 +19,7 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
-import 'package:openvine/widgets/video_clip_editor/sheets/video_editor_restore_autosave_sheet.dart';
+import 'package:openvine/widgets/video_editor/sheets/video_editor_restore_autosave_sheet.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
@@ -303,11 +303,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
           }
         },
         child: const AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle(
-            statusBarColor: backgroundColor,
-            statusBarIconBrightness: .light,
-            statusBarBrightness: .dark,
-          ),
+          value: VideoEditorConstants.uiOverlayStyle,
           child: Scaffold(
             backgroundColor: backgroundColor,
             resizeToAvoidBottomInset: false,

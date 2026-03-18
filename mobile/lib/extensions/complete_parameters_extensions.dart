@@ -1,0 +1,46 @@
+import 'package:flutter/foundation.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
+
+/// Deep equality extension for [CompleteParameters].
+///
+/// The built-in `==` uses reference equality for [Uint8List] `image`,
+/// so two instances with identical bytes are considered unequal.
+/// This extension compares all fields with proper list/byte equality.
+extension CompleteParametersEquality on CompleteParameters {
+  /// Returns `true` when all fields match [other] by value,
+  /// including byte-level comparison of [image].
+  ///
+  /// Delegates to [diff] so equality and diff logging are always consistent.
+  bool deepEquals(CompleteParameters other) {
+    if (identical(this, other)) return true;
+    return diff(other).isEmpty;
+  }
+
+  /// Returns a list of field names that differ from [other].
+  List<String> diff(CompleteParameters other) {
+    return <String>[
+      if (blur != other.blur) 'blur',
+      if (startTime != other.startTime) 'startTime',
+      if (endTime != other.endTime) 'endTime',
+      if (cropWidth != other.cropWidth) 'cropWidth',
+      if (cropHeight != other.cropHeight) 'cropHeight',
+      if (rotateTurns != other.rotateTurns) 'rotateTurns',
+      if (cropX != other.cropX) 'cropX',
+      if (cropY != other.cropY) 'cropY',
+      if (flipX != other.flipX) 'flipX',
+      if (flipY != other.flipY) 'flipY',
+      if (isTransformed != other.isTransformed) 'isTransformed',
+      if (customAudioTrack != other.customAudioTrack) 'customAudioTrack',
+      if (!listEquals(layers, other.layers)) 'layers',
+      if (!listEquals(videoClips, other.videoClips)) 'videoClips',
+      if (!listEquals(matrixFilterList, other.matrixFilterList))
+        'matrixFilterList',
+      if (!listEquals(
+        matrixTuneAdjustmentsList,
+        other.matrixTuneAdjustmentsList,
+      ))
+        'matrixTuneAdjustmentsList',
+      if (!listEquals(image, other.image)) 'image',
+    ];
+  }
+}

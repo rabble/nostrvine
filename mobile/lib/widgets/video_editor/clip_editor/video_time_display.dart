@@ -1,0 +1,85 @@
+// ABOUTME: Widget displaying current and total video time with separator
+// ABOUTME: Combines smooth interpolated current time with static total duration
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/utils/video_editor_utils.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/smooth_time_display.dart';
+
+/// Displays current video time and total duration with a separator.
+class VideoTimeDisplay extends StatelessWidget {
+  /// Creates a video time display.
+  const VideoTimeDisplay({
+    required this.isPlayingSelector,
+    required this.currentPositionSelector,
+    required this.totalDuration,
+    this.currentStyle,
+    this.separatorStyle,
+    this.totalStyle,
+    super.key,
+  });
+
+  /// Selector that extracts playing state from [ClipEditorState].
+  final bool Function(ClipEditorState state) isPlayingSelector;
+
+  /// Selector that extracts current position from [ClipEditorState].
+  final Duration Function(ClipEditorState state) currentPositionSelector;
+
+  /// Total video duration
+  final Duration totalDuration;
+
+  /// Style for current time (defaults to white)
+  final TextStyle? currentStyle;
+
+  /// Style for separator (defaults to semi-transparent white)
+  final TextStyle? separatorStyle;
+
+  /// Style for total duration (defaults to semi-transparent white)
+  final TextStyle? totalStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final defaultCurrentStyle =
+        currentStyle ??
+        const TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 18,
+          fontFamily: VineTheme.fontFamilyBricolage,
+          fontWeight: .w800,
+          height: 1.33,
+          letterSpacing: 0.15,
+          fontFeatures: [.tabularFigures()],
+        );
+
+    final defaultSeparatorStyle =
+        separatorStyle ??
+        defaultCurrentStyle.copyWith(
+          color: VineTheme.onSurfaceMuted,
+        );
+
+    final defaultTotalStyle = totalStyle ?? defaultSeparatorStyle;
+
+    return Text.rich(
+      TextSpan(
+        style: defaultSeparatorStyle,
+        children: [
+          WidgetSpan(
+            alignment: .baseline,
+            baseline: .alphabetic,
+            child: SmoothTimeDisplay(
+              isPlayingSelector: isPlayingSelector,
+              currentPositionSelector: currentPositionSelector,
+              style: defaultCurrentStyle,
+            ),
+          ),
+          const TextSpan(text: ' / '),
+          TextSpan(
+            text: '${totalDuration.toFormattedSeconds()}s',
+            style: defaultTotalStyle,
+          ),
+        ],
+      ),
+    );
+  }
+}

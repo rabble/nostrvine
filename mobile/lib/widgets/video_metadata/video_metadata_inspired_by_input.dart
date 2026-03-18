@@ -84,10 +84,8 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                       child: Text(
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         'None',
-                        style: VineTheme.titleFont(
-                          fontSize: 16,
+                        style: VineTheme.titleMediumFont(
                           color: VineTheme.onSurface,
-                          letterSpacing: 0.15,
                         ),
                       ),
                     ),

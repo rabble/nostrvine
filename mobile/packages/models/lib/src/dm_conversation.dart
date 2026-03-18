@@ -18,6 +18,7 @@ class DmConversation extends Equatable {
     this.lastMessageSenderPubkey,
     this.subject,
     this.isRead = true,
+    this.currentUserHasSent = false,
   }) : participantPubkeys = List.unmodifiable(participantPubkeys);
 
   /// Deterministic conversation ID (SHA-256 of sorted participant pubkeys).
@@ -47,6 +48,13 @@ class DmConversation extends Equatable {
   /// Whether the conversation has been read.
   final bool isRead;
 
+  /// Whether the current user has sent a message in this conversation.
+  final bool currentUserHasSent;
+
+  /// The most recent timestamp for sorting: last message time, or
+  /// conversation creation time if no messages exist.
+  int get effectiveTimestamp => lastMessageTimestamp ?? createdAt;
+
   /// Creates a copy with the given fields replaced.
   ///
   /// To explicitly clear a nullable field, set the corresponding
@@ -65,6 +73,7 @@ class DmConversation extends Equatable {
     String? subject,
     bool clearSubject = false,
     bool? isRead,
+    bool? currentUserHasSent,
   }) {
     return DmConversation(
       id: id ?? this.id,
@@ -82,6 +91,7 @@ class DmConversation extends Equatable {
           : lastMessageSenderPubkey ?? this.lastMessageSenderPubkey,
       subject: clearSubject ? null : subject ?? this.subject,
       isRead: isRead ?? this.isRead,
+      currentUserHasSent: currentUserHasSent ?? this.currentUserHasSent,
     );
   }
 
@@ -96,5 +106,6 @@ class DmConversation extends Equatable {
     lastMessageSenderPubkey,
     subject,
     isRead,
+    currentUserHasSent,
   ];
 }

@@ -1,6 +1,6 @@
-# diVine Brand Guidelines
+# Divine Brand Guidelines
 
-Brand guidelines for diVine, translated from the official brand PDFs (January 2026).
+Brand guidelines for Divine, translated from the official brand PDFs (January 2026).
 
 ## Files
 

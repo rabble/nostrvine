@@ -2939,5 +2939,215 @@ void main() {
         },
       );
     });
+
+    group('stale position recovery', () {
+      test('recovers when position is frozen after play', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+          preloadAhead: 1,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        // Simulate: video is playing but position is frozen at 533ms
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(false);
+        when(() => setup.state.position).thenReturn(
+          const Duration(milliseconds: 533),
+        );
+
+        // Trigger buffer ready so the controller starts the position timer
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Wait for stale detection (100ms interval × 4 ticks for threshold=3)
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        // Recovery should have called pause + seek + play
+        verify(setup.player.pause).called(greaterThanOrEqualTo(1));
+        verify(
+          () => setup.player.seek(const Duration(milliseconds: 533)),
+        ).called(greaterThanOrEqualTo(1));
+
+        controller.dispose();
+      });
+
+      test('does not trigger recovery when position advances', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+          preloadAhead: 1,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+        var currentPosition = 0;
+
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(false);
+        when(() => setup.state.position).thenAnswer(
+          (_) => Duration(milliseconds: currentPosition += 100),
+        );
+
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Let heartbeat run for a while — position is always advancing
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        // seek should only be called for the initial _resume seek-to-zero
+        // check, not for stale recovery
+        verifyNever(
+          () => setup.player.seek(const Duration(milliseconds: 533)),
+        );
+
+        controller.dispose();
+      });
+
+      test('does not trigger recovery when buffering', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+          preloadAhead: 1,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(true);
+        when(() => setup.state.position).thenReturn(
+          const Duration(milliseconds: 533),
+        );
+
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        // Recovery seek should NOT be called — buffering resets stale count
+        verifyNever(
+          () => setup.player.seek(const Duration(milliseconds: 533)),
+        );
+
+        controller.dispose();
+      });
+
+      test('resets stale count on page change', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(false);
+        when(() => setup.state.position).thenReturn(
+          const Duration(milliseconds: 533),
+        );
+
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+
+        // Swipe away before threshold is reached — resets stale tracking
+        controller.onPageChanged(1);
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        // Recovery seek to 533ms should NOT have been called on index 0
+        verifyNever(
+          () => setup.player.seek(const Duration(milliseconds: 533)),
+        );
+
+        controller.dispose();
+      });
+    });
+
+    group('pool eviction protection', () {
+      test('current video is touched in pool before preloading', () async {
+        // Use a small pool to force eviction pressure
+        final smallPool = TestablePlayerPool(
+          maxPlayers: 4,
+          mockPlayerFactory: (url) {
+            final setup = createMockPlayerSetup();
+            playerSetups[url] = setup;
+
+            final mockPooledPlayer = _MockPooledPlayer();
+            when(() => mockPooledPlayer.player).thenReturn(setup.player);
+            when(
+              () => mockPooledPlayer.videoController,
+            ).thenReturn(createMockVideoController());
+            when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+
+            return mockPooledPlayer;
+          },
+        );
+
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 8),
+          pool: smallPool,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Swipe through several videos
+        for (var i = 1; i <= 4; i++) {
+          final prevUrl = createTestVideos(count: 8)[i - 1].url;
+          final prevSetup = playerSetups[prevUrl];
+          if (prevSetup != null) {
+            prevSetup.bufferingController.add(false);
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          controller.onPageChanged(i);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+
+        // The current video (index 4) should still have a player
+        expect(controller.getVideoController(4), isNotNull);
+
+        controller.dispose();
+        await smallPool.dispose();
+      });
+    });
+
+    group('preload pause and rewind', () {
+      test('pauses before seeking on preloaded video', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Preloaded video (index 1) should get pause then seek(0)
+        final url1 = createTestVideos()[1].url;
+        final setup1 = playerSetups[url1]!;
+
+        setup1.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Verify pause was called (from _pauseAndRewindPreloaded)
+        verify(setup1.player.pause).called(greaterThanOrEqualTo(1));
+        verify(
+          () => setup1.player.seek(Duration.zero),
+        ).called(greaterThanOrEqualTo(1));
+
+        controller.dispose();
+      });
+    });
   });
 }

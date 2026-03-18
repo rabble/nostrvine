@@ -119,6 +119,7 @@ void main() {
       ErrorBuilder? errorBuilder,
       OverlayBuilder? overlayBuilder,
       bool enableTapToPause = false,
+      bool isActive = true,
       VoidCallback? onTap,
     }) {
       return MaterialApp(
@@ -127,6 +128,7 @@ void main() {
             feedController: controller ?? mockController,
             child: PooledVideoPlayer(
               index: index,
+              isActive: isActive,
               controller: controller ?? mockController,
               thumbnailUrl: thumbnailUrl,
               loadingBuilder: loadingBuilder,
@@ -671,6 +673,65 @@ void main() {
         // Widget at index 0 should now show video
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
       });
+    });
+    group('isActive texture bleeding prevention', () {
+      setUp(() {
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.ready,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+      });
+
+      testWidgets(
+        'hides video texture when isActive is false',
+        (tester) async {
+          await tester.pumpWidget(buildWidget(isActive: false));
+
+          final opacityFinder = find.ancestor(
+            of: find.byType(AnimatedOpacity),
+            matching: find.byType(Opacity),
+          );
+
+          expect(opacityFinder, findsOneWidget);
+          expect(
+            tester.widget<Opacity>(opacityFinder).opacity,
+            equals(0),
+          );
+        },
+      );
+
+      testWidgets(
+        'shows video texture when isActive is true',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+
+          final opacityFinder = find.ancestor(
+            of: find.byType(AnimatedOpacity),
+            matching: find.byType(Opacity),
+          );
+
+          expect(opacityFinder, findsOneWidget);
+          expect(
+            tester.widget<Opacity>(opacityFinder).opacity,
+            equals(1),
+          );
+        },
+      );
+
+      testWidgets(
+        'video widget stays in tree when inactive',
+        (tester) async {
+          await tester.pumpWidget(buildWidget(isActive: false));
+
+          expect(
+            find.byKey(const Key('video_widget')),
+            findsOneWidget,
+          );
+        },
+      );
     });
   });
 }

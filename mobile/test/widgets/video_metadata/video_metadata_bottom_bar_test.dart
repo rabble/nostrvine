@@ -11,9 +11,13 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
+import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
+
+class _MockPermissionsService extends Mock implements PermissionsService {}
 
 class _FakeEditorVideo extends Fake implements EditorVideo {}
 
@@ -45,9 +49,21 @@ void main() {
 
   group('VideoMetadataBottomBar', () {
     late _MockGallerySaveService mockGallerySaveService;
+    late _MockPermissionsService mockPermissionsService;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       mockGallerySaveService = _MockGallerySaveService();
+      mockPermissionsService = _MockPermissionsService();
+      when(
+        () => mockPermissionsService.openAppSettings(),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockPermissionsService.checkGalleryStatus(),
+      ).thenAnswer((_) async => PermissionStatus.granted);
+      when(
+        () => mockPermissionsService.requestGalleryPermission(),
+      ).thenAnswer((_) async => PermissionStatus.granted);
       when(
         () => mockGallerySaveService.saveVideoToGallery(any()),
       ).thenAnswer((_) async => const GallerySaveSuccess());
@@ -59,8 +75,7 @@ void main() {
           child: MaterialApp(home: Scaffold(body: VideoMetadataBottomBar())),
         ),
       );
-      // TODO(@hm21): Once the Drafts library exists, uncomment below
-      // expect(find.text('Save draft'), findsOneWidget);
+      expect(find.text('Save for Later'), findsOneWidget);
       expect(find.text('Post'), findsOneWidget);
     });
 
@@ -165,12 +180,15 @@ void main() {
     });
 
     testWidgets(
-      'save for later surfaces gallery permission errors instead of full success',
+      'save for later shows permission sheet on gallery denial',
       (tester) async {
         var saveAsDraftCalled = false;
         when(
           () => mockGallerySaveService.saveVideoToGallery(any()),
         ).thenAnswer((_) async => const GallerySavePermissionDenied());
+        when(
+          () => mockPermissionsService.checkGalleryStatus(),
+        ).thenAnswer((_) async => PermissionStatus.requiresSettings);
 
         final mockNotifier = _MockVideoEditorNotifier(
           VideoEditorProviderState(
@@ -194,6 +212,9 @@ void main() {
               gallerySaveServiceProvider.overrideWith(
                 (ref) => mockGallerySaveService,
               ),
+              permissionsServiceProvider.overrideWithValue(
+                mockPermissionsService,
+              ),
             ],
             child: _createTestApp(const VideoMetadataBottomBar()),
           ),
@@ -202,8 +223,18 @@ void main() {
         await tester.tap(find.text('Save for Later'));
         await tester.pumpAndSettle();
 
+        // Permission sheet should be visible
+        expect(
+          find.text('Gallery Access Needed'),
+          findsOneWidget,
+        );
+
+        // Dismiss via "Not Now"
+        await tester.tap(find.text('Not Now'));
+        await tester.pumpAndSettle();
+
+        // Draft still saved after sheet dismissal
         expect(saveAsDraftCalled, isTrue);
-        expect(find.textContaining('permission denied'), findsOneWidget);
       },
     );
 
@@ -244,13 +275,16 @@ void main() {
       expect(postVideoCalled, isTrue);
     });
 
-    testWidgets('post continues after gallery save permission denial', (
+    testWidgets('post continues after gallery permission sheet dismissal', (
       tester,
     ) async {
       var postVideoCalled = false;
       when(
         () => mockGallerySaveService.saveVideoToGallery(any()),
       ).thenAnswer((_) async => const GallerySavePermissionDenied());
+      when(
+        () => mockPermissionsService.checkGalleryStatus(),
+      ).thenAnswer((_) async => PermissionStatus.requiresSettings);
 
       final mockNotifier = _MockVideoEditorNotifier(
         VideoEditorProviderState(
@@ -274,6 +308,9 @@ void main() {
             gallerySaveServiceProvider.overrideWith(
               (ref) => mockGallerySaveService,
             ),
+            permissionsServiceProvider.overrideWithValue(
+              mockPermissionsService,
+            ),
           ],
           child: _createTestApp(const VideoMetadataBottomBar()),
         ),
@@ -282,9 +319,58 @@ void main() {
       await tester.tap(find.text('Post'));
       await tester.pumpAndSettle();
 
+      // Permission sheet appears — dismiss via "Not Now"
+      await tester.tap(find.text('Not Now'));
+      await tester.pumpAndSettle();
+
       expect(postVideoCalled, isTrue);
-      expect(find.textContaining('permission denied'), findsOneWidget);
     });
+
+    testWidgets(
+      'gallery save is skipped when dismissed forever flag is set',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({
+          'gallery_permission_dismissed_forever': true,
+        });
+        var postVideoCalled = false;
+
+        final mockNotifier = _MockVideoEditorNotifier(
+          VideoEditorProviderState(
+            title: 'Test',
+            finalRenderedClip: DivineVideoClip(
+              id: 'test',
+              video: EditorVideo.file('test.mp4'),
+              duration: const Duration(seconds: 5),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: models.AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ),
+          onPostVideo: () => postVideoCalled = true,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoEditorProvider.overrideWith(() => mockNotifier),
+              gallerySaveServiceProvider.overrideWith(
+                (ref) => mockGallerySaveService,
+              ),
+            ],
+            child: _createTestApp(const VideoMetadataBottomBar()),
+          ),
+        );
+
+        await tester.tap(find.text('Post'));
+        await tester.pumpAndSettle();
+
+        // Gallery save was never called
+        verifyNever(
+          () => mockGallerySaveService.saveVideoToGallery(any()),
+        );
+        expect(postVideoCalled, isTrue);
+      },
+    );
 
     group('snackbar error state', () {
       VideoEditorProviderState validState0() => VideoEditorProviderState(
@@ -340,13 +426,12 @@ void main() {
 
       testWidgets(
         'save for later shows error snackbar when draft save fails '
-        'but gallery succeeds',
+        'even if gallery succeeds',
         (tester) async {
           when(
             () => mockGallerySaveService.saveVideoToGallery(any()),
           ).thenAnswer((_) async => const GallerySaveSuccess());
 
-          final destination = GallerySaveService.destinationName;
           final mockNotifier = _MockVideoEditorNotifier(
             validState0(),
             saveAsDraftResult: false,
@@ -359,6 +444,9 @@ void main() {
                 gallerySaveServiceProvider.overrideWith(
                   (ref) => mockGallerySaveService,
                 ),
+                permissionsServiceProvider.overrideWithValue(
+                  mockPermissionsService,
+                ),
               ],
               child: _createTestApp(const VideoMetadataBottomBar()),
             ),
@@ -367,20 +455,16 @@ void main() {
           await tester.tap(find.text('Save for Later'));
           await tester.pumpAndSettle();
 
+          // Gallery success is not surfaced — only draft status matters.
           final snackbar = findSnackbarContainer(tester);
           expect(snackbar.error, isTrue);
-          expect(
-            snackbar.label,
-            equals(
-              'Saved to $destination, but failed to save to library',
-            ),
-          );
+          expect(snackbar.label, equals('Failed to save'));
         },
       );
 
       testWidgets(
-        'save for later shows error snackbar when gallery '
-        'save fails with reason',
+        'save for later shows success snackbar when gallery '
+        'save fails but draft succeeds',
         (tester) async {
           when(
             () => mockGallerySaveService.saveVideoToGallery(any()),
@@ -388,7 +472,6 @@ void main() {
             (_) async => const GallerySaveFailure('disk full'),
           );
 
-          final destination = GallerySaveService.destinationName;
           final mockNotifier = _MockVideoEditorNotifier(validState0());
 
           await tester.pumpWidget(
@@ -406,15 +489,10 @@ void main() {
           await tester.tap(find.text('Save for Later'));
           await tester.pumpAndSettle();
 
+          // Gallery failure is optional — draft success is what matters.
           final snackbar = findSnackbarContainer(tester);
-          expect(snackbar.error, isTrue);
-          expect(
-            snackbar.label,
-            equals(
-              'Saved to library, but '
-              'failed to save to $destination: disk full',
-            ),
-          );
+          expect(snackbar.error, isFalse);
+          expect(snackbar.label, equals('Saved to library'));
         },
       );
 
@@ -425,10 +503,9 @@ void main() {
           when(
             () => mockGallerySaveService.saveVideoToGallery(any()),
           ).thenAnswer(
-            (_) async => const GallerySavePermissionDenied(),
+            (_) async => const GallerySaveFailure('storage full'),
           );
 
-          final destination = GallerySaveService.destinationName;
           final mockNotifier = _MockVideoEditorNotifier(
             validState0(),
             saveAsDraftResult: false,
@@ -451,13 +528,8 @@ void main() {
 
           final snackbar = findSnackbarContainer(tester);
           expect(snackbar.error, isTrue);
-          expect(
-            snackbar.label,
-            equals(
-              'Failed to save to library, '
-              'and $destination permission denied',
-            ),
-          );
+          // Gallery failure is not surfaced — only draft failure matters.
+          expect(snackbar.label, equals('Failed to save'));
         },
       );
 
@@ -563,7 +635,7 @@ void main() {
           when(
             () => mockGallerySaveService.saveVideoToGallery(any()),
           ).thenAnswer(
-            (_) async => const GallerySavePermissionDenied(),
+            (_) async => const GallerySaveFailure('disk full'),
           );
 
           final mockNotifier = _MockVideoEditorNotifier(
@@ -629,7 +701,7 @@ void main() {
       );
 
       testWidgets(
-        'post shows error snackbar with gallery failure reason',
+        'post does not show snackbar when gallery save fails',
         (tester) async {
           when(
             () => mockGallerySaveService.saveVideoToGallery(any()),
@@ -637,7 +709,6 @@ void main() {
             (_) async => const GallerySaveFailure('no space'),
           );
 
-          final destination = GallerySaveService.destinationName;
           final mockNotifier = _MockVideoEditorNotifier(
             validState0(),
             onPostVideo: () {},
@@ -650,6 +721,9 @@ void main() {
                 gallerySaveServiceProvider.overrideWith(
                   (ref) => mockGallerySaveService,
                 ),
+                permissionsServiceProvider.overrideWithValue(
+                  mockPermissionsService,
+                ),
               ],
               child: _createTestApp(const VideoMetadataBottomBar()),
             ),
@@ -658,15 +732,8 @@ void main() {
           await tester.tap(find.text('Post'));
           await tester.pumpAndSettle();
 
-          final snackbar = findSnackbarContainer(tester);
-          expect(snackbar.error, isTrue);
-          expect(
-            snackbar.label,
-            equals(
-              'failed to save to $destination: '
-              'no space. Video will still post.',
-            ),
-          );
+          // Gallery failure is optional — no snackbar shown.
+          expect(find.byType(DivineSnackbarContainer), findsNothing);
         },
       );
     });
