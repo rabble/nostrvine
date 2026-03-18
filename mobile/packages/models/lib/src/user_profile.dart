@@ -87,6 +87,32 @@ class UserProfile {
     eventId: json['event_id'] as String,
   );
 
+  /// Creates a [UserProfile] from a Funnelcake REST API response.
+  ///
+  /// Both single-profile and batch endpoints return the same shape, so this
+  /// factory works for either. Use [eventIdPrefix] to distinguish the source
+  /// (defaults to `'rest'`; batch callers pass `'rest-bulk'`).
+  factory UserProfile.fromFunnelcake(
+    String pubkey,
+    Map<String, dynamic> data, {
+    String? eventIdPrefix,
+  }) {
+    return UserProfile(
+      pubkey: pubkey,
+      name: data['name'] as String?,
+      displayName: data['display_name'] as String?,
+      about: data['about'] as String?,
+      picture: data['picture'] as String?,
+      banner: data['banner'] as String?,
+      website: data['website'] as String?,
+      nip05: data['nip05'] as String?,
+      lud16: data['lud16'] as String?,
+      rawData: data,
+      createdAt: DateTime.now(),
+      eventId: '${eventIdPrefix ?? 'rest'}-$pubkey',
+    );
+  }
+
   /// Create profile from Drift database row
   factory UserProfile.fromDrift(dynamic row) {
     // Parse rawData from JSON string if present
