@@ -1,6 +1,6 @@
 // ABOUTME: Messages/Notifications segmented toggle for the inbox screen.
 // ABOUTME: Matches the Figma design with primary green active state,
-// ABOUTME: muted inactive state, and a notification badge on the right tab.
+// ABOUTME: muted inactive state, and a notification badge on the left tab.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -38,17 +38,17 @@ class InboxSegmentedToggle extends StatelessWidget {
         children: [
           Expanded(
             child: _ToggleButton(
-              label: 'Messages',
-              isSelected: selected == InboxTab.messages,
-              onTap: () => onChanged(InboxTab.messages),
-            ),
-          ),
-          Expanded(
-            child: _ToggleButton(
               label: 'Notifications',
               isSelected: selected == InboxTab.notifications,
               onTap: () => onChanged(InboxTab.notifications),
               badgeCount: notificationCount,
+            ),
+          ),
+          Expanded(
+            child: _ToggleButton(
+              label: 'Messages',
+              isSelected: selected == InboxTab.messages,
+              onTap: () => onChanged(InboxTab.messages),
             ),
           ),
         ],
@@ -103,22 +103,34 @@ class _ToggleButton extends StatelessWidget {
                     ]
                   : null,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: VineTheme.titleMediumFont(
-                    color: isSelected
-                        ? VineTheme.onPrimaryButton
-                        : VineTheme.onSurfaceMuted,
-                  ),
-                ),
-                if (badgeCount > 0) ...[
-                  const SizedBox(width: 8),
-                  _NotificationBadge(count: badgeCount),
-                ],
-              ],
+            child: Center(
+              child: badgeCount > 0
+                  ? Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Text(
+                          label,
+                          style: VineTheme.titleMediumFont(
+                            color: isSelected
+                                ? VineTheme.onPrimaryButton
+                                : VineTheme.onSurfaceMuted,
+                          ),
+                        ),
+                        Positioned(
+                          top: -4,
+                          right: -24,
+                          child: _NotificationBadge(count: badgeCount),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      label,
+                      style: VineTheme.titleMediumFont(
+                        color: isSelected
+                            ? VineTheme.onPrimaryButton
+                            : VineTheme.onSurfaceMuted,
+                      ),
+                    ),
             ),
           ),
         ),
