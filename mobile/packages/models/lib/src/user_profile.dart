@@ -214,6 +214,26 @@ class UserProfile {
         '${animal[0].toUpperCase()}${animal.substring(1)} $number';
   }
 
+  /// Follower count from either Funnelcake REST API or Nostr Kind 0 rawData.
+  ///
+  /// Checks `follower_count` (REST) and `vine_followers` (Kind 0).
+  /// Returns `null` when neither source provides a value.
+  int? get followerCount {
+    final raw = rawData['follower_count'] ?? rawData['vine_followers'];
+    if (raw == null) return null;
+    return raw is int ? raw : int.tryParse('$raw');
+  }
+
+  /// Video count from either Funnelcake REST API or Nostr Kind 0 rawData.
+  ///
+  /// Checks `video_count` (REST) and `vine_loops` (Kind 0).
+  /// Returns `null` when neither source provides a value.
+  int? get videoCount {
+    final raw = rawData['video_count'] ?? rawData['vine_loops'];
+    if (raw == null) return null;
+    return raw is int ? raw : int.tryParse('$raw');
+  }
+
   /// Check if profile has basic information
   bool get hasBasicInfo =>
       (name?.isNotEmpty ?? false) ||

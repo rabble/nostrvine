@@ -45,10 +45,15 @@ void main() {
       mockGoRouter = MockGoRouter();
 
       when(
-        () => mockDmRepository.watchConversations(limit: any(named: 'limit')),
+        () => mockDmRepository.watchAcceptedConversations(
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) => Stream.value(const []));
       when(
-        () => mockDmRepository.watchUnreadCount(),
+        () => mockDmRepository.watchPotentialRequests(),
+      ).thenAnswer((_) => Stream.value(const []));
+      when(
+        () => mockDmRepository.watchUnreadAcceptedCount(),
       ).thenAnswer((_) => Stream.value(0));
       when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
 

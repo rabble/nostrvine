@@ -445,10 +445,8 @@ class _CommentsSortToggle extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     label,
-                    style: VineTheme.bodyFont(
-                      fontSize: 12,
+                    style: VineTheme.labelMediumFont(
                       color: VineTheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],

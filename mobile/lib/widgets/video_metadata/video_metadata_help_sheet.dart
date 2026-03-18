@@ -65,7 +65,6 @@ class VideoMetadataHelpSheet extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: VineTheme.titleMediumFont(
                         color: VineTheme.primary,
-                        fontSize: 16,
                       ),
                     ),
                   ),

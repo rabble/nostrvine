@@ -131,14 +131,10 @@ class _VideoMetadataTagsInputState
   @override
   Widget build(BuildContext context) {
     // Dynamic label color based on focus state
-    final labelStyle = VineTheme.bodyFont(
+    final labelStyle = VineTheme.labelSmallFont(
       color: _focusNode.hasFocus
           ? VineTheme.primary
           : VineTheme.onSurfaceVariant,
-      fontSize: 11,
-      fontWeight: .w600,
-      height: 1.45,
-      letterSpacing: 0.5,
     );
 
     final tags = ref.watch(videoEditorProvider.select((s) => s.tags));
@@ -241,11 +237,7 @@ class _TagChip extends ConsumerWidget {
           // Hashtag symbol
           Text(
             '#',
-            style: VineTheme.bodyFont(
-              color: VineTheme.primary,
-              height: 1.50,
-              letterSpacing: 0.15,
-            ),
+            style: VineTheme.bodyLargeFont(color: VineTheme.primary),
           ),
           const SizedBox(width: 4),
           // Tag text

@@ -33,6 +33,8 @@ import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
+import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -429,6 +431,37 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           }
           final participantPubkeys = st.extra as List<String>? ?? [];
           return ConversationPage(
+            conversationId: id,
+            participantPubkeys: participantPubkeys,
+          );
+        },
+      ),
+
+      // Message requests inbox (pushed from inbox, no bottom nav)
+      GoRoute(
+        path: MessageRequestsPage.path,
+        name: MessageRequestsPage.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) => const MessageRequestsPage(),
+      ),
+
+      // Message request preview (pushed from requests inbox)
+      GoRoute(
+        path: RequestPreviewPage.pathPattern,
+        name: RequestPreviewPage.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) {
+          final id = st.pathParameters['id'];
+          if (id == null || id.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid request ID')),
+            );
+          }
+          // Pubkeys are optional — the page loads them from the DB
+          // when not provided (e.g. deep link).
+          final participantPubkeys = st.extra as List<String>? ?? [];
+          return RequestPreviewPage(
             conversationId: id,
             participantPubkeys: participantPubkeys,
           );

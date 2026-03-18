@@ -37,7 +37,7 @@ void main() {
 
     test('initial state is 0', () {
       when(
-        () => mockConversationsDao.watchUnreadCount(),
+        () => mockConversationsDao.watchUnreadAcceptedCount(),
       ).thenAnswer((_) => const Stream.empty());
 
       final cubit = buildCubit();
@@ -48,9 +48,9 @@ void main() {
     });
 
     blocTest<DmUnreadCountCubit, int>(
-      'emits counts from watchUnreadCount stream',
+      'emits counts from watchUnreadAcceptedCount stream',
       setUp: () {
-        when(() => mockConversationsDao.watchUnreadCount()).thenAnswer(
+        when(() => mockConversationsDao.watchUnreadAcceptedCount()).thenAnswer(
           (_) => Stream.fromIterable([1, 3, 0]),
         );
       },
@@ -62,7 +62,7 @@ void main() {
       'emits nothing when stream is empty',
       setUp: () {
         when(
-          () => mockConversationsDao.watchUnreadCount(),
+          () => mockConversationsDao.watchUnreadAcceptedCount(),
         ).thenAnswer((_) => const Stream.empty());
       },
       build: buildCubit,
@@ -72,7 +72,7 @@ void main() {
     test('cancels subscription on close', () async {
       final controller = StreamController<int>();
       when(
-        () => mockConversationsDao.watchUnreadCount(),
+        () => mockConversationsDao.watchUnreadAcceptedCount(),
       ).thenAnswer((_) => controller.stream);
 
       final cubit = buildCubit();

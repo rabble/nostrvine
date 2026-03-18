@@ -958,7 +958,18 @@ Future<void> _setZendeskIdentity(
 @riverpod
 UserDataCleanupService userDataCleanupService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return UserDataCleanupService(prefs);
+  final db = ref.watch(databaseProvider);
+  final service = UserDataCleanupService(prefs);
+
+  // Wire database cleanup callback so signOut() clears DM and notification data
+  service.onDatabaseCleanup = () async {
+    await db.directMessagesDao.clearAll();
+    await db.conversationsDao.clearAll();
+    await db.notificationsDao.clearAll();
+    await NotificationServiceEnhanced.instance.clearAllData();
+  };
+
+  return service;
 }
 
 /// Subscription manager for centralized subscription management

@@ -155,6 +155,13 @@ void main() {
         when(
           () => mockNostrClient.fetchProfile(testPubkey),
         ).thenAnswer((_) async => null);
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
         await profileRepository.fetchFreshProfile(pubkey: testPubkey);
         expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
 
@@ -399,6 +406,21 @@ void main() {
     });
 
     group('fetchFreshProfile', () {
+      /// Stubs both relay and indexer to return nothing, so tests that
+      /// only care about one layer can focus on that.
+      void stubAllSourcesMiss() {
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+      }
+
       test('fetches from relay and caches profile', () async {
         final result = await profileRepository.fetchFreshProfile(
           pubkey: testPubkey,
@@ -413,10 +435,8 @@ void main() {
         verify(() => mockUserProfilesDao.upsertProfile(result)).called(1);
       });
 
-      test('returns null when relay returns no profile', () async {
-        when(
-          () => mockNostrClient.fetchProfile(testPubkey),
-        ).thenAnswer((_) async => null);
+      test('returns null when all sources return no profile', () async {
+        stubAllSourcesMiss();
 
         final result = await profileRepository.fetchFreshProfile(
           pubkey: testPubkey,
@@ -428,10 +448,8 @@ void main() {
         verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
       });
 
-      test('marks pubkey as confirmed missing on relay miss', () async {
-        when(
-          () => mockNostrClient.fetchProfile(testPubkey),
-        ).thenAnswer((_) async => null);
+      test('marks pubkey as confirmed missing when all sources miss', () async {
+        stubAllSourcesMiss();
 
         await profileRepository.fetchFreshProfile(pubkey: testPubkey);
 
@@ -439,18 +457,16 @@ void main() {
       });
 
       test(
-        'skips relay fetch for confirmed missing pubkeys',
+        'skips all fetches for confirmed missing pubkeys',
         () async {
-          when(
-            () => mockNostrClient.fetchProfile(testPubkey),
-          ).thenAnswer((_) async => null);
+          stubAllSourcesMiss();
 
-          // First call — hits relay, marks missing
+          // First call — hits all sources, marks missing
           await profileRepository.fetchFreshProfile(
             pubkey: testPubkey,
           );
 
-          // Second call — should not hit relay
+          // Second call — should not hit any source
           await profileRepository.fetchFreshProfile(
             pubkey: testPubkey,
           );
@@ -480,6 +496,216 @@ void main() {
           ).called(1);
         },
       );
+
+      group('with Funnelcake API', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+        late ProfileRepository repoWithFunnelcake;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+        });
+
+        test('uses Funnelcake REST API first when available', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => {
+              'pubkey': testPubkey,
+              'display_name': 'REST User',
+              'name': 'restuser',
+              'picture': 'https://example.com/pic.png',
+            },
+          );
+
+          final result = await repoWithFunnelcake.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('REST User'));
+          verify(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).called(1);
+          // Should NOT fall through to relay
+          verifyNever(() => mockNostrClient.fetchProfile(testPubkey));
+          verify(() => mockUserProfilesDao.upsertProfile(any())).called(1);
+        });
+
+        test('falls back to relay when Funnelcake throws', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenThrow(Exception('API down'));
+
+          final result = await repoWithFunnelcake.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Test User'));
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        });
+
+        test(
+          'falls back to relay when Funnelcake returns null (404)',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer((_) async => null);
+
+            final result = await repoWithFunnelcake.fetchFreshProfile(
+              pubkey: testPubkey,
+            );
+
+            expect(result, isNotNull);
+            expect(result!.displayName, equals('Test User'));
+            verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+          },
+        );
+
+        test(
+          'marks missing immediately when Funnelcake returns '
+          '_noProfile sentinel',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => {'_noProfile': true, 'pubkey': testPubkey},
+            );
+
+            final result = await repoWithFunnelcake.fetchFreshProfile(
+              pubkey: testPubkey,
+            );
+
+            expect(result, isNull);
+            expect(
+              repoWithFunnelcake.isConfirmedMissing(testPubkey),
+              isTrue,
+            );
+            // Should NOT fall through to relay or indexer
+            verifyNever(() => mockNostrClient.fetchProfile(any()));
+            verifyNever(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+                useCache: any(named: 'useCache'),
+              ),
+            );
+          },
+        );
+
+        test('skips Funnelcake when not available', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+          final result = await repoWithFunnelcake.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Test User'));
+          verifyNever(
+            () => mockFunnelcakeClient.getUserProfile(any()),
+          );
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        });
+      });
+
+      group('indexer relay fallback', () {
+        late MockEvent mockIndexerEvent;
+
+        setUp(() {
+          mockIndexerEvent = MockEvent();
+          when(() => mockIndexerEvent.kind).thenReturn(0);
+          when(() => mockIndexerEvent.pubkey).thenReturn(testPubkey);
+          when(() => mockIndexerEvent.createdAt).thenReturn(1704067200);
+          when(() => mockIndexerEvent.id).thenReturn(
+            'idx_$testEventId',
+          );
+          when(() => mockIndexerEvent.content).thenReturn(
+            jsonEncode({
+              'display_name': 'Indexer User',
+              'picture': 'https://example.com/indexer.png',
+            }),
+          );
+        });
+
+        test('falls back to indexer relays when relay misses', () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [mockIndexerEvent]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Indexer User'));
+          verify(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: false,
+            ),
+          ).called(1);
+          verify(() => mockUserProfilesDao.upsertProfile(any())).called(1);
+        });
+
+        test('marks missing when indexer also returns nothing', () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+          expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+        });
+
+        test('handles indexer relay timeout gracefully', () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenThrow(Exception('Indexer timeout'));
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+          expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+        });
+      });
     });
 
     group('saveProfileEvent', () {

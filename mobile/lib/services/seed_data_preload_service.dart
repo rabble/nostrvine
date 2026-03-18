@@ -3,6 +3,7 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:flutter/services.dart';
+import 'package:openvine/services/classic_viner_seed_preload_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class SeedDataPreloadService {
@@ -13,48 +14,57 @@ class SeedDataPreloadService {
   ///
   /// Errors are logged but non-critical - app works normally by fetching
   /// from relay if seed load fails.
-  static Future<void> loadSeedDataIfNeeded(AppDatabase db) async {
+  static Future<void> loadSeedDataIfNeeded(
+    AppDatabase db, {
+    ClassicVinerSeedPreloadService? classicVinerService,
+  }) async {
     try {
       // Check if database already has events
       final count = await db.nostrEventsDao.getEventCount();
       if (count > 0) {
         Log.info(
-          '[SEED] Database has $count events, skipping seed load',
+          '[SEED] Database has $count events, skipping event seed load',
           name: 'SeedDataPreload',
           category: LogCategory.system,
         );
-        return;
+      } else {
+        Log.info(
+          '[SEED] Database empty, loading seed data...',
+          name: 'SeedDataPreload',
+          category: LogCategory.system,
+        );
+
+        // Load SQL file from assets
+        final sql = await rootBundle.loadString(
+          'assets/seed_data/seed_events.sql',
+        );
+
+        // Execute all SQL statements in a single transaction
+        await db.transaction(() async {
+          final statements = sql
+              .split(';')
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty && !s.startsWith('--'));
+
+          for (final statement in statements) {
+            await db.customStatement(statement);
+          }
+        });
+
+        // Log success
+        final finalCount = await db.nostrEventsDao.getEventCount();
+        Log.info(
+          '[SEED] ✅ Loaded seed data: $finalCount events',
+          name: 'SeedDataPreload',
+          category: LogCategory.system,
+        );
       }
 
-      Log.info(
-        '[SEED] Database empty, loading seed data...',
-        name: 'SeedDataPreload',
-        category: LogCategory.system,
-      );
-
-      // Load SQL file from assets
-      final sql = await rootBundle.loadString(
-        'assets/seed_data/seed_events.sql',
-      );
-
-      // Execute all SQL statements in a single transaction
-      await db.transaction(() async {
-        final statements = sql
-            .split(';')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty && !s.startsWith('--'));
-
-        for (final statement in statements) {
-          await db.customStatement(statement);
-        }
-      });
-
-      // Log success
-      final finalCount = await db.nostrEventsDao.getEventCount();
-      Log.info(
-        '[SEED] ✅ Loaded seed data: $finalCount events',
-        name: 'SeedDataPreload',
-        category: LogCategory.system,
+      final vinerService =
+          classicVinerService ?? ClassicVinerSeedPreloadService();
+      await vinerService.importProfilesIfNeeded(
+        userProfilesDao: db.userProfilesDao,
+        profileStatsDao: db.profileStatsDao,
       );
     } catch (e, stack) {
       // Non-critical failure: user will fetch from relay normally

@@ -637,6 +637,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
         children: [
           PooledVideoPlayer(
             index: index,
+            isActive: isActive,
             thumbnailUrl: video.thumbnailUrl,
             enableTapToPause: isActive,
             videoBuilder: (context, videoController, player) =>

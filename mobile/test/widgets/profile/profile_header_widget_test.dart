@@ -147,6 +147,8 @@ void main() {
       required bool isOwnProfile,
       int videoCount = 10,
       UserProfile? profile,
+      UserProfile? suppliedProfile,
+      ProfileStats? profileStats,
       bool profileIsLoading = false,
       VoidCallback? onSetupProfile,
       bool isAnonymous = false,
@@ -159,6 +161,8 @@ void main() {
         userIdHex: userIdHex,
         isOwnProfile: isOwnProfile,
         videoCount: videoCount,
+        profile: suppliedProfile,
+        profileStats: profileStats,
         onSetupProfile: onSetupProfile,
         displayNameHint: displayNameHint,
         avatarUrlHint: avatarUrlHint,
@@ -236,6 +240,53 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(UserAvatar), findsOneWidget);
+    });
+
+    testWidgets(
+      'uses parent-supplied profile for other users while fallback provider is unresolved',
+      (tester) async {
+        final suppliedProfile = createTestProfile(
+          displayName: 'Cached Classic',
+          about: 'Seeded bio',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: suppliedProfile,
+            profileIsLoading: true,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Cached Classic'), findsOneWidget);
+        expect(find.text('Seeded bio'), findsOneWidget);
+      },
+    );
+
+    testWidgets('prefers archived video count when stats are provided', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'Counted User');
+      const profileStats = ProfileStats(
+        pubkey: testUserHex,
+        videoCount: 42,
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: testProfile,
+          profileStats: profileStats,
+          videoCount: 3,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('42'), findsWidgets);
+      expect(find.text('Videos'), findsOneWidget);
     });
 
     testWidgets('displays all three stat columns', (tester) async {

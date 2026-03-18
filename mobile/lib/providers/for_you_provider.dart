@@ -4,6 +4,7 @@
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -72,7 +73,6 @@ class ForYouFeed extends _$ForYouFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
-    final analyticsService = ref.read(analyticsApiServiceProvider);
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -91,10 +91,21 @@ class ForYouFeed extends _$ForYouFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
+    return _fetchRecommendations(limit: _currentLimit);
+  }
+
+  Future<VideoFeedState> _fetchRecommendations({required int limit}) async {
     try {
+      final authService = ref.read(authServiceProvider);
+      final currentUserPubkey = authService.currentPublicKeyHex;
+      if (currentUserPubkey == null) {
+        return const VideoFeedState(videos: [], hasMoreContent: false);
+      }
+
+      final analyticsService = ref.read(analyticsApiServiceProvider);
       final result = await analyticsService.getRecommendations(
         pubkey: currentUserPubkey,
-        limit: _currentLimit,
+        limit: limit,
       );
 
       Log.info(
@@ -218,8 +229,13 @@ class ForYouFeed extends _$ForYouFeed {
     );
 
     _currentLimit = 50; // Reset limit on refresh
-    ref.invalidateSelf();
-    await future; // Wait for rebuild to complete
+
+    await staleWhileRevalidate(
+      getCurrentState: () => state,
+      isMounted: () => ref.mounted,
+      setState: (s) => state = s,
+      fetchFresh: () => _fetchRecommendations(limit: _currentLimit),
+    );
   }
 }
 

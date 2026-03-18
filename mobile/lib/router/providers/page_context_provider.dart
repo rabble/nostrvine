@@ -17,6 +17,7 @@ import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -79,6 +80,8 @@ enum RouteType {
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
   videoDetail, // Video detail screen (deep link to specific video)
   conversation, // DM conversation detail (pushed from inbox)
+  messageRequests, // Message requests inbox (pushed from inbox)
+  requestPreview, // Message request preview (pushed from requests)
 }
 
 /// Structured representation of a route
@@ -159,12 +162,24 @@ RouteContext parseRoute(String path) {
     case 'inbox':
       // /inbox - inbox screen
       // /inbox/conversation/:id - conversation detail
+      // /inbox/message-requests - message requests inbox
+      // /inbox/message-requests/:id - request preview
       if (segments.length > 2 && segments[1] == 'conversation') {
         final conversationId = Uri.decodeComponent(segments[2]);
         return RouteContext(
           type: RouteType.conversation,
           conversationId: conversationId,
         );
+      }
+      if (segments.length > 1 && segments[1] == 'message-requests') {
+        if (segments.length > 2) {
+          final conversationId = Uri.decodeComponent(segments[2]);
+          return RouteContext(
+            type: RouteType.requestPreview,
+            conversationId: conversationId,
+          );
+        }
+        return const RouteContext(type: RouteType.messageRequests);
       }
       return const RouteContext(type: RouteType.inbox);
 
@@ -368,6 +383,13 @@ String buildRoute(RouteContext context) {
 
     case RouteType.inbox:
       return InboxPage.path;
+
+    case RouteType.messageRequests:
+      return MessageRequestsPage.path;
+
+    case RouteType.requestPreview:
+      final id = Uri.encodeComponent(context.conversationId ?? '');
+      return '/inbox/message-requests/$id';
 
     case RouteType.profile:
       final npub = Uri.encodeComponent(context.npub ?? '');

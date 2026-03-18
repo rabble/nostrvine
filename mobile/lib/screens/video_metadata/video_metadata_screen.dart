@@ -262,11 +262,8 @@ class _MetadataLimitWarning extends ConsumerWidget {
               // TODO(l10n): Replace with context.l10n when localization is
               // added.
               '64KB limit reached. Remove some content to continue.',
-              style: VineTheme.bodyFont(
+              style: VineTheme.labelLargeFont(
                 color: VineTheme.contentWarningAmber,
-                fontSize: 14,
-                fontWeight: .w600,
-                height: 1.43,
               ),
             ),
           ),

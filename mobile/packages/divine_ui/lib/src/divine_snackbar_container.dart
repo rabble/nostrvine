@@ -47,7 +47,7 @@ class DivineSnackbarContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = VineTheme.bodyFont(fontWeight: FontWeight.w600);
+    final textStyle = VineTheme.labelLargeFont();
     late final Widget bannerText;
     if (error) {
       bannerText = Text(
