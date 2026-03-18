@@ -201,7 +201,17 @@ void main() {
       });
 
       test('returns time format for today', () {
-        final ts = unixSecondsAgo(const Duration(hours: 2));
+        final now = DateTime.now();
+        if (now.hour < 1) return; // skip: within first hour of the day
+        // Explicitly stay on today to avoid cross-day edge cases on CI
+        final sameDay = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          now.hour - 1,
+          now.minute,
+        );
+        final ts = sameDay.millisecondsSinceEpoch ~/ 1000;
         final result = TimeFormatter.formatMessageTime(ts);
         // Matches patterns like "9:41 AM" or "2:30 PM"
         // intl uses Unicode narrow no-break space (U+202F) before AM/PM
