@@ -3,30 +3,27 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 
 /// Displays a progress bar showing all video clips as segments.
-class VideoClipEditorProgressBar extends ConsumerWidget {
+class VideoClipEditorProgressBar extends StatelessWidget {
   /// Creates a video progress bar widget.
   const VideoClipEditorProgressBar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clips = ref.watch(clipManagerProvider.select((state) => state.clips));
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (s) => (
-          currentClipIndex: s.currentClipIndex,
-          isReordering: s.isReordering,
-        ),
+  Widget build(BuildContext context) {
+    final (currentClipIndex, isReordering, clips) = context.select(
+      (ClipEditorBloc bloc) => (
+        bloc.state.currentClipIndex,
+        bloc.state.isReordering,
+        bloc.state.clips,
       ),
     );
 
     // Calculate offset for current clip
     Duration clipStartOffset = Duration.zero;
-    for (var i = 0; i < state.currentClipIndex && i < clips.length; i++) {
+    for (var i = 0; i < currentClipIndex && i < clips.length; i++) {
       clipStartOffset += clips[i].duration;
     }
 
@@ -36,9 +33,9 @@ class VideoClipEditorProgressBar extends ConsumerWidget {
         final clip = clips[i];
         final isFirst = i == 0;
         final isLast = i == clips.length - 1;
-        final isCompleted = i < state.currentClipIndex;
-        final isCurrent = i == state.currentClipIndex;
-        final isReorderingClip = state.isReordering && isCurrent;
+        final isCompleted = i < currentClipIndex;
+        final isCurrent = i == currentClipIndex;
+        final isReorderingClip = isReordering && isCurrent;
 
         // Determine color based on state
         final segmentColor = isReorderingClip
@@ -53,7 +50,7 @@ class VideoClipEditorProgressBar extends ConsumerWidget {
             alignment: .centerLeft,
             children: [
               AnimatedContainer(
-                duration: state.isReordering
+                duration: isReordering
                     ? Duration.zero
                     : const Duration(milliseconds: 100),
                 height: 8,
@@ -94,7 +91,7 @@ class VideoClipEditorProgressBar extends ConsumerWidget {
   }
 }
 
-class _ClipProgressOverlay extends ConsumerStatefulWidget {
+class _ClipProgressOverlay extends StatefulWidget {
   const _ClipProgressOverlay({
     required this.clipStartOffset,
     required this.clipDuration,
@@ -108,11 +105,10 @@ class _ClipProgressOverlay extends ConsumerStatefulWidget {
   final bool isLast;
 
   @override
-  ConsumerState<_ClipProgressOverlay> createState() =>
-      _ClipProgressOverlayState();
+  State<_ClipProgressOverlay> createState() => _ClipProgressOverlayState();
 }
 
-class _ClipProgressOverlayState extends ConsumerState<_ClipProgressOverlay> {
+class _ClipProgressOverlayState extends State<_ClipProgressOverlay> {
   double _previousProgress = 0.0;
 
   double _calculateProgress(Duration currentPosition) {
@@ -125,17 +121,15 @@ class _ClipProgressOverlayState extends ConsumerState<_ClipProgressOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (s) => (
-          currentPosition: s.currentPosition,
-          hasPlayedOnce: s.hasPlayedOnce,
-        ),
+    final (hasPlayedOnce, currentPosition) = context.select(
+      (ClipEditorBloc bloc) => (
+        bloc.state.hasPlayedOnce,
+        bloc.state.currentPosition,
       ),
     );
 
-    final clipProgress = state.hasPlayedOnce
-        ? _calculateProgress(state.currentPosition)
+    final clipProgress = hasPlayedOnce
+        ? _calculateProgress(currentPosition)
         : 0.0;
 
     // Detect reset (loop) - don't animate backwards

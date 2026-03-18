@@ -6,10 +6,10 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
 import 'package:video_player/video_player.dart';
 
 /// Displays a video clip preview with thumbnail and video playback.
@@ -23,7 +23,7 @@ import 'package:video_player/video_player.dart';
 /// When not current:
 /// - Shows thumbnail or placeholder icon
 /// - Disposes video player to free resources
-class VideoEditorClipPreview extends ConsumerStatefulWidget {
+class VideoEditorClipPreview extends StatefulWidget {
   /// Creates a video clip preview widget.
   const VideoEditorClipPreview({
     required this.clip,
@@ -50,11 +50,10 @@ class VideoEditorClipPreview extends ConsumerStatefulWidget {
   final VoidCallback? onLongPress;
 
   @override
-  ConsumerState<VideoEditorClipPreview> createState() =>
-      _VideoClipPreviewState();
+  State<VideoEditorClipPreview> createState() => _VideoClipPreviewState();
 }
 
-class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
+class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
 
@@ -65,7 +64,6 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
     // Only initialize if this is the current clip
     if (widget.isCurrentClip) {
       unawaited(_initializeVideoPlayer());
-      _setupListeners();
     }
   }
 
@@ -85,37 +83,6 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
     }
   }
 
-  void _setupListeners() {
-    ref
-      // Listen to play/pause state changes
-      ..listenManual(videoEditorProvider.select((state) => state.isPlaying), (
-        previous,
-        next,
-      ) {
-        _handlePlaybackStateChange(next);
-      })
-      // Listen to trim-position changes
-      ..listenManual(
-        videoEditorProvider.select(
-          (state) =>
-              (splitPosition: state.splitPosition, isEditing: state.isEditing),
-        ),
-        (previous, next) {
-          if (!next.isEditing) return;
-          _controller?.seekTo(next.splitPosition);
-        },
-      )
-      // Listen to trim-position changes
-      ..listenManual(videoEditorProvider.select((state) => state.isEditing), (
-        previous,
-        next,
-      ) {
-        if (previous == next) return;
-
-        _controller?.setLooping(!next);
-      });
-  }
-
   Future<void> _initializeVideoPlayer() async {
     final videoPath = await widget.clip.video.safeFilePath();
 
@@ -132,7 +99,9 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
     _controller?.addListener(_videoPlayerListener);
 
     if (mounted) {
-      ref.read(videoEditorProvider.notifier).setPlayerReady(true);
+      context.read<ClipEditorBloc>().add(
+        const ClipEditorPlayerReadyChanged(isReady: true),
+      );
       setState(() {
         _isInitialized = true;
       });
@@ -142,12 +111,12 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
   Future<void> _videoPlayerListener() async {
     if (_controller == null || !mounted || !widget.isCurrentClip) return;
 
-    final notifier = ref.read(videoEditorProvider.notifier);
-    final provider = ref.read(videoEditorProvider);
+    final bloc = context.read<ClipEditorBloc>();
+    final blocState = bloc.state;
 
-    final isEditing = provider.isEditing;
-    final isPlaying = provider.isPlaying;
-    final splitPosition = provider.splitPosition;
+    final isEditing = blocState.isEditing;
+    final isPlaying = blocState.isPlaying;
+    final splitPosition = blocState.splitPosition;
 
     // Check if video has ended
     final position = _controller!.value.position;
@@ -155,11 +124,16 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
         ? splitPosition
         : _controller!.value.duration;
 
-    notifier.updatePosition(widget.clip.id, _controller!.value.position);
+    bloc.add(
+      ClipEditorPositionUpdated(
+        clipId: widget.clip.id,
+        position: _controller!.value.position,
+      ),
+    );
 
     // Track when video starts playing (to hide thumbnail)
-    if (!provider.hasPlayedOnce && (_controller?.value.isPlaying ?? false)) {
-      notifier.setHasPlayedOnce();
+    if (!blocState.hasPlayedOnce && (_controller?.value.isPlaying ?? false)) {
+      bloc.add(const ClipEditorFirstPlaybackStarted());
     }
 
     if (isEditing &&
@@ -188,15 +162,34 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
 
     // Dispose video player when no longer current clip
     if (oldWidget.isCurrentClip && !widget.isCurrentClip) {
-      ref.read(videoEditorProvider.notifier).setPlayerReady(false);
+      context.read<ClipEditorBloc>().add(
+        const ClipEditorPlayerReadyChanged(isReady: false),
+      );
       unawaited(_disposeController());
       _isInitialized = false;
     }
 
+    // Reinitialize when the underlying video file changed (e.g. after a
+    // split finishes rendering) while this is still the current clip.
+    if (widget.isCurrentClip && oldWidget.clip.video != widget.clip.video) {
+      unawaited(_reinitializePlayer());
+    }
+
     // Handle playback when isCurrentClip changes
     if (oldWidget.isCurrentClip != widget.isCurrentClip) {
-      final isPlaying = ref.read(videoEditorProvider).isPlaying;
+      final isPlaying = context.read<ClipEditorBloc>().state.isPlaying;
       _handlePlaybackStateChange(isPlaying);
+    }
+  }
+
+  Future<void> _reinitializePlayer() async {
+    context.read<ClipEditorBloc>().add(
+      const ClipEditorPlayerReadyChanged(isReady: false),
+    );
+    await _disposeController();
+    _isInitialized = false;
+    if (mounted) {
+      await _initializeVideoPlayer();
     }
   }
 
@@ -218,58 +211,81 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
     // rebuilds
     final isOverDeleteZone =
         widget.isCurrentClip &&
-        ref.watch(videoEditorProvider.select((s) => s.isOverDeleteZone));
+        context.select<ClipEditorBloc, bool>(
+          (bloc) => bloc.state.isOverDeleteZone,
+        );
 
-    return Center(
-      child: AspectRatio(
-        aspectRatio: widget.clip.targetAspectRatio.value,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          onLongPress: widget.onLongPress,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              borderRadius: .circular(16),
-              border: .all(
-                color: isOverDeleteZone
-                    // Red when over delete zone
-                    ? VineTheme.error
-                    : widget.isReordering
-                    // Yellow when reordering
-                    ? VineTheme.accentYellow
-                    : VineTheme.transparent, // Transparent otherwise
-                width: 6,
-                strokeAlign: BorderSide.strokeAlignOutside,
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          listenWhen: (prev, curr) => prev.isPlaying != curr.isPlaying,
+          listener: (_, state) => _handlePlaybackStateChange(state.isPlaying),
+        ),
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          listenWhen: (prev, curr) =>
+              curr.isEditing &&
+              (prev.splitPosition != curr.splitPosition ||
+                  prev.isEditing != curr.isEditing),
+          listener: (_, state) => _controller?.seekTo(state.splitPosition),
+        ),
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          listenWhen: (prev, curr) => prev.isEditing != curr.isEditing,
+          listener: (_, state) => _controller?.setLooping(!state.isEditing),
+        ),
+      ],
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: widget.clip.targetAspectRatio.value,
+          child: GestureDetector(
+            onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                borderRadius: .circular(16),
+                border: .all(
+                  color: isOverDeleteZone
+                      // Red when over delete zone
+                      ? VineTheme.error
+                      : widget.isReordering
+                      // Yellow when reordering
+                      ? VineTheme.accentYellow
+                      : VineTheme.transparent, // Transparent otherwise
+                  width: 6,
+                  strokeAlign: BorderSide.strokeAlignOutside,
+                ),
               ),
-            ),
-            child: ClipRRect(
-              borderRadius: .circular(16),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Show video player ONLY when this is the current clip
-                  if (_isInitialized &&
-                      _controller != null &&
-                      widget.isCurrentClip)
-                    FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: _controller!.value.size.width,
-                        height: _controller!.value.size.height,
-                        child: IgnorePointer(child: VideoPlayer(_controller!)),
+              child: ClipRRect(
+                borderRadius: .circular(16),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Show video player ONLY when this is the current clip
+                    if (_isInitialized &&
+                        _controller != null &&
+                        widget.isCurrentClip)
+                      FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _controller!.value.size.width,
+                          height: _controller!.value.size.height,
+                          child: IgnorePointer(
+                            child: VideoPlayer(_controller!),
+                          ),
+                        ),
                       ),
+
+                    _ThumbnailVisibility(
+                      isCurrentClip: widget.isCurrentClip,
+                      clip: widget.clip,
                     ),
 
-                  _ThumbnailVisibility(
-                    isCurrentClip: widget.isCurrentClip,
-                    clip: widget.clip,
-                  ),
-
-                  VideoClipEditorProcessingOverlay(
-                    clip: widget.clip,
-                    isCurrentClip: widget.isCurrentClip,
-                  ),
-                ],
+                    VideoClipEditorProcessingOverlay(
+                      clip: widget.clip,
+                      isCurrentClip: widget.isCurrentClip,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -279,33 +295,34 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
   }
 }
 
-/// Controls thumbnail visibility based on playback state.
+/// Controls thumbnail visibility based on playback and editing state.
 ///
-/// Shows thumbnail when video hasn't played yet, hides when playing or has played.
-/// Uses AnimatedSwitcher internally for smooth fade transitions.
-class _ThumbnailVisibility extends ConsumerWidget {
+/// Hides the thumbnail when:
+/// - The video has played at least once, OR
+/// - The clip is in edit mode (split position seeking shows the live frame)
+///
+/// Uses AnimatedOpacity for smooth bidirectional fade transitions.
+class _ThumbnailVisibility extends StatelessWidget {
   const _ThumbnailVisibility({required this.isCurrentClip, required this.clip});
 
   final bool isCurrentClip;
   final DivineVideoClip clip;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Only watch hasPlayedOnce for current clip
-    final hasPlayedOnce =
+  Widget build(BuildContext context) {
+    final shouldHide =
         isCurrentClip &&
-        ref.watch(videoEditorProvider.select((s) => s.hasPlayedOnce));
+        context.select<ClipEditorBloc, bool>(
+          (bloc) => bloc.state.hasPlayedOnce || bloc.state.isEditing,
+        );
 
-    return AnimatedSwitcher(
-      layoutBuilder: (currentChild, previousChildren) => Stack(
-        fit: StackFit.expand,
-        alignment: Alignment.center,
-        children: [...previousChildren, ?currentChild],
+    return IgnorePointer(
+      ignoring: shouldHide,
+      child: AnimatedOpacity(
+        opacity: shouldHide ? 0.0 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: _ClipThumbnail(clip: clip),
       ),
-      duration: const Duration(milliseconds: 150),
-      child: hasPlayedOnce
-          ? const SizedBox.shrink()
-          : _ClipThumbnail(clip: clip),
     );
   }
 }

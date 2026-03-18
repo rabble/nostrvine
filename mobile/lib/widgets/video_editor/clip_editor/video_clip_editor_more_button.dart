@@ -1,7 +1,9 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -21,13 +23,14 @@ class VideoClipEditorMoreButton extends ConsumerStatefulWidget {
 
 class _VideoEditorMoreButtonState
     extends ConsumerState<VideoClipEditorMoreButton> {
-  /// Gets the current clip index from the video editor.
-  int get _currentClipIndex => ref.read(videoEditorProvider).currentClipIndex;
+  /// Gets the current clip index from the clip editor bloc.
+  int get _currentClipIndex =>
+      context.read<ClipEditorBloc>().state.currentClipIndex;
 
-  /// Gets the current clip from the clip manager.
+  /// Gets the current clip from the BLoC's local clip list.
   DivineVideoClip get _currentClip {
-    final clipManager = ref.read(clipManagerProvider.notifier);
-    return clipManager.clips[_currentClipIndex];
+    final state = context.read<ClipEditorBloc>().state;
+    return state.clips[_currentClipIndex];
   }
 
   /// Show the more options bottom sheet.
@@ -39,7 +42,7 @@ class _VideoEditorMoreButtonState
       name: 'VideoEditorNotifier',
       category: .video,
     );
-    final isEditing = ref.read(videoEditorProvider).isEditing;
+    final isEditing = context.read<ClipEditorBloc>().state.isEditing;
 
     if (isEditing) {
       await _openClipEditOptions();
@@ -65,19 +68,15 @@ class _VideoEditorMoreButtonState
           label: 'Save selected clip',
           onTap: _saveClipToLibrary,
         ),
-        VineBottomSheetActionData(
-          iconPath: 'assets/icon/trash.svg',
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Delete clips & start over',
-          onTap: _deleteAndStartOver,
-          isDestructive: true,
-        ),
       ],
     );
   }
 
   /// Shows options for clip editing mode: split, save, or delete current clip.
   Future<void> _openClipEditOptions() async {
+    final clips = context.read<ClipEditorBloc>().state.clips;
+    final isLastClip = clips.length <= 1;
+
     await VineBottomSheetActionMenu.show(
       context: context,
       options: [
@@ -85,8 +84,9 @@ class _VideoEditorMoreButtonState
           iconPath: 'assets/icon/trim.svg',
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Split clip',
-          onTap: () =>
-              ref.read(videoEditorProvider.notifier).splitSelectedClip(),
+          onTap: () => context.read<ClipEditorBloc>().add(
+            const ClipEditorSplitRequested(),
+          ),
         ),
         VineBottomSheetActionData(
           iconPath: 'assets/icon/save.svg',
@@ -98,7 +98,7 @@ class _VideoEditorMoreButtonState
           iconPath: 'assets/icon/trash.svg',
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Delete clip',
-          onTap: _removeClip,
+          onTap: isLastClip ? null : _removeClip,
           isDestructive: true,
         ),
       ],
@@ -121,37 +121,28 @@ class _VideoEditorMoreButtonState
 
   /// Removes the current clip from the timeline.
   ///
-  /// If no clips remain, navigates back to the previous screen.
-  Future<void> _removeClip() async {
-    final clipManager = ref.read(clipManagerProvider.notifier);
-    final success = await clipManager.removeClipById(_currentClip.id);
+  /// If only one clip remains, navigates back to the previous screen.
+  void _removeClip() {
+    final bloc = context.read<ClipEditorBloc>();
+    final clips = bloc.state.clips;
+    final clipId = _currentClip.id;
 
-    if (!success) {
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      _showSnackBar(
-        message: 'Failed to delete clip: Clip not found',
-        isError: true,
-      );
+    if (clips.length <= 1) {
+      // Last clip — navigate back to the video recorder.
+      _deleteAndStartOver();
       return;
     }
 
-    // Check if there are any clips left
-    final remainingClips = ref.read(clipManagerProvider).clips;
+    bloc.add(ClipEditorClipRemoved(clipId));
 
-    if (remainingClips.isEmpty) {
-      // No clips left, navigate back
-      if (mounted) context.pop();
-    } else {
-      // Update currentClipIndex if it's now out of bounds
-      final videoEditor = ref.read(videoEditorProvider.notifier);
-      final currentIndex = ref.read(videoEditorProvider).currentClipIndex;
-      if (currentIndex >= remainingClips.length) {
-        videoEditor.selectClipByIndex(remainingClips.length - 1);
-      }
-      videoEditor.stopClipEditing();
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      _showSnackBar(message: 'Clip deleted');
+    // Adjust index if it would be out of bounds after removal.
+    final currentIndex = bloc.state.currentClipIndex;
+    if (currentIndex >= clips.length - 1) {
+      bloc.add(ClipEditorClipSelected(clips.length - 2));
     }
+    bloc.add(const ClipEditorEditingStopped());
+    // TODO(l10n): Replace with context.l10n when localization is added.
+    _showSnackBar(message: 'Clip deleted');
   }
 
   /// Shows a styled snackbar with the given message.
@@ -176,6 +167,18 @@ class _VideoEditorMoreButtonState
     ref.read(clipManagerProvider.notifier).clearAll();
 
     /// Navigate back to the video-recorder page.
+    // TODO(hm21): reimplement after design decision is done
+    // if we go back to camera and also clean all clips or not.
+    // if (mounted) {
+    //   Navigator.of(
+    //     context,
+    //   ).popUntil(
+    //     (route) =>
+    //         route.settings.name == VideoRecorderScreen.routeName ||
+    //         route.settings.name == LibraryScreen.draftsRouteName ||
+    //         route.settings.name == LibraryScreen.clipsRouteName,
+    //   );
+    // }
     context.pop();
   }
 
@@ -190,17 +193,46 @@ class _VideoEditorMoreButtonState
       category: .video,
     );
 
-    await VineBottomSheet.show(
+    final bloc = context.read<ClipEditorBloc>();
+    final selectedClips = await VineBottomSheet.show<List<DivineVideoClip>>(
       context: context,
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
       showHeaderDivider: false,
-      body: const LibraryScreen(selectionMode: true),
+      body: LibraryScreen(
+        selectionMode: true,
+        editorClips: bloc.state.clips,
+      ),
     );
 
+    if (selectedClips == null || selectedClips.isEmpty || !context.mounted) {
+      return;
+    }
+
+    final currentCount = bloc.state.clips.length;
+
+    for (var i = 0; i < selectedClips.length; i++) {
+      final clip = selectedClips[i];
+      final newClip = DivineVideoClip(
+        id: 'clip_${DateTime.now().millisecondsSinceEpoch}_$i',
+        video: clip.video,
+        duration: clip.duration,
+        recordedAt: DateTime.now(),
+        thumbnailPath: clip.thumbnailPath,
+        targetAspectRatio: clip.targetAspectRatio,
+        originalAspectRatio: clip.targetAspectRatio.value,
+        lensMetadata: clip.lensMetadata,
+        ghostFramePath: clip.ghostFramePath,
+        thumbnailTimestamp: clip.thumbnailTimestamp,
+      );
+      bloc.add(
+        ClipEditorClipInserted(index: currentCount + i, clip: newClip),
+      );
+    }
+
     Log.info(
-      '📹 Closed clip library',
+      '📹 Added ${selectedClips.length} clips from library',
       name: 'ClipManagerNotifier',
       category: .video,
     );

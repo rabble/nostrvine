@@ -3,17 +3,19 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_more_button.dart';
-import 'package:openvine/widgets/video_clip_editor/video_time_display.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_more_button.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_time_display.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 /// Bottom bar with playback controls and time display.
-class VideoClipEditorBottomBar extends ConsumerWidget {
+class VideoClipEditorBottomBar extends StatelessWidget {
   /// Creates a video editor bottom bar widget.
   const VideoClipEditorBottomBar({super.key});
 
@@ -30,11 +32,12 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleSplitClip(BuildContext context, WidgetRef ref) async {
-    final splitPosition = ref.read(videoEditorProvider).splitPosition;
-    final currentClipIndex = ref.read(videoEditorProvider).currentClipIndex;
+  void _handleSplitClip(BuildContext context) {
+    final clipEditorState = context.read<ClipEditorBloc>().state;
+    final splitPosition = clipEditorState.splitPosition;
+    final currentClipIndex = clipEditorState.currentClipIndex;
 
-    final clips = ref.read(clipManagerProvider).clips;
+    final clips = clipEditorState.clips;
     if (currentClipIndex >= clips.length) {
       return;
     }
@@ -69,31 +72,40 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
     }
 
     // Proceed with split
-    await ref.read(videoEditorProvider.notifier).splitSelectedClip();
+    context.read<ClipEditorBloc>().add(const ClipEditorSplitRequested());
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (state) => (
-          isPlaying: state.isPlaying,
-          isEditing: state.isEditing,
-          isReordering: state.isReordering,
-          isMuted: state.isMuted,
-          currentClipIndex: state.currentClipIndex,
-          splitPosition: state.splitPosition,
-        ),
-      ),
-    );
-    final notifier = ref.read(videoEditorProvider.notifier);
+  Widget build(BuildContext context) {
+    final (
+      :isReordering,
+      :isPlaying,
+      :isEditing,
+      :currentClipIndex,
+    ) = context
+        .select<
+          ClipEditorBloc,
+          ({
+            bool isReordering,
+            bool isPlaying,
+            bool isEditing,
+            int currentClipIndex,
+          })
+        >(
+          (bloc) => (
+            isReordering: bloc.state.isReordering,
+            isPlaying: bloc.state.isPlaying,
+            isEditing: bloc.state.isEditing,
+            currentClipIndex: bloc.state.currentClipIndex,
+          ),
+        );
 
     return Container(
       height: 80,
       padding: const .symmetric(horizontal: 16, vertical: 16),
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        child: state.isReordering
+        child: isReordering
             ? const _ClipRemoveArea()
             : Row(
                 mainAxisAlignment: .spaceBetween,
@@ -104,16 +116,18 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                     children: [
                       VideoEditorIconButton(
                         backgroundColor: VineTheme.transparent,
-                        icon: state.isPlaying ? .pause : .play,
-                        onTap: notifier.togglePlayPause,
+                        icon: isPlaying ? .pause : .play,
+                        onTap: () => context.read<ClipEditorBloc>().add(
+                          const ClipEditorPlayPauseToggled(),
+                        ),
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticLabel: 'Play or pause video',
                       ),
-                      if (state.isEditing)
+                      if (isEditing)
                         VideoEditorIconButton(
                           backgroundColor: VineTheme.transparent,
                           icon: .scissors,
-                          onTap: () => _handleSplitClip(context, ref),
+                          onTap: () => _handleSplitClip(context),
                           // TODO(l10n): Replace with context.l10n when localization is added.
                           semanticLabel: 'Crop',
                         ),
@@ -122,47 +136,41 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                   ),
 
                   // Time display
-                  Consumer(
-                    builder: (_, ref, _) {
-                      Duration totalDuration = .zero;
+                  BlocSelector<
+                    ClipEditorBloc,
+                    ClipEditorState,
+                    ({Duration totalDuration, List<DivineVideoClip> clips})
+                  >(
+                    selector: (state) => (
+                      totalDuration: state.totalDuration,
+                      clips: state.clips,
+                    ),
+                    builder: (context, data) {
+                      Duration totalDuration;
 
-                      if (state.isEditing) {
-                        totalDuration = ref.watch(
-                          clipManagerProvider.select((p) {
-                            final clipIndex = state.currentClipIndex;
-
-                            if (clipIndex >= p.clips.length) {
-                              assert(
-                                false,
-                                'Clip index $clipIndex is out of bounds. '
-                                'Total clips: ${p.clips.length}',
-                              );
-                              return Duration.zero;
-                            }
-
-                            return p.clips[clipIndex].duration;
-                          }),
-                        );
+                      if (isEditing) {
+                        if (currentClipIndex >= data.clips.length) {
+                          assert(
+                            false,
+                            'Clip index $currentClipIndex is out of bounds. '
+                            'Total clips: ${data.clips.length}',
+                          );
+                          totalDuration = Duration.zero;
+                        } else {
+                          totalDuration = data.clips[currentClipIndex].duration;
+                        }
                       } else {
-                        totalDuration = ref.watch(
-                          clipManagerProvider.select(
-                            (state) => state.totalDuration,
-                          ),
-                        );
+                        totalDuration = data.totalDuration;
                       }
 
                       return VideoTimeDisplay(
                         key: ValueKey(
-                          'Video-Editor-Time-Display-${state.isEditing}',
+                          'Video-Editor-Time-Display-$isEditing',
                         ),
-                        isPlayingSelector: videoEditorProvider.select(
-                          (s) => s.isPlaying && !s.isEditing,
-                        ),
-                        currentPositionSelector: state.isEditing
-                            ? videoEditorProvider.select((s) => s.splitPosition)
-                            : videoEditorProvider.select(
-                                (s) => s.currentPosition,
-                              ),
+                        isPlayingSelector: (s) => s.isPlaying && !s.isEditing,
+                        currentPositionSelector: isEditing
+                            ? (s) => s.splitPosition
+                            : (s) => s.currentPosition,
                         totalDuration: Duration(
                           milliseconds: totalDuration.inMilliseconds.clamp(
                             0,
@@ -185,25 +193,33 @@ class _ClipRemoveArea extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deleteButtonKey = ref.read(videoEditorProvider).deleteButtonKey;
-    final isOverDeleteZone = ref.watch(
-      videoEditorProvider.select((s) => s.isOverDeleteZone),
-    );
+    final (:isOverDeleteZone, :isLastClip) = context
+        .select<ClipEditorBloc, ({bool isOverDeleteZone, bool isLastClip})>(
+          (bloc) => (
+            isOverDeleteZone: bloc.state.isOverDeleteZone,
+            isLastClip: bloc.state.clips.length <= 1,
+          ),
+        );
     return Align(
       child: AnimatedScale(
-        scale: isOverDeleteZone ? 1.4 : 1.0,
+        scale: isOverDeleteZone && !isLastClip ? 1.4 : 1.0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        child: Container(
-          key: deleteButtonKey,
-          padding: const .all(10),
-          decoration: ShapeDecoration(
-            color: VineTheme.error,
-            shape: RoundedRectangleBorder(borderRadius: .circular(20)),
-          ),
-          child: const DivineIcon(
-            icon: .trash,
-            size: 28,
-            color: VineTheme.backgroundColor,
+        child: AnimatedOpacity(
+          opacity: isLastClip ? 0.3 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            key: deleteButtonKey,
+            padding: const .all(10),
+            decoration: ShapeDecoration(
+              color: VineTheme.error,
+              shape: RoundedRectangleBorder(borderRadius: .circular(20)),
+            ),
+            child: const DivineIcon(
+              icon: .trash,
+              size: 28,
+              color: VineTheme.backgroundColor,
+            ),
           ),
         ),
       ),

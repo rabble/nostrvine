@@ -3,18 +3,43 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_progress_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_progress_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('VideoClipEditorProgressBar Widget Tests', () {
+    Widget buildTestWidget({
+      required List<DivineVideoClip> clips,
+      int currentClipIndex = 0,
+      bool isReordering = false,
+      Duration currentPosition = Duration.zero,
+      bool hasPlayedOnce = false,
+    }) {
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          clips: clips,
+          currentClipIndex: currentClipIndex,
+          isReordering: isReordering,
+          currentPosition: currentPosition,
+          hasPlayedOnce: hasPlayedOnce,
+        ),
+      );
+
+      return ProviderScope(
+        child: BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: const MaterialApp(
+            home: Scaffold(body: VideoClipEditorProgressBar()),
+          ),
+        ),
+      );
+    }
+
     testWidgets('displays progress bar with correct number of segments', (
       tester,
     ) async {
@@ -30,22 +55,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipManagerProvider.overrideWith(
-              () => TestClipManagerNotifier(ClipManagerState(clips: clips)),
-            ),
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(VideoEditorProviderState()),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoClipEditorProgressBar()),
-          ),
-        ),
-      );
-
+      await tester.pumpWidget(buildTestWidget(clips: clips));
       await tester.pumpAndSettle();
 
       // Progress bar should be present
@@ -78,22 +88,7 @@ void main() {
         ),
       ];
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipManagerProvider.overrideWith(
-              () => TestClipManagerNotifier(ClipManagerState(clips: clips)),
-            ),
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(VideoEditorProviderState()),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoClipEditorProgressBar()),
-          ),
-        ),
-      );
-
+      await tester.pumpWidget(buildTestWidget(clips: clips));
       await tester.pumpAndSettle();
 
       // Verify Expanded widgets have correct flex values
@@ -118,23 +113,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipManagerProvider.overrideWith(
-              () => TestClipManagerNotifier(ClipManagerState(clips: clips)),
-            ),
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(
-                VideoEditorProviderState(currentClipIndex: 2),
-              ),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoClipEditorProgressBar()),
-          ),
-        ),
+        buildTestWidget(clips: clips, currentClipIndex: 2),
       );
-
       await tester.pumpAndSettle();
 
       // Get all AnimatedContainers
@@ -166,23 +146,8 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipManagerProvider.overrideWith(
-              () => TestClipManagerNotifier(ClipManagerState(clips: clips)),
-            ),
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(
-                VideoEditorProviderState(isReordering: true),
-              ),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoClipEditorProgressBar()),
-          ),
-        ),
+        buildTestWidget(clips: clips, isReordering: true),
       );
-
       await tester.pumpAndSettle();
 
       // Get the AnimatedContainer
@@ -214,26 +179,12 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipManagerProvider.overrideWith(
-              () => TestClipManagerNotifier(ClipManagerState(clips: clips)),
-            ),
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(
-                VideoEditorProviderState(
-                  currentPosition: const Duration(seconds: 5),
-                  hasPlayedOnce: true, // Required for progress to show
-                ),
-              ),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoClipEditorProgressBar()),
-          ),
+        buildTestWidget(
+          clips: clips,
+          currentPosition: const Duration(seconds: 5),
+          hasPlayedOnce: true,
         ),
       );
-
       await tester.pumpAndSettle();
 
       // FractionallySizedBox should be present for progress overlay
@@ -266,22 +217,7 @@ void main() {
         ),
       ];
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipManagerProvider.overrideWith(
-              () => TestClipManagerNotifier(ClipManagerState(clips: clips)),
-            ),
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(VideoEditorProviderState()),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoClipEditorProgressBar()),
-          ),
-        ),
-      );
-
+      await tester.pumpWidget(buildTestWidget(clips: clips));
       await tester.pumpAndSettle();
 
       final containers = tester
@@ -303,18 +239,10 @@ void main() {
   });
 }
 
-class TestVideoEditorNotifier extends VideoEditorNotifier {
-  TestVideoEditorNotifier(this._state);
-  final VideoEditorProviderState _state;
-
-  @override
-  VideoEditorProviderState build() => _state;
-}
-
-class TestClipManagerNotifier extends ClipManagerNotifier {
-  TestClipManagerNotifier(this._state);
-  final ClipManagerState _state;
-
-  @override
-  ClipManagerState build() => _state;
+class _TestClipEditorBloc extends ClipEditorBloc {
+  _TestClipEditorBloc({
+    ClipEditorState initialState = const ClipEditorState(),
+  }) {
+    emit(initialState);
+  }
 }

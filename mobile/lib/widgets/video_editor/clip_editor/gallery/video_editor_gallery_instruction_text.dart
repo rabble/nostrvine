@@ -3,22 +3,23 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 
 /// Instruction text that appears below the clip gallery.
 ///
 /// Displays "Tap to edit. Hold and drag to reorder." with animated transitions
 /// based on editing and reordering states.
-class ClipGalleryInstructionText extends ConsumerWidget {
+class ClipGalleryInstructionText extends StatelessWidget {
   /// Creates clip gallery instruction text.
   const ClipGalleryInstructionText({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (s) => (isEditing: s.isEditing, isReordering: s.isReordering),
+  Widget build(BuildContext context) {
+    final state = context.select(
+      (ClipEditorBloc bloc) => (
+        isEditing: bloc.state.isEditing,
+        isReordering: bloc.state.isReordering,
       ),
     );
     return AnimatedSwitcher(
@@ -34,17 +35,13 @@ class ClipGalleryInstructionText extends ConsumerWidget {
           : AnimatedOpacity(
               duration: const Duration(milliseconds: 120),
               opacity: state.isReordering ? 0 : 1,
-              child: const Align(
+              child: Align(
                 child: Padding(
-                  padding: EdgeInsets.only(top: 25),
+                  padding: const .only(top: 25),
                   child: Text(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     'Tap to edit. Hold and drag to reorder.',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      height: 1.33,
-                      letterSpacing: 0.4,
-                      fontSize: 12,
+                    style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
                     textAlign: TextAlign.center,

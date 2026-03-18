@@ -1,7 +1,5 @@
 // ABOUTME: Widget tests for VideoEditorMainOverlayActions toolbar.
-// ABOUTME: Tests button rendering, enabled/disabled states, and music sub-editor hiding.
-
-import 'dart:async';
+// ABOUTME: Tests button rendering, play state indicator, and music sub-editor hiding.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -33,7 +31,9 @@ void main() {
       mockGoRouter = MockGoRouter();
 
       when(() => mockBloc.state).thenReturn(const VideoEditorMainState());
-      when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockBloc.stream).thenAnswer(
+        (_) => const Stream<VideoEditorMainState>.empty(),
+      );
       when(() => mockGoRouter.pop<Object?>(any())).thenAnswer((_) async {});
     });
 
@@ -52,7 +52,11 @@ void main() {
                 removeAreaKey: GlobalKey(),
                 originalClipAspectRatio: 9 / 16,
                 bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                videoOutputPathNotifier: ValueNotifier('temp/video.mp4'),
+                fromLibrary: false,
+                onOpenClipsEditor: () {},
                 onAddStickers: () {},
+                onAdjustVolume: () {},
                 onAddEditTextLayer: ([layer]) async => null,
                 child: BlocProvider<VideoEditorMainBloc>.value(
                   value: mockBloc,
@@ -93,35 +97,30 @@ void main() {
         expect(find.byType(VideoEditorAudioChip), findsOneWidget);
       });
 
-      testWidgets('renders Undo button', (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.bySemanticsLabel('Undo'), findsOneWidget);
-      });
-
-      testWidgets('renders Redo button', (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.bySemanticsLabel('Redo'), findsOneWidget);
-      });
-
       testWidgets('renders Reorder button', (tester) async {
         await tester.pumpWidget(buildWidget());
 
         expect(find.bySemanticsLabel('Reorder'), findsOneWidget);
       });
 
-      testWidgets('renders Play button when not playing', (tester) async {
+      testWidgets('renders play icon when not playing and player ready', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           buildWidget(
             state: const VideoEditorMainState(isPlayerReady: true),
           ),
         );
 
-        expect(find.bySemanticsLabel('Play'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.playFill,
+          ),
+          findsOneWidget,
+        );
       });
 
-      testWidgets('renders Pause button when playing', (tester) async {
+      testWidgets('renders pause icon when playing', (tester) async {
         await tester.pumpWidget(
           buildWidget(
             state: const VideoEditorMainState(
@@ -131,15 +130,20 @@ void main() {
           ),
         );
 
-        expect(find.bySemanticsLabel('Pause'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.pauseFill,
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets(
-        'renders $CircularProgressIndicator when player is not ready',
+        'renders $PartialCircleSpinner when player is not ready',
         (tester) async {
           await tester.pumpWidget(buildWidget());
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.byType(PartialCircleSpinner), findsOneWidget);
         },
       );
     });
@@ -200,62 +204,6 @@ void main() {
     });
 
     group('enabled/disabled states', () {
-      testWidgets('Undo button is disabled when canUndo is false', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-
-        final undoButton = tester.widget<DivineIconButton>(
-          find.byWidgetPredicate(
-            (w) => w is DivineIconButton && w.semanticLabel == 'Undo',
-          ),
-        );
-        expect(undoButton.onPressed, isNull);
-      });
-
-      testWidgets('Undo button is enabled when canUndo is true', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildWidget(state: const VideoEditorMainState(canUndo: true)),
-        );
-
-        final undoButton = tester.widget<DivineIconButton>(
-          find.byWidgetPredicate(
-            (w) => w is DivineIconButton && w.semanticLabel == 'Undo',
-          ),
-        );
-        expect(undoButton.onPressed, isNotNull);
-      });
-
-      testWidgets('Redo button is disabled when canRedo is false', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-
-        final redoButton = tester.widget<DivineIconButton>(
-          find.byWidgetPredicate(
-            (w) => w is DivineIconButton && w.semanticLabel == 'Redo',
-          ),
-        );
-        expect(redoButton.onPressed, isNull);
-      });
-
-      testWidgets('Redo button is enabled when canRedo is true', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildWidget(state: const VideoEditorMainState(canRedo: true)),
-        );
-
-        final redoButton = tester.widget<DivineIconButton>(
-          find.byWidgetPredicate(
-            (w) => w is DivineIconButton && w.semanticLabel == 'Redo',
-          ),
-        );
-        expect(redoButton.onPressed, isNotNull);
-      });
-
       testWidgets('Reorder button is disabled with 0 or 1 layers', (
         tester,
       ) async {
@@ -271,23 +219,6 @@ void main() {
     });
 
     group('interactions', () {
-      testWidgets(
-        'tapping Play dispatches $VideoEditorPlaybackToggleRequested',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(
-              state: const VideoEditorMainState(isPlayerReady: true),
-            ),
-          );
-
-          await tester.tap(find.bySemanticsLabel('Play'));
-
-          verify(
-            () => mockBloc.add(const VideoEditorPlaybackToggleRequested()),
-          ).called(1);
-        },
-      );
-
       testWidgets(
         'tapping Close when no sub-editor is open calls context.pop',
         (tester) async {

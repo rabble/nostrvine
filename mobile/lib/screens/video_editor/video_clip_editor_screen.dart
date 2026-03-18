@@ -4,134 +4,137 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_gallery.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_bottom_bar.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_progress_bar.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_split_bar.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_top_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_clip_gallery.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_bottom_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_progress_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_split_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_top_bar.dart';
 
 /// Video editor screen for editing recorded video clips.
-class VideoClipEditorScreen extends ConsumerStatefulWidget {
+class VideoClipEditorScreen extends ConsumerWidget {
   /// Creates a video editor screen.
-  const VideoClipEditorScreen({
-    super.key,
-    this.draftId,
-    this.fromLibrary = false,
-  });
+  const VideoClipEditorScreen({required this.initialClips, super.key});
 
-  /// Optional draft ID to load an existing draft.
-  final String? draftId;
-
-  /// Whether the editor was opened from the clip library.
-  final bool fromLibrary;
-
-  /// Route name for this screen.
-  static const routeName = 'video-clip-editor';
-
-  static const draftRouteName = '$routeName-draft';
-
-  /// Path for this route.
-  static const path = '/video-clip-editor';
-
-  static const draftPathWithId = '$path/:draftId';
+  final List<DivineVideoClip> initialClips;
 
   @override
-  ConsumerState<VideoClipEditorScreen> createState() {
-    return _VideoClipEditorScreenState();
-  }
-}
-
-class _VideoClipEditorScreenState extends ConsumerState<VideoClipEditorScreen> {
-  late bool _isLoadingDraft = widget.draftId != null;
-
-  @override
-  void initState() {
-    super.initState();
-    Log.info(
-      '🎬 Initialized (draftId: ${widget.draftId}, fromLibrary: ${widget.fromLibrary})',
-      name: 'VideoClipEditorScreen',
-      category: LogCategory.video,
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-
-      Log.debug(
-        '🎬 Initializing video editor provider',
-        name: 'VideoClipEditorScreen',
-        category: LogCategory.video,
-      );
-
-      await ref
-          .read(videoEditorProvider.notifier)
-          .initialize(draftId: widget.draftId);
-
-      Log.info(
-        '🎬 Video editor initialized successfully',
-        name: 'VideoClipEditorScreen',
-        category: LogCategory.video,
-      );
-
-      if (mounted) {
-        setState(() {
-          _isLoadingDraft = false;
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isProcessing = ref.watch(
       videoEditorProvider.select((p) => p.isProcessing),
     );
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: VineTheme.surfaceContainerHigh,
-        systemNavigationBarColor: VineTheme.surfaceContainerHigh,
-        statusBarIconBrightness: .light,
-        statusBarBrightness: .dark,
-      ),
-      child: PopScope(
-        canPop: !isProcessing,
-        child: SafeArea(
-          child: Scaffold(
-            resizeToAvoidBottomInset: false,
-            backgroundColor: VineTheme.surfaceContainerHigh,
-            body: _isLoadingDraft
-                ? const Center(child: CircularProgressIndicator.adaptive())
-                : Column(
-                    children: [
-                      /// Top bar
-                      VideoClipEditorTopBar(fromLibrary: widget.fromLibrary),
-
-                      /// Main content area with clips
-                      const Expanded(child: VideoEditorClipGallery()),
-
-                      /// Progress or Split bar
-                      Container(
-                        height: 40,
-                        padding: const .symmetric(horizontal: 16),
-                        child: Consumer(
-                          builder: (_, ref, _) {
-                            final isEditing = ref.watch(
-                              videoEditorProvider.select((p) => p.isEditing),
-                            );
-
-                            return isEditing
-                                ? const VideoClipEditorSplitBar()
-                                : const VideoClipEditorProgressBar();
-                          },
-                        ),
+    return BlocProvider(
+      create: (_) {
+        late final ClipEditorBloc bloc;
+        bloc = ClipEditorBloc(
+          splitExecutor:
+              ({
+                required sourceClip,
+                required splitPosition,
+                required currentClipIndex,
+              }) async {
+                await VideoEditorSplitService.splitClip(
+                  sourceClip: sourceClip,
+                  splitPosition: splitPosition,
+                  onClipsCreated: (startClip, endClip) {
+                    // Replace source clip with the start segment.
+                    bloc.add(
+                      ClipEditorClipUpdated(
+                        clipId: sourceClip.id,
+                        clip: startClip.copyWith(id: sourceClip.id),
                       ),
+                    );
+                    // Insert the end segment after it.
+                    bloc.add(
+                      ClipEditorClipInserted(
+                        index: currentClipIndex + 1,
+                        clip: endClip,
+                      ),
+                    );
+                  },
+                  onThumbnailExtracted: (clip, thumbnailPath) {
+                    bloc.add(
+                      ClipEditorClipUpdated(
+                        clipId: clip.id,
+                        clip: clip.copyWith(thumbnailPath: thumbnailPath),
+                      ),
+                    );
+                  },
+                  onClipRendered: (clip, video) {
+                    // Read the current clip from BLoC state to avoid
+                    // overwriting fields updated by earlier callbacks
+                    // (e.g. thumbnailPath from onThumbnailExtracted).
+                    final current = bloc.state.clips.where(
+                      (c) => c.id == clip.id,
+                    );
+                    final base = current.isNotEmpty ? current.first : clip;
+                    bloc.add(
+                      ClipEditorClipUpdated(
+                        clipId: clip.id,
+                        clip: base.copyWith(video: video),
+                      ),
+                    );
+                    Log.debug(
+                      '\u2705 Clip rendered: ${clip.id}',
+                      name: 'VideoClipEditorScreen',
+                      category: LogCategory.video,
+                    );
+                  },
+                );
 
-                      /// Bottom bar
-                      const VideoClipEditorBottomBar(),
-                    ],
-                  ),
+                final notifier = ref.read(videoEditorProvider.notifier);
+                notifier.invalidateFinalRenderedClip();
+              },
+        )..add(ClipEditorInitialized(initialClips));
+
+        return bloc;
+      },
+      child: ScaffoldMessenger(
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VideoEditorConstants.uiOverlayStyle,
+          child: PopScope(
+            canPop: !isProcessing,
+            child: Scaffold(
+              resizeToAvoidBottomInset: false,
+              backgroundColor: VineTheme.surfaceContainerHigh,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    /// Top bar
+                    const VideoClipEditorTopBar(),
+
+                    /// Main content area with clips
+                    const Expanded(child: VideoEditorClipGallery()),
+
+                    /// Progress or Split bar
+                    Container(
+                      height: 40,
+                      padding: const .symmetric(horizontal: 16),
+                      child:
+                          BlocSelector<ClipEditorBloc, ClipEditorState, bool>(
+                            selector: (state) => state.isEditing,
+                            builder: (_, isEditing) {
+                              return isEditing
+                                  ? const VideoClipEditorSplitBar()
+                                  : const VideoClipEditorProgressBar();
+                            },
+                          ),
+                    ),
+
+                    /// Bottom bar
+                    const VideoClipEditorBottomBar(),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

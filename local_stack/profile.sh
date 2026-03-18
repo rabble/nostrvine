@@ -65,7 +65,7 @@ fi
 # --- Start docker log capture (background, from now only) ---
 echo "Starting docker log capture..." >&2
 docker compose -f "$COMPOSE_FILE" logs -f -t --since "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    keycast funnelcake-relay funnelcake-api blossom blossom-proxy \
+    keycast funnelcake-relay funnelcake-api blossom blossom-proxy invite \
     > "$DOCKER_LOG" 2>&1 &
 DOCKER_PID=$!
 

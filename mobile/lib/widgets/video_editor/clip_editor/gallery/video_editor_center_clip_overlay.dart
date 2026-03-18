@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_preview.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_clip_preview.dart';
 
 /// Overlay widget that renders the centered clip on top of the PageView.
 ///

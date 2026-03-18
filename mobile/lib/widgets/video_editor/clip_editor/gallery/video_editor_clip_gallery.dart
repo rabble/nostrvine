@@ -4,21 +4,21 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/controllers/clip_reorder_controller.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_calculations.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_callbacks.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/utils/gallery_transform_calculator.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_center_clip_overlay.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_edge_gradients.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_instruction_text.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_page_view.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_calculations.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_callbacks.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/utils/gallery_transform_calculator.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_center_clip_overlay.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_edge_gradients.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_instruction_text.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_page_view.dart';
 
 /// Horizontal scrolling clip selector with animated transitions.
 class VideoEditorClipGallery extends ConsumerStatefulWidget {
@@ -51,17 +51,6 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
       vsync: this,
       duration: VideoEditorGalleryConstants.dragResetDuration,
     )..addListener(_onDragResetTick);
-
-    // Listen to currentClipIndex changes
-    ref.listenManual(
-      videoEditorProvider.select((state) => state.currentClipIndex),
-      (previous, next) {
-        if (previous != next && next != _lastClipIndex) {
-          _lastClipIndex = next;
-          unawaited(_navigateToClip(next));
-        }
-      },
-    );
   }
 
   @override
@@ -118,12 +107,15 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
 
   /// Initiates clip reorder mode for the currently selected clip.
   ///
-  /// Resets drag tracking state and notifies the video editor provider.
+  /// Resets drag tracking state and notifies the clip editor bloc.
   void _handleStartReordering() {
-    final currentClipIndex = ref.read(videoEditorProvider).currentClipIndex;
+    final currentClipIndex = context
+        .read<ClipEditorBloc>()
+        .state
+        .currentClipIndex;
 
     _reorderController.startReorder(currentClipIndex);
-    ref.read(videoEditorProvider.notifier).startClipReordering();
+    context.read<ClipEditorBloc>().add(const ClipEditorReorderingStarted());
     setState(() {});
   }
 
@@ -139,6 +131,12 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
       constraints.maxHeight,
     );
 
+    // Don't activate delete zone when only one clip remains
+    final clips = context.read<ClipEditorBloc>().state.clips;
+    if (clips.length <= 1) {
+      return isLeavingClipArea;
+    }
+
     final isOverDeleteZone = _isPointerOverDeleteButton(event.position);
 
     // Trigger haptic feedback when entering the delete zone
@@ -147,7 +145,9 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     }
     _wasOverDeleteZone = isOverDeleteZone;
 
-    ref.read(videoEditorProvider.notifier).setOverDeleteZone(isOverDeleteZone);
+    context.read<ClipEditorBloc>().add(
+      ClipEditorDeleteZoneChanged(isOver: isOverDeleteZone),
+    );
 
     return isLeavingClipArea || isOverDeleteZone;
   }
@@ -172,7 +172,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
   void _applyReorderToIndex(int newTargetIndex) {
     _reorderController.updateTargetIndex(newTargetIndex);
 
-    ref.read(videoEditorProvider.notifier).selectClipByIndex(newTargetIndex);
+    context.read<ClipEditorBloc>().add(ClipEditorClipSelected(newTargetIndex));
     unawaited(_navigateToClip(newTargetIndex));
     setState(() {});
   }
@@ -217,7 +217,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     _reorderController.addDragOffset(event.delta.dx);
 
     // Check if threshold exceeded for page switch
-    final clips = ref.read(clipManagerProvider).clips;
+    final clips = context.read<ClipEditorBloc>().state.clips;
     final threshold = _calculateReorderThreshold(
       constraints.maxWidth,
       clips.length,
@@ -239,40 +239,44 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
   /// If the clip was released over the delete zone, it will be removed.
   /// Otherwise, the drag offset animates back to zero and reorder mode ends.
   Future<void> _handleReorderCancel() async {
-    final isOverDeleteZone = ref.read(videoEditorProvider).isOverDeleteZone;
+    final isOverDeleteZone = context
+        .read<ClipEditorBloc>()
+        .state
+        .isOverDeleteZone;
     // Use startIndex for deletion - the clip list hasn't been reordered yet,
     // so the original clip is still at its starting position
     final startIndex = _reorderController.startIndex;
 
     if (isOverDeleteZone) {
       // Delete the clip if released over delete zone
-      final clips = ref.read(clipManagerProvider).clips;
+      final bloc = context.read<ClipEditorBloc>();
+      final clips = bloc.state.clips;
+      // Prevent deleting the last remaining clip
+      if (clips.length <= 1) {
+        _reorderController.completeReorder();
+        bloc.add(const ClipEditorReorderingStopped());
+        return;
+      }
       if (startIndex >= 0 && startIndex < clips.length) {
         final clipToDelete = clips[startIndex];
-        unawaited(
-          ref
-              .read(clipManagerProvider.notifier)
-              .removeClipById(clipToDelete.id),
-        );
-        ref.read(videoEditorProvider.notifier).setOverDeleteZone(false);
-
-        if (ref.read(clipManagerProvider.notifier).clips.isEmpty) {
-          context.pop();
-          return;
-        }
+        bloc
+          ..add(ClipEditorClipRemoved(clipToDelete.id))
+          ..add(
+            const ClipEditorDeleteZoneChanged(isOver: false),
+          );
 
         // Update selected index after deletion - based on startIndex since
         // that's where the deleted clip was
-        final remainingClips = ref.read(clipManagerProvider).clips;
+        final remainingCount = clips.length - 1;
         final newIndex = _reorderController.calculateIndexAfterDeletion(
-          remainingClips.length,
+          remainingCount,
         );
         _reorderController.updateTargetIndex(newIndex);
-        ref.read(videoEditorProvider.notifier).selectClipByIndex(newIndex);
+        context.read<ClipEditorBloc>().add(ClipEditorClipSelected(newIndex));
 
         // Skip reorder since we deleted instead
         _reorderController.completeReorder();
-        ref.read(videoEditorProvider.notifier).stopClipReordering();
+        context.read<ClipEditorBloc>().add(const ClipEditorReorderingStopped());
         _wasOverDeleteZone = false;
 
         Future.delayed(VideoEditorGalleryConstants.scaleAnimationDuration, () {
@@ -290,16 +294,19 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     }
     _reorderController.completeReorder();
 
+    if (!mounted) return;
+
     // Only reorder if we didn't delete
-    ref
-        .read(clipManagerProvider.notifier)
-        .reorderClip(
-          _reorderController.startIndex,
-          _reorderController.updatedIndex,
-        );
+    context.read<ClipEditorBloc>().add(
+      ClipEditorClipReordered(
+        oldIndex: _reorderController.startIndex,
+        newIndex: _reorderController.updatedIndex,
+      ),
+    );
 
     // Exit reorder mode (after animation completes)
-    ref.read(videoEditorProvider.notifier).stopClipReordering();
+    if (!mounted) return;
+    context.read<ClipEditorBloc>().add(const ClipEditorReorderingStopped());
     _wasOverDeleteZone = false;
 
     Future.delayed(VideoEditorGalleryConstants.scaleAnimationDuration, () {
@@ -310,42 +317,55 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
 
   @override
   Widget build(BuildContext context) {
-    final clips = ref.watch(clipManagerProvider.select((state) => state.clips));
+    final clips = context.select(
+      (ClipEditorBloc bloc) => bloc.state.clips,
+    );
 
     if (clips.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return GalleryCallbacksScope(
-      callbacks: GalleryCallbacks(
-        onStartReordering: _handleStartReordering,
-        onReorderCancel: _handleReorderCancel,
-        onReorderEvent: _handleReorderEvent,
-        onPageChanged: (page) {
-          _lastClipIndex = page;
-          ref.read(videoEditorProvider.notifier).selectClipByIndex(page);
-        },
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Flexible(
-            child: _GalleryViewer(
-              pageController: _pageController,
-              clips: clips,
-              reorderController: _reorderController,
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (previous, current) =>
+          previous.currentClipIndex != current.currentClipIndex,
+      listener: (context, state) {
+        final index = state.currentClipIndex;
+        if (index != _lastClipIndex) {
+          _lastClipIndex = index;
+          unawaited(_navigateToClip(index));
+        }
+      },
+      child: GalleryCallbacksScope(
+        callbacks: GalleryCallbacks(
+          onStartReordering: _handleStartReordering,
+          onReorderCancel: _handleReorderCancel,
+          onReorderEvent: _handleReorderEvent,
+          onPageChanged: (page) {
+            _lastClipIndex = page;
+            context.read<ClipEditorBloc>().add(ClipEditorClipSelected(page));
+          },
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Flexible(
+              child: _GalleryViewer(
+                pageController: _pageController,
+                clips: clips,
+                reorderController: _reorderController,
+              ),
             ),
-          ),
-          const ClipGalleryInstructionText(),
-          const SizedBox(height: 20),
-        ],
+            const ClipGalleryInstructionText(),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _GalleryViewer extends ConsumerWidget {
+class _GalleryViewer extends StatelessWidget {
   const _GalleryViewer({
     required this.pageController,
     required this.clips,
@@ -357,40 +377,36 @@ class _GalleryViewer extends ConsumerWidget {
   final ClipReorderController reorderController;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final callbacks = GalleryCallbacksScope.of(context);
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (s) => (
-          currentClipIndex: s.currentClipIndex,
-          isEditing: s.isEditing,
-          isReordering: s.isReordering,
-        ),
+    final (isReordering, currentClipIndex, isEditing) = context.select(
+      (ClipEditorBloc bloc) => (
+        bloc.state.isReordering,
+        bloc.state.currentClipIndex,
+        bloc.state.isEditing,
       ),
     );
-    final currentClipIndex = state.isReordering
+    final activeClipIndex = isReordering
         ? reorderController.startIndex
-        : state.currentClipIndex;
+        : currentClipIndex;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         return Listener(
-          onPointerMove: state.isReordering
+          onPointerMove: isReordering
               ? (event) => callbacks.onReorderEvent(event, constraints)
               : null,
-          onPointerUp: state.isReordering
-              ? (_) => callbacks.onReorderCancel()
-              : null,
-          onPointerCancel: state.isReordering
+          onPointerUp: isReordering ? (_) => callbacks.onReorderCancel() : null,
+          onPointerCancel: isReordering
               ? (_) => callbacks.onReorderCancel()
               : null,
           child: AnimatedBuilder(
             animation: pageController,
             builder: (context, child) {
               // Calculate common values once
-              final page = !state.isReordering && pageController.hasClients
-                  ? (pageController.page ?? currentClipIndex.toDouble())
-                  : currentClipIndex.toDouble();
+              final page = !isReordering && pageController.hasClients
+                  ? (pageController.page ?? activeClipIndex.toDouble())
+                  : activeClipIndex.toDouble();
               final centerIndex = page.round();
               final difference = (centerIndex - page).abs();
               final showCenterOverlay =
@@ -407,10 +423,10 @@ class _GalleryViewer extends ConsumerWidget {
                 pageController: pageController,
                 clips: clips,
                 reorderController: reorderController,
-                isEditing: state.isEditing,
-                isReordering: state.isReordering,
-                selectedClipIndex: state.currentClipIndex,
-                activeClipIndex: state.isReordering
+                isEditing: isEditing,
+                isReordering: isReordering,
+                selectedClipIndex: currentClipIndex,
+                activeClipIndex: isReordering
                     ? reorderController.startIndex
                     : centerIndex,
                 constraints: constraints,
@@ -426,7 +442,7 @@ class _GalleryViewer extends ConsumerWidget {
   }
 }
 
-class _GalleryStack extends ConsumerStatefulWidget {
+class _GalleryStack extends StatefulWidget {
   const _GalleryStack({
     required this.pageController,
     required this.clips,
@@ -458,10 +474,10 @@ class _GalleryStack extends ConsumerStatefulWidget {
   final bool showCenterOverlay;
 
   @override
-  ConsumerState<_GalleryStack> createState() => _GalleryStackState();
+  State<_GalleryStack> createState() => _GalleryStackState();
 }
 
-class _GalleryStackState extends ConsumerState<_GalleryStack> {
+class _GalleryStackState extends State<_GalleryStack> {
   Offset? _lastTapDownPosition;
 
   /// Calculator for scale and offset values.
@@ -491,7 +507,7 @@ class _GalleryStackState extends ConsumerState<_GalleryStack> {
 
     // Bounds check to prevent invalid index selection
     if (newIndex >= 0 && newIndex < widget.clips.length) {
-      ref.read(videoEditorProvider.notifier).selectClipByIndex(newIndex);
+      context.read<ClipEditorBloc>().add(ClipEditorClipSelected(newIndex));
     }
   }
 
