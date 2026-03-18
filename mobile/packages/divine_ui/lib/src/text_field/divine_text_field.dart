@@ -117,11 +117,7 @@ class DivineTextField extends StatelessWidget {
       onEditingComplete: onEditingComplete,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: VineTheme.bodyFont(
-          color: VineTheme.onSurfaceVariant,
-          height: 1.50,
-          letterSpacing: 0.15,
-        ),
+        labelStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
         border: .none,
         enabledBorder: .none,
         focusedBorder: .none,

@@ -225,7 +225,6 @@ class _SaveForLaterButton extends ConsumerWidget {
                         'Save for Later',
                         style: VineTheme.titleMediumFont(
                           color: VineTheme.primary,
-                          height: 1.33,
                         ),
                       ),
               ),
@@ -277,10 +276,7 @@ class _PostButton extends ConsumerWidget {
               // added.
               child: Text(
                 'Post',
-                style: VineTheme.titleMediumFont(
-                  height: 1.33,
-                  color: VineTheme.onPrimary,
-                ),
+                style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
               ),
             ),
           ),

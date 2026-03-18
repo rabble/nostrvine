@@ -103,16 +103,14 @@ class VineTheme {
       );
 
   /// Title medium: Bricolage Grotesque 800 18/24/0.15
-  static TextStyle titleMediumFont({
-    Color color = whiteText,
-    double height = 24 / 18,
-  }) => GoogleFonts.bricolageGrotesque(
-    fontSize: 16,
-    fontWeight: FontWeight.w800,
-    height: height,
-    letterSpacing: 0.15,
-    color: color,
-  );
+  static TextStyle titleMediumFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        height: 24 / 18,
+        letterSpacing: 0.15,
+        color: color,
+      );
 
   /// Title small: Bricolage Grotesque 800 14/20/0.1
   static TextStyle titleSmallFont({Color color = whiteText}) =>
@@ -169,20 +167,6 @@ class VineTheme {
     letterSpacing: 0.4,
     color: color,
     fontFeatures: fontFeatures,
-  );
-
-  /// @Deprecated Use [bodyLargeFont], [bodyMediumFont], or [bodySmallFont].
-  static TextStyle bodyFont({
-    FontWeight fontWeight = FontWeight.w400,
-    Color color = primaryText,
-    double? height,
-    double? letterSpacing,
-  }) => GoogleFonts.inter(
-    fontSize: 16,
-    fontWeight: fontWeight,
-    color: color,
-    height: height,
-    letterSpacing: letterSpacing,
   );
 
   // --------------------------------------------------------------------------

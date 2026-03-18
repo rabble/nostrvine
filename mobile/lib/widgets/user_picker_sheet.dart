@@ -40,10 +40,7 @@ Future<UserProfile?> showUserPickerSheet(
     title: Column(
       spacing: 2,
       children: [
-        Text(
-          title,
-          style: VineTheme.titleMediumFont(height: 1.5),
-        ),
+        Text(title, style: VineTheme.titleMediumFont()),
         Text(searchText, style: VineTheme.bodySmallFont()),
       ],
     ),
@@ -206,15 +203,13 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               onChanged: _onSearchChanged,
               onSubmitted: _onSearchChanged,
               cursorColor: VineTheme.vineGreen,
-              style: VineTheme.bodyFont(
+              style: VineTheme.bodyLargeFont(
                 color: VineTheme.onSurface,
-                height: 1.5,
               ),
               decoration: InputDecoration(
                 hintText: hintText,
-                hintStyle: VineTheme.bodyFont(
+                hintStyle: VineTheme.bodyLargeFont(
                   color: VineTheme.onSurfaceMuted,
-                  height: 1.5,
                 ),
                 prefixIcon: const Padding(
                   padding: .only(left: 16, right: 8),

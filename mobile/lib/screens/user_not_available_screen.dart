@@ -41,7 +41,7 @@ class UserNotAvailableScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 "This account isn't available right now.",
-                style: VineTheme.bodyFont(color: VineTheme.secondaryText),
+                style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
                 textAlign: TextAlign.center,
               ),
             ],

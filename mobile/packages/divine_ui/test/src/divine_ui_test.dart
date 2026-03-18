@@ -179,40 +179,6 @@ void main() {
       });
     });
 
-    group('bodyFont', () {
-      testWidgets('returns TextStyle with default values', (tester) async {
-        final style = VineTheme.bodyFont();
-
-        expect(style.fontSize, 16);
-        expect(style.fontWeight, FontWeight.w400);
-        expect(style.color, VineTheme.primaryText);
-      });
-
-      testWidgets('returns TextStyle with custom fontWeight', (tester) async {
-        final style = VineTheme.bodyFont(fontWeight: FontWeight.bold);
-
-        expect(style.fontWeight, FontWeight.bold);
-      });
-
-      testWidgets('returns TextStyle with custom color', (tester) async {
-        final style = VineTheme.bodyFont(color: Colors.blue);
-
-        expect(style.color, Colors.blue);
-      });
-
-      testWidgets('returns TextStyle with custom height', (tester) async {
-        final style = VineTheme.bodyFont(height: 1.8);
-
-        expect(style.height, 1.8);
-      });
-
-      testWidgets('returns TextStyle with letterSpacing', (tester) async {
-        final style = VineTheme.bodyFont(letterSpacing: 0.25);
-
-        expect(style.letterSpacing, 0.25);
-      });
-    });
-
     group('tabTextStyle', () {
       testWidgets('returns TextStyle with default color', (tester) async {
         final style = VineTheme.tabTextStyle();
