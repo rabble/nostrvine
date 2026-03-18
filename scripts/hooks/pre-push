@@ -1,0 +1,33 @@
+#!/bin/bash
+# Pre-push hook: runs the same checks as CI to catch failures early.
+# Install with: mise run setup_hooks (from mobile/)
+
+set -e
+
+cd "$(git rev-parse --show-toplevel)/mobile"
+
+# Unset git env vars that break Flutter/Dart in hooks (especially in worktrees)
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE
+
+echo "Running pre-push checks..."
+
+echo "[1/3] Checking format..."
+mise exec -- dart format --output=none --set-exit-if-changed lib test integration_test
+
+echo "[2/3] Running analyzer..."
+mise exec -- flutter analyze
+
+echo "[3/3] Verifying generated files..."
+BEFORE=$(git status --porcelain)
+mise exec -- dart run build_runner build --delete-conflicting-outputs
+AFTER=$(git status --porcelain)
+if [ "$BEFORE" != "$AFTER" ]; then
+    echo ""
+    echo "Generated files are out of date."
+    echo "Run: cd mobile && mise exec -- dart run build_runner build --delete-conflicting-outputs"
+    echo "Then commit the generated files before pushing."
+    exit 1
+fi
+
+echo ""
+echo "All pre-push checks passed!"
