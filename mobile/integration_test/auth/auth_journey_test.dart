@@ -32,6 +32,11 @@ void main() {
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
 
+        // Pre-enable semantics so the handle is disposed at the right time.
+        // find.bySemanticsLabel() calls ensureSemantics() implicitly; if we
+        // don't hold the handle ourselves the framework complains at teardown.
+        final semanticsHandle = tester.ensureSemantics();
+
         // Launch the full app in a guarded zone to catch external relay errors
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -796,6 +801,7 @@ void main() {
         // See also: cross_user_verify_test.dart
 
         // Drain pending errors before restoring handlers.
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
