@@ -3044,10 +3044,8 @@ void main() {
 
       test('resets stale count on page change', () async {
         final controller = VideoFeedController(
-          videos: createTestVideos(count: 5),
+          videos: createTestVideos(),
           pool: pool,
-          preloadAhead: 2,
-          preloadBehind: 1,
         );
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -3101,8 +3099,6 @@ void main() {
         final controller = VideoFeedController(
           videos: createTestVideos(count: 8),
           pool: smallPool,
-          preloadAhead: 2,
-          preloadBehind: 1,
         );
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -3132,7 +3128,6 @@ void main() {
         final controller = VideoFeedController(
           videos: createTestVideos(count: 3),
           pool: pool,
-          preloadAhead: 2,
           preloadBehind: 0,
         );
 
