@@ -39,6 +39,8 @@ class DivineVideoDraft {
     this.inspiredByNpub,
     this.selectedSound,
     this.contentWarning,
+    this.originalAudioVolume = 1.0,
+    this.customAudioVolume = 1.0,
   });
 
   factory DivineVideoDraft.create({
@@ -59,6 +61,8 @@ class DivineVideoDraft {
     String? inspiredByNpub,
     AudioEvent? selectedSound,
     String? contentWarning,
+    double originalAudioVolume = 1.0,
+    double customAudioVolume = 1.0,
   }) {
     final now = DateTime.now();
     return DivineVideoDraft(
@@ -83,6 +87,8 @@ class DivineVideoDraft {
       inspiredByNpub: inspiredByNpub,
       selectedSound: selectedSound,
       contentWarning: contentWarning,
+      originalAudioVolume: originalAudioVolume,
+      customAudioVolume: customAudioVolume,
     );
   }
 
@@ -177,6 +183,9 @@ class DivineVideoDraft {
           ? AudioEvent.fromJson(json['selectedSound'] as Map<String, dynamic>)
           : null,
       contentWarning: json['contentWarning'] as String?,
+      originalAudioVolume:
+          (json['originalAudioVolume'] as num?)?.toDouble() ?? 1.0,
+      customAudioVolume: (json['customAudioVolume'] as num?)?.toDouble() ?? 1.0,
     );
   }
 
@@ -236,6 +245,12 @@ class DivineVideoDraft {
   /// Comma-separated NIP-32 content warning labels for this video.
   final String? contentWarning;
 
+  /// Volume level for the original video audio track (0.0 to 1.0).
+  final double originalAudioVolume;
+
+  /// Volume level for the custom/added audio track (0.0 to 1.0).
+  final double customAudioVolume;
+
   /// Check if this draft has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
 
@@ -284,6 +299,8 @@ class DivineVideoDraft {
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
     Object? contentWarning = _sentinel,
+    double? originalAudioVolume,
+    double? customAudioVolume,
     bool skipUpdateLastModified = false,
   }) => DivineVideoDraft(
     id: id ?? this.id,
@@ -319,6 +336,8 @@ class DivineVideoDraft {
     contentWarning: contentWarning == _sentinel
         ? this.contentWarning
         : contentWarning as String?,
+    originalAudioVolume: originalAudioVolume ?? this.originalAudioVolume,
+    customAudioVolume: customAudioVolume ?? this.customAudioVolume,
   );
 
   static const _sentinel = Object();
@@ -349,6 +368,8 @@ class DivineVideoDraft {
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
     if (selectedSound != null) 'selectedSound': selectedSound!.toJson(),
     if (contentWarning != null) 'contentWarning': contentWarning,
+    if (originalAudioVolume != 1.0) 'originalAudioVolume': originalAudioVolume,
+    if (customAudioVolume != 1.0) 'customAudioVolume': customAudioVolume,
   };
 
   Set<ContentLabel> get contentWarnings => ContentLabel.fromCsv(contentWarning);

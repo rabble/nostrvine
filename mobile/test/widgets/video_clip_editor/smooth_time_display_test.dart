@@ -2,11 +2,10 @@
 // ABOUTME: Validates time display formatting and styling
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/smooth_time_display.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/smooth_time_display.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,24 +16,20 @@ void main() {
       Duration currentPosition = Duration.zero,
       TextStyle? style,
     }) {
-      return ProviderScope(
-        overrides: [
-          videoEditorProvider.overrideWith(
-            () => TestVideoEditorNotifier(
-              VideoEditorProviderState(
-                isPlaying: isPlaying,
-                currentPosition: currentPosition,
-              ),
-            ),
-          ),
-        ],
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          isPlaying: isPlaying,
+          currentPosition: currentPosition,
+        ),
+      );
+
+      return BlocProvider<ClipEditorBloc>.value(
+        value: bloc,
         child: MaterialApp(
           home: Scaffold(
             body: SmoothTimeDisplay(
-              isPlayingSelector: videoEditorProvider.select((s) => s.isPlaying),
-              currentPositionSelector: videoEditorProvider.select(
-                (s) => s.currentPosition,
-              ),
+              isPlayingSelector: (s) => s.isPlaying,
+              currentPositionSelector: (s) => s.currentPosition,
               style: style,
             ),
           ),
@@ -73,10 +68,10 @@ void main() {
   });
 }
 
-class TestVideoEditorNotifier extends VideoEditorNotifier {
-  TestVideoEditorNotifier(this._state);
-  final VideoEditorProviderState _state;
-
-  @override
-  VideoEditorProviderState build() => _state;
+class _TestClipEditorBloc extends ClipEditorBloc {
+  _TestClipEditorBloc({
+    ClipEditorState initialState = const ClipEditorState(),
+  }) {
+    emit(initialState);
+  }
 }

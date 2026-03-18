@@ -15,6 +15,10 @@ class VideoEditorConstants {
   /// Prefix key used to identify drafts being published in storage.
   static String publishPrefixId = 'draft_publish';
 
+  /// Task ID used to identify the FFmpeg merge operation when rendering
+  /// multiple clips into a single video.
+  static String renderMergeTaskId = 'Divine_Editor_Merger';
+
   /// Maximum number of tags allowed per video.
   static int tagLimit = 1 << 30; // ~1 billion
 
@@ -45,24 +49,43 @@ class VideoEditorConstants {
     Color(0xFF34BBF1),
   ];
 
-  /// Available text fonts for text overlays.
+  /// Available text fonts for text overlays, sorted by popularity.
   static const List<TextFont> textFonts = [
     GoogleFonts.inter,
     GoogleFonts.bricolageGrotesque,
+    GoogleFonts.roboto,
+    GoogleFonts.openSans,
+    GoogleFonts.notoSans,
     GoogleFonts.montserrat,
-    GoogleFonts.anonymousPro,
+    GoogleFonts.lato,
+    GoogleFonts.poppins,
+    GoogleFonts.robotoMono,
+    GoogleFonts.oswald,
+    GoogleFonts.raleway,
+    GoogleFonts.ubuntu,
+    GoogleFonts.nunito,
+    GoogleFonts.rubik,
+    GoogleFonts.merriweather,
+    GoogleFonts.playfairDisplay,
+    GoogleFonts.nunitoSans,
+    GoogleFonts.lora,
+    GoogleFonts.ptSans,
+    GoogleFonts.workSans,
+    GoogleFonts.barlow,
+    GoogleFonts.quicksand,
+    GoogleFonts.mulish,
+    GoogleFonts.titilliumWeb,
+    GoogleFonts.josefinSans,
+    GoogleFonts.bebasNeue,
+    GoogleFonts.comfortaa,
+    GoogleFonts.lobster,
+    GoogleFonts.pacifico,
+    GoogleFonts.dancingScript,
     GoogleFonts.caveat,
+    GoogleFonts.permanentMarker,
     GoogleFonts.crimsonText,
     GoogleFonts.ibmPlexMono,
-    GoogleFonts.pacifico,
-    GoogleFonts.playfairDisplay,
-    GoogleFonts.bebasNeue,
-    GoogleFonts.poppins,
-    GoogleFonts.lobster,
-    GoogleFonts.oswald,
-    GoogleFonts.dancingScript,
-    GoogleFonts.permanentMarker,
-    GoogleFonts.comfortaa,
+    GoogleFonts.anonymousPro,
   ];
 
   /// Width of drawing tool items in the draw editor toolbar.
@@ -88,7 +111,7 @@ class VideoEditorConstants {
     statusBarIconBrightness: Brightness.light,
     systemNavigationBarIconBrightness: Brightness.light,
     statusBarBrightness: Brightness.dark,
-    systemNavigationBarColor: Color(0xFF000000),
+    systemNavigationBarColor: VineTheme.surfaceContainerHigh,
   );
 
   /// Height of the bottom action bar in the video editor.
@@ -102,6 +125,15 @@ class VideoEditorConstants {
 
   /// Hero animation tag for the final clip-preview in the video editor.
   static const heroMetaPreviewId = 'Video-metadata-clip-preview-video';
+
+  /// Hero animation tag for the audio-chip in the video editor.
+  static const heroAudioChipId = 'Video-Editor-Audio-Chip';
+
+  /// Hero animation tag for the toolbar leading (close) button.
+  static const heroToolbarLeadingId = 'Video-Editor-Toolbar-Leading';
+
+  /// Hero animation tag for the toolbar trailing (done) button.
+  static const heroToolbarTrailingId = 'Video-Editor-Toolbar-Trailing';
 
   /// List of filter presets sorted by popularity
   static final List<FilterModel> filters = [
@@ -284,12 +316,9 @@ class VideoEditorGalleryConstants {
   static double dragClampFactor = 0.3;
 
   /// Maximum upward Y clamp (pixels) during drag — prevents clip from
-  /// leaving the gallery area upward.
+  /// leaving the gallery area upward. Downward movement is unclamped so
+  /// the clip can always reach the delete zone.
   static double dragYClampUp = 40;
-
-  /// Maximum downward Y clamp (pixels) during drag — prevents clip from
-  /// going too far below the gallery area.
-  static double dragYClampDown = 200;
 
   /// Scale factor when in reorder mode.
   static double reorderScale = 0.5;

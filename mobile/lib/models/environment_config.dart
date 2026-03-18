@@ -9,6 +9,7 @@ const localKeycastPort = 43000;
 const localRelayPort = 47777;
 const localApiPort = 43001;
 const localBlossomPort = 43003;
+const localInvitePort = 43004;
 
 /// Build-time default environment
 /// Set via: --dart-define=DEFAULT_ENV=STAGING

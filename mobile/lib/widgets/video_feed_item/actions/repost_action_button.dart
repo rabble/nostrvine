@@ -28,20 +28,26 @@ class RepostActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isPreviewMode) return const _ActionButton();
 
-    return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
-      builder: (context, state) {
-        final isReposted = state.isReposted;
-        // Use relay count when available; fall back to video metadata.
-        // Don't sum both — Funnelcake's originalReposts already includes
-        // Nostr reposts, so adding them would double-count.
-        final totalReposts =
+    // Use relay count when available; fall back to video metadata.
+    // Don't sum both — Funnelcake's originalReposts already includes
+    // Nostr reposts, so adding them would double-count.
+    return BlocSelector<
+      VideoInteractionsBloc,
+      VideoInteractionsState,
+      ({bool isReposted, bool isInProgress, int count})
+    >(
+      selector: (state) => (
+        isReposted: state.isReposted,
+        isInProgress: state.isRepostInProgress,
+        count:
             state.repostCount ??
-            (video.reposterPubkeys?.length ?? 0) + (video.originalReposts ?? 0);
-
+            (video.reposterPubkeys?.length ?? 0) + (video.originalReposts ?? 0),
+      ),
+      builder: (context, data) {
         return _ActionButton(
-          isReposted: isReposted,
-          isRepostInProgress: state.isRepostInProgress,
-          totalReposts: totalReposts,
+          isReposted: data.isReposted,
+          isRepostInProgress: data.isInProgress,
+          totalReposts: data.count,
         );
       },
     );
@@ -62,7 +68,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VideoActionButton(
-      iconAsset: 'assets/icon/content-controls/repost.svg',
+      icon: .repeatDuo,
       semanticIdentifier: 'repost_button',
       semanticLabel: isReposted ? 'Remove repost' : 'Repost video',
       iconColor: isReposted ? VineTheme.vineGreen : VineTheme.whiteText,

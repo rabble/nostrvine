@@ -14,10 +14,16 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
@@ -29,13 +35,27 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 /// Manages the [VideoEditorMainBloc] and [VideoEditorStickerBloc] lifecycle,
 /// precaches sticker images, and coordinates the editor canvas with toolbars.
 class VideoEditorScreen extends ConsumerStatefulWidget {
-  const VideoEditorScreen({super.key});
+  const VideoEditorScreen({
+    super.key,
+    this.draftId,
+    this.fromLibrary = false,
+  });
+
+  /// Optional draft ID to load an existing draft.
+  final String? draftId;
+
+  /// Whether the editor was opened from the clip library.
+  final bool fromLibrary;
 
   /// Route name for this screen.
   static const routeName = 'video-editor';
 
+  static const draftRouteName = '$routeName-draft';
+
   /// Path for this route.
   static const path = '/video-editor';
+
+  static const draftPathWithId = '$path/:draftId';
 
   @override
   ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
@@ -45,6 +65,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   final _editorKey = GlobalKey<ProImageEditorState>();
   final GlobalKey<State<StatefulWidget>> _removeAreaKey = GlobalKey();
 
+  late final _isLoadingDraft = ValueNotifier<bool>(widget.draftId != null);
+
   /// Manually managed instead of using [BlocProvider.create] so we can reuse
   /// it in contexts outside the widget tree (e.g., bottom sheets opened via
   /// [VineBottomSheet.show]).
@@ -52,6 +74,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
+
+  /// Notifier for the rendered video output path.
+  ///
+  /// `null` while rendering is in progress.
+  final _videoOutputPathNotifier = ValueNotifier<String?>(null);
 
   ProImageEditorState? get _editor => _editorKey.currentState;
 
@@ -68,17 +95,39 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   void initState() {
     super.initState();
     Log.info(
-      '🎨 Initialized',
+      '🎬 Initialized (draftId: ${widget.draftId}, fromLibrary: ${widget.fromLibrary})',
       name: 'VideoEditorScreen',
       category: LogCategory.video,
     );
     _stickerBloc = VideoEditorStickerBloc(onPrecacheStickers: _precacheStickers)
       ..add(const VideoEditorStickerLoad());
-    Log.debug(
-      '🎨 Sticker bloc created and loading stickers',
-      name: 'VideoEditorScreen',
-      category: LogCategory.video,
-    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      Log.debug(
+        '🎬 Initializing video editor provider',
+        name: 'VideoClipEditorScreen',
+        category: LogCategory.video,
+      );
+
+      await ref
+          .read(videoEditorProvider.notifier)
+          .initialize(draftId: widget.draftId);
+
+      Log.info(
+        '🎬 Video editor initialized successfully',
+        name: 'VideoClipEditorScreen',
+        category: LogCategory.video,
+      );
+
+      if (mounted) {
+        _isLoadingDraft.value = false;
+      }
+
+      // Initial video render
+      await _renderVideo();
+    });
   }
 
   @override
@@ -89,7 +138,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       category: LogCategory.video,
     );
     _stickerBloc.close();
+    _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
+    _videoOutputPathNotifier.dispose();
+    VideoEditorRenderService.cancelTask(VideoEditorConstants.renderMergeTaskId);
     super.dispose();
   }
 
@@ -115,6 +167,91 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       if (provider == null) continue;
 
       unawaited(precacheImage(provider, context, size: estimatedSize));
+    }
+  }
+
+  /// Renders the video from current clips and updates the output path notifier.
+  ///
+  /// Reuses the cached merge output when clips haven't changed.
+  Future<void> _renderVideo() async {
+    final clipState = ref.read(clipManagerProvider);
+    final clips = clipState.clips;
+    if (clips.isEmpty) return;
+
+    // Single clip needs no merge — use its video file directly.
+    if (clips.length == 1) {
+      _videoOutputPathNotifier.value = clips.first.video.file?.path;
+      return;
+    }
+
+    final cached = clipState.mergeOutputPath;
+    if (cached != null && File(cached).existsSync()) {
+      Log.debug(
+        '⚡ Reusing cached merge output',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+      );
+      _videoOutputPathNotifier.value = cached;
+      return;
+    }
+
+    Log.debug(
+      '🎬 Rendering video from ${clips.length} clip(s)',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
+
+    _videoOutputPathNotifier.value = null;
+
+    final outputPath = await VideoEditorRenderService.renderVideo(
+      taskId: VideoEditorConstants.renderMergeTaskId,
+      clips: clips,
+    );
+
+    if (mounted && outputPath != null) {
+      _videoOutputPathNotifier.value = outputPath;
+      ref.read(clipManagerProvider.notifier).cacheMergeOutput(outputPath);
+    }
+  }
+
+  Future<void> _openClipsEditor({
+    required VideoEditorMainBloc mainBloc,
+  }) async {
+    // Pause playback while the clip editor is open.
+    mainBloc
+      ..add(const VideoEditorMainOpenSubEditor(.clips))
+      ..add(const VideoEditorExternalPauseRequested(isPaused: true));
+    final currentPath = _videoOutputPathNotifier.value;
+    final initialClips = ref.read(clipManagerProvider).clips;
+
+    final clips = await Navigator.push<List<DivineVideoClip>>(
+      context,
+      _FadeUpPageRoute<List<DivineVideoClip>>(
+        child: VideoClipEditorScreen(
+          initialClips: initialClips.map((e) => e.copyWith()).toList(),
+        ),
+      ),
+    );
+
+    mainBloc.add(const VideoEditorMainSubEditorClosed());
+
+    if (clips != null) {
+      Log.info(
+        '🎬 Clips changed after clip editor – re-rendering video',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+      );
+
+      final clipManager = ref.read(clipManagerProvider.notifier);
+      clipManager
+        ..clearClips()
+        ..addMultipleClips(clips);
+
+      _videoOutputPathNotifier.value = null;
+      await _renderVideo();
+    } else {
+      // Clips unchanged – restore the previous output path to resume playback.
+      _videoOutputPathNotifier.value = currentPath;
     }
   }
 
@@ -165,6 +302,38 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         ),
       );
       _editor!.addLayer(layer, blockSelectLayer: true);
+    }
+  }
+
+  /// Opens the audio volume adjust sheet.
+  Future<void> _adjustVolume() async {
+    final notifier = ref.read(videoEditorProvider.notifier);
+    final state = ref.read(videoEditorProvider);
+    final initialRecordedVolume = state.originalAudioVolume;
+    final initialCustomVolume = state.customAudioVolume;
+
+    final result = await VineBottomSheet.show<AudioAdjustResult>(
+      context: context,
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      body: VideoEditorAudioAdjustSheet(
+        initialRecordedVolume: initialRecordedVolume,
+        initialCustomVolume: initialCustomVolume,
+        onRecordedVolumeChanged: notifier.previewOriginalAudioVolume,
+        onCustomVolumeChanged: notifier.previewCustomAudioVolume,
+      ),
+    );
+
+    if (result != null) {
+      notifier
+        ..setOriginalAudioVolume(result.recordedVolume)
+        ..setCustomAudioVolume(result.customVolume);
+    } else {
+      // Dismissed — restore previewed values without side effects
+      notifier
+        ..previewOriginalAudioVolume(initialRecordedVolume)
+        ..previewCustomAudioVolume(initialCustomVolume);
     }
   }
 
@@ -228,7 +397,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             removeAreaKey: _removeAreaKey,
             originalClipAspectRatio: _clip.originalAspectRatio,
             bodySizeNotifier: _bodySizeNotifier,
+            videoOutputPathNotifier: _videoOutputPathNotifier,
+            fromLibrary: widget.fromLibrary,
+            onOpenClipsEditor: () {
+              final mainBloc = context.read<VideoEditorMainBloc>();
+              _openClipsEditor(mainBloc: mainBloc);
+            },
             onAddStickers: _addStickers,
+            onAdjustVolume: _adjustVolume,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();
               final textBloc = context.read<VideoEditorTextBloc>();
@@ -239,10 +415,57 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                 layer: layer,
               );
             },
-            child: const VideoEditorScaffold(),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _isLoadingDraft,
+              builder: (_, isLoading, _) =>
+                  VideoEditorScaffold(isLoading: isLoading),
+            ),
           );
         },
       ),
+    );
+  }
+}
+
+class _FadeUpPageRoute<T> extends PageRoute<T> {
+  _FadeUpPageRoute({required this.child});
+
+  final Widget child;
+
+  @override
+  Color? get barrierColor => null;
+
+  @override
+  String? get barrierLabel => null;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 300);
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    return child;
+  }
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return const FadeUpwardsPageTransitionsBuilder().buildTransitions(
+      this,
+      context,
+      animation,
+      secondaryAnimation,
+      child,
     );
   }
 }

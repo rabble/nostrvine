@@ -151,22 +151,45 @@ void main() {
         await tester.tap(recordButton);
         logPhase('Record tap 1 — starting recording');
 
-        // Wait for native camera to produce first keyframe and truly start.
-        // On the emulator fake camera this can take 5-10 seconds.
-        for (var i = 0; i < 60; i++) {
+        // Wait for recording to truly start. On the emulator the camera
+        // can take 5-15s to produce its first keyframe. Poll the record
+        // button's tooltip: it changes from "Start recording" to
+        // "Stop recording" once recording begins.
+        var recordingStarted = false;
+        for (var i = 0; i < 80; i++) {
+          await tester.pump(const Duration(milliseconds: 250));
+          final button = find.bySemanticsIdentifier(
+            'divine-camera-record-button',
+          );
+          if (button.evaluate().isNotEmpty) {
+            final semantics = tester.getSemantics(button);
+            if (semantics.tooltip == 'Stop recording') {
+              recordingStarted = true;
+              logPhase('Recording truly started (tooltip: Stop recording)');
+              break;
+            }
+          }
+        }
+        if (!recordingStarted) {
+          logPhase('Warning: recording did not start within 20s');
+        }
+
+        // Now record for at least 3 seconds to get a usable clip
+        for (var i = 0; i < 12; i++) {
           await tester.pump(const Duration(milliseconds: 250));
         }
-        logPhase('Waited 15s for recording');
+        logPhase('Recorded for 3s');
 
         // Second tap → toggleRecording() → stopRecording() → addClip()
         await tester.tap(recordButton);
         logPhase('Record tap 2 — stopping recording');
 
-        // Wait for clip processing (thumbnail, metadata extraction)
-        for (var i = 0; i < 20; i++) {
+        // Wait for clip processing (thumbnail, metadata extraction).
+        // On the emulator, stopRecording can take several seconds.
+        for (var i = 0; i < 40; i++) {
           await tester.pump(const Duration(milliseconds: 250));
         }
-        logPhase('Clip processing done');
+        logPhase('Clip processing done (10s wait)');
 
         // Tap the continue button and verify we navigate to the editor.
         // The button exists in the tree but has onPressed: null when no clips,

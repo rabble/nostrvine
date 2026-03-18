@@ -135,7 +135,13 @@ class VideoEditorTextBloc
     VideoEditorTextClosePanels event,
     Emitter<VideoEditorTextState> emit,
   ) {
-    emit(state.copyWith(showFontSelector: false, showColorPicker: false));
+    emit(
+      state.copyWith(
+        fontSize: 0.5,
+        showFontSelector: false,
+        showColorPicker: false,
+      ),
+    );
   }
 
   /// Initializes state from an existing text layer.

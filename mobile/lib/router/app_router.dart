@@ -49,7 +49,6 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -757,20 +756,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: VideoEditorScreen.path,
         name: VideoEditorScreen.routeName,
-        builder: (_, st) => const VideoEditorScreen(),
-      ),
-      GoRoute(
-        path: VideoClipEditorScreen.path,
-        name: VideoClipEditorScreen.routeName,
         builder: (_, st) {
           final extra = st.extra as Map<String, dynamic>?;
           final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
-          return VideoClipEditorScreen(fromLibrary: fromLibrary);
+
+          return VideoEditorScreen(
+            fromLibrary: fromLibrary,
+          );
         },
       ),
       GoRoute(
-        path: VideoClipEditorScreen.draftPathWithId,
-        name: VideoClipEditorScreen.draftRouteName,
+        path: VideoEditorScreen.draftPathWithId,
+        name: VideoEditorScreen.draftRouteName,
         builder: (_, st) {
           // The draft ID is optional if the user wants to continue editing
           // the draft.
@@ -778,7 +775,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = st.extra as Map<String, dynamic>?;
           final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
 
-          return VideoClipEditorScreen(
+          return VideoEditorScreen(
             draftId: draftId == null || draftId.isEmpty ? null : draftId,
             fromLibrary: fromLibrary,
           );

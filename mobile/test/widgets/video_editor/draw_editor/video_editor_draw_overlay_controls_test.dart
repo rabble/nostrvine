@@ -37,7 +37,11 @@ void main() {
             removeAreaKey: GlobalKey(),
             originalClipAspectRatio: 9 / 16,
             bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+            videoOutputPathNotifier: ValueNotifier('temp/video.mp4'),
+            fromLibrary: false,
+            onOpenClipsEditor: () {},
             onAddStickers: () {},
+            onAdjustVolume: () {},
             onAddEditTextLayer: ([layer]) async => null,
             child: BlocProvider<VideoEditorDrawBloc>.value(
               value: mockBloc,
