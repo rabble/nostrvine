@@ -63,9 +63,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Get clips from clip manager.
   List<DivineVideoClip> get _clips => ref.read(clipManagerProvider).clips;
 
-  DraftStorageService get _draftService => ref.read(
-    draftStorageServiceProvider,
-  );
+  DraftStorageService get _draftService =>
+      ref.read(draftStorageServiceProvider);
 
   bool get isAutosavedDraft => draftId == VideoEditorConstants.autoSaveId;
 
@@ -578,10 +577,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     if (state.collaboratorPubkeys.contains(pubkey)) return;
     if (state.pendingCollaboratorPubkeys.contains(pubkey)) return;
     state = state.copyWith(
-      pendingCollaboratorPubkeys: {
-        ...state.pendingCollaboratorPubkeys,
-        pubkey,
-      },
+      pendingCollaboratorPubkeys: {...state.pendingCollaboratorPubkeys, pubkey},
     );
   }
 
@@ -1092,6 +1088,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
+      aiTrainingOptOut: ref
+          .read(aiTrainingPreferenceServiceProvider)
+          .isOptOutEnabled,
       parameters: renderParameters,
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,

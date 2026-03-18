@@ -23,7 +23,10 @@ class DivineSlider extends StatelessWidget {
     this.inactiveColor = VineTheme.onSurfaceDisabled,
     this.thumbColor = VineTheme.onSurface,
     super.key,
-  });
+  }) : assert(min <= max, 'min must be <= max'),
+       assert(trackHeight >= 0, 'trackHeight must be >= 0'),
+       assert(thumbWidth > 0, 'thumbWidth must be > 0'),
+       assert(thumbHeight > 0, 'thumbHeight must be > 0');
 
   /// The current value of the slider.
   final double value;
@@ -131,39 +134,51 @@ class DivineSliderTrackShape extends SliderTrackShape {
     final trackRight = offset.dx + parentBox.size.width;
 
     final canvas = context.canvas;
+    final isLtr = textDirection == TextDirection.ltr;
 
-    // Inactive track (right side) — flat left, rounded right
+    // Inactive track — full width, painted first as the background
     final inactiveRect = RRect.fromLTRBAndCorners(
-      thumbCenter.dx,
+      trackLeft,
       trackTop,
       trackRight,
       trackBottom,
+      topLeft: trackRadius,
+      bottomLeft: trackRadius,
       topRight: trackRadius,
       bottomRight: trackRadius,
     );
     canvas.drawRRect(
       inactiveRect,
+      // Fallback is unreachable when used via DivineSlider (always sets
+      // SliderThemeData.inactiveTrackColor), kept for standalone usage.
       Paint()
         ..color = sliderTheme.inactiveTrackColor ?? VineTheme.onSurfaceDisabled,
     );
 
-    // Active track (left side) — rounded left, flat right
+    // Active track — painted on top, covering from the start edge to thumb
     final activeRect = RRect.fromLTRBAndCorners(
-      trackLeft,
+      isLtr ? trackLeft : thumbCenter.dx,
       trackTop,
-      thumbCenter.dx,
+      isLtr ? thumbCenter.dx : trackRight,
       trackBottom,
-      topLeft: trackRadius,
-      bottomLeft: trackRadius,
+      topLeft: isLtr ? trackRadius : Radius.zero,
+      bottomLeft: isLtr ? trackRadius : Radius.zero,
+      topRight: isLtr ? Radius.zero : trackRadius,
+      bottomRight: isLtr ? Radius.zero : trackRadius,
     );
     canvas.drawRRect(
       activeRect,
+      // Fallback is unreachable when used via DivineSlider (always sets
+      // SliderThemeData.activeTrackColor), kept for standalone usage.
       Paint()..color = sliderTheme.activeTrackColor ?? VineTheme.primary,
     );
   }
 }
 
-/// Tall rectangular thumb with rounded corners for the Divine slider.
+/// Tall capsule-shaped thumb indicator for the Divine slider.
+///
+/// The short ends are fully rounded (pill shape) while the height
+/// creates a tall, narrow indicator.
 @visibleForTesting
 class DivineSliderThumbShape extends SliderComponentShape {
   /// Creates a thumb shape with the given [width] and [height].
@@ -206,7 +221,9 @@ class DivineSliderThumbShape extends SliderComponentShape {
     );
 
     canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, Radius.circular(width)),
+      RRect.fromRectAndRadius(rect, Radius.circular(width / 2)),
+      // Fallback is unreachable when used via DivineSlider (always sets
+      // SliderThemeData.thumbColor), kept for standalone usage.
       Paint()..color = sliderTheme.thumbColor ?? VineTheme.onSurface,
     );
   }

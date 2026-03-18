@@ -1,4 +1,4 @@
-# diVine Tone of Voice
+# Divine Tone of Voice
 
 We have three tone of voice principles that shape how we sound. They ensure consistency across everything we say, wherever we say it.
 
@@ -18,8 +18,8 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 
 | Instead of | Try |
 |------------|-----|
-| "diVine will do its utmost to detect and flag suspected GenAI content and prevent it from being posted. diVine is building systems designed to detect and flag suspected AI-generated videos. We will provide tools for users to flag suspected AI content for us to further evaluate." | "We stand against AI-slop. Our systems are designed to catch and remove machine-generated content, and we also ask our users to flag anything suspicious. We might not catch it all, but we're committed to making diVine as human-only as possible." |
-| "diVine is a new open-source social video app built on the Nostr protocol, reviving the iconic six-second video format that made Vine so popular." | "diVine is bringing back the six-second videos that shaped Internet culture. All on a new protocol where creators own what they make, and users have more say over their feeds." |
+| "Divine will do its utmost to detect and flag suspected GenAI content and prevent it from being posted. Divine is building systems designed to detect and flag suspected AI-generated videos. We will provide tools for users to flag suspected AI content for us to further evaluate." | "We stand against AI-slop. Our systems are designed to catch and remove machine-generated content, and we also ask our users to flag anything suspicious. We might not catch it all, but we're committed to making Divine as human-only as possible." |
+| "Divine is a new open-source social video app built on the Nostr protocol, reviving the iconic six-second video format that made Vine so popular." | "Divine is bringing back the six-second videos that shaped Internet culture. All on a new protocol where creators own what they make, and users have more say over their feeds." |
 
 ---
 
@@ -37,7 +37,7 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 
 | Instead of | Try |
 |------------|-----|
-| "diVine is designed to bring a focus back on real human creativity in an era increasingly flooded with AI slop." | "As activists who've always questioned the concentration of social media power in the hands of a few corporations, we're building with and for people who believe in keeping creativity human. Join us in protecting the brightest corner of the Internet." |
+| "Divine is designed to bring a focus back on real human creativity in an era increasingly flooded with AI slop." | "As activists who've always questioned the concentration of social media power in the hands of a few corporations, we're building with and for people who believe in keeping creativity human. Join us in protecting the brightest corner of the Internet." |
 | "We are encouraging an ecosystem of algorithms for users to choose from. The problem on other social platforms has been the monoculture of ad-focused algorithms designed merely to drive eyeballs which have in turn promoted much of the type of content we don't want to see, and also forced creators to game the algorithm." | "We believe you should have agency over your feed and followers, so we're building a set of 'choose your experience' algorithms. Whether you want to see something silly or serious, or you want to post something quick or polished, or everything in between -- it's up to you." |
 
 ---
@@ -56,8 +56,8 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 
 | Instead of | Try |
 |------------|-----|
-| "Vine Revisited - A Return to the Halcyon Days of the Internet" | "Our diVine right to AI-free, human-made creativity" |
-| "diVine includes access to more than 100,000 archived Vine videos and lets people create their own six-second looping videos. We are aiming to provide an experience that is free of AI-generated content." | "We've brought back to life 100,000 Vines from the original archives. At diVine, we want everyone to show up as they are to our human-made, no-slop playground." |
+| "Vine Revisited - A Return to the Halcyon Days of the Internet" | "Our Divine right to AI-free, human-made creativity" |
+| "Divine includes access to more than 100,000 archived Vine videos and lets people create their own six-second looping videos. We are aiming to provide an experience that is free of AI-generated content." | "We've brought back to life 100,000 Vines from the original archives. At Divine, we want everyone to show up as they are to our human-made, no-slop playground." |
 
 ---
 
@@ -69,7 +69,7 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 - **Show personality in microcopy**: Error messages, empty states, tooltips should have character
 - **Use "we" and "our"**: Reinforce community ("We're building this together")
 - **Celebrate creators**: Highlight people, not metrics
-- **Be honest**: About what diVine is and isn't
+- **Be honest**: About what Divine is and isn't
 
 ### Avoid
 
@@ -96,7 +96,7 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 
 ### Example Microcopy
 
-| Scenario | Corporate | diVine |
+| Scenario | Corporate | Divine |
 |----------|-----------|--------|
 | Empty feed | "No content available" | "Nothing here yet. Go find your people." |
 | Upload success | "Your video has been uploaded successfully" | "Your loop is live. Let's go." |

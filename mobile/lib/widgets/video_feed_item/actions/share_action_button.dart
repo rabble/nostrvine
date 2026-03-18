@@ -25,6 +25,7 @@ import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:share_plus/share_plus.dart';
@@ -59,49 +60,18 @@ class ShareActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          identifier: 'share_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: 'Share video',
-          child: IconButton(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            style: IconButton.styleFrom(
-              highlightColor: VineTheme.transparent,
-              splashFactory: NoSplash.splashFactory,
-            ),
-            onPressed: () {
-              Log.info(
-                'Share button tapped for ${video.id}',
-                name: 'ShareActionButton',
-                category: LogCategory.ui,
-              );
-              ShareActionButton.showShareSheet(context, video);
-            },
-            icon: DecoratedBox(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: VineTheme.backgroundColor.withValues(alpha: 0.15),
-                    blurRadius: 15,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: const DivineIcon(
-                icon: DivineIconName.shareFat,
-                size: 32,
-                color: VineTheme.whiteText,
-              ),
-            ),
-          ),
-        ),
-      ],
+    return VideoActionButton(
+      icon: .shareFatDuo,
+      semanticIdentifier: 'share_button',
+      semanticLabel: 'Share video',
+      onPressed: () {
+        Log.info(
+          'Share button tapped for ${video.id}',
+          name: 'ShareActionButton',
+          category: LogCategory.ui,
+        );
+        ShareActionButton.showShareSheet(context, video);
+      },
     );
   }
 }
