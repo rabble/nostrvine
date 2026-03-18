@@ -231,19 +231,7 @@ class ProfileRepository {
       try {
         final data = await _funnelcakeApiClient!.getUserProfile(pubkey);
         if (data != null && data['_noProfile'] != true) {
-          final profile = UserProfile(
-            pubkey: pubkey,
-            name: data['name'] as String?,
-            displayName: data['display_name'] as String?,
-            about: data['about'] as String?,
-            picture: data['picture'] as String?,
-            banner: data['banner'] as String?,
-            nip05: data['nip05'] as String?,
-            lud16: data['lud16'] as String?,
-            rawData: data,
-            createdAt: DateTime.now(),
-            eventId: 'rest-$pubkey',
-          );
+          final profile = UserProfile.fromFunnelcake(pubkey, data);
           developer.log(
             'Fetched from REST API and caching: '
             '${profile.bestDisplayName}',
@@ -762,18 +750,10 @@ class ProfileRepository {
             continue;
           }
 
-          final profile = UserProfile(
-            pubkey: pubkey,
-            name: data['name'] as String?,
-            displayName: data['display_name'] as String?,
-            about: data['about'] as String?,
-            picture: data['picture'] as String?,
-            banner: data['banner'] as String?,
-            nip05: data['nip05'] as String?,
-            lud16: data['lud16'] as String?,
-            rawData: data,
-            createdAt: DateTime.now(),
-            eventId: 'rest-bulk-$pubkey',
+          final profile = UserProfile.fromFunnelcake(
+            pubkey,
+            data,
+            eventIdPrefix: 'rest-bulk',
           );
           results[pubkey] = profile;
           toCache.add(profile);
