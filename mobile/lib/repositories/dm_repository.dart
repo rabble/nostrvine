@@ -487,13 +487,12 @@ class DmRepository {
       // dual-send fires both NIP-17 and NIP-04 copies. The receiver (also
       // Divine) will process the NIP-17 first, then see the NIP-04 copy.
       // Since the two events have different IDs, hasGiftWrap won't catch it.
-      // Check for an existing message with the same sender+content+timestamp
-      // in this conversation to skip the duplicate.
+      // Match on sender+content only (no createdAt) because the NIP-17 rumor
+      // and NIP-04 event may have slightly different timestamps.
       final isDuplicate = await _directMessagesDao.hasMatchingMessage(
         conversationId: conversationId,
         senderPubkey: senderPubkey,
         content: plaintext,
-        createdAt: nip04Event.createdAt,
       );
       if (isDuplicate) {
         Log.debug(
@@ -533,7 +532,8 @@ class DmRepository {
         currentUserHasSent:
             isSentByMe || (existing?.currentUserHasSent ?? false),
         ownerPubkey: _userPubkey,
-        dmProtocol: 'nip04',
+        // Protocol only upgrades (null → nip04 → nip17), never downgrades.
+        dmProtocol: existing?.dmProtocol ?? 'nip04',
       );
 
       Log.debug(
@@ -612,6 +612,7 @@ class DmRepository {
           lastMessageSenderPubkey: _userPubkey,
           currentUserHasSent: true,
           ownerPubkey: _userPubkey,
+          dmProtocol: existingSend?.dmProtocol,
         );
 
         Log.debug(
@@ -730,6 +731,7 @@ class DmRepository {
         lastMessageSenderPubkey: _userPubkey,
         currentUserHasSent: true,
         ownerPubkey: _userPubkey,
+        dmProtocol: existingGroup?.dmProtocol,
       );
     }
 
@@ -825,6 +827,7 @@ class DmRepository {
         lastMessageSenderPubkey: _userPubkey,
         currentUserHasSent: true,
         ownerPubkey: _userPubkey,
+        dmProtocol: existingFile?.dmProtocol,
       );
     }
 
