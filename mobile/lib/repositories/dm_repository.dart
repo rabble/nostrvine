@@ -411,6 +411,8 @@ class DmRepository {
         currentUserHasSent:
             isSentByMe || (existing?.currentUserHasSent ?? false),
         ownerPubkey: _userPubkey,
+        // Protocol only upgrades toward 'nip17', never back. Once we
+        // confirm the peer supports NIP-17 we stop sending NIP-04 copies.
         dmProtocol: 'nip17',
       );
 
@@ -462,10 +464,12 @@ class DmRepository {
       final peerPubkey = isSentByMe ? recipientPubkey : senderPubkey;
 
       // Decrypt using injected decryptor or signer fallback
+      final signer = _signer;
+      if (signer == null && _nip04Decryptor == null) return;
       final decryptor =
           _nip04Decryptor ??
           (String pubkey, String ciphertext) =>
-              _signer!.decrypt(pubkey, ciphertext);
+              signer!.decrypt(pubkey, ciphertext);
       final plaintext = await decryptor(peerPubkey, nip04Event.content);
       if (plaintext == null) {
         Log.debug(
@@ -478,6 +482,27 @@ class DmRepository {
       // Build participants and conversation ID
       final participants = [senderPubkey, recipientPubkey]..sort();
       final conversationId = computeConversationId(participants);
+
+      // Cross-protocol dedup: when a Divine user sends a message, the
+      // dual-send fires both NIP-17 and NIP-04 copies. The receiver (also
+      // Divine) will process the NIP-17 first, then see the NIP-04 copy.
+      // Since the two events have different IDs, hasGiftWrap won't catch it.
+      // Check for an existing message with the same sender+content+timestamp
+      // in this conversation to skip the duplicate.
+      final isDuplicate = await _directMessagesDao.hasMatchingMessage(
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: plaintext,
+        createdAt: nip04Event.createdAt,
+      );
+      if (isDuplicate) {
+        Log.debug(
+          'Skipping NIP-04 duplicate (NIP-17 copy already stored) '
+          '${nip04Event.id}',
+          category: LogCategory.system,
+        );
+        return;
+      }
 
       // Persist the message
       await _directMessagesDao.insertMessage(
@@ -819,12 +844,18 @@ class DmRepository {
     required String recipientPubkey,
     required String content,
   }) async {
-    final ciphertext = await _signer!.encrypt(recipientPubkey, content);
+    // Reuses NIP17SendResult for simplicity — this is an internal helper.
+    final signer = _signer;
+    if (signer == null) {
+      return NIP17SendResult.failure('Signer not available');
+    }
+
+    final ciphertext = await signer.encrypt(recipientPubkey, content);
     if (ciphertext == null) {
       return NIP17SendResult.failure('NIP-04 encrypt returned null');
     }
 
-    final pubkey = await _signer!.getPublicKey();
+    final pubkey = await signer.getPublicKey();
     if (pubkey == null) {
       return NIP17SendResult.failure('Signer returned null pubkey');
     }
@@ -838,7 +869,7 @@ class DmRepository {
       ciphertext,
     );
 
-    final signed = await _signer!.signEvent(event);
+    final signed = await signer.signEvent(event);
     if (signed == null) {
       return NIP17SendResult.failure('NIP-04 sign returned null');
     }

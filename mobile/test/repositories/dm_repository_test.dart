@@ -2512,6 +2512,14 @@ void main() {
 
       void stubDaoInserts() {
         when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
           () => mockDirectMessagesDao.insertMessage(
             id: any(named: 'id'),
             conversationId: any(named: 'conversationId'),
@@ -2555,6 +2563,67 @@ void main() {
           () => mockConversationsDao.getConversation(any()),
         ).thenAnswer((_) async => null);
       }
+
+      test('skips NIP-04 duplicate when NIP-17 copy already stored', () async {
+        final nip04Event = createNip04Event();
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final repository = createRepository(
+          nip04Decryptor: (pubkey, ciphertext) async => 'Hello!',
+        );
+
+        repository.startListening();
+        controller.add(nip04Event);
+        await Future<void>.delayed(Duration.zero);
+
+        // Should NOT insert — cross-protocol dedup caught it
+        verifyNever(
+          () => mockDirectMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+
+        await controller.close();
+        await repository.stopListening();
+      });
 
       test('decrypts and persists a NIP-04 message', () async {
         final nip04Event = createNip04Event();
