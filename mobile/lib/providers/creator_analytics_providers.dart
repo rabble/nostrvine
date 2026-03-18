@@ -18,10 +18,8 @@ final creatorAnalyticsRepositoryProvider = Provider<CreatorAnalyticsRepository>(
       return _FixtureCreatorAnalyticsRepository();
     }
 
-    final service = ref.watch(analyticsApiServiceProvider);
-    return FunnelcakeCreatorAnalyticsRepository(
-      AnalyticsApiCreatorAdapter(service),
-    );
+    final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+    return FunnelcakeCreatorAnalyticsRepository(funnelcakeClient);
   },
 );
 
