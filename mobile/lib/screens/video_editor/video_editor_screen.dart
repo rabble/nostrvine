@@ -325,9 +325,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       ),
     );
 
-    notifier
-      ..setOriginalAudioVolume(result?.recordedVolume ?? initialRecordedVolume)
-      ..setCustomAudioVolume(result?.customVolume ?? initialCustomVolume);
+    if (result != null) {
+      notifier
+        ..setOriginalAudioVolume(result.recordedVolume)
+        ..setCustomAudioVolume(result.customVolume);
+    } else {
+      // Dismissed — restore previewed values without side effects
+      notifier
+        ..previewOriginalAudioVolume(initialRecordedVolume)
+        ..previewCustomAudioVolume(initialCustomVolume);
+    }
   }
 
   /// Opens the text editor screen to add or edit a text layer.
