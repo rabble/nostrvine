@@ -109,7 +109,6 @@ class _ToggleButton extends StatelessWidget {
                 Text(
                   label,
                   style: VineTheme.titleMediumFont(
-                    height: 24 / 16,
                     color: isSelected
                         ? VineTheme.onPrimaryButton
                         : VineTheme.onSurfaceMuted,
@@ -142,11 +141,10 @@ class _NotificationBadge extends StatelessWidget {
         color: VineTheme.error,
         borderRadius: BorderRadius.all(Radius.circular(1000)),
       ),
-      child: Center(
-        child: Text(
-          count > 99 ? '99+' : '$count',
-          style: VineTheme.labelSmallFont(),
-        ),
+      alignment: Alignment.center,
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: VineTheme.labelSmallFont(),
       ),
     );
   }

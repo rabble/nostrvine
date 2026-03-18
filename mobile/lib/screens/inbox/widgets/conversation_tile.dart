@@ -51,7 +51,9 @@ class ConversationTile extends ConsumerWidget {
     );
 
     final relativeTime = conversation.lastMessageTimestamp != null
-        ? TimeFormatter.formatRelative(conversation.lastMessageTimestamp!)
+        ? TimeFormatter.formatConversationTimestamp(
+            conversation.lastMessageTimestamp!,
+          )
         : '';
 
     return Semantics(

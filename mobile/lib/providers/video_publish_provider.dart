@@ -34,9 +34,8 @@ final videoPublishProvider =
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
-  DraftStorageService get _draftService => ref.read(
-    draftStorageServiceProvider,
-  );
+  DraftStorageService get _draftService =>
+      ref.read(draftStorageServiceProvider);
 
   @override
   VideoPublishProviderState build() {
@@ -100,9 +99,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   Future<void> resumePendingPublishes(BuildContext context) async {
     final List<DivineVideoDraft> pendingDrafts;
     try {
-      pendingDrafts = await _draftService.getDraftsByPublishStatuses(
-        const {PublishStatus.publishing, PublishStatus.failed},
-      );
+      pendingDrafts = await _draftService.getDraftsByPublishStatuses(const {
+        PublishStatus.publishing,
+        PublishStatus.failed,
+      });
     } catch (e) {
       Log.error(
         '❌ Failed to load drafts for pending publish resume: $e',
@@ -250,6 +250,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           final result = await VideoEditorRenderService.renderVideoToClip(
             clips: draft.clips,
             parameters: parameters,
+            aiTrainingOptOut: ref
+                .read(aiTrainingPreferenceServiceProvider)
+                .isOptOutEnabled,
           );
 
           if (result == null) {
@@ -278,7 +281,13 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         );
 
         final filePath = await finalRenderedClip.video.safeFilePath();
-        final result = await NativeProofModeService.proofFile(File(filePath));
+        final aiTrainingOptOut = ref
+            .read(aiTrainingPreferenceServiceProvider)
+            .isOptOutEnabled;
+        final result = await NativeProofModeService.proofFile(
+          File(filePath),
+          aiTrainingOptOut: aiTrainingOptOut,
+        );
         proofManifestJson = result != null ? jsonEncode(result) : null;
 
         if (proofManifestJson != null) {

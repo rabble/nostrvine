@@ -49,6 +49,28 @@ abstract class TimeFormatter {
     return DateFormat('MMMM d').format(date);
   }
 
+  /// Formats a Unix timestamp (seconds) for conversation list timestamps.
+  ///
+  /// - Under 1 minute: "now"
+  /// - Under 1 hour: relative minutes — "1m", "5m", "59m"
+  /// - Same calendar day: relative hours — "1h", "3h", "23h"
+  /// - Yesterday: "Yesterday"
+  /// - 2–6 days ago: day of week — "Monday", "Tuesday"
+  /// - 7–364 days (same year): "Mar 3", "Jan 15"
+  /// - 1+ years ago: "Mar 3, 2025"
+  static String formatConversationTimestamp(int unixSeconds) {
+    final now = DateTime.now();
+    final date = DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000);
+    final diff = now.difference(date);
+
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+
+    final dayDiff = _calendarDayDiff(now, date);
+    if (dayDiff == 0) return '${diff.inHours}h';
+    return _formatByDayDiff(dayDiff, date, now);
+  }
+
   /// Formats a Unix timestamp (seconds) for message bubble timestamps.
   ///
   /// Returns "Now" for < 60s, "9:41 AM" for today, "Yesterday" for
@@ -61,12 +83,20 @@ abstract class TimeFormatter {
 
     if (diff.inSeconds < 60) return 'Now';
 
+    final dayDiff = _calendarDayDiff(now, date);
+    if (dayDiff == 0) return DateFormat.jm().format(date);
+    return _formatByDayDiff(dayDiff, date, now);
+  }
+
+  /// Returns the number of calendar days between [now] and [date].
+  static int _calendarDayDiff(DateTime now, DateTime date) {
     final today = DateTime(now.year, now.month, now.day);
     final messageDay = DateTime(date.year, date.month, date.day);
+    return today.difference(messageDay).inDays;
+  }
 
-    if (messageDay == today) return DateFormat.jm().format(date);
-
-    final dayDiff = today.difference(messageDay).inDays;
+  /// Shared formatting for dates 1+ days old.
+  static String _formatByDayDiff(int dayDiff, DateTime date, DateTime now) {
     if (dayDiff == 1) return 'Yesterday';
     if (dayDiff >= 2 && dayDiff <= 6) return DateFormat.EEEE().format(date);
     if (date.year == now.year) return DateFormat.MMMd().format(date);

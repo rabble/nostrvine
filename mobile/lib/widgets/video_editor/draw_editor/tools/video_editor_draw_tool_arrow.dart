@@ -55,7 +55,6 @@ class _ArrowPainter extends CustomPainter {
 
     // Squiggle line with arrow
     const amplitude = 6.0;
-    const waveHeight = 22.0;
     const straightStart = 22.0;
 
     final path = Path()
@@ -70,13 +69,16 @@ class _ArrowPainter extends CustomPainter {
       ..lineTo(centerX, 11)
       ..quadraticBezierTo(centerX, 11, centerX - 2, straightStart);
 
-    // Create squiggle waves continuing from where we left off
+    // Create squiggle waves to fill remaining height
     double y = straightStart;
+    final remainingHeight = size.height - straightStart;
+    const wavesCount = 3;
+    final dynamicWaveHeight = remainingHeight / wavesCount;
     int direction = -1; // Start right since the intro went left
 
-    for (int i = 0; i < 3; i++) {
-      final nextY = y + waveHeight;
-      final controlY = y + waveHeight / 2;
+    for (int i = 0; i < wavesCount; i++) {
+      final nextY = y + dynamicWaveHeight;
+      final controlY = y + dynamicWaveHeight / 2;
 
       path.quadraticBezierTo(
         centerX + (amplitude * direction),

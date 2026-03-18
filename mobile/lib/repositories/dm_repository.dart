@@ -330,16 +330,24 @@ class DmRepository {
           ? _filePreviewText(fileMetadata?.fileType)
           : rumorEvent.content;
 
+      // Preserve sticky state from any existing conversation row so that
+      // the full-row upsert does not clobber previous values.
+      final existing = await _conversationsDao.getConversation(
+        conversationId,
+      );
+
       await _conversationsDao.upsertConversation(
         id: conversationId,
         participantPubkeys: jsonEncode(participants),
         isGroup: isGroup,
-        createdAt: rumorEvent.createdAt,
+        createdAt: existing?.createdAt ?? rumorEvent.createdAt,
         lastMessageContent: previewContent,
         lastMessageTimestamp: rumorEvent.createdAt,
         lastMessageSenderPubkey: rumorEvent.pubkey,
         subject: subject,
         isRead: isSentByMe,
+        currentUserHasSent:
+            isSentByMe || (existing?.currentUserHasSent ?? false),
       );
 
       Log.debug(
@@ -405,14 +413,18 @@ class DmRepository {
           replyToId: replyToId,
         );
 
+        final existingSend = await _conversationsDao.getConversation(
+          conversationId,
+        );
         await _conversationsDao.upsertConversation(
           id: conversationId,
           participantPubkeys: jsonEncode(participants),
           isGroup: false,
-          createdAt: now,
+          createdAt: existingSend?.createdAt ?? now,
           lastMessageContent: content,
           lastMessageTimestamp: now,
           lastMessageSenderPubkey: _userPubkey,
+          currentUserHasSent: true,
         );
 
         Log.debug(
@@ -496,14 +508,18 @@ class DmRepository {
         replyToId: replyToId,
       );
 
+      final existingGroup = await _conversationsDao.getConversation(
+        conversationId,
+      );
       await _conversationsDao.upsertConversation(
         id: conversationId,
         participantPubkeys: jsonEncode(participants),
         isGroup: true,
-        createdAt: now,
+        createdAt: existingGroup?.createdAt ?? now,
         lastMessageContent: content,
         lastMessageTimestamp: now,
         lastMessageSenderPubkey: _userPubkey,
+        currentUserHasSent: true,
       );
     }
 
@@ -585,14 +601,18 @@ class DmRepository {
         thumbnailUrl: fileMetadata.thumbnailUrl,
       );
 
+      final existingFile = await _conversationsDao.getConversation(
+        conversationId,
+      );
       await _conversationsDao.upsertConversation(
         id: conversationId,
         participantPubkeys: jsonEncode(participants),
         isGroup: false,
-        createdAt: now,
+        createdAt: existingFile?.createdAt ?? now,
         lastMessageContent: _filePreviewText(fileMetadata.fileType),
         lastMessageTimestamp: now,
         lastMessageSenderPubkey: _userPubkey,
+        currentUserHasSent: true,
       );
     }
 
@@ -615,18 +635,145 @@ class DmRepository {
         );
   }
 
+  /// Get a single conversation by ID.
+  ///
+  /// Returns `null` if no conversation with the given ID exists.
+  Future<DmConversation?> getConversation(String conversationId) async {
+    final row = await _conversationsDao.getConversation(conversationId);
+    return row == null ? null : _conversationFromRow(row);
+  }
+
   /// Get all conversations.
   Future<List<DmConversation>> getConversations() async {
     final rows = await _conversationsDao.getAllConversations();
     return rows.map(_conversationFromRow).toList();
   }
 
-  /// Watch unread conversation count.
+  /// Watch conversations where the user has sent at least one message.
+  ///
+  /// Supports pagination via [limit]. These conversations are never
+  /// message requests.
+  Stream<List<DmConversation>> watchAcceptedConversations({int? limit}) {
+    return _conversationsDao
+        .watchAcceptedConversations(limit: limit)
+        .map((rows) => rows.map(_conversationFromRow).toList());
+  }
+
+  /// Watch conversations where the user has never sent a message.
+  ///
+  /// These are potential message requests. Final classification (based on
+  /// follow state) is applied by [classifyPotentialRequests]. Returned
+  /// without pagination since the list is typically small and needed in full.
+  Stream<List<DmConversation>> watchPotentialRequests() {
+    return _conversationsDao.watchPotentialRequestConversations().map(
+      (rows) => rows.map(_conversationFromRow).toList(),
+    );
+  }
+
+  /// Classifies potential request conversations by follow state.
+  ///
+  /// Conversations where `currentUserHasSent == false` are "potential
+  /// requests". For 1:1 conversations from followed contacts, they go to
+  /// the followed list (Messages tab). Everything else is a true request.
+  static ({
+    List<DmConversation> followed,
+    List<DmConversation> requests,
+  })
+  classifyPotentialRequests(
+    List<DmConversation> potentialRequests, {
+    required String userPubkey,
+    required bool Function(String) isFollowing,
+  }) {
+    final followed = <DmConversation>[];
+    final requests = <DmConversation>[];
+
+    for (final conversation in potentialRequests) {
+      final otherPubkeys = conversation.participantPubkeys.where(
+        (pk) => pk != userPubkey,
+      );
+
+      // A 1:1 conversation from a followed contact is not a request
+      // even if the user hasn't replied yet. For groups, follow state
+      // is irrelevant per the spec.
+      final isFollowedContact =
+          !conversation.isGroup && otherPubkeys.any(isFollowing);
+
+      if (otherPubkeys.isEmpty || isFollowedContact) {
+        followed.add(conversation);
+      } else {
+        requests.add(conversation);
+      }
+    }
+
+    return (followed: followed, requests: requests);
+  }
+
+  /// Merges accepted conversations with followed-but-unreplied ones
+  /// and sorts by timestamp descending.
+  static List<DmConversation> mergeAndSort(
+    List<DmConversation> accepted,
+    List<DmConversation> followedPotential,
+  ) {
+    if (followedPotential.isEmpty) return accepted;
+    return [...accepted, ...followedPotential]..sort((a, b) {
+      return b.effectiveTimestamp.compareTo(a.effectiveTimestamp);
+    });
+  }
+
+  /// Watch unread conversation count (all conversations).
   Stream<int> watchUnreadCount() => _conversationsDao.watchUnreadCount();
+
+  /// Watch unread count for accepted conversations only (excludes requests).
+  Stream<int> watchUnreadAcceptedCount() =>
+      _conversationsDao.watchUnreadAcceptedCount();
 
   /// Mark a conversation as read.
   Future<void> markConversationAsRead(String conversationId) {
     return _conversationsDao.markAsRead(conversationId);
+  }
+
+  /// Mark multiple conversations as read in a single batch.
+  ///
+  /// No-op when [conversationIds] is empty.
+  Future<void> markConversationsAsRead(List<String> conversationIds) {
+    return _conversationsDao.markMultipleAsRead(conversationIds);
+  }
+
+  /// Remove a conversation and all its messages atomically.
+  ///
+  /// Deletes the messages first, then the conversation metadata
+  /// inside a single database transaction.
+  ///
+  /// Throws:
+  ///
+  /// * [InvalidDataException] if a database constraint is violated.
+  Future<void> removeConversation(String conversationId) {
+    return _conversationsDao.runInTransaction(() async {
+      await _directMessagesDao.deleteConversationMessages(conversationId);
+      await _conversationsDao.deleteConversation(conversationId);
+    });
+  }
+
+  /// Remove multiple conversations and all their messages atomically.
+  ///
+  /// No-op when [conversationIds] is empty.
+  ///
+  /// Throws:
+  ///
+  /// * [InvalidDataException] if a database constraint is violated.
+  Future<void> removeConversations(List<String> conversationIds) {
+    if (conversationIds.isEmpty) return Future.value();
+    return _conversationsDao.runInTransaction(() async {
+      await _directMessagesDao.deleteMultipleConversationMessages(
+        conversationIds,
+      );
+      await _conversationsDao.deleteMultiple(conversationIds);
+    });
+  }
+
+  /// Count the total number of messages in a conversation.
+  Future<int> countMessagesInConversation(String conversationId) {
+    return _directMessagesDao.countMessages(conversationId);
   }
 
   // -------------------------------------------------------------------------
@@ -775,6 +922,7 @@ class DmRepository {
       lastMessageSenderPubkey: row.lastMessageSenderPubkey,
       subject: row.subject,
       isRead: row.isRead,
+      currentUserHasSent: row.currentUserHasSent,
     );
   }
 

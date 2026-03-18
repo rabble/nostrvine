@@ -100,7 +100,6 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.conversation:
     case RouteType.videoRecorder:
     case RouteType.videoEditor:
-    case RouteType.videoClipEditor:
     case RouteType.videoMetadata:
     case RouteType.settings:
     case RouteType.relaySettings:
@@ -125,6 +124,8 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.creatorAnalytics:
     case RouteType.sound:
     case RouteType.secureAccount:
+    case RouteType.messageRequests:
+    case RouteType.requestPreview:
       // Non-video routes - return null
       Log.debug(
         '[ACTIVE] ❌ Non-video route: ${ctx.type}',

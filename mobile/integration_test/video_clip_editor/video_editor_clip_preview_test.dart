@@ -2,17 +2,35 @@
 // ABOUTME: Tests video preview rendering and interactions
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_preview.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_clip_preview.dart';
 import 'package:patrol/patrol.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('VideoEditorClipPreview Integration Tests', () {
+    late ClipEditorBloc bloc;
+
+    setUp(() {
+      bloc = ClipEditorBloc();
+    });
+
+    tearDown(() async {
+      await bloc.close();
+    });
+
+    Widget buildTestWidget({required Widget child}) {
+      return BlocProvider<ClipEditorBloc>.value(
+        value: bloc,
+        child: MaterialApp(
+          home: Scaffold(body: child),
+        ),
+      );
+    }
+
     patrolTest('displays clip preview with correct aspect ratio', ($) async {
       final tester = $.tester;
       final clip = DivineVideoClip(
@@ -25,24 +43,11 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(VideoEditorProviderState()),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: VideoEditorClipPreview(clip: clip),
-            ),
-          ),
-        ),
+        buildTestWidget(child: VideoEditorClipPreview(clip: clip)),
       );
 
-      // Use pump instead of pumpAndSettle to avoid waiting for infinite animations
       await tester.pump();
 
-      // AspectRatio widget should be present
       expect(find.byType(AspectRatio), findsOneWidget);
     });
 
@@ -60,31 +65,20 @@ void main() {
       var tapped = false;
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(VideoEditorProviderState()),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: VideoEditorClipPreview(
-                clip: clip,
-                onTap: () => tapped = true,
-              ),
-            ),
+        buildTestWidget(
+          child: VideoEditorClipPreview(
+            clip: clip,
+            onTap: () => tapped = true,
           ),
         ),
       );
 
-      // Use pump instead of pumpAndSettle to avoid waiting for infinite animations
       await tester.pump();
 
-      // Tap the preview
       await tester.tap(find.byType(VideoEditorClipPreview));
       await tester.pump();
 
-      expect(tapped, true);
+      expect(tapped, isTrue);
     });
 
     patrolTest('shows border when reordering', ($) async {
@@ -99,33 +93,26 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(VideoEditorProviderState()),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: VideoEditorClipPreview(
-                clip: clip,
-                isCurrentClip: true,
-                isReordering: true,
-              ),
-            ),
+        buildTestWidget(
+          child: VideoEditorClipPreview(
+            clip: clip,
+            isCurrentClip: true,
+            isReordering: true,
           ),
         ),
       );
 
-      // Use pump instead of pumpAndSettle to avoid waiting for infinite animations
       await tester.pump();
 
-      // AnimatedContainer should be present for border animation
       expect(find.byType(AnimatedContainer), findsWidgets);
     });
 
     patrolTest('shows deletion zone border color', ($) async {
       final tester = $.tester;
+      await bloc.close();
+      bloc = _TestClipEditorBloc(
+        initialState: const ClipEditorState(isOverDeleteZone: true),
+      );
       final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
@@ -136,39 +123,24 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(
-                VideoEditorProviderState(isOverDeleteZone: true),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: VideoEditorClipPreview(
-                clip: clip,
-                isCurrentClip: true,
-                isReordering: true,
-              ),
-            ),
+        buildTestWidget(
+          child: VideoEditorClipPreview(
+            clip: clip,
+            isCurrentClip: true,
+            isReordering: true,
           ),
         ),
       );
 
-      // Use pump instead of pumpAndSettle to avoid waiting for infinite animations
       await tester.pump();
 
-      // Preview should render with deletion zone styling
       expect(find.byType(VideoEditorClipPreview), findsOneWidget);
     });
   });
 }
 
-class TestVideoEditorNotifier extends VideoEditorNotifier {
-  TestVideoEditorNotifier(this._state);
-  final VideoEditorProviderState _state;
-
-  @override
-  VideoEditorProviderState build() => _state;
+class _TestClipEditorBloc extends ClipEditorBloc {
+  _TestClipEditorBloc({required ClipEditorState initialState}) {
+    emit(initialState);
+  }
 }

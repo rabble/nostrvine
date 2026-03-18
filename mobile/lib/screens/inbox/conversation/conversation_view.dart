@@ -12,7 +12,10 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:time_formatter/time_formatter.dart';
 
 /// View for a single DM conversation.
@@ -22,7 +25,7 @@ import 'package:time_formatter/time_formatter.dart';
 ///
 /// Uses [BlocSelector] for child widgets that depend on specific slices of
 /// [ConversationState] to avoid unnecessary rebuilds.
-class ConversationView extends ConsumerWidget {
+class ConversationView extends ConsumerStatefulWidget {
   const ConversationView({
     required this.participantPubkeys,
     super.key,
@@ -32,13 +35,60 @@ class ConversationView extends ConsumerWidget {
   final List<String> participantPubkeys;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConversationView> createState() => _ConversationViewState();
+}
+
+class _ConversationViewState extends ConsumerState<ConversationView> {
+  Future<void> _onOptions(
+    String otherPubkey,
+    String displayName,
+  ) async {
+    if (otherPubkey.isEmpty) return;
+
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final followRepository = ref.read(followRepositoryProvider);
+    final isBlocked = blocklistService.isBlocked(otherPubkey);
+    final isFollowing = followRepository.isFollowing(otherPubkey);
+
+    final result = await VineBottomSheet.show<MoreSheetResult>(
+      context: context,
+      scrollable: false,
+      body: MoreSheetContent(
+        userIdHex: otherPubkey,
+        displayName: displayName,
+        isFollowing: isFollowing,
+        isBlocked: isBlocked,
+      ),
+      children: const [],
+    );
+
+    if (!mounted || result == null) return;
+
+    switch (result) {
+      case MoreSheetResult.copy:
+        final npub = NostrKeyUtils.encodePubKey(otherPubkey);
+        await ClipboardUtils.copyPubkey(context, npub);
+      case MoreSheetResult.unfollow:
+        await followRepository.toggleFollow(otherPubkey);
+      case MoreSheetResult.blockConfirmed:
+        blocklistService.blockUser(
+          otherPubkey,
+          ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+        );
+        if (mounted) context.pop();
+      case MoreSheetResult.unblockConfirmed:
+        blocklistService.unblockUser(otherPubkey);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
     // Resolve other participant's profile for the app bar + empty state
-    final otherPubkey = participantPubkeys.isNotEmpty
-        ? participantPubkeys.first
+    final otherPubkey = widget.participantPubkeys.isNotEmpty
+        ? widget.participantPubkeys.first
         : '';
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
@@ -56,9 +106,12 @@ class ConversationView extends ConsumerWidget {
             displayName: displayName,
             handle: handle,
             onBack: () => context.pop(),
-            onOptions: () {
-              // TODO(dm): Show conversation options (mute, block, etc.)
-            },
+            onTitleTap: otherPubkey.isNotEmpty
+                ? () => context.push(
+                    '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
+                  )
+                : null,
+            onOptions: () => _onOptions(otherPubkey, displayName),
           ),
           Expanded(
             child: _ConversationContent(
@@ -74,7 +127,7 @@ class ConversationView extends ConsumerWidget {
               },
             ),
           ),
-          _SendBar(participantPubkeys: participantPubkeys),
+          _SendBar(participantPubkeys: widget.participantPubkeys),
         ],
       ),
     );

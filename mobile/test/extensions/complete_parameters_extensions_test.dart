@@ -1,0 +1,335 @@
+import 'dart:typed_data';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/extensions/complete_parameters_extensions.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
+
+CompleteParameters _makeParams({
+  double blur = 0,
+  List<List<double>>? matrixFilterList,
+  List<List<double>>? matrixTuneAdjustmentsList,
+  Duration? startTime,
+  Duration? endTime,
+  int? cropWidth,
+  int? cropHeight,
+  int rotateTurns = 0,
+  int? cropX,
+  int? cropY,
+  bool flipX = false,
+  bool flipY = false,
+  Uint8List? image,
+  bool isTransformed = false,
+  List<Layer>? layers,
+  List<VideoClip>? videoClips,
+  AudioTrack? customAudioTrack,
+}) {
+  return CompleteParameters(
+    blur: blur,
+    matrixFilterList: matrixFilterList ?? const [],
+    matrixTuneAdjustmentsList: matrixTuneAdjustmentsList ?? const [],
+    startTime: startTime,
+    endTime: endTime,
+    cropWidth: cropWidth,
+    cropHeight: cropHeight,
+    rotateTurns: rotateTurns,
+    cropX: cropX,
+    cropY: cropY,
+    flipX: flipX,
+    flipY: flipY,
+    image: image ?? Uint8List(0),
+    isTransformed: isTransformed,
+    layers: layers ?? const [],
+    videoClips: videoClips ?? const [],
+    customAudioTrack: customAudioTrack,
+  );
+}
+
+AudioTrack _makeAudioTrack({String id = 'a1'}) {
+  return AudioTrack(
+    id: id,
+    title: 'track',
+    subtitle: 'artist',
+    duration: const Duration(seconds: 30),
+    audio: EditorAudio.asset('audio.mp3'),
+  );
+}
+
+VideoClip _makeVideoClip({String id = 'v1'}) {
+  return VideoClip(
+    id: id,
+    title: 'clip',
+    clip: EditorVideoClip.asset('clip.mp4'),
+    duration: const Duration(seconds: 10),
+  );
+}
+
+void main() {
+  group('CompleteParametersEquality', () {
+    group('deepEquals', () {
+      test('returns true for identical references', () {
+        final params = _makeParams();
+        expect(params.deepEquals(params), isTrue);
+      });
+
+      test('returns true for two equal instances', () {
+        final a = _makeParams(blur: 2, flipX: true);
+        final b = _makeParams(blur: 2, flipX: true);
+        expect(a.deepEquals(b), isTrue);
+      });
+
+      test(
+        'returns true when image bytes are equal '
+        'but different Uint8List instances',
+        () {
+          final a = _makeParams(
+            image: Uint8List.fromList([1, 2, 3]),
+          );
+          final b = _makeParams(
+            image: Uint8List.fromList([1, 2, 3]),
+          );
+          // Built-in == would fail here because Uint8List uses identity.
+          expect(a.deepEquals(b), isTrue);
+        },
+      );
+
+      test('returns false when image bytes differ', () {
+        final a = _makeParams(
+          image: Uint8List.fromList([1, 2, 3]),
+        );
+        final b = _makeParams(
+          image: Uint8List.fromList([4, 5, 6]),
+        );
+        expect(a.deepEquals(b), isFalse);
+      });
+
+      test('returns false when blur differs', () {
+        expect(
+          _makeParams(blur: 1).deepEquals(_makeParams(blur: 2)),
+          isFalse,
+        );
+      });
+
+      test('returns false when startTime differs', () {
+        expect(
+          _makeParams(startTime: const Duration(seconds: 1)).deepEquals(
+            _makeParams(startTime: const Duration(seconds: 2)),
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false when endTime differs', () {
+        expect(
+          _makeParams(endTime: const Duration(seconds: 5)).deepEquals(
+            _makeParams(endTime: const Duration(seconds: 10)),
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false when cropWidth differs', () {
+        expect(
+          _makeParams(cropWidth: 100).deepEquals(
+            _makeParams(cropWidth: 200),
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false when cropHeight differs', () {
+        expect(
+          _makeParams(cropHeight: 100).deepEquals(
+            _makeParams(cropHeight: 200),
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false when rotateTurns differs', () {
+        expect(
+          _makeParams(rotateTurns: 1).deepEquals(
+            _makeParams(rotateTurns: 3),
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false when cropX differs', () {
+        expect(
+          _makeParams(cropX: 10).deepEquals(_makeParams(cropX: 20)),
+          isFalse,
+        );
+      });
+
+      test('returns false when cropY differs', () {
+        expect(
+          _makeParams(cropY: 10).deepEquals(_makeParams(cropY: 20)),
+          isFalse,
+        );
+      });
+
+      test('returns false when flipX differs', () {
+        expect(
+          _makeParams(flipX: true).deepEquals(_makeParams()),
+          isFalse,
+        );
+      });
+
+      test('returns false when flipY differs', () {
+        expect(
+          _makeParams(flipY: true).deepEquals(_makeParams()),
+          isFalse,
+        );
+      });
+
+      test('returns false when isTransformed differs', () {
+        expect(
+          _makeParams(isTransformed: true).deepEquals(_makeParams()),
+          isFalse,
+        );
+      });
+
+      test('returns false when customAudioTrack differs', () {
+        expect(
+          _makeParams(customAudioTrack: _makeAudioTrack()).deepEquals(
+            _makeParams(),
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false when videoClips differ', () {
+        expect(
+          _makeParams(videoClips: [_makeVideoClip()]).deepEquals(
+            _makeParams(),
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false when matrixFilterList differs', () {
+        expect(
+          _makeParams(
+            matrixFilterList: [
+              [1, 0, 0, 0, 0],
+            ],
+          ).deepEquals(_makeParams()),
+          isFalse,
+        );
+      });
+
+      test('returns false when matrixTuneAdjustmentsList differs', () {
+        expect(
+          _makeParams(
+            matrixTuneAdjustmentsList: [
+              [0, 1, 0, 0, 0],
+            ],
+          ).deepEquals(_makeParams()),
+          isFalse,
+        );
+      });
+    });
+
+    group('diff', () {
+      test('returns empty list for equal instances', () {
+        final a = _makeParams(blur: 5, flipX: true);
+        final b = _makeParams(blur: 5, flipX: true);
+        expect(a.diff(b), isEmpty);
+      });
+
+      test('returns empty list for identical reference', () {
+        final a = _makeParams();
+        expect(a.diff(a), isEmpty);
+      });
+
+      test('reports single differing scalar field', () {
+        final a = _makeParams(blur: 1);
+        final b = _makeParams(blur: 2);
+        expect(a.diff(b), equals(['blur']));
+      });
+
+      test('reports multiple differing fields', () {
+        final a = _makeParams(blur: 1, flipX: true, rotateTurns: 1);
+        final b = _makeParams(blur: 2, rotateTurns: 3);
+        expect(a.diff(b), containsAll(['blur', 'flipX', 'rotateTurns']));
+      });
+
+      test('reports image when bytes differ', () {
+        final a = _makeParams(image: Uint8List.fromList([1]));
+        final b = _makeParams(image: Uint8List.fromList([2]));
+        expect(a.diff(b), contains('image'));
+      });
+
+      test('does not report image when bytes are equal', () {
+        final a = _makeParams(image: Uint8List.fromList([1, 2]));
+        final b = _makeParams(image: Uint8List.fromList([1, 2]));
+        expect(a.diff(b), isNot(contains('image')));
+      });
+
+      test('reports layers when lists differ', () {
+        final a = _makeParams();
+        final b = _makeParams(
+          layers: [
+            TextLayer(text: 'hello'),
+          ],
+        );
+        expect(a.diff(b), contains('layers'));
+      });
+
+      test('reports videoClips when lists differ', () {
+        final a = _makeParams();
+        final b = _makeParams(videoClips: [_makeVideoClip()]);
+        expect(a.diff(b), contains('videoClips'));
+      });
+
+      test('reports matrixFilterList when lists differ', () {
+        final a = _makeParams();
+        final b = _makeParams(
+          matrixFilterList: [
+            [1, 0, 0, 0, 0],
+          ],
+        );
+        expect(a.diff(b), contains('matrixFilterList'));
+      });
+
+      test('reports matrixTuneAdjustmentsList when lists differ', () {
+        final a = _makeParams();
+        final b = _makeParams(
+          matrixTuneAdjustmentsList: [
+            [0, 1, 0, 0, 0],
+          ],
+        );
+        expect(a.diff(b), contains('matrixTuneAdjustmentsList'));
+      });
+
+      test('reports customAudioTrack when it differs', () {
+        final a = _makeParams();
+        final b = _makeParams(customAudioTrack: _makeAudioTrack());
+        expect(a.diff(b), contains('customAudioTrack'));
+      });
+
+      test('reports startTime and endTime when they differ', () {
+        final a = _makeParams();
+        final b = _makeParams(
+          startTime: const Duration(seconds: 1),
+          endTime: const Duration(seconds: 5),
+        );
+        expect(a.diff(b), containsAll(['startTime', 'endTime']));
+      });
+
+      test('reports all crop fields when they differ', () {
+        final a = _makeParams();
+        final b = _makeParams(
+          cropWidth: 100,
+          cropHeight: 200,
+          cropX: 10,
+          cropY: 20,
+        );
+        expect(
+          a.diff(b),
+          containsAll(['cropWidth', 'cropHeight', 'cropX', 'cropY']),
+        );
+      });
+    });
+  });
+}

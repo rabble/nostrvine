@@ -27,6 +27,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     String? lastMessageSenderPubkey,
     String? subject,
     bool isRead = true,
+    bool currentUserHasSent = false,
   }) {
     return into(conversations).insertOnConflictUpdate(
       ConversationsCompanion.insert(
@@ -39,6 +40,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
         lastMessageSenderPubkey: Value(lastMessageSenderPubkey),
         subject: Value(subject),
         isRead: Value(isRead),
+        currentUserHasSent: Value(currentUserHasSent),
       ),
     );
   }
@@ -73,6 +75,54 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
       ]);
     if (limit != null) query.limit(limit, offset: offset);
     return query.watch();
+  }
+
+  /// Watch conversations where the user has sent at least one message.
+  ///
+  /// These are "accepted" conversations that are never message requests.
+  /// Supports pagination via [limit] and [offset].
+  Stream<List<ConversationRow>> watchAcceptedConversations({
+    int? limit,
+    int? offset,
+  }) {
+    final query = select(conversations)
+      ..where((t) => t.currentUserHasSent.equals(true))
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.lastMessageTimestamp,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    if (limit != null) query.limit(limit, offset: offset);
+    return query.watch();
+  }
+
+  /// Watch conversations where the user has never sent a message.
+  ///
+  /// These are potential message requests (final classification depends
+  /// on follow state, which is applied in the BLoC layer). Returned
+  /// without pagination since the count is typically small and needed
+  /// in full for accurate badge counts.
+  Stream<List<ConversationRow>> watchPotentialRequestConversations() {
+    final query = select(conversations)
+      ..where((t) => t.currentUserHasSent.equals(false))
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.lastMessageTimestamp,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    return query.watch();
+  }
+
+  /// Watch count of potential request conversations.
+  Stream<int> watchPotentialRequestCount() {
+    final query = selectOnly(conversations)
+      ..where(conversations.currentUserHasSent.equals(false))
+      ..addColumns([conversations.id.count()]);
+    return query.watchSingle().map(
+      (row) => row.read(conversations.id.count()) ?? 0,
+    );
   }
 
   /// Get a single conversation by ID.
@@ -111,7 +161,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     return result.read(conversations.id.count()) ?? 0;
   }
 
-  /// Watch unread conversation count.
+  /// Watch unread conversation count (all conversations).
   Stream<int> watchUnreadCount() {
     final query = selectOnly(conversations)
       ..where(conversations.isRead.equals(false))
@@ -121,9 +171,45 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Watch unread count for accepted conversations only.
+  ///
+  /// Excludes conversations where the user has never sent a message
+  /// (potential requests), so the badge on the nav bar reflects only
+  /// the "Messages" tab unreads.
+  Stream<int> watchUnreadAcceptedCount() {
+    final query = selectOnly(conversations)
+      ..where(
+        conversations.isRead.equals(false) &
+            conversations.currentUserHasSent.equals(true),
+      )
+      ..addColumns([conversations.id.count()]);
+    return query.watchSingle().map(
+      (row) => row.read(conversations.id.count()) ?? 0,
+    );
+  }
+
+  /// Mark multiple conversations as read in a single batch.
+  Future<void> markMultipleAsRead(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (update(conversations)..where((t) => t.id.isIn(ids))).write(
+      const ConversationsCompanion(isRead: Value(true)),
+    );
+  }
+
   /// Delete a conversation by ID.
   Future<int> deleteConversation(String id) {
     return (delete(conversations)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// Delete multiple conversations in a single batch.
+  Future<int> deleteMultiple(List<String> ids) {
+    if (ids.isEmpty) return Future.value(0);
+    return (delete(conversations)..where((t) => t.id.isIn(ids))).go();
+  }
+
+  /// Run a callback inside a database transaction.
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    return attachedDatabase.transaction(action);
   }
 
   /// Delete all conversations.

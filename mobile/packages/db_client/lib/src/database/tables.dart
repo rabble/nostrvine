@@ -789,6 +789,11 @@ class Conversations extends Table {
   BoolColumn get isRead =>
       boolean().withDefault(const Constant(true)).named('is_read')();
 
+  /// Whether the current user has sent a message in this conversation.
+  BoolColumn get currentUserHasSent => boolean()
+      .withDefault(const Constant(false))
+      .named('current_user_has_sent')();
+
   /// Unix timestamp when the conversation was first created.
   IntColumn get createdAt => integer().named('created_at')();
 

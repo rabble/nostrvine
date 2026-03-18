@@ -125,6 +125,16 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return (delete(directMessages)..where((t) => t.id.equals(id))).go();
   }
 
+  /// Delete messages for multiple conversations in a single batch.
+  Future<int> deleteMultipleConversationMessages(
+    List<String> conversationIds,
+  ) {
+    if (conversationIds.isEmpty) return Future.value(0);
+    return (delete(
+      directMessages,
+    )..where((t) => t.conversationId.isIn(conversationIds))).go();
+  }
+
   /// Count messages in a conversation.
   Future<int> countMessages(String conversationId) async {
     final query = selectOnly(directMessages)

@@ -1,4 +1,4 @@
-# diVine Brand DNA
+# Divine Brand DNA
 
 ## Purpose
 
@@ -7,7 +7,7 @@
 It's not just about creativity, but about the power that creativity gives you -- power that has been co-opted by corporations and algorithms. This is a rebellious, declarative statement of how and where power should be distributed.
 
 - Human hands that make real things
-- Human hands that hold diVine in their phones
+- Human hands that hold Divine in their phones
 - Human hands that join together
 
 We are building a movement to brighten the world.
@@ -20,7 +20,7 @@ People remember Vine as the golden days of the Internet. Back when you could lau
 
 Then social media grew darker. It got hateful and heavier. It learned how to divide, compare, and isolate us. To hold our attention in pursuit of profit. To make us never feel as good as someone else in a tiny square. And big tech grew more powerful. It hurtled us into the slopocalypse. Algorithms became black boxes beholden to the interests of corporations, rather than the communities that power them.
 
-At diVine, we say: fuck that.
+At Divine, we say: fuck that.
 
 We want you to own what you make. Choose what you see. Trade doom scrolling for joy scrolling. Trade keyboard wars for a playground of human creativity. Crack the algorithm open and make it work for you. Bring your weird unfiltered self. Chances are you'll find someone just like you. Together, we'll put the power of creativity back in human hands.
 
@@ -37,7 +37,7 @@ We want you to own what you make. Choose what you see. Trade doom scrolling for 
 - The full, expansive spectrum of how humans want to create
 - Calls back to the nostalgia and epoch of an exciting time in internet history
 
-### What diVine Offers
+### What Divine Offers
 
 - No-slop, all-human creativity
 - Agency over your feed and followers
@@ -49,7 +49,7 @@ We want you to own what you make. Choose what you see. Trade doom scrolling for 
 
 ## Brand Archetype: The Playful Rebel
 
-diVine sits at the intersection of the **Jester** and the **Rebel**.
+Divine sits at the intersection of the **Jester** and the **Rebel**.
 
 ### Why Jester
 - We know that play and laughter are essential to the world
@@ -105,7 +105,7 @@ Expressive, Bold, Raw, Community-First, Principled
 - **Putting action behind values**: Believes in transparency, giving power back to customers, and helping build a better future -- and takes action on it
 - **Comfortable experimenting early**: Eager to test new platforms before they're polished or proven
 - **Culturally switched on**: Relevant now, or actively working to stay close to what's next
-- **Partnership as participation**: Wants to show up in community with creators, users, and diVine
+- **Partnership as participation**: Wants to show up in community with creators, users, and Divine
 
 ---
 

@@ -33,6 +33,8 @@ import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
+import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -49,7 +51,6 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -436,6 +437,37 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
 
+      // Message requests inbox (pushed from inbox, no bottom nav)
+      GoRoute(
+        path: MessageRequestsPage.path,
+        name: MessageRequestsPage.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) => const MessageRequestsPage(),
+      ),
+
+      // Message request preview (pushed from requests inbox)
+      GoRoute(
+        path: RequestPreviewPage.pathPattern,
+        name: RequestPreviewPage.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) {
+          final id = st.pathParameters['id'];
+          if (id == null || id.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid request ID')),
+            );
+          }
+          // Pubkeys are optional — the page loads them from the DB
+          // when not provided (e.g. deep link).
+          final participantPubkeys = st.extra as List<String>? ?? [];
+          return RequestPreviewPage(
+            conversationId: id,
+            participantPubkeys: participantPubkeys,
+          );
+        },
+      ),
+
       // Non-tab routes outside the shell (camera/settings/editor/video/welcome)
       GoRoute(
         path: CreatorAnalyticsScreen.path,
@@ -757,20 +789,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: VideoEditorScreen.path,
         name: VideoEditorScreen.routeName,
-        builder: (_, st) => const VideoEditorScreen(),
-      ),
-      GoRoute(
-        path: VideoClipEditorScreen.path,
-        name: VideoClipEditorScreen.routeName,
         builder: (_, st) {
           final extra = st.extra as Map<String, dynamic>?;
           final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
-          return VideoClipEditorScreen(fromLibrary: fromLibrary);
+
+          return VideoEditorScreen(
+            fromLibrary: fromLibrary,
+          );
         },
       ),
       GoRoute(
-        path: VideoClipEditorScreen.draftPathWithId,
-        name: VideoClipEditorScreen.draftRouteName,
+        path: VideoEditorScreen.draftPathWithId,
+        name: VideoEditorScreen.draftRouteName,
         builder: (_, st) {
           // The draft ID is optional if the user wants to continue editing
           // the draft.
@@ -778,7 +808,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = st.extra as Map<String, dynamic>?;
           final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
 
-          return VideoClipEditorScreen(
+          return VideoEditorScreen(
             draftId: draftId == null || draftId.isEmpty ? null : draftId,
             fromLibrary: fromLibrary,
           );

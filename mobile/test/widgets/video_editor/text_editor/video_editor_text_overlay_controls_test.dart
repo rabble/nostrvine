@@ -42,6 +42,7 @@ void main() {
     late MockTextEditorState mockEditor;
     late MockProImageEditorConfigs mockConfigs;
     late MockTextEditorConfigs mockTextEditorConfigs;
+    late FocusNode focusNode;
 
     setUp(() {
       mockBloc = MockVideoEditorTextBloc();
@@ -49,14 +50,20 @@ void main() {
       mockEditor = MockTextEditorState();
       mockConfigs = MockProImageEditorConfigs();
       mockTextEditorConfigs = MockTextEditorConfigs();
+      focusNode = FocusNode();
 
       when(() => mockBloc.state).thenReturn(const VideoEditorTextState());
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockKey.currentState).thenReturn(mockEditor);
+      when(() => mockEditor.focusNode).thenReturn(focusNode);
       when(() => mockEditor.configs).thenReturn(mockConfigs);
       when(() => mockConfigs.textEditor).thenReturn(mockTextEditorConfigs);
       when(() => mockTextEditorConfigs.minFontScale).thenReturn(0.5);
       when(() => mockTextEditorConfigs.maxFontScale).thenReturn(3.0);
+    });
+
+    tearDown(() {
+      focusNode.dispose();
     });
 
     Widget buildWidget({VideoEditorTextState? state}) {

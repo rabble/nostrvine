@@ -4,37 +4,19 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
-import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_split_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_split_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-class TestVideoEditorNotifier extends VideoEditorNotifier {
-  TestVideoEditorNotifier(this._state);
-  VideoEditorProviderState _state;
-
-  @override
-  VideoEditorProviderState build() => _state;
-
-  @override
-  Future<void> seekToTrimPosition(Duration position) async {
-    _state = _state.copyWith(splitPosition: position);
-  }
-}
-
-class TestClipManagerNotifier extends ClipManagerNotifier {
-  TestClipManagerNotifier(this._clips);
-  final List<DivineVideoClip> _clips;
-
-  @override
-  ClipManagerState build() {
-    return ClipManagerState(clips: _clips);
+class _TestClipEditorBloc extends ClipEditorBloc {
+  _TestClipEditorBloc({
+    ClipEditorState initialState = const ClipEditorState(),
+  }) {
+    emit(initialState);
   }
 }
 
@@ -62,21 +44,16 @@ void main() {
       List<DivineVideoClip>? clips,
     }) {
       final testClips = clips ?? [_createClip()];
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          splitPosition: splitPosition,
+          currentClipIndex: currentClipIndex,
+          clips: testClips,
+        ),
+      );
 
-      return ProviderScope(
-        overrides: [
-          videoEditorProvider.overrideWith(
-            () => TestVideoEditorNotifier(
-              VideoEditorProviderState(
-                splitPosition: splitPosition,
-                currentClipIndex: currentClipIndex,
-              ),
-            ),
-          ),
-          clipManagerProvider.overrideWith(
-            () => TestClipManagerNotifier(testClips),
-          ),
-        ],
+      return BlocProvider<ClipEditorBloc>.value(
+        value: bloc,
         child: const MaterialApp(
           home: Scaffold(body: VideoClipEditorSplitBar()),
         ),

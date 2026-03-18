@@ -16,6 +16,8 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
+import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
@@ -191,6 +193,71 @@ void main() {
           expect(find.byType(ConversationTile), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'renders $MessageRequestsBanner when request conversations exist',
+        (tester) async {
+          final request = DmConversation(
+            id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hey',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                requestConversations: [request],
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(MessageRequestsBanner), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'renders $MessageRequestsBanner above conversations when both exist',
+        (tester) async {
+          final conversation = DmConversation(
+            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          final request = DmConversation(
+            id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hey',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                requestConversations: [request],
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(MessageRequestsBanner), findsOneWidget);
+          expect(find.byType(ConversationTile), findsOneWidget);
+        },
+      );
     });
 
     group('navigation', () {
@@ -232,6 +299,41 @@ void main() {
             ConversationPage.pathForId('conv123'),
             extra: [otherPubkey],
           ),
+        ).called(1);
+      });
+
+      testWidgets('calls pushNamed to message requests when banner is tapped', (
+        tester,
+      ) async {
+        final request = DmConversation(
+          id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hey',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              requestConversations: [request],
+              hasMore: false,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        when(
+          () => mockGoRouter.pushNamed(any()),
+        ).thenAnswer((_) async => null);
+
+        await tester.tap(find.byType(MessageRequestsBanner));
+        await tester.pump();
+
+        verify(
+          () => mockGoRouter.pushNamed(MessageRequestsPage.routeName),
         ).called(1);
       });
 

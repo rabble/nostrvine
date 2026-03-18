@@ -40,11 +40,15 @@ class C2paSigningService {
   /// Signs a video file with C2PA content credentials.
   ///
   /// [videoPath] - Path to the video file to sign
-  /// [claimGenerator] - Identifier for the app/tool creating the claim
+  /// [aiTrainingOptOut] - When true, includes a CAWG training-mining assertion
+  ///   marking all AI training and data mining uses as "notAllowed"
   ///
   /// Returns the path to the signed video file, or the original path if
   /// signing fails (signing is best-effort, not blocking).
-  Future<C2paSigningResult> signVideo({required String videoPath}) async {
+  Future<C2paSigningResult> signVideo({
+    required String videoPath,
+    bool aiTrainingOptOut = true,
+  }) async {
     try {
       Log.info(
         'Starting C2PA signing for video: $videoPath',
@@ -77,6 +81,7 @@ class C2paSigningService {
         claimGenerator,
         filename,
         DigitalSourceType.digitalCapture.url,
+        aiTrainingOptOut: aiTrainingOptOut,
       );
       Log.info('prepared C2PA manifest json: $manifestJsonSource');
 
@@ -164,15 +169,41 @@ class C2paSigningService {
     return _c2pa.isHardwareSigningAvailable();
   }
 
+  /// Exposes [_buildManifestJson] for testing.
+  @visibleForTesting
+  String buildManifestJsonPublic(
+    String claimGenerator,
+    String title,
+    String digitalSourceUrl, {
+    bool aiTrainingOptOut = true,
+  }) => _buildManifestJson(
+    claimGenerator,
+    title,
+    digitalSourceUrl,
+    aiTrainingOptOut: aiTrainingOptOut,
+  );
+
   /// Builds the manifest JSON for a freshly captured video.
+  ///
+  /// When [aiTrainingOptOut] is true, includes a `cawg.training-mining`
+  /// assertion per the CAWG Training and Data Mining spec v1.1, marking
+  /// all AI training, inference, generative training, and data mining
+  /// uses as "notAllowed".
   String _buildManifestJson(
     String claimGenerator,
     String title,
-    String digitalSourceUrl,
-  ) {
-    // Using digitalCapture source type for in-app recorded content
-    // DigitalSourceType.digitalCapture.url provides the IPTC URL
-    //final digitalSourceUrl = DigitalSourceType.digitalCapture.url;
+    String digitalSourceUrl, {
+    bool aiTrainingOptOut = true,
+  }) {
+    final trainingMiningAssertion = aiTrainingOptOut
+        ? ','
+              ' {"label": "cawg.training-mining",'
+              ' "data": {"entries": {'
+              ' "cawg.ai_training": {"use": "notAllowed"},'
+              ' "cawg.ai_inference": {"use": "notAllowed"},'
+              ' "cawg.ai_generative_training": {"use": "notAllowed"},'
+              ' "cawg.data_mining": {"use": "notAllowed"}}}}'
+        : '';
 
     return '''
 {
@@ -199,7 +230,7 @@ class C2paSigningService {
           }
         ]
       }
-    }
+    }$trainingMiningAssertion
   ]
 }
 ''';

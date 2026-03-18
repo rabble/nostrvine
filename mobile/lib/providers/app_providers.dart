@@ -30,6 +30,7 @@ import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/ai_training_preference_service.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
@@ -488,6 +489,16 @@ AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
   return service;
 }
 
+/// AI training opt-out preference service. Controls whether the
+/// CAWG training-mining assertion is embedded in C2PA manifests.
+/// keepAlive ensures setting persists across widget rebuilds.
+@Riverpod(keepAlive: true)
+AiTrainingPreferenceService aiTrainingPreferenceService(Ref ref) {
+  final service = AiTrainingPreferenceService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
 /// Audio device preference service for managing the preferred input device
 /// for recording on macOS. keepAlive ensures preference persists.
 @Riverpod(keepAlive: true)
@@ -817,21 +828,18 @@ bool isNostrReady(Ref ref) {
     // hasKeys transitions because it's the same object reference.
     // Poll with a periodic timer until hasKeys becomes true.
     const pollInterval = Duration(milliseconds: 50);
-    final timer = Timer.periodic(
-      pollInterval,
-      (timer) {
-        if (nostrClient.hasKeys) {
-          timer.cancel();
-          Log.info(
-            'isNostrReady: NostrClient.hasKeys became true after '
-            '${timer.tick * pollInterval.inMilliseconds}ms, invalidating',
-            name: 'isNostrReadyProvider',
-            category: LogCategory.system,
-          );
-          ref.invalidateSelf();
-        }
-      },
-    );
+    final timer = Timer.periodic(pollInterval, (timer) {
+      if (nostrClient.hasKeys) {
+        timer.cancel();
+        Log.info(
+          'isNostrReady: NostrClient.hasKeys became true after '
+          '${timer.tick * pollInterval.inMilliseconds}ms, invalidating',
+          name: 'isNostrReadyProvider',
+          category: LogCategory.system,
+        );
+        ref.invalidateSelf();
+      }
+    });
     ref.onDispose(timer.cancel);
   }
 

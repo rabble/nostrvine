@@ -140,6 +140,19 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, Stopwatch> _loadStopwatches = {};
   final Map<int, String> _openedSources = {};
 
+  /// Stale-position recovery: tracks the last observed position and how many
+  /// consecutive heartbeats it has remained unchanged while the player reports
+  /// `playing=true` and `buffering=false`.
+  int? _lastHeartbeatPositionMs;
+  int _staleHeartbeatCount = 0;
+
+  /// Number of consecutive stale heartbeats before triggering recovery.
+  /// With a 100ms heartbeat interval, this means ~300ms of confirmed
+  /// frozen video before recovery kicks in. False positives cause only
+  /// a brief ~200ms micro-stutter (pause+seek+play at same position),
+  /// which is far less disruptive than a multi-second visible freeze.
+  static const _staleHeartbeatThreshold = 3;
+
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
 
@@ -314,6 +327,10 @@ class VideoFeedController extends ChangeNotifier {
     // Pause old video
     _pauseVideo(oldIndex);
 
+    // Mark the current video as most-recently-used in the pool so it is
+    // never evicted when preloading neighbors below.
+    _touchCurrentPlayerInPool(index);
+
     // Play new video if ready
     if (_isActive && !_isPaused && isVideoReady(index)) {
       _playVideo(index);
@@ -343,11 +360,10 @@ class VideoFeedController extends ChangeNotifier {
       _pauseVideo(_currentIndex);
       if (retainCurrentPlayer) {
         // Only pause current, release other players outside current index
-        for (final idx in _loadedPlayers.keys.toList()) {
-          if (idx != _currentIndex) {
-            _releasePlayer(idx);
-          }
-        }
+        _loadedPlayers.keys
+            .where((idx) => idx != _currentIndex)
+            .toList()
+            .forEach(_releasePlayer);
       } else {
         // Release all players to free memory
         _releaseAllPlayers();
@@ -701,13 +717,32 @@ class VideoFeedController extends ChangeNotifier {
       // Pausing prevents it from advancing to a random position.
       // Seeking to zero while paused ensures frame 0 is displayed
       // when the user scrolls to this video.
-      unawaited(player.pause());
-      unawaited(player.seek(Duration.zero));
+      //
+      // IMPORTANT: pause must complete before seeking. Seeking a
+      // still-playing HLS stream in mpv can stall the decoder,
+      // causing a frozen frame when the video is later resumed.
+      unawaited(_pauseAndRewindPreloaded(index, player));
     }
 
     // Keep buffer subscription alive to handle post-seek rebuffering.
     // Subscriptions are cleaned up in _releasePlayer, _onPlayerEvicted,
     // and dispose.
+  }
+
+  /// Pauses a preloaded player and then seeks to zero, awaiting each step
+  /// sequentially. Seeking a still-playing HLS stream in mpv can stall the
+  /// decoder, so the pause must complete first.
+  Future<void> _pauseAndRewindPreloaded(int index, Player player) async {
+    try {
+      await player.pause();
+      // Guard: player may have been released while awaiting pause.
+      if (_isDisposed || _loadedPlayers[index]?.player != player) return;
+      await player.seek(Duration.zero);
+    } on Exception catch (e) {
+      _logDebug(
+        'preload_rewind_failed ${_videoDebugDetails(index)} error=$e',
+      );
+    }
 
     _notifyIndex(index);
   }
@@ -824,15 +859,125 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   void _startPositionTimer(int index) {
-    if (positionCallback == null) return;
-
     _positionTimers[index]?.cancel();
-    _positionTimers[index] = Timer.periodic(positionCallbackInterval, (_) {
+    // Reset stale-position tracking when starting a new timer.
+    _lastHeartbeatPositionMs = null;
+    _staleHeartbeatCount = 0;
+
+    // Use the shorter of the caller's interval and the stale-detection
+    // interval so both position callbacks and recovery work correctly.
+    final interval =
+        positionCallback != null &&
+            positionCallbackInterval < const Duration(milliseconds: 100)
+        ? positionCallbackInterval
+        : const Duration(milliseconds: 100);
+
+    _positionTimers[index] = Timer.periodic(interval, (_) {
       final player = _loadedPlayers[index]?.player;
-      if (player != null && player.state.playing) {
+      if (player == null) return;
+
+      // Stale-position watchdog: detect and recover from mpv decoder
+      // stalls caused by B-frame encoded videos.
+      if (index == _currentIndex) {
+        _checkStalePosition(
+          index,
+          player,
+          player.state.position.inMilliseconds,
+        );
+      }
+
+      if (positionCallback != null && player.state.playing) {
         positionCallback?.call(index, player.state.position);
       }
     });
+  }
+
+  /// Checks whether the current video's position has stalled. If the position
+  /// hasn't changed for [_staleHeartbeatThreshold] consecutive heartbeats while
+  /// the player reports `playing=true` and `buffering=false`, we assume
+  /// media_kit's decoder is stuck and attempt recovery.
+  void _checkStalePosition(int index, Player player, int positionMs) {
+    if (!player.state.playing || player.state.buffering) {
+      // Not in a state where we'd expect position to advance.
+      _staleHeartbeatCount = 0;
+      _lastHeartbeatPositionMs = null;
+      return;
+    }
+
+    if (_lastHeartbeatPositionMs != null &&
+        positionMs == _lastHeartbeatPositionMs) {
+      _staleHeartbeatCount++;
+    } else {
+      _staleHeartbeatCount = 0;
+    }
+    _lastHeartbeatPositionMs = positionMs;
+
+    if (_staleHeartbeatCount >= _staleHeartbeatThreshold) {
+      _logDebug(
+        'stale_position_detected index=$index '
+        'positionMs=$positionMs '
+        'staleCount=$_staleHeartbeatCount '
+        '${_videoDebugDetails(index)}',
+      );
+      _staleHeartbeatCount = 0;
+      _lastHeartbeatPositionMs = null;
+      _recoverStalePlayer(index, player, positionMs);
+    }
+  }
+
+  /// Attempts to recover a player whose position is frozen.
+  ///
+  /// Strategy: pause, seek to the stuck position (nudges mpv's decoder),
+  /// then play again.
+  void _recoverStalePlayer(int index, Player player, int positionMs) {
+    _logDebug(
+      'stale_recovery_start index=$index positionMs=$positionMs '
+      '${_videoDebugDetails(index)}',
+    );
+
+    unawaited(() async {
+      try {
+        await player.pause();
+        await player.seek(Duration(milliseconds: positionMs));
+
+        // Guard: user may have swiped away during the seek.
+        if (_isDisposed || _currentIndex != index || !_isActive || _isPaused) {
+          _logDebug(
+            'stale_recovery_aborted index=$index '
+            'current=$_currentIndex active=$_isActive '
+            'paused=$_isPaused disposed=$_isDisposed',
+          );
+          return;
+        }
+
+        await player.setVolume(100);
+        await player.play();
+        _logDebug(
+          'stale_recovery_complete index=$index '
+          'playing=${player.state.playing} '
+          'positionMs=${player.state.position.inMilliseconds} '
+          '${_videoDebugDetails(index)}',
+        );
+      } on Exception catch (e) {
+        _logDebug(
+          'stale_recovery_failed index=$index error=$e '
+          '${_videoDebugDetails(index)}',
+        );
+      }
+    }());
+  }
+
+  /// Marks the current video's URL as most-recently-used in the player pool.
+  ///
+  /// Called before [_updatePreloadWindow] to ensure the pool's LRU eviction
+  /// never targets the video the user is watching. Without this, preloading
+  /// neighbor videos can evict the current player, freezing playback with
+  /// no recovery possible (the heartbeat timer is cancelled on eviction).
+  void _touchCurrentPlayerInPool(int index) {
+    if (index < 0 || index >= _videos.length) return;
+    final url = _videos[index].url;
+    // getExistingPlayer touches (marks MRU) without creating a new player.
+    pool.getExistingPlayer(url);
   }
 
   void _stopPositionTimer(int index) {
