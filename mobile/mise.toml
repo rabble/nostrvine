@@ -56,16 +56,8 @@ description = "Show keycast container logs (useful after refresh token tests)"
 run = "docker compose -f ../e2e/docker-compose.yml logs keycast --tail=200"
 
 [tasks.setup_hooks]
-description = "Install git pre-push hook for local CI checks"
-run = """
-GIT_COMMON="$(git rev-parse --git-common-dir)"
-if [[ "$GIT_COMMON" != /* ]]; then
-  GIT_COMMON="$(pwd)/$GIT_COMMON"
-fi
-cp ../scripts/hooks/pre-push "$GIT_COMMON/hooks/pre-push"
-chmod +x "$GIT_COMMON/hooks/pre-push"
-echo "Pre-push hook installed."
-"""
+description = "Install git hooks (pre-commit + pre-push) for local CI checks"
+run = "bash ../scripts/install-hooks.sh"
 
 [tasks.e2e_test]
 description = "Run E2E tests with log profiling (starts Docker stack, captures merged timeline)"
