@@ -723,6 +723,10 @@ class DirectMessages extends Table {
   /// URL of an encrypted thumbnail (same key/nonce).
   TextColumn get thumbnailUrl => text().nullable().named('thumbnail_url')();
 
+  /// Hex public key of the account that received/sent this message.
+  /// NULL for legacy messages created before multi-account support.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -746,6 +750,16 @@ class DirectMessages extends Table {
       'idx_dm_sender',
       'CREATE INDEX IF NOT EXISTS idx_dm_sender '
           'ON direct_messages (sender_pubkey)',
+    ),
+    Index(
+      'idx_dm_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_dm_owner_pubkey '
+          'ON direct_messages (owner_pubkey)',
+    ),
+    Index(
+      'idx_dm_owner_conversation',
+      'CREATE INDEX IF NOT EXISTS idx_dm_owner_conversation '
+          'ON direct_messages (owner_pubkey, conversation_id, created_at DESC)',
     ),
   ];
 }
@@ -797,6 +811,10 @@ class Conversations extends Table {
   /// Unix timestamp when the conversation was first created.
   IntColumn get createdAt => integer().named('created_at')();
 
+  /// Hex public key of the account that owns this conversation view.
+  /// NULL for legacy conversations created before multi-account support.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -810,6 +828,11 @@ class Conversations extends Table {
       'idx_conversation_is_read',
       'CREATE INDEX IF NOT EXISTS idx_conversation_is_read '
           'ON conversations (is_read)',
+    ),
+    Index(
+      'idx_conversation_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey '
+          'ON conversations (owner_pubkey)',
     ),
   ];
 }

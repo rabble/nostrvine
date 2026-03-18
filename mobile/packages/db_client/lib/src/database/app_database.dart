@@ -379,6 +379,22 @@ class AppDatabase extends _$AppDatabase {
       'INTEGER NOT NULL DEFAULT 0',
     );
 
+    // Add owner_pubkey columns for multi-account DM isolation
+    await _addColumnIfMissing('direct_messages', 'owner_pubkey', 'TEXT');
+    await _addColumnIfMissing('conversations', 'owner_pubkey', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_dm_owner_pubkey
+      ON direct_messages (owner_pubkey)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_dm_owner_conversation
+      ON direct_messages (owner_pubkey, conversation_id, created_at DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey
+      ON conversations (owner_pubkey)
+    ''');
+
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();
   }

@@ -234,6 +234,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -248,6 +249,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -283,6 +285,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -297,6 +300,7 @@ void main() {
             lastMessageSenderPubkey: _validPubkeyA,
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
       });
@@ -343,6 +347,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
       });
@@ -472,6 +477,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -486,6 +492,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -540,6 +547,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -554,6 +562,7 @@ void main() {
             lastMessageSenderPubkey: _validPubkeyB,
             isRead: false,
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -606,6 +615,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -659,6 +669,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
 
@@ -712,6 +723,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
 
@@ -767,6 +779,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
 
@@ -822,6 +835,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
 
@@ -882,6 +896,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -933,6 +948,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -1008,6 +1024,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(2);
 
@@ -1045,6 +1062,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenThrow(Exception('DB write failed'));
 
@@ -1154,7 +1172,9 @@ void main() {
         final convId = DmRepository.computeConversationId(participants);
 
         when(
-          () => mockConversationsDao.watchAllConversations(),
+          () => mockConversationsDao.watchAllConversations(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer(
           (_) => Stream.value([
             ConversationRow(
@@ -1237,7 +1257,10 @@ void main() {
         );
 
         when(
-          () => mockDirectMessagesDao.watchMessagesForConversation(convId),
+          () => mockDirectMessagesDao.watchMessagesForConversation(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer(
           (_) => Stream.value([
             DirectMessageRow(
@@ -1433,7 +1456,10 @@ void main() {
             'aabb00112233445566778899aabbccddeeff0011223344556677889900aabb00';
 
         when(
-          () => mockDirectMessagesDao.countMessages(convId),
+          () => mockDirectMessagesDao.countMessages(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => 5);
 
         final repository = createRepository();
@@ -1441,7 +1467,10 @@ void main() {
 
         expect(count, equals(5));
         verify(
-          () => mockDirectMessagesDao.countMessages(convId),
+          () => mockDirectMessagesDao.countMessages(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).called(1);
       });
     });
@@ -1469,6 +1498,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -1483,6 +1513,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -1578,6 +1609,7 @@ void main() {
               subject: any(named: 'subject'),
               isRead: false,
               currentUserHasSent: true,
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
 
@@ -1614,6 +1646,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -1628,6 +1661,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -1714,6 +1748,7 @@ void main() {
             fileHash: fileHash,
             fileSize: 1024,
             dimensions: '1920x1080',
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -1728,6 +1763,7 @@ void main() {
             lastMessageSenderPubkey: _validPubkeyB,
             isRead: false,
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -1795,6 +1831,7 @@ void main() {
             createdAt: 1700000000,
             giftWrapId: _giftWrapEventId,
             messageKind: EventKind.fileMessage,
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -1818,7 +1855,10 @@ void main() {
         const decryptionNonce = 'eeeeeeeeeeeeeeeeeeeeeeee';
 
         when(
-          () => mockDirectMessagesDao.watchMessagesForConversation(convId),
+          () => mockDirectMessagesDao.watchMessagesForConversation(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer(
           (_) => Stream.value([
             DirectMessageRow(
@@ -1951,6 +1991,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -1965,6 +2006,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2008,6 +2050,7 @@ void main() {
             decryptionNonce: decryptionNonce,
             fileHash: fileHash,
             fileSize: 2048,
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
 
@@ -2024,6 +2067,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
       });
@@ -2071,6 +2115,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
       });
@@ -2106,6 +2151,7 @@ void main() {
             dimensions: any(named: 'dimensions'),
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2120,6 +2166,7 @@ void main() {
             subject: any(named: 'subject'),
             isRead: any(named: 'isRead'),
             currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2188,6 +2235,7 @@ void main() {
               dimensions: any(named: 'dimensions'),
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
         },
@@ -2264,6 +2312,7 @@ void main() {
               dimensions: any(named: 'dimensions'),
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
 
@@ -2281,6 +2330,7 @@ void main() {
               subject: any(named: 'subject'),
               isRead: false,
               currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
 

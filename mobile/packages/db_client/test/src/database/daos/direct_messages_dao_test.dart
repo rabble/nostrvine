@@ -465,5 +465,142 @@ void main() {
         expect(deleted, equals(0));
       });
     });
+
+    group('ownerPubkey scoping', () {
+      const userA = 'pubkey_user_a';
+      const userB = 'pubkey_user_b';
+
+      test(
+        'queries scoped by ownerPubkey only return that user messages',
+        () async {
+          await dao.insertMessage(
+            id: 'msg_a1',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'For user A',
+            createdAt: 1700000001,
+            giftWrapId: 'gw_a1',
+            ownerPubkey: userA,
+          );
+          await dao.insertMessage(
+            id: 'msg_b1',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'For user B',
+            createdAt: 1700000002,
+            giftWrapId: 'gw_b1',
+            ownerPubkey: userB,
+          );
+
+          final userAMessages = await dao.getMessagesForConversation(
+            conversationId1,
+            ownerPubkey: userA,
+          );
+          final userBMessages = await dao.getMessagesForConversation(
+            conversationId1,
+            ownerPubkey: userB,
+          );
+
+          expect(userAMessages, hasLength(1));
+          expect(userAMessages.first.content, equals('For user A'));
+          expect(userBMessages, hasLength(1));
+          expect(userBMessages.first.content, equals('For user B'));
+        },
+      );
+
+      test(
+        'legacy messages (NULL ownerPubkey) are visible to scoped queries',
+        () async {
+          await dao.insertMessage(
+            id: 'msg_legacy',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'Legacy message',
+            createdAt: 1700000001,
+            giftWrapId: 'gw_legacy',
+          );
+          await dao.insertMessage(
+            id: 'msg_a1',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'User A message',
+            createdAt: 1700000002,
+            giftWrapId: 'gw_a1',
+            ownerPubkey: userA,
+          );
+
+          final userAMessages = await dao.getMessagesForConversation(
+            conversationId1,
+            ownerPubkey: userA,
+          );
+
+          expect(userAMessages, hasLength(2));
+        },
+      );
+
+      test('clearAllForUser only deletes that user messages', () async {
+        await dao.insertMessage(
+          id: 'msg_a1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'User A msg',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_a1',
+          ownerPubkey: userA,
+        );
+        await dao.insertMessage(
+          id: 'msg_b1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'User B msg',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_b1',
+          ownerPubkey: userB,
+        );
+
+        final deleted = await dao.clearAllForUser(userA);
+
+        expect(deleted, equals(1));
+        final remaining = await dao.getMessagesForConversation(
+          conversationId1,
+          ownerPubkey: userB,
+        );
+        expect(remaining, hasLength(1));
+        expect(remaining.first.content, equals('User B msg'));
+      });
+
+      test('countMessages respects ownerPubkey', () async {
+        await dao.insertMessage(
+          id: 'msg_a1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'A',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_a1',
+          ownerPubkey: userA,
+        );
+        await dao.insertMessage(
+          id: 'msg_b1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'B',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_b1',
+          ownerPubkey: userB,
+        );
+
+        final countA = await dao.countMessages(
+          conversationId1,
+          ownerPubkey: userA,
+        );
+        final countB = await dao.countMessages(
+          conversationId1,
+          ownerPubkey: userB,
+        );
+
+        expect(countA, equals(1));
+        expect(countB, equals(1));
+      });
+    });
   });
 }

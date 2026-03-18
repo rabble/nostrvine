@@ -68,6 +68,23 @@ class NotificationServiceEnhanced {
   /// Check if notification permissions are granted
   bool get hasPermissions => _permissionsGranted;
 
+  /// Clear all notification data from memory and Hive storage.
+  ///
+  /// Called on account switch to prevent data leakage between users.
+  Future<void> clearAllData() async {
+    _notifications.clear();
+    _unreadCount = 0;
+    try {
+      await _notificationBox?.clear();
+    } catch (e) {
+      Log.error(
+        'Failed to clear notification box: $e',
+        name: 'NotificationServiceEnhanced',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// Initialize notification service
   Future<void> initialize({
     required NostrClient nostrService,

@@ -1,6 +1,7 @@
 // ABOUTME: Data Access Object for NIP-17 direct message persistence.
 // ABOUTME: Provides CRUD operations for decrypted DM storage and
 // ABOUTME: conversation-scoped queries with reactive streams.
+// ABOUTME: All queries are scoped by ownerPubkey for multi-account isolation.
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
@@ -11,6 +12,16 @@ part 'direct_messages_dao.g.dart';
 class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     with _$DirectMessagesDaoMixin {
   DirectMessagesDao(super.attachedDatabase);
+
+  /// Build a filter expression that returns rows owned by [ownerPubkey]
+  /// **or** legacy rows with no owner (NULL).
+  Expression<bool> _ownedOrLegacy(
+    GeneratedColumn<String> column,
+    String? ownerPubkey,
+  ) {
+    if (ownerPubkey == null) return const Constant(true);
+    return column.equals(ownerPubkey) | column.isNull();
+  }
 
   /// Insert a decrypted DM, ignoring duplicates by gift_wrap_id.
   ///
@@ -41,6 +52,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     String? dimensions,
     String? blurhash,
     String? thumbnailUrl,
+    String? ownerPubkey,
   }) {
     return into(directMessages).insertOnConflictUpdate(
       DirectMessagesCompanion.insert(
@@ -63,6 +75,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         dimensions: Value(dimensions),
         blurhash: Value(blurhash),
         thumbnailUrl: Value(thumbnailUrl),
+        ownerPubkey: Value(ownerPubkey),
       ),
     );
   }
@@ -72,9 +85,14 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     String conversationId, {
     int? limit,
     int? offset,
+    String? ownerPubkey,
   }) {
     final query = select(directMessages)
-      ..where((t) => t.conversationId.equals(conversationId))
+      ..where(
+        (t) =>
+            t.conversationId.equals(conversationId) &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+      )
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.createdAt,
@@ -89,9 +107,14 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   Stream<List<DirectMessageRow>> watchMessagesForConversation(
     String conversationId, {
     int? limit,
+    String? ownerPubkey,
   }) {
     final query = select(directMessages)
-      ..where((t) => t.conversationId.equals(conversationId))
+      ..where(
+        (t) =>
+            t.conversationId.equals(conversationId) &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+      )
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.createdAt,
@@ -136,12 +159,25 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Count messages in a conversation.
-  Future<int> countMessages(String conversationId) async {
+  Future<int> countMessages(
+    String conversationId, {
+    String? ownerPubkey,
+  }) async {
     final query = selectOnly(directMessages)
-      ..where(directMessages.conversationId.equals(conversationId))
+      ..where(
+        directMessages.conversationId.equals(conversationId) &
+            _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey),
+      )
       ..addColumns([directMessages.id.count()]);
     final result = await query.getSingle();
     return result.read(directMessages.id.count()) ?? 0;
+  }
+
+  /// Delete all DMs for a specific user.
+  Future<int> clearAllForUser(String ownerPubkey) {
+    return (delete(
+      directMessages,
+    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
   }
 
   /// Delete all DMs.

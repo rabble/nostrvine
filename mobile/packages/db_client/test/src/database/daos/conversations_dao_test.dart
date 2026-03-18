@@ -448,5 +448,115 @@ void main() {
         expect(deleted, equals(0));
       });
     });
+
+    group('ownerPubkey scoping', () {
+      const userA = 'pubkey_user_a';
+      const userB = 'pubkey_user_b';
+
+      test(
+        'queries scoped by ownerPubkey only return that user conversations',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000100,
+            ownerPubkey: userA,
+          );
+          await dao.upsertConversation(
+            id: 'conv_2',
+            participantPubkeys: '["pubkey_c","pubkey_d"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000200,
+            ownerPubkey: userB,
+          );
+
+          final userAConvs = await dao.getAllConversations(ownerPubkey: userA);
+          final userBConvs = await dao.getAllConversations(ownerPubkey: userB);
+
+          expect(userAConvs, hasLength(1));
+          expect(userAConvs.first.id, equals('conv_1'));
+          expect(userBConvs, hasLength(1));
+          expect(userBConvs.first.id, equals('conv_2'));
+        },
+      );
+
+      test(
+        'legacy conversations (NULL ownerPubkey) are visible to scoped queries',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_legacy',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000100,
+          );
+          await dao.upsertConversation(
+            id: 'conv_a1',
+            participantPubkeys: '["pubkey_c","pubkey_d"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000200,
+            ownerPubkey: userA,
+          );
+
+          final userAConvs = await dao.getAllConversations(ownerPubkey: userA);
+          expect(userAConvs, hasLength(2));
+        },
+      );
+
+      test('clearAllForUser only deletes that user conversations', () async {
+        await dao.upsertConversation(
+          id: 'conv_a1',
+          participantPubkeys: '["pubkey_a","pubkey_b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000100,
+          ownerPubkey: userA,
+        );
+        await dao.upsertConversation(
+          id: 'conv_b1',
+          participantPubkeys: '["pubkey_c","pubkey_d"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000200,
+          ownerPubkey: userB,
+        );
+
+        final deleted = await dao.clearAllForUser(userA);
+
+        expect(deleted, equals(1));
+        final remaining = await dao.getAllConversations(ownerPubkey: userB);
+        expect(remaining, hasLength(1));
+        expect(remaining.first.id, equals('conv_b1'));
+      });
+
+      test('unread count respects ownerPubkey', () async {
+        await dao.upsertConversation(
+          id: 'conv_a1',
+          participantPubkeys: '["pubkey_a","pubkey_b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          isRead: false,
+          ownerPubkey: userA,
+        );
+        await dao.upsertConversation(
+          id: 'conv_b1',
+          participantPubkeys: '["pubkey_c","pubkey_d"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          isRead: false,
+          ownerPubkey: userB,
+        );
+
+        final countA = await dao.getUnreadCount(ownerPubkey: userA);
+        final countB = await dao.getUnreadCount(ownerPubkey: userB);
+
+        expect(countA, equals(1));
+        expect(countB, equals(1));
+      });
+    });
   });
 }
