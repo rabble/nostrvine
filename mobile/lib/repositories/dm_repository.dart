@@ -323,7 +323,9 @@ class DmRepository {
       }
 
       // Decrypt: gift wrap → seal → rumor
-      final nostr = Nostr(_signer!, [], _dummyRelay);
+      final signer = _signer;
+      if (signer == null) return;
+      final nostr = Nostr(signer, [], _dummyRelay);
       await nostr.refreshPublicKey();
 
       final rumorEvent = await _rumorDecryptor(nostr, giftWrapEvent);
@@ -358,6 +360,23 @@ class DmRepository {
       final fileMetadata = rumorEvent.kind == EventKind.fileMessage
           ? _extractFileMetadata(rumorEvent)
           : null;
+
+      // Cross-protocol dedup: if a NIP-04 copy of this message was
+      // processed first (network reordering), skip the duplicate.
+      final isDuplicate = await _directMessagesDao.hasMatchingMessage(
+        conversationId: conversationId,
+        senderPubkey: rumorEvent.pubkey,
+        content: rumorEvent.content,
+        createdAt: rumorEvent.createdAt,
+      );
+      if (isDuplicate) {
+        Log.debug(
+          'Skipping NIP-17 duplicate (NIP-04 copy already stored) '
+          '${giftWrapEvent.id}',
+          category: LogCategory.system,
+        );
+        return;
+      }
 
       // Persist the message
       await _directMessagesDao.insertMessage(
@@ -493,6 +512,7 @@ class DmRepository {
         conversationId: conversationId,
         senderPubkey: senderPubkey,
         content: plaintext,
+        createdAt: nip04Event.createdAt,
       );
       if (isDuplicate) {
         Log.debug(
@@ -744,6 +764,10 @@ class DmRepository {
 
   /// Send an encrypted file message to a 1:1 conversation.
   ///
+  /// No NIP-04 fallback is sent for file messages because NIP-04 only
+  /// supports plaintext content. File sharing requires NIP-17's kind 15
+  /// with encrypted file metadata tags.
+  ///
   /// The file should already be encrypted with AES-GCM and uploaded to a
   /// Blossom server. This method wraps the file URL and metadata in a
   /// Kind 15 event, then encrypts with NIP-59 gift wrapping.
@@ -858,13 +882,8 @@ class DmRepository {
       return NIP17SendResult.failure('NIP-04 encrypt returned null');
     }
 
-    final pubkey = await signer.getPublicKey();
-    if (pubkey == null) {
-      return NIP17SendResult.failure('Signer returned null pubkey');
-    }
-
     final event = Event(
-      pubkey,
+      _userPubkey,
       EventKind.directMessage,
       [
         ['p', recipientPubkey],

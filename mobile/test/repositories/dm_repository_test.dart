@@ -471,6 +471,14 @@ void main() {
 
       void stubDaoInserts() {
         when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
           () => mockDirectMessagesDao.insertMessage(
             id: any(named: 'id'),
             conversationId: any(named: 'conversationId'),
@@ -627,12 +635,11 @@ void main() {
             createdAt: any(named: 'createdAt'),
             lastMessageContent: any(named: 'lastMessageContent'),
             lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            lastMessageSenderPubkey: _validPubkeyA,
             subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
+            currentUserHasSent: true,
             ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
+            dmProtocol: 'nip17',
           ),
         ).called(1);
 
@@ -1496,6 +1503,14 @@ void main() {
     group('_handleGiftWrapEvent preserves existing state', () {
       void stubDaoInserts() {
         when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
           () => mockDirectMessagesDao.insertMessage(
             id: any(named: 'id'),
             conversationId: any(named: 'conversationId'),
@@ -1645,6 +1660,14 @@ void main() {
 
     group('Kind 15 receive pipeline', () {
       void stubDaoInserts() {
+        when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenAnswer((_) async => false);
         when(
           () => mockDirectMessagesDao.insertMessage(
             id: any(named: 'id'),
@@ -2155,6 +2178,14 @@ void main() {
 
       void stubDaoInserts() {
         when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
           () => mockDirectMessagesDao.insertMessage(
             id: any(named: 'id'),
             conversationId: any(named: 'conversationId'),
@@ -2516,6 +2547,7 @@ void main() {
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -2574,6 +2606,7 @@ void main() {
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -3037,6 +3070,7 @@ void main() {
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -3142,6 +3176,14 @@ void main() {
 
     group('dual-send NIP-04 fallback', () {
       void stubDaoInserts() {
+        when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenAnswer((_) async => false);
         when(
           () => mockDirectMessagesDao.insertMessage(
             id: any(named: 'id'),
