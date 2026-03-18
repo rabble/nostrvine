@@ -864,33 +864,32 @@ class VideoFeedController extends ChangeNotifier {
     _lastHeartbeatPositionMs = null;
     _staleHeartbeatCount = 0;
 
-    if (positionCallback != null) {
-      // Caller-managed position tracking — use their interval, no stale
-      // detection (callers handle their own recovery).
-      _positionTimers[index] = Timer.periodic(positionCallbackInterval, (_) {
-        final player = _loadedPlayers[index]?.player;
-        if (player != null && player.state.playing) {
-          positionCallback?.call(index, player.state.position);
-        }
-      });
-    } else {
-      // Default: high-frequency stale-position watchdog to detect and
-      // recover from mpv decoder stalls (B-frame encoded videos).
-      _positionTimers[index] = Timer.periodic(
-        const Duration(milliseconds: 100),
-        (_) {
-          final player = _loadedPlayers[index]?.player;
-          if (player == null) return;
-          if (index == _currentIndex) {
-            _checkStalePosition(
-              index,
-              player,
-              player.state.position.inMilliseconds,
-            );
-          }
-        },
-      );
-    }
+    // Use the shorter of the caller's interval and the stale-detection
+    // interval so both position callbacks and recovery work correctly.
+    final interval =
+        positionCallback != null &&
+            positionCallbackInterval < const Duration(milliseconds: 100)
+        ? positionCallbackInterval
+        : const Duration(milliseconds: 100);
+
+    _positionTimers[index] = Timer.periodic(interval, (_) {
+      final player = _loadedPlayers[index]?.player;
+      if (player == null) return;
+
+      // Stale-position watchdog: detect and recover from mpv decoder
+      // stalls caused by B-frame encoded videos.
+      if (index == _currentIndex) {
+        _checkStalePosition(
+          index,
+          player,
+          player.state.position.inMilliseconds,
+        );
+      }
+
+      if (positionCallback != null && player.state.playing) {
+        positionCallback?.call(index, player.state.position);
+      }
+    });
   }
 
   /// Checks whether the current video's position has stalled. If the position
