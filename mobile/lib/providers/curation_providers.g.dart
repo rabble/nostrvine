@@ -333,7 +333,7 @@ final class AnalyticsTrendingProvider
   }
 }
 
-String _$analyticsTrendingHash() => r'3aaec182a211f227179730bd514818a405acf01d';
+String _$analyticsTrendingHash() => r'91eae1566af8e7cfd2ef83a8c7d39996a5f1a4cf';
 
 /// Provider for analytics-based trending videos with cursor pagination
 
