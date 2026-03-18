@@ -54,8 +54,17 @@ class ShareActionButton extends StatelessWidget {
   /// This is exposed as a static method so share entry points can reuse the
   /// same bottom-sheet wiring without duplicating setup logic.
   static void showShareSheet(BuildContext context, VideoEvent video) {
+    // Read here so the sheet receives a guaranteed non-null repository.
+    // If Nostr client hasn't initialized yet, skip opening the sheet.
+    final container = ProviderScope.containerOf(context);
+    final profileRepository = container.read(profileRepositoryProvider);
+    if (profileRepository == null) return;
+
     context.showVideoPausingVineBottomSheet<void>(
-      builder: (context) => _UnifiedShareSheet(video: video),
+      builder: (context) => _UnifiedShareSheet(
+        video: video,
+        profileRepository: profileRepository,
+      ),
     );
   }
 
@@ -82,9 +91,13 @@ class ShareActionButton extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _UnifiedShareSheet extends ConsumerStatefulWidget {
-  const _UnifiedShareSheet({required this.video});
+  const _UnifiedShareSheet({
+    required this.video,
+    required this.profileRepository,
+  });
 
   final VideoEvent video;
+  final ProfileRepository profileRepository;
 
   @override
   ConsumerState<_UnifiedShareSheet> createState() => _UnifiedShareSheetState();
@@ -92,29 +105,11 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
 
 class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   final TextEditingController _messageController = TextEditingController();
-  ShareSheetBloc? _bloc;
 
   @override
   void dispose() {
     _messageController.dispose();
-    _bloc?.close();
     super.dispose();
-  }
-
-  /// Creates the BLoC once all required providers are available.
-  ///
-  /// Called from [build] so that `ref.watch(profileRepositoryProvider)`
-  /// triggers a rebuild when the repository transitions from null to non-null
-  /// during Nostr client initialisation.
-  ShareSheetBloc? _ensureBloc(ProfileRepository profileRepository) {
-    return _bloc ??= ShareSheetBloc(
-      video: widget.video,
-      relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
-      videoSharingService: ref.read(videoSharingServiceProvider),
-      profileRepository: profileRepository,
-      followRepository: ref.read(followRepositoryProvider),
-      bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
-    )..add(const ShareSheetContactsLoadRequested());
   }
 
   void _safePop(BuildContext ctx) {
@@ -133,28 +128,17 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch profileRepositoryProvider so the widget rebuilds when it
-    // transitions from null → non-null during Nostr client init.
-    final profileRepository = ref.watch(profileRepositoryProvider);
-
-    if (profileRepository == null) {
-      return const Material(
-        color: VineTheme.surfaceBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 48),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ),
-      );
-    }
-
-    final bloc = _ensureBloc(profileRepository)!;
     final isOwnContent = _isUserOwnContent();
 
-    return BlocProvider.value(
-      value: bloc,
+    return BlocProvider(
+      create: (_) => ShareSheetBloc(
+        video: widget.video,
+        relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
+        videoSharingService: ref.read(videoSharingServiceProvider),
+        profileRepository: widget.profileRepository,
+        followRepository: ref.read(followRepositoryProvider),
+        bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
+      )..add(const ShareSheetContactsLoadRequested()),
       child: BlocListener<ShareSheetBloc, ShareSheetState>(
         listenWhen: (prev, curr) =>
             curr.actionResult != null && prev.actionResult != curr.actionResult,
@@ -211,8 +195,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   Future<void> _handleFindPeople() async {
-    final bloc = _bloc;
-    if (bloc == null) return;
+    final bloc = context.read<ShareSheetBloc>();
     final selectedUser = await FindPeopleSheet.show(
       context,
       contacts: bloc.state.contacts,
