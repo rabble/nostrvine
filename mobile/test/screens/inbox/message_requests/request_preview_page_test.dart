@@ -1,6 +1,6 @@
 // ABOUTME: Widget tests for RequestPreviewPage.
 // ABOUTME: Verifies route constants and that it renders RequestPreviewView
-// ABOUTME: with MessageRequestActionsCubit provided.
+// ABOUTME: with RequestPreviewCubit and MessageRequestActionsCubit provided.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
