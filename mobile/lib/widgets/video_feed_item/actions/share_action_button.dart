@@ -28,6 +28,7 @@ import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
 
 part 'share_sheet_header.dart';
@@ -91,26 +92,29 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
 
 class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   final TextEditingController _messageController = TextEditingController();
-  late final ShareSheetBloc _bloc;
-
-  @override
-  void initState() {
-    super.initState();
-    _bloc = ShareSheetBloc(
-      video: widget.video,
-      relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
-      videoSharingService: ref.read(videoSharingServiceProvider),
-      profileRepository: ref.read(profileRepositoryProvider)!,
-      followRepository: ref.read(followRepositoryProvider),
-      bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
-    )..add(const ShareSheetContactsLoadRequested());
-  }
+  ShareSheetBloc? _bloc;
 
   @override
   void dispose() {
     _messageController.dispose();
-    _bloc.close();
+    _bloc?.close();
     super.dispose();
+  }
+
+  /// Creates the BLoC once all required providers are available.
+  ///
+  /// Called from [build] so that `ref.watch(profileRepositoryProvider)`
+  /// triggers a rebuild when the repository transitions from null to non-null
+  /// during Nostr client initialisation.
+  ShareSheetBloc? _ensureBloc(ProfileRepository profileRepository) {
+    return _bloc ??= ShareSheetBloc(
+      video: widget.video,
+      relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
+      videoSharingService: ref.read(videoSharingServiceProvider),
+      profileRepository: profileRepository,
+      followRepository: ref.read(followRepositoryProvider),
+      bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
+    )..add(const ShareSheetContactsLoadRequested());
   }
 
   void _safePop(BuildContext ctx) {
@@ -129,10 +133,28 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch profileRepositoryProvider so the widget rebuilds when it
+    // transitions from null → non-null during Nostr client init.
+    final profileRepository = ref.watch(profileRepositoryProvider);
+
+    if (profileRepository == null) {
+      return const Material(
+        color: VineTheme.surfaceBackground,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 48),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ),
+      );
+    }
+
+    final bloc = _ensureBloc(profileRepository)!;
     final isOwnContent = _isUserOwnContent();
 
     return BlocProvider.value(
-      value: _bloc,
+      value: bloc,
       child: BlocListener<ShareSheetBloc, ShareSheetState>(
         listenWhen: (prev, curr) =>
             curr.actionResult != null && prev.actionResult != curr.actionResult,
@@ -189,12 +211,14 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   Future<void> _handleFindPeople() async {
+    final bloc = _bloc;
+    if (bloc == null) return;
     final selectedUser = await FindPeopleSheet.show(
       context,
-      contacts: _bloc.state.contacts,
+      contacts: bloc.state.contacts,
     );
     if (selectedUser != null && mounted) {
-      _bloc.add(ShareSheetRecipientSelected(selectedUser));
+      bloc.add(ShareSheetRecipientSelected(selectedUser));
     }
   }
 

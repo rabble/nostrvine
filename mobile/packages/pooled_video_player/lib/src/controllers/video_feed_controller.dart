@@ -140,7 +140,6 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, Stopwatch> _loadStopwatches = {};
   final Map<int, String> _openedSources = {};
   final Set<int> _slowLoadIndices = {};
-  final Set<int> _fallbackAttempted = {};
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
 
@@ -149,6 +148,7 @@ class VideoFeedController extends ChangeNotifier {
   /// `playing=true` and `buffering=false`.
   int? _lastHeartbeatPositionMs;
   int _staleHeartbeatCount = 0;
+  int _staleRecoveryAttempts = 0;
 
   /// Number of consecutive stale heartbeats before triggering recovery.
   /// With a 100ms heartbeat interval, this means ~300ms of confirmed
@@ -156,6 +156,10 @@ class VideoFeedController extends ChangeNotifier {
   /// a brief ~200ms micro-stutter (pause+seek+play at same position),
   /// which is far less disruptive than a multi-second visible freeze.
   static const _staleHeartbeatThreshold = 3;
+
+  /// After this many failed seek-recovery attempts with no position progress,
+  /// give up and mark the video as error.
+  static const _maxStaleRecoveryAttempts = 2;
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -286,6 +290,20 @@ class VideoFeedController extends ChangeNotifier {
           'elapsedMs=$elapsedMs threshold=${slowLoadThreshold.inMilliseconds}',
         );
         _notifyIndex(index);
+
+        // Current video stuck in buffering too long — mark as error
+        // so the user can swipe past instead of waiting forever.
+        if (index == _currentIndex) {
+          _logDebug(
+            'load_gave_up ${_videoDebugDetails(index)} '
+            'elapsedMs=$elapsedMs',
+          );
+          timer.cancel();
+          _loadWatchdogTimers.remove(index);
+          _loadStates[index] = LoadState.error;
+          _notifyIndex(index);
+          return;
+        }
       }
 
       final shouldLog =
@@ -311,13 +329,16 @@ class VideoFeedController extends ChangeNotifier {
   ) {
     final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
 
-    // For any Divine media URL (raw blob or variant like /720p, /480p),
-    // provide HLS as fallback for codec errors.
+    // For Divine progressive URLs (/720p, /480p, or bare hash),
+    // provide HLS as fallback for codec errors. If already HLS, no fallback
+    // needed since HLS is self-healing per segment.
     final hash = _extractCanonicalDivineBlobHash(resolvedSource);
     if (hash != null) {
+      final hlsUrl = _canonicalDivineBlobHlsUrl(hash);
+      final isAlreadyHls = resolvedSource.contains('/hls/');
       return (
         primary: resolvedSource,
-        fallback: _canonicalDivineBlobHlsUrl(hash),
+        fallback: isAlreadyHls ? null : hlsUrl,
       );
     }
 
@@ -857,18 +878,12 @@ class VideoFeedController extends ChangeNotifier {
 
   /// Detects stuck playback where the variant opens and reports "playing"
   /// but position never advances (broken transcode). If position stays at
-  /// 0 for 5 seconds after playback starts, retries with the HLS fallback.
+  /// 0 for 5 seconds after playback starts, marks as error.
   void _startStuckPlaybackWatchdog(int index) {
     _stuckPlaybackTimer?.cancel();
 
-    // Only watch the current video, and only if a fallback exists.
     if (index != _currentIndex) return;
     if (index < 0 || index >= _videos.length) return;
-    final video = _videos[index];
-    final sources = _resolvePlaybackSources(video);
-    if (sources.fallback == null) return;
-    // Don't retry if we already tried the fallback for this index.
-    if (_fallbackAttempted.contains(index)) return;
 
     var checksRemaining = 5;
     _stuckPlaybackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -894,28 +909,12 @@ class VideoFeedController extends ChangeNotifier {
         timer.cancel();
         _logDebug(
           'stuck_playback ${_videoDebugDetails(index)} '
-          'retrying with fallback=${sources.fallback}',
+          'giving up',
         );
-        _fallbackAttempted.add(index);
-        unawaited(_retryWithFallback(index, sources.fallback!));
+        _loadStates[index] = LoadState.error;
+        _notifyIndex(index);
       }
     });
-  }
-
-  /// Release the current player and reload with the fallback URL.
-  Future<void> _retryWithFallback(int index, String fallbackUrl) async {
-    if (_isDisposed) return;
-
-    // Release the broken player.
-    _releasePlayer(index);
-
-    // Replace the video's URL with the fallback so _loadPlayer uses it.
-    if (index < _videos.length) {
-      _videos[index] = VideoItem(id: _videos[index].id, url: fallbackUrl);
-    }
-
-    // Reload — this will go through the normal _loadPlayer path.
-    await _loadPlayer(index);
   }
 
   /// Unmute and play, seeking to the beginning only when at the end of the
@@ -978,6 +977,7 @@ class VideoFeedController extends ChangeNotifier {
     // Reset stale-position tracking when starting a new timer.
     _lastHeartbeatPositionMs = null;
     _staleHeartbeatCount = 0;
+    _staleRecoveryAttempts = 0;
 
     // Use the shorter of the caller's interval and the stale-detection
     // interval so both position callbacks and recovery work correctly.
@@ -1028,14 +1028,30 @@ class VideoFeedController extends ChangeNotifier {
     _lastHeartbeatPositionMs = positionMs;
 
     if (_staleHeartbeatCount >= _staleHeartbeatThreshold) {
+      _staleHeartbeatCount = 0;
+      _lastHeartbeatPositionMs = null;
+      _staleRecoveryAttempts++;
+
+      // After repeated failed recoveries, the stream is likely corrupt
+      // (e.g. missing h264 PPS headers). Give up so the user can swipe past.
+      if (_staleRecoveryAttempts > _maxStaleRecoveryAttempts) {
+        _logDebug(
+          'stale_gave_up index=$index '
+          'attempts=$_staleRecoveryAttempts '
+          '${_videoDebugDetails(index)}',
+        );
+        _staleRecoveryAttempts = 0;
+        _loadStates[index] = LoadState.error;
+        _notifyIndex(index);
+        return;
+      }
+
       _logDebug(
         'stale_position_detected index=$index '
         'positionMs=$positionMs '
-        'staleCount=$_staleHeartbeatCount '
+        'attempt=$_staleRecoveryAttempts '
         '${_videoDebugDetails(index)}',
       );
-      _staleHeartbeatCount = 0;
-      _lastHeartbeatPositionMs = null;
       _recoverStalePlayer(index, player, positionMs);
     }
   }

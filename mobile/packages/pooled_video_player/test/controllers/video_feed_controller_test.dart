@@ -3078,12 +3078,12 @@ void main() {
 
     group('slow-load detection', () {
       test(
-        'isSlowLoad is set when load exceeds threshold',
+        'current video gives up with error when load exceeds threshold',
         () async {
           final videos = createTestVideos(count: 1);
 
           // Use isBuffering: true so the video stays in loading state
-          // long enough for the watchdog to fire.
+          // long enough for the watchdog to fire and give up.
           final slowPool = TestablePlayerPool(
             mockPlayerFactory: (url) {
               final setup = createMockPlayerSetup(isBuffering: true);
@@ -3101,14 +3101,13 @@ void main() {
 
           final notifier = controller.getIndexNotifier(0);
 
-          // Initially not slow.
+          // Initially loading.
           await Future<void>.delayed(const Duration(milliseconds: 100));
-          expect(notifier.value.isSlowLoad, isFalse);
+          expect(notifier.value.hasError, isFalse);
 
-          // After threshold, watchdog should mark as slow.
+          // After threshold, watchdog gives up for stuck current video.
           await Future<void>.delayed(const Duration(milliseconds: 1200));
-          expect(notifier.value.isSlowLoad, isTrue);
-          expect(notifier.value.isLoading, isTrue);
+          expect(notifier.value.hasError, isTrue);
 
           controller.dispose();
           await slowPool.dispose();
@@ -3116,7 +3115,7 @@ void main() {
       );
 
       test(
-        'isSlowLoad is cleared when video becomes ready',
+        'isSlowLoad is cleared when video becomes ready before threshold',
         () async {
           final videos = createTestVideos(count: 1);
 
@@ -3134,16 +3133,13 @@ void main() {
             pool: slowPool,
             preloadBehind: 0,
             preloadAhead: 0,
-            slowLoadThreshold: const Duration(seconds: 1),
+            slowLoadThreshold: const Duration(seconds: 2),
           );
 
           final notifier = controller.getIndexNotifier(0);
 
-          // Wait past threshold.
-          await Future<void>.delayed(const Duration(milliseconds: 1200));
-          expect(notifier.value.isSlowLoad, isTrue);
-
-          // Fire buffer-ready → video becomes ready, slow flag clears.
+          // Wait less than threshold, then fire buffer-ready.
+          await Future<void>.delayed(const Duration(milliseconds: 500));
           setupByUrl[videos[0].url]!.bufferingController.add(false);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
