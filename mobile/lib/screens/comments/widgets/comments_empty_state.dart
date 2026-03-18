@@ -74,10 +74,9 @@ class CommentsEmptyState extends StatelessWidget {
             Text(
               'Get the party started!',
               textAlign: TextAlign.center,
-              style: VineTheme.bodyFont(
-                fontSize: 14,
+              style: VineTheme.bodyMediumFont(
                 color: VineTheme.onSurfaceVariant,
-              ).copyWith(height: 20 / 14, letterSpacing: 0.25),
+              ),
             ),
           ],
         ),

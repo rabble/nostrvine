@@ -238,8 +238,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: Text(
             'Select a reason for flagging this comment',
-            style: VineTheme.bodyFont(
-              fontSize: 14,
+            style: VineTheme.bodyMediumFont(
               color: VineTheme.onSurfaceMuted,
             ),
           ),
@@ -360,8 +359,7 @@ class _ReasonRadioTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _getReasonDescription(reason),
-                    style: VineTheme.bodyFont(
-                      fontSize: 12,
+                    style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
                   ),

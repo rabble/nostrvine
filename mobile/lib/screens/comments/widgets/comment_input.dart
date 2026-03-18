@@ -349,11 +349,9 @@ class _EditIndicator extends StatelessWidget {
             Flexible(
               child: Text(
                 'Editing',
-                style: VineTheme.bodyFont(
-                  fontSize: 12,
+                style: VineTheme.bodySmallFont(
                   color: VineTheme.tabIndicatorGreen,
-                  height: 16 / 12,
-                ).copyWith(letterSpacing: 0.4),
+                ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -394,11 +392,9 @@ class _ReplyIndicator extends StatelessWidget {
             Flexible(
               child: Text(
                 'Re: $displayName',
-                style: VineTheme.bodyFont(
-                  fontSize: 12,
+                style: VineTheme.bodySmallFont(
                   color: VineTheme.tabIndicatorGreen,
-                  height: 16 / 12,
-                ).copyWith(letterSpacing: 0.4),
+                ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
