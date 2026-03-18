@@ -206,19 +206,18 @@ services:
       start_period: 10s
 
   # ---------------------------------------------------------------------------
-  # Invite stub (returns onboardingMode: open for E2E tests)
+  # Invite service (divine-invite-darshan via Viceroy)
   # ---------------------------------------------------------------------------
-  invite-stub:
-    image: nginx:alpine
+  invite:
+    image: ghcr.io/divinevideo/divine-invite-darshan:e2e
     ports:
-      - "43004:3000"
-    volumes:
-      - ./invite-stub/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - "43004:7676"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/v1/client-config || exit 1"]
-      interval: 3s
-      timeout: 3s
-      retries: 5
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/7676'"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # ---------------------------------------------------------------------------
   # E2E seed data (runs once at startup)

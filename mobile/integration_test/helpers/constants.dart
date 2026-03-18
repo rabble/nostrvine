@@ -6,6 +6,7 @@ export 'package:openvine/models/environment_config.dart'
         localApiPort,
         localBlossomPort,
         localHost,
+        localInvitePort,
         localKeycastPort,
         localRelayPort;
 

@@ -79,7 +79,7 @@
         tools:node="remove" />
 
     <application
-        android:label="divine"
+        android:label="Divine"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/NormalTheme"
