@@ -4,6 +4,7 @@
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -227,46 +228,14 @@ class ForYouFeed extends _$ForYouFeed {
       category: LogCategory.video,
     );
 
-    final currentState = state.asData?.value;
-    if (currentState != null && ref.mounted) {
-      state = AsyncData(
-        currentState.copyWith(
-          isRefreshing: true,
-          isInitialLoad: false,
-          error: null,
-        ),
-      );
-    }
-
     _currentLimit = 50; // Reset limit on refresh
 
-    try {
-      final refreshedState = await _fetchRecommendations(limit: _currentLimit);
-      if (!ref.mounted) return;
-      state = AsyncData(
-        refreshedState.copyWith(
-          isRefreshing: false,
-          isInitialLoad: false,
-          error: null,
-        ),
-      );
-    } catch (e) {
-      if (!ref.mounted) return;
-      if (currentState != null) {
-        state = AsyncData(
-          currentState.copyWith(isRefreshing: false, error: e.toString()),
-        );
-        return;
-      }
-
-      state = AsyncData(
-        VideoFeedState(
-          videos: const [],
-          hasMoreContent: false,
-          error: e.toString(),
-        ),
-      );
-    }
+    await staleWhileRevalidate(
+      getCurrentState: () => state,
+      isMounted: () => ref.mounted,
+      setState: (s) => state = s,
+      fetchFresh: () => _fetchRecommendations(limit: _currentLimit),
+    );
   }
 }
 
