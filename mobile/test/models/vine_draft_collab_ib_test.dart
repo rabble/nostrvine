@@ -126,6 +126,23 @@ void main() {
         );
       });
 
+      test('collaboratorPubkeys serializes as List, not Set', () {
+        final draft = DivineVideoDraft.create(
+          clips: [_testClip()],
+          title: 'Test',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'native',
+          collaboratorPubkeys: {
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          },
+        );
+
+        final json = draft.toJson();
+        expect(json['collaboratorPubkeys'], isA<List>());
+      });
+
       test('omits collaboratorPubkeys when empty', () {
         final draft = DivineVideoDraft.create(
           clips: [_testClip()],

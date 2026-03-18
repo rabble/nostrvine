@@ -696,7 +696,7 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
   }
 
   @override
-  Future<bool> saveAsDraft() async {
+  Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
     onSaveAsDraft?.call();
     return saveAsDraftResult;
   }

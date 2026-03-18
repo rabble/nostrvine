@@ -709,6 +709,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   DivineVideoDraft getActiveDraft({
     bool isAutosave = false,
     bool enforceSeparatedClips = false,
+    String? draftId,
   }) {
     // Read selected sound from local state
     final selectedSound = state.selectedSound;
@@ -724,7 +725,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     }
 
     return DivineVideoDraft.create(
-      id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
+      id:
+          draftId ??
+          (isAutosave ? VideoEditorConstants.autoSaveId : this.draftId),
       clips:
           state.finalRenderedClip == null || isAutosave || enforceSeparatedClips
           ? _clips
@@ -853,10 +856,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// Persists clips and metadata to local storage for later editing.
   /// Returns `true` on success, `false` on failure.
-  Future<bool> saveAsDraft() async {
+  Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
     if (state.isSavingDraft) return false;
 
     state = state.copyWith(isSavingDraft: true);
+
+    final draftId = enforceCreateNewDraft
+        ? 'draft_${DateTime.now().microsecondsSinceEpoch}'
+        : this.draftId;
 
     Log.info(
       '💾 Saving draft: $draftId',
@@ -866,7 +873,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     try {
       await _draftService.saveDraft(
-        getActiveDraft(enforceSeparatedClips: true),
+        getActiveDraft(enforceSeparatedClips: true, draftId: draftId),
       );
 
       // Remove the autosaved draft

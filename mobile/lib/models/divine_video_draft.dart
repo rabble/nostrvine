@@ -344,7 +344,7 @@ class DivineVideoDraft {
     if (finalRenderedClip != null)
       'finalRenderedClip': finalRenderedClip!.toJson(),
     if (collaboratorPubkeys.isNotEmpty)
-      'collaboratorPubkeys': collaboratorPubkeys,
+      'collaboratorPubkeys': collaboratorPubkeys.toList(),
     if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
     if (selectedSound != null) 'selectedSound': selectedSound!.toJson(),
