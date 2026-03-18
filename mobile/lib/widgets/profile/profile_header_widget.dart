@@ -641,7 +641,7 @@ class _UniqueIdentifier extends ConsumerWidget {
                   );
                 },
                 child: SvgPicture.asset(
-                  'assets/icon/copy.svg',
+                  DivineIconName.copy.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: ColorFilter.mode(linkColor, BlendMode.srcIn),

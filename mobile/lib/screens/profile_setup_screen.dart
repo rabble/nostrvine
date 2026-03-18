@@ -358,7 +358,7 @@ class _ProfileSetupScreenViewState
               ),
               actions: [
                 DiVineAppBarAction(
-                  icon: const SvgIconSource('assets/icon/info.svg'),
+                  icon: SvgIconSource(DivineIconName.info.assetPath),
                   onPressed: () => _showNostrInfoSheet(context),
                   tooltip: 'About Nostr',
                   semanticLabel: 'About Nostr',
@@ -465,7 +465,9 @@ class _ProfileSetupScreenViewState
                                                   ),
                                                   child: Center(
                                                     child: SvgPicture.asset(
-                                                      'assets/icon/cameraPlus.svg',
+                                                      DivineIconName
+                                                          .cameraPlus
+                                                          .assetPath,
                                                       width: 24,
                                                       height: 24,
                                                       colorFilter:
@@ -501,7 +503,9 @@ class _ProfileSetupScreenViewState
                                                 ),
                                                 child: Center(
                                                   child: SvgPicture.asset(
-                                                    'assets/icon/imagesSquare.svg',
+                                                    DivineIconName
+                                                        .imagesSquare
+                                                        .assetPath,
                                                     width: 24,
                                                     height: 24,
                                                     colorFilter:
@@ -534,7 +538,9 @@ class _ProfileSetupScreenViewState
                                                 ),
                                                 child: Center(
                                                   child: SvgPicture.asset(
-                                                    'assets/icon/linkSimple.svg',
+                                                    DivineIconName
+                                                        .linkSimple
+                                                        .assetPath,
                                                     width: 24,
                                                     height: 24,
                                                     colorFilter:

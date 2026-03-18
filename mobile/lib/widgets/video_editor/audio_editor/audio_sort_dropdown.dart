@@ -198,7 +198,7 @@ class _DropdownButton extends StatelessWidget {
             mainAxisSize: .min,
             children: [
               SvgPicture.asset(
-                'assets/icon/funnel_simple.svg',
+                DivineIconName.funnelSimple.assetPath,
                 width: 24,
                 height: 24,
                 colorFilter: const .mode(VineTheme.primary, .srcIn),

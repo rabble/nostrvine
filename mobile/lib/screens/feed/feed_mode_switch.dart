@@ -82,7 +82,7 @@ class FeedModeSwitch extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               SvgPicture.asset(
-                                'assets/icon/CaretDown.svg',
+                                DivineIconName.caretDown.assetPath,
                                 width: 24,
                                 height: 24,
                                 colorFilter: const ColorFilter.mode(
@@ -139,7 +139,7 @@ class _MenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DiVineAppBarIconButton(
-      icon: const SvgIconSource('assets/icon/menu.svg'),
+      icon: SvgIconSource(DivineIconName.menu.assetPath),
       onPressed: onTap,
       iconSize: 24,
       semanticLabel: 'Open menu',
@@ -156,7 +156,7 @@ class _SearchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DiVineAppBarIconButton(
-      icon: const SvgIconSource('assets/icon/search.svg'),
+      icon: SvgIconSource(DivineIconName.search.assetPath),
       onPressed: onTap,
       iconSize: 24,
       semanticLabel: 'Search',

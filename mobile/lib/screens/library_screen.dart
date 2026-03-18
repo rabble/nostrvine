@@ -423,15 +423,15 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
           actions: hasSelection
               ? [
                   DiVineAppBarAction(
-                    icon: const SvgIconSource(
-                      'assets/icon/download_simple.svg',
+                    icon: SvgIconSource(
+                      DivineIconName.downloadSimple.assetPath,
                     ),
                     onPressed: onSaveToGallery,
                     tooltip: 'Save to camera roll',
                     semanticLabel: 'Save to camera roll',
                   ),
                   DiVineAppBarAction(
-                    icon: const SvgIconSource('assets/icon/trash.svg'),
+                    icon: SvgIconSource(DivineIconName.trash.assetPath),
                     onPressed: onDelete,
                     tooltip: 'Delete selected clips',
                     semanticLabel: 'Delete selected clips',

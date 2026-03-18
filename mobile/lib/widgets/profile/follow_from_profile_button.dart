@@ -119,7 +119,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SvgPicture.asset(
-              'assets/icon/prohibit.svg',
+              DivineIconName.prohibit.assetPath,
               width: 24,
               height: 24,
               colorFilter: const ColorFilter.mode(
@@ -223,7 +223,7 @@ class _FollowingButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SvgPicture.asset(
-            'assets/icon/userCheck.svg',
+            DivineIconName.userCheck.assetPath,
             width: 24,
             height: 24,
             colorFilter: const ColorFilter.mode(
@@ -264,7 +264,7 @@ class _FollowButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SvgPicture.asset(
-            'assets/icon/userPlus.svg',
+            DivineIconName.userPlus.assetPath,
             width: 24,
             height: 24,
             colorFilter: const ColorFilter.mode(

@@ -505,7 +505,7 @@ class _DrawerItem extends StatelessWidget {
         style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       trailing: SvgPicture.asset(
-        'assets/icon/caret_right.svg',
+        DivineIconName.caretRight.assetPath,
         width: 24,
         height: 24,
         colorFilter: const ColorFilter.mode(

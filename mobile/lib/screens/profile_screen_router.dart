@@ -295,7 +295,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/content-controls/pencil.svg',
+                  DivineIconName.pencilSimpleLineDuo.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(
@@ -333,7 +333,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/content-controls/share.svg',
+                  DivineIconName.shareFatDuo.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(
@@ -354,7 +354,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/copy.svg',
+                  DivineIconName.copy.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(
@@ -480,13 +480,17 @@ class _ProfileScaffold extends ConsumerWidget {
           DiVineAppBarAction(
             icon: isRefreshing
                 ? const MaterialIconSource(Icons.refresh)
-                : const SvgIconSource('assets/icon/refresh.svg'),
+                : SvgIconSource(
+                    DivineIconName.arrowsCounterClockwise.assetPath,
+                  ),
             onPressed: isRefreshing ? null : onRefreshPressed,
             tooltip: 'Refresh',
             semanticLabel: 'Refresh profile',
           ),
           DiVineAppBarAction(
-            icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+            icon: SvgIconSource(
+              DivineIconName.dotsThree.assetPath,
+            ),
             onPressed: onMorePressed,
             tooltip: 'More',
             semanticLabel: 'More options',

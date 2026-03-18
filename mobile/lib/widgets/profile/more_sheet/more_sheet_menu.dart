@@ -50,7 +50,7 @@ class MoreSheetMenu extends StatelessWidget {
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/copy.svg',
+                  DivineIconName.copy.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(
@@ -76,7 +76,7 @@ class MoreSheetMenu extends StatelessWidget {
               child: Row(
                 children: [
                   SvgPicture.asset(
-                    'assets/icon/userMinus.svg',
+                    DivineIconName.userMinus.assetPath,
                     width: 24,
                     height: 24,
                     colorFilter: const ColorFilter.mode(
@@ -102,8 +102,8 @@ class MoreSheetMenu extends StatelessWidget {
               children: [
                 SvgPicture.asset(
                   isBlocked
-                      ? 'assets/icon/prohibitInset.svg'
-                      : 'assets/icon/prohibit.svg',
+                      ? DivineIconName.prohibitInset.assetPath
+                      : DivineIconName.prohibit.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: ColorFilter.mode(
