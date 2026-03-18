@@ -184,7 +184,7 @@ class _SheetHeader extends StatelessWidget {
         const SizedBox(height: 20),
         Text(
           'New message',
-          style: VineTheme.titleMediumFont(fontSize: 16, height: 24 / 16),
+          style: VineTheme.titleMediumFont(),
         ),
         const SizedBox(height: 8),
         const Divider(height: 1, thickness: 1, color: VineTheme.outlineMuted),
@@ -209,9 +209,9 @@ class _SearchField extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
+        spacing: 8,
         children: [
           const Icon(Icons.search, color: VineTheme.onSurfaceMuted, size: 24),
-          const SizedBox(width: 8),
           Expanded(
             child: TextField(
               controller: controller,
@@ -385,10 +385,7 @@ class _UserTile extends StatelessWidget {
                     profile.bestDisplayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: VineTheme.titleMediumFont(
-                      fontSize: 16,
-                      height: 24 / 16,
-                    ),
+                    style: VineTheme.titleMediumFont(),
                   ),
                   if (profile.nip05 != null && profile.nip05!.isNotEmpty)
                     Text(

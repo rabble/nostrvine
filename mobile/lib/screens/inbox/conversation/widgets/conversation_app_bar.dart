@@ -47,9 +47,7 @@ class ConversationAppBar extends StatelessWidget
       ),
       actions: [
         DiVineAppBarAction(
-          icon: const SvgIconSource(
-            'assets/icon/DotsThree.svg',
-          ),
+          icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
           onPressed: onOptions,
           semanticLabel: 'Options',
         ),

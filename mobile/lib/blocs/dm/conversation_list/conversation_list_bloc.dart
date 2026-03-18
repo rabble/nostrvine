@@ -43,76 +43,10 @@ class ConversationListBloc
     on<ConversationListNavigationConsumed>(
       _onNavigationConsumed,
     );
-    on<_ConversationListFollowingChanged>(
-      _onFollowingChanged,
-      transformer: restartable(),
-    );
-
-    // Listen to follow-list changes and re-split conversations.
-    _followingSubscription = _followRepository.followingStream.listen((_) {
-      add(const _ConversationListFollowingChanged());
-    });
   }
 
   final DmRepository _dmRepository;
   final FollowRepository _followRepository;
-  StreamSubscription<List<String>>? _followingSubscription;
-
-  @override
-  Future<void> close() {
-    _followingSubscription?.cancel();
-    return super.close();
-  }
-
-  /// Splits potential request conversations by follow state.
-  ///
-  /// Conversations where `currentUserHasSent == false` are "potential
-  /// requests". For 1:1 conversations from followed contacts, they go to
-  /// the followed list (Messages tab). Everything else is a true request.
-  ({
-    List<DmConversation> followed,
-    List<DmConversation> requests,
-  })
-  _splitPotentialRequests(List<DmConversation> potentialRequests) {
-    final userPubkey = _dmRepository.userPubkey;
-    final followed = <DmConversation>[];
-    final requests = <DmConversation>[];
-
-    for (final conversation in potentialRequests) {
-      final otherPubkeys = conversation.participantPubkeys.where(
-        (pk) => pk != userPubkey,
-      );
-
-      // A 1:1 conversation from a followed contact is not a request
-      // even if the user hasn't replied yet. For groups, follow state
-      // is irrelevant per the spec.
-      final isFollowedContact =
-          !conversation.isGroup &&
-          otherPubkeys.any(_followRepository.isFollowing);
-
-      if (otherPubkeys.isEmpty || isFollowedContact) {
-        followed.add(conversation);
-      } else {
-        requests.add(conversation);
-      }
-    }
-
-    return (followed: followed, requests: requests);
-  }
-
-  /// Merges accepted conversations with followed-but-unreplied ones
-  /// and sorts by timestamp descending.
-  List<DmConversation> _mergeAndSort(
-    List<DmConversation> accepted,
-    List<DmConversation> followedPotential,
-  ) {
-    if (followedPotential.isEmpty) return accepted;
-    return [...accepted, ...followedPotential]..sort((a, b) {
-      final aTime = a.lastMessageTimestamp ?? a.createdAt;
-      final bTime = b.lastMessageTimestamp ?? b.createdAt;
-      return bTime.compareTo(aTime);
-    });
-  }
 
   Future<void> _onStarted(
     ConversationListStarted event,
@@ -130,23 +64,33 @@ class ConversationListBloc
 
     // Stream 1: accepted conversations (paginated, user has sent).
     // Stream 2: potential requests (unpaginated, user has NOT sent).
-    // Combining ensures requests are never truncated by pagination.
+    // Stream 3: following list changes (triggers re-classification).
+    // Combining ensures requests are never truncated by pagination
+    // and follow-list changes are handled automatically.
     await emit.forEach(
-      Rx.combineLatest2(
+      Rx.combineLatest3(
         _dmRepository.watchAcceptedConversations(
           limit: state.currentLimit,
         ),
         _dmRepository.watchPotentialRequests(),
-        (accepted, potentialRequests) => (
+        _followRepository.followingStream.startWith(const []),
+        (accepted, potentialRequests, _) => (
           accepted: accepted,
           potentialRequests: potentialRequests,
         ),
       ),
       onData: (data) {
-        final split = _splitPotentialRequests(data.potentialRequests);
+        final split = DmRepository.classifyPotentialRequests(
+          data.potentialRequests,
+          userPubkey: _dmRepository.userPubkey,
+          isFollowing: _followRepository.isFollowing,
+        );
         return state.copyWith(
           status: ConversationListStatus.loaded,
-          conversations: _mergeAndSort(data.accepted, split.followed),
+          conversations: DmRepository.mergeAndSort(
+            data.accepted,
+            split.followed,
+          ),
           requestConversations: split.requests,
           potentialRequests: data.potentialRequests,
           hasMore: data.accepted.length >= state.currentLimit,
@@ -159,34 +103,6 @@ class ConversationListBloc
           status: ConversationListStatus.error,
         );
       },
-    );
-  }
-
-  void _onFollowingChanged(
-    _ConversationListFollowingChanged event,
-    Emitter<ConversationListState> emit,
-  ) {
-    // Re-split potential requests when the follow list changes.
-    // Accepted conversations (currentUserHasSent == true) are unaffected.
-    if (state.status != ConversationListStatus.loaded) return;
-    if (state.potentialRequests.isEmpty) return;
-
-    final split = _splitPotentialRequests(state.potentialRequests);
-
-    // Rebuild the conversations list: keep only the accepted ones
-    // (those NOT in potentialRequests) and merge with newly classified
-    // followed conversations.
-    final acceptedOnly = state.conversations
-        .where(
-          (c) => c.currentUserHasSent,
-        )
-        .toList();
-
-    emit(
-      state.copyWith(
-        conversations: _mergeAndSort(acceptedOnly, split.followed),
-        requestConversations: split.requests,
-      ),
     );
   }
 

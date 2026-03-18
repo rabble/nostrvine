@@ -4,7 +4,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 /// Banner row displayed at the top of the conversation list when there are
 /// pending message requests from non-followed users.
@@ -45,22 +44,14 @@ class MessageRequestsBanner extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Message requests',
-                    style: VineTheme.titleMediumFont(
-                      fontSize: 16,
-                      height: 24 / 16,
-                    ),
+                    style: VineTheme.titleMediumFont(),
                   ),
                 ),
                 _RequestCountBadge(count: requestCount),
                 const SizedBox(width: 8),
-                SvgPicture.asset(
-                  'assets/icon/caret_right.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.onSurface,
-                    BlendMode.srcIn,
-                  ),
+                const DivineIcon(
+                  icon: DivineIconName.caretRight,
+                  color: VineTheme.onSurface,
                 ),
               ],
             ),
@@ -89,14 +80,7 @@ class _RequestCountBadge extends StatelessWidget {
       child: Center(
         child: Text(
           label,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
-            height: 16 / 11,
-            letterSpacing: 0.5,
-            color: VineTheme.onSurface,
-          ),
+          style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
         ),
       ),
     );

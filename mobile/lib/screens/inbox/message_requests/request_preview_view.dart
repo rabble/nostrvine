@@ -11,6 +11,7 @@ import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/utils/count_formatter.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -43,9 +44,8 @@ class RequestPreviewView extends ConsumerWidget {
 
     final profile = profileAsync.asData?.value;
 
-    final displayName = profile?.displayName?.isNotEmpty == true
-        ? profile!.displayName!
-        : profile?.name ?? NostrKeyUtils.truncateNpub(otherPubkey);
+    final displayName =
+        profile?.bestDisplayName ?? NostrKeyUtils.truncateNpub(otherPubkey);
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
@@ -55,10 +55,7 @@ class RequestPreviewView extends ConsumerWidget {
         onBackPressed: context.pop,
       ),
       body: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(32),
-          topRight: Radius.circular(32),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: ColoredBox(
           color: VineTheme.surfaceContainerHigh,
           child: Column(
@@ -127,10 +124,7 @@ class _ProfileContent extends StatelessWidget {
               const SizedBox(height: 32),
               Text(
                 displayName,
-                style: VineTheme.titleMediumFont(
-                  fontSize: 20,
-                  height: 28 / 20,
-                ),
+                style: VineTheme.titleLargeFont(),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -185,10 +179,10 @@ class _StatsLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final parts = <String>[];
     if (followerCount != null) {
-      parts.add('${_formatCount(followerCount!)} Followers');
+      parts.add('${CountFormatter.formatCompact(followerCount!)} Followers');
     }
     if (videoCount != null) {
-      parts.add('${_formatCount(videoCount!)} videos');
+      parts.add('${CountFormatter.formatCompact(videoCount!)} videos');
     }
 
     return Text(
@@ -196,24 +190,6 @@ class _StatsLine extends StatelessWidget {
       style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
       textAlign: TextAlign.center,
     );
-  }
-
-  static String _formatCount(Object count) {
-    final n = count is int ? count : int.tryParse('$count') ?? 0;
-    if (n >= 1000000) {
-      final m = n / 1000000;
-      return m == m.roundToDouble()
-          ? '${m.round()}m'
-          : '${m.toStringAsFixed(1)}m';
-    }
-    if (n >= 1000) {
-      final k = n / 1000;
-      if (k >= 999.95) return '1m';
-      return k == k.roundToDouble()
-          ? '${k.round()}k'
-          : '${k.toStringAsFixed(1)}k';
-    }
-    return '$n';
   }
 }
 
@@ -298,25 +274,27 @@ class _PrimaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: GestureDetector(
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: VineTheme.primary,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Text(
-              label,
-              style: VineTheme.titleMediumFont(
-                fontSize: 16,
-                height: 24 / 16,
-                color: VineTheme.onPrimary,
+    return Semantics(
+      button: true,
+      label: label,
+      child: SizedBox(
+        width: double.infinity,
+        child: GestureDetector(
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: VineTheme.primary,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Text(
+                label,
+                style: VineTheme.titleMediumFont(
+                  color: VineTheme.onPrimary,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -336,24 +314,24 @@ class _OutlinedActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
-          border: Border.all(color: VineTheme.outlineMuted, width: 2),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            label,
-            style: VineTheme.titleMediumFont(
-              fontSize: 16,
-              height: 24 / 16,
-              color: VineTheme.primary,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceContainer,
+            border: Border.all(color: VineTheme.outlineMuted, width: 2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              label,
+              style: VineTheme.titleMediumFont(color: VineTheme.primary),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ),
       ),
@@ -372,26 +350,26 @@ class _SecondaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: GestureDetector(
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
-            border: Border.all(color: VineTheme.outlineMuted, width: 2),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Text(
-              label,
-              style: VineTheme.titleMediumFont(
-                fontSize: 16,
-                height: 24 / 16,
-                color: VineTheme.primary,
+    return Semantics(
+      button: true,
+      label: label,
+      child: SizedBox(
+        width: double.infinity,
+        child: GestureDetector(
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: VineTheme.surfaceContainer,
+              border: Border.all(color: VineTheme.outlineMuted, width: 2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Text(
+                label,
+                style: VineTheme.titleMediumFont(color: VineTheme.primary),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ),
         ),

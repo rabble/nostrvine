@@ -26,7 +26,7 @@ class EmptyConversation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 64),
       child: Column(
         children: [

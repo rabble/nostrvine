@@ -662,12 +662,62 @@ class DmRepository {
   /// Watch conversations where the user has never sent a message.
   ///
   /// These are potential message requests. Final classification (based on
-  /// follow state) is applied by the BLoC layer. Returned without
-  /// pagination since the list is typically small and needed in full.
+  /// follow state) is applied by [classifyPotentialRequests]. Returned
+  /// without pagination since the list is typically small and needed in full.
   Stream<List<DmConversation>> watchPotentialRequests() {
     return _conversationsDao.watchPotentialRequestConversations().map(
       (rows) => rows.map(_conversationFromRow).toList(),
     );
+  }
+
+  /// Classifies potential request conversations by follow state.
+  ///
+  /// Conversations where `currentUserHasSent == false` are "potential
+  /// requests". For 1:1 conversations from followed contacts, they go to
+  /// the followed list (Messages tab). Everything else is a true request.
+  static ({
+    List<DmConversation> followed,
+    List<DmConversation> requests,
+  })
+  classifyPotentialRequests(
+    List<DmConversation> potentialRequests, {
+    required String userPubkey,
+    required bool Function(String) isFollowing,
+  }) {
+    final followed = <DmConversation>[];
+    final requests = <DmConversation>[];
+
+    for (final conversation in potentialRequests) {
+      final otherPubkeys = conversation.participantPubkeys.where(
+        (pk) => pk != userPubkey,
+      );
+
+      // A 1:1 conversation from a followed contact is not a request
+      // even if the user hasn't replied yet. For groups, follow state
+      // is irrelevant per the spec.
+      final isFollowedContact =
+          !conversation.isGroup && otherPubkeys.any(isFollowing);
+
+      if (otherPubkeys.isEmpty || isFollowedContact) {
+        followed.add(conversation);
+      } else {
+        requests.add(conversation);
+      }
+    }
+
+    return (followed: followed, requests: requests);
+  }
+
+  /// Merges accepted conversations with followed-but-unreplied ones
+  /// and sorts by timestamp descending.
+  static List<DmConversation> mergeAndSort(
+    List<DmConversation> accepted,
+    List<DmConversation> followedPotential,
+  ) {
+    if (followedPotential.isEmpty) return accepted;
+    return [...accepted, ...followedPotential]..sort((a, b) {
+      return b.effectiveTimestamp.compareTo(a.effectiveTimestamp);
+    });
   }
 
   /// Watch unread conversation count (all conversations).

@@ -109,8 +109,6 @@ class _ToggleButton extends StatelessWidget {
                 Text(
                   label,
                   style: VineTheme.titleMediumFont(
-                    fontSize: 16,
-                    height: 24 / 16,
                     color: isSelected
                         ? VineTheme.onPrimaryButton
                         : VineTheme.onSurfaceMuted,
@@ -137,8 +135,7 @@ class _NotificationBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 20,
-      constraints: const BoxConstraints(minWidth: 20),
+      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: const BoxDecoration(
         color: VineTheme.error,

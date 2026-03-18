@@ -244,7 +244,7 @@ class _ConversationList extends StatelessWidget {
     );
 
     final hasRequests = requestConversations.isNotEmpty;
-    final hasBanner = hasRequests ? 1 : 0;
+    final bannerOffset = hasRequests ? 1 : 0;
 
     if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
 
@@ -273,7 +273,7 @@ class _ConversationList extends StatelessWidget {
         return false;
       },
       child: ListView.builder(
-        itemCount: conversations.length + hasBanner + (hasMore ? 1 : 0),
+        itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           // Banner at position 0 when requests exist
           if (hasRequests && index == 0) {
@@ -283,7 +283,7 @@ class _ConversationList extends StatelessWidget {
             );
           }
 
-          final conversationIndex = index - hasBanner;
+          final conversationIndex = index - bannerOffset;
 
           // Loading indicator at the end
           if (conversationIndex == conversations.length) {

@@ -41,10 +41,7 @@ class MessageRequestsView extends ConsumerWidget {
         ],
       ),
       body: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(32),
-          topRight: Radius.circular(32),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: ColoredBox(
           color: VineTheme.surfaceContainerHigh,
           child: _RequestList(currentPubkey: currentPubkey),
@@ -103,8 +100,6 @@ class _RequestList extends StatelessWidget {
               child: Text(
                 'No message requests',
                 style: VineTheme.titleMediumFont(
-                  fontSize: 16,
-                  height: 24 / 16,
                   color: VineTheme.onSurfaceMuted,
                 ),
                 textAlign: TextAlign.center,

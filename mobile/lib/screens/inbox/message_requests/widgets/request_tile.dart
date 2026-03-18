@@ -37,9 +37,8 @@ class RequestTile extends ConsumerWidget {
     final profileAsync = ref.watch(userProfileReactiveProvider(otherPubkey));
 
     final displayName = profileAsync.maybeWhen(
-      data: (profile) => profile?.displayName?.isNotEmpty == true
-          ? profile!.displayName!
-          : profile?.name ?? NostrKeyUtils.truncateNpub(otherPubkey),
+      data: (profile) =>
+          profile?.bestDisplayName ?? NostrKeyUtils.truncateNpub(otherPubkey),
       orElse: () => NostrKeyUtils.truncateNpub(otherPubkey),
     );
 
@@ -76,6 +75,7 @@ class RequestTile extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Row(
+              spacing: 20,
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -85,7 +85,6 @@ class RequestTile extends ConsumerWidget {
                     size: 40,
                   ),
                 ),
-                const SizedBox(width: 20),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,10 +94,7 @@ class RequestTile extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               displayName,
-                              style: VineTheme.titleMediumFont(
-                                fontSize: 16,
-                                height: 24 / 16,
-                              ),
+                              style: VineTheme.titleMediumFont(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

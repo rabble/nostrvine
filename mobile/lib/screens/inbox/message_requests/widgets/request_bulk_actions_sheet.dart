@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
 /// Result of the bulk actions sheet.
@@ -22,12 +21,12 @@ class RequestBulkActionsSheet {
         mainAxisSize: MainAxisSize.min,
         children: [
           _ActionTile(
-            iconPath: 'assets/icon/checks.svg',
+            icon: DivineIconName.checks,
             label: 'Mark all requests as read',
             onTap: () => context.pop(RequestBulkAction.markAllRead),
           ),
           _ActionTile(
-            iconPath: 'assets/icon/trash.svg',
+            icon: DivineIconName.trash,
             label: 'Remove all requests',
             isDestructive: true,
             showDivider: false,
@@ -41,14 +40,14 @@ class RequestBulkActionsSheet {
 
 class _ActionTile extends StatelessWidget {
   const _ActionTile({
-    required this.iconPath,
+    required this.icon,
     required this.label,
     required this.onTap,
     this.isDestructive = false,
     this.showDivider = true,
   });
 
-  final String iconPath;
+  final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
   final bool isDestructive;
@@ -74,20 +73,11 @@ class _ActionTile extends StatelessWidget {
           child: Row(
             spacing: 16,
             children: [
-              SvgPicture.asset(
-                iconPath,
-                width: 24,
-                height: 24,
-                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-              ),
+              DivineIcon(icon: icon, color: color),
               Expanded(
                 child: Text(
                   label,
-                  style: VineTheme.titleMediumFont(
-                    fontSize: 16,
-                    height: 24 / 16,
-                    color: color,
-                  ),
+                  style: VineTheme.titleMediumFont(color: color),
                 ),
               ),
             ],
