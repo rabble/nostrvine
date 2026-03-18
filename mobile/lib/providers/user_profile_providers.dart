@@ -10,6 +10,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
 
+// ignore: specify_nonobvious_property_types
 final userProfileStatsReactiveProvider =
     StreamProvider.family<ProfileStats?, String>((ref, pubkey) {
       final repo = ref.watch(profileRepositoryProvider);

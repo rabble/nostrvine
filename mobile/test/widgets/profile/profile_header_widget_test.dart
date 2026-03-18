@@ -272,10 +272,6 @@ void main() {
       const profileStats = ProfileStats(
         pubkey: testUserHex,
         videoCount: 42,
-        totalLikes: 0,
-        followers: 0,
-        following: 0,
-        totalViews: 0,
       );
 
       await tester.pumpWidget(

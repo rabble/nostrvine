@@ -39,11 +39,18 @@ class ProfileFeed extends _$ProfileFeed {
   // Key: video ID, Value: metadata fields
   final Map<String, _VideoMetadataCache> _metadataCache = {};
 
+  /// Guard against concurrent refresh() calls.
+  bool _isRefreshing = false;
+
+  /// Guard against duplicate listener registration from retained-state path.
+  bool _listenersRegistered = false;
+
   @override
   Future<VideoFeedState> build(String userId) async {
     // Reset cursor state at start of build to ensure clean state
     _usingRestApi = false;
     _nextCursor = null;
+    _listenersRegistered = false;
 
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
@@ -70,6 +77,7 @@ class ProfileFeed extends _$ProfileFeed {
     final retainedState = sessionCache.read(userId);
 
     if (retainedState != null && retainedState.videos.isNotEmpty) {
+      _usingRestApi = funnelcakeAvailable;
       _registerRetainedRealtimeListeners(videoEventService);
       Future.microtask(() => refresh(retainedState: retainedState));
       return retainedState.copyWith(
@@ -681,6 +689,17 @@ class ProfileFeed extends _$ProfileFeed {
 
   /// Refresh the profile feed for this user
   Future<void> refresh({VideoFeedState? retainedState}) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+
+    try {
+      await _refreshInner(retainedState: retainedState);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  Future<void> _refreshInner({VideoFeedState? retainedState}) async {
     Log.info(
       'ProfileFeed: Refreshing feed for user=$userId',
       name: 'ProfileFeedProvider',
@@ -739,7 +758,6 @@ class ProfileFeed extends _$ProfileFeed {
               videos: authorVideos,
               hasMoreContent:
                   apiVideos.length >= AppConstants.paginationBatchSize,
-              isRefreshing: false,
               lastUpdated: DateTime.now(),
             ),
           );
@@ -797,8 +815,6 @@ class ProfileFeed extends _$ProfileFeed {
         videos: updatedVideos,
         hasMoreContent:
             updatedVideos.length >= AppConstants.hasMoreContentThreshold,
-        isRefreshing: false,
-        isInitialLoad: false,
         lastUpdated: DateTime.now(),
       ),
     );
@@ -844,6 +860,9 @@ class ProfileFeed extends _$ProfileFeed {
   }
 
   void _registerRetainedRealtimeListeners(VideoEventService videoEventService) {
+    if (_listenersRegistered) return;
+    _listenersRegistered = true;
+
     void onNostrVideosChanged() {
       if (!ref.mounted) return;
       final currentVideos = videoEventService
