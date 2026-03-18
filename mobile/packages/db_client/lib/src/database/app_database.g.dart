@@ -9428,6 +9428,17 @@ class $ConversationsTable extends Conversations
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _dmProtocolMeta = const VerificationMeta(
+    'dmProtocol',
+  );
+  @override
+  late final GeneratedColumn<String> dmProtocol = GeneratedColumn<String>(
+    'dm_protocol',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9441,6 +9452,7 @@ class $ConversationsTable extends Conversations
     currentUserHasSent,
     createdAt,
     ownerPubkey,
+    dmProtocol,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9541,6 +9553,12 @@ class $ConversationsTable extends Conversations
         ),
       );
     }
+    if (data.containsKey('dm_protocol')) {
+      context.handle(
+        _dmProtocolMeta,
+        dmProtocol.isAcceptableOrUnknown(data['dm_protocol']!, _dmProtocolMeta),
+      );
+    }
     return context;
   }
 
@@ -9594,6 +9612,10 @@ class $ConversationsTable extends Conversations
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
       ),
+      dmProtocol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dm_protocol'],
+      ),
     );
   }
 
@@ -9638,6 +9660,11 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
   /// Hex public key of the account that owns this conversation view.
   /// NULL for legacy conversations created before multi-account support.
   final String? ownerPubkey;
+
+  /// The DM protocol used for this conversation: 'nip04' or 'nip17'.
+  /// NULL when the protocol is unknown (e.g. conversation created before
+  /// protocol tracking was added).
+  final String? dmProtocol;
   const ConversationRow({
     required this.id,
     required this.participantPubkeys,
@@ -9650,6 +9677,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     required this.currentUserHasSent,
     required this.createdAt,
     this.ownerPubkey,
+    this.dmProtocol,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9677,6 +9705,9 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     if (!nullToAbsent || ownerPubkey != null) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey);
     }
+    if (!nullToAbsent || dmProtocol != null) {
+      map['dm_protocol'] = Variable<String>(dmProtocol);
+    }
     return map;
   }
 
@@ -9703,6 +9734,9 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       ownerPubkey: ownerPubkey == null && nullToAbsent
           ? const Value.absent()
           : Value(ownerPubkey),
+      dmProtocol: dmProtocol == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dmProtocol),
     );
   }
 
@@ -9731,6 +9765,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       currentUserHasSent: serializer.fromJson<bool>(json['currentUserHasSent']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
+      dmProtocol: serializer.fromJson<String?>(json['dmProtocol']),
     );
   }
   @override
@@ -9750,6 +9785,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       'currentUserHasSent': serializer.toJson<bool>(currentUserHasSent),
       'createdAt': serializer.toJson<int>(createdAt),
       'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
+      'dmProtocol': serializer.toJson<String?>(dmProtocol),
     };
   }
 
@@ -9765,6 +9801,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     bool? currentUserHasSent,
     int? createdAt,
     Value<String?> ownerPubkey = const Value.absent(),
+    Value<String?> dmProtocol = const Value.absent(),
   }) => ConversationRow(
     id: id ?? this.id,
     participantPubkeys: participantPubkeys ?? this.participantPubkeys,
@@ -9783,6 +9820,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     currentUserHasSent: currentUserHasSent ?? this.currentUserHasSent,
     createdAt: createdAt ?? this.createdAt,
     ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
+    dmProtocol: dmProtocol.present ? dmProtocol.value : this.dmProtocol,
   );
   ConversationRow copyWithCompanion(ConversationsCompanion data) {
     return ConversationRow(
@@ -9809,6 +9847,9 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       ownerPubkey: data.ownerPubkey.present
           ? data.ownerPubkey.value
           : this.ownerPubkey,
+      dmProtocol: data.dmProtocol.present
+          ? data.dmProtocol.value
+          : this.dmProtocol,
     );
   }
 
@@ -9825,7 +9866,8 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
           ..write('isRead: $isRead, ')
           ..write('currentUserHasSent: $currentUserHasSent, ')
           ..write('createdAt: $createdAt, ')
-          ..write('ownerPubkey: $ownerPubkey')
+          ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('dmProtocol: $dmProtocol')
           ..write(')'))
         .toString();
   }
@@ -9843,6 +9885,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     currentUserHasSent,
     createdAt,
     ownerPubkey,
+    dmProtocol,
   );
   @override
   bool operator ==(Object other) =>
@@ -9858,7 +9901,8 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
           other.isRead == this.isRead &&
           other.currentUserHasSent == this.currentUserHasSent &&
           other.createdAt == this.createdAt &&
-          other.ownerPubkey == this.ownerPubkey);
+          other.ownerPubkey == this.ownerPubkey &&
+          other.dmProtocol == this.dmProtocol);
 }
 
 class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
@@ -9873,6 +9917,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
   final Value<bool> currentUserHasSent;
   final Value<int> createdAt;
   final Value<String?> ownerPubkey;
+  final Value<String?> dmProtocol;
   final Value<int> rowid;
   const ConversationsCompanion({
     this.id = const Value.absent(),
@@ -9886,6 +9931,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     this.currentUserHasSent = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
+    this.dmProtocol = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ConversationsCompanion.insert({
@@ -9900,6 +9946,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     this.currentUserHasSent = const Value.absent(),
     required int createdAt,
     this.ownerPubkey = const Value.absent(),
+    this.dmProtocol = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        participantPubkeys = Value(participantPubkeys),
@@ -9916,6 +9963,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     Expression<bool>? currentUserHasSent,
     Expression<int>? createdAt,
     Expression<String>? ownerPubkey,
+    Expression<String>? dmProtocol,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9934,6 +9982,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
         'current_user_has_sent': currentUserHasSent,
       if (createdAt != null) 'created_at': createdAt,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
+      if (dmProtocol != null) 'dm_protocol': dmProtocol,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9950,6 +9999,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     Value<bool>? currentUserHasSent,
     Value<int>? createdAt,
     Value<String?>? ownerPubkey,
+    Value<String?>? dmProtocol,
     Value<int>? rowid,
   }) {
     return ConversationsCompanion(
@@ -9965,6 +10015,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
       currentUserHasSent: currentUserHasSent ?? this.currentUserHasSent,
       createdAt: createdAt ?? this.createdAt,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+      dmProtocol: dmProtocol ?? this.dmProtocol,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10007,6 +10058,9 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     if (ownerPubkey.present) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
     }
+    if (dmProtocol.present) {
+      map['dm_protocol'] = Variable<String>(dmProtocol.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -10027,6 +10081,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
           ..write('currentUserHasSent: $currentUserHasSent, ')
           ..write('createdAt: $createdAt, ')
           ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('dmProtocol: $dmProtocol, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -14537,6 +14592,7 @@ typedef $$ConversationsTableCreateCompanionBuilder =
       Value<bool> currentUserHasSent,
       required int createdAt,
       Value<String?> ownerPubkey,
+      Value<String?> dmProtocol,
       Value<int> rowid,
     });
 typedef $$ConversationsTableUpdateCompanionBuilder =
@@ -14552,6 +14608,7 @@ typedef $$ConversationsTableUpdateCompanionBuilder =
       Value<bool> currentUserHasSent,
       Value<int> createdAt,
       Value<String?> ownerPubkey,
+      Value<String?> dmProtocol,
       Value<int> rowid,
     });
 
@@ -14616,6 +14673,11 @@ class $$ConversationsTableFilterComposer
 
   ColumnFilters<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dmProtocol => $composableBuilder(
+    column: $table.dmProtocol,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14683,6 +14745,11 @@ class $$ConversationsTableOrderingComposer
     column: $table.ownerPubkey,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get dmProtocol => $composableBuilder(
+    column: $table.dmProtocol,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ConversationsTableAnnotationComposer
@@ -14738,6 +14805,11 @@ class $$ConversationsTableAnnotationComposer
     column: $table.ownerPubkey,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get dmProtocol => $composableBuilder(
+    column: $table.dmProtocol,
+    builder: (column) => column,
+  );
 }
 
 class $$ConversationsTableTableManager
@@ -14782,6 +14854,7 @@ class $$ConversationsTableTableManager
                 Value<bool> currentUserHasSent = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
+                Value<String?> dmProtocol = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConversationsCompanion(
                 id: id,
@@ -14795,6 +14868,7 @@ class $$ConversationsTableTableManager
                 currentUserHasSent: currentUserHasSent,
                 createdAt: createdAt,
                 ownerPubkey: ownerPubkey,
+                dmProtocol: dmProtocol,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14810,6 +14884,7 @@ class $$ConversationsTableTableManager
                 Value<bool> currentUserHasSent = const Value.absent(),
                 required int createdAt,
                 Value<String?> ownerPubkey = const Value.absent(),
+                Value<String?> dmProtocol = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConversationsCompanion.insert(
                 id: id,
@@ -14823,6 +14898,7 @@ class $$ConversationsTableTableManager
                 currentUserHasSent: currentUserHasSent,
                 createdAt: createdAt,
                 ownerPubkey: ownerPubkey,
+                dmProtocol: dmProtocol,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

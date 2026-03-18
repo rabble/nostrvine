@@ -815,6 +815,11 @@ class Conversations extends Table {
   /// NULL for legacy conversations created before multi-account support.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
 
+  /// The DM protocol used for this conversation: 'nip04' or 'nip17'.
+  /// NULL when the protocol is unknown (e.g. conversation created before
+  /// protocol tracking was added).
+  TextColumn get dmProtocol => text().nullable().named('dm_protocol')();
+
   @override
   Set<Column> get primaryKey => {id};
 

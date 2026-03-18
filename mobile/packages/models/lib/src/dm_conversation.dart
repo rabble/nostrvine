@@ -19,6 +19,7 @@ class DmConversation extends Equatable {
     this.subject,
     this.isRead = true,
     this.currentUserHasSent = false,
+    this.dmProtocol,
   }) : participantPubkeys = List.unmodifiable(participantPubkeys);
 
   /// Deterministic conversation ID (SHA-256 of sorted participant pubkeys).
@@ -51,6 +52,10 @@ class DmConversation extends Equatable {
   /// Whether the current user has sent a message in this conversation.
   final bool currentUserHasSent;
 
+  /// The DM protocol used for this conversation: 'nip04' or 'nip17'.
+  /// Null when the protocol is unknown.
+  final String? dmProtocol;
+
   /// The most recent timestamp for sorting: last message time, or
   /// conversation creation time if no messages exist.
   int get effectiveTimestamp => lastMessageTimestamp ?? createdAt;
@@ -74,6 +79,8 @@ class DmConversation extends Equatable {
     bool clearSubject = false,
     bool? isRead,
     bool? currentUserHasSent,
+    String? dmProtocol,
+    bool clearDmProtocol = false,
   }) {
     return DmConversation(
       id: id ?? this.id,
@@ -92,6 +99,7 @@ class DmConversation extends Equatable {
       subject: clearSubject ? null : subject ?? this.subject,
       isRead: isRead ?? this.isRead,
       currentUserHasSent: currentUserHasSent ?? this.currentUserHasSent,
+      dmProtocol: clearDmProtocol ? null : dmProtocol ?? this.dmProtocol,
     );
   }
 
@@ -107,5 +115,6 @@ class DmConversation extends Equatable {
     subject,
     isRead,
     currentUserHasSent,
+    dmProtocol,
   ];
 }

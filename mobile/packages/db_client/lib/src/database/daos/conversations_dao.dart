@@ -40,6 +40,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     bool isRead = true,
     bool currentUserHasSent = false,
     String? ownerPubkey,
+    String? dmProtocol,
   }) {
     return into(conversations).insertOnConflictUpdate(
       ConversationsCompanion.insert(
@@ -54,6 +55,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
         isRead: Value(isRead),
         currentUserHasSent: Value(currentUserHasSent),
         ownerPubkey: Value(ownerPubkey),
+        dmProtocol: Value(dmProtocol),
       ),
     );
   }

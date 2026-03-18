@@ -382,6 +382,9 @@ class AppDatabase extends _$AppDatabase {
     // Add owner_pubkey columns for multi-account DM isolation
     await _addColumnIfMissing('direct_messages', 'owner_pubkey', 'TEXT');
     await _addColumnIfMissing('conversations', 'owner_pubkey', 'TEXT');
+
+    // Add dm_protocol column for NIP-04/NIP-17 protocol tracking
+    await _addColumnIfMissing('conversations', 'dm_protocol', 'TEXT');
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_dm_owner_pubkey
       ON direct_messages (owner_pubkey)
