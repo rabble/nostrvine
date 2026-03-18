@@ -22,13 +22,16 @@ import 'package:openvine/widgets/user_avatar.dart';
 /// a "View profile" button, message count text, and two action buttons:
 /// "View messages" (accept) and "Decline and remove".
 class RequestPreviewView extends ConsumerWidget {
-  @visibleForTesting
   const RequestPreviewView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final previewState = context.watch<RequestPreviewCubit>().state;
-    final participantPubkeys = previewState.participantPubkeys;
+    final participantPubkeys = context.select(
+      (RequestPreviewCubit cubit) => cubit.state.participantPubkeys,
+    );
+    final messageCount = context.select(
+      (RequestPreviewCubit cubit) => cubit.state.messageCount,
+    );
 
     final otherPubkey = participantPubkeys.isNotEmpty
         ? participantPubkeys.first
@@ -59,7 +62,7 @@ class RequestPreviewView extends ConsumerWidget {
                   displayName: displayName,
                   profile: profile,
                   otherPubkey: otherPubkey,
-                  messageCount: previewState.messageCount,
+                  messageCount: messageCount,
                 ),
               ),
               _ActionButtons(
