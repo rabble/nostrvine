@@ -102,12 +102,12 @@ class VineTheme {
         color: color,
       );
 
-  /// Title medium: Bricolage Grotesque 800 18/24/0.15
+  /// Title medium: Bricolage Grotesque 800 16/24/0.15
   static TextStyle titleMediumFont({Color color = whiteText}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 16,
         fontWeight: FontWeight.w800,
-        height: 24 / 18,
+        height: 24 / 16,
         letterSpacing: 0.15,
         color: color,
       );

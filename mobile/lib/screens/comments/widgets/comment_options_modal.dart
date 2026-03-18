@@ -186,10 +186,7 @@ class _OptionTile extends StatelessWidget {
               const SizedBox(width: 16),
               Text(
                 label,
-                style: VineTheme.bodyFont(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: VineTheme.titleMediumFont(color: color),
               ),
             ],
           ),
@@ -283,8 +280,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
               ),
               child: Text(
                 'Submit',
-                style: VineTheme.bodyFont(
-                  fontWeight: FontWeight.w700,
+                style: VineTheme.labelLargeFont(
                   color: _selectedReason != null
                       ? VineTheme.backgroundColor
                       : VineTheme.onSurfaceMuted,
@@ -350,7 +346,7 @@ class _ReasonRadioTile extends StatelessWidget {
                 children: [
                   Text(
                     _getReasonDisplayName(reason),
-                    style: VineTheme.bodyFont(
+                    style: VineTheme.bodyLargeFont(
                       color: isSelected
                           ? VineTheme.onSurface
                           : VineTheme.onSurfaceVariant,
