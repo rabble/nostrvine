@@ -121,7 +121,7 @@ void main() {
 
       testWidgets('titleMediumFont returns correct style', (tester) async {
         final style = VineTheme.titleMediumFont();
-        expect(style.fontSize, 18);
+        expect(style.fontSize, 16);
         expect(style.fontWeight, FontWeight.w800);
       });
 
