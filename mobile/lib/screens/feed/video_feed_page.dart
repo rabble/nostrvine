@@ -677,6 +677,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
       color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
         index: index,
+        isActive: isActive,
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: isActive,
         videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
