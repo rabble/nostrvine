@@ -82,13 +82,8 @@ class VideoFormatPreferenceService {
   VideoPlaybackFormat? get format => _format;
 
   /// Returns true when the selected format uses HLS delivery.
-  ///
-  /// Covers null (production default), [VideoPlaybackFormat.hlsDefault],
-  /// [VideoPlaybackFormat.hlsMaster], [VideoPlaybackFormat.hls720p], and
-  /// [VideoPlaybackFormat.hls480p].
   bool get isHlsFormat {
-    return _format == null ||
-        _format == VideoPlaybackFormat.hlsDefault ||
+    return _format == VideoPlaybackFormat.hlsDefault ||
         _format == VideoPlaybackFormat.hlsMaster ||
         _format == VideoPlaybackFormat.hls720p ||
         _format == VideoPlaybackFormat.hls480p;

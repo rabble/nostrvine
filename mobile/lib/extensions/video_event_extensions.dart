@@ -283,8 +283,10 @@ extension VideoEventAppExtensions on VideoEvent {
           videoUrl;
     }
 
-    // Production default: HLS with bandwidth tracker
-    return _hlsForBandwidth() ?? videoUrl;
+    // Production default: progressive MP4 720p (faststart).
+    // Fastest startup (1 request, moov at front), correct colors on all
+    // platforms, and 3-8x smaller than the raw blob.
+    return '$_divineMediaBase/$hash/720p.mp4';
   }
 
   /// HLS URL selected by bandwidth tracker quality.
