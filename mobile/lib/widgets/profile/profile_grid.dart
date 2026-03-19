@@ -331,7 +331,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'videos_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/play.svg',
+                        DivineIconName.play.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
@@ -347,7 +347,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'liked_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/heart.svg',
+                        DivineIconName.heart.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
@@ -363,7 +363,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'reposted_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/repost.svg',
+                        DivineIconName.repeat.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
@@ -379,7 +379,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'collabs_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/user.svg',
+                        DivineIconName.user.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
@@ -395,7 +395,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'comments_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/chat_circle.svg',
+                        DivineIconName.chatCircle.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(

@@ -510,6 +510,11 @@ class VineTheme {
         fontWeight: FontWeight.w400,
       ),
     ),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: primary,
+      selectionColor: primary.withAlpha(80),
+      selectionHandleColor: primary,
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: vineGreen,

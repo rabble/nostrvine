@@ -187,7 +187,7 @@ class _FollowButton extends StatelessWidget {
               border: Border.all(color: VineTheme.outlineMuted, width: 2),
             ),
             child: SvgPicture.asset(
-              'assets/icon/userMinus.svg',
+              DivineIconName.userMinus.assetPath,
               width: 24,
               height: 24,
               colorFilter: const ColorFilter.mode(
@@ -216,7 +216,7 @@ class _FollowButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
           child: SvgPicture.asset(
-            'assets/icon/userPlus.svg',
+            DivineIconName.userPlus.assetPath,
             width: 24,
             height: 24,
             colorFilter: const ColorFilter.mode(

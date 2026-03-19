@@ -107,7 +107,7 @@ class VideoMetadataUserChip extends ConsumerWidget {
                   width: 16,
                   height: 16,
                   child: SvgPicture.asset(
-                    'assets/icon/close.svg',
+                    DivineIconName.x.assetPath,
                     colorFilter: const ColorFilter.mode(
                       VineTheme.onSurfaceMuted,
                       BlendMode.srcIn,

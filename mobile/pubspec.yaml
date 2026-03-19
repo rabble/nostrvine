@@ -252,7 +252,6 @@ flutter:
     - assets/fonts/
     - google_fonts/
     - assets/icon/
-    - assets/icon/content-controls/
     - assets/loading-brand.gif
     - assets/loading-brand-sprite.png
     - assets/seed_data/seed_events.sql

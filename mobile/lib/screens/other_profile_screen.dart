@@ -359,13 +359,15 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               DiVineAppBarAction(
                 icon: _isRefreshing
                     ? const MaterialIconSource(Icons.refresh)
-                    : const SvgIconSource('assets/icon/refresh.svg'),
+                    : SvgIconSource(
+                        DivineIconName.arrowsCounterClockwise.assetPath,
+                      ),
                 onPressed: _isRefreshing ? null : _refreshProfile,
                 tooltip: 'Refresh',
                 semanticLabel: 'Refresh profile',
               ),
               DiVineAppBarAction(
-                icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+                icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
                 onPressed: _more,
                 semanticLabel: 'More options',
               ),

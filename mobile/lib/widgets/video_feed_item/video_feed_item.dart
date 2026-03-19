@@ -1207,7 +1207,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         ],
                                       ),
                                       child: SvgPicture.asset(
-                                        'assets/icon/content-controls/like.svg',
+                                        DivineIconName.heartDuo.assetPath,
                                         width: 120,
                                         height: 120,
                                         colorFilter: const ColorFilter.mode(
@@ -1936,7 +1936,7 @@ class _VideoEditButton extends ConsumerWidget {
                 ],
               ),
               child: SvgPicture.asset(
-                'assets/icon/content-controls/pencil.svg',
+                DivineIconName.pencilSimpleLineDuo.assetPath,
                 width: 32,
                 height: 32,
                 colorFilter: const ColorFilter.mode(

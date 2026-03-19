@@ -148,7 +148,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
             ? const []
             : [
                 DiVineAppBarAction(
-                  icon: const SvgIconSource('assets/icon/Check.svg'),
+                  icon: SvgIconSource(DivineIconName.check.assetPath),
                   onPressed: _isSaving ? null : _saveSettings,
                   tooltip: 'Save',
                 ),

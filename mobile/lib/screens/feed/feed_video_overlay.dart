@@ -394,7 +394,7 @@ class _Nip05Badge extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.only(left: 4),
           child: SvgPicture.asset(
-            'assets/icon/seal_check.svg',
+            DivineIconName.sealCheck.assetPath,
             width: 16,
             height: 16,
             colorFilter: const ColorFilter.mode(

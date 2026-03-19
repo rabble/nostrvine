@@ -57,13 +57,13 @@ class _VideoEditorMoreButtonState
       context: context,
       options: [
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/folder_open.svg',
+          iconPath: DivineIconName.folderOpen.assetPath,
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Add clip from Library',
           onTap: () => _pickFromLibrary(context),
         ),
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/save.svg',
+          iconPath: DivineIconName.save.assetPath,
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Save selected clip',
           onTap: _saveClipToLibrary,
@@ -81,7 +81,7 @@ class _VideoEditorMoreButtonState
       context: context,
       options: [
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/trim.svg',
+          iconPath: DivineIconName.scissors.assetPath,
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Split clip',
           onTap: () => context.read<ClipEditorBloc>().add(
@@ -89,13 +89,13 @@ class _VideoEditorMoreButtonState
           ),
         ),
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/save.svg',
+          iconPath: DivineIconName.save.assetPath,
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Save clip',
           onTap: _saveClipToLibrary,
         ),
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/trash.svg',
+          iconPath: DivineIconName.trash.assetPath,
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Delete clip',
           onTap: isLastClip ? null : _removeClip,

@@ -140,14 +140,14 @@ class VineBottomNav extends ConsumerWidget {
             _buildTabButton(
               context,
               ref,
-              'assets/icon/house.svg',
+              DivineIconName.house.assetPath,
               0,
               'home_tab',
             ),
             _buildTabButton(
               context,
               ref,
-              'assets/icon/compass.svg',
+              DivineIconName.compass.assetPath,
               1,
               'explore_tab',
             ),
@@ -167,7 +167,7 @@ class VineBottomNav extends ConsumerWidget {
               child: _buildTabButton(
                 context,
                 ref,
-                'assets/icon/${DivineIconName.chat.fileName}.svg',
+                DivineIconName.chat.assetPath,
                 2,
                 'inbox_tab',
               ),
@@ -175,7 +175,7 @@ class VineBottomNav extends ConsumerWidget {
             _buildTabButton(
               context,
               ref,
-              'assets/icon/userCircle.svg',
+              DivineIconName.userCircle.assetPath,
               3,
               'profile_tab',
             ),
@@ -211,7 +211,7 @@ class _CameraButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: SvgPicture.asset(
-              'assets/icon/retro-camera.svg',
+              DivineIconName.cameraRetro.assetPath,
               width: 32,
               height: 32,
             ),

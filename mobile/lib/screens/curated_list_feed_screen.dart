@@ -329,7 +329,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
 
     return DiVineAppBarAction(
       icon: SvgIconSource(
-        isSubscribed ? 'assets/icon/Check.svg' : 'assets/icon/plus.svg',
+        isSubscribed
+            ? DivineIconName.check.assetPath
+            : DivineIconName.plus.assetPath,
       ),
       backgroundColor: isSubscribed
           ? VineTheme.iconButtonBackground

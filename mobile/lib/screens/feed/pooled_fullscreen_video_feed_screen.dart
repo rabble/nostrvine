@@ -429,7 +429,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               isEditorEnabled && isOwnVideo && currentVideo != null
               ? DiVineAppBarAction(
                   icon: SvgIconSource(
-                    'assets/icon/${DivineIconName.pencilSimpleLine.fileName}.svg',
+                    DivineIconName.pencilSimpleLine.assetPath,
                   ),
                   onPressed: () =>
                       showEditDialogForVideo(context, currentVideo),

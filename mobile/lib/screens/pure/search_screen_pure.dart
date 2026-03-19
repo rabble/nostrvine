@@ -416,7 +416,7 @@ class _SearchBar extends StatelessWidget {
                     ),
                   )
                 : SvgPicture.asset(
-                    'assets/icon/search.svg',
+                    DivineIconName.search.assetPath,
                     width: 24,
                     height: 24,
                     colorFilter: const ColorFilter.mode(

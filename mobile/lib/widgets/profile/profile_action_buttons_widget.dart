@@ -57,7 +57,7 @@ class ProfileActionButtons extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SvgPicture.asset(
-                    'assets/icon/content-controls/pencil.svg',
+                    DivineIconName.pencilSimpleLineDuo.assetPath,
                     width: 20,
                     height: 20,
                     colorFilter: const ColorFilter.mode(
@@ -102,7 +102,7 @@ class ProfileActionButtons extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SvgPicture.asset(
-                    'assets/icon/FilmSlate.svg',
+                    DivineIconName.filmSlate.assetPath,
                     width: 20,
                     height: 20,
                     colorFilter: const ColorFilter.mode(

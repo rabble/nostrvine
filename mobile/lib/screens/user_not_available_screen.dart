@@ -25,7 +25,7 @@ class UserNotAvailableScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SvgPicture.asset(
-                'assets/icon/prohibit.svg',
+                DivineIconName.prohibit.assetPath,
                 width: 48,
                 height: 48,
                 colorFilter: const ColorFilter.mode(

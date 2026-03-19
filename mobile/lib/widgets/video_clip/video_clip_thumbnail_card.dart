@@ -229,7 +229,7 @@ class _SelectionOverlay extends StatelessWidget {
               color: VineTheme.tabIndicatorGreen,
             ),
             child: SvgPicture.asset(
-              'assets/icon/Check.svg',
+              DivineIconName.check.assetPath,
               colorFilter: const .mode(VineTheme.surfaceContainer, .srcIn),
             ),
           ),

@@ -96,7 +96,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                         height: 18,
                         width: 18,
                         child: SvgPicture.asset(
-                          'assets/icon/caret_right.svg',
+                          DivineIconName.caretRight.assetPath,
                           colorFilter: const ColorFilter.mode(
                             VineTheme.tabIndicatorGreen,
                             .srcIn,

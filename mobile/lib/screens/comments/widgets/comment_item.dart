@@ -457,7 +457,7 @@ class _ActionsRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SvgPicture.asset(
-                    'assets/icon/arrow_bend_down_right.svg',
+                    DivineIconName.arrowBendDownRight.assetPath,
                     height: 11,
                     colorFilter: const ColorFilter.mode(
                       VineTheme.onSurface,
@@ -535,7 +535,7 @@ class _CommentVoteButtons extends StatelessWidget {
                     vertical: 2,
                   ),
                   child: SvgPicture.asset(
-                    'assets/icon/arrow_fat_up.svg',
+                    DivineIconName.arrowFatUp.assetPath,
                     height: 16,
                     colorFilter: ColorFilter.mode(
                       voteState.isUpvoted
@@ -584,7 +584,7 @@ class _CommentVoteButtons extends StatelessWidget {
                     vertical: 2,
                   ),
                   child: SvgPicture.asset(
-                    'assets/icon/arrow_fat_down.svg',
+                    DivineIconName.arrowFatDown.assetPath,
                     height: 16,
                     colorFilter: ColorFilter.mode(
                       voteState.isDownvoted

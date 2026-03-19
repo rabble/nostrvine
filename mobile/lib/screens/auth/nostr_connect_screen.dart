@@ -546,7 +546,7 @@ class _ActionBar extends StatelessWidget {
           Expanded(
             child: _ActionButton(
               icon: SvgPicture.asset(
-                'assets/icon/share_fat.svg',
+                DivineIconName.shareFat.assetPath,
                 width: 24,
                 height: 24,
                 colorFilter: const ColorFilter.mode(

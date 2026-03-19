@@ -100,17 +100,17 @@ class DraftsTab extends ConsumerWidget {
       ),
       options: [
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/${DivineIconName.paperPlaneTilt.fileName}.svg',
+          iconPath: DivineIconName.paperPlaneTilt.assetPath,
           label: 'Post',
           onTap: () => _postDraft(context, ref, draft),
         ),
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/${DivineIconName.pencilSimple.fileName}.svg',
+          iconPath: DivineIconName.pencilSimple.assetPath,
           label: 'Edit',
           onTap: () => _openDraft(context, ref, draft),
         ),
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/${DivineIconName.trash.fileName}.svg',
+          iconPath: DivineIconName.trash.assetPath,
           label: 'Delete draft',
           isDestructive: true,
           onTap: () => _deleteDraft(context, ref, draft),

@@ -315,7 +315,7 @@ class _FullscreenVideoFeedScreenState
     if (!isOwnVideo) return null;
 
     return DiVineAppBarAction(
-      icon: const SvgIconSource('assets/icon/content-controls/pencil.svg'),
+      icon: SvgIconSource(DivineIconName.pencilSimpleLineDuo.assetPath),
       onPressed: () => showEditDialogForVideo(context, currentVideo),
       tooltip: 'Edit video',
       semanticLabel: 'Edit video',
