@@ -105,9 +105,24 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
 
 class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   final TextEditingController _messageController = TextEditingController();
+  late final ShareSheetBloc _shareSheetBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _shareSheetBloc = ShareSheetBloc(
+      video: widget.video,
+      relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
+      videoSharingService: ref.read(videoSharingServiceProvider),
+      profileRepository: widget.profileRepository,
+      followRepository: ref.read(followRepositoryProvider),
+      bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
+    )..add(const ShareSheetContactsLoadRequested());
+  }
 
   @override
   void dispose() {
+    _shareSheetBloc.close();
     _messageController.dispose();
     super.dispose();
   }
@@ -130,15 +145,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   Widget build(BuildContext context) {
     final isOwnContent = _isUserOwnContent();
 
-    return BlocProvider(
-      create: (_) => ShareSheetBloc(
-        video: widget.video,
-        relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
-        videoSharingService: ref.read(videoSharingServiceProvider),
-        profileRepository: widget.profileRepository,
-        followRepository: ref.read(followRepositoryProvider),
-        bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
-      )..add(const ShareSheetContactsLoadRequested()),
+    return BlocProvider.value(
+      value: _shareSheetBloc,
       child: BlocListener<ShareSheetBloc, ShareSheetState>(
         listenWhen: (prev, curr) =>
             curr.actionResult != null && prev.actionResult != curr.actionResult,
@@ -195,13 +203,12 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   Future<void> _handleFindPeople() async {
-    final bloc = context.read<ShareSheetBloc>();
     final selectedUser = await FindPeopleSheet.show(
       context,
-      contacts: bloc.state.contacts,
+      contacts: _shareSheetBloc.state.contacts,
     );
     if (selectedUser != null && mounted) {
-      bloc.add(ShareSheetRecipientSelected(selectedUser));
+      _shareSheetBloc.add(ShareSheetRecipientSelected(selectedUser));
     }
   }
 
