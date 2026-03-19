@@ -453,7 +453,7 @@ class _ProfileScaffold extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: '',
         backgroundColor: appBarColor ?? getEnvironmentAppBarColor(environment),
-        leadingIcon: const SvgIconSource(DivineIconName.gear.assetPath),
+        leadingIcon: SvgIconSource(DivineIconName.gear.assetPath),
         onLeadingPressed: () {
           Log.info(
             'User tapped settings gear',
