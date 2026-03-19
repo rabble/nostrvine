@@ -1,0 +1,21 @@
+server {
+    listen 80;
+    server_name _;
+    client_max_body_size 500m;
+
+    # Docker embedded DNS — resolve container names at request time
+    resolver 127.0.0.11 valid=30s;
+
+    location / {
+        set $upstream http://blossom:7676;
+        proxy_pass $upstream;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # Throttle download bandwidth to simulate mobile networks.
+        # Value comes from THROTTLE_RATE env var (default 0 = unlimited).
+        # Set to 625k for ~5 Mbps, 250k for ~2 Mbps, etc.
+        limit_rate ${THROTTLE_RATE};
+    }
+}

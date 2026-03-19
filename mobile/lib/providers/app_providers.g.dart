@@ -2186,7 +2186,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'3cd3cf995f094aed8b0b8c88a3219b482319c766';
+String _$authServiceHash() => r'21c98cd95333c3197814e2d50cdf496c9e3194d6';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -2419,7 +2419,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'bad5e2e3ae1a38a6de7e77d75e321628c36a3ba2';
+    r'808d26e12d8cc5c18793a22f4e888bf3c9840abe';
 
 /// Subscription manager for centralized subscription management
 

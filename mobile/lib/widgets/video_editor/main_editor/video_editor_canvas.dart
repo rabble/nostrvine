@@ -312,6 +312,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     if (!mounted) return;
     await _videoPlayer!.setLooping(true);
     if (!mounted) return;
+
+    // Apply stored volume from state
+    final editorState = ref.read(videoEditorProvider);
+    await _videoPlayer!.setVolume(editorState.originalAudioVolume);
+    if (!mounted) return;
+
     await _videoPlayer!.play();
     if (!mounted) return;
     _isPlayerReadyNotifier.value = true;
@@ -354,7 +360,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
 
     // Initialize service if needed
-    _audioService ??= AudioPlaybackService();
+    _audioService ??= AudioPlaybackService(
+      handleAudioSessionActivation: false,
+    );
 
     _isAudioLoading = true;
     try {
@@ -364,6 +372,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       // Load audio from URL
       await _audioService!.loadAudio(sound.url!);
       _isAudioLoading = false;
+
+      // Apply stored custom audio volume
+      final customVolume = ref.read(videoEditorProvider).customAudioVolume;
+      await _audioService!.setVolume(customVolume);
 
       // Sync to current video position
       final videoPosition = _videoPlayer?.value.position ?? Duration.zero;
@@ -508,6 +520,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           unawaited(_syncAudioToVideo());
         }
       },
+    );
+
+    // Live volume preview: sync player volumes when state changes
+    ref.listen<double>(
+      videoEditorProvider.select((s) => s.originalAudioVolume),
+      (_, volume) => _videoPlayer?.setVolume(volume),
+    );
+    ref.listen<double>(
+      videoEditorProvider.select((s) => s.customAudioVolume),
+      (_, volume) => _audioService?.setVolume(volume),
     );
 
     // Listen for playback control requests from BLoC

@@ -697,6 +697,7 @@ class _PooledFullscreenItemContentState
       color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
         index: widget.index,
+        isActive: widget.isActive,
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
         videoBuilder: (context, videoController, player) =>

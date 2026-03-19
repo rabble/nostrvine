@@ -51,7 +51,9 @@ class ConversationTile extends ConsumerWidget {
     );
 
     final relativeTime = conversation.lastMessageTimestamp != null
-        ? TimeFormatter.formatRelative(conversation.lastMessageTimestamp!)
+        ? TimeFormatter.formatConversationTimestamp(
+            conversation.lastMessageTimestamp!,
+          )
         : '';
 
     return Semantics(
@@ -96,10 +98,7 @@ class ConversationTile extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               displayName,
-                              style: VineTheme.titleMediumFont(
-                                fontSize: 16,
-                                height: 24 / 16,
-                              ),
+                              style: VineTheme.titleMediumFont(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

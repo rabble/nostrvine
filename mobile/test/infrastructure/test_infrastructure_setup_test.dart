@@ -147,13 +147,14 @@ void main() {
       );
       expect(
         content,
-        contains('command -v flutter'),
-        reason: 'Hook installer should pin the active Flutter binary path',
+        contains('mise exec -- flutter'),
+        reason:
+            'Hook installer should use mise exec for pinned Flutter version',
       );
       expect(
         content,
-        contains('command -v dart'),
-        reason: 'Hook installer should pin the active Dart binary path',
+        contains('mise exec -- dart'),
+        reason: 'Hook installer should use mise exec for pinned Dart version',
       );
     });
 

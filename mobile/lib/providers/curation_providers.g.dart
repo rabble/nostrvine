@@ -8,59 +8,6 @@ part of 'curation_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider for analytics API service
-
-@ProviderFor(analyticsApiService)
-const analyticsApiServiceProvider = AnalyticsApiServiceProvider._();
-
-/// Provider for analytics API service
-
-final class AnalyticsApiServiceProvider
-    extends
-        $FunctionalProvider<
-          AnalyticsApiService,
-          AnalyticsApiService,
-          AnalyticsApiService
-        >
-    with $Provider<AnalyticsApiService> {
-  /// Provider for analytics API service
-  const AnalyticsApiServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'analyticsApiServiceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$analyticsApiServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<AnalyticsApiService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  AnalyticsApiService create(Ref ref) {
-    return analyticsApiService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(AnalyticsApiService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<AnalyticsApiService>(value),
-    );
-  }
-}
-
-String _$analyticsApiServiceHash() =>
-    r'3b43956b3ec62bb486adfb07c2193dac55f6f54e';
-
 /// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
 
 @ProviderFor(funnelcakeApiClient)
@@ -120,7 +67,7 @@ String _$funnelcakeApiClientHash() =>
 /// Re-checks when environment or relay configuration changes.
 ///
 /// All feed providers should watch this instead of checking
-/// `analyticsService.isAvailable` directly.
+/// `client.isAvailable` directly.
 
 @ProviderFor(FunnelcakeAvailable)
 const funnelcakeAvailableProvider = FunnelcakeAvailableProvider._();
@@ -131,7 +78,7 @@ const funnelcakeAvailableProvider = FunnelcakeAvailableProvider._();
 /// Re-checks when environment or relay configuration changes.
 ///
 /// All feed providers should watch this instead of checking
-/// `analyticsService.isAvailable` directly.
+/// `client.isAvailable` directly.
 final class FunnelcakeAvailableProvider
     extends $AsyncNotifierProvider<FunnelcakeAvailable, bool> {
   /// Single source of truth for Funnelcake REST API availability.
@@ -140,7 +87,7 @@ final class FunnelcakeAvailableProvider
   /// Re-checks when environment or relay configuration changes.
   ///
   /// All feed providers should watch this instead of checking
-  /// `analyticsService.isAvailable` directly.
+  /// `client.isAvailable` directly.
   const FunnelcakeAvailableProvider._()
     : super(
         from: null,
@@ -161,7 +108,7 @@ final class FunnelcakeAvailableProvider
 }
 
 String _$funnelcakeAvailableHash() =>
-    r'e2aee3022e003d793ab02e9be1007692a66b3183';
+    r'35bb222c27e7b722396f57582b6fc2f9df4cec2c';
 
 /// Single source of truth for Funnelcake REST API availability.
 ///
@@ -169,7 +116,7 @@ String _$funnelcakeAvailableHash() =>
 /// Re-checks when environment or relay configuration changes.
 ///
 /// All feed providers should watch this instead of checking
-/// `analyticsService.isAvailable` directly.
+/// `client.isAvailable` directly.
 
 abstract class _$FunnelcakeAvailable extends $AsyncNotifier<bool> {
   FutureOr<bool> build();
@@ -386,7 +333,7 @@ final class AnalyticsTrendingProvider
   }
 }
 
-String _$analyticsTrendingHash() => r'd43d939228af77d34a04f3ad400af7357207e513';
+String _$analyticsTrendingHash() => r'91eae1566af8e7cfd2ef83a8c7d39996a5f1a4cf';
 
 /// Provider for analytics-based trending videos with cursor pagination
 
@@ -445,7 +392,7 @@ final class AnalyticsPopularProvider
   }
 }
 
-String _$analyticsPopularHash() => r'3d9025ad3973f20185d45e07fe90f89143edbab6';
+String _$analyticsPopularHash() => r'ed1bc63e7cbed5a2a84c006d45e327a1d5da0480';
 
 /// Provider for analytics-based popular videos
 

@@ -193,8 +193,6 @@ services:
   blossom:
     image: ghcr.io/divinevideo/divine-blossom:latest
     pull_policy: always
-    ports:
-      - "43003:7676"
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -204,6 +202,31 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Blossom throttle proxy (rate-limits downloads for perf testing)
+  # ---------------------------------------------------------------------------
+  blossom-proxy:
+    image: nginx:alpine
+    ports:
+      - "43003:80"
+    volumes:
+      - ./blossom-proxy/default.conf.template:/tmp/default.conf.template:ro
+    environment:
+      THROTTLE_RATE: ${THROTTLE_RATE:-0}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        envsubst '$$THROTTLE_RATE' < /tmp/default.conf.template > /etc/nginx/conf.d/default.conf
+        nginx -g 'daemon off;'
+    depends_on:
+      blossom:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
 
   # ---------------------------------------------------------------------------
   # Invite service (divine-invite-darshan via Viceroy)
@@ -229,10 +252,18 @@ services:
         condition: service_started
       blossom:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       RELAY_URL: ws://funnelcake-relay:7777
       BLOSSOM_URL: http://blossom:7676
+      BLOSSOM_PUBLIC_URL: http://10.0.2.2:43003
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_BUCKET: divine-blossom-local
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
       NUM_VIDEOS: "100"
+      NUM_UNIQUE_VIDEOS: ${NUM_UNIQUE_VIDEOS:-10}
     restart: "no"
 
 volumes:

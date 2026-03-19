@@ -23,6 +23,7 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
@@ -304,6 +305,38 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
+  /// Opens the audio volume adjust sheet.
+  Future<void> _adjustVolume() async {
+    final notifier = ref.read(videoEditorProvider.notifier);
+    final state = ref.read(videoEditorProvider);
+    final initialRecordedVolume = state.originalAudioVolume;
+    final initialCustomVolume = state.customAudioVolume;
+
+    final result = await VineBottomSheet.show<AudioAdjustResult>(
+      context: context,
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      body: VideoEditorAudioAdjustSheet(
+        initialRecordedVolume: initialRecordedVolume,
+        initialCustomVolume: initialCustomVolume,
+        onRecordedVolumeChanged: notifier.previewOriginalAudioVolume,
+        onCustomVolumeChanged: notifier.previewCustomAudioVolume,
+      ),
+    );
+
+    if (result != null) {
+      notifier
+        ..setOriginalAudioVolume(result.recordedVolume)
+        ..setCustomAudioVolume(result.customVolume);
+    } else {
+      // Dismissed — restore previewed values without side effects
+      notifier
+        ..previewOriginalAudioVolume(initialRecordedVolume)
+        ..previewCustomAudioVolume(initialCustomVolume);
+    }
+  }
+
   /// Opens the text editor screen to add or edit a text layer.
   ///
   /// If [layer] is provided, the editor is initialized with its values for
@@ -371,6 +404,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
               _openClipsEditor(mainBloc: mainBloc);
             },
             onAddStickers: _addStickers,
+            onAdjustVolume: _adjustVolume,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();
               final textBloc = context.read<VideoEditorTextBloc>();

@@ -4,6 +4,7 @@
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -72,7 +73,6 @@ class ForYouFeed extends _$ForYouFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
-    final analyticsService = ref.read(analyticsApiServiceProvider);
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -91,14 +91,28 @@ class ForYouFeed extends _$ForYouFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
+    return _fetchRecommendations(limit: _currentLimit);
+  }
+
+  Future<VideoFeedState> _fetchRecommendations({required int limit}) async {
     try {
-      final result = await analyticsService.getRecommendations(
+      final authService = ref.read(authServiceProvider);
+      final currentUserPubkey = authService.currentPublicKeyHex;
+      if (currentUserPubkey == null) {
+        return const VideoFeedState(videos: [], hasMoreContent: false);
+      }
+
+      final client = ref.read(funnelcakeApiClientProvider);
+      final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
-        limit: _currentLimit,
+        limit: limit,
       );
+      final resultVideos = response.videos
+          .map((v) => v.toVideoEvent())
+          .toList();
 
       Log.info(
-        '✅ ForYouFeed: Got ${result.videos.length} recommendations, source: ${result.source}',
+        '✅ ForYouFeed: Got ${resultVideos.length} recommendations, source: ${response.source}',
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
@@ -108,7 +122,7 @@ class ForYouFeed extends _$ForYouFeed {
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistService = ref.read(contentBlocklistServiceProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        result.videos
+        resultVideos
             .where((v) => v.isSupportedOnCurrentPlatform)
             .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
             .toList(),
@@ -158,19 +172,22 @@ class ForYouFeed extends _$ForYouFeed {
         return;
       }
 
-      final analyticsService = ref.read(analyticsApiServiceProvider);
+      final client = ref.read(funnelcakeApiClientProvider);
       final newLimit = _currentLimit + 30;
-      final result = await analyticsService.getRecommendations(
+      final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: newLimit,
       );
+      final resultVideos = response.videos
+          .map((v) => v.toVideoEvent())
+          .toList();
 
       if (!ref.mounted) return;
 
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistService = ref.read(contentBlocklistServiceProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        result.videos
+        resultVideos
             .where((v) => v.isSupportedOnCurrentPlatform)
             .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
             .toList(),
@@ -218,8 +235,13 @@ class ForYouFeed extends _$ForYouFeed {
     );
 
     _currentLimit = 50; // Reset limit on refresh
-    ref.invalidateSelf();
-    await future; // Wait for rebuild to complete
+
+    await staleWhileRevalidate(
+      getCurrentState: () => state,
+      isMounted: () => ref.mounted,
+      setState: (s) => state = s,
+      fetchFresh: () => _fetchRecommendations(limit: _currentLimit),
+    );
   }
 }
 

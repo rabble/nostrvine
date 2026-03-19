@@ -67,6 +67,7 @@ void main() {
             fromLibrary: false,
             onOpenClipsEditor: () {},
             onAddStickers: () {},
+            onAdjustVolume: () {},
             onAddEditTextLayer: ([layer]) async => null,
             child: MultiBlocProvider(
               providers: [

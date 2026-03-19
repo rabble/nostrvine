@@ -172,29 +172,6 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Divine media server base URL for HLS streaming.
   static const String _divineMediaBase = 'https://media.divine.video';
 
-  /// Whether this URL is the bare Blossom blob form:
-  /// `https://media.divine.video/{sha256}`.
-  ///
-  /// Some uploads publish this canonical blob URL even when the directly
-  /// fetchable MP4 object is unavailable. The HLS playlist is the more stable
-  /// playback path for this shape.
-  static bool _isCanonicalDivineBlobUrl(String? url) {
-    if (url == null || url.isEmpty) return false;
-
-    try {
-      final uri = Uri.parse(url);
-      if (uri.host.toLowerCase() != 'media.divine.video') return false;
-
-      final segments = uri.pathSegments;
-      if (segments.length != 1) return false;
-
-      final hash = segments.first;
-      return hash.length == 64 && RegExp(r'^[a-fA-F0-9]+$').hasMatch(hash);
-    } catch (_) {
-      return false;
-    }
-  }
-
   /// Extract video hash from a Divine server URL.
   ///
   /// Handles URLs like:
@@ -241,16 +218,11 @@ extension VideoEventAppExtensions on VideoEvent {
 
   /// Whether playback should prefer HLS instead of direct asset URLs.
   ///
-  /// Previously bare `media.divine.video/{hash}` URLs were routed to HLS,
-  /// but the direct MP4 URL loads significantly faster (no manifest + segment
-  /// overhead). If the direct URL 404s, the existing fallback logic in
-  /// [IndividualVideoController] retries with HLS automatically.
-  bool get shouldPreferHlsPlayback => false;
+  /// Divine videos use HLS for proper color metadata signaling on Android.
+  /// Direct .ts playback causes green/dark tint on hardware decoders.
+  bool get shouldPreferHlsPlayback => isFromDivineServer;
 
   /// Whether background file caching should be skipped for this video.
-  ///
-  /// Now that we prefer direct MP4 playback for bare divine hash URLs,
-  /// single-file caching works normally.
   bool get shouldSkipFileCaching => false;
 
   /// Get HLS URL with optional quality override.
@@ -274,51 +246,35 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Get the optimal video URL for initial playback.
   ///
   /// **Strategy**:
-  /// - Always try direct MP4 first (faster startup, no manifest overhead).
-  /// - Android uses bandwidth-based Divine quality variants for startup speed.
-  /// - If direct URL fails, the [IndividualVideoController] error handler
-  ///   automatically retries with HLS fallback.
+  /// - Divine videos use quality-specific HLS playlists (stream_720p.m3u8 or
+  ///   stream_480p.m3u8). HLS is required because the transcoded variants
+  ///   are MPEG-TS files, and Android hardware decoders need the HLS manifest
+  ///   for proper color metadata signaling. Direct .ts playback causes a
+  ///   green/dark tint on many devices.
+  /// - Bandwidth tracker selects 720p (high/medium) or 480p (low).
+  /// - The raw blob (/{hash}) is 7-21 Mbps and exists only for archival/
+  ///   protocol purposes.
   ///
   /// Non-Divine videos always use original (no transcoded variants exist).
-  /// On first Android launch (no samples), defaults to 720p (safe middle
-  /// ground).
-  ///
-  /// For HLS fallback on Android codec errors, see [getHlsFallbackUrl].
+  /// On first launch (no samples), defaults to 720p (safe middle ground).
   String? getOptimalVideoUrlForPlatform() {
     // Non-Divine videos: always use original (no transcoded variants)
     if (!isFromDivineServer) return videoUrl;
 
-    final hash = _extractVideoHash(videoUrl);
-    if (hash == null) return videoUrl;
-
-    // Bare Blossom blob URLs: try direct MP4 first for faster startup.
-    // HLS fallback is handled by IndividualVideoController on failure.
-    if (_isCanonicalDivineBlobUrl(videoUrl)) {
-      return videoUrl;
-    }
-
-    // Desktop and Apple platforms are more stable using the original MP4.
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
-      return videoUrl;
-    }
-
     final quality = bandwidthTracker.recommendedQuality;
-    switch (quality) {
-      case VideoQuality.high:
-        return videoUrl; // Original full quality
-      case VideoQuality.medium:
-        return '$_divineMediaBase/$hash/720p';
-      case VideoQuality.low:
-        return '$_divineMediaBase/$hash/480p';
-    }
+    final hlsQuality = switch (quality) {
+      VideoQuality.high || VideoQuality.medium => 'high',
+      VideoQuality.low => 'low',
+    };
+    return getHlsUrl(quality: hlsQuality) ?? videoUrl;
   }
 
   /// Get the URL to use for disk caching, if any.
   ///
-  /// Returns null for HLS-only playback cases where direct-file caching is not
-  /// expected to work.
+  /// Returns null for Divine videos since playback uses HLS (can't be
+  /// single-file cached). Non-Divine videos cache their original URL.
   String? getCacheableVideoUrlForPlatform() {
-    if (shouldSkipFileCaching) {
+    if (shouldSkipFileCaching || isFromDivineServer) {
       return null;
     }
     return videoUrl;

@@ -147,7 +147,7 @@ class VideoEditorAudioChip extends StatelessWidget {
                             // TODO(l10n): Replace with context.l10n when localization is added.
                             'Add audio',
                             textAlign: .center,
-                            style: VineTheme.titleMediumFont(fontSize: 16),
+                            style: VineTheme.titleMediumFont(),
                           ),
                   ),
                 ),

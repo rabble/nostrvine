@@ -18,6 +18,16 @@ MOBILE_DIR="$(cd "${SCRIPT_DIR}/../mobile" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 MERGE_SCRIPT="${SCRIPT_DIR}/merge_logs.py"
 
+# --- Ensure DISPLAY is set for emulator (Hyprland/XWayland) ---
+if [[ -z "${DISPLAY:-}" ]]; then
+    if [[ -S /tmp/.X11-unix/X1 ]]; then
+        export DISPLAY=:1
+        echo "Note: Set DISPLAY=:1 (XWayland) for emulator camera support." >&2
+    elif [[ -S /tmp/.X11-unix/X0 ]]; then
+        export DISPLAY=:0
+    fi
+fi
+
 TEST_PATH="${1:-integration_test/auth/}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 REPORT_DIR="${MOBILE_DIR}/test_reports"
@@ -55,7 +65,7 @@ fi
 # --- Start docker log capture (background, from now only) ---
 echo "Starting docker log capture..." >&2
 docker compose -f "$COMPOSE_FILE" logs -f -t --since "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    keycast funnelcake-relay funnelcake-api blossom invite \
+    keycast funnelcake-relay funnelcake-api blossom blossom-proxy invite \
     > "$DOCKER_LOG" 2>&1 &
 DOCKER_PID=$!
 
@@ -70,7 +80,7 @@ echo "Device:     ${DEVICE}" >&2
 # --- Start logcat capture (background, flutter/app logs with timestamps) ---
 echo "Starting logcat capture..." >&2
 adb -s "$DEVICE" logcat -c 2>/dev/null || true
-adb -s "$DEVICE" logcat -v UTC -v year flutter:I C2PAManager:D OpenVineProofMode:D '*:S' > "$LOGCAT_LOG" 2>&1 &
+adb -s "$DEVICE" logcat -v UTC -v year flutter:I BandwidthTracker:I IndividualVideoController:I VideoLoadingMetrics:I C2PAManager:D OpenVineProofMode:D '*:S' > "$LOGCAT_LOG" 2>&1 &
 LOGCAT_PID=$!
 
 # --- Run E2E test ---

@@ -85,11 +85,7 @@ class VideoMetadataUserChip extends ConsumerWidget {
               profileAsync.value?.bestDisplayName ?? _fallbackDisplay,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: VineTheme.bodyFont(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.38,
-              ),
+              style: VineTheme.titleSmallFont(),
             ),
           ),
           if (isLoading)

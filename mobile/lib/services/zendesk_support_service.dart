@@ -461,6 +461,45 @@ class ZendeskSupportService {
         '❌ Zendesk SDK error: ${e.code} - ${e.message}',
         category: LogCategory.system,
       );
+
+      // JWT pre-auth tokens expire after 5 minutes. If the user reports
+      // content later than that, the SDK's JWT callback will fail with
+      // "unauthorized". Fall back to anonymous identity (already has
+      // name/email from login) and retry before trying the REST API.
+      if (e.code == 'CREATE_FAILED' &&
+          e.message != null &&
+          e.message!.toLowerCase().contains('unauthorized')) {
+        Log.info(
+          '🔄 JWT expired, retrying with anonymous identity',
+          category: LogCategory.system,
+        );
+        try {
+          final anonymousSet = await setAnonymousIdentityWithUserInfo();
+          if (anonymousSet) {
+            final retryResult = await _channel.invokeMethod('createTicket', {
+              'subject': subject,
+              'description': description,
+              'tags': tags ?? [],
+              'ticketFormId': ?ticketFormId,
+              if (customFields != null && customFields.isNotEmpty)
+                'customFields': customFields,
+            });
+            if (retryResult == true) {
+              Log.info(
+                'Zendesk ticket created on retry with anonymous identity',
+                category: LogCategory.system,
+              );
+              return true;
+            }
+          }
+        } catch (retryError) {
+          Log.warning(
+            'Anonymous identity retry also failed: $retryError',
+            category: LogCategory.system,
+          );
+        }
+      }
+
       // Fall back to REST API on SDK error
       Log.info(
         '🔄 Falling back to REST API after SDK error',

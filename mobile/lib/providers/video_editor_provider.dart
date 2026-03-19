@@ -402,6 +402,42 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Update the volume level for the original video audio (0.0 to 1.0).
+  void setOriginalAudioVolume(double volume) {
+    state = state.copyWith(originalAudioVolume: volume.clamp(0.0, 1.0));
+    invalidateFinalRenderedClip();
+    triggerAutosave();
+  }
+
+  /// Update the volume level for the custom/added audio track (0.0 to 1.0).
+  void setCustomAudioVolume(double volume) {
+    state = state.copyWith(customAudioVolume: volume.clamp(0.0, 1.0));
+    invalidateFinalRenderedClip();
+    triggerAutosave();
+  }
+
+  /// Preview original audio volume without invalidating render or autosave.
+  ///
+  /// Used during live slider interaction so the user can hear the change
+  /// immediately. Call [setOriginalAudioVolume] to commit the final value.
+  void previewOriginalAudioVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    if (clamped != state.originalAudioVolume) {
+      state = state.copyWith(originalAudioVolume: clamped);
+    }
+  }
+
+  /// Preview custom audio volume without invalidating render or autosave.
+  ///
+  /// Used during live slider interaction so the user can hear the change
+  /// immediately. Call [setCustomAudioVolume] to commit the final value.
+  void previewCustomAudioVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    if (clamped != state.customAudioVolume) {
+      state = state.copyWith(customAudioVolume: clamped);
+    }
+  }
+
   /// Update the start offset of the currently selected sound.
   void updateSoundStartOffset(Duration offset) {
     if (state.selectedSound != null &&
@@ -462,6 +498,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
       proofManifestJson: state.proofManifestJson,
+      originalAudioVolume: state.originalAudioVolume,
+      customAudioVolume: state.customAudioVolume,
     );
   }
 
@@ -729,6 +767,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarnings: draft.contentWarnings,
       finalRenderedClip: validFinalRenderedClip,
       clearFinalRenderedClip: validFinalRenderedClip == null,
+      originalAudioVolume: draft.originalAudioVolume,
+      customAudioVolume: draft.customAudioVolume,
     );
     _clipManager.addMultipleClips(clipsWithThumbnails);
     // We set the aspect ratio in the video recorder to match the clips,
@@ -780,7 +820,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Combines all clips, applies audio settings, and creates the final
   /// rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    if (state.finalRenderedClip != null) return;
+    if (state.finalRenderedClip != null) {
+      setProcessing(false);
+      return;
+    }
 
     Log.info(
       '🎬 Starting final video render',
@@ -793,11 +836,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
-      enableAudio: !state.isMuted,
       aiTrainingOptOut: ref
           .read(aiTrainingPreferenceServiceProvider)
           .isOptOutEnabled,
       parameters: renderParameters,
+      originalAudioVolume: state.originalAudioVolume,
+      customAudioVolume: state.customAudioVolume,
     );
 
     if (result == null) {

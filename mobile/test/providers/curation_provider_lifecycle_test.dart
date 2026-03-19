@@ -2,6 +2,7 @@
 // ABOUTME: Verifies editor's picks persist when navigating away and back to tab
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -10,7 +11,6 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/social_service.dart';
@@ -27,7 +27,7 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 void main() {
   setUpAll(() {
@@ -41,7 +41,7 @@ void main() {
     late _MockSocialService mockSocialService;
     late _MockLikesRepository mockLikesRepository;
     late _MockAuthService mockAuthService;
-    late _MockAnalyticsApiService mockAnalyticsApiService;
+    late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late List<VideoEvent> sampleVideos;
 
     setUp(() {
@@ -50,7 +50,7 @@ void main() {
       mockSocialService = _MockSocialService();
       mockLikesRepository = _MockLikesRepository();
       mockAuthService = _MockAuthService();
-      mockAnalyticsApiService = _MockAnalyticsApiService();
+      mockFunnelcakeApiClient = _MockFunnelcakeApiClient();
 
       // Create sample videos for editor's picks
       sampleVideos = List.generate(
@@ -90,8 +90,8 @@ void main() {
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           socialServiceProvider.overrideWithValue(mockSocialService),
           authServiceProvider.overrideWithValue(mockAuthService),
-          analyticsApiServiceProvider.overrideWithValue(
-            mockAnalyticsApiService,
+          funnelcakeApiClientProvider.overrideWithValue(
+            mockFunnelcakeApiClient,
           ),
         ],
       );
@@ -133,8 +133,8 @@ void main() {
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
             socialServiceProvider.overrideWithValue(mockSocialService),
             authServiceProvider.overrideWithValue(mockAuthService),
-            analyticsApiServiceProvider.overrideWithValue(
-              mockAnalyticsApiService,
+            funnelcakeApiClientProvider.overrideWithValue(
+              mockFunnelcakeApiClient,
             ),
           ],
         );

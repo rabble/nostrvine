@@ -15,6 +15,11 @@ class UserDataCleanupService {
 
   final SharedPreferences _prefs;
 
+  /// Optional callback invoked during cleanup to clear user-specific
+  /// database tables (DMs, conversations, notifications, etc.).
+  /// Set by the provider layer which has access to DAOs.
+  Future<void> Function()? onDatabaseCleanup;
+
   /// Keys that store user-specific data and should be cleared on identity change.
   /// Device/app settings like relay URLs, analytics preferences are NOT included.
   static const List<String> userSpecificKeys = [
@@ -128,6 +133,24 @@ class UserDataCleanupService {
         await _prefs.remove(key);
         clearedCount++;
         clearedKeys.add(key);
+      }
+    }
+
+    // Clear user-specific database tables (DMs, conversations, notifications)
+    if (onDatabaseCleanup != null) {
+      try {
+        await onDatabaseCleanup!();
+        Log.info(
+          'Database cleanup complete',
+          name: 'UserDataCleanupService',
+          category: LogCategory.auth,
+        );
+      } catch (e) {
+        Log.error(
+          'Database cleanup failed: $e',
+          name: 'UserDataCleanupService',
+          category: LogCategory.auth,
+        );
       }
     }
 

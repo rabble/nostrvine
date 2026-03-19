@@ -22,18 +22,12 @@ class InboxEmptyState extends StatelessWidget {
           children: [
             Text(
               'No messages yet',
-              style: VineTheme.titleMediumFont(
-                fontSize: 16,
-                height: 24 / 16,
-                color: VineTheme.onSurfaceMuted,
-              ),
+              style: VineTheme.titleMediumFont(color: VineTheme.onSurfaceMuted),
               textAlign: TextAlign.center,
             ),
             Text(
               "That + button won't bite.",
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurfaceMuted,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
               textAlign: TextAlign.center,
             ),
           ],

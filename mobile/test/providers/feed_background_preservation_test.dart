@@ -2,6 +2,7 @@
 // ABOUTME: Verifies fix for feeds going empty when app resumes from background
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -10,13 +11,12 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -37,7 +37,7 @@ void main() {
   });
 
   group('Feed background state preservation', () {
-    late _MockAnalyticsApiService mockAnalyticsService;
+    late _MockFunnelcakeApiClient mockFunnelcakeClient;
     late _MockVideoEventService mockVideoEventService;
     late _MockContentBlocklistService mockBlocklistService;
     late SharedPreferences sharedPreferences;
@@ -65,11 +65,11 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
-      mockAnalyticsService = _MockAnalyticsApiService();
+      mockFunnelcakeClient = _MockFunnelcakeApiClient();
       mockVideoEventService = _MockVideoEventService();
       mockBlocklistService = _MockContentBlocklistService();
 
-      when(() => mockAnalyticsService.isAvailable).thenReturn(false);
+      when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
       when(
         () => mockBlocklistService.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
@@ -100,7 +100,7 @@ void main() {
         overrides: [
           appReadyProvider.overrideWithValue(appReady),
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
+          funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
@@ -146,7 +146,7 @@ void main() {
         container.updateOverrides([
           appReadyProvider.overrideWithValue(false),
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
+          funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
@@ -187,7 +187,7 @@ void main() {
         container.updateOverrides([
           appReadyProvider.overrideWithValue(false),
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
+          funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
@@ -214,7 +214,7 @@ void main() {
         container.updateOverrides([
           appReadyProvider.overrideWithValue(true),
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
+          funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
@@ -272,7 +272,7 @@ void main() {
         container.updateOverrides([
           appReadyProvider.overrideWithValue(false),
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
+          funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,

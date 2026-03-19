@@ -141,7 +141,7 @@ void main() {
       expect(cachedIds, isNot(contains('video-2')));
     });
 
-    test('SPEC: should include bare divine hash URLs in prefetch', () {
+    test('SPEC: should skip Divine videos in prefetch (HLS not cacheable)', () {
       final videos = [
         _createVideo('video-1', hasUrl: true),
         _createVideo(
@@ -167,7 +167,8 @@ void main() {
       final items = captured[0] as List<({String url, String key})>;
       final cachedIds = items.map((item) => item.key).toList();
 
-      expect(cachedIds, contains('video-2'));
+      // Divine videos use HLS playback which can't be single-file cached
+      expect(cachedIds, isNot(contains('video-2')));
       expect(cachedIds, contains('video-3'));
     });
 

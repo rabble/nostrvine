@@ -103,18 +103,15 @@ class _MentionSuggestionItem extends ConsumerWidget {
                   if (displayName != null)
                     Text(
                       displayName,
-                      style: VineTheme.bodyFont(
-                        fontSize: 14,
+                      style: VineTheme.labelLargeFont(
                         color: VineTheme.onSurface,
-                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   Text(
                     npub,
-                    style: VineTheme.bodyFont(
-                      fontSize: 12,
+                    style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
                     maxLines: 1,

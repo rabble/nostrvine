@@ -58,6 +58,12 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                   ),*/
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
+                    label: 'Volume',
+                    icon: .speakerHigh,
+                    onTap: scope.onAdjustVolume,
+                  ),
+                  _ActionButton(
+                    // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Effects',
                     icon: .fadersHorizontal,
                     onTap: () => scope.editor?.openFilterEditor(),

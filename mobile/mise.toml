@@ -1,5 +1,5 @@
 [tools]
-flutter = "3.41.2-stable"
+flutter = "3.41.4-stable"
 
 [tasks.local_up]
 description = "Start all local E2E services"
@@ -8,7 +8,7 @@ docker compose -f ../local_stack/docker-compose.yml up -d
 docker compose -f ../local_stack/docker-compose.yml up -d --wait \
   keycast keycast-postgres keycast-redis \
   funnelcake-relay funnelcake-api funnelcake-proxy funnelcake-redis funnelcake-clickhouse \
-  minio blossom invite
+  minio blossom blossom-proxy invite
 docker compose -f ../local_stack/docker-compose.yml run --rm e2e-seed
 """
 
@@ -54,6 +54,10 @@ docker compose -f ../local_stack/docker-compose.yml exec keycast-postgres \
 [tasks.local_logs_keycast]
 description = "Show keycast container logs (useful after refresh token tests)"
 run = "docker compose -f ../e2e/docker-compose.yml logs keycast --tail=200"
+
+[tasks.setup_hooks]
+description = "Install git hooks (pre-commit + pre-push) for local CI checks"
+run = "bash ../scripts/install-hooks.sh"
 
 [tasks.e2e_test]
 description = "Run E2E tests with log profiling (starts Docker stack, captures merged timeline)"

@@ -8,6 +8,8 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/profile_feed_session_cache.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_nostr_enrichment.dart';
@@ -37,11 +39,18 @@ class ProfileFeed extends _$ProfileFeed {
   // Key: video ID, Value: metadata fields
   final Map<String, _VideoMetadataCache> _metadataCache = {};
 
+  /// Guard against concurrent refresh() calls.
+  bool _isRefreshing = false;
+
+  /// Guard against duplicate listener registration from retained-state path.
+  bool _listenersRegistered = false;
+
   @override
   Future<VideoFeedState> build(String userId) async {
     // Reset cursor state at start of build to ensure clean state
     _usingRestApi = false;
     _nextCursor = null;
+    _listenersRegistered = false;
 
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
@@ -63,7 +72,21 @@ class ProfileFeed extends _$ProfileFeed {
     // cascade rebuilds create new instances and lose state.
     final funnelcakeAsync = ref.read(funnelcakeAvailableProvider);
     final funnelcakeAvailable = funnelcakeAsync.asData?.value ?? false;
-    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final funnelcakeClient = ref.read(funnelcakeApiClientProvider);
+    final sessionCache = ref.read(profileFeedSessionCacheProvider);
+    final retainedState = sessionCache.read(userId);
+
+    if (retainedState != null && retainedState.videos.isNotEmpty) {
+      _usingRestApi = funnelcakeAvailable;
+      _registerRetainedRealtimeListeners(videoEventService);
+      Future.microtask(() => refresh(retainedState: retainedState));
+      return retainedState.copyWith(
+        isRefreshing: true,
+        isInitialLoad: false,
+        error: null,
+      );
+    }
+
     if (funnelcakeAvailable) {
       Log.info(
         'ProfileFeed: Trying Funnelcake REST API first for user=$userId',
@@ -72,10 +95,11 @@ class ProfileFeed extends _$ProfileFeed {
       );
 
       try {
-        final apiVideos = await analyticsService.getVideosByAuthor(
+        final stats = await funnelcakeClient.getVideosByAuthor(
           pubkey: userId,
           limit: 100,
         );
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
@@ -216,13 +240,15 @@ class ProfileFeed extends _$ProfileFeed {
       category: LogCategory.video,
     );
 
-    return VideoFeedState(
+    final initialState = VideoFeedState(
       videos: authorVideos,
       hasMoreContent:
           authorVideos.length >= AppConstants.hasMoreContentThreshold,
       isInitialLoad: authorVideos.isEmpty && !_usingRestApi,
       lastUpdated: DateTime.now(),
     );
+    _cacheSnapshot(initialState);
+    return initialState;
   }
 
   /// Staleness threshold — data older than this triggers a background refresh.
@@ -403,11 +429,12 @@ class ProfileFeed extends _$ProfileFeed {
   /// Fix #2: Refresh from REST API when in REST API mode
   Future<void> _refreshFromRestApi() async {
     try {
-      final analyticsService = ref.read(analyticsApiServiceProvider);
-      final apiVideos = await analyticsService.getVideosByAuthor(
+      final client = ref.read(funnelcakeApiClientProvider);
+      final stats = await client.getVideosByAuthor(
         pubkey: userId,
         limit: 100,
       );
+      final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
       if (!ref.mounted) return;
 
@@ -509,17 +536,19 @@ class ProfileFeed extends _$ProfileFeed {
     try {
       // If using REST API, load more using cursor-based pagination
       if (_usingRestApi) {
-        final analyticsService = ref.read(analyticsApiServiceProvider);
+        final client = ref.read(funnelcakeApiClientProvider);
         Log.info(
           'ProfileFeed: Loading more from REST API with cursor: $_nextCursor for user=$userId',
           name: 'ProfileFeedProvider',
           category: LogCategory.video,
         );
 
-        final apiVideos = await analyticsService.getVideosByAuthor(
+        final stats = await client.getVideosByAuthor(
           pubkey: userId,
+          limit: 100,
           before: _nextCursor,
         );
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
 
@@ -663,26 +692,52 @@ class ProfileFeed extends _$ProfileFeed {
   }
 
   /// Refresh the profile feed for this user
-  Future<void> refresh() async {
+  Future<void> refresh({VideoFeedState? retainedState}) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+
+    try {
+      await _refreshInner(retainedState: retainedState);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  Future<void> _refreshInner({VideoFeedState? retainedState}) async {
     Log.info(
       'ProfileFeed: Refreshing feed for user=$userId',
       name: 'ProfileFeedProvider',
       category: LogCategory.video,
     );
 
-    // If using REST API, try to refresh from there first
-    if (_usingRestApi) {
+    final currentState = retainedState ?? state.asData?.value;
+    if (currentState != null && ref.mounted) {
+      state = AsyncData(
+        currentState.copyWith(
+          isRefreshing: true,
+          isInitialLoad: false,
+          error: null,
+        ),
+      );
+    }
+
+    final funnelcakeAvailable =
+        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+
+    if (funnelcakeAvailable) {
       try {
-        final analyticsService = ref.read(analyticsApiServiceProvider);
-        final apiVideos = await analyticsService.getVideosByAuthor(
+        final client = ref.read(funnelcakeApiClientProvider);
+        final stats = await client.getVideosByAuthor(
           pubkey: userId,
           limit: 100,
         );
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
           // Reset cursor for pagination
+          _usingRestApi = true;
           _nextCursor = _getOldestTimestamp(apiVideos);
 
           // Filter out reposts
@@ -703,7 +758,7 @@ class ProfileFeed extends _$ProfileFeed {
           final videoEventService = ref.read(videoEventServiceProvider);
           authorVideos = videoEventService.filterVideoList(authorVideos);
 
-          state = AsyncData(
+          _emitState(
             VideoFeedState(
               videos: authorVideos,
               hasMoreContent:
@@ -737,19 +792,37 @@ class ProfileFeed extends _$ProfileFeed {
         }
       } catch (e) {
         Log.warning(
-          'ProfileFeed: REST API refresh failed ($e), falling back to invalidate',
+          'ProfileFeed: REST API refresh failed ($e), falling back to Nostr refresh',
           name: 'ProfileFeedProvider',
           category: LogCategory.video,
         );
       }
     }
 
-    // Reset cursor state before invalidating (but keep metadata cache!)
+    // Reset cursor state before Nostr refresh (but keep metadata cache!)
     _usingRestApi = false;
     _nextCursor = null;
 
-    // Invalidate to re-run build() which will try REST API then Nostr
-    ref.invalidateSelf();
+    final videoEventService = ref.read(videoEventServiceProvider);
+    await videoEventService.subscribeToUserVideos(userId, limit: 100);
+
+    if (!ref.mounted) return;
+
+    var updatedVideos = videoEventService
+        .authorVideos(userId)
+        .where((v) => !v.isRepost)
+        .toList();
+    updatedVideos = _applyMetadataCache(updatedVideos);
+    updatedVideos = videoEventService.filterVideoList(updatedVideos);
+
+    _emitState(
+      VideoFeedState(
+        videos: updatedVideos,
+        hasMoreContent:
+            updatedVideos.length >= AppConstants.hasMoreContentThreshold,
+        lastUpdated: DateTime.now(),
+      ),
+    );
   }
 
   /// Cache metadata from REST API videos for later merging with Nostr data
@@ -789,6 +862,85 @@ class ProfileFeed extends _$ProfileFeed {
       }
       return video;
     }).toList();
+  }
+
+  void _registerRetainedRealtimeListeners(VideoEventService videoEventService) {
+    if (_listenersRegistered) return;
+    _listenersRegistered = true;
+
+    void onNostrVideosChanged() {
+      if (!ref.mounted) return;
+      final currentVideos = videoEventService
+          .authorVideos(userId)
+          .where((v) => !v.isRepost)
+          .toList();
+
+      final currentState = state.asData?.value;
+      if (currentState == null ||
+          currentVideos.length == currentState.videos.length) {
+        return;
+      }
+
+      var updatedVideos = _applyMetadataCache(currentVideos);
+      updatedVideos = videoEventService.filterVideoList(updatedVideos);
+      _emitState(
+        currentState.copyWith(
+          videos: updatedVideos,
+          hasMoreContent:
+              updatedVideos.length >= AppConstants.hasMoreContentThreshold,
+          isRefreshing: false,
+          isInitialLoad: false,
+          lastUpdated: DateTime.now(),
+        ),
+      );
+    }
+
+    videoEventService.addListener(onNostrVideosChanged);
+    ref.onDispose(() {
+      videoEventService.removeListener(onNostrVideosChanged);
+    });
+
+    final unregisterUpdate = videoEventService.addVideoUpdateListener((
+      updated,
+    ) {
+      if (updated.pubkey == userId && ref.mounted) {
+        refresh();
+      }
+    });
+
+    final unregisterNew = videoEventService.addNewVideoListener((
+      newVideo,
+      authorPubkey,
+    ) {
+      if (authorPubkey == userId && ref.mounted) {
+        _addNewVideoToState(newVideo);
+      }
+    });
+
+    ref.onDispose(() {
+      unregisterUpdate();
+      unregisterNew();
+    });
+  }
+
+  void _emitState(VideoFeedState nextState) {
+    if (!ref.mounted) return;
+    state = AsyncData(nextState);
+    _cacheSnapshot(nextState);
+  }
+
+  void _cacheSnapshot(VideoFeedState stateSnapshot) {
+    ref
+        .read(profileFeedSessionCacheProvider)
+        .write(
+          userId,
+          stateSnapshot.copyWith(
+            isLoadingMore: false,
+            isRefreshing: false,
+            isInitialLoad: false,
+            error: null,
+          ),
+        );
   }
 }
 

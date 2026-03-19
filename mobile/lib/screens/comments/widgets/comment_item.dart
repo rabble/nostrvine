@@ -244,27 +244,21 @@ class _CommentHeader extends ConsumerWidget {
                 children: [
                   Text(
                     relativeTime,
-                    style: VineTheme.bodyFont(
+                    style: VineTheme.labelSmallFont(
                       color: VineTheme.onSurfaceMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   if (isCurrentUser) ...[
                     Text(
                       ' • ',
-                      style: VineTheme.bodyFont(
+                      style: VineTheme.labelSmallFont(
                         color: VineTheme.onSurfaceMuted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       'You',
-                      style: VineTheme.bodyFont(
+                      style: VineTheme.labelSmallFont(
                         color: VineTheme.onSurfaceMuted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -428,10 +422,8 @@ class _MentionLink extends ConsumerWidget {
       onTap: () => context.push(OtherProfileScreen.pathForNpub(npub)),
       child: Text(
         '@$displayText',
-        style: VineTheme.bodyFont(
-          fontSize: 14,
+        style: VineTheme.labelLargeFont(
           color: VineTheme.tabIndicatorGreen,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -475,11 +467,8 @@ class _ActionsRow extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     'Reply',
-                    style: VineTheme.bodyFont(
-                      fontSize: 14,
+                    style: VineTheme.labelLargeFont(
                       color: VineTheme.onSurfaceMuted,
-                      fontWeight: FontWeight.w600,
-                      height: 14 / 20,
                     ),
                   ),
                 ],
@@ -564,15 +553,12 @@ class _CommentVoteButtons extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Text(
                   netScore.formatScore,
-                  style: VineTheme.bodyFont(
-                    fontSize: 12,
+                  style: VineTheme.labelMediumFont(
                     color: voteState.isUpvoted
                         ? VineTheme.vineGreen
                         : voteState.isDownvoted
                         ? VineTheme.likeRed
                         : VineTheme.onSurfaceMuted,
-                    fontWeight: FontWeight.w600,
-                    height: 12 / 16,
                   ),
                 ),
               ),
@@ -660,10 +646,8 @@ class _ReplyIndicator extends ConsumerWidget {
           alignment: Alignment.center,
           child: Text(
             'Re:',
-            style: VineTheme.bodyFont(
-              fontSize: 14,
+            style: VineTheme.bodyMediumFont(
               color: VineTheme.tabIndicatorGreen,
-              height: 14 / 20,
             ),
           ),
         ),
@@ -678,10 +662,8 @@ class _ReplyIndicator extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
             child: Text(
               displayName,
-              style: VineTheme.bodyFont(
-                fontSize: 14,
+              style: VineTheme.bodyMediumFont(
                 color: VineTheme.tabIndicatorGreen,
-                height: 14 / 20,
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,

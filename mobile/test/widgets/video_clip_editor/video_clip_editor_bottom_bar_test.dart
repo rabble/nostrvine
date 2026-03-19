@@ -1,5 +1,5 @@
 // ABOUTME: Tests for VideoClipEditorBottomBar widget
-// ABOUTME: Validates playback controls, mute button, and time display
+// ABOUTME: Validates playback controls and time display
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,7 +23,6 @@ void main() {
       bool isPlaying = false,
       bool isEditing = false,
       bool isReordering = false,
-      bool isMuted = false,
       Duration totalDuration = const Duration(seconds: 10),
     }) {
       final clips = [
@@ -42,7 +41,6 @@ void main() {
           isPlaying: isPlaying,
           isEditing: isEditing,
           isReordering: isReordering,
-          isMuted: isMuted,
         ),
       );
 

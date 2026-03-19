@@ -26,6 +26,30 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
 
+/// Minimal mock so NotificationsScreen (default tab) renders without crashing.
+class _MockRelayNotifications extends RelayNotifications {
+  @override
+  Future<NotificationFeedState> build() async {
+    return NotificationFeedState(
+      notifications: const [],
+      isInitialLoad: false,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<void> markAsRead(String notificationId) async {}
+
+  @override
+  Future<void> markAllAsRead() async {}
+
+  @override
+  Future<void> loadMore() async {}
+
+  @override
+  Future<void> refresh() async {}
+}
+
 void main() {
   const testPubkey =
       'aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd';
@@ -45,10 +69,15 @@ void main() {
       mockGoRouter = MockGoRouter();
 
       when(
-        () => mockDmRepository.watchConversations(limit: any(named: 'limit')),
+        () => mockDmRepository.watchAcceptedConversations(
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) => Stream.value(const []));
       when(
-        () => mockDmRepository.watchUnreadCount(),
+        () => mockDmRepository.watchPotentialRequests(),
+      ).thenAnswer((_) => Stream.value(const []));
+      when(
+        () => mockDmRepository.watchUnreadAcceptedCount(),
       ).thenAnswer((_) => Stream.value(0));
       when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
 
@@ -88,6 +117,9 @@ void main() {
               ),
               goRouterProvider.overrideWithValue(mockGoRouter),
               relayNotificationUnreadCountProvider.overrideWithValue(0),
+              relayNotificationsProvider.overrideWith(
+                _MockRelayNotifications.new,
+              ),
             ],
           ),
         );

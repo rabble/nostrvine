@@ -189,7 +189,8 @@ class VideoEditorRenderService {
   static Future<(DivineVideoClip, String? proofManifestJson)?>
   renderVideoToClip({
     required List<DivineVideoClip> clips,
-    bool enableAudio = true,
+    double originalAudioVolume = 1.0,
+    double customAudioVolume = 1.0,
     bool aiTrainingOptOut = true,
     CompleteParameters? parameters,
   }) async {
@@ -197,7 +198,8 @@ class VideoEditorRenderService {
 
     Log.debug(
       '🎬 renderVideoToClip: clips=${clips.length}, '
-      'enableAudio=$enableAudio, '
+      'originalAudioVolume=$originalAudioVolume, '
+      'customAudioVolume=$customAudioVolume, '
       'parameters=${parameters?.toMap()}',
       name: _logName,
       category: LogCategory.video,
@@ -206,7 +208,8 @@ class VideoEditorRenderService {
     final outputPath = await renderVideo(
       clips: clips,
       aspectRatio: clips.first.targetAspectRatio,
-      enableAudio: enableAudio,
+      originalAudioVolume: originalAudioVolume,
+      customAudioVolume: customAudioVolume,
       usePersistentStorage: true,
       parameters: parameters,
     );
@@ -276,12 +279,11 @@ class VideoEditorRenderService {
   /// the rendered video should persist across app restarts.
   static Future<String?> renderVideo({
     required List<DivineVideoClip> clips,
-    double? originalAudioVolume,
-    double? customAudioVolume,
+    double originalAudioVolume = 1.0,
+    double customAudioVolume = 1.0,
     Uint8List? imageBytes,
     bool usePersistentStorage = false,
     model.AspectRatio? aspectRatio,
-    bool enableAudio = true,
     CompleteParameters? parameters,
     String? taskId,
   }) async {
@@ -307,7 +309,6 @@ class VideoEditorRenderService {
       final result = await _normalizeClipsToAspectRatio(
         clips: clips,
         aspectRatio: aspectRatio ?? clips.first.targetAspectRatio,
-        enableAudio: enableAudio,
         cacheDir: cacheDir,
         parameters: parameters,
       );
@@ -316,7 +317,6 @@ class VideoEditorRenderService {
       final outputPath = await _concatenateSegments(
         segments: result.segments,
         taskId: taskId ?? clips.first.id,
-        enableAudio: enableAudio,
         outputDir: outputDir,
         globalTransform: result.globalTransform,
         originalAudioVolume: originalAudioVolume,
@@ -473,7 +473,6 @@ class VideoEditorRenderService {
   static Future<_NormalizationResult> _normalizeClipsToAspectRatio({
     required List<DivineVideoClip> clips,
     required model.AspectRatio aspectRatio,
-    required bool enableAudio,
     required Directory cacheDir,
     required CompleteParameters? parameters,
   }) async {
@@ -527,7 +526,6 @@ class VideoEditorRenderService {
           clip: entry.clip,
           index: i,
           cropParams: entry.cropParams,
-          enableAudio: enableAudio,
           tempDir: cacheDir,
           parameters: parameters,
         );
@@ -575,7 +573,6 @@ class VideoEditorRenderService {
     required DivineVideoClip clip,
     required int index,
     required _CropParameters cropParams,
-    required bool enableAudio,
     required Directory tempDir,
     required CompleteParameters? parameters,
   }) async {
@@ -587,7 +584,6 @@ class VideoEditorRenderService {
     final task = VideoRenderData(
       id: '${clip.id}_normalized',
       video: clip.video,
-      enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
       imageBytes: parameters?.layers.isNotEmpty == true
           ? parameters?.image
@@ -629,12 +625,11 @@ class VideoEditorRenderService {
   static Future<String> _concatenateSegments({
     required List<VideoSegment> segments,
     required String taskId,
-    required bool enableAudio,
     required Directory outputDir,
     required CompleteParameters? parameters,
     _CropParameters? globalTransform,
-    double? originalAudioVolume,
-    double? customAudioVolume,
+    double originalAudioVolume = 1.0,
+    double customAudioVolume = 1.0,
     Uint8List? imageBytes,
   }) async {
     final outputPath = path.join(
@@ -642,14 +637,19 @@ class VideoEditorRenderService {
       'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
     );
 
+    final hasCustomAudio =
+        customAudioVolume > 0 && parameters?.customAudioTrack != null;
+
     final task = VideoRenderData(
       id: taskId,
       videoSegments: segments,
       endTime: VideoEditorConstants.maxDuration,
-      enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
-      customAudioPath: await parameters?.customAudioTrack?.audio.safeFilePath(),
+      customAudioPath: hasCustomAudio
+          ? await parameters?.customAudioTrack?.audio.safeFilePath()
+          : null,
       loopCustomAudio: false,
+      enableAudio: originalAudioVolume > 0 || hasCustomAudio,
       originalAudioVolume: originalAudioVolume,
       customAudioVolume: customAudioVolume,
       imageBytes: parameters?.layers.isNotEmpty == true
