@@ -306,6 +306,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           BlocListener<VideoFeedBloc, VideoFeedState>(
             listenWhen: (previous, current) => previous.mode != current.mode,
             listener: (_, state) {
+              _pagePosition.value = 0;
               _resetVideoController();
               handleVideoController(state);
             },
