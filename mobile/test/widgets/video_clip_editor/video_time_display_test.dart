@@ -61,6 +61,36 @@ void main() {
 
       expect(find.textContaining('75.50s'), findsOneWidget);
     });
+
+    testWidgets('passes maxDuration to SmoothTimeDisplay', (tester) async {
+      final bloc = _TestClipEditorBloc(
+        initialState: const ClipEditorState(
+          currentPosition: Duration(seconds: 10),
+        ),
+      );
+
+      await tester.pumpWidget(
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: MaterialApp(
+            home: Scaffold(
+              body: VideoTimeDisplay(
+                isPlayingSelector: (s) => s.isPlaying,
+                currentPositionSelector: (s) => s.currentPosition,
+                totalDuration: const Duration(seconds: 30),
+                maxDuration: const Duration(seconds: 5),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Current position (10s) should be clamped to maxDuration (5s)
+      expect(find.textContaining('5.00'), findsOneWidget);
+      // Total duration should still show 30s
+      expect(find.textContaining('30.00s'), findsOneWidget);
+    });
   });
 }
 

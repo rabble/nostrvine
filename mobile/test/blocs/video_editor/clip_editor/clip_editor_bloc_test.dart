@@ -974,6 +974,76 @@ void main() {
     // SPLIT
     // =========================================================
 
+    group('ClipEditorOriginalClipReplaced', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'replaces source clip with start and end clips',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) {
+          final startClip = _createClip(
+            id: 'a-start',
+            duration: const Duration(seconds: 1),
+          );
+          final endClip = _createClip(
+            id: 'a-end',
+            duration: const Duration(seconds: 1),
+          );
+          bloc.add(
+            ClipEditorOriginalClipReplaced(
+              sourceClipId: 'a',
+              startClip: startClip,
+              endClip: endClip,
+            ),
+          );
+        },
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.clips, 'clips', hasLength(3))
+              .having((s) => s.clips[0].id, 'first id', 'a-start')
+              .having((s) => s.clips[1].id, 'second id', 'a-end')
+              .having((s) => s.clips[2].id, 'third id', 'b')
+              .having((s) => s.isPlayerReady, 'isPlayerReady', isFalse)
+              .having((s) => s.hasPlayedOnce, 'hasPlayedOnce', isFalse),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'pushes undo entry so the split can be undone',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) {
+          bloc.add(
+            ClipEditorOriginalClipReplaced(
+              sourceClipId: 'a',
+              startClip: _createClip(id: 'a-start'),
+              endClip: _createClip(id: 'a-end'),
+            ),
+          );
+        },
+        verify: (bloc) {
+          expect(bloc.state.canUndo, isTrue);
+          expect(bloc.state.undoStack, hasLength(1));
+          expect(bloc.state.redoStack, isEmpty);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'is no-op when source clip id is not found',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) {
+          bloc.add(
+            ClipEditorOriginalClipReplaced(
+              sourceClipId: 'nonexistent',
+              startClip: _createClip(id: 'x'),
+              endClip: _createClip(id: 'y'),
+            ),
+          );
+        },
+        expect: () => <ClipEditorState>[],
+      );
+    });
+
     group('ClipEditorSplitRequested', () {
       blocTest<ClipEditorBloc, ClipEditorState>(
         'stops editing and calls split executor when position is valid',
@@ -1319,6 +1389,25 @@ void main() {
         expect(
           const ClipEditorDeleteZoneChanged(isOver: true),
           equals(const ClipEditorDeleteZoneChanged(isOver: true)),
+        );
+      });
+
+      test('$ClipEditorOriginalClipReplaced with same values are equal', () {
+        final clip1 = _createClip(id: 'start');
+        final clip2 = _createClip(id: 'end');
+        expect(
+          ClipEditorOriginalClipReplaced(
+            sourceClipId: 'src',
+            startClip: clip1,
+            endClip: clip2,
+          ),
+          equals(
+            ClipEditorOriginalClipReplaced(
+              sourceClipId: 'src',
+              startClip: clip1,
+              endClip: clip2,
+            ),
+          ),
         );
       });
 
