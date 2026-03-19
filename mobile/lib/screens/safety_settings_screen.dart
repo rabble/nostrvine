@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/image_cache_manager.dart';
-import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 
@@ -49,7 +48,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
       setState(() {
         _isAgeVerified = service.isAdultContentVerified;
         _isDivineLabelerEnabled = labelService.subscribedLabelers.contains(
-          ModerationLabelService.divineModerationPubkeyHex,
+          labelService.divineModerationPubkeyHex,
         );
         _isPeopleIFollowEnabled = labelService.isFollowingModerationEnabled;
         _showDivineHostedOnly = divineHostFilterService.showDivineHostedOnly;
@@ -190,11 +189,11 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         final labelService = ref.read(moderationLabelServiceProvider);
         if (value) {
           await labelService.addLabeler(
-            ModerationLabelService.divineModerationPubkeyHex,
+            labelService.divineModerationPubkeyHex,
           );
         } else {
           await labelService.removeLabeler(
-            ModerationLabelService.divineModerationPubkeyHex,
+            labelService.divineModerationPubkeyHex,
           );
         }
         setState(() {
@@ -299,7 +298,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Widget _buildCustomLabelersSection() {
     final labelService = ref.read(moderationLabelServiceProvider);
     final customLabelers = labelService.subscribedLabelers
-        .where((pk) => pk != ModerationLabelService.divineModerationPubkeyHex)
+        .where((pk) => pk != labelService.divineModerationPubkeyHex)
         .toList();
 
     return Column(

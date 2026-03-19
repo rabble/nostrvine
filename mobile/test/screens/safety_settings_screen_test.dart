@@ -105,8 +105,11 @@ void main() {
       when(
         () => mockModerationLabelService.initialize(),
       ).thenAnswer((_) async {});
+      when(
+        () => mockModerationLabelService.divineModerationPubkeyHex,
+      ).thenReturn(ModerationLabelService.fallbackModerationPubkeyHex);
       when(() => mockModerationLabelService.subscribedLabelers).thenReturn({
-        ModerationLabelService.divineModerationPubkeyHex,
+        ModerationLabelService.fallbackModerationPubkeyHex,
       });
       when(
         () => mockModerationLabelService.isFollowingModerationEnabled,
