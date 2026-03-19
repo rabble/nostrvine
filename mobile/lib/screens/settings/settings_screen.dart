@@ -7,15 +7,25 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/nip05_verification_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -44,8 +54,111 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
+  Future<void> _handleSessionExpired() async {
+    final authService = ref.read(authServiceProvider);
+    final router = GoRouter.of(context);
+    final refreshed = await authService.tryRefreshExpiredSession();
+    if (!mounted) return;
+    if (!refreshed) {
+      router.go(WelcomeScreen.loginOptionsPath);
+    }
+  }
+
+  Future<void> _handleSwitchAccount() async {
+    final draftService = ref.read(draftStorageServiceProvider);
+    final draftCount = await draftService.getDraftCount();
+
+    if (!mounted) return;
+
+    if (draftCount > 0) {
+      final draftWord = draftCount == 1 ? 'draft' : 'drafts';
+      final proceedWithWarning = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: const Text(
+            'Unsaved Drafts',
+            style: TextStyle(color: VineTheme.error),
+          ),
+          content: Text(
+            'You have $draftCount unsaved $draftWord. '
+            'Switching accounts will keep your $draftWord, but '
+            'you may want to publish or review '
+            '${draftCount == 1 ? 'it' : 'them'} first.\n\n'
+            'Do you want to switch accounts anyway?',
+            style: const TextStyle(color: VineTheme.lightText),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => context.pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: VineTheme.lightText),
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.pop(true),
+              child: const Text(
+                'Switch Anyway',
+                style: TextStyle(color: VineTheme.error),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (proceedWithWarning != true) return;
+    }
+
+    if (!mounted) return;
+
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Switch Account?',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        content: const Text(
+          'You will be taken to the sign in screen where you '
+          'can:\n\n'
+          '\u2022 Continue with your saved keys\n'
+          '\u2022 Import a different account\n'
+          '\u2022 Create a new identity\n\n'
+          'Your current keys will stay saved on this device.',
+          style: TextStyle(color: VineTheme.lightText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.lightText),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final authService = ref.read(authServiceProvider);
+              authService.signOut();
+              context.pop(true);
+            },
+            child: const Text(
+              'Switch Account',
+              style: TextStyle(color: VineTheme.vineGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authService = ref.watch(authServiceProvider);
+    final authState = ref.watch(currentAuthStateProvider);
+    final isAuthenticated = authState == AuthState.authenticated;
+
     return Scaffold(
       appBar: DiVineAppBar(
         title: 'Settings',
@@ -59,6 +172,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
+              // Account header
+              if (isAuthenticated) ...[
+                _AccountHeader(onSwitchAccount: _handleSwitchAccount),
+                // Auth-state conditional tiles
+                if (authService.hasExpiredOAuthSession)
+                  _SettingsTile(
+                    icon: Icons.refresh,
+                    title: 'Session Expired',
+                    subtitle: 'Sign in again to restore full access',
+                    onTap: _handleSessionExpired,
+                    iconColor: VineTheme.accentOrange,
+                  )
+                else if (authService.isAnonymous)
+                  _SettingsTile(
+                    icon: Icons.security,
+                    title: 'Secure Your Account',
+                    subtitle:
+                        'Add email & password to recover your '
+                        'account on any device',
+                    onTap: () => context.push(SecureAccountScreen.path),
+                  ),
+              ],
+
               _SettingsTile(
                 icon: Icons.analytics_outlined,
                 title: 'Creator Analytics',
@@ -72,8 +208,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push(SupportCenterScreen.path),
               ),
 
-              // Preferences
-              const _SectionHeader(title: 'Preferences'),
               _SettingsTile(
                 icon: Icons.notifications,
                 title: 'Notifications',
@@ -104,6 +238,92 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AccountHeader extends ConsumerWidget {
+  const _AccountHeader({required this.onSwitchAccount});
+
+  final VoidCallback onSwitchAccount;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServiceProvider);
+    final pubkey = authService.currentPublicKeyHex;
+    if (pubkey == null) return const SizedBox.shrink();
+
+    final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
+    final displayName =
+        profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
+
+    final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
+    final claimedNip05 = profile?.displayNip05;
+    final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
+        ? ref
+              .watch(nip05VerificationProvider(pubkey))
+              .whenOrNull(data: (status) => status)
+        : null;
+    final hasVerifiedNip05 =
+        verificationStatus == Nip05VerificationStatus.verified;
+    final uniqueIdentifier = hasVerifiedNip05 && claimedNip05 != null
+        ? claimedNip05
+        : truncatedNpub;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        spacing: 16,
+        children: [
+          UserAvatar(
+            imageUrl: profile?.picture,
+            name: displayName,
+            size: 96,
+          ),
+          Column(
+            children: [
+              Text(
+                displayName,
+                style: VineTheme.headlineSmallFont(
+                  color: VineTheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                uniqueIdentifier,
+                style: VineTheme.bodyMediumFont(
+                  color: VineTheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+          GestureDetector(
+            onTap: onSwitchAccount,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: VineTheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: VineTheme.outlineMuted,
+                  width: 2,
+                ),
+              ),
+              child: Text(
+                'Switch account',
+                style: VineTheme.titleMediumFont(
+                  color: VineTheme.vineGreen,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -192,17 +412,19 @@ class _SettingsTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.iconColor,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: VineTheme.vineGreen),
+      leading: Icon(icon, color: iconColor ?? VineTheme.vineGreen),
       title: Text(
         title,
         style: const TextStyle(
@@ -217,28 +439,6 @@ class _SettingsTile extends StatelessWidget {
       ),
       trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
       onTap: onTap,
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
-      ),
     );
   }
 }
