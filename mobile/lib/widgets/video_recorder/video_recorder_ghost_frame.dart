@@ -41,7 +41,7 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
           ? IgnorePointer(
               key: ValueKey(ghostFramePath),
               child: Opacity(
-                opacity: 0.24,
+                opacity: 0.48,
                 child: Image.file(
                   File(ghostFramePath),
                   fit: .cover,
