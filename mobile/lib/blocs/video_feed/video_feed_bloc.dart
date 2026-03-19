@@ -287,7 +287,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       ),
     );
 
-    await _loadVideos(state.mode, emit);
+    await _loadVideos(state.mode, emit, skipCache: true);
   }
 
   /// Handle auto-refresh request (dispatched by UI on app resume).
@@ -317,7 +317,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       ),
     );
 
-    await _loadVideos(state.mode, emit);
+    await _loadVideos(state.mode, emit, skipCache: true);
   }
 
   /// Handle following list changes from [FollowRepository].
@@ -353,7 +353,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     }
 
     // Silent refresh — keep current videos visible, replace when done.
-    await _loadVideos(FeedMode.home, emit);
+    await _loadVideos(FeedMode.home, emit, skipCache: true);
   }
 
   /// Handle curated list subscription changes from [CuratedListRepository].
@@ -376,7 +376,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       ),
     );
 
-    await _loadVideos(FeedMode.home, emit);
+    await _loadVideos(FeedMode.home, emit, skipCache: true);
   }
 
   /// Load videos for the specified mode.
@@ -390,7 +390,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// drives recovery: when the follow list arrives via
   /// [VideoFeedFollowingListChanged], the handler decides whether to show
   /// the `noFollowedUsers` CTA or refresh the feed.
-  Future<void> _loadVideos(FeedMode mode, Emitter<VideoFeedState> emit) async {
+  Future<void> _loadVideos(
+    FeedMode mode,
+    Emitter<VideoFeedState> emit, {
+    bool skipCache = false,
+  }) async {
     // Serve cached home feed on first load for instant startup.
     if (_serveCachedHomeFeed &&
         !_cacheServed &&
@@ -420,7 +424,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     }
 
     try {
-      final result = await _fetchVideosForMode(mode);
+      final result = await _fetchVideosForMode(mode, skipCache: skipCache);
 
       // Filter out videos without valid URLs
       final validVideos = result.videos
@@ -487,23 +491,32 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Returns [HomeFeedResult] for all modes. For home/forYou, includes
   /// curated list attribution metadata. For other modes, returns a
   /// result with empty attribution.
-  Future<HomeFeedResult> _fetchVideosForMode(FeedMode mode, {int? until}) =>
-      switch (mode) {
-        FeedMode.forYou || FeedMode.home => _videosRepository.getHomeFeedVideos(
-          authors: _followRepository.followingPubkeys,
-          videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
-          userPubkey: _userPubkey,
-          until: until,
-        ),
-        FeedMode.latest =>
-          _videosRepository
-              .getNewVideos(until: until)
-              .then((videos) => HomeFeedResult(videos: videos)),
-        FeedMode.popular =>
-          _videosRepository
-              .getPopularVideos(until: until)
-              .then((videos) => HomeFeedResult(videos: videos)),
-      };
+  ///
+  /// When [skipCache] is `false` (default), the repository may return
+  /// a previously cached result from the [InMemoryFeedCache] without
+  /// a network round-trip. Pass `true` for refresh and auto-refresh
+  /// flows that must hit the network.
+  Future<HomeFeedResult> _fetchVideosForMode(
+    FeedMode mode, {
+    int? until,
+    bool skipCache = false,
+  }) => switch (mode) {
+    FeedMode.forYou || FeedMode.home => _videosRepository.getHomeFeedVideos(
+      authors: _followRepository.followingPubkeys,
+      videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
+      userPubkey: _userPubkey,
+      until: until,
+      skipCache: skipCache,
+    ),
+    FeedMode.latest =>
+      _videosRepository
+          .getNewVideos(until: until, skipCache: skipCache)
+          .then((videos) => HomeFeedResult(videos: videos)),
+    FeedMode.popular =>
+      _videosRepository
+          .getPopularVideos(until: until, skipCache: skipCache)
+          .then((videos) => HomeFeedResult(videos: videos)),
+  };
 
   /// Batch-fetch creator profiles for the given videos.
   ///

@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/home_feed_result.dart';
+import 'package:videos_repository/src/in_memory_feed_cache.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
@@ -55,12 +56,14 @@ class VideosRepository {
     VideoContentFilter? contentFilter,
     VideoWarningLabelsResolver? warningLabelsResolver,
     FunnelcakeApiClient? funnelcakeApiClient,
+    InMemoryFeedCache? inMemoryFeedCache,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _blockFilter = blockFilter,
        _contentFilter = contentFilter,
        _warningLabelsResolver = warningLabelsResolver,
-       _funnelcakeApiClient = funnelcakeApiClient;
+       _funnelcakeApiClient = funnelcakeApiClient,
+       _inMemoryFeedCache = inMemoryFeedCache;
 
   final NostrClient _nostrClient;
   final VideoLocalStorage? _localStorage;
@@ -68,6 +71,20 @@ class VideosRepository {
   final VideoContentFilter? _contentFilter;
   final VideoWarningLabelsResolver? _warningLabelsResolver;
   final FunnelcakeApiClient? _funnelcakeApiClient;
+  final InMemoryFeedCache? _inMemoryFeedCache;
+
+  /// Clears the in-memory feed cache.
+  ///
+  /// When [key] is provided, only that feed mode's cache is removed
+  /// (e.g. `"home"`, `"latest"`, `"popular"`). When omitted, all
+  /// cached feeds are cleared.
+  void clearInMemoryFeedCache({String? key}) {
+    if (key != null) {
+      _inMemoryFeedCache?.remove(key);
+    } else {
+      _inMemoryFeedCache?.clear();
+    }
+  }
 
   /// Fetches videos from followed users for the home feed, optionally
   /// merging in videos from subscribed curated lists.
@@ -104,9 +121,16 @@ class VideosRepository {
     String? userPubkey,
     int limit = _defaultLimit,
     int? until,
+    bool skipCache = false,
   }) async {
     if (authors.isEmpty && userPubkey == null) {
       return const HomeFeedResult(videos: []);
+    }
+
+    // Return in-memory cached result when available (initial page only).
+    if (!skipCache && until == null) {
+      final cached = _inMemoryFeedCache?.get('home');
+      if (cached != null) return cached;
     }
 
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
@@ -119,11 +143,18 @@ class VideosRepository {
 
     // 2. If no list refs, return following-only result
     if (videoRefs.isEmpty) {
-      return HomeFeedResult(videos: videos, rawResponseBody: rawBody);
+      final result = HomeFeedResult(videos: videos, rawResponseBody: rawBody);
+      if (until == null) _inMemoryFeedCache?.set('home', result);
+      return result;
     }
 
     // 3. Merge list videos with following videos
-    return _mergeListVideos(followingVideos: videos, videoRefs: videoRefs);
+    final result = await _mergeListVideos(
+      followingVideos: videos,
+      videoRefs: videoRefs,
+    );
+    if (until == null) _inMemoryFeedCache?.set('home', result);
+    return result;
   }
 
   /// Fetches videos from followed users via Funnelcake API or Nostr relays.
@@ -395,7 +426,14 @@ class VideosRepository {
   Future<List<VideoEvent>> getNewVideos({
     int limit = _defaultLimit,
     int? until,
+    bool skipCache = false,
   }) async {
+    // Return in-memory cached result when available (initial page only).
+    if (!skipCache && until == null) {
+      final cached = _inMemoryFeedCache?.get('latest');
+      if (cached != null) return cached.videos;
+    }
+
     // 1. Try Funnelcake API first
     if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
       try {
@@ -405,6 +443,9 @@ class VideosRepository {
         );
 
         final videos = _transformVideoStats(videoStats);
+        if (until == null) {
+          _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
+        }
         return videos;
       } on FunnelcakeException {
         // Fall through to Nostr
@@ -416,7 +457,11 @@ class VideosRepository {
 
     final events = await _nostrClient.queryEvents([filter]);
 
-    return _transformAndFilter(events);
+    final videos = _transformAndFilter(events);
+    if (until == null) {
+      _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
+    }
+    return videos;
   }
 
   /// Fetches popular videos sorted by engagement score.
@@ -445,7 +490,14 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
     int fetchMultiplier = 4,
+    bool skipCache = false,
   }) async {
+    // Return in-memory cached result when available (initial page only).
+    if (!skipCache && until == null) {
+      final cached = _inMemoryFeedCache?.get('popular');
+      if (cached != null) return cached.videos;
+    }
+
     // 1. Try Funnelcake API first (best engagement data)
     if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
       try {
@@ -456,6 +508,9 @@ class VideosRepository {
 
         // Preserve API order (sorted by trending score)
         final videos = _transformVideoStats(videoStats, sortByCreatedAt: false);
+        if (until == null) {
+          _inMemoryFeedCache?.set('popular', HomeFeedResult(videos: videos));
+        }
         return videos;
       } on FunnelcakeException {
         // Fall through to NIP-50
@@ -478,7 +533,11 @@ class VideosRepository {
     if (nip50Events.isNotEmpty) {
       // NIP-50 worked - relay returned sorted results
       // Preserve relay order (don't re-sort by createdAt)
-      return _transformAndFilter(nip50Events, sortByCreatedAt: false);
+      final videos = _transformAndFilter(nip50Events, sortByCreatedAt: false);
+      if (until == null) {
+        _inMemoryFeedCache?.set('popular', HomeFeedResult(videos: videos));
+      }
+      return videos;
     }
 
     // 3. Fallback: relay doesn't support NIP-50, use client-side sorting
@@ -498,7 +557,11 @@ class VideosRepository {
       ..sort(VideoEvent.compareByEngagementScore);
 
     // Return only the requested limit
-    return videos.take(limit).toList();
+    final result = videos.take(limit).toList();
+    if (until == null) {
+      _inMemoryFeedCache?.set('popular', HomeFeedResult(videos: result));
+    }
+    return result;
   }
 
   /// Fetches videos by their event IDs.

@@ -755,14 +755,9 @@ AuthService authService(Ref ref) {
       // set, so the router redirect has accurate cache data and sends
       // user to /home not /explore.
       final environmentConfig = ref.read(currentEnvironmentProvider);
-      final client = FunnelcakeApiClient(
-        baseUrl: environmentConfig.apiBaseUrl,
-      );
+      final client = FunnelcakeApiClient(baseUrl: environmentConfig.apiBaseUrl);
       final prefs = ref.read(sharedPreferencesProvider);
-      final result = await client.getFollowing(
-        pubkey: pubkeyHex,
-        limit: 5000,
-      );
+      final result = await client.getFollowing(pubkey: pubkeyHex, limit: 5000);
       if (result.pubkeys.isNotEmpty) {
         final key = 'following_list_$pubkeyHex';
         await prefs.setString(key, jsonEncode(result.pubkeys));
@@ -1831,6 +1826,7 @@ VideosRepository videosRepository(Ref ref) {
       moderationLabelService: moderationLabelService,
     ),
     funnelcakeApiClient: funnelcakeClient,
+    inMemoryFeedCache: InMemoryFeedCache(),
   );
 }
 

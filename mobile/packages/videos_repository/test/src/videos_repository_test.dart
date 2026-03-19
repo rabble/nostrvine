@@ -460,6 +460,121 @@ void main() {
         expect(result.first.id, equals('newer'));
         expect(result.last.id, equals('older'));
       });
+
+      group('in-memory cache', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+        late InMemoryFeedCache feedCache;
+        late VideosRepository repoWithCache;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          feedCache = InMemoryFeedCache();
+          repoWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+        });
+
+        test('returns cached result without network call', () async {
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'v1',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/v1.mp4',
+              ),
+            ],
+          );
+
+          // First call → network
+          await repoWithCache.getNewVideos();
+          verify(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+
+          // Second call → served from cache, no new network call
+          final cached = await repoWithCache.getNewVideos();
+          verifyNever(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          );
+          expect(cached, hasLength(1));
+          expect(cached.first.id, equals('v1'));
+        });
+
+        test('skipCache bypasses the in-memory cache', () async {
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'v1',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/v1.mp4',
+              ),
+            ],
+          );
+
+          // First call populates cache
+          await repoWithCache.getNewVideos();
+
+          // skipCache: true → hits network again
+          await repoWithCache.getNewVideos(skipCache: true);
+          verify(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(2); // 1 initial + 1 skip
+        });
+
+        test('pagination calls bypass cache', () async {
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'v1',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/v1.mp4',
+              ),
+            ],
+          );
+
+          // Populate cache
+          await repoWithCache.getNewVideos();
+
+          // Pagination (until != null) always hits network
+          await repoWithCache.getNewVideos(until: 1000);
+          verify(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(2);
+        });
+      });
     });
 
     group('getHomeFeedVideos', () {
@@ -1094,6 +1209,64 @@ void main() {
         expect(result.videos, hasLength(2));
         expect(result.videos.first.id, equals('newer'));
         expect(result.videos.last.id, equals('older'));
+      });
+
+      group('in-memory cache', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+        late InMemoryFeedCache feedCache;
+        late VideosRepository repoWithCache;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          feedCache = InMemoryFeedCache();
+          repoWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+        });
+
+        test('returns cached result without network call', () async {
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'h1',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/h1.mp4',
+                ),
+              ],
+              rawBody: '{}',
+            ),
+          );
+
+          await repoWithCache.getHomeFeedVideos(
+            authors: ['author1'],
+            userPubkey: 'user1',
+          );
+          final cached = await repoWithCache.getHomeFeedVideos(
+            authors: ['author1'],
+            userPubkey: 'user1',
+          );
+
+          verify(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+          expect(cached.videos, hasLength(1));
+          expect(cached.videos.first.id, equals('h1'));
+        });
       });
     });
 
@@ -2264,6 +2437,53 @@ void main() {
           expect(result, isEmpty);
         },
       );
+
+      group('in-memory cache', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+        late InMemoryFeedCache feedCache;
+        late VideosRepository repoWithCache;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          feedCache = InMemoryFeedCache();
+          repoWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+        });
+
+        test('returns cached result without network call', () async {
+          when(
+            () => mockFunnelcakeClient.getTrendingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'pop1',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/pop1.mp4',
+              ),
+            ],
+          );
+
+          await repoWithCache.getPopularVideos();
+          final cached = await repoWithCache.getPopularVideos();
+
+          verify(
+            () => mockFunnelcakeClient.getTrendingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+          expect(cached, hasLength(1));
+          expect(cached.first.id, equals('pop1'));
+        });
+      });
     });
 
     group('content filtering', () {
@@ -5769,6 +5989,113 @@ void main() {
             category: 'sports',
           ),
         ).called(1);
+      });
+    });
+
+    group('clearInMemoryFeedCache', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+      late InMemoryFeedCache feedCache;
+      late VideosRepository repoWithCache;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        feedCache = InMemoryFeedCache();
+        repoWithCache = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          inMemoryFeedCache: feedCache,
+        );
+      });
+
+      test('clears a single key', () async {
+        when(
+          () => mockFunnelcakeClient.getRecentVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'v1',
+              pubkey: 'p1',
+              dTag: 'd1',
+              videoUrl: 'https://example.com/v1.mp4',
+            ),
+          ],
+        );
+
+        // Populate cache
+        await repoWithCache.getNewVideos();
+
+        // Clear latest cache
+        repoWithCache.clearInMemoryFeedCache(key: 'latest');
+
+        // Next call hits network again
+        await repoWithCache.getNewVideos();
+        verify(
+          () => mockFunnelcakeClient.getRecentVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).called(2);
+      });
+
+      test('clears all keys', () async {
+        when(
+          () => mockFunnelcakeClient.getRecentVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'v1',
+              pubkey: 'p1',
+              dTag: 'd1',
+              videoUrl: 'https://example.com/v1.mp4',
+            ),
+          ],
+        );
+        when(
+          () => mockFunnelcakeClient.getTrendingVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'pop1',
+              pubkey: 'p1',
+              dTag: 'd1',
+              videoUrl: 'https://example.com/pop1.mp4',
+            ),
+          ],
+        );
+
+        // Populate both caches
+        await repoWithCache.getNewVideos();
+        await repoWithCache.getPopularVideos();
+
+        // Clear all
+        repoWithCache.clearInMemoryFeedCache();
+
+        // Both hit network again
+        await repoWithCache.getNewVideos();
+        await repoWithCache.getPopularVideos();
+
+        verify(
+          () => mockFunnelcakeClient.getRecentVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).called(2);
+        verify(
+          () => mockFunnelcakeClient.getTrendingVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).called(2);
       });
     });
   });
