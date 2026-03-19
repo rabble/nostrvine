@@ -277,8 +277,8 @@ extension VideoEventAppExtensions on VideoEvent {
             VideoPlaybackFormat.hls480p => getHlsUrl(quality: 'low'),
             VideoPlaybackFormat.ts720p => '$_divineMediaBase/$hash/720p',
             VideoPlaybackFormat.ts480p => '$_divineMediaBase/$hash/480p',
-            VideoPlaybackFormat.fmp4_720p => '$_divineMediaBase/$hash/720p.mp4',
-            VideoPlaybackFormat.fmp4_480p => '$_divineMediaBase/$hash/480p.mp4',
+            VideoPlaybackFormat.mp4_720p => '$_divineMediaBase/$hash/720p.mp4',
+            VideoPlaybackFormat.mp4_480p => '$_divineMediaBase/$hash/480p.mp4',
           } ??
           videoUrl;
     }
@@ -299,7 +299,7 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Get the URL to use for disk caching, if any.
   ///
   /// Returns null for Divine HLS videos (can't be single-file cached).
-  /// Progressive formats (ts, fmp4, raw) can be cached.
+  /// Progressive formats (ts, mp4, raw) can be cached.
   String? getCacheableVideoUrlForPlatform() {
     if (shouldSkipFileCaching) return null;
     // HLS can't be single-file cached; progressive formats can

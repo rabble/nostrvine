@@ -31,11 +31,11 @@ enum VideoPlaybackFormat {
   /// /{hash}/480p — direct 480p .ts segment
   ts480p,
 
-  /// /{hash}/720p.mp4 — fMP4 720p
-  fmp4_720p,
+  /// /{hash}/720p.mp4 — MP4 720p (faststart, moov at front)
+  mp4_720p,
 
-  /// /{hash}/480p.mp4 — fMP4 480p
-  fmp4_480p,
+  /// /{hash}/480p.mp4 — MP4 480p (faststart, moov at front)
+  mp4_480p,
 }
 
 /// Persists and exposes the developer's video format selection.

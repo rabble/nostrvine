@@ -37,48 +37,48 @@ class _FormatOption {
 const _formatOptions = [
   _FormatOption(
     format: null,
-    label: 'HLS (default)',
-    urlPattern: '/{hash}/hls/stream_720p.m3u8 (bandwidth tracker)',
+    label: 'Auto (default)',
+    urlPattern: 'HLS 720p/480p, 2 requests, bandwidth tracker selects quality',
   ),
   _FormatOption(
     format: VideoPlaybackFormat.raw,
-    label: 'Raw (blossom)',
-    urlPattern: '/{hash} (original upload, 7-21 Mbps)',
+    label: 'Raw original upload',
+    urlPattern: '/{hash} — 1 request, 2-16 MB/6s, 7-21 Mbps, no transcode',
   ),
   _FormatOption(
     format: VideoPlaybackFormat.hlsMaster,
-    label: 'HLS Master',
-    urlPattern: '/{hash}/hls/master.m3u8 (adaptive)',
+    label: 'HLS master playlist',
+    urlPattern: '/{hash}/hls/master.m3u8 — 3 requests, adaptive 720p/480p',
   ),
   _FormatOption(
     format: VideoPlaybackFormat.hls720p,
-    label: 'HLS 720p',
-    urlPattern: '/{hash}/hls/stream_720p.m3u8',
+    label: 'HLS 720p stream',
+    urlPattern: '/{hash}/hls/stream_720p.m3u8 — 2 requests, 1.5-2.5 MB/6s',
   ),
   _FormatOption(
     format: VideoPlaybackFormat.hls480p,
-    label: 'HLS 480p',
-    urlPattern: '/{hash}/hls/stream_480p.m3u8',
+    label: 'HLS 480p stream',
+    urlPattern: '/{hash}/hls/stream_480p.m3u8 — 2 requests, 0.6-1 MB/6s',
   ),
   _FormatOption(
     format: VideoPlaybackFormat.ts720p,
-    label: 'TS 720p',
-    urlPattern: '/{hash}/720p (direct .ts)',
+    label: 'Progressive TS 720p',
+    urlPattern: '/{hash}/720p — 1 request, MPEG-TS, 1.5-2.5 MB/6s',
   ),
   _FormatOption(
     format: VideoPlaybackFormat.ts480p,
-    label: 'TS 480p',
-    urlPattern: '/{hash}/480p (direct .ts)',
+    label: 'Progressive TS 480p',
+    urlPattern: '/{hash}/480p — 1 request, MPEG-TS, 0.6-1 MB/6s',
   ),
   _FormatOption(
-    format: VideoPlaybackFormat.fmp4_720p,
-    label: 'fMP4 720p',
-    urlPattern: '/{hash}/720p.mp4',
+    format: VideoPlaybackFormat.mp4_720p,
+    label: 'Progressive MP4 720p',
+    urlPattern: '/{hash}/720p.mp4 — 1 request, faststart, 1.5-2.5 MB/6s',
   ),
   _FormatOption(
-    format: VideoPlaybackFormat.fmp4_480p,
-    label: 'fMP4 480p',
-    urlPattern: '/{hash}/480p.mp4',
+    format: VideoPlaybackFormat.mp4_480p,
+    label: 'Progressive MP4 480p',
+    urlPattern: '/{hash}/480p.mp4 — 1 request, faststart, 0.6-1 MB/6s',
   ),
 ];
 
