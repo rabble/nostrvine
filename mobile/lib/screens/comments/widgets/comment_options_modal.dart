@@ -121,7 +121,7 @@ class CommentOptionsModal {
             identifier: 'block_user_option',
             label: 'Block User',
             semanticLabel: 'Block this user',
-            iconPath: DivineIconName.flag.assetPath,
+            iconPath: DivineIconName.prohibit.assetPath,
             isDestructive: true,
             onTap: () => context.pop('block'),
           ),
