@@ -20,6 +20,7 @@ class SmoothTimeDisplay extends StatefulWidget {
   const SmoothTimeDisplay({
     required this.isPlayingSelector,
     required this.currentPositionSelector,
+    this.maxDuration,
     this.style,
     this.formatter,
     super.key,
@@ -30,6 +31,10 @@ class SmoothTimeDisplay extends StatefulWidget {
 
   /// Selector that extracts current position from [ClipEditorState].
   final Duration Function(ClipEditorState state) currentPositionSelector;
+
+  /// Upper bound for the displayed time. When set, the interpolated
+  /// position is clamped so it never exceeds this value.
+  final Duration? maxDuration;
 
   /// Text style for the time display
   final TextStyle? style;
@@ -113,13 +118,18 @@ class _SmoothTimeDisplayState extends State<SmoothTimeDisplay>
   }
 
   Duration get _displayPosition {
+    final max = widget.maxDuration;
+
     if (!_previousIsPlaying || _lastUpdateTime == null) {
+      if (max != null && _lastKnownPosition > max) return max;
       return _lastKnownPosition;
     }
 
     // Interpolate: add elapsed time since last update
     final elapsed = DateTime.now().difference(_lastUpdateTime!);
-    return _lastKnownPosition + elapsed;
+    final interpolated = _lastKnownPosition + elapsed;
+    if (max != null && interpolated > max) return max;
+    return interpolated;
   }
 
   @override

@@ -147,6 +147,7 @@ class VideoClipEditorBottomBar extends StatelessWidget {
                     ),
                     builder: (context, data) {
                       Duration totalDuration;
+                      Duration maxDuration;
 
                       if (isEditing) {
                         if (currentClipIndex >= data.clips.length) {
@@ -156,12 +157,31 @@ class VideoClipEditorBottomBar extends StatelessWidget {
                             'Total clips: ${data.clips.length}',
                           );
                           totalDuration = Duration.zero;
+                          maxDuration = Duration.zero;
                         } else {
                           totalDuration = data.clips[currentClipIndex].duration;
+                          maxDuration = totalDuration;
                         }
                       } else {
                         totalDuration = data.totalDuration;
+                        // Clamp interpolation to the end of the current clip
+                        // so the display never overshoots into the next clip's
+                        // time range.
+                        maxDuration = data.clips
+                            .take(
+                              (currentClipIndex + 1).clamp(
+                                0,
+                                data.clips.length,
+                              ),
+                            )
+                            .fold(
+                              Duration.zero,
+                              (sum, clip) => sum + clip.duration,
+                            );
                       }
+
+                      final maxMs =
+                          VideoEditorConstants.maxDuration.inMilliseconds;
 
                       return VideoTimeDisplay(
                         key: ValueKey(
@@ -174,7 +194,13 @@ class VideoClipEditorBottomBar extends StatelessWidget {
                         totalDuration: Duration(
                           milliseconds: totalDuration.inMilliseconds.clamp(
                             0,
-                            VideoEditorConstants.maxDuration.inMilliseconds,
+                            maxMs,
+                          ),
+                        ),
+                        maxDuration: Duration(
+                          milliseconds: maxDuration.inMilliseconds.clamp(
+                            0,
+                            maxMs,
                           ),
                         ),
                       );
