@@ -151,6 +151,20 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('hides Secure Your Account for non-anonymous users', (
+      tester,
+    ) async {
+      when(() => mockAuthService.isAnonymous).thenReturn(false);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Secure Your Account'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
     testWidgets('does not render account section when unauthenticated', (
       tester,
     ) async {
