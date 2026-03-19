@@ -34,7 +34,7 @@ class MessageRequestsView extends ConsumerWidget {
         onBackPressed: context.pop,
         actions: [
           DiVineAppBarAction(
-            icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+            icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
             onPressed: () => _showBulkActions(context),
             semanticLabel: 'More options',
           ),
