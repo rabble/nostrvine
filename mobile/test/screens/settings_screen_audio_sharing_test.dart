@@ -9,25 +9,44 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAudioSharingPreferenceService extends Mock
     implements AudioSharingPreferenceService {}
 
+class _MockLanguagePreferenceService extends Mock
+    implements LanguagePreferenceService {}
+
+class _MockAccountLabelService extends Mock implements AccountLabelService {}
+
 void main() {
   group('ContentPreferencesScreen Audio Sharing Toggle', () {
     late _MockAudioSharingPreferenceService mockAudioSharingService;
+    late _MockLanguagePreferenceService mockLanguageService;
+    late _MockAccountLabelService mockAccountLabelService;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
       mockAudioSharingService = _MockAudioSharingPreferenceService();
+      mockLanguageService = _MockLanguagePreferenceService();
+      mockAccountLabelService = _MockAccountLabelService();
 
       when(
         () => mockAudioSharingService.isAudioSharingEnabled,
       ).thenReturn(false);
+      when(() => mockLanguageService.contentLanguage).thenReturn('en');
+      when(() => mockLanguageService.isCustomLanguageSet).thenReturn(false);
+      when(
+        () => mockAccountLabelService.accountLabels,
+      ).thenReturn({});
+      when(
+        () => mockAccountLabelService.initialized,
+      ).thenAnswer((_) async {});
     });
 
     Widget createTestWidget() {
@@ -36,6 +55,12 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           audioSharingPreferenceServiceProvider.overrideWithValue(
             mockAudioSharingService,
+          ),
+          languagePreferenceServiceProvider.overrideWithValue(
+            mockLanguageService,
+          ),
+          accountLabelServiceProvider.overrideWithValue(
+            mockAccountLabelService,
           ),
         ],
         child: MaterialApp(
