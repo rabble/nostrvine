@@ -35,9 +35,34 @@ class _MockConversationListBloc
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
     implements MyFollowingBloc {}
 
+/// Minimal mock so NotificationsScreen (default tab) renders without crashing.
+class _MockRelayNotifications extends RelayNotifications {
+  @override
+  Future<NotificationFeedState> build() async {
+    return NotificationFeedState(
+      notifications: const [],
+      isInitialLoad: false,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<void> markAsRead(String notificationId) async {}
+
+  @override
+  Future<void> markAllAsRead() async {}
+
+  @override
+  Future<void> loadMore() async {}
+
+  @override
+  Future<void> refresh() async {}
+}
+
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey) {
     when(() => authState).thenReturn(AuthState.authenticated);
+    when(() => isAuthenticated).thenReturn(true);
     when(
       () => authStateStream,
     ).thenAnswer((_) => const Stream<AuthState>.empty());
@@ -95,6 +120,7 @@ void main() {
         mockAuthService: mockAuthService,
         additionalOverrides: [
           relayNotificationUnreadCountProvider.overrideWithValue(0),
+          relayNotificationsProvider.overrideWith(_MockRelayNotifications.new),
           goRouterProvider.overrideWithValue(mockGoRouter),
         ],
         home: MockGoRouterProvider(
@@ -122,6 +148,10 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pump();
 
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+
         expect(find.byType(FollowingBar), findsOneWidget);
       });
 
@@ -129,6 +159,10 @@ void main() {
         'renders $CircularProgressIndicator when status is initial',
         (tester) async {
           await tester.pumpWidget(buildSubject());
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
           await tester.pump();
 
           expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -147,6 +181,10 @@ void main() {
           );
           await tester.pump();
 
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+
           expect(find.byType(InboxEmptyState), findsOneWidget);
         },
       );
@@ -161,6 +199,10 @@ void main() {
               ),
             ),
           );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
           await tester.pump();
 
           expect(find.byType(InboxEmptyState), findsOneWidget);
@@ -188,6 +230,10 @@ void main() {
               ),
             ),
           );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
           await tester.pumpAndSettle();
 
           expect(find.byType(ConversationTile), findsOneWidget);
@@ -215,6 +261,10 @@ void main() {
               ),
             ),
           );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
           await tester.pump();
 
           expect(find.byType(MessageRequestsBanner), findsOneWidget);
@@ -252,6 +302,10 @@ void main() {
               ),
             ),
           );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
           await tester.pumpAndSettle();
 
           expect(find.byType(MessageRequestsBanner), findsOneWidget);
@@ -282,6 +336,10 @@ void main() {
             ),
           ),
         );
+        await tester.pump();
+
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
         await tester.pumpAndSettle();
 
         when(
@@ -325,6 +383,10 @@ void main() {
         );
         await tester.pump();
 
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+
         when(
           () => mockGoRouter.pushNamed(any()),
         ).thenAnswer((_) async => null);
@@ -356,6 +418,10 @@ void main() {
         );
 
         await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 

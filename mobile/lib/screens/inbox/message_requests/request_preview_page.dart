@@ -5,41 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
+import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_view.dart';
 
-/// Provides the message count for a specific conversation.
-// ignore: specify_nonobvious_property_types
-final _messageCountProvider = FutureProvider.family<int, String>((
-  ref,
-  conversationId,
-) {
-  final dmRepository = ref.watch(dmRepositoryProvider);
-  return dmRepository.countMessagesInConversation(conversationId);
-});
-
-/// Derives participant pubkeys from the conversation ID stored in the DB.
-///
-/// Used as a fallback when pubkeys are not passed via route `extra`, ensuring
-/// deep links work without `extra`.
-// ignore: specify_nonobvious_property_types
-final _participantsProvider = FutureProvider.family<List<String>, String>((
-  ref,
-  conversationId,
-) async {
-  final dmRepository = ref.watch(dmRepositoryProvider);
-  final conversation = await dmRepository.getConversation(conversationId);
-  if (conversation == null) return [];
-  final userPubkey = dmRepository.userPubkey;
-  return conversation.participantPubkeys
-      .where((pk) => pk != userPubkey)
-      .toList();
-});
-
 /// Request preview page.
 ///
-/// Provides [MessageRequestActionsCubit] for the decline action and
-/// fetches the message count via a Riverpod provider.
+/// Provides [RequestPreviewCubit] for data loading and
+/// [MessageRequestActionsCubit] for the decline action.
 class RequestPreviewPage extends ConsumerWidget {
   const RequestPreviewPage({
     required this.conversationId,
@@ -61,20 +34,21 @@ class RequestPreviewPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
-    final messageCount = ref.watch(_messageCountProvider(conversationId));
 
-    // Use provided pubkeys if available, otherwise load from DB.
-    final effectivePubkeys = participantPubkeys.isNotEmpty
-        ? participantPubkeys
-        : ref.watch(_participantsProvider(conversationId)).asData?.value ?? [];
-
-    return BlocProvider(
-      create: (_) => MessageRequestActionsCubit(dmRepository: dmRepository),
-      child: RequestPreviewView(
-        conversationId: conversationId,
-        participantPubkeys: effectivePubkeys,
-        messageCount: messageCount,
-      ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => RequestPreviewCubit(
+            dmRepository: dmRepository,
+            conversationId: conversationId,
+            initialParticipantPubkeys: participantPubkeys,
+          )..load(),
+        ),
+        BlocProvider(
+          create: (_) => MessageRequestActionsCubit(dmRepository: dmRepository),
+        ),
+      ],
+      child: const RequestPreviewView(),
     );
   }
 }

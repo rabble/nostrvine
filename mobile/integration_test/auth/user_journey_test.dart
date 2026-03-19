@@ -225,19 +225,19 @@ void main() {
         // ── Phase 5: Skip editor, add title, publish ──
         logPhase('── Phase 5: Publish video ──');
 
-        // Wait for the editor "Next" button that navigates to metadata
-        final nextButton = find.text('Next');
+        // Wait for the editor "Done" button (check icon) that pops with clips
+        final doneButton = find.bySemanticsLabel('Done');
         final foundEditor = await waitForWidget(
           tester,
-          nextButton,
+          doneButton,
         );
         expect(
           foundEditor,
           isTrue,
-          reason: 'Editor "Next" button should appear on clip editor screen',
+          reason: 'Editor "Done" button should appear on clip editor screen',
         );
 
-        await tester.tap(nextButton);
+        await tester.tap(doneButton);
         await tester.pump(const Duration(seconds: 2));
         logPhase('Editor Next tapped, proceeding to metadata');
 

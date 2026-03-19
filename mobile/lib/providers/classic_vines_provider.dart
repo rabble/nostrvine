@@ -65,7 +65,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
-    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final client = ref.read(funnelcakeApiClientProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
     final blocklistService = ref.read(contentBlocklistServiceProvider);
     final funnelcakeAvailable =
@@ -78,10 +78,11 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     // Try REST API first (Funnelcake has comprehensive classic Vine data)
     if (funnelcakeAvailable) {
       try {
-        final videos = await analyticsService.getClassicVines(
+        final stats = await client.getClassicVines(
           limit: _pageSize,
           offset: _randomOffset,
         );
+        final videos = stats.map((v) => v.toVideoEvent()).toList();
 
         // Filter for platform compatibility, content preferences,
         // blocked users, and shuffle
@@ -144,7 +145,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
   /// Refresh with a new random slice of classic vines
   Future<void> refresh() async {
-    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final client = ref.read(funnelcakeApiClientProvider);
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -167,10 +168,11 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     state = const AsyncLoading();
 
     try {
-      final videos = await analyticsService.getClassicVines(
+      final stats = await client.getClassicVines(
         limit: _pageSize,
         offset: _randomOffset,
       );
+      final videos = stats.map((v) => v.toVideoEvent()).toList();
 
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistService = ref.read(contentBlocklistServiceProvider);
@@ -205,7 +207,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final currentState = state.value!;
     if (currentState.isLoadingMore) return;
 
-    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final client = ref.read(funnelcakeApiClientProvider);
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -217,10 +219,11 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       _loadMorePages++;
       final nextOffset = _randomOffset + _loadMorePages * _pageSize;
 
-      final videos = await analyticsService.getClassicVines(
+      final stats = await client.getClassicVines(
         limit: _pageSize,
         offset: nextOffset,
       );
+      final videos = stats.map((v) => v.toVideoEvent()).toList();
 
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistService = ref.read(contentBlocklistServiceProvider);

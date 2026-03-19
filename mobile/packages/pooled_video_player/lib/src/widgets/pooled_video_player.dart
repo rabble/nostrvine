@@ -184,19 +184,40 @@ class _RevealVideoAfterFirstFrameState
   int _generation = 0;
   Timer? _firstFrameTimeout;
 
+  /// Tracks the last known texture ID to detect Android surface recreation.
+  ///
+  /// On Android, when the app backgrounds/foregrounds or the GPU context is
+  /// lost, `SurfaceProducer` destroys and recreates the surface. The new
+  /// surface has uninitialized content (green in YUV color space). Since
+  /// `waitUntilFirstFrameRendered` is a one-shot `Completer`, it stays
+  /// completed after the initial load and never re-fires on surface
+  /// recreation. This means `_hasRenderedFirstFrame` stays `true` and the
+  /// green frame is visible.
+  ///
+  /// By tracking texture ID changes we can detect surface recreation and
+  /// temporarily re-hide the video until a new frame is rendered.
+  int? _lastTextureId;
+
+  /// Whether we're waiting for the first frame after a surface recreation.
+  bool _surfaceRecreating = false;
+  Timer? _surfaceRecoveryTimer;
+
   @override
   void initState() {
     super.initState();
     _subscribeToFirstFrame();
     _syncFallbackTimer();
+    _listenToTextureId();
   }
 
   @override
   void didUpdateWidget(covariant _RevealVideoAfterFirstFrame oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.videoController, widget.videoController)) {
+      _stopListeningToTextureId(oldWidget.videoController);
       _resetRevealState();
       _subscribeToFirstFrame();
+      _listenToTextureId();
     }
     if (oldWidget.readyForFallback != widget.readyForFallback) {
       _syncFallbackTimer();
@@ -205,8 +226,56 @@ class _RevealVideoAfterFirstFrameState
 
   void _resetRevealState() {
     _firstFrameTimeout?.cancel();
+    _surfaceRecoveryTimer?.cancel();
     _hasRenderedFirstFrame = false;
     _revealedByTimeout = false;
+    _surfaceRecreating = false;
+    _lastTextureId = null;
+  }
+
+  void _listenToTextureId() {
+    _lastTextureId = widget.videoController.id.value;
+    widget.videoController.id.addListener(_onTextureIdChanged);
+  }
+
+  void _stopListeningToTextureId(VideoController controller) {
+    controller.id.removeListener(_onTextureIdChanged);
+    _surfaceRecoveryTimer?.cancel();
+  }
+
+  void _onTextureIdChanged() {
+    final newId = widget.videoController.id.value;
+    if (_lastTextureId != null &&
+        newId != null &&
+        newId != _lastTextureId &&
+        _hasRenderedFirstFrame) {
+      // Surface was recreated — hide texture until a new frame renders.
+      // The `rect` notifier fires once mpv renders to the new surface,
+      // but since dimensions may not change we use a timer as fallback.
+      setState(() => _surfaceRecreating = true);
+      _surfaceRecoveryTimer?.cancel();
+
+      void reveal() {
+        if (!mounted) return;
+        setState(() => _surfaceRecreating = false);
+      }
+
+      // Listen for the next rect update as a "frame rendered" signal.
+      void onRect() {
+        _surfaceRecoveryTimer?.cancel();
+        widget.videoController.rect.removeListener(onRect);
+        reveal();
+      }
+
+      widget.videoController.rect.addListener(onRect);
+
+      // Fallback: reveal after 500ms even if no rect update arrives.
+      _surfaceRecoveryTimer = Timer(const Duration(milliseconds: 500), () {
+        widget.videoController.rect.removeListener(onRect);
+        reveal();
+      });
+    }
+    _lastTextureId = newId;
   }
 
   void _subscribeToFirstFrame() {
@@ -251,6 +320,7 @@ class _RevealVideoAfterFirstFrameState
 
   @override
   void dispose() {
+    _stopListeningToTextureId(widget.videoController);
     _firstFrameTimeout?.cancel();
     super.dispose();
   }
@@ -258,8 +328,9 @@ class _RevealVideoAfterFirstFrameState
   @override
   Widget build(BuildContext context) {
     final shouldReveal =
-        _hasRenderedFirstFrame ||
-        (widget.readyForFallback && _revealedByTimeout);
+        !_surfaceRecreating &&
+        (_hasRenderedFirstFrame ||
+            (widget.readyForFallback && _revealedByTimeout));
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 120),

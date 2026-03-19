@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
+import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -21,21 +22,17 @@ import 'package:openvine/widgets/user_avatar.dart';
 /// a "View profile" button, message count text, and two action buttons:
 /// "View messages" (accept) and "Decline and remove".
 class RequestPreviewView extends ConsumerWidget {
-  const RequestPreviewView({
-    required this.conversationId,
-    required this.participantPubkeys,
-    required this.messageCount,
-    super.key,
-  });
-
-  final String conversationId;
-  final List<String> participantPubkeys;
-
-  /// Number of messages the requester has sent.
-  final AsyncValue<int> messageCount;
+  const RequestPreviewView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final participantPubkeys = context.select(
+      (RequestPreviewCubit cubit) => cubit.state.participantPubkeys,
+    );
+    final messageCount = context.select(
+      (RequestPreviewCubit cubit) => cubit.state.messageCount,
+    );
+
     final otherPubkey = participantPubkeys.isNotEmpty
         ? participantPubkeys.first
         : '';
@@ -69,7 +66,6 @@ class RequestPreviewView extends ConsumerWidget {
                 ),
               ),
               _ActionButtons(
-                conversationId: conversationId,
                 participantPubkeys: participantPubkeys,
               ),
             ],
@@ -91,7 +87,7 @@ class _ProfileContent extends StatelessWidget {
   final String displayName;
   final UserProfile? profile;
   final String otherPubkey;
-  final AsyncValue<int> messageCount;
+  final int messageCount;
 
   @override
   Widget build(BuildContext context) {
@@ -195,12 +191,11 @@ class _MessageCountDescription extends StatelessWidget {
   });
 
   final String displayName;
-  final AsyncValue<int> messageCount;
+  final int messageCount;
 
   @override
   Widget build(BuildContext context) {
-    final count = messageCount.asData?.value ?? 0;
-    final msgText = count == 1 ? '1 message' : '$count messages';
+    final msgText = messageCount == 1 ? '1 message' : '$messageCount messages';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -215,15 +210,15 @@ class _MessageCountDescription extends StatelessWidget {
 
 class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
-    required this.conversationId,
     required this.participantPubkeys,
   });
 
-  final String conversationId;
   final List<String> participantPubkeys;
 
   @override
   Widget build(BuildContext context) {
+    final conversationId = context.read<RequestPreviewCubit>().conversationId;
+
     return SafeArea(
       top: false,
       child: Padding(

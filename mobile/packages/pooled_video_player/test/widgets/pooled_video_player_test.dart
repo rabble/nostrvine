@@ -99,12 +99,20 @@ void main() {
     late Map<int, ValueNotifier<VideoIndexState>> indexNotifiers;
     late _MockVideoController mockVideoController;
     late _MockPlayer mockPlayer;
+    late ValueNotifier<int?> textureIdNotifier;
+    late ValueNotifier<Rect?> textureRectNotifier;
 
     setUp(() {
       final result = _createMockVideoFeedControllerWithNotifier();
       mockController = result.controller;
       indexNotifiers = result.notifiers;
       mockVideoController = _MockVideoController();
+      textureIdNotifier = ValueNotifier<int?>(1);
+      textureRectNotifier = ValueNotifier<Rect?>(
+        const Rect.fromLTWH(0, 0, 1920, 1080),
+      );
+      when(() => mockVideoController.id).thenReturn(textureIdNotifier);
+      when(() => mockVideoController.rect).thenReturn(textureRectNotifier);
       when(
         () => mockVideoController.waitUntilFirstFrameRendered,
       ).thenAnswer((_) => Future<void>.value());
@@ -462,9 +470,7 @@ void main() {
       });
 
       testWidgets('reveals video after timeout when ready and first frame '
-          'stalls', (
-        tester,
-      ) async {
+          'stalls', (tester) async {
         final firstFrameCompleter = Completer<void>();
         when(
           () => mockVideoController.waitUntilFirstFrameRendered,
@@ -685,53 +691,166 @@ void main() {
         );
       });
 
+      testWidgets('hides video texture when isActive is false', (tester) async {
+        await tester.pumpWidget(buildWidget(isActive: false));
+
+        final opacityFinder = find.ancestor(
+          of: find.byType(AnimatedOpacity),
+          matching: find.byType(Opacity),
+        );
+
+        expect(opacityFinder, findsOneWidget);
+        expect(tester.widget<Opacity>(opacityFinder).opacity, equals(0));
+      });
+
+      testWidgets('shows video texture when isActive is true', (tester) async {
+        await tester.pumpWidget(buildWidget());
+
+        final opacityFinder = find.ancestor(
+          of: find.byType(AnimatedOpacity),
+          matching: find.byType(Opacity),
+        );
+
+        expect(opacityFinder, findsOneWidget);
+        expect(tester.widget<Opacity>(opacityFinder).opacity, equals(1));
+      });
+
+      testWidgets('video widget stays in tree when inactive', (tester) async {
+        await tester.pumpWidget(buildWidget(isActive: false));
+
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+      });
+    });
+
+    group('surface recreation green frame prevention', () {
+      setUp(() {
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.ready,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+      });
+
+      testWidgets('hides video when texture ID changes after first frame', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        // Video should be visible after first frame
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+
+        // Simulate surface recreation: texture ID changes
+        textureIdNotifier.value = 2;
+        await tester.pump();
+
+        // Video should be hidden during surface recreation
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+      });
+
       testWidgets(
-        'hides video texture when isActive is false',
-        (tester) async {
-          await tester.pumpWidget(buildWidget(isActive: false));
-
-          final opacityFinder = find.ancestor(
-            of: find.byType(AnimatedOpacity),
-            matching: find.byType(Opacity),
-          );
-
-          expect(opacityFinder, findsOneWidget);
-          expect(
-            tester.widget<Opacity>(opacityFinder).opacity,
-            equals(0),
-          );
-        },
-      );
-
-      testWidgets(
-        'shows video texture when isActive is true',
+        'reveals video after rect update following surface recreation',
         (tester) async {
           await tester.pumpWidget(buildWidget());
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 120));
 
           final opacityFinder = find.ancestor(
-            of: find.byType(AnimatedOpacity),
-            matching: find.byType(Opacity),
+            of: find.byKey(const Key('video_widget')),
+            matching: find.byType(AnimatedOpacity),
           );
 
-          expect(opacityFinder, findsOneWidget);
+          // Simulate surface recreation
+          textureIdNotifier.value = 2;
+          await tester.pump();
           expect(
-            tester.widget<Opacity>(opacityFinder).opacity,
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+            equals(0),
+          );
+
+          // Simulate new frame rendered: rect notifier fires with new value
+          textureRectNotifier.value = const Rect.fromLTWH(0, 0, 1280, 720);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 120));
+
+          // Video should be visible again
+          expect(
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
             equals(1),
           );
         },
       );
 
-      testWidgets(
-        'video widget stays in tree when inactive',
-        (tester) async {
-          await tester.pumpWidget(buildWidget(isActive: false));
+      testWidgets('reveals video after timeout if no rect update arrives', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
 
-          expect(
-            find.byKey(const Key('video_widget')),
-            findsOneWidget,
-          );
-        },
-      );
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        // Simulate surface recreation
+        textureIdNotifier.value = 2;
+        await tester.pump();
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        // Wait for fallback timeout (500ms)
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        // Video should be visible via timeout fallback
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
+
+      testWidgets('does not hide video when initial texture ID is set', (
+        tester,
+      ) async {
+        // Start with null texture ID
+        textureIdNotifier.value = null;
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        // First texture ID assignment should NOT trigger hiding
+        textureIdNotifier.value = 1;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
     });
   });
 }

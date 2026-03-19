@@ -1,7 +1,6 @@
 // ABOUTME: Tests for isFromDivineServer detection logic
 // ABOUTME: Verifies all Divine subdomains are recognized as first-party
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
@@ -137,36 +136,40 @@ void main() {
   });
 
   group('getOptimalVideoUrlForPlatform', () {
-    test('returns original MP4 for Divine-hosted videos on desktop hosts', () {
-      const url =
-          'https://media.divine.video/'
-          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4';
-      final video = _createVideoWithUrl(url);
+    test('returns HLS 720p for Divine-hosted videos by default', () {
+      const hash =
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      expect(video.getOptimalVideoUrlForPlatform(), url);
+      expect(video.shouldPreferHlsPlayback, isTrue);
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash/hls/stream_720p.m3u8'),
+      );
     });
 
-    test('prefers direct MP4 for bare media.divine.video blob URLs', () {
+    test('uses HLS 720p for bare media.divine.video blob URLs', () {
       const hash =
           '191679cbbeea3e4e3539d46b558e66fbadb673733af1ada0161a6e8b1cf61bea';
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
       expect(video.hasBareDivineHashPath, isTrue);
-      expect(video.shouldPreferHlsPlayback, isFalse);
+      expect(video.shouldPreferHlsPlayback, isTrue);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash'),
+        equals('https://media.divine.video/$hash/hls/stream_720p.m3u8'),
       );
     });
 
-    test('keeps explicit MP4 URLs unchanged on Divine hosts', () {
+    test('returns original URL for non-Divine videos', () {
       final video = _createVideoWithUrl(
-        'https://media.divine.video/test/video.mp4',
+        'https://blossom.primal.net/test/video.mp4',
       );
 
+      expect(video.shouldPreferHlsPlayback, isFalse);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/test/video.mp4'),
+        equals('https://blossom.primal.net/test/video.mp4'),
       );
     });
   });
@@ -175,14 +178,10 @@ void main() {
     const hash =
         'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d';
 
-    test('allow direct-file caching for bare hash paths', () {
+    test('returns null cache URL for Divine videos (HLS not cacheable)', () {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      expect(video.shouldSkipFileCaching, isFalse);
-      expect(
-        video.getCacheableVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash'),
-      );
+      expect(video.getCacheableVideoUrlForPlatform(), isNull);
     });
 
     test('do not treat quality variants as bare hash paths', () {
@@ -191,45 +190,41 @@ void main() {
       );
 
       expect(video.hasBareDivineHashPath, isFalse);
-      expect(video.shouldPreferHlsPlayback, isFalse);
+      expect(video.shouldPreferHlsPlayback, isTrue);
     });
 
     test(
-      'do not force HLS for bare hash paths on cdn.divine.video',
+      'uses HLS for all Divine hosts including cdn.divine.video',
       () {
         final video = _createVideoWithUrl('https://cdn.divine.video/$hash');
-        final expectedPlaybackUrl =
-            kIsWeb || defaultTargetPlatform != TargetPlatform.android
-            ? 'https://cdn.divine.video/$hash'
-            : 'https://media.divine.video/$hash/720p';
 
-        expect(video.hasBareDivineHashPath, isFalse);
-        expect(video.shouldPreferHlsPlayback, isFalse);
+        expect(video.shouldPreferHlsPlayback, isTrue);
         expect(
           video.getOptimalVideoUrlForPlatform(),
-          equals(expectedPlaybackUrl),
+          equals('https://media.divine.video/$hash/hls/stream_720p.m3u8'),
         );
-        expect(
-          video.getCacheableVideoUrlForPlatform(),
-          equals('https://cdn.divine.video/$hash'),
-        );
+        expect(video.getCacheableVideoUrlForPlatform(), isNull);
       },
     );
   });
 
   group('toPooledVideoItems', () {
-    test('uses the platform-aware URL for pooled playback', () {
-      const url =
-          'https://media.divine.video/'
-          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4';
-      final video = _createVideoWithUrl(url);
+    test('uses HLS URL for Divine-hosted pooled playback', () {
+      const hash =
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/$hash',
+      );
 
       final items = <VideoEvent>[video].toPooledVideoItems();
 
       expect(items, hasLength(1));
       expect(items.single, isA<VideoItem>());
       expect(items.single.id, video.id);
-      expect(items.single.url, url);
+      expect(
+        items.single.url,
+        equals('https://media.divine.video/$hash/hls/stream_720p.m3u8'),
+      );
     });
 
     test('filters out videos with null URLs', () {

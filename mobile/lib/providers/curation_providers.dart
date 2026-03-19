@@ -9,26 +9,12 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'curation_providers.g.dart';
-
-/// Provider for analytics API service
-@riverpod
-AnalyticsApiService analyticsApiService(Ref ref) {
-  final environmentConfig = ref.watch(currentEnvironmentProvider);
-  final nostrService = ref.watch(nostrServiceProvider);
-  final baseUrl = resolveApiBaseUrlFromRelays(
-    configuredRelays: nostrService.configuredRelays,
-    fallbackBaseUrl: environmentConfig.apiBaseUrl,
-  );
-
-  return AnalyticsApiService(baseUrl: baseUrl);
-}
 
 /// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
 @riverpod
@@ -48,15 +34,15 @@ FunnelcakeApiClient funnelcakeApiClient(Ref ref) {
 /// Re-checks when environment or relay configuration changes.
 ///
 /// All feed providers should watch this instead of checking
-/// `analyticsService.isAvailable` directly.
+/// `client.isAvailable` directly.
 @Riverpod(keepAlive: true)
 class FunnelcakeAvailable extends _$FunnelcakeAvailable {
   @override
   Future<bool> build() async {
-    final analyticsService = ref.watch(analyticsApiServiceProvider);
+    final client = ref.watch(funnelcakeApiClientProvider);
 
     // Quick check: is the API configured at all?
-    if (!analyticsService.isAvailable) {
+    if (!client.isAvailable) {
       Log.debug(
         '🔌 Funnelcake: API not configured',
         name: 'FunnelcakeAvailable',
@@ -97,10 +83,11 @@ class FunnelcakeAvailable extends _$FunnelcakeAvailable {
       // Use recent endpoint with limit=1 as lightweight probe
       // (trending endpoint may 500 on staging due to scoring query issues)
       // Use a short 3s timeout so the probe doesn't block startup
-      await analyticsService.getRecentVideos(
-        limit: 1,
-        timeout: const Duration(seconds: 3),
-      );
+      await client
+          .getRecentVideos(limit: 1)
+          .timeout(
+            const Duration(seconds: 3),
+          );
       Log.info(
         '✅ Funnelcake: API available',
         name: 'FunnelcakeAvailable',
@@ -289,8 +276,9 @@ class AnalyticsTrending extends _$AnalyticsTrending {
     );
 
     try {
-      final service = ref.read(analyticsApiServiceProvider);
-      final videos = await service.getTrendingVideos(forceRefresh: true);
+      final client = ref.read(funnelcakeApiClientProvider);
+      final stats = await client.getTrendingVideos(limit: 100);
+      final videos = stats.map((v) => v.toVideoEvent()).toList();
 
       // Check if provider is still mounted after async gap
       if (!ref.mounted) return;
@@ -340,10 +328,13 @@ class AnalyticsTrending extends _$AnalyticsTrending {
     );
 
     try {
-      final service = ref.read(analyticsApiServiceProvider);
+      final client = ref.read(funnelcakeApiClientProvider);
 
-      // Use cursor-based pagination with 'before' parameter
-      final videos = await service.getTrendingVideos(before: _nextCursor);
+      // Use cursor-based pagination with 'before' parameter (limit default: 50)
+      final stats = _nextCursor != null
+          ? await client.getTrendingVideos(before: _nextCursor)
+          : await client.getTrendingVideos();
+      final videos = stats.map((v) => v.toVideoEvent()).toList();
 
       // Check if provider is still mounted after async gap
       if (!ref.mounted) return;
@@ -417,9 +408,10 @@ class AnalyticsPopular extends _$AnalyticsPopular {
     );
 
     try {
-      final service = ref.read(analyticsApiServiceProvider);
+      final client = ref.read(funnelcakeApiClientProvider);
       // Popular uses the trending videos API
-      final videos = await service.getTrendingVideos(forceRefresh: true);
+      final stats = await client.getTrendingVideos(limit: 100);
+      final videos = stats.map((v) => v.toVideoEvent()).toList();
 
       // Update state with new popular videos
       state = videos;

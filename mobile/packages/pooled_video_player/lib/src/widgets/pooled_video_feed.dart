@@ -94,6 +94,17 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   /// The feed controller.
   VideoFeedController get controller => _controller;
 
+  /// Animate the page view to [index].
+  ///
+  /// Used by overlay widgets (e.g., slow-load skip) that need to scroll
+  /// the feed programmatically. Triggers the page-changed callback as a
+  /// side effect.
+  Future<void> animateToPage(int index) => _pageController.animateToPage(
+    index,
+    duration: const Duration(milliseconds: 300),
+    curve: Curves.easeInOut,
+  );
+
   @override
   void initState() {
     super.initState();

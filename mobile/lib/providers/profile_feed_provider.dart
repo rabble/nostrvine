@@ -72,7 +72,7 @@ class ProfileFeed extends _$ProfileFeed {
     // cascade rebuilds create new instances and lose state.
     final funnelcakeAsync = ref.read(funnelcakeAvailableProvider);
     final funnelcakeAvailable = funnelcakeAsync.asData?.value ?? false;
-    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final funnelcakeClient = ref.read(funnelcakeApiClientProvider);
     final sessionCache = ref.read(profileFeedSessionCacheProvider);
     final retainedState = sessionCache.read(userId);
 
@@ -95,10 +95,11 @@ class ProfileFeed extends _$ProfileFeed {
       );
 
       try {
-        final apiVideos = await analyticsService.getVideosByAuthor(
+        final stats = await funnelcakeClient.getVideosByAuthor(
           pubkey: userId,
           limit: 100,
         );
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
@@ -428,11 +429,12 @@ class ProfileFeed extends _$ProfileFeed {
   /// Fix #2: Refresh from REST API when in REST API mode
   Future<void> _refreshFromRestApi() async {
     try {
-      final analyticsService = ref.read(analyticsApiServiceProvider);
-      final apiVideos = await analyticsService.getVideosByAuthor(
+      final client = ref.read(funnelcakeApiClientProvider);
+      final stats = await client.getVideosByAuthor(
         pubkey: userId,
         limit: 100,
       );
+      final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
       if (!ref.mounted) return;
 
@@ -534,17 +536,19 @@ class ProfileFeed extends _$ProfileFeed {
     try {
       // If using REST API, load more using cursor-based pagination
       if (_usingRestApi) {
-        final analyticsService = ref.read(analyticsApiServiceProvider);
+        final client = ref.read(funnelcakeApiClientProvider);
         Log.info(
           'ProfileFeed: Loading more from REST API with cursor: $_nextCursor for user=$userId',
           name: 'ProfileFeedProvider',
           category: LogCategory.video,
         );
 
-        final apiVideos = await analyticsService.getVideosByAuthor(
+        final stats = await client.getVideosByAuthor(
           pubkey: userId,
+          limit: 100,
           before: _nextCursor,
         );
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
 
@@ -722,11 +726,12 @@ class ProfileFeed extends _$ProfileFeed {
 
     if (funnelcakeAvailable) {
       try {
-        final analyticsService = ref.read(analyticsApiServiceProvider);
-        final apiVideos = await analyticsService.getVideosByAuthor(
+        final client = ref.read(funnelcakeApiClientProvider);
+        final stats = await client.getVideosByAuthor(
           pubkey: userId,
           limit: 100,
         );
+        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
 

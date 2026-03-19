@@ -1,7 +1,8 @@
-// ABOUTME: Repository for NIP-17 direct message management.
-// ABOUTME: Handles subscribing to gift-wrapped events, decrypting messages,
-// ABOUTME: persisting to the database, and providing reactive streams.
-// ABOUTME: Supports both Kind 14 (text) and Kind 15 (file) messages.
+// ABOUTME: Repository for NIP-17 and NIP-04 direct message management.
+// ABOUTME: Handles subscribing to gift-wrapped (NIP-17) and legacy encrypted
+// ABOUTME: (NIP-04) events, decrypting messages, persisting to the database,
+// ABOUTME: and providing reactive streams.
+// ABOUTME: Supports Kind 14 (text), Kind 15 (file), and Kind 4 (NIP-04 DM).
 // ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
 import 'dart:async';
@@ -25,6 +26,19 @@ import 'package:openvine/utils/unified_logger.dart';
 ///
 /// Returns `null` if decryption fails at any layer.
 typedef RumorDecryptor = Future<Event?> Function(Nostr nostr, Event giftWrap);
+
+/// Decrypts a NIP-04 encrypted direct message (kind 4).
+///
+/// [peerPubkey] is the other party's pubkey (the counterpart in the
+/// conversation, NOT the current user's pubkey).
+/// [ciphertext] is the NIP-04 ciphertext from the event content.
+///
+/// Returns the decrypted plaintext, or `null` if decryption fails.
+typedef Nip04Decryptor =
+    Future<String?> Function(
+      String peerPubkey,
+      String ciphertext,
+    );
 
 /// Supported NIP-17 rumor event kinds.
 const Set<int> _supportedDmKinds = {
@@ -56,13 +70,15 @@ class DmRepository {
     String? userPubkey,
     NostrSigner? signer,
     RumorDecryptor? rumorDecryptor,
+    Nip04Decryptor? nip04Decryptor,
   }) : _nostrClient = nostrClient,
        _directMessagesDao = directMessagesDao,
        _conversationsDao = conversationsDao,
        _messageService = messageService,
        _userPubkey = userPubkey ?? '',
        _signer = signer,
-       _rumorDecryptor = rumorDecryptor ?? GiftWrapUtil.getRumorEvent;
+       _rumorDecryptor = rumorDecryptor ?? GiftWrapUtil.getRumorEvent,
+       _nip04Decryptor = nip04Decryptor;
 
   final NostrClient _nostrClient;
   final DirectMessagesDao _directMessagesDao;
@@ -71,6 +87,7 @@ class DmRepository {
   String _userPubkey;
   NostrSigner? _signer;
   RumorDecryptor _rumorDecryptor;
+  Nip04Decryptor? _nip04Decryptor;
 
   StreamSubscription<Event>? _giftWrapSubscription;
   Timer? _pollTimer;
@@ -98,6 +115,7 @@ class DmRepository {
     required NostrSigner signer,
     required NIP17MessageService messageService,
     RumorDecryptor? rumorDecryptor,
+    Nip04Decryptor? nip04Decryptor,
   }) {
     if (isInitialized && _userPubkey == userPubkey) return;
 
@@ -114,6 +132,7 @@ class DmRepository {
     _signer = signer;
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
+    if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
     startListening();
   }
 
@@ -171,7 +190,7 @@ class DmRepository {
     if (_giftWrapSubscription != null || _disposed || !isInitialized) return;
 
     final filter = nostr_filter.Filter(
-      kinds: [EventKind.giftWrap],
+      kinds: [EventKind.giftWrap, EventKind.directMessage],
       p: [_userPubkey],
     );
 
@@ -190,7 +209,7 @@ class DmRepository {
     );
 
     _giftWrapSubscription = stream.listen(
-      _handleGiftWrapEvent,
+      _handleIncomingEvent,
       onError: (Object error) {
         Log.error(
           'DM subscription error: $error',
@@ -248,7 +267,7 @@ class DmRepository {
         // Instead, fetch the most recent events and rely on dedup to skip
         // already-processed ones.
         final filter = nostr_filter.Filter(
-          kinds: [EventKind.giftWrap],
+          kinds: [EventKind.giftWrap, EventKind.directMessage],
           p: [_userPubkey],
           limit: 20,
         );
@@ -260,7 +279,7 @@ class DmRepository {
         );
 
         for (final event in events) {
-          await _handleGiftWrapEvent(event);
+          await _handleIncomingEvent(event);
         }
       } on Object catch (e) {
         Log.error(
@@ -276,6 +295,15 @@ class DmRepository {
   // -------------------------------------------------------------------------
   // Receive pipeline
   // -------------------------------------------------------------------------
+
+  /// Routes an incoming event to the correct handler based on kind.
+  Future<void> _handleIncomingEvent(Event event) async {
+    if (event.kind == EventKind.directMessage) {
+      await _handleNip04Event(event);
+    } else {
+      await _handleGiftWrapEvent(event);
+    }
+  }
 
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
     try {
@@ -295,7 +323,9 @@ class DmRepository {
       }
 
       // Decrypt: gift wrap → seal → rumor
-      final nostr = Nostr(_signer!, [], _dummyRelay);
+      final signer = _signer;
+      if (signer == null) return;
+      final nostr = Nostr(signer, [], _dummyRelay);
       await nostr.refreshPublicKey();
 
       final rumorEvent = await _rumorDecryptor(nostr, giftWrapEvent);
@@ -330,6 +360,23 @@ class DmRepository {
       final fileMetadata = rumorEvent.kind == EventKind.fileMessage
           ? _extractFileMetadata(rumorEvent)
           : null;
+
+      // Cross-protocol dedup: if a NIP-04 copy of this message was
+      // processed first (network reordering), skip the duplicate.
+      final isDuplicate = await _directMessagesDao.hasMatchingMessage(
+        conversationId: conversationId,
+        senderPubkey: rumorEvent.pubkey,
+        content: rumorEvent.content,
+        createdAt: rumorEvent.createdAt,
+      );
+      if (isDuplicate) {
+        Log.debug(
+          'Skipping NIP-17 duplicate (NIP-04 copy already stored) '
+          '${giftWrapEvent.id}',
+          category: LogCategory.system,
+        );
+        return;
+      }
 
       // Persist the message
       await _directMessagesDao.insertMessage(
@@ -383,6 +430,9 @@ class DmRepository {
         currentUserHasSent:
             isSentByMe || (existing?.currentUserHasSent ?? false),
         ownerPubkey: _userPubkey,
+        // Protocol only upgrades toward 'nip17', never back. Once we
+        // confirm the peer supports NIP-17 we stop sending NIP-04 copies.
+        dmProtocol: 'nip17',
       );
 
       Log.debug(
@@ -393,6 +443,126 @@ class DmRepository {
     } catch (e, stackTrace) {
       Log.error(
         'Failed to process gift wrap event: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _handleNip04Event(Event nip04Event) async {
+    try {
+      Log.debug(
+        'Received NIP-04 event ${nip04Event.id} '
+        'from ${nip04Event.pubkey}',
+        category: LogCategory.system,
+      );
+
+      // Dedup: use event ID as giftWrapId for the unique index
+      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
+        Log.debug(
+          'Skipping duplicate NIP-04 event ${nip04Event.id}',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      // Extract recipient from p tag
+      String? recipientPubkey;
+      for (final tag in nip04Event.tags) {
+        if (tag.length >= 2 && tag[0] == 'p') {
+          recipientPubkey = tag[1];
+          break;
+        }
+      }
+      if (recipientPubkey == null) return;
+
+      // Determine sender and the other party's pubkey for decryption
+      final senderPubkey = nip04Event.pubkey;
+      final isSentByMe = senderPubkey == _userPubkey;
+      final peerPubkey = isSentByMe ? recipientPubkey : senderPubkey;
+
+      // Decrypt using injected decryptor or signer fallback
+      final signer = _signer;
+      if (signer == null && _nip04Decryptor == null) return;
+      final decryptor =
+          _nip04Decryptor ??
+          (String pubkey, String ciphertext) =>
+              signer!.decrypt(pubkey, ciphertext);
+      final plaintext = await decryptor(peerPubkey, nip04Event.content);
+      if (plaintext == null) {
+        Log.debug(
+          'Failed to decrypt NIP-04 event ${nip04Event.id}',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      // Build participants and conversation ID
+      final participants = [senderPubkey, recipientPubkey]..sort();
+      final conversationId = computeConversationId(participants);
+
+      // Cross-protocol dedup: when a Divine user sends a message, the
+      // dual-send fires both NIP-17 and NIP-04 copies. The receiver (also
+      // Divine) will process the NIP-17 first, then see the NIP-04 copy.
+      // Since the two events have different IDs, hasGiftWrap won't catch it.
+      // Match on sender+content only (no createdAt) because the NIP-17 rumor
+      // and NIP-04 event may have slightly different timestamps.
+      final isDuplicate = await _directMessagesDao.hasMatchingMessage(
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: plaintext,
+        createdAt: nip04Event.createdAt,
+      );
+      if (isDuplicate) {
+        Log.debug(
+          'Skipping NIP-04 duplicate (NIP-17 copy already stored) '
+          '${nip04Event.id}',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      // Persist the message
+      await _directMessagesDao.insertMessage(
+        id: nip04Event.id,
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: plaintext,
+        createdAt: nip04Event.createdAt,
+        giftWrapId: nip04Event.id,
+        messageKind: EventKind.directMessage,
+        ownerPubkey: _userPubkey,
+      );
+
+      // Preserve sticky state from any existing conversation row
+      final existing = await _conversationsDao.getConversation(
+        conversationId,
+      );
+
+      await _conversationsDao.upsertConversation(
+        id: conversationId,
+        participantPubkeys: jsonEncode(participants),
+        isGroup: false,
+        createdAt: existing?.createdAt ?? nip04Event.createdAt,
+        lastMessageContent: plaintext,
+        lastMessageTimestamp: nip04Event.createdAt,
+        lastMessageSenderPubkey: senderPubkey,
+        isRead: isSentByMe,
+        currentUserHasSent:
+            isSentByMe || (existing?.currentUserHasSent ?? false),
+        ownerPubkey: _userPubkey,
+        // Protocol only upgrades (null → nip04 → nip17), never downgrades.
+        dmProtocol: existing?.dmProtocol ?? 'nip04',
+      );
+
+      Log.debug(
+        'Persisted NIP-04 DM in conversation $conversationId',
+        category: LogCategory.system,
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to process NIP-04 event: $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
@@ -462,6 +632,7 @@ class DmRepository {
           lastMessageSenderPubkey: _userPubkey,
           currentUserHasSent: true,
           ownerPubkey: _userPubkey,
+          dmProtocol: existingSend?.dmProtocol,
         );
 
         Log.debug(
@@ -469,6 +640,27 @@ class DmRepository {
           '$conversationId',
           category: LogCategory.system,
         );
+
+        // Fire NIP-04 fallback for interop with legacy clients.
+        // Skip when the conversation is known to be NIP-17-only.
+        final protocol = existingSend?.dmProtocol;
+        if (protocol != 'nip17') {
+          unawaited(
+            _sendNip04Message(
+              recipientPubkey: recipientPubkey,
+              content: content,
+            ).catchError((Object e) {
+              Log.error(
+                'NIP-04 fallback failed: $e',
+                category: LogCategory.system,
+              );
+              // Reuse NIP17SendResult for simplicity
+              return NIP17SendResult.failure(
+                'NIP-04 fallback failed: $e',
+              );
+            }),
+          );
+        }
       } catch (e, stackTrace) {
         Log.error(
           'Failed to persist sent message locally: $e',
@@ -559,6 +751,7 @@ class DmRepository {
         lastMessageSenderPubkey: _userPubkey,
         currentUserHasSent: true,
         ownerPubkey: _userPubkey,
+        dmProtocol: existingGroup?.dmProtocol,
       );
     }
 
@@ -570,6 +763,10 @@ class DmRepository {
   // -------------------------------------------------------------------------
 
   /// Send an encrypted file message to a 1:1 conversation.
+  ///
+  /// No NIP-04 fallback is sent for file messages because NIP-04 only
+  /// supports plaintext content. File sharing requires NIP-17's kind 15
+  /// with encrypted file metadata tags.
   ///
   /// The file should already be encrypted with AES-GCM and uploaded to a
   /// Blossom server. This method wraps the file URL and metadata in a
@@ -654,10 +851,60 @@ class DmRepository {
         lastMessageSenderPubkey: _userPubkey,
         currentUserHasSent: true,
         ownerPubkey: _userPubkey,
+        dmProtocol: existingFile?.dmProtocol,
       );
     }
 
     return result;
+  }
+
+  // -------------------------------------------------------------------------
+  // Send - NIP-04 fallback (Kind 4)
+  // -------------------------------------------------------------------------
+
+  /// Sends a NIP-04 encrypted direct message (kind 4) for legacy client
+  /// interoperability.
+  ///
+  /// Reuses [NIP17SendResult] as the return type for simplicity — the
+  /// semantics (success/failure with optional event ID) are identical.
+  Future<NIP17SendResult> _sendNip04Message({
+    required String recipientPubkey,
+    required String content,
+  }) async {
+    // Reuses NIP17SendResult for simplicity — this is an internal helper.
+    final signer = _signer;
+    if (signer == null) {
+      return NIP17SendResult.failure('Signer not available');
+    }
+
+    final ciphertext = await signer.encrypt(recipientPubkey, content);
+    if (ciphertext == null) {
+      return NIP17SendResult.failure('NIP-04 encrypt returned null');
+    }
+
+    final event = Event(
+      _userPubkey,
+      EventKind.directMessage,
+      [
+        ['p', recipientPubkey],
+      ],
+      ciphertext,
+    );
+
+    final signed = await signer.signEvent(event);
+    if (signed == null) {
+      return NIP17SendResult.failure('NIP-04 sign returned null');
+    }
+
+    final published = await _nostrClient.publishEvent(signed);
+    if (published == null) {
+      return NIP17SendResult.failure('NIP-04 publish returned null');
+    }
+
+    return NIP17SendResult.success(
+      messageEventId: published.id,
+      recipientPubkey: recipientPubkey,
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -987,6 +1234,7 @@ class DmRepository {
       subject: row.subject,
       isRead: row.isRead,
       currentUserHasSent: row.currentUserHasSent,
+      dmProtocol: row.dmProtocol,
     );
   }
 

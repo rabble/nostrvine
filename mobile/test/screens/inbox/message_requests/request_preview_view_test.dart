@@ -5,11 +5,11 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
+import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -23,6 +23,9 @@ import '../../../helpers/test_provider_overrides.dart';
 class _MockMessageRequestActionsCubit
     extends MockCubit<MessageRequestActionsState>
     implements MessageRequestActionsCubit {}
+
+class _MockRequestPreviewCubit extends MockCubit<RequestPreviewState>
+    implements RequestPreviewCubit {}
 
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey) {
@@ -47,18 +50,30 @@ void main() {
 
   group(RequestPreviewView, () {
     late _MockMessageRequestActionsCubit mockActionsCubit;
+    late _MockRequestPreviewCubit mockPreviewCubit;
     late _MockAuthService mockAuthService;
     late MockGoRouter mockGoRouter;
     late UserProfile testProfile;
 
     setUp(() {
       mockActionsCubit = _MockMessageRequestActionsCubit();
+      mockPreviewCubit = _MockRequestPreviewCubit();
       mockAuthService = _MockAuthService(currentPubkey);
       mockGoRouter = MockGoRouter();
 
       when(() => mockActionsCubit.state).thenReturn(
         const MessageRequestActionsState(),
       );
+
+      when(() => mockPreviewCubit.state).thenReturn(
+        const RequestPreviewState(
+          status: RequestPreviewStatus.loaded,
+          messageCount: 3,
+          participantPubkeys: [otherPubkey],
+        ),
+      );
+
+      when(() => mockPreviewCubit.conversationId).thenReturn(conversationId);
 
       testProfile = UserProfile(
         pubkey: otherPubkey,
@@ -70,7 +85,11 @@ void main() {
       );
     });
 
-    Widget buildSubject({AsyncValue<int>? messageCount}) {
+    Widget buildSubject({RequestPreviewState? previewState}) {
+      if (previewState != null) {
+        when(() => mockPreviewCubit.state).thenReturn(previewState);
+      }
+
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
@@ -81,13 +100,16 @@ void main() {
         ],
         home: MockGoRouterProvider(
           goRouter: mockGoRouter,
-          child: BlocProvider<MessageRequestActionsCubit>.value(
-            value: mockActionsCubit,
-            child: RequestPreviewView(
-              conversationId: conversationId,
-              participantPubkeys: const [otherPubkey],
-              messageCount: messageCount ?? const AsyncValue.data(3),
-            ),
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider<RequestPreviewCubit>.value(
+                value: mockPreviewCubit,
+              ),
+              BlocProvider<MessageRequestActionsCubit>.value(
+                value: mockActionsCubit,
+              ),
+            ],
+            child: const RequestPreviewView(),
           ),
         ),
       );
@@ -132,9 +154,7 @@ void main() {
       });
 
       testWidgets('renders message count description', (tester) async {
-        await tester.pumpWidget(
-          buildSubject(messageCount: const AsyncValue.data(3)),
-        );
+        await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
         expect(find.textContaining('3 messages'), findsOneWidget);

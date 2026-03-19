@@ -56,18 +56,19 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
     });
 
     try {
-      final service = ref.read(analyticsApiServiceProvider);
+      final client = ref.read(funnelcakeApiClientProvider);
 
       // Use hashtags from current video to find related content
       final hashtags = widget.currentVideo.hashtags;
       List<VideoEvent> videos = [];
 
-      if (hashtags.isNotEmpty && service.isAvailable) {
+      if (hashtags.isNotEmpty && client.isAvailable) {
         // Search by the first hashtag for related content
-        videos = await service.getVideosByHashtag(
+        final stats = await client.getVideosByHashtag(
           hashtag: hashtags.first,
           limit: 20,
         );
+        videos = stats.map((v) => v.toVideoEvent()).toList();
 
         // Filter out the current video
         videos = videos

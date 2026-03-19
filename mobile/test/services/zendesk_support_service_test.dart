@@ -281,6 +281,60 @@ void main() {
     });
   });
 
+  group('ZendeskSupportService.createTicket JWT expiry retry', () {
+    test(
+      'retries with anonymous identity when JWT returns unauthorized',
+      () async {
+        var createTicketCallCount = 0;
+        var setUserIdentityCalled = false;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setUserIdentity') {
+                setUserIdentityCalled = true;
+                return true;
+              }
+              if (call.method == 'createTicket') {
+                createTicketCallCount++;
+                if (createTicketCallCount == 1) {
+                  // First call fails with expired JWT
+                  throw PlatformException(
+                    code: 'CREATE_FAILED',
+                    message: 'unauthorized',
+                  );
+                }
+                // Second call (after anonymous identity set) succeeds
+                return true;
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        // Set user identity so anonymous fallback has name/email
+        ZendeskSupportService.setUserIdentity(
+          npub: 'npub1test1234567890abcdef1234567890abcdef1234567890abcdef1234',
+          displayName: 'Test User',
+        );
+
+        final result = await ZendeskSupportService.createTicket(
+          subject: 'Content Report',
+          description: 'Test report',
+          tags: ['content-report'],
+        );
+
+        expect(result, isTrue);
+        expect(createTicketCallCount, 2);
+        expect(setUserIdentityCalled, isTrue);
+      },
+    );
+  });
+
   group('ZendeskSupportService identity consistency', () {
     test('same npub produces same synthetic email', () {
       const testNpub =

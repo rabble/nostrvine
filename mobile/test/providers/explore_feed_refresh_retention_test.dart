@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -13,7 +14,6 @@ import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -28,7 +28,7 @@ class _MockContentBlocklistService extends Mock
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
-class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -45,7 +45,7 @@ void main() {
     late _MockVideoEventService mockVideoEventService;
     late _MockContentBlocklistService mockBlocklistService;
     late _MockVideosRepository mockVideosRepository;
-    late _MockAnalyticsApiService mockAnalyticsApiService;
+    late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late _MockAuthService mockAuthService;
     late _MockNostrClient mockNostrClient;
 
@@ -56,7 +56,7 @@ void main() {
       mockVideoEventService = _MockVideoEventService();
       mockBlocklistService = _MockContentBlocklistService();
       mockVideosRepository = _MockVideosRepository();
-      mockAnalyticsApiService = _MockAnalyticsApiService();
+      mockFunnelcakeApiClient = _MockFunnelcakeApiClient();
       mockAuthService = _MockAuthService();
       mockNostrClient = _MockNostrClient();
 
@@ -78,28 +78,20 @@ void main() {
     test(
       'popular now keeps existing videos visible while refresh is in flight',
       () async {
-        final initialVideos = [_video('popular-now-initial')];
-        final refreshedVideos = [_video('popular-now-refreshed')];
-        final refreshCompleter = Completer<List<VideoEvent>>();
+        final refreshCompleter = Completer<List<VideoStats>>();
         var recentCallCount = 0;
 
         when(
-          () => mockAnalyticsApiService.getRecentVideos(
+          () => mockFunnelcakeApiClient.getRecentVideos(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
-            forceRefresh: any(named: 'forceRefresh'),
-            timeout: any(named: 'timeout'),
           ),
-        ).thenAnswer((invocation) {
-          final forceRefresh =
-              invocation.namedArguments[#forceRefresh] as bool? ?? false;
-          if (forceRefresh) {
-            return refreshCompleter.future;
-          }
+        ).thenAnswer((_) {
           recentCallCount += 1;
-          return Future.value(
-            recentCallCount == 1 ? initialVideos : refreshedVideos,
-          );
+          if (recentCallCount == 1) {
+            return Future.value([_videoStats('popular-now-initial')]);
+          }
+          return refreshCompleter.future;
         });
 
         final container = ProviderContainer(
@@ -110,8 +102,8 @@ void main() {
             contentBlocklistServiceProvider.overrideWithValue(
               mockBlocklistService,
             ),
-            analyticsApiServiceProvider.overrideWithValue(
-              mockAnalyticsApiService,
+            funnelcakeApiClientProvider.overrideWithValue(
+              mockFunnelcakeApiClient,
             ),
             funnelcakeAvailableProvider.overrideWith(
               _AlwaysAvailableFunnelcake.new,
@@ -147,7 +139,7 @@ void main() {
         ]);
         expect(refreshingState.isRefreshing, isTrue);
 
-        refreshCompleter.complete(refreshedVideos);
+        refreshCompleter.complete([_videoStats('popular-now-refreshed')]);
         await refreshFuture;
 
         final finalState = container.read(popularNowFeedProvider).value;
@@ -235,23 +227,22 @@ void main() {
     test(
       'for you keeps existing videos visible while refresh is in flight',
       () async {
-        final initialVideos = [_video('for-you-initial')];
-        final refreshedVideos = [_video('for-you-refreshed')];
-        final refreshCompleter = Completer<RecommendationsResult>();
+        final refreshCompleter = Completer<RecommendationsResponse>();
         var requestCount = 0;
 
         when(
-          () => mockAnalyticsApiService.getRecommendations(
+          () => mockFunnelcakeApiClient.getRecommendations(
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
           ),
         ).thenAnswer((_) {
           requestCount += 1;
           if (requestCount == 1) {
             return Future.value(
-              RecommendationsResult(videos: initialVideos, source: 'popular'),
+              RecommendationsResponse(
+                videos: [_videoStats('for-you-initial')],
+                source: 'popular',
+              ),
             );
           }
           return refreshCompleter.future;
@@ -265,8 +256,8 @@ void main() {
             contentBlocklistServiceProvider.overrideWithValue(
               mockBlocklistService,
             ),
-            analyticsApiServiceProvider.overrideWithValue(
-              mockAnalyticsApiService,
+            funnelcakeApiClientProvider.overrideWithValue(
+              mockFunnelcakeApiClient,
             ),
             authServiceProvider.overrideWithValue(mockAuthService),
             funnelcakeAvailableProvider.overrideWith(
@@ -298,8 +289,8 @@ void main() {
         expect(refreshingState.isRefreshing, isTrue);
 
         refreshCompleter.complete(
-          RecommendationsResult(
-            videos: refreshedVideos,
+          RecommendationsResponse(
+            videos: [_videoStats('for-you-refreshed')],
             source: 'personalized',
           ),
         );
@@ -327,5 +318,22 @@ VideoEvent _video(String id) {
     thumbnailUrl: 'https://example.com/$id.jpg',
     rawTags: const {'d': 'seed', 'x': '1', 'y': '2', 'z': '3'},
     originalLoops: AppConstants.paginationBatchSize,
+  );
+}
+
+VideoStats _videoStats(String id) {
+  return VideoStats(
+    id: id,
+    pubkey: 'author-$id',
+    createdAt: DateTime(2026, 3, 17),
+    kind: 34236,
+    dTag: id,
+    title: id,
+    thumbnail: 'https://example.com/$id.jpg',
+    videoUrl: 'https://example.com/$id.mp4',
+    reactions: 0,
+    comments: 0,
+    reposts: 0,
+    engagementScore: 0,
   );
 }

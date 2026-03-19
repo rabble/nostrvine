@@ -34,7 +34,7 @@ class InboxView extends ConsumerStatefulWidget {
 }
 
 class _InboxViewState extends ConsumerState<InboxView> {
-  InboxTab _selectedTab = InboxTab.messages;
+  InboxTab _selectedTab = InboxTab.notifications;
 
   @override
   Widget build(BuildContext context) {

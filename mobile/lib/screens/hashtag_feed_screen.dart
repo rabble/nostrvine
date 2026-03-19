@@ -98,10 +98,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   /// Fetches trending AND classic videos in parallel, then interleaves 50/50.
   Future<void> _fetchFromFunnelcake({bool forceRefresh = false}) async {
     try {
-      final analyticsService = ref.read(analyticsApiServiceProvider);
+      final client = ref.read(funnelcakeApiClientProvider);
 
       // Quick check - skip if API not configured
-      if (!analyticsService.isAvailable) {
+      if (!client.isAvailable) {
         Log.debug(
           '🏷️ HashtagFeedScreen: Funnelcake not configured, skipping',
           category: LogCategory.video,
@@ -111,17 +111,21 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
       // Fetch trending AND classic videos in parallel
       final results = await Future.wait([
-        analyticsService.getVideosByHashtag(
+        client.getVideosByHashtag(
           hashtag: widget.hashtag,
-          forceRefresh: forceRefresh,
+          limit: 100,
         ),
-        analyticsService.getClassicVideosByHashtag(hashtag: widget.hashtag),
+        client.getClassicVideosByHashtag(hashtag: widget.hashtag),
       ]).timeout(const Duration(seconds: 5));
 
       if (!mounted) return;
 
-      final trendingVideos = results[0];
-      final classicVideos = results[1];
+      final trendingStats = results[0];
+      final classicStats = results[1];
+      final trendingVideos = trendingStats
+          .map((v) => v.toVideoEvent())
+          .toList();
+      final classicVideos = classicStats.map((v) => v.toVideoEvent()).toList();
 
       Log.info(
         '🏷️ HashtagFeedScreen: Got ${trendingVideos.length} trending + '

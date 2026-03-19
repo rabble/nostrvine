@@ -134,6 +134,38 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return result != null;
   }
 
+  /// Check if a message with the same sender and content already exists in a
+  /// conversation within a ±5 second window. Used for cross-protocol dedup
+  /// when both a NIP-17 and NIP-04 copy of the same message arrive.
+  ///
+  /// The time window prevents false positives when a user genuinely sends
+  /// the same text twice (e.g. "ok") while still catching dual-send
+  /// duplicates where timestamps differ by at most a few seconds.
+  Future<bool> hasMatchingMessage({
+    required String conversationId,
+    required String senderPubkey,
+    required String content,
+    required int createdAt,
+    int windowSeconds = 5,
+  }) async {
+    final query = selectOnly(directMessages)
+      ..where(
+        directMessages.conversationId.equals(conversationId) &
+            directMessages.senderPubkey.equals(senderPubkey) &
+            directMessages.content.equals(content) &
+            directMessages.createdAt.isBiggerOrEqualValue(
+              createdAt - windowSeconds,
+            ) &
+            directMessages.createdAt.isSmallerOrEqualValue(
+              createdAt + windowSeconds,
+            ),
+      )
+      ..addColumns([directMessages.id])
+      ..limit(1);
+    final result = await query.getSingleOrNull();
+    return result != null;
+  }
+
   /// Delete all messages in a conversation.
   ///
   /// Returns the number of deleted rows.
