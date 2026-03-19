@@ -45,18 +45,11 @@ class VideoClipEditorScreen extends ConsumerWidget {
                   sourceClip: sourceClip,
                   splitPosition: splitPosition,
                   onClipsCreated: (startClip, endClip) {
-                    // Replace source clip with the start segment.
                     bloc.add(
-                      ClipEditorClipUpdated(
-                        clipId: sourceClip.id,
-                        clip: startClip.copyWith(id: sourceClip.id),
-                      ),
-                    );
-                    // Insert the end segment after it.
-                    bloc.add(
-                      ClipEditorClipInserted(
-                        index: currentClipIndex + 1,
-                        clip: endClip,
+                      ClipEditorOriginalClipReplaced(
+                        sourceClipId: sourceClip.id,
+                        startClip: startClip,
+                        endClip: endClip,
                       ),
                     );
                   },
