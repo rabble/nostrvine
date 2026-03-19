@@ -9,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
+import 'package:openvine/services/video_format_preference.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Get quality string based on bandwidth tracker recommendation (3-tier)
@@ -220,7 +221,8 @@ extension VideoEventAppExtensions on VideoEvent {
   ///
   /// Divine videos use HLS for proper color metadata signaling on Android.
   /// Direct .ts playback causes green/dark tint on hardware decoders.
-  bool get shouldPreferHlsPlayback => isFromDivineServer;
+  bool get shouldPreferHlsPlayback =>
+      isFromDivineServer && videoFormatPreference.isHlsFormat;
 
   /// Whether background file caching should be skipped for this video.
   bool get shouldSkipFileCaching => false;
@@ -261,23 +263,48 @@ extension VideoEventAppExtensions on VideoEvent {
     // Non-Divine videos: always use original (no transcoded variants)
     if (!isFromDivineServer) return videoUrl;
 
-    final quality = bandwidthTracker.recommendedQuality;
-    final hlsQuality = switch (quality) {
+    final hash = _extractVideoHash(videoUrl);
+    if (hash == null) return videoUrl;
+
+    // Developer format override takes priority
+    final override = videoFormatPreference.format;
+    if (override != null) {
+      return switch (override) {
+            VideoPlaybackFormat.hlsDefault => _hlsForBandwidth(),
+            VideoPlaybackFormat.raw => videoUrl,
+            VideoPlaybackFormat.hlsMaster => getHlsUrl(),
+            VideoPlaybackFormat.hls720p => getHlsUrl(quality: 'high'),
+            VideoPlaybackFormat.hls480p => getHlsUrl(quality: 'low'),
+            VideoPlaybackFormat.ts720p => '$_divineMediaBase/$hash/720p',
+            VideoPlaybackFormat.ts480p => '$_divineMediaBase/$hash/480p',
+            VideoPlaybackFormat.fmp4_720p => '$_divineMediaBase/$hash/720p.mp4',
+            VideoPlaybackFormat.fmp4_480p => '$_divineMediaBase/$hash/480p.mp4',
+          } ??
+          videoUrl;
+    }
+
+    // Production default: HLS with bandwidth tracker
+    return _hlsForBandwidth() ?? videoUrl;
+  }
+
+  /// HLS URL selected by bandwidth tracker quality.
+  String? _hlsForBandwidth() {
+    final hlsQuality = switch (bandwidthTracker.recommendedQuality) {
       VideoQuality.high || VideoQuality.medium => 'high',
       VideoQuality.low => 'low',
     };
-    return getHlsUrl(quality: hlsQuality) ?? videoUrl;
+    return getHlsUrl(quality: hlsQuality);
   }
 
   /// Get the URL to use for disk caching, if any.
   ///
-  /// Returns null for Divine videos since playback uses HLS (can't be
-  /// single-file cached). Non-Divine videos cache their original URL.
+  /// Returns null for Divine HLS videos (can't be single-file cached).
+  /// Progressive formats (ts, fmp4, raw) can be cached.
   String? getCacheableVideoUrlForPlatform() {
-    if (shouldSkipFileCaching || isFromDivineServer) {
-      return null;
-    }
-    return videoUrl;
+    if (shouldSkipFileCaching) return null;
+    // HLS can't be single-file cached; progressive formats can
+    if (isFromDivineServer && videoFormatPreference.isHlsFormat) return null;
+    return getOptimalVideoUrlForPlatform() ?? videoUrl;
   }
 
   /// Get HLS fallback URL for Android codec errors.
