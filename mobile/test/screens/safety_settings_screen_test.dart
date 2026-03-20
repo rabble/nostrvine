@@ -108,6 +108,10 @@ void main() {
       when(
         () => mockModerationLabelService.divineModerationPubkeyHex,
       ).thenReturn(ModerationLabelService.fallbackModerationPubkeyHex);
+      when(
+        () => mockModerationLabelService.isDivineLabelerSubscribed,
+      ).thenReturn(true);
+      when(() => mockModerationLabelService.customLabelers).thenReturn({});
       when(() => mockModerationLabelService.subscribedLabelers).thenReturn({
         ModerationLabelService.fallbackModerationPubkeyHex,
       });
@@ -119,6 +123,12 @@ void main() {
       ).thenAnswer((_) async {});
       when(
         () => mockModerationLabelService.removeLabeler(any()),
+      ).thenAnswer((_) async {});
+      when(
+        mockModerationLabelService.addDivineLabeler,
+      ).thenAnswer((_) async {});
+      when(
+        mockModerationLabelService.removeDivineLabeler,
       ).thenAnswer((_) async {});
       when(
         () => mockModerationLabelService.setFollowingModerationEnabled(

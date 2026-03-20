@@ -47,9 +47,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     if (mounted) {
       setState(() {
         _isAgeVerified = service.isAdultContentVerified;
-        _isDivineLabelerEnabled = labelService.subscribedLabelers.contains(
-          labelService.divineModerationPubkeyHex,
-        );
+        _isDivineLabelerEnabled = labelService.isDivineLabelerSubscribed;
         _isPeopleIFollowEnabled = labelService.isFollowingModerationEnabled;
         _showDivineHostedOnly = divineHostFilterService.showDivineHostedOnly;
         _isLoading = false;
@@ -188,13 +186,9 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
       onChanged: (value) async {
         final labelService = ref.read(moderationLabelServiceProvider);
         if (value) {
-          await labelService.addLabeler(
-            labelService.divineModerationPubkeyHex,
-          );
+          await labelService.addDivineLabeler();
         } else {
-          await labelService.removeLabeler(
-            labelService.divineModerationPubkeyHex,
-          );
+          await labelService.removeDivineLabeler();
         }
         setState(() {
           _isDivineLabelerEnabled = value;
@@ -297,9 +291,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
 
   Widget _buildCustomLabelersSection() {
     final labelService = ref.read(moderationLabelServiceProvider);
-    final customLabelers = labelService.subscribedLabelers
-        .where((pk) => pk != labelService.divineModerationPubkeyHex)
-        .toList();
+    final customLabelers = labelService.customLabelers.toList();
 
     return Column(
       children: [

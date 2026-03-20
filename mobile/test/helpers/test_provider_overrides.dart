@@ -247,6 +247,8 @@ MockModerationLabelService createMockModerationLabelService() {
     ModerationLabelService.fallbackModerationPubkeyHex,
   );
   when(() => mock.subscribedLabelers).thenReturn({});
+  when(() => mock.isDivineLabelerSubscribed).thenReturn(false);
+  when(() => mock.customLabelers).thenReturn({});
   when(() => mock.isFollowingModerationEnabled).thenReturn(false);
   when(mock.initialize).thenAnswer((_) async {});
   when(() => mock.getContentWarnings(any())).thenReturn([]);
@@ -259,6 +261,8 @@ MockModerationLabelService createMockModerationLabelService() {
   when(() => mock.subscribeToLabeler(any())).thenAnswer((_) async {});
   when(() => mock.addLabeler(any())).thenAnswer((_) async {});
   when(() => mock.removeLabeler(any())).thenAnswer((_) async {});
+  when(mock.addDivineLabeler).thenAnswer((_) async {});
+  when(mock.removeDivineLabeler).thenAnswer((_) async {});
   when(
     () => mock.setFollowingModerationEnabled(
       any(),
