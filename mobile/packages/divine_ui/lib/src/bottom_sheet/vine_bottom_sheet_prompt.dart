@@ -5,10 +5,13 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// A prompt-style bottom sheet with a centered sticker illustration, title,
-/// subtitle, and up to three action buttons (primary, secondary, tertiary).
+/// subtitle, and up to three optional action buttons
+/// (primary, secondary, tertiary).
 ///
 /// Use for permission prompts, onboarding steps, confirmations, or any
 /// full-width sheet that follows the "illustration + text + actions" pattern.
+///
+/// Each button pair (text + callback) must be provided together or both null.
 ///
 /// Can be used as a widget directly (e.g., inside an [Align]) or shown as
 /// a modal via [VineBottomSheetPrompt.show].
@@ -23,8 +26,6 @@ import 'package:flutter/material.dart';
 ///   onPrimaryPressed: () => requestPermission(),
 ///   secondaryButtonText: 'Not now',
 ///   onSecondaryPressed: () => Navigator.pop(context),
-///   tertiaryButtonText: 'Learn more',
-///   onTertiaryPressed: () => openHelp(),
 /// )
 /// ```
 ///
@@ -37,8 +38,6 @@ import 'package:flutter/material.dart';
 ///   subtitle: 'Please try again.',
 ///   primaryButtonText: 'Retry',
 ///   onPrimaryPressed: () => retry(),
-///   secondaryButtonText: 'Cancel',
-///   onSecondaryPressed: () => Navigator.pop(context),
 /// );
 /// ```
 class VineBottomSheetPrompt extends StatelessWidget {
@@ -47,15 +46,25 @@ class VineBottomSheetPrompt extends StatelessWidget {
     required this.sticker,
     required this.title,
     required this.subtitle,
-    required this.primaryButtonText,
-    required this.onPrimaryPressed,
-    required this.secondaryButtonText,
-    required this.onSecondaryPressed,
     this.additionalText,
+    this.primaryButtonText,
+    this.onPrimaryPressed,
+    this.secondaryButtonText,
+    this.onSecondaryPressed,
     this.tertiaryButtonText,
     this.onTertiaryPressed,
     super.key,
   }) : assert(
+         (primaryButtonText == null) == (onPrimaryPressed == null),
+         'primaryButtonText and onPrimaryPressed must both be provided '
+         'or both be null',
+       ),
+       assert(
+         (secondaryButtonText == null) == (onSecondaryPressed == null),
+         'secondaryButtonText and onSecondaryPressed must both be provided '
+         'or both be null',
+       ),
+       assert(
          (tertiaryButtonText == null) == (onTertiaryPressed == null),
          'tertiaryButtonText and onTertiaryPressed must both be provided '
          'or both be null',
@@ -79,17 +88,17 @@ class VineBottomSheetPrompt extends StatelessWidget {
   /// Callback for the tertiary text-link button.
   final VoidCallback? onTertiaryPressed;
 
-  /// Label for the primary action button.
-  final String primaryButtonText;
+  /// Optional label for the primary action button.
+  final String? primaryButtonText;
 
   /// Callback for the primary action button.
-  final VoidCallback onPrimaryPressed;
+  final VoidCallback? onPrimaryPressed;
 
-  /// Label for the secondary action button.
-  final String secondaryButtonText;
+  /// Optional label for the secondary action button.
+  final String? secondaryButtonText;
 
   /// Callback for the secondary action button.
-  final VoidCallback onSecondaryPressed;
+  final VoidCallback? onSecondaryPressed;
 
   /// Shows the prompt sheet as a fixed modal bottom sheet.
   static Future<T?> show<T>({
@@ -97,11 +106,11 @@ class VineBottomSheetPrompt extends StatelessWidget {
     required DivineStickerName sticker,
     required String title,
     required String subtitle,
-    required String primaryButtonText,
-    required VoidCallback onPrimaryPressed,
-    required String secondaryButtonText,
-    required VoidCallback onSecondaryPressed,
     String? additionalText,
+    String? primaryButtonText,
+    VoidCallback? onPrimaryPressed,
+    String? secondaryButtonText,
+    VoidCallback? onSecondaryPressed,
     String? tertiaryButtonText,
     VoidCallback? onTertiaryPressed,
     bool isDismissible = true,
@@ -172,30 +181,39 @@ class VineBottomSheetPrompt extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Primary action
-          DivineButton(
-            label: primaryButtonText,
-            onPressed: onPrimaryPressed,
-            expanded: true,
-          ),
-
-          const SizedBox(height: 16),
+          if (primaryButtonText != null)
+            DivineButton(
+              label: primaryButtonText!,
+              onPressed: onPrimaryPressed,
+              expanded: true,
+            ),
 
           // Secondary action
-          DivineButton(
-            label: secondaryButtonText,
-            onPressed: onSecondaryPressed,
-            type: .secondary,
-            expanded: true,
-          ),
+          if (secondaryButtonText != null)
+            Padding(
+              padding: EdgeInsets.only(
+                top: primaryButtonText != null ? 16 : 0,
+              ),
+              child: DivineButton(
+                label: secondaryButtonText!,
+                onPressed: onSecondaryPressed,
+                type: DivineButtonType.secondary,
+                expanded: true,
+              ),
+            ),
 
           // Optional tertiary text-link action
           if (tertiaryButtonText != null)
             Padding(
-              padding: const EdgeInsets.only(top: 16),
+              padding: EdgeInsets.only(
+                top: primaryButtonText != null || secondaryButtonText != null
+                    ? 16
+                    : 0,
+              ),
               child: DivineButton(
                 label: tertiaryButtonText!,
                 onPressed: onTertiaryPressed,
-                type: .link,
+                type: DivineButtonType.link,
                 expanded: true,
               ),
             ),
