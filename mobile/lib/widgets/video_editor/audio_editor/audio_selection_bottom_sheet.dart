@@ -150,8 +150,7 @@ class _AudioSelectionBottomSheetState
         bundledSoundsAsync.whenOrNull(
           data: (service) {
             final count = service.sounds.length;
-            return service.sounds
-                .indexed
+            return service.sounds.indexed
                 .map(
                   (e) => AudioEvent.fromBundledSound(
                     e.$2,
