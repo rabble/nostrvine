@@ -25,7 +25,6 @@ class AppConfig {
   static bool get isProduction => environment == 'production';
   static const bool isGhActionsPrPreviewBuild = bool.fromEnvironment(
     'GH_ACTIONS_PR_PREVIEW',
-    defaultValue: false,
   );
 
   // API endpoints
