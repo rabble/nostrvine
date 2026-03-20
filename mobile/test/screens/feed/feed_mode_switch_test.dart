@@ -111,7 +111,6 @@ void main() {
         when(() => mockBloc.state).thenReturn(
           const VideoFeedState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.following,
           ),
         );
         await tester.pumpWidget(createTestWidget());
@@ -155,7 +154,6 @@ void main() {
         Stream.fromIterable([
           const VideoFeedState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.following,
           ),
         ]),
         initialState: const VideoFeedState(
