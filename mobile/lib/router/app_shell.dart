@@ -24,10 +24,9 @@ import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/notification_badge.dart';
@@ -520,7 +519,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                       name: 'Navigation',
                       category: LogCategory.ui,
                     );
-                    context.pushWithVideoPause(VideoRecorderScreen.path);
+                    context.pushToCameraWithPermission();
                   },
                   child: Container(
                     width: 72,
