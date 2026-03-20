@@ -123,10 +123,9 @@ void main() {
         final leftVerify = await waitForTextGone(
           tester,
           'Complete your registration',
-          maxSeconds: 30,
         );
         expect(leftVerify, isTrue, reason: 'A verification should complete');
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await pumpUntilSettled(tester);
 
         final container = ProviderScope.containerOf(
           tester.element(find.byType(MaterialApp)),
@@ -302,10 +301,9 @@ void main() {
         final leftVerify = await waitForTextGone(
           tester,
           'Complete your registration',
-          maxSeconds: 30,
         );
         expect(leftVerify, isTrue);
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await pumpUntilSettled(tester);
 
         final container = ProviderScope.containerOf(
           tester.element(find.byType(MaterialApp)),
@@ -364,7 +362,7 @@ void main() {
         logPhase('-- Phase 4: App restart (re-initialize) --');
 
         await authService.initialize();
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await pumpUntilSettled(tester);
 
         logPhase(
           'Phase 4 post-init: '

@@ -72,8 +72,8 @@ void main() {
 
         // Use tester.runAsync for real async operations that trigger
         // auth state changes and app navigation.
-        await tester.runAsync(() => authService.signOut());
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await tester.runAsync(authService.signOut);
+        await pumpUntilSettled(tester);
 
         logPhase('Phase 2a: signed out from A');
 
@@ -81,8 +81,8 @@ void main() {
           () => authService.importFromNsec(nsecB),
         );
         expect(resultB!.success, isTrue);
-        await tester.runAsync(() => authService.acceptTerms());
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await tester.runAsync(authService.acceptTerms);
+        await pumpUntilSettled(tester);
 
         expect(authService.isAuthenticated, isTrue);
         final pubkeyB = authService.currentPublicKeyHex!;
@@ -112,8 +112,8 @@ void main() {
         // But PRIMARY still has nsec_B from the import.
         // ════════════════════════════════════════════════════════════
 
-        await tester.runAsync(() => authService.signOut());
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await tester.runAsync(authService.signOut);
+        await pumpUntilSettled(tester);
 
         logPhase('Phase 3a: signed out from B');
 
@@ -123,7 +123,7 @@ void main() {
             AuthenticationSource.automatic,
           ),
         );
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await pumpUntilSettled(tester);
 
         expect(authService.isAuthenticated, isTrue);
         expect(authService.currentPublicKeyHex, equals(pubkeyA));
