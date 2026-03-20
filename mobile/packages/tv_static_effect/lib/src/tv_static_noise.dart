@@ -76,7 +76,7 @@ class _TvStaticNoiseState extends State<TvStaticNoise>
       if (mounted) {
         setState(() => _loaded = true);
       }
-    } catch (e, s) {
+    } on Exception catch (e, s) {
       developer.log(
         'Failed to load TV static shader',
         name: 'TvStaticNoise',
