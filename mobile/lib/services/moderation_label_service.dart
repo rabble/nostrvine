@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip05/nip05_validor.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -88,9 +89,46 @@ class ModerationLabelService {
   static const String _followingModerationEnabledKey =
       'following_moderation_enabled';
 
-  /// Divine official moderation account pubkey (hex).
-  static const String divineModerationPubkeyHex =
+  /// SharedPreferences key for the NIP-05 resolved moderation pubkey.
+  static const String _resolvedPubkeyKey = 'divine_moderation_resolved_pubkey';
+
+  /// SharedPreferences key for when the moderation pubkey was last resolved.
+  static const String _resolvedAtKey = 'divine_moderation_resolved_at';
+
+  /// NIP-05 address for the Divine moderation identity.
+  static const String divineModerationNip05 = 'moderation@divine.video';
+
+  /// Fallback pubkey when NIP-05 resolution fails.
+  static const String fallbackModerationPubkeyHex =
+      '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
+
+  /// Old pubkey — used only for one-time migration of stored subscriptions.
+  static const String _legacyModerationPubkeyHex =
       '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72';
+
+  /// Cache TTL for NIP-05 resolved pubkey (24 hours).
+  static const Duration _resolvedPubkeyTtl = Duration(hours: 24);
+
+  /// Resolved Divine moderation pubkey (NIP-05 → cache → fallback).
+  String _divineModerationPubkey = fallbackModerationPubkeyHex;
+
+  /// The current Divine moderation pubkey (resolved via NIP-05 or fallback).
+  String get divineModerationPubkeyHex => _divineModerationPubkey;
+
+  /// Whether the Divine official labeler is currently subscribed.
+  bool get isDivineLabelerSubscribed =>
+      _subscribedLabelers.contains(_divineModerationPubkey);
+
+  /// Subscribe to the Divine official labeler.
+  Future<void> addDivineLabeler() => addLabeler(_divineModerationPubkey);
+
+  /// Unsubscribe from the Divine official labeler (no-op by design —
+  /// [removeLabeler] guards against removing the built-in labeler).
+  Future<void> removeDivineLabeler() => removeLabeler(_divineModerationPubkey);
+
+  /// Subscribed labelers excluding the built-in Divine labeler.
+  Set<String> get customLabelers =>
+      _subscribedLabelers.difference({_divineModerationPubkey});
 
   /// Labels keyed by target event ID.
   final Map<String, List<ModerationLabel>> _labelsByEventId = {};
@@ -135,6 +173,10 @@ class ModerationLabelService {
 
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // Resolve Divine moderation pubkey (cache → NIP-05 → fallback)
+      _divineModerationPubkey = await _resolveModerationPubkey(prefs);
+
       final saved = prefs.getStringList(_subscribedLabelersKey);
       if (saved != null) {
         _subscribedLabelers.addAll(saved);
@@ -142,9 +184,12 @@ class ModerationLabelService {
       _isFollowingModerationEnabled =
           prefs.getBool(_followingModerationEnabledKey) ?? false;
 
+      // Migrate legacy pubkey if present in stored subscriptions
+      await _migrateLegacyPubkey(prefs);
+
       // Always subscribe to Divine labeler
-      if (!_subscribedLabelers.contains(divineModerationPubkeyHex)) {
-        _subscribedLabelers.add(divineModerationPubkeyHex);
+      if (!_subscribedLabelers.contains(_divineModerationPubkey)) {
+        _subscribedLabelers.add(_divineModerationPubkey);
       }
 
       // Subscribe to all labelers
@@ -154,7 +199,8 @@ class ModerationLabelService {
 
       Log.info(
         'ModerationLabelService initialized with '
-        '${_subscribedLabelers.length} labelers',
+        '${_subscribedLabelers.length} labelers '
+        '(moderation pubkey: $_divineModerationPubkey)',
         name: 'ModerationLabelService',
         category: LogCategory.system,
       );
@@ -210,7 +256,7 @@ class ModerationLabelService {
   /// Remove a labeler and clean up.
   Future<void> removeLabeler(String pubkey) async {
     // Don't allow removing the built-in Divine labeler
-    if (pubkey == divineModerationPubkeyHex) return;
+    if (pubkey == _divineModerationPubkey) return;
 
     _subscribedLabelers.remove(pubkey);
     await _saveSubscribedLabelers();
@@ -490,6 +536,77 @@ class ModerationLabelService {
     _labelsByAddressableId.forEach((_, labels) {
       labels.removeWhere((l) => l.labelerPubkey == pubkey);
     });
+  }
+
+  /// Resolve the Divine moderation pubkey via cached value or NIP-05 lookup.
+  ///
+  /// Strategy: SharedPreferences cache (24h TTL) → NIP-05 → fallback constant.
+  Future<String> _resolveModerationPubkey(SharedPreferences prefs) async {
+    // Check cached resolution
+    final cachedPubkey = prefs.getString(_resolvedPubkeyKey);
+    final cachedAtStr = prefs.getString(_resolvedAtKey);
+    if (cachedPubkey != null &&
+        cachedPubkey.isNotEmpty &&
+        cachedAtStr != null) {
+      final cachedAt = DateTime.tryParse(cachedAtStr);
+      if (cachedAt != null &&
+          DateTime.now().difference(cachedAt) < _resolvedPubkeyTtl) {
+        return cachedPubkey;
+      }
+    }
+
+    // Resolve via NIP-05
+    try {
+      final resolved = await Nip05Validor.getPubkey(divineModerationNip05);
+      if (resolved != null && resolved.isNotEmpty) {
+        await prefs.setString(_resolvedPubkeyKey, resolved);
+        await prefs.setString(
+          _resolvedAtKey,
+          DateTime.now().toIso8601String(),
+        );
+        Log.info(
+          'Resolved moderation pubkey via NIP-05: $resolved',
+          name: 'ModerationLabelService',
+          category: LogCategory.system,
+        );
+        return resolved;
+      }
+    } catch (e) {
+      Log.warning(
+        'NIP-05 resolution failed for $divineModerationNip05: $e',
+        name: 'ModerationLabelService',
+        category: LogCategory.system,
+      );
+    }
+
+    // Use stale cache if available, otherwise fallback
+    if (cachedPubkey != null && cachedPubkey.isNotEmpty) {
+      return cachedPubkey;
+    }
+    return fallbackModerationPubkeyHex;
+  }
+
+  /// Migrate the legacy moderation pubkey out of stored subscriptions.
+  ///
+  /// Existing users may have the old pubkey persisted. This swaps it for
+  /// the current resolved pubkey so they subscribe to the right labeler.
+  Future<void> _migrateLegacyPubkey(SharedPreferences prefs) async {
+    if (!_subscribedLabelers.contains(_legacyModerationPubkeyHex)) return;
+
+    _subscribedLabelers.remove(_legacyModerationPubkeyHex);
+    _subscribedLabelers.add(_divineModerationPubkey);
+    await _saveSubscribedLabelers();
+
+    // Clean up any labels fetched from the old key
+    _removeLabelsForLabeler(_legacyModerationPubkeyHex);
+    _loadedLabelers.remove(_legacyModerationPubkeyHex);
+
+    Log.info(
+      'Migrated moderation labeler from legacy pubkey '
+      '$_legacyModerationPubkeyHex to $_divineModerationPubkey',
+      name: 'ModerationLabelService',
+      category: LogCategory.system,
+    );
   }
 
   /// Clean up subscriptions.

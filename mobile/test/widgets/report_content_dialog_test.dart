@@ -31,6 +31,9 @@ class _MockMuteService extends Mock implements MuteService {}
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
+class _MockModerationLabelService extends Mock
+    implements ModerationLabelService {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(ContentFilterReason.spam);
@@ -588,12 +591,17 @@ void main() {
   group('moderation DM integration', () {
     late MockNostrClient mockNostrClient;
     late _MockDmRepository mockDmRepository;
+    late _MockModerationLabelService mockModerationLabelService;
 
     setUp(() {
       mockNostrClient = createMockNostrService();
       mockDmRepository = _MockDmRepository();
+      mockModerationLabelService = _MockModerationLabelService();
 
       when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
+      when(
+        () => mockModerationLabelService.divineModerationPubkeyHex,
+      ).thenReturn(ModerationLabelService.fallbackModerationPubkeyHex);
       when(
         () => mockDmRepository.sendMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
@@ -603,7 +611,7 @@ void main() {
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
           messageEventId: 'dm_event_id',
-          recipientPubkey: ModerationLabelService.divineModerationPubkeyHex,
+          recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
         ),
       );
     });
@@ -630,6 +638,7 @@ void main() {
 
       return testProviderScope(
         mockNostrService: mockNostrClient,
+        mockModerationLabelService: mockModerationLabelService,
         additionalOverrides: [
           contentReportingServiceProvider.overrideWith(
             (ref) async => mockReportingService,
@@ -665,7 +674,7 @@ void main() {
 
         verify(
           () => mockDmRepository.sendMessage(
-            recipientPubkey: ModerationLabelService.divineModerationPubkeyHex,
+            recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
             content: any(named: 'content'),
             replyToId: any(named: 'replyToId'),
           ),
@@ -802,12 +811,12 @@ void main() {
       'moderation pubkey is a valid 64-character hex string',
       () {
         expect(
-          ModerationLabelService.divineModerationPubkeyHex.length,
+          ModerationLabelService.fallbackModerationPubkeyHex.length,
           equals(64),
         );
         expect(
           RegExp(r'^[0-9a-f]{64}$').hasMatch(
-            ModerationLabelService.divineModerationPubkeyHex,
+            ModerationLabelService.fallbackModerationPubkeyHex,
           ),
           isTrue,
         );

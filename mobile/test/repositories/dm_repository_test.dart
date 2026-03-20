@@ -2173,8 +2173,9 @@ void main() {
     // -----------------------------------------------------------------
 
     group('moderation DM scenarios', () {
-      /// The moderation pubkey from [ModerationLabelService].
-      const moderationPubkey = ModerationLabelService.divineModerationPubkeyHex;
+      /// The fallback moderation pubkey from [ModerationLabelService].
+      const moderationPubkey =
+          ModerationLabelService.fallbackModerationPubkeyHex;
 
       void stubDaoInserts() {
         when(

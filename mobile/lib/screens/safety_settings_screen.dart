@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/image_cache_manager.dart';
-import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 
@@ -48,9 +47,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     if (mounted) {
       setState(() {
         _isAgeVerified = service.isAdultContentVerified;
-        _isDivineLabelerEnabled = labelService.subscribedLabelers.contains(
-          ModerationLabelService.divineModerationPubkeyHex,
-        );
+        _isDivineLabelerEnabled = labelService.isDivineLabelerSubscribed;
         _isPeopleIFollowEnabled = labelService.isFollowingModerationEnabled;
         _showDivineHostedOnly = divineHostFilterService.showDivineHostedOnly;
         _isLoading = false;
@@ -189,13 +186,9 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
       onChanged: (value) async {
         final labelService = ref.read(moderationLabelServiceProvider);
         if (value) {
-          await labelService.addLabeler(
-            ModerationLabelService.divineModerationPubkeyHex,
-          );
+          await labelService.addDivineLabeler();
         } else {
-          await labelService.removeLabeler(
-            ModerationLabelService.divineModerationPubkeyHex,
-          );
+          await labelService.removeDivineLabeler();
         }
         setState(() {
           _isDivineLabelerEnabled = value;
@@ -298,9 +291,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
 
   Widget _buildCustomLabelersSection() {
     final labelService = ref.read(moderationLabelServiceProvider);
-    final customLabelers = labelService.subscribedLabelers
-        .where((pk) => pk != ModerationLabelService.divineModerationPubkeyHex)
-        .toList();
+    final customLabelers = labelService.customLabelers.toList();
 
     return Column(
       children: [
