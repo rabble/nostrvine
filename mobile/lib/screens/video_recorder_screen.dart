@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
@@ -19,7 +20,6 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
-import 'package:openvine/widgets/video_editor/sheets/video_editor_restore_autosave_sheet.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
@@ -127,12 +127,21 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         name: 'VideoRecorderScreen',
         category: LogCategory.video,
       );
-      await VineBottomSheet.show(
+      await VineBottomSheetPrompt.show(
         context: context,
-        expanded: false,
-        scrollable: false,
-        isScrollControlled: true,
-        body: const VideoEditorRestoreAutosaveSheet(),
+        sticker: .videoClapBoard,
+        title: 'We found work in progress',
+        subtitle: 'Would you like to continue where you left off?',
+        primaryButtonText: 'Yes, continue',
+        onPrimaryPressed: () {
+          ref.read(videoEditorProvider.notifier).restoreDraft();
+          context.pop();
+        },
+        secondaryButtonText: 'No, start a new video',
+        onSecondaryPressed: () {
+          ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
+          context.pop();
+        },
       );
     } else {
       Log.debug(

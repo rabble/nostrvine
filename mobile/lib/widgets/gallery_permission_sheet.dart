@@ -4,8 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -55,133 +53,51 @@ Future<GalleryPermissionChoice> showGalleryPermissionSheet(
 
   final requiresSettings = status == PermissionStatus.requiresSettings;
 
-  final result = await VineBottomSheet.show<GalleryPermissionChoice>(
+  final result = await VineBottomSheetPrompt.show<GalleryPermissionChoice>(
     context: context,
-    scrollable: false,
-    children: [
-      _GalleryPermissionSheetContent(
-        destination: destination,
-        requiresSettings: requiresSettings,
-        onPrimaryAction: requiresSettings
-            ? () async {
-                await permissionsService.openAppSettings();
-                if (context.mounted) {
-                  Navigator.of(
-                    context,
-                  ).pop(GalleryPermissionChoice.openedSettings);
-                }
-              }
-            : () async {
-                final requested = await permissionsService
-                    .requestGalleryPermission();
-                if (context.mounted) {
-                  Navigator.of(context).pop(
-                    requested == PermissionStatus.granted
-                        ? GalleryPermissionChoice.granted
-                        : GalleryPermissionChoice.skipped,
-                  );
-                }
-              },
-        onDismissForever: () async {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool(_kGalleryPermissionDismissedKey, true);
-          if (context.mounted) {
-            Navigator.of(
-              context,
-            ).pop(GalleryPermissionChoice.dismissedForever);
+    sticker: DivineStickerName.alert,
+    // TODO(l10n): Replace with context.l10n when localization is added.
+    title: 'Let us save your videos',
+    subtitle: requiresSettings
+        ? 'Flip on $destination access in Settings so we can save your videos.'
+        : 'To keep a copy of your videos on your device, '
+              'we need $destination access.',
+    primaryButtonText: requiresSettings ? 'Open Settings' : 'Allow Access',
+    onPrimaryPressed: requiresSettings
+        ? () async {
+            await permissionsService.openAppSettings();
+            if (context.mounted) {
+              Navigator.of(
+                context,
+              ).pop(GalleryPermissionChoice.openedSettings);
+            }
           }
-        },
-        onSkip: () {
-          Navigator.of(context).pop(GalleryPermissionChoice.skipped);
-        },
-      ),
-    ],
+        : () async {
+            final requested = await permissionsService
+                .requestGalleryPermission();
+            if (context.mounted) {
+              Navigator.of(context).pop(
+                requested == PermissionStatus.granted
+                    ? GalleryPermissionChoice.granted
+                    : GalleryPermissionChoice.skipped,
+              );
+            }
+          },
+    secondaryButtonText: 'Not Now',
+    onSecondaryPressed: () {
+      Navigator.of(context).pop(GalleryPermissionChoice.skipped);
+    },
+    tertiaryButtonText: "Don't Ask Again",
+    onTertiaryPressed: () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kGalleryPermissionDismissedKey, true);
+      if (context.mounted) {
+        Navigator.of(
+          context,
+        ).pop(GalleryPermissionChoice.dismissedForever);
+      }
+    },
   );
 
   return result ?? GalleryPermissionChoice.skipped;
-}
-
-class _GalleryPermissionSheetContent extends StatelessWidget {
-  const _GalleryPermissionSheetContent({
-    required this.destination,
-    required this.requiresSettings,
-    required this.onPrimaryAction,
-    required this.onDismissForever,
-    required this.onSkip,
-  });
-
-  final String destination;
-  final bool requiresSettings;
-  final VoidCallback onPrimaryAction;
-  final VoidCallback onDismissForever;
-  final VoidCallback onSkip;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          const SizedBox(height: 8),
-          const DivineSticker(
-            sticker: DivineStickerName.alert,
-            size: 96,
-          ),
-
-          const SizedBox(height: 16),
-          Text(
-            // TODO(l10n): Replace with context.l10n when localization
-            // is added.
-            '$destination Access Needed',
-            style: VineTheme.headlineSmallFont(),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 8),
-          Text(
-            // TODO(l10n): Replace with context.l10n when localization
-            // is added.
-            requiresSettings
-                ? 'To save a copy of your videos, allow '
-                      '$destination access in Settings.'
-                : 'Divine needs $destination access to '
-                      'save a copy of your videos.',
-            style: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 32),
-          DivinePrimaryButton(
-            // TODO(l10n): Replace with context.l10n when localization
-            // is added.
-            label: requiresSettings ? 'Open Settings' : 'Allow Access',
-            onPressed: onPrimaryAction,
-          ),
-
-          const SizedBox(height: 16),
-          DivineSecondaryButton(
-            // TODO(l10n): Replace with context.l10n when localization
-            // is added.
-            label: 'Not Now',
-            onPressed: onSkip,
-          ),
-
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: onDismissForever,
-            child: Text(
-              // TODO(l10n): Replace with context.l10n when localization
-              // is added.
-              "Don't Ask Again",
-              style: VineTheme.labelLargeFont(
-                color: VineTheme.secondaryText,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

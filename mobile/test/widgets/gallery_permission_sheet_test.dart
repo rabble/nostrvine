@@ -7,8 +7,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 import 'package:openvine/widgets/gallery_permission_sheet.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,7 +60,7 @@ void main() {
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Gallery Access Needed'), findsOneWidget);
+        expect(find.text('Let us save your videos'), findsOneWidget);
       });
 
       testWidgets('description text', (tester) async {
@@ -71,7 +69,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.textContaining('allow Gallery access in Settings'),
+          find.textContaining(
+            'Flip on Gallery access in Settings',
+          ),
           findsOneWidget,
         );
       });
@@ -87,25 +87,19 @@ void main() {
         );
       });
 
-      testWidgets('$DivinePrimaryButton with Open Settings label', (
-        tester,
-      ) async {
+      testWidgets('Open Settings primary button', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(DivinePrimaryButton), findsOneWidget);
         expect(find.text('Open Settings'), findsOneWidget);
       });
 
-      testWidgets('$DivineSecondaryButton with Not Now label', (
-        tester,
-      ) async {
+      testWidgets('Not Now secondary button', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(DivineSecondaryButton), findsOneWidget);
         expect(find.text('Not Now'), findsOneWidget);
       });
 
@@ -131,7 +125,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Sheet dismissed
-          expect(find.text('Gallery Access Needed'), findsNothing);
+          expect(find.text('Let us save your videos'), findsNothing);
 
           verify(() => mockPermissionsService.openAppSettings()).called(1);
           expect(find.text('result:openedSettings'), findsOneWidget);
@@ -149,7 +143,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Sheet dismissed
-          expect(find.text('Gallery Access Needed'), findsNothing);
+          expect(find.text('Let us save your videos'), findsNothing);
 
           verifyNever(() => mockPermissionsService.openAppSettings());
           expect(find.text('result:skipped'), findsOneWidget);
@@ -168,7 +162,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Sheet dismissed
-          expect(find.text('Gallery Access Needed'), findsNothing);
+          expect(find.text('Let us save your videos'), findsNothing);
 
           expect(find.text('result:dismissedForever'), findsOneWidget);
 
@@ -195,7 +189,6 @@ void main() {
           await tester.tap(find.text('Open Sheet'));
           await tester.pumpAndSettle();
 
-          expect(find.byType(DivinePrimaryButton), findsOneWidget);
           expect(find.text('Allow Access'), findsOneWidget);
           expect(find.text('Open Settings'), findsNothing);
         });
@@ -207,7 +200,7 @@ void main() {
 
           expect(
             find.textContaining(
-              'Divine needs Gallery access to save a copy of your videos',
+              'we need Gallery access',
             ),
             findsOneWidget,
           );
@@ -227,7 +220,7 @@ void main() {
             await tester.pumpAndSettle();
 
             // Sheet dismissed
-            expect(find.text('Gallery Access Needed'), findsNothing);
+            expect(find.text('Let us save your videos'), findsNothing);
 
             verify(
               () => mockPermissionsService.requestGalleryPermission(),
@@ -254,7 +247,7 @@ void main() {
             await tester.tap(find.text('Allow Access'));
             await tester.pumpAndSettle();
 
-            expect(find.text('Gallery Access Needed'), findsNothing);
+            expect(find.text('Let us save your videos'), findsNothing);
 
             verify(
               () => mockPermissionsService.requestGalleryPermission(),
@@ -273,7 +266,7 @@ void main() {
             await tester.tap(find.text('Not Now'));
             await tester.pumpAndSettle();
 
-            expect(find.text('Gallery Access Needed'), findsNothing);
+            expect(find.text('Let us save your videos'), findsNothing);
             expect(find.text('result:skipped'), findsOneWidget);
           },
         );
@@ -293,7 +286,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Sheet should not appear
-        expect(find.text('Gallery Access Needed'), findsNothing);
+        expect(find.text('Let us save your videos'), findsNothing);
         // Result should be granted
         expect(find.text('result:granted'), findsOneWidget);
       },
