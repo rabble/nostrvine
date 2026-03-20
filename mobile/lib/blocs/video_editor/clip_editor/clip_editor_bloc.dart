@@ -69,6 +69,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     on<ClipEditorDeleteZoneChanged>(_onDeleteZoneChanged);
 
     // Split
+    on<ClipEditorOriginalClipReplaced>(_onOriginalClipReplaced);
     on<ClipEditorSplitRequested>(_onSplitRequested);
   }
 
@@ -466,6 +467,36 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   }
 
   // === SPLIT ===
+
+  void _onOriginalClipReplaced(
+    ClipEditorOriginalClipReplaced event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final index = state.clips.indexWhere(
+      (c) => c.id == event.sourceClipId,
+    );
+    if (index == -1) return;
+
+    final withUndo = _pushUndo(state);
+    final newClips = List<DivineVideoClip>.of(withUndo.clips)
+      ..[index] = event.startClip
+      ..insert(index + 1, event.endClip);
+
+    Log.debug(
+      '✂️ Replaced ${event.sourceClipId} with '
+      '${event.startClip.id} + ${event.endClip.id}',
+      name: 'ClipEditorBloc',
+      category: LogCategory.video,
+    );
+
+    emit(
+      withUndo.copyWith(
+        clips: List.unmodifiable(newClips),
+        isPlayerReady: false,
+        hasPlayedOnce: false,
+      ),
+    );
+  }
 
   Future<void> _onSplitRequested(
     ClipEditorSplitRequested event,

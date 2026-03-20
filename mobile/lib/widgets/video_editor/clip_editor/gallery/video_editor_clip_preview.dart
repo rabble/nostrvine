@@ -260,6 +260,18 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
+                    // Very short clips (< 300ms) may render as a black
+                    // frame in the video player, but they can still be
+                    // merged into the final video. Show the thumbnail
+                    // permanently so the user sees a meaningful preview.
+                    if (widget.clip.duration <
+                        const Duration(milliseconds: 300))
+                      _ThumbnailVisibility(
+                        enforceVisible: true,
+                        isCurrentClip: widget.isCurrentClip,
+                        clip: widget.clip,
+                      ),
+
                     // Show video player ONLY when this is the current clip
                     if (_isInitialized &&
                         _controller != null &&
@@ -303,14 +315,20 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
 ///
 /// Uses AnimatedOpacity for smooth bidirectional fade transitions.
 class _ThumbnailVisibility extends StatelessWidget {
-  const _ThumbnailVisibility({required this.isCurrentClip, required this.clip});
+  const _ThumbnailVisibility({
+    required this.isCurrentClip,
+    required this.clip,
+    this.enforceVisible = false,
+  });
 
   final bool isCurrentClip;
+  final bool enforceVisible;
   final DivineVideoClip clip;
 
   @override
   Widget build(BuildContext context) {
     final shouldHide =
+        !enforceVisible &&
         isCurrentClip &&
         context.select<ClipEditorBloc, bool>(
           (bloc) => bloc.state.hasPlayedOnce || bloc.state.isEditing,

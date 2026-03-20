@@ -1,6 +1,7 @@
 // ABOUTME: Developer options screen for switching between environments
 // ABOUTME: Allows switching relay URLs (POC, Staging, Test, Production)
 // ABOUTME: Shows page load performance timing data for debugging
+// ABOUTME: Includes video format selector for A/B testing server-side formats
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,9 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/page_load_history.dart';
+import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Returns a color indicating speed: green (<1s), orange (1-3s), red (>3s).
@@ -20,7 +23,66 @@ Color _getSpeedColor(PageLoadRecord record) {
   return VineTheme.vineGreen;
 }
 
-class DeveloperOptionsScreen extends ConsumerWidget {
+class _FormatOption {
+  const _FormatOption({
+    required this.format,
+    required this.label,
+    required this.urlPattern,
+  });
+  final VideoPlaybackFormat? format;
+  final String label;
+  final String urlPattern;
+}
+
+const _formatOptions = [
+  _FormatOption(
+    format: null,
+    label: 'Auto (default)',
+    urlPattern: 'HLS 720p/480p, 2 requests, bandwidth tracker selects quality',
+  ),
+  _FormatOption(
+    format: VideoPlaybackFormat.raw,
+    label: 'Raw original upload',
+    urlPattern: '/{hash} — 1 request, 2-16 MB/6s, 7-21 Mbps, no transcode',
+  ),
+  _FormatOption(
+    format: VideoPlaybackFormat.hlsMaster,
+    label: 'HLS master playlist',
+    urlPattern: '/{hash}/hls/master.m3u8 — 3 requests, adaptive 720p/480p',
+  ),
+  _FormatOption(
+    format: VideoPlaybackFormat.hls720p,
+    label: 'HLS 720p stream',
+    urlPattern: '/{hash}/hls/stream_720p.m3u8 — 2 requests, 1.5-2.5 MB/6s',
+  ),
+  _FormatOption(
+    format: VideoPlaybackFormat.hls480p,
+    label: 'HLS 480p stream',
+    urlPattern: '/{hash}/hls/stream_480p.m3u8 — 2 requests, 0.6-1 MB/6s',
+  ),
+  _FormatOption(
+    format: VideoPlaybackFormat.ts720p,
+    label: 'Progressive TS 720p',
+    urlPattern: '/{hash}/720p — 1 request, MPEG-TS, 1.5-2.5 MB/6s',
+  ),
+  _FormatOption(
+    format: VideoPlaybackFormat.ts480p,
+    label: 'Progressive TS 480p',
+    urlPattern: '/{hash}/480p — 1 request, MPEG-TS, 0.6-1 MB/6s',
+  ),
+  _FormatOption(
+    format: VideoPlaybackFormat.mp4_720p,
+    label: 'Progressive MP4 720p',
+    urlPattern: '/{hash}/720p.mp4 — 1 request, faststart, 1.5-2.5 MB/6s',
+  ),
+  _FormatOption(
+    format: VideoPlaybackFormat.mp4_480p,
+    label: 'Progressive MP4 480p',
+    urlPattern: '/{hash}/480p.mp4 — 1 request, faststart, 0.6-1 MB/6s',
+  ),
+];
+
+class DeveloperOptionsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const routeName = 'developer-options';
 
@@ -30,7 +92,14 @@ class DeveloperOptionsScreen extends ConsumerWidget {
   const DeveloperOptionsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DeveloperOptionsScreen> createState() =>
+      _DeveloperOptionsScreenState();
+}
+
+class _DeveloperOptionsScreenState
+    extends ConsumerState<DeveloperOptionsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final currentConfig = ref.watch(currentEnvironmentProvider);
 
     // All available environment configurations
@@ -83,7 +152,7 @@ class DeveloperOptionsScreen extends ConsumerWidget {
               trailing: isSelected
                   ? const Icon(Icons.check, color: VineTheme.vineGreen)
                   : null,
-              onTap: () => _switchEnvironment(context, ref, env, isSelected),
+              onTap: () => _switchEnvironment(context, env, isSelected),
             );
           }),
 
@@ -184,6 +253,45 @@ class DeveloperOptionsScreen extends ConsumerWidget {
               );
             }),
           ],
+
+          const Divider(color: VineTheme.outlineVariant, height: 32),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Video Playback Format',
+              style: TextStyle(
+                color: VineTheme.vineGreen,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          ..._formatOptions.map((option) {
+            final isSelected = option.format == videoFormatPreference.format;
+            return ListTile(
+              title: Text(
+                option.label,
+                style: const TextStyle(
+                  color: VineTheme.primaryText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              subtitle: Text(
+                option.urlPattern,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 14,
+                ),
+              ),
+              trailing: isSelected
+                  ? const Icon(Icons.check, color: VineTheme.vineGreen)
+                  : null,
+              onTap: () => _switchFormat(option.format),
+            );
+          }),
         ],
       ),
     );
@@ -191,7 +299,6 @@ class DeveloperOptionsScreen extends ConsumerWidget {
 
   Future<void> _switchEnvironment(
     BuildContext context,
-    WidgetRef ref,
     EnvironmentConfig newConfig,
     bool isSelected,
   ) async {
@@ -265,5 +372,25 @@ class DeveloperOptionsScreen extends ConsumerWidget {
       );
       context.pop();
     }
+  }
+
+  Future<void> _switchFormat(VideoPlaybackFormat? format) async {
+    await videoFormatPreference.setFormat(format);
+    await openVineMediaCache.clearCache();
+
+    final videoEventService = ref.read(videoEventServiceProvider);
+    videoEventService.clearVideoEvents();
+
+    if (!mounted) return;
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Switched to ${format?.name ?? "HLS (default)"} — cache cleared',
+        ),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
   }
 }

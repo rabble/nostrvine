@@ -164,6 +164,7 @@ void main() {
             limit: any(named: 'limit'),
             until: any(named: 'until'),
             fetchMultiplier: any(named: 'fetchMultiplier'),
+            skipCache: any(named: 'skipCache'),
           ),
         ).thenAnswer((_) {
           requestCount += 1;

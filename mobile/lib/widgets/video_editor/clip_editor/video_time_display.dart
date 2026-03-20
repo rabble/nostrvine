@@ -14,6 +14,7 @@ class VideoTimeDisplay extends StatelessWidget {
     required this.isPlayingSelector,
     required this.currentPositionSelector,
     required this.totalDuration,
+    this.maxDuration,
     this.currentStyle,
     this.separatorStyle,
     this.totalStyle,
@@ -28,6 +29,10 @@ class VideoTimeDisplay extends StatelessWidget {
 
   /// Total video duration
   final Duration totalDuration;
+
+  /// Upper bound for the interpolated current time. Defaults to
+  /// [totalDuration] when not set.
+  final Duration? maxDuration;
 
   /// Style for current time (defaults to white)
   final TextStyle? currentStyle;
@@ -70,6 +75,7 @@ class VideoTimeDisplay extends StatelessWidget {
             child: SmoothTimeDisplay(
               isPlayingSelector: isPlayingSelector,
               currentPositionSelector: currentPositionSelector,
+              maxDuration: maxDuration ?? totalDuration,
               style: defaultCurrentStyle,
             ),
           ),

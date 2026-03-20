@@ -65,6 +65,34 @@ void main() {
 
       expect(find.text('12.50'), findsOneWidget);
     });
+
+    testWidgets('clamps position to maxDuration when not playing', (
+      tester,
+    ) async {
+      final bloc = _TestClipEditorBloc(
+        initialState: const ClipEditorState(
+          currentPosition: Duration(seconds: 10),
+        ),
+      );
+
+      await tester.pumpWidget(
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: MaterialApp(
+            home: Scaffold(
+              body: SmoothTimeDisplay(
+                isPlayingSelector: (s) => s.isPlaying,
+                currentPositionSelector: (s) => s.currentPosition,
+                maxDuration: const Duration(seconds: 5),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('5.00'), findsOneWidget);
+    });
   });
 }
 

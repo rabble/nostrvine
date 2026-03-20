@@ -346,6 +346,13 @@ class PlayerPool {
         final nativePlayer = player.platform;
         if (nativePlayer is NativePlayer) {
           await (nativePlayer as dynamic).setProperty('msg-level', 'all=error');
+          // Start playback immediately without waiting for the cache to fill.
+          // Without this, fragmented MP4 (fMP4) takes ~3s to start because
+          // mpv parses all moof/mdat fragments before declaring cache ready.
+          await (nativePlayer as dynamic).setProperty(
+            'cache-pause-initial',
+            '0',
+          );
         }
       } on Object catch (_) {
         // Ignore — some platforms or stubs don't support setProperty.

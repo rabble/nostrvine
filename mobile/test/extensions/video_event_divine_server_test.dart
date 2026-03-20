@@ -136,28 +136,28 @@ void main() {
   });
 
   group('getOptimalVideoUrlForPlatform', () {
-    test('returns HLS 720p for Divine-hosted videos by default', () {
+    test('returns MP4 720p for Divine-hosted videos by default', () {
       const hash =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      expect(video.shouldPreferHlsPlayback, isTrue);
+      expect(video.shouldPreferHlsPlayback, isFalse);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash/hls/stream_720p.m3u8'),
+        equals('https://media.divine.video/$hash/720p.mp4'),
       );
     });
 
-    test('uses HLS 720p for bare media.divine.video blob URLs', () {
+    test('uses MP4 720p for bare media.divine.video blob URLs', () {
       const hash =
           '191679cbbeea3e4e3539d46b558e66fbadb673733af1ada0161a6e8b1cf61bea';
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
       expect(video.hasBareDivineHashPath, isTrue);
-      expect(video.shouldPreferHlsPlayback, isTrue);
+      expect(video.shouldPreferHlsPlayback, isFalse);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash/hls/stream_720p.m3u8'),
+        equals('https://media.divine.video/$hash/720p.mp4'),
       );
     });
 
@@ -178,10 +178,13 @@ void main() {
     const hash =
         'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d';
 
-    test('returns null cache URL for Divine videos (HLS not cacheable)', () {
+    test('returns MP4 cache URL for Divine videos', () {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      expect(video.getCacheableVideoUrlForPlatform(), isNull);
+      expect(
+        video.getCacheableVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash/720p.mp4'),
+      );
     });
 
     test('do not treat quality variants as bare hash paths', () {
@@ -190,26 +193,29 @@ void main() {
       );
 
       expect(video.hasBareDivineHashPath, isFalse);
-      expect(video.shouldPreferHlsPlayback, isTrue);
+      expect(video.shouldPreferHlsPlayback, isFalse);
     });
 
     test(
-      'uses HLS for all Divine hosts including cdn.divine.video',
+      'uses MP4 720p for all Divine hosts including cdn.divine.video',
       () {
         final video = _createVideoWithUrl('https://cdn.divine.video/$hash');
 
-        expect(video.shouldPreferHlsPlayback, isTrue);
+        expect(video.shouldPreferHlsPlayback, isFalse);
         expect(
           video.getOptimalVideoUrlForPlatform(),
-          equals('https://media.divine.video/$hash/hls/stream_720p.m3u8'),
+          equals('https://media.divine.video/$hash/720p.mp4'),
         );
-        expect(video.getCacheableVideoUrlForPlatform(), isNull);
+        expect(
+          video.getCacheableVideoUrlForPlatform(),
+          equals('https://media.divine.video/$hash/720p.mp4'),
+        );
       },
     );
   });
 
   group('toPooledVideoItems', () {
-    test('uses HLS URL for Divine-hosted pooled playback', () {
+    test('uses MP4 720p URL for Divine-hosted pooled playback', () {
       const hash =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       final video = _createVideoWithUrl(
@@ -223,7 +229,7 @@ void main() {
       expect(items.single.id, video.id);
       expect(
         items.single.url,
-        equals('https://media.divine.video/$hash/hls/stream_720p.m3u8'),
+        equals('https://media.divine.video/$hash/720p.mp4'),
       );
     });
 

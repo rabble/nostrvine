@@ -47,6 +47,7 @@ import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
@@ -633,6 +634,7 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
   await Future.wait([
     container.read(seenVideosServiceProvider).initialize(),
     bandwidthTracker.initialize(),
+    videoFormatPreference.initialize(),
     container.read(uploadManagerProvider).initialize(),
   ]);
 

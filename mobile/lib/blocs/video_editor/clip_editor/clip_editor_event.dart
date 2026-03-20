@@ -198,6 +198,26 @@ class ClipEditorDeleteZoneChanged extends ClipEditorEvent {
 
 // === SPLIT ===
 
+/// Atomically replace the original clip with two split halves.
+///
+/// Finds the clip by [sourceClipId], replaces it with [startClip],
+/// and inserts [endClip] right after. Pushes one undo entry so
+/// the entire split can be undone in a single step.
+class ClipEditorOriginalClipReplaced extends ClipEditorEvent {
+  const ClipEditorOriginalClipReplaced({
+    required this.sourceClipId,
+    required this.startClip,
+    required this.endClip,
+  });
+
+  final String sourceClipId;
+  final DivineVideoClip startClip;
+  final DivineVideoClip endClip;
+
+  @override
+  List<Object?> get props => [sourceClipId, startClip, endClip];
+}
+
 /// Request to split the currently selected clip at the current split position.
 ///
 /// Validates the split position, stops editing mode, and delegates the

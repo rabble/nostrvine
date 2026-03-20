@@ -584,6 +584,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     if (!keepAutosavedDraft) {
       final draftService = ref.read(draftStorageServiceProvider);
       await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
+      _clearProviders();
     }
   }
 

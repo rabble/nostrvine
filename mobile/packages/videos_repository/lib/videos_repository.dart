@@ -8,6 +8,7 @@ library;
 
 export 'src/db_video_local_storage.dart';
 export 'src/home_feed_result.dart';
+export 'src/in_memory_feed_cache.dart';
 export 'src/video_content_filter.dart';
 export 'src/video_event_filter.dart';
 export 'src/video_local_storage.dart';

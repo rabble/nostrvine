@@ -201,6 +201,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -225,6 +226,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => videos);
         },
@@ -252,6 +254,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -271,12 +274,14 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
           verifyNever(
             () => mockVideosRepository.getPopularVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           );
         },
@@ -291,6 +296,7 @@ void main() {
             () => mockVideosRepository.getPopularVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => videos);
         },
@@ -315,6 +321,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
@@ -344,6 +351,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -371,6 +379,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -396,6 +405,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
@@ -423,6 +433,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -444,6 +455,7 @@ void main() {
               userPubkey: 'user-pubkey',
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -460,6 +472,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => latestVideos);
         },
@@ -493,6 +506,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           );
         },
@@ -518,6 +532,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
@@ -546,6 +561,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -611,6 +627,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
@@ -644,6 +661,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
@@ -683,6 +701,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async {
             // Simulate network delay
@@ -712,6 +731,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -739,6 +759,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: overlappingVideos));
         },
@@ -777,6 +798,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -813,6 +835,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: freshVideos));
         },
@@ -838,6 +861,8 @@ void main() {
               videoRefs: any(named: 'videoRefs'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -856,6 +881,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -888,6 +914,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -960,6 +987,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -999,6 +1027,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1043,6 +1072,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1077,6 +1107,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1133,6 +1164,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1168,6 +1200,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1190,6 +1223,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -1212,6 +1246,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async {
             callCount++;
@@ -1248,6 +1283,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(2);
         },
@@ -1269,6 +1305,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1294,6 +1331,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(2);
         },
@@ -1316,6 +1354,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1369,6 +1408,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1408,6 +1448,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1455,6 +1496,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1533,6 +1575,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1555,6 +1598,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1579,6 +1623,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -1605,6 +1650,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => videos);
         },
@@ -1627,6 +1673,7 @@ void main() {
             () => mockVideosRepository.getPopularVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => videos);
         },
@@ -1703,6 +1750,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1744,6 +1792,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1780,6 +1829,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1812,6 +1862,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1843,6 +1894,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1862,6 +1914,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => videos);
         },
@@ -1894,6 +1947,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenThrow(Exception('network error'));
         },
@@ -1930,6 +1984,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: freshVideos));
         },
@@ -1990,6 +2045,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
 
@@ -2052,6 +2108,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async {
             callCount++;
@@ -2146,6 +2203,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async {
             callCount++;
