@@ -120,7 +120,7 @@ void main() {
       final bloc = createBloc();
       expect(bloc.state.status, VideoFeedStatus.loading);
       expect(bloc.state.videos, isEmpty);
-      expect(bloc.state.mode, FeedMode.home);
+      expect(bloc.state.mode, FeedMode.following);
       expect(bloc.state.hasMore, isTrue);
       expect(bloc.state.isLoadingMore, isFalse);
       expect(bloc.state.error, isNull);
@@ -168,13 +168,13 @@ void main() {
       test('copyWith preserves values when not specified', () {
         const state = VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.popular,
+          mode: FeedMode.latest,
         );
 
         final updated = state.copyWith();
 
         expect(updated.status, VideoFeedStatus.success);
-        expect(updated.mode, FeedMode.popular);
+        expect(updated.mode, FeedMode.latest);
       });
 
       test('copyWith clearError removes error', () {
@@ -206,13 +206,14 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.mode, 'mode', FeedMode.home)
+              .having((s) => s.mode, 'mode', FeedMode.following)
               .having((s) => s.hasMore, 'hasMore', true),
         ],
       );
@@ -277,37 +278,7 @@ void main() {
               skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
-          verifyNever(
-            () => mockVideosRepository.getPopularVideos(
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-            ),
-          );
         },
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
-        'emits [loading, success] with popular mode when specified',
-        setUp: () {
-          final videos = createTestVideos(5);
-
-          when(
-            () => mockVideosRepository.getPopularVideos(
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-            ),
-          ).thenAnswer((_) async => videos);
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.popular)),
-        expect: () => [
-          const VideoFeedState(mode: FeedMode.popular),
-          isA<VideoFeedState>()
-              .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.mode, 'mode', FeedMode.popular),
-        ],
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
@@ -326,7 +297,8 @@ void main() {
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           // _loadVideos emits success with empty videos
@@ -356,7 +328,8 @@ void main() {
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           const VideoFeedState(
@@ -384,7 +357,8 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
@@ -410,7 +384,8 @@ void main() {
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
@@ -443,7 +418,8 @@ void main() {
           curatedListRepository: mockCuratedListRepository,
           userPubkey: 'user-pubkey',
         ),
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           // Repository is called with empty authors (follow list
           // not yet initialized) — the fast path relies on
@@ -950,18 +926,6 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'does nothing when mode is popular',
-        build: createBloc,
-        seed: () => VideoFeedState(
-          status: VideoFeedStatus.success,
-          mode: FeedMode.popular,
-          videos: createTestVideos(5),
-        ),
-        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
-        expect: () => <VideoFeedState>[],
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
         'does nothing when mode is forYou',
         build: createBloc,
         seed: () => VideoFeedState(
@@ -1004,7 +968,7 @@ void main() {
         ),
         act: (bloc) async {
           // First, trigger a load so _lastRefreshedAt gets set
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(Duration.zero);
 
           // Now the auto-refresh should be skipped (data is fresh)
@@ -1043,7 +1007,7 @@ void main() {
         ),
         act: (bloc) async {
           // First load sets _lastRefreshedAt
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(Duration.zero);
 
           // With Duration.zero interval, this should refresh
@@ -1123,7 +1087,7 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.mode, 'mode', FeedMode.home),
+              .having((s) => s.mode, 'mode', FeedMode.following),
         ],
       );
 
@@ -1206,7 +1170,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           // Wait for initial load to complete (Funnelcake loaded content)
           await Future<void>.delayed(Duration.zero);
           // First stream emission is skipped (BehaviorSubject replay)
@@ -1258,7 +1222,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           // Wait for initial load to complete (Funnelcake returned empty)
           await Future<void>.delayed(Duration.zero);
           // First emission is skipped (BehaviorSubject replay)
@@ -1311,7 +1275,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(Duration.zero);
           // First emission is skipped (BehaviorSubject replay)
           followingController.add(['author']);
@@ -1369,7 +1333,7 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.mode, 'mode', FeedMode.home),
+              .having((s) => s.mode, 'mode', FeedMode.following),
         ],
       );
 
@@ -1414,7 +1378,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           // Wait for initial load to complete
           await Future<void>.delayed(Duration.zero);
           // First stream emission is skipped (BehaviorSubject replay)
@@ -1580,9 +1544,10 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBlocWithTracker,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
-          verify(() => mockTracker.startFeedLoad('home')).called(1);
+          verify(() => mockTracker.startFeedLoad('following')).called(1);
         },
       );
 
@@ -1603,12 +1568,13 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBlocWithTracker,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verify(
-            () => mockTracker.markFirstVideosReceived('home', 3),
+            () => mockTracker.markFirstVideosReceived('following', 3),
           ).called(1);
-          verify(() => mockTracker.markFeedDisplayed('home', 3)).called(1);
+          verify(() => mockTracker.markFeedDisplayed('following', 3)).called(1);
         },
       );
 
@@ -1628,11 +1594,12 @@ void main() {
           ).thenThrow(Exception('Network error'));
         },
         build: createBlocWithTracker,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verify(
             () => mockTracker.trackFeedError(
-              'home',
+              'following',
               errorType: 'load_failed',
               errorMessage: any(named: 'errorMessage'),
             ),
@@ -1662,29 +1629,6 @@ void main() {
             () => mockTracker.markFirstVideosReceived('latest', 3),
           ).called(1);
           verify(() => mockTracker.markFeedDisplayed('latest', 3)).called(1);
-        },
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
-        'uses correct feed type for popular mode',
-        setUp: () {
-          final videos = createTestVideos(3);
-          when(
-            () => mockVideosRepository.getPopularVideos(
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-              skipCache: any(named: 'skipCache'),
-            ),
-          ).thenAnswer((_) async => videos);
-        },
-        build: createBlocWithTracker,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.popular)),
-        verify: (_) {
-          verify(() => mockTracker.startFeedLoad('popular')).called(1);
-          verify(
-            () => mockTracker.markFirstVideosReceived('popular', 3),
-          ).called(1);
-          verify(() => mockTracker.markFeedDisplayed('popular', 3)).called(1);
         },
       );
     });
@@ -1760,7 +1704,8 @@ void main() {
           );
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           // 1. Loading state from _onStarted
           const VideoFeedState(),
@@ -1803,7 +1748,8 @@ void main() {
           homeFeedCache: mockCache,
           // No sharedPreferences — cache should be skipped
         ),
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
@@ -1839,7 +1785,8 @@ void main() {
           );
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
@@ -1872,7 +1819,8 @@ void main() {
           );
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verify(
             () =>
@@ -1899,7 +1847,8 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verifyNever(() => mockCache.write(any(), any()));
         },
@@ -1952,7 +1901,8 @@ void main() {
           ).thenThrow(Exception('network error'));
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           // 1. Loading state
           const VideoFeedState(),
@@ -1990,7 +1940,7 @@ void main() {
         },
         build: createBlocWithCache,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(Duration.zero);
           // Trigger a refresh — should NOT serve cache again
           bloc.add(const VideoFeedRefreshRequested());
@@ -2066,7 +2016,8 @@ void main() {
           curatedListRepository: mockCuratedListRepository,
           profileRepository: mockProfileRepository,
         ),
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verify(
             () => mockProfileRepository.fetchBatchProfiles(
@@ -2140,7 +2091,7 @@ void main() {
           profileRepository: mockProfileRepository,
         ),
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(const Duration(milliseconds: 100));
           bloc.add(const VideoFeedLoadMoreRequested());
         },
@@ -2224,7 +2175,7 @@ void main() {
           profileRepository: mockProfileRepository,
         ),
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(const Duration(milliseconds: 100));
           bloc.add(const VideoFeedLoadMoreRequested());
         },
