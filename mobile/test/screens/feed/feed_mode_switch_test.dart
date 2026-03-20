@@ -57,18 +57,6 @@ void main() {
         expect(find.text('New'), findsOneWidget);
       });
 
-      testWidgets('displays "Popular" label for popular mode', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-            mode: FeedMode.popular,
-          ),
-        );
-        await tester.pumpWidget(createTestWidget());
-
-        expect(find.text('Popular'), findsOneWidget);
-      });
-
       testWidgets('displays "Following" label for home mode', (tester) async {
         when(
           () => mockBloc.state,
@@ -95,28 +83,6 @@ void main() {
         expect(find.byType(VineBottomSheet), findsOneWidget);
       });
 
-      testWidgets('adds VideoFeedModeChanged when popular selected', (
-        tester,
-      ) async {
-        when(() => mockBloc.state).thenReturn(
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-            mode: FeedMode.latest,
-          ),
-        );
-        await tester.pumpWidget(createTestWidget());
-
-        await tester.tap(find.byType(FeedModeSwitch));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Popular'));
-        await tester.pumpAndSettle();
-
-        verify(
-          () => mockBloc.add(const VideoFeedModeChanged(FeedMode.popular)),
-        ).called(1);
-      });
-
       testWidgets('dispatches VideoFeedModeChanged when following selected', (
         tester,
       ) async {
@@ -135,7 +101,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockBloc.add(const VideoFeedModeChanged(FeedMode.home)),
+          () => mockBloc.add(const VideoFeedModeChanged(FeedMode.following)),
         ).called(1);
       });
 
@@ -145,7 +111,6 @@ void main() {
         when(() => mockBloc.state).thenReturn(
           const VideoFeedState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.popular,
           ),
         );
         await tester.pumpWidget(createTestWidget());
@@ -189,7 +154,6 @@ void main() {
         Stream.fromIterable([
           const VideoFeedState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.popular,
           ),
         ]),
         initialState: const VideoFeedState(
@@ -201,7 +165,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
 
-      expect(find.text('Popular'), findsOneWidget);
+      expect(find.text('Following'), findsOneWidget);
     });
   });
 }
