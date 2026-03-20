@@ -94,6 +94,12 @@ void main() {
       ),
     ).thenAnswer((_) async => testKeyContainer);
     when(() => mockKeyStorage.getKeyContainer()).thenAnswer((_) async => null);
+    when(
+      () => mockKeyStorage.switchToIdentity(
+        any(),
+        biometricPrompt: any(named: 'biometricPrompt'),
+      ),
+    ).thenAnswer((_) async => true);
 
     when(
       () => mockCleanupService.shouldClearDataForUser(any()),

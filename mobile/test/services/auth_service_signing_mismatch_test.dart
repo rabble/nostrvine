@@ -86,6 +86,12 @@ void main() {
     when(
       () => mockKeyStorage.getKeyContainer(),
     ).thenAnswer((_) async => null);
+    when(
+      () => mockKeyStorage.switchToIdentity(
+        any(),
+        biometricPrompt: any(named: 'biometricPrompt'),
+      ),
+    ).thenAnswer((_) async => true);
 
     when(
       () => mockCleanupService.shouldClearDataForUser(any()),
@@ -145,10 +151,24 @@ void main() {
           ),
         ).thenAnswer((_) async => containerA);
 
-        // withPrivateKey reads from PRIMARY — returns nsec_B (WRONG!)
-        // This is the bug: PRIMARY was overwritten by a previous import.
+        // Track which private key the PRIMARY slot holds.
+        // Starts with nsec_B (simulating corrupted state from previous import).
         String? privateKeyBHex;
         containerB.withPrivateKey<void>((pk) => privateKeyBHex = pk);
+        String? privateKeyAHex;
+        containerA.withPrivateKey<void>((pk) => privateKeyAHex = pk);
+        var primaryPrivateKey = privateKeyBHex!;
+
+        // switchToIdentity syncs PRIMARY — the fix calls this before signing
+        when(
+          () => mockKeyStorage.switchToIdentity(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async {
+          primaryPrivateKey = privateKeyAHex!;
+          return true;
+        });
 
         when(
           () => mockKeyStorage.withPrivateKey<Event?>(
@@ -158,8 +178,8 @@ void main() {
         ).thenAnswer((invocation) async {
           final operation =
               invocation.positionalArguments[0] as Event? Function(String);
-          // Return the result of signing with nsec_B (wrong key)
-          return operation(privateKeyBHex!);
+          // Returns whatever PRIMARY currently holds
+          return operation(primaryPrivateKey);
         });
 
         // Sign in as account A
@@ -238,6 +258,81 @@ void main() {
         );
 
         expect(signedEvent, isNotNull);
+        expect(signedEvent!.pubkey, equals(containerA.publicKeyHex));
+      },
+    );
+
+    test(
+      'createAndSignEvent fails when PRIMARY key slot was wiped by deleteKeys '
+      '(log 2: signer returned null)',
+      () async {
+        // ── Setup: simulate the state AFTER destructive sign-out ──
+        //
+        // 1. User had auto identity A, then created auto identity B.
+        // 2. User deleted account B (deleteKeys: true) — PRIMARY slot wiped.
+        // 3. User switches back to A via signInForAccount.
+        // 4. _currentKeyContainer has pubkey_A from identity storage.
+        // 5. PRIMARY slot is empty — withPrivateKey returns null.
+
+        final npubA = containerA.npub;
+        String? privateKeyAHex;
+        containerA.withPrivateKey<void>((pk) => privateKeyAHex = pk);
+
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            npubA,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => containerA);
+
+        // PRIMARY slot is empty (wiped by deleteKeys)
+        var primaryRestored = false;
+
+        when(
+          () => mockKeyStorage.switchToIdentity(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async {
+          primaryRestored = true;
+          return true;
+        });
+
+        when(
+          () => mockKeyStorage.withPrivateKey<Event?>(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((invocation) async {
+          if (!primaryRestored) {
+            // PRIMARY is empty — this is the bug
+            return null;
+          }
+          final operation =
+              invocation.positionalArguments[0] as Event? Function(String);
+          return operation(privateKeyAHex!);
+        });
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            containerA.publicKeyHex,
+            AuthenticationSource.automatic,
+          ),
+        );
+
+        final signedEvent = await authService.createAndSignEvent(
+          kind: 1,
+          content: 'test after delete + switch back',
+        );
+
+        expect(
+          signedEvent,
+          isNotNull,
+          reason:
+              'BUG #2233 (log 2): createAndSignEvent returns null because '
+              'PRIMARY key slot was wiped by deleteKeys and '
+              'signInForAccount did not restore it.',
+        );
         expect(signedEvent!.pubkey, equals(containerA.publicKeyHex));
       },
     );

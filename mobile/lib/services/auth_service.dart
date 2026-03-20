@@ -1326,6 +1326,7 @@ class AuthService implements BackgroundAwareService {
             name: 'AuthService',
             category: LogCategory.auth,
           );
+          await _keyStorage.switchToIdentity(npub);
           await _setupUserSession(container, authSource);
         } else {
           // Fall back to current primary keys
