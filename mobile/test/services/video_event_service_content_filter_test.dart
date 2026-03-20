@@ -78,6 +78,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
     mockNostrClient = _MockNostrClient();
     mockSubscriptionManager = _MockSubscriptionManager();
     mockAuthService = _MockAuthService();
@@ -92,6 +93,7 @@ void main() {
     moderationLabelService = ModerationLabelService(
       nostrClient: mockNostrClient,
       authService: mockAuthService,
+      sharedPreferences: prefs,
     );
 
     videoEventService = VideoEventService(

@@ -75,12 +75,15 @@ class ModerationLabelService {
   ModerationLabelService({
     required NostrClient nostrClient,
     required AuthService authService,
+    required SharedPreferences sharedPreferences,
   }) : _nostrClient = nostrClient,
-       _authService = authService;
+       _authService = authService,
+       _prefs = sharedPreferences;
 
   final NostrClient _nostrClient;
   // ignore: unused_field
   final AuthService _authService;
+  final SharedPreferences _prefs;
 
   /// SharedPreferences key for subscribed labeler pubkeys.
   static const String _subscribedLabelersKey = 'subscribed_labeler_pubkeys';
@@ -172,20 +175,18 @@ class ModerationLabelService {
     _initialized = true;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-
       // Resolve Divine moderation pubkey (cache → NIP-05 → fallback)
-      _divineModerationPubkey = await _resolveModerationPubkey(prefs);
+      _divineModerationPubkey = await _resolveModerationPubkey(_prefs);
 
-      final saved = prefs.getStringList(_subscribedLabelersKey);
+      final saved = _prefs.getStringList(_subscribedLabelersKey);
       if (saved != null) {
         _subscribedLabelers.addAll(saved);
       }
       _isFollowingModerationEnabled =
-          prefs.getBool(_followingModerationEnabledKey) ?? false;
+          _prefs.getBool(_followingModerationEnabledKey) ?? false;
 
       // Migrate legacy pubkey if present in stored subscriptions
-      await _migrateLegacyPubkey(prefs);
+      await _migrateLegacyPubkey(_prefs);
 
       // Always subscribe to Divine labeler
       if (!_subscribedLabelers.contains(_divineModerationPubkey)) {
@@ -460,8 +461,7 @@ class ModerationLabelService {
   /// Persist subscribed labeler pubkeys.
   Future<void> _saveSubscribedLabelers() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(
+      await _prefs.setStringList(
         _subscribedLabelersKey,
         _subscribedLabelers.toList(),
       );
@@ -477,8 +477,7 @@ class ModerationLabelService {
   /// Persist whether followed accounts are trusted moderation sources.
   Future<void> _saveFollowingModerationEnabled() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(
+      await _prefs.setBool(
         _followingModerationEnabledKey,
         _isFollowingModerationEnabled,
       );

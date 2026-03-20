@@ -458,10 +458,12 @@ AccountLabelService accountLabelService(Ref ref) {
 ModerationLabelService moderationLabelService(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
   final followRepository = ref.watch(followRepositoryProvider);
   final service = ModerationLabelService(
     nostrClient: nostrClient,
     authService: authService,
+    sharedPreferences: prefs,
   );
   unawaited(
     service.initialize().then((_) {

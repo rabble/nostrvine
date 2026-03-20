@@ -80,6 +80,7 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       ageService = AgeVerificationService();
       contentFilterService = ContentFilterService(
         ageVerificationService: ageService,
@@ -90,6 +91,7 @@ void main() {
       moderationLabelService = ModerationLabelService(
         nostrClient: mockNostrClient,
         authService: mockAuthService,
+        sharedPreferences: prefs,
       );
     });
 

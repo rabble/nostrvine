@@ -30,19 +30,22 @@ class _FakeLabelEvent extends Fake implements Event {
 void main() {
   late _MockNostrClient mockNostrClient;
   late _MockAuthService mockAuthService;
+  late SharedPreferences mockPrefs;
   late ModerationLabelService service;
 
   setUpAll(() {
     registerFallbackValue(<Filter>[_FakeFilter()]);
   });
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    mockPrefs = await SharedPreferences.getInstance();
     mockNostrClient = _MockNostrClient();
     mockAuthService = _MockAuthService();
     service = ModerationLabelService(
       nostrClient: mockNostrClient,
       authService: mockAuthService,
+      sharedPreferences: mockPrefs,
     );
   });
 
