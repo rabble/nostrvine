@@ -432,6 +432,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *enable_spm
       - *setup_local_properties
       - *build_apk
       - *build_aab
