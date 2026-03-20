@@ -31,7 +31,7 @@ Use:
 1. Check whether an existing current doc should be updated instead.
 2. Prefer linking to canonical docs instead of duplicating architecture or release guidance.
 3. If the content is a plan, investigation, or completed implementation note, mark it `Historical`.
-4. If the content affects shipping behavior or review posture, link it from [docs/P1_LAUNCH_HUB.md](/Users/lizsw/divine-mobile/docs/P1_LAUNCH_HUB.md).
+4. If the content affects shipping behavior or review posture, link it from [docs/P1_LAUNCH_HUB.md](P1_LAUNCH_HUB.md).
 
 ## Maintenance Rules
 

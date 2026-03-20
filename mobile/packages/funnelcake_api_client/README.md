@@ -10,6 +10,6 @@ Used by: repository packages that need server-backed data in addition to Nostr d
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/funnelcake_api_client
+cd mobile/packages/funnelcake_api_client
 dart test
 ```

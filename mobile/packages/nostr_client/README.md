@@ -10,6 +10,6 @@ Used by: repository packages that should not talk directly to transport details.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/nostr_client
+cd mobile/packages/nostr_client
 flutter test
 ```

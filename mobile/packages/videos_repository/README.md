@@ -10,6 +10,6 @@ Used by: the main video feed, profile grids, and related playback surfaces.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/videos_repository
+cd mobile/packages/videos_repository
 flutter test --coverage
 ```

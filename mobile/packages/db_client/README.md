@@ -10,6 +10,6 @@ Used by: repository packages that need local reads, writes, and cache hydration.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/db_client
+cd mobile/packages/db_client
 flutter test
 ```

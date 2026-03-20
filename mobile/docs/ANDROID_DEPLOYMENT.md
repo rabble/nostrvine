@@ -50,6 +50,42 @@ The helper requires:
 - working Fastlane installation
 - a previously built or buildable release AAB
 
+#### Deploy Script Flags
+
+| Flag | Description |
+|------|-------------|
+| `--skip-build` | Skip the build step and upload an existing AAB |
+| `--skip-upload` | Build only, do not upload to Play Console |
+| `--version <version>` | Override the version name (e.g. `--version 1.0.7`) |
+| `--notes <text>` | Set release notes for the upload (e.g. `--notes "Bug fixes"`) |
+
+## Google Play Service Account Setup
+
+To use the scripted upload helper, you need a Google Play service account:
+
+1. Open [Google Play Console](https://play.google.com/console) and navigate to **Settings > API access**.
+2. Click **Create service account** and follow the link to Google Cloud Console.
+3. In Google Cloud Console, create a new service account with a descriptive name (e.g. `divine-play-deploy`).
+4. Back in Google Play Console, click **Grant access** on the new service account.
+5. Assign the **Release manager** role so it can upload builds and manage releases.
+6. On the service account row, create a new JSON key and download it.
+7. Save the file as `android/play-store-service-account.json` inside the `mobile/` directory.
+
+## Security Notes
+
+- `android/play-store-service-account.json` is gitignored. **Never commit this file.**
+- Store the JSON key securely (e.g. team password manager or encrypted CI secrets).
+- Rotate the service account key periodically and revoke old keys after rotation.
+- Limit service account permissions to only what is needed for deployment.
+
+## Track Differences
+
+| Track | Review Time | Tester Limit | Rollout Speed |
+|-------|-------------|--------------|---------------|
+| Internal | None (immediate) | Up to 100 internal testers | Instant |
+| Closed | Typically < 24 hours | Up to 2,000 testers per group | Within hours of approval |
+| Production | 1-7 days (first review may be longer) | Unlimited | Staged rollout (e.g. 5% → 20% → 100%) |
+
 ## Pre-Upload Checks
 
 - Confirm `mobile/pubspec.yaml` version/build is correct.

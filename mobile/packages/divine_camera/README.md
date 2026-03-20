@@ -10,6 +10,6 @@ Used by: recording and capture flows in the mobile app.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/divine_camera
+cd mobile/packages/divine_camera
 flutter test
 ```

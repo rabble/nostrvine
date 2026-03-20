@@ -10,6 +10,6 @@ Used by: search and discovery experiences in the mobile app.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/hashtag_repository
+cd mobile/packages/hashtag_repository
 dart test
 ```

@@ -10,6 +10,6 @@ Used by: feed and profile surfaces that display or mutate repost state.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/reposts_repository
+cd mobile/packages/reposts_repository
 dart test
 ```

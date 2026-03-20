@@ -10,6 +10,6 @@ Used by: the app and most workspace packages.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/models
+cd mobile/packages/models
 dart test
 ```

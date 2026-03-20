@@ -40,7 +40,7 @@ Do not start new work in a dirty checkout. Keep one task per worktree and commit
 
 - Run Flutter commands from `mobile/`.
 - Put reusable logic in the owning package under `mobile/packages/`.
-- Follow the current architecture direction in [docs/STATE_MANAGEMENT.md](/Users/lizsw/divine-mobile/docs/STATE_MANAGEMENT.md) and [docs/BLOC_UI_MIGRATION_PRD.md](/Users/lizsw/divine-mobile/docs/BLOC_UI_MIGRATION_PRD.md).
+- Follow the current architecture direction in [docs/STATE_MANAGEMENT.md](docs/STATE_MANAGEMENT.md) and [docs/BLOC_UI_MIGRATION_PRD.md](docs/BLOC_UI_MIGRATION_PRD.md).
 
 ## Day-To-Day Commands
 
@@ -109,4 +109,4 @@ Additional expectations:
 
 - Current docs belong in `docs/` or `mobile/docs/`.
 - Historical plans and completed investigations should be preserved but clearly marked historical.
-- Before adding a new doc, check [docs/DOCUMENTATION_GUIDELINES.md](/Users/lizsw/divine-mobile/docs/DOCUMENTATION_GUIDELINES.md).
+- Before adding a new doc, check [docs/DOCUMENTATION_GUIDELINES.md](docs/DOCUMENTATION_GUIDELINES.md).

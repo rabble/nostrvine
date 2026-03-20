@@ -40,7 +40,7 @@ mobile platforms.
 * **Widgets are for UI:** Everything in Flutter's UI is a widget. Compose
   complex UIs from smaller, reusable widgets.
 * **Navigation:** Use a modern routing package like `auto_route` or `go_router`.
-  For current repo patterns, inspect [mobile/lib/router/app_router.dart](/Users/lizsw/divine-mobile/mobile/lib/router/app_router.dart).
+  For current repo patterns, inspect [mobile/lib/router/app_router.dart](../mobile/lib/router/app_router.dart).
 
 ## Package Management
 * **Pub Tool:** To manage packages, use the `pub` tool, if available.

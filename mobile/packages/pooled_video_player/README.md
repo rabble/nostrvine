@@ -10,6 +10,6 @@ Used by: feed and playback surfaces where rapid scroll performance matters.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/pooled_video_player
+cd mobile/packages/pooled_video_player
 flutter test
 ```

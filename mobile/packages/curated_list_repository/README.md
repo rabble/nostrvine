@@ -10,6 +10,6 @@ Used by: the Divine mobile app when reading, writing, and presenting curated lis
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/curated_list_repository
+cd mobile/packages/curated_list_repository
 dart test
 ```

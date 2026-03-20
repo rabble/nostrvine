@@ -10,6 +10,6 @@ Used by: auth and account-linking flows that rely on Keycast.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/keycast_flutter
+cd mobile/packages/keycast_flutter
 flutter test
 ```

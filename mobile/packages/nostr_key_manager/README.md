@@ -10,6 +10,6 @@ Used by: authentication, key backup, and signing flows.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/nostr_key_manager
+cd mobile/packages/nostr_key_manager
 flutter test
 ```

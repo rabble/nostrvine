@@ -23,7 +23,7 @@ These older docs are intentionally preserved but should not drive launch decisio
 
 ## How To Use Historical Docs Safely
 
-1. Start with [docs/README.md](/Users/lizsw/divine-mobile/docs/README.md).
+1. Start with [docs/README.md](../README.md).
 2. Confirm whether a newer current doc exists.
 3. Treat historical docs as context, not execution instructions.
 4. If a historical doc is still useful, keep it but add a clear `Historical` banner.

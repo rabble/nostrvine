@@ -30,6 +30,20 @@ Support Center
   -> external policy/support URLs on divine.video
 ```
 
+## Platform Channel Architecture
+
+The Zendesk native SDKs are accessed through a Flutter `MethodChannel`. The service layer abstracts platform details so the rest of the app never touches native code directly.
+
+```
+Settings (UI)
+  -> ZendeskSupportService (Dart)
+       -> MethodChannel('com.divine.zendesk')
+            -> iOS: ZendeskPlugin (Swift, uses ZendeskSDK pod)
+            -> Android: ZendeskPlugin (Kotlin, uses Zendesk Support SDK)
+```
+
+All calls through the channel are fire-and-forget or return simple status maps. The native side handles SDK lifecycle, view presentation, and push-token registration.
+
 ## Current Service Behavior
 
 `ZendeskSupportService`:
@@ -45,16 +59,42 @@ If Zendesk is unavailable:
 - the Support Center still supports bug reporting and log export
 - ticket history is unavailable
 
+### Identity Upgrade Flow
+
+When the app launches or the user is not yet authenticated, the service registers an **anonymous identity** with the Zendesk SDK so ticket creation still works.
+
+Once the user authenticates (login or registration), the service upgrades to a **JWT pre-auth identity**:
+
+1. The service calls the relay-manager API to fetch a Zendesk JWT token scoped to the authenticated user.
+2. On success, it replaces the anonymous identity with the JWT identity via the platform channel. Existing tickets become associated with the authenticated user.
+3. **Fallback**: If the JWT token fetch fails (network error, server error, expired session), the service logs the failure and retries with the anonymous identity so the user can still reach support. The upgrade is reattempted on the next app foreground or manual support-center open.
+
 ## Configuration
 
-Common dart defines:
+### Dart Define Configuration
 
-- `ZENDESK_APP_ID`
-- `ZENDESK_CLIENT_ID`
-- `ZENDESK_URL`
-- `ZENDESK_API_TOKEN`
+The Zendesk SDK requires four dart defines injected at build time:
 
-The mobile build scripts read these from `.env` when present.
+| Define | Purpose |
+|--------|---------|
+| `ZENDESK_APP_ID` | Identifies the Zendesk mobile SDK application |
+| `ZENDESK_CLIENT_ID` | OAuth client ID for SDK authentication |
+| `ZENDESK_URL` | Base URL of the Zendesk instance (e.g. `https://divine.zendesk.com`) |
+| `ZENDESK_API_TOKEN` | Server-side API token used for JWT identity minting |
+
+**Local development**: Values are loaded automatically from the `.env` file in `mobile/`. The `.env` file is gitignored and must be created manually from `.env.example` or obtained from the team.
+
+**CI / production builds**: Values are passed explicitly via `--dart-define` flags:
+
+```bash
+flutter build ios \
+  --dart-define=ZENDESK_APP_ID=<value> \
+  --dart-define=ZENDESK_CLIENT_ID=<value> \
+  --dart-define=ZENDESK_URL=<value> \
+  --dart-define=ZENDESK_API_TOKEN=<value>
+```
+
+If any define is missing or empty, `ZendeskSupportService` skips initialization and the app falls back to email-based support and local bug reporting.
 
 ## Current Files
 
@@ -62,6 +102,42 @@ The mobile build scripts read these from `.env` when present.
 - `mobile/lib/screens/settings/support_center_screen.dart`
 - `mobile/lib/config/zendesk_config.dart`
 - native platform handlers in the iOS and Android app targets
+
+## Troubleshooting
+
+### iOS build fails with Zendesk pod errors
+
+The Zendesk iOS SDK is installed via CocoaPods. If `pod install` fails or Xcode reports missing modules:
+
+```bash
+cd mobile/ios
+rm -rf Pods Podfile.lock .symlinks
+cd ..
+flutter clean && flutter pub get
+cd ios && pod install
+```
+
+If the error persists, also clear Xcode derived data:
+
+```bash
+rm -rf ~/Library/Developer/Xcode/DerivedData
+```
+
+### Zendesk not initializing
+
+Check the debug console for log lines from `ZendeskSupportService`. Common causes:
+
+- One or more dart defines are missing or empty. Verify `.env` contains all four keys.
+- The native plugin failed to register. Confirm `ZendeskPlugin` is listed in the iOS `AppDelegate` / Android `MainActivity` plugin registry.
+- Network is unreachable at init time. The service logs the failure and retries on next access.
+
+### Support button shows email dialog instead of Zendesk UI
+
+This means the SDK credentials are not configured or initialization was skipped. The app intentionally falls back to a `mailto:` link when Zendesk is unavailable. To fix:
+
+1. Confirm all four dart defines are set (see Configuration above).
+2. Restart the app (hot-reload does not re-run SDK initialization).
+3. Check logs for initialization errors.
 
 ## Notes For Launch
 

@@ -34,8 +34,8 @@ Use this document when preparing App Store reviewer notes and internal release s
 
 Reference docs:
 
-- [mobile/docs/APPLE_REVIEW_RESPONSE.md](/Users/lizsw/divine-mobile/mobile/docs/APPLE_REVIEW_RESPONSE.md)
-- [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](/Users/lizsw/divine-mobile/mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md)
+- [mobile/docs/APPLE_REVIEW_RESPONSE.md](../mobile/docs/APPLE_REVIEW_RESPONSE.md)
+- [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](../mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md)
 
 ## Permissions And Privacy Notes
 
@@ -60,7 +60,7 @@ The Android manifest explicitly removes Advertising ID and unused location/Bluet
 ## Encryption Export Notes
 
 - `ITSAppUsesNonExemptEncryption` is set to `false`.
-- Export rationale and cryptography inventory live in [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](/Users/lizsw/divine-mobile/mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md).
+- Export rationale and cryptography inventory live in [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](../mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md).
 
 ## External Pages To Verify Before Submission
 

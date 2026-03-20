@@ -7,7 +7,7 @@ Divine is a dark-mode-only short-form video app built on Nostr. This repository 
 
 ## Current Milestone
 
-P1 launch means the app is ready to submit to the App Store for review and to cut the matching Android release candidate. The launch-critical documentation lives in [docs/P1_LAUNCH_HUB.md](/Users/lizsw/divine-mobile/docs/P1_LAUNCH_HUB.md).
+P1 launch means the app is ready to submit to the App Store for review and to cut the matching Android release candidate. The launch-critical documentation lives in [docs/P1_LAUNCH_HUB.md](docs/P1_LAUNCH_HUB.md).
 
 ## Repository Map
 
@@ -33,11 +33,11 @@ Common alternatives:
 
 ## Canonical Docs
 
-- [CONTRIBUTING.md](/Users/lizsw/divine-mobile/CONTRIBUTING.md) - setup, workflow, verification, and PR expectations
-- [docs/README.md](/Users/lizsw/divine-mobile/docs/README.md) - documentation map and source-of-truth guide
-- [docs/P1_LAUNCH_HUB.md](/Users/lizsw/divine-mobile/docs/P1_LAUNCH_HUB.md) - launch-critical release, review, and compliance docs
-- [docs/STATE_MANAGEMENT.md](/Users/lizsw/divine-mobile/docs/STATE_MANAGEMENT.md) - current state-management direction
-- [docs/BLOC_UI_MIGRATION_PRD.md](/Users/lizsw/divine-mobile/docs/BLOC_UI_MIGRATION_PRD.md) - migration policy and rationale
+- [CONTRIBUTING.md](CONTRIBUTING.md) - setup, workflow, verification, and PR expectations
+- [docs/README.md](docs/README.md) - documentation map and source-of-truth guide
+- [docs/P1_LAUNCH_HUB.md](docs/P1_LAUNCH_HUB.md) - launch-critical release, review, and compliance docs
+- [docs/STATE_MANAGEMENT.md](docs/STATE_MANAGEMENT.md) - current state-management direction
+- [docs/BLOC_UI_MIGRATION_PRD.md](docs/BLOC_UI_MIGRATION_PRD.md) - migration policy and rationale
 
 ## Daily Development
 
@@ -59,11 +59,11 @@ dart run build_runner build --delete-conflicting-outputs
 
 Use these docs instead of older deployment notes:
 
-- [docs/RELEASE_CHECKLIST.md](/Users/lizsw/divine-mobile/docs/RELEASE_CHECKLIST.md)
-- [docs/APP_STORE_REVIEW_DOSSIER.md](/Users/lizsw/divine-mobile/docs/APP_STORE_REVIEW_DOSSIER.md)
-- [mobile/docs/APPLE_REVIEW_RESPONSE.md](/Users/lizsw/divine-mobile/mobile/docs/APPLE_REVIEW_RESPONSE.md)
-- [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](/Users/lizsw/divine-mobile/mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md)
+- [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)
+- [docs/APP_STORE_REVIEW_DOSSIER.md](docs/APP_STORE_REVIEW_DOSSIER.md)
+- [mobile/docs/APPLE_REVIEW_RESPONSE.md](mobile/docs/APPLE_REVIEW_RESPONSE.md)
+- [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md)
 
 ## Documentation Policy
 
-If a doc conflicts with current code, tests, or the focused current docs above, trust the implementation first. Older plans, migration notes, and postmortems are preserved for context and tracked from [docs/archive/README.md](/Users/lizsw/divine-mobile/docs/archive/README.md).
+If a doc conflicts with current code, tests, or the focused current docs above, trust the implementation first. Older plans, migration notes, and postmortems are preserved for context and tracked from [docs/archive/README.md](docs/archive/README.md).

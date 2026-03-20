@@ -10,6 +10,6 @@ Used by: video and media playback flows that need resilient local caching.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/media_cache
+cd mobile/packages/media_cache
 flutter test
 ```

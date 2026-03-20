@@ -10,6 +10,6 @@ Used by: the Flutter app and any workspace package that renders app-consistent U
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/divine_ui
+cd mobile/packages/divine_ui
 flutter test
 ```

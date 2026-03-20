@@ -10,6 +10,6 @@ Used by: comment surfaces in the Divine mobile app.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/comments_repository
+cd mobile/packages/comments_repository
 dart test
 ```

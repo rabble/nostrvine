@@ -10,6 +10,6 @@ Used by: camera, media, and other permission-gated app flows.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/permissions_service
+cd mobile/packages/permissions_service
 flutter test
 ```

@@ -16,11 +16,11 @@ P1 launch is the milestone for submitting Divine to the App Store for review and
 
 ## Launch Doc Set
 
-- [docs/RELEASE_CHECKLIST.md](/Users/lizsw/divine-mobile/docs/RELEASE_CHECKLIST.md) - release execution checklist
-- [docs/APP_STORE_REVIEW_DOSSIER.md](/Users/lizsw/divine-mobile/docs/APP_STORE_REVIEW_DOSSIER.md) - reviewer-facing evidence and submission notes
-- [mobile/docs/APPLE_REVIEW_RESPONSE.md](/Users/lizsw/divine-mobile/mobile/docs/APPLE_REVIEW_RESPONSE.md) - prior Apple review response and current compliance posture
-- [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](/Users/lizsw/divine-mobile/mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md) - export compliance record
-- [mobile/docs/ANDROID_DEPLOYMENT.md](/Users/lizsw/divine-mobile/mobile/docs/ANDROID_DEPLOYMENT.md) - Play Console upload flow
+- [docs/RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) - release execution checklist
+- [docs/APP_STORE_REVIEW_DOSSIER.md](APP_STORE_REVIEW_DOSSIER.md) - reviewer-facing evidence and submission notes
+- [mobile/docs/APPLE_REVIEW_RESPONSE.md](../mobile/docs/APPLE_REVIEW_RESPONSE.md) - prior Apple review response and current compliance posture
+- [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](../mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md) - export compliance record
+- [mobile/docs/ANDROID_DEPLOYMENT.md](../mobile/docs/ANDROID_DEPLOYMENT.md) - Play Console upload flow
 
 ## Current Release Path
 
@@ -59,4 +59,4 @@ These pages are linked from the app and should be reviewed before submission eve
 
 ## Not Source Of Truth
 
-Do not use older legacy deployment notes, package release notes, or web-deployment docs as the launch checklist. Those are tracked from [docs/archive/README.md](/Users/lizsw/divine-mobile/docs/archive/README.md).
+Do not use older legacy deployment notes, package release notes, or web-deployment docs as the launch checklist. Those are tracked from [docs/archive/README.md](archive/README.md).

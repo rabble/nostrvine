@@ -10,6 +10,6 @@ Used by: feed, profile, and detail surfaces that show or mutate likes.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/likes_repository
+cd mobile/packages/likes_repository
 dart test
 ```

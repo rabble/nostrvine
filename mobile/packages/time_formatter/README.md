@@ -10,6 +10,6 @@ Used by: feed, profile, inbox, and other UI surfaces that render times.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/time_formatter
+cd mobile/packages/time_formatter
 dart test
 ```

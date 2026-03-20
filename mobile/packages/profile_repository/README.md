@@ -10,6 +10,6 @@ Used by: profile, search, and account-related mobile surfaces.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/profile_repository
+cd mobile/packages/profile_repository
 dart test
 ```

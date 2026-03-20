@@ -40,7 +40,7 @@ mobile platforms.
 * **Widgets are for UI:** Everything in Flutter's UI is a widget. Compose
   complex UIs from smaller, reusable widgets.
 * **Navigation:** Use a modern routing package like `auto_route` or `go_router`.
-  For current repo patterns, inspect [mobile/lib/router/app_router.dart](/Users/lizsw/divine-mobile/mobile/lib/router/app_router.dart).
+  For current repo patterns, inspect [mobile/lib/router/app_router.dart](../mobile/lib/router/app_router.dart).
 * **CRITICAL - No Modals Policy:** Do NOT use modal dialogs, bottom sheets, or
   any modal overlays unless Rabble explicitly requests them. Even if requested,
   try to convince them to use full-screen navigation instead. Modals interrupt

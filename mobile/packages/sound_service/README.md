@@ -10,6 +10,6 @@ Used by: recording and editing flows that need app-managed sound playback.
 Test locally:
 
 ```bash
-cd /Users/lizsw/divine-mobile/mobile/packages/sound_service
+cd mobile/packages/sound_service
 flutter test
 ```

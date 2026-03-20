@@ -11,10 +11,10 @@ Use this checklist for P1 release prep and store submission. This replaces older
 - [ ] Confirm `mobile/pubspec.yaml` has the release version and build number you expect.
 - [ ] Review `git status` and remove temporary files, logs, or unfinished work.
 - [ ] Confirm launch-critical docs are updated:
-  - [ ] [docs/P1_LAUNCH_HUB.md](/Users/lizsw/divine-mobile/docs/P1_LAUNCH_HUB.md)
-  - [ ] [docs/APP_STORE_REVIEW_DOSSIER.md](/Users/lizsw/divine-mobile/docs/APP_STORE_REVIEW_DOSSIER.md)
-  - [ ] [mobile/docs/APPLE_REVIEW_RESPONSE.md](/Users/lizsw/divine-mobile/mobile/docs/APPLE_REVIEW_RESPONSE.md)
-  - [ ] [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](/Users/lizsw/divine-mobile/mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md)
+  - [ ] [docs/P1_LAUNCH_HUB.md](P1_LAUNCH_HUB.md)
+  - [ ] [docs/APP_STORE_REVIEW_DOSSIER.md](APP_STORE_REVIEW_DOSSIER.md)
+  - [ ] [mobile/docs/APPLE_REVIEW_RESPONSE.md](../mobile/docs/APPLE_REVIEW_RESPONSE.md)
+  - [ ] [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](../mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md)
 
 ## 2. Run The Required Checks
 
@@ -62,7 +62,7 @@ From `mobile/`:
 - [ ] Verify `ITSAppUsesNonExemptEncryption` remains `false` in `mobile/ios/Runner/Info.plist`.
 - [ ] Re-check camera, microphone, photo-library, Bluetooth, Bonjour, and location usage strings in `Info.plist`.
 - [ ] Ensure App Store Connect screenshots, subtitle, description, keywords, privacy answers, and support URL are current.
-- [ ] Attach reviewer notes using [docs/APP_STORE_REVIEW_DOSSIER.md](/Users/lizsw/divine-mobile/docs/APP_STORE_REVIEW_DOSSIER.md).
+- [ ] Attach reviewer notes using [docs/APP_STORE_REVIEW_DOSSIER.md](APP_STORE_REVIEW_DOSSIER.md).
 - [ ] Upload the archive to TestFlight or App Store Connect and verify processing succeeds.
 
 ## 6. Android Submission Checklist
