@@ -195,7 +195,7 @@ void main() {
         );
         expect(
           find.byWidgetPredicate(
-            (w) => w is Opacity && w.opacity == 0.24,
+            (w) => w is Opacity && w.opacity == 0.48,
           ),
           findsOneWidget,
         );
