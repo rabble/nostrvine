@@ -1,5 +1,5 @@
 // ABOUTME: BLoC for unified video feed with mode switching
-// ABOUTME: Manages For You, Home (following), New (latest), and Popular feeds
+// ABOUTME: Manages For You, Following, and New (latest) feeds
 // ABOUTME: Uses VideosRepository for data fetching with cursor-based pagination
 
 import 'dart:async';
@@ -29,7 +29,7 @@ const _feedModeKey = 'selected_feed_mode';
 /// BLoC for managing the unified video feed.
 ///
 /// Handles:
-/// - Multiple feed modes (home, latest, popular)
+/// - Multiple feed modes (forYou, following, latest)
 /// - Pagination via cursor-based loading
 /// - Following list changes for home feed
 /// - Pull-to-refresh functionality
@@ -130,7 +130,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     // After the initial load, check for the "no follows" CTA. Needed for
     // BLoC re-creation (e.g. navigating back to home) when the follow repo
     // is already initialized — .skip(1) would skip the only replay.
-    if (mode == FeedMode.home || mode == FeedMode.forYou) {
+    if (mode == FeedMode.following || mode == FeedMode.forYou) {
       final currentFollowing = _followRepository.followingPubkeys;
       if (currentFollowing.isEmpty && state.videos.isEmpty) {
         emit(
@@ -232,11 +232,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         }
       }
 
-      // Only sort chronological feeds by createdAt.
-      // Popular feed preserves its engagement-based order.
-      if (state.mode != FeedMode.popular) {
-        updatedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      }
+      updatedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       // Merge attribution metadata from pagination with existing state.
       final mergedSources = Map.of(state.videoListSources);
@@ -293,14 +289,14 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Handle auto-refresh request (dispatched by UI on app resume).
   ///
   /// Only refreshes when:
-  /// - The current feed mode is [FeedMode.home]
+  /// - The current feed mode is [FeedMode.following]
   /// - The data is stale (last refresh was longer ago than
   ///   [_autoRefreshMinInterval])
   Future<void> _onAutoRefreshRequested(
     VideoFeedAutoRefreshRequested event,
     Emitter<VideoFeedState> emit,
   ) async {
-    if (state.mode != FeedMode.home) return;
+    if (state.mode != FeedMode.following) return;
 
     final lastRefresh = _lastRefreshedAt;
     if (lastRefresh != null &&
@@ -334,7 +330,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     VideoFeedFollowingListChanged event,
     Emitter<VideoFeedState> emit,
   ) async {
-    if (state.mode != FeedMode.home) return;
+    if (state.mode != FeedMode.following) return;
     if (state.status == VideoFeedStatus.loading) return;
 
     // Empty follow list → show "follow someone" CTA.
@@ -353,18 +349,18 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     }
 
     // Silent refresh — keep current videos visible, replace when done.
-    await _loadVideos(FeedMode.home, emit, skipCache: true);
+    await _loadVideos(FeedMode.following, emit, skipCache: true);
   }
 
   /// Handle curated list subscription changes from [CuratedListRepository].
   ///
-  /// Only refreshes when the current mode is [FeedMode.home] and the
+  /// Only refreshes when the current mode is [FeedMode.following] and the
   /// feed has already been loaded (avoids double-loading on startup).
   Future<void> _onCuratedListsChanged(
     VideoFeedCuratedListsChanged event,
     Emitter<VideoFeedState> emit,
   ) async {
-    if (state.mode != FeedMode.home) return;
+    if (state.mode != FeedMode.following) return;
     if (state.status == VideoFeedStatus.loading) return;
 
     emit(
@@ -376,7 +372,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       ),
     );
 
-    await _loadVideos(FeedMode.home, emit, skipCache: true);
+    await _loadVideos(FeedMode.following, emit, skipCache: true);
   }
 
   /// Load videos for the specified mode.
@@ -398,7 +394,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     // Serve cached home feed on first load for instant startup.
     if (_serveCachedHomeFeed &&
         !_cacheServed &&
-        (mode == FeedMode.home || mode == FeedMode.forYou) &&
+        (mode == FeedMode.following || mode == FeedMode.forYou) &&
         _sharedPreferences != null) {
       _cacheServed = true;
       final cached = _homeFeedCache.read(_sharedPreferences);
@@ -454,7 +450,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       await _fetchCreatorProfiles(validVideos, emit);
 
       // Cache the raw response for next cold start (fire-and-forget).
-      if ((mode == FeedMode.home || mode == FeedMode.forYou) &&
+      if ((mode == FeedMode.following || mode == FeedMode.forYou) &&
           _sharedPreferences != null &&
           result.rawResponseBody != null) {
         unawaited(
@@ -501,7 +497,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     int? until,
     bool skipCache = false,
   }) => switch (mode) {
-    FeedMode.forYou || FeedMode.home => _videosRepository.getHomeFeedVideos(
+    FeedMode.forYou ||
+    FeedMode.following => _videosRepository.getHomeFeedVideos(
       authors: _followRepository.followingPubkeys,
       videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
       userPubkey: _userPubkey,
@@ -511,10 +508,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     FeedMode.latest =>
       _videosRepository
           .getNewVideos(until: until, skipCache: skipCache)
-          .then((videos) => HomeFeedResult(videos: videos)),
-    FeedMode.popular =>
-      _videosRepository
-          .getPopularVideos(until: until, skipCache: skipCache)
           .then((videos) => HomeFeedResult(videos: videos)),
   };
 

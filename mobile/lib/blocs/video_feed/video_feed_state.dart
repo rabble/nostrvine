@@ -9,13 +9,10 @@ enum FeedMode {
   forYou,
 
   /// Videos from users the current user follows.
-  home,
+  following,
 
   /// All videos sorted by creation time (newest first).
   latest,
-
-  /// Videos sorted by engagement score (most popular first).
-  popular,
 }
 
 /// Status of the video feed.
@@ -44,7 +41,7 @@ enum VideoFeedError {
 /// Contains:
 /// - [videos]: The list of video events for the current mode
 /// - [status]: The current loading status
-/// - [mode]: The active feed mode (home, latest, popular)
+/// - [mode]: The active feed mode (forYou, following, latest)
 /// - [hasMore]: Whether more videos can be loaded
 /// - [isLoadingMore]: Whether pagination is in progress
 /// - [error]: Any error that occurred
@@ -52,7 +49,7 @@ final class VideoFeedState extends Equatable {
   const VideoFeedState({
     this.status = VideoFeedStatus.loading,
     this.videos = const [],
-    this.mode = FeedMode.home,
+    this.mode = FeedMode.following,
     this.hasMore = true,
     this.isLoadingMore = false,
     this.error,

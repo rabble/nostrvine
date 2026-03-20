@@ -43,6 +43,7 @@ workspace:
   - packages/reposts_repository
   - packages/sound_service
   - packages/time_formatter
+  - packages/tv_static_effect
   - packages/videos_repository
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -139,6 +140,9 @@ dependencies:
   # Videos Repository - Video feed data layer
   videos_repository:
 
+  # TV static noise effect
+  tv_static_effect:
+
   # Divine UI - Shared UI components
   divine_ui:
 
@@ -169,7 +173,7 @@ dependencies:
   convert: ^3.1.2
   audio_session: ^0.2.2
   pro_video_editor: ^1.7.0
-  pro_image_editor: ^12.0.6
+  pro_image_editor: ^12.0.8
   linked_scroll_controller: ^0.2.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7

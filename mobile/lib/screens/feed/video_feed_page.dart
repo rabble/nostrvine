@@ -36,9 +36,9 @@ class VideoFeedPage extends ConsumerWidget {
   /// Build path for a specific index.
   static String pathForIndex(int index) => '/home/$index';
 
-  const VideoFeedPage({this.initialMode = FeedMode.home, super.key});
+  const VideoFeedPage({this.initialMode = FeedMode.following, super.key});
 
-  /// The feed mode to start with. Defaults to [FeedMode.home].
+  /// The feed mode to start with. Defaults to [FeedMode.following].
   final FeedMode initialMode;
 
   @override
@@ -506,7 +506,7 @@ class FeedEmptyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNoFollowedUsers =
-        state.mode == FeedMode.home &&
+        state.mode == FeedMode.following &&
         state.error == VideoFeedError.noFollowedUsers;
 
     return Center(
@@ -542,7 +542,7 @@ class FeedEmptyWidget extends StatelessWidget {
   }
 
   String _getEmptyMessage(VideoFeedState state) {
-    if (state.mode == FeedMode.home &&
+    if (state.mode == FeedMode.following &&
         state.error == VideoFeedError.noFollowedUsers) {
       return 'No followed users.\nFollow someone to see their videos here.';
     }

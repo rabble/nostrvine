@@ -1,5 +1,5 @@
 // ABOUTME: Feed mode picker overlay widget for video feed
-// ABOUTME: Shows current mode (New/Popular/Following) with bottom sheet selection
+// ABOUTME: Shows current mode (For You/New/Following) with bottom sheet selection
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +22,7 @@ class FeedModeSwitch extends StatelessWidget {
   static const Map<FeedMode, String> feedModeLabels = {
     FeedMode.forYou: 'For You',
     FeedMode.latest: 'New',
-    FeedMode.popular: 'Popular',
-    FeedMode.home: 'Following',
+    FeedMode.following: 'Following',
   };
 
   @override
@@ -119,8 +118,10 @@ class FeedModeSwitch extends StatelessWidget {
       options: const [
         VineBottomSheetSelectionOptionData(label: 'For You', value: 'forYou'),
         VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),
-        VineBottomSheetSelectionOptionData(label: 'Popular', value: 'popular'),
-        VineBottomSheetSelectionOptionData(label: 'Following', value: 'home'),
+        VineBottomSheetSelectionOptionData(
+          label: 'Following',
+          value: 'following',
+        ),
       ],
     );
 
