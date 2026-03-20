@@ -123,4 +123,18 @@ abstract class VideoLocalStorage {
 
   /// Gets the count of cached video events.
   Future<int> getEventCount();
+
+  /// Saves a JSON response body for a feed mode.
+  ///
+  /// Replaces any existing cached response for [feedKey].
+  Future<void> saveFeedResponseBody(String feedKey, String responseBody);
+
+  /// Returns the cached JSON response body for a feed mode, or `null`.
+  Future<String?> getFeedResponseBody(String feedKey);
+
+  /// Deletes the cached response body for a single feed mode.
+  Future<void> clearFeedResponseBody(String feedKey);
+
+  /// Deletes all cached feed response bodies.
+  Future<void> clearAllFeedResponseBodies();
 }

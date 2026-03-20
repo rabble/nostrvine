@@ -826,9 +826,8 @@ class Conversations extends Table {
   /// NULL for legacy conversations created before multi-account support.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
 
-  /// The DM protocol used for this conversation: 'nip04' or 'nip17'.
-  /// NULL when the protocol is unknown (e.g. conversation created before
-  /// protocol tracking was added).
+  /// Protocol used for this conversation: 'nip-04' or 'nip-17'.
+  /// NULL for legacy conversations created before protocol tracking.
   TextColumn get dmProtocol => text().nullable().named('dm_protocol')();
 
   @override
@@ -851,6 +850,29 @@ class Conversations extends Table {
           'ON conversations (owner_pubkey)',
     ),
   ];
+}
+
+/// Stores a single JSON response body per feed key.
+///
+/// Each feed mode (home, latest, popular) caches its most recent API
+/// response body so cold starts can display data instantly without a
+/// network round-trip.
+@DataClassName('FeedResponseCacheRow')
+class FeedResponseCache extends Table {
+  @override
+  String get tableName => 'feed_response_cache';
+
+  /// Feed mode identifier (e.g., 'home', 'latest', 'popular').
+  TextColumn get feedKey => text().named('feed_key')();
+
+  /// The full JSON response body to cache.
+  TextColumn get responseBody => text().named('response_body')();
+
+  /// Unix timestamp (seconds) when the response was cached.
+  IntColumn get cachedAt => integer().named('cached_at')();
+
+  @override
+  Set<Column> get primaryKey => {feedKey};
 }
 
 /// Stores the current user's own repost events (Kind 16 generic reposts).

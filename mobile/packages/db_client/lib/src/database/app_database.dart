@@ -32,6 +32,7 @@ const _notificationRetentionDays = 7;
     Clips,
     DirectMessages,
     Conversations,
+    FeedResponseCache,
   ],
   daos: [
     UserProfilesDao,
@@ -49,6 +50,7 @@ const _notificationRetentionDays = 7;
     ClipsDao,
     DirectMessagesDao,
     ConversationsDao,
+    FeedCacheDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -413,6 +415,25 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey
       ON conversations (owner_pubkey)
     ''');
+
+    // Check if feed_response_cache table exists, create if missing
+    final feedCacheResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='feed_response_cache'",
+    ).get();
+
+    if (feedCacheResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE feed_response_cache (
+          feed_key TEXT NOT NULL PRIMARY KEY,
+          response_body TEXT NOT NULL,
+          cached_at INTEGER NOT NULL
+        )
+      ''');
+    }
+
+    // Drop legacy feed_cache_entries table if it exists
+    await customStatement('DROP TABLE IF EXISTS feed_cache_entries');
 
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();

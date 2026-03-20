@@ -9767,9 +9767,8 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
   /// NULL for legacy conversations created before multi-account support.
   final String? ownerPubkey;
 
-  /// The DM protocol used for this conversation: 'nip04' or 'nip17'.
-  /// NULL when the protocol is unknown (e.g. conversation created before
-  /// protocol tracking was added).
+  /// Protocol used for this conversation: 'nip-04' or 'nip-17'.
+  /// NULL for legacy conversations created before protocol tracking.
   final String? dmProtocol;
   const ConversationRow({
     required this.id,
@@ -10194,6 +10193,286 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
   }
 }
 
+class $FeedResponseCacheTable extends FeedResponseCache
+    with TableInfo<$FeedResponseCacheTable, FeedResponseCacheRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FeedResponseCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _feedKeyMeta = const VerificationMeta(
+    'feedKey',
+  );
+  @override
+  late final GeneratedColumn<String> feedKey = GeneratedColumn<String>(
+    'feed_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _responseBodyMeta = const VerificationMeta(
+    'responseBody',
+  );
+  @override
+  late final GeneratedColumn<String> responseBody = GeneratedColumn<String>(
+    'response_body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cachedAtMeta = const VerificationMeta(
+    'cachedAt',
+  );
+  @override
+  late final GeneratedColumn<int> cachedAt = GeneratedColumn<int>(
+    'cached_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [feedKey, responseBody, cachedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'feed_response_cache';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FeedResponseCacheRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('feed_key')) {
+      context.handle(
+        _feedKeyMeta,
+        feedKey.isAcceptableOrUnknown(data['feed_key']!, _feedKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_feedKeyMeta);
+    }
+    if (data.containsKey('response_body')) {
+      context.handle(
+        _responseBodyMeta,
+        responseBody.isAcceptableOrUnknown(
+          data['response_body']!,
+          _responseBodyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_responseBodyMeta);
+    }
+    if (data.containsKey('cached_at')) {
+      context.handle(
+        _cachedAtMeta,
+        cachedAt.isAcceptableOrUnknown(data['cached_at']!, _cachedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cachedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {feedKey};
+  @override
+  FeedResponseCacheRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FeedResponseCacheRow(
+      feedKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}feed_key'],
+      )!,
+      responseBody: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}response_body'],
+      )!,
+      cachedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cached_at'],
+      )!,
+    );
+  }
+
+  @override
+  $FeedResponseCacheTable createAlias(String alias) {
+    return $FeedResponseCacheTable(attachedDatabase, alias);
+  }
+}
+
+class FeedResponseCacheRow extends DataClass
+    implements Insertable<FeedResponseCacheRow> {
+  /// Feed mode identifier (e.g., 'home', 'latest', 'popular').
+  final String feedKey;
+
+  /// The full JSON response body to cache.
+  final String responseBody;
+
+  /// Unix timestamp (seconds) when the response was cached.
+  final int cachedAt;
+  const FeedResponseCacheRow({
+    required this.feedKey,
+    required this.responseBody,
+    required this.cachedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['feed_key'] = Variable<String>(feedKey);
+    map['response_body'] = Variable<String>(responseBody);
+    map['cached_at'] = Variable<int>(cachedAt);
+    return map;
+  }
+
+  FeedResponseCacheCompanion toCompanion(bool nullToAbsent) {
+    return FeedResponseCacheCompanion(
+      feedKey: Value(feedKey),
+      responseBody: Value(responseBody),
+      cachedAt: Value(cachedAt),
+    );
+  }
+
+  factory FeedResponseCacheRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FeedResponseCacheRow(
+      feedKey: serializer.fromJson<String>(json['feedKey']),
+      responseBody: serializer.fromJson<String>(json['responseBody']),
+      cachedAt: serializer.fromJson<int>(json['cachedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'feedKey': serializer.toJson<String>(feedKey),
+      'responseBody': serializer.toJson<String>(responseBody),
+      'cachedAt': serializer.toJson<int>(cachedAt),
+    };
+  }
+
+  FeedResponseCacheRow copyWith({
+    String? feedKey,
+    String? responseBody,
+    int? cachedAt,
+  }) => FeedResponseCacheRow(
+    feedKey: feedKey ?? this.feedKey,
+    responseBody: responseBody ?? this.responseBody,
+    cachedAt: cachedAt ?? this.cachedAt,
+  );
+  FeedResponseCacheRow copyWithCompanion(FeedResponseCacheCompanion data) {
+    return FeedResponseCacheRow(
+      feedKey: data.feedKey.present ? data.feedKey.value : this.feedKey,
+      responseBody: data.responseBody.present
+          ? data.responseBody.value
+          : this.responseBody,
+      cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FeedResponseCacheRow(')
+          ..write('feedKey: $feedKey, ')
+          ..write('responseBody: $responseBody, ')
+          ..write('cachedAt: $cachedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(feedKey, responseBody, cachedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FeedResponseCacheRow &&
+          other.feedKey == this.feedKey &&
+          other.responseBody == this.responseBody &&
+          other.cachedAt == this.cachedAt);
+}
+
+class FeedResponseCacheCompanion extends UpdateCompanion<FeedResponseCacheRow> {
+  final Value<String> feedKey;
+  final Value<String> responseBody;
+  final Value<int> cachedAt;
+  final Value<int> rowid;
+  const FeedResponseCacheCompanion({
+    this.feedKey = const Value.absent(),
+    this.responseBody = const Value.absent(),
+    this.cachedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FeedResponseCacheCompanion.insert({
+    required String feedKey,
+    required String responseBody,
+    required int cachedAt,
+    this.rowid = const Value.absent(),
+  }) : feedKey = Value(feedKey),
+       responseBody = Value(responseBody),
+       cachedAt = Value(cachedAt);
+  static Insertable<FeedResponseCacheRow> custom({
+    Expression<String>? feedKey,
+    Expression<String>? responseBody,
+    Expression<int>? cachedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (feedKey != null) 'feed_key': feedKey,
+      if (responseBody != null) 'response_body': responseBody,
+      if (cachedAt != null) 'cached_at': cachedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FeedResponseCacheCompanion copyWith({
+    Value<String>? feedKey,
+    Value<String>? responseBody,
+    Value<int>? cachedAt,
+    Value<int>? rowid,
+  }) {
+    return FeedResponseCacheCompanion(
+      feedKey: feedKey ?? this.feedKey,
+      responseBody: responseBody ?? this.responseBody,
+      cachedAt: cachedAt ?? this.cachedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (feedKey.present) {
+      map['feed_key'] = Variable<String>(feedKey.value);
+    }
+    if (responseBody.present) {
+      map['response_body'] = Variable<String>(responseBody.value);
+    }
+    if (cachedAt.present) {
+      map['cached_at'] = Variable<int>(cachedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FeedResponseCacheCompanion(')
+          ..write('feedKey: $feedKey, ')
+          ..write('responseBody: $responseBody, ')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -10216,6 +10495,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ClipsTable clips = $ClipsTable(this);
   late final $DirectMessagesTable directMessages = $DirectMessagesTable(this);
   late final $ConversationsTable conversations = $ConversationsTable(this);
+  late final $FeedResponseCacheTable feedResponseCache =
+      $FeedResponseCacheTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -10256,6 +10537,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final ConversationsDao conversationsDao = ConversationsDao(
     this as AppDatabase,
   );
+  late final FeedCacheDao feedCacheDao = FeedCacheDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -10276,6 +10558,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     clips,
     directMessages,
     conversations,
+    feedResponseCache,
   ];
 }
 
@@ -15070,6 +15353,183 @@ typedef $$ConversationsTableProcessedTableManager =
       ConversationRow,
       PrefetchHooks Function()
     >;
+typedef $$FeedResponseCacheTableCreateCompanionBuilder =
+    FeedResponseCacheCompanion Function({
+      required String feedKey,
+      required String responseBody,
+      required int cachedAt,
+      Value<int> rowid,
+    });
+typedef $$FeedResponseCacheTableUpdateCompanionBuilder =
+    FeedResponseCacheCompanion Function({
+      Value<String> feedKey,
+      Value<String> responseBody,
+      Value<int> cachedAt,
+      Value<int> rowid,
+    });
+
+class $$FeedResponseCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $FeedResponseCacheTable> {
+  $$FeedResponseCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get feedKey => $composableBuilder(
+    column: $table.feedKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get responseBody => $composableBuilder(
+    column: $table.responseBody,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cachedAt => $composableBuilder(
+    column: $table.cachedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FeedResponseCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $FeedResponseCacheTable> {
+  $$FeedResponseCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get feedKey => $composableBuilder(
+    column: $table.feedKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get responseBody => $composableBuilder(
+    column: $table.responseBody,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cachedAt => $composableBuilder(
+    column: $table.cachedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FeedResponseCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FeedResponseCacheTable> {
+  $$FeedResponseCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get feedKey =>
+      $composableBuilder(column: $table.feedKey, builder: (column) => column);
+
+  GeneratedColumn<String> get responseBody => $composableBuilder(
+    column: $table.responseBody,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cachedAt =>
+      $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+}
+
+class $$FeedResponseCacheTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FeedResponseCacheTable,
+          FeedResponseCacheRow,
+          $$FeedResponseCacheTableFilterComposer,
+          $$FeedResponseCacheTableOrderingComposer,
+          $$FeedResponseCacheTableAnnotationComposer,
+          $$FeedResponseCacheTableCreateCompanionBuilder,
+          $$FeedResponseCacheTableUpdateCompanionBuilder,
+          (
+            FeedResponseCacheRow,
+            BaseReferences<
+              _$AppDatabase,
+              $FeedResponseCacheTable,
+              FeedResponseCacheRow
+            >,
+          ),
+          FeedResponseCacheRow,
+          PrefetchHooks Function()
+        > {
+  $$FeedResponseCacheTableTableManager(
+    _$AppDatabase db,
+    $FeedResponseCacheTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FeedResponseCacheTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FeedResponseCacheTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FeedResponseCacheTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> feedKey = const Value.absent(),
+                Value<String> responseBody = const Value.absent(),
+                Value<int> cachedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FeedResponseCacheCompanion(
+                feedKey: feedKey,
+                responseBody: responseBody,
+                cachedAt: cachedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String feedKey,
+                required String responseBody,
+                required int cachedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => FeedResponseCacheCompanion.insert(
+                feedKey: feedKey,
+                responseBody: responseBody,
+                cachedAt: cachedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FeedResponseCacheTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FeedResponseCacheTable,
+      FeedResponseCacheRow,
+      $$FeedResponseCacheTableFilterComposer,
+      $$FeedResponseCacheTableOrderingComposer,
+      $$FeedResponseCacheTableAnnotationComposer,
+      $$FeedResponseCacheTableCreateCompanionBuilder,
+      $$FeedResponseCacheTableUpdateCompanionBuilder,
+      (
+        FeedResponseCacheRow,
+        BaseReferences<
+          _$AppDatabase,
+          $FeedResponseCacheTable,
+          FeedResponseCacheRow
+        >,
+      ),
+      FeedResponseCacheRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15104,4 +15564,6 @@ class $AppDatabaseManager {
       $$DirectMessagesTableTableManager(_db, _db.directMessages);
   $$ConversationsTableTableManager get conversations =>
       $$ConversationsTableTableManager(_db, _db.conversations);
+  $$FeedResponseCacheTableTableManager get feedResponseCache =>
+      $$FeedResponseCacheTableTableManager(_db, _db.feedResponseCache);
 }

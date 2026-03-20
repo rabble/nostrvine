@@ -16,6 +16,9 @@ QueryExecutor openConnection() {
     final dbFile = prepareDatabaseFile(dbPath);
     return NativeDatabase(
       dbFile,
+      setup: (db) {
+        db.execute('PRAGMA foreign_keys = ON');
+      },
     );
   });
 }

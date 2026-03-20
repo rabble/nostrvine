@@ -554,6 +554,64 @@ class VideoStats {
     );
   }
 
+  /// Serializes this [VideoStats] to a JSON map compatible with
+  /// `VideoStats.fromJson`.
+  ///
+  /// Produces the flat format (no nested `event`/`stats` keys) that
+  /// `fromJson` can round-trip through.
+  Map<String, dynamic> toJson() {
+    final tags = <List<String>>[
+      if (title.isNotEmpty) ['title', title],
+      if (videoUrl.isNotEmpty) ['url', videoUrl],
+      if (thumbnail.isNotEmpty) ['thumb', thumbnail],
+      if (dTag.isNotEmpty) ['d', dTag],
+      if (sha256 != null && sha256!.isNotEmpty) ['x', sha256!],
+      if (blurhash != null && blurhash!.isNotEmpty) ['blurhash', blurhash!],
+      if (dimensions != null && dimensions!.isNotEmpty) ['dim', dimensions!],
+      if (publishedAt != null) ['published_at', publishedAt.toString()],
+      if (loops != null) ['loops', loops.toString()],
+      if (views != null) ['views', views.toString()],
+      if (textTrackRef != null) ['text-track', textTrackRef!],
+      for (final label in contentWarningLabels) ['content-warning', label],
+      for (final entry in rawTags.entries)
+        if (!const {
+          'title',
+          'url',
+          'thumb',
+          'thumbnail',
+          'd',
+          'x',
+          'blurhash',
+          'dim',
+          'size',
+          'published_at',
+          'loops',
+          'views',
+          'text-track',
+          'content-warning',
+        }.contains(entry.key))
+          [entry.key, entry.value],
+    ];
+
+    return <String, dynamic>{
+      'id': id,
+      'pubkey': pubkey,
+      'created_at': createdAt.millisecondsSinceEpoch ~/ 1000,
+      'kind': kind,
+      'content': description ?? '',
+      'tags': tags,
+      'reactions': reactions,
+      'comments': comments,
+      'reposts': reposts,
+      'engagement_score': engagementScore,
+      if (trendingScore != null) 'trending_score': trendingScore,
+      if (authorName != null) 'author_name': authorName,
+      if (authorAvatar != null) 'author_avatar': authorAvatar,
+      if (moderationLabels.isNotEmpty) 'moderation_labels': moderationLabels,
+      if (textTrackContent != null) 'text_track_content': textTrackContent,
+    };
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

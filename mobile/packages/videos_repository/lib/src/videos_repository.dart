@@ -4,6 +4,8 @@
 // ABOUTME: Returns Future<List<VideoEvent>>, not streams -
 // ABOUTME: loading is pagination-based.
 
+import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -74,16 +76,18 @@ class VideosRepository {
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final InMemoryFeedCache? _inMemoryFeedCache;
 
-  /// Clears the in-memory feed cache.
+  /// Clears feed caches (both in-memory and persistent DB).
   ///
   /// When [key] is provided, only that feed mode's cache is removed
   /// (e.g. `"home"`, `"latest"`, `"popular"`). When omitted, all
   /// cached feeds are cleared.
-  void clearInMemoryFeedCache({String? key}) {
+  void clearFeedCache({String? key}) {
     if (key != null) {
       _inMemoryFeedCache?.remove(key);
+      unawaited(_localStorage?.clearFeedResponseBody(key));
     } else {
       _inMemoryFeedCache?.clear();
+      unawaited(_localStorage?.clearAllFeedResponseBodies());
     }
   }
 
@@ -129,9 +133,34 @@ class VideosRepository {
     }
 
     // Return in-memory cached result when available (initial page only).
+    // Fires a background revalidation so the next open gets fresh data.
     if (!skipCache && until == null) {
       final cached = _inMemoryFeedCache?.get('home');
-      if (cached != null) return cached;
+      if (cached != null) {
+        unawaited(
+          _revalidateHomeFeed(
+            authors: authors,
+            videoRefs: videoRefs,
+            userPubkey: userPubkey,
+            limit: limit,
+          ),
+        );
+        return cached;
+      }
+
+      // Try persistent DB cache on cold start.
+      final dbResult = await _readFeedFromDb('home');
+      if (dbResult != null) {
+        unawaited(
+          _revalidateHomeFeed(
+            authors: authors,
+            videoRefs: videoRefs,
+            userPubkey: userPubkey,
+            limit: limit,
+          ),
+        );
+        return dbResult;
+      }
     }
 
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
@@ -145,7 +174,10 @@ class VideosRepository {
     // 2. If no list refs, return following-only result
     if (videoRefs.isEmpty) {
       final result = HomeFeedResult(videos: videos, rawResponseBody: rawBody);
-      if (until == null) _inMemoryFeedCache?.set('home', result);
+      if (until == null) {
+        _inMemoryFeedCache?.set('home', result);
+        if (rawBody != null) _writeFeedToDb('home', rawBody);
+      }
       return result;
     }
 
@@ -501,9 +533,20 @@ class VideosRepository {
     bool skipCache = false,
   }) async {
     // Return in-memory cached result when available (initial page only).
+    // Fires a background revalidation so the next open gets fresh data.
     if (!skipCache && until == null) {
       final cached = _inMemoryFeedCache?.get('latest');
-      if (cached != null) return cached.videos;
+      if (cached != null) {
+        unawaited(_revalidateLatestFeed(limit: limit));
+        return cached.videos;
+      }
+
+      // Try persistent DB cache on cold start.
+      final dbResult = await _readFeedFromDb('latest');
+      if (dbResult != null) {
+        unawaited(_revalidateLatestFeed(limit: limit));
+        return dbResult.videos;
+      }
     }
 
     // 1. Try Funnelcake API first
@@ -517,6 +560,7 @@ class VideosRepository {
         final videos = _transformVideoStats(videoStats);
         if (until == null) {
           _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
+          _writeFeedToDb('latest', _serializeVideoStatsList(videoStats));
         }
         return videos;
       } on FunnelcakeException {
@@ -1063,6 +1107,190 @@ class VideosRepository {
     }
 
     return videos;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Stale-while-revalidate: background network fetches
+  // ---------------------------------------------------------------------------
+
+  /// Background revalidation for the home feed.
+  ///
+  /// Fetches fresh data from the network and updates both in-memory and DB
+  /// caches so the next read gets fresh results.
+  Future<void> _revalidateHomeFeed({
+    required List<String> authors,
+    required Map<String, List<String>> videoRefs,
+    String? userPubkey,
+    int limit = _defaultLimit,
+  }) async {
+    try {
+      final (:videos, :rawBody) = await _fetchFollowingVideos(
+        authors: authors,
+        userPubkey: userPubkey,
+        limit: limit,
+      );
+
+      if (videos.isEmpty) return;
+
+      HomeFeedResult result;
+      if (videoRefs.isEmpty) {
+        result = HomeFeedResult(videos: videos, rawResponseBody: rawBody);
+      } else {
+        result = await _mergeListVideos(
+          followingVideos: videos,
+          videoRefs: videoRefs,
+        );
+      }
+
+      _inMemoryFeedCache?.set('home', result);
+      if (rawBody != null) _writeFeedToDb('home', rawBody);
+    } on Exception catch (e, s) {
+      developer.log(
+        'Background home feed revalidation failed',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
+
+  /// Background revalidation for the latest feed.
+  Future<void> _revalidateLatestFeed({int limit = _defaultLimit}) async {
+    try {
+      // 1. Try Funnelcake API first
+      if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+        try {
+          final videoStats = await _funnelcakeApiClient.getRecentVideos(
+            limit: limit,
+          );
+          final videos = _transformVideoStats(videoStats);
+          _inMemoryFeedCache?.set(
+            'latest',
+            HomeFeedResult(videos: videos),
+          );
+          _writeFeedToDb('latest', _serializeVideoStatsList(videoStats));
+          return;
+        } on FunnelcakeException {
+          // Fall through to Nostr
+        }
+      }
+
+      // 2. Nostr fallback
+      final filter = Filter(kinds: [_videoKind], limit: limit);
+      final events = await _nostrClient.queryEvents([filter]);
+      final videos = _transformAndFilter(events);
+      if (videos.isNotEmpty) {
+        _inMemoryFeedCache?.set(
+          'latest',
+          HomeFeedResult(videos: videos),
+        );
+      }
+    } on Exception catch (e, s) {
+      developer.log(
+        'Background latest feed revalidation failed',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Persistent DB feed cache helpers
+  // ---------------------------------------------------------------------------
+
+  /// Reads a cached feed from the DB and populates the in-memory cache.
+  ///
+  /// Returns `null` when no DB cache exists or the cached data is empty.
+  /// The [sortByCreatedAt] flag controls whether the result is re-sorted
+  /// (set to `false` for popular feed to preserve trending order).
+  Future<HomeFeedResult?> _readFeedFromDb(
+    String feedKey, {
+    bool sortByCreatedAt = true,
+  }) async {
+    final db = _localStorage;
+    if (db == null) return null;
+
+    try {
+      final body = await db.getFeedResponseBody(feedKey);
+      if (body == null) return null;
+
+      final videos = _parseCachedFeedBody(
+        body,
+        sortByCreatedAt: sortByCreatedAt,
+      );
+      if (videos.isEmpty) return null;
+
+      final result = HomeFeedResult(videos: videos);
+      _inMemoryFeedCache?.set(feedKey, result);
+      return result;
+    } on Exception catch (e, s) {
+      developer.log(
+        'Failed to read DB feed cache for "$feedKey"',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: s,
+      );
+      return null;
+    }
+  }
+
+  /// Parses a cached JSON body into a filtered list of [VideoEvent]s.
+  ///
+  /// Supports two formats:
+  /// - Funnelcake home feed: `{"videos": [...]}` (object with videos key)
+  /// - Funnelcake list endpoint: `[...]` (raw JSON array)
+  ///
+  /// Both contain objects parseable by [VideoStats.fromJson].
+  List<VideoEvent> _parseCachedFeedBody(
+    String jsonBody, {
+    bool sortByCreatedAt = true,
+  }) {
+    try {
+      final decoded = jsonDecode(jsonBody);
+
+      List<dynamic> items;
+      if (decoded is Map<String, dynamic>) {
+        items = decoded['videos'] as List<dynamic>? ?? [];
+      } else if (decoded is List) {
+        items = decoded;
+      } else {
+        return [];
+      }
+
+      final statsList = items
+          .whereType<Map<String, dynamic>>()
+          .map(VideoStats.fromJson)
+          .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+          .toList();
+
+      return _transformVideoStats(
+        statsList,
+        sortByCreatedAt: sortByCreatedAt,
+      );
+    } on Exception catch (e, s) {
+      developer.log(
+        'Failed to parse cached feed body',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: s,
+      );
+      return [];
+    }
+  }
+
+  /// Writes a feed response body to the persistent DB cache.
+  ///
+  /// Runs fire-and-forget to avoid blocking the caller.
+  void _writeFeedToDb(String feedKey, String body) {
+    final db = _localStorage;
+    if (db == null) return;
+    unawaited(db.saveFeedResponseBody(feedKey, body));
+  }
+
+  /// Serializes a [VideoStats] list to a JSON array string for DB caching.
+  static String _serializeVideoStatsList(List<VideoStats> stats) {
+    return jsonEncode(stats.map((s) => s.toJson()).toList());
   }
 
   /// Searches local cache for videos matching [query].

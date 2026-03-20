@@ -11,9 +11,12 @@ import 'package:videos_repository/videos_repository.dart';
 
 class MockNostrEventsDao extends Mock implements NostrEventsDao {}
 
+class MockFeedCacheDao extends Mock implements FeedCacheDao {}
+
 void main() {
   group('DbVideoLocalStorage', () {
     late MockNostrEventsDao mockDao;
+    late MockFeedCacheDao mockFeedCacheDao;
     late DbVideoLocalStorage storage;
 
     /// Valid 64-char hex IDs for testing
@@ -58,12 +61,19 @@ void main() {
 
     setUp(() {
       mockDao = MockNostrEventsDao();
-      storage = DbVideoLocalStorage(dao: mockDao);
+      mockFeedCacheDao = MockFeedCacheDao();
+      storage = DbVideoLocalStorage(
+        dao: mockDao,
+        feedCacheDao: mockFeedCacheDao,
+      );
     });
 
     group('constructor', () {
       test('creates storage with dao', () {
-        final storage = DbVideoLocalStorage(dao: mockDao);
+        final storage = DbVideoLocalStorage(
+          dao: mockDao,
+          feedCacheDao: mockFeedCacheDao,
+        );
         expect(storage, isNotNull);
       });
     });
@@ -505,6 +515,65 @@ void main() {
 
         expect(result, equals(42));
         verify(() => mockDao.getEventCount()).called(1);
+      });
+    });
+
+    group('saveFeedResponseBody', () {
+      test('delegates to feedCacheDao.saveResponseBody', () async {
+        when(
+          () => mockFeedCacheDao.saveResponseBody(any(), any()),
+        ).thenAnswer((_) async {});
+
+        await storage.saveFeedResponseBody('home', '{"videos":[]}');
+
+        verify(
+          () => mockFeedCacheDao.saveResponseBody('home', '{"videos":[]}'),
+        ).called(1);
+      });
+    });
+
+    group('getFeedResponseBody', () {
+      test('returns body from feedCacheDao', () async {
+        when(
+          () => mockFeedCacheDao.getResponseBody(any()),
+        ).thenAnswer((_) async => '{"videos":[]}');
+
+        final result = await storage.getFeedResponseBody('home');
+
+        expect(result, equals('{"videos":[]}'));
+        verify(() => mockFeedCacheDao.getResponseBody('home')).called(1);
+      });
+
+      test('returns null when no cache exists', () async {
+        when(
+          () => mockFeedCacheDao.getResponseBody(any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await storage.getFeedResponseBody('home');
+
+        expect(result, isNull);
+      });
+    });
+
+    group('clearFeedResponseBody', () {
+      test('delegates to feedCacheDao.clearResponseBody', () async {
+        when(
+          () => mockFeedCacheDao.clearResponseBody(any()),
+        ).thenAnswer((_) async {});
+
+        await storage.clearFeedResponseBody('home');
+
+        verify(() => mockFeedCacheDao.clearResponseBody('home')).called(1);
+      });
+    });
+
+    group('clearAllFeedResponseBodies', () {
+      test('delegates to feedCacheDao.clearAll', () async {
+        when(() => mockFeedCacheDao.clearAll()).thenAnswer((_) async {});
+
+        await storage.clearAllFeedResponseBodies();
+
+        verify(() => mockFeedCacheDao.clearAll()).called(1);
       });
     });
   });
