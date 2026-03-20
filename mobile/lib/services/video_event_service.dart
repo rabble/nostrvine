@@ -1723,6 +1723,15 @@ class VideoEventService extends ChangeNotifier {
                 isOnline: _connectionService.isOnline,
               );
             }
+
+            // Complete per-subscription loading state — historical data
+            // is done. Without this, isLoadingForSubscription() stays true
+            // and the UI never transitions from spinner to empty state.
+            final paginationState = _paginationStates[subscriptionType];
+            if (paginationState != null) {
+              paginationState.completeQuery(limit);
+              notifyListeners();
+            }
           },
         );
 
@@ -3250,6 +3259,7 @@ class VideoEventService extends ChangeNotifier {
               category: LogCategory.video,
             );
             paginationState.isLoading = false;
+            notifyListeners();
           });
 
       // Don't await the query - return immediately and let events stream in
@@ -3274,6 +3284,7 @@ class VideoEventService extends ChangeNotifier {
         );
       }
       paginationState.isLoading = false;
+      notifyListeners();
     }
   }
 
