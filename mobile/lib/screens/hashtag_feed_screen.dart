@@ -69,12 +69,11 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   /// Load videos from both Funnelcake REST API and WebSocket in parallel.
   /// Funnelcake is fast and provides complete video data - show immediately.
   /// WebSocket provides real-time updates and additional videos.
-  Future<void> _loadHashtagVideos({bool forceRefresh = false}) async {
+  Future<void> _loadHashtagVideos() async {
     if (!mounted) return;
 
     Log.info(
-      '🏷️ HashtagFeedScreen: Loading #${widget.hashtag}'
-      '${forceRefresh ? ' (force refresh)' : ''}',
+      '🏷️ HashtagFeedScreen: Loading #${widget.hashtag}',
       category: LogCategory.video,
     );
 
@@ -83,7 +82,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     // Run both fetches in parallel for speed
     // Always try Funnelcake - it will fail fast if unavailable
     final futures = <Future<void>>[
-      _fetchFromFunnelcake(forceRefresh: forceRefresh),
+      _fetchFromFunnelcake(),
       _subscribeViaWebSocket(hashtagService),
     ];
 
@@ -96,7 +95,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
   /// Fetch videos from Funnelcake REST API and update state immediately.
   /// Fetches trending AND classic videos in parallel, then interleaves 50/50.
-  Future<void> _fetchFromFunnelcake({bool forceRefresh = false}) async {
+  Future<void> _fetchFromFunnelcake() async {
     try {
       final client = ref.read(funnelcakeApiClientProvider);
 
@@ -111,10 +110,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
       // Fetch trending AND classic videos in parallel
       final results = await Future.wait([
-        client.getVideosByHashtag(
-          hashtag: widget.hashtag,
-          limit: 100,
-        ),
+        client.getVideosByHashtag(hashtag: widget.hashtag),
         client.getClassicVideosByHashtag(hashtag: widget.hashtag),
       ]).timeout(const Duration(seconds: 5));
 
@@ -386,7 +382,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 (videoList, index) {
                   _navigateToFullscreenFeed(context, videoList, index);
                 },
-            onRefresh: () => _loadHashtagVideos(forceRefresh: true),
+            onRefresh: _loadHashtagVideos,
           );
         }
 
@@ -397,7 +393,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           semanticsLabel: 'searching for more videos',
           color: VineTheme.onPrimary,
           backgroundColor: VineTheme.vineGreen,
-          onRefresh: () => _loadHashtagVideos(forceRefresh: true),
+          onRefresh: _loadHashtagVideos,
           child: ListView.builder(
             // Add 1 for loading indicator if still loading
             itemCount: videos.length + (isLoadingMore ? 1 : 0),
