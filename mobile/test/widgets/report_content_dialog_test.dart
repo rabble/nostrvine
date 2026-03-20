@@ -638,6 +638,7 @@ void main() {
 
       return testProviderScope(
         mockNostrService: mockNostrClient,
+        mockModerationLabelService: mockModerationLabelService,
         additionalOverrides: [
           contentReportingServiceProvider.overrideWith(
             (ref) async => mockReportingService,
@@ -647,9 +648,6 @@ void main() {
           ),
           muteServiceProvider.overrideWith((ref) async => mockMuteService),
           dmRepositoryProvider.overrideWithValue(mockDmRepository),
-          moderationLabelServiceProvider.overrideWithValue(
-            mockModerationLabelService,
-          ),
         ],
         child: MaterialApp.router(routerConfig: router),
       );
