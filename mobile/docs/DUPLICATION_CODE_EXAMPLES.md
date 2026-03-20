@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This duplication analysis is not maintained as a current source of truth.
+
 # OpenVine Duplication Analysis - Code Examples & Snippets
 
 This document provides detailed code examples for each duplication pattern identified in DUPLICATION_ANALYSIS.md.
@@ -899,4 +904,3 @@ TabBarView(
 6. **EmptyTabWidget**: Consolidate profile tab empty states
 
 ---
-

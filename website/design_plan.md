@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This website design plan predates the current Divine documentation structure.
+
 # OpenVine Website Redesign Plan - Vine-Inspired Hybrid Design
 
 ## Overview

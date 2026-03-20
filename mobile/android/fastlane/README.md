@@ -1,13 +1,24 @@
-## fastlane documentation
+# Android Fastlane Notes
 
-# Installation
+Status: Current
+Validated against: `mobile/deploy_android.sh` on 2026-03-19.
 
-For _fastlane_ installation instructions, see [Installing _fastlane_](https://docs.fastlane.tools/#installing-fastlane)
+This directory supports the optional Play Console upload helper used by `mobile/deploy_android.sh`.
 
-1. Download Google Service account JSON file and put it in `/.keys/` folder (added to .gitignore) and set the path in `Appfile`.
-2. `fastlane supply init` to download the metadata for your app from Google Play and check it in with git.
+## Prerequisites
 
-# usage
+- Fastlane installed locally
+- `android/play-store-service-account.json` present
+- a built release AAB or a working local release build environment
 
-- `fastlane beta` => Deploy a new version to open Testing Track
-- `fastlane production` => Deploy a new version to Google Play
+## Common Usage
+
+From `mobile/`:
+
+```bash
+./deploy_android.sh internal
+./deploy_android.sh closed
+./deploy_android.sh production
+```
+
+If the helper is unavailable or misconfigured, fall back to manual Play Console upload with the AAB produced by `./build_android.sh release`.

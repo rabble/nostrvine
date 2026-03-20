@@ -1,7 +1,10 @@
-# Golden Testing Guide for OpenVine
+# Golden Testing Guide for Divine
+
+Status: Current
+Validated against: current `mobile/scripts/golden.sh` workflow on 2026-03-19.
 
 ## Overview
-Golden tests (screenshot tests) are now integrated into OpenVine using the `golden_toolkit` and `alchemist` packages. These tests help ensure UI consistency across different devices and prevent visual regressions.
+Golden tests (screenshot tests) are integrated into Divine using the `golden_toolkit` and `alchemist` packages. These tests help ensure UI consistency across different devices and prevent visual regressions.
 
 ## Quick Start
 
@@ -211,7 +214,7 @@ To convert existing widget tests to golden tests:
 
 ## Summary
 
-Golden testing is now fully integrated into OpenVine with:
+Golden testing is fully integrated into Divine with:
 - ✅ Infrastructure setup complete
 - ✅ Device configuration matrix defined
 - ✅ Management scripts ready

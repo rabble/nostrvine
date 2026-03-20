@@ -1,8 +1,11 @@
 # Camera Architecture Documentation
 
+Status: Current
+Validated against: current camera architecture notes on 2026-03-19.
+
 ## Overview
 
-OpenVine uses **4 different camera interface implementations** to handle platform-specific requirements and capabilities. This multi-interface approach allows for platform-specific optimizations while maintaining a consistent API.
+Divine uses **4 different camera interface implementations** to handle platform-specific requirements and capabilities. This multi-interface approach allows for platform-specific optimizations while maintaining a consistent API.
 
 ## Camera Interface Implementations
 

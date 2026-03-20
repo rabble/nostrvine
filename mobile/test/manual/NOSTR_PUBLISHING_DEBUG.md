@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This manual debug guide is kept for investigation history and may not match current relay or logging behavior.
+
 # Nostr Event Publishing Debug Guide
 
 ## Status: Enhanced Logging Added ✅

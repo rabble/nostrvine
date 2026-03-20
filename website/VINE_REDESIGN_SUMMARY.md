@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This website redesign summary predates the current Divine documentation structure.
+
 # Vine-Inspired OpenVine Redesign Summary
 
 ## Overview

@@ -98,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Confirmation dialog before key replacement to prevent accidental data loss
   - Auto-fetches profile (kind 0) and contacts (kind 3) after successful import
   - Accessible via Settings → Key Management
-  - Dark mode UI consistent with OpenVine aesthetic
+  - Dark mode UI consistent with the project aesthetic at the time
   - Security warnings for both import and export operations
 
 - **Nostr Key Manager Enhanced Features**: Backend support for key management operations
@@ -133,7 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `BlossomUploadService` for uploading videos to any Blossom-compatible server
   - `BlossomSettingsScreen` for configuring custom media servers
   - NIP-98 authentication support for Blossom uploads
-  - User-selectable upload destination (OpenVine servers vs. custom Blossom servers)
+  - User-selectable upload destination (default servers vs. custom Blossom servers)
   - Decentralized media hosting capabilities
 
 - **Firebase Crash Reporting Infrastructure**: Development infrastructure for crash tracking
@@ -418,7 +418,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User-friendly relay configuration
 
 ### Changed
-- **BREAKING**: Complete rebrand from NostrVine to OpenVine
+- **BREAKING**: Complete rebrand from NostrVine to the intermediate brand used before Divine
   - Updated all package imports from `nostrvine_app` to `openvine` (76+ files)
   - Changed app title and branding throughout the application
   - Updated all documentation files to reflect new branding

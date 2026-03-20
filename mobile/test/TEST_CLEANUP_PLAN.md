@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This generated cleanup plan is not maintained as a current source of truth.
+
 # Test Cleanup Plan
 
 **Generated**: 2025-10-20
