@@ -31,9 +31,13 @@ void main() {
       when(() => mockPainter.removeListener(any())).thenReturn(null);
     });
 
-    ShaderLoader createTestLoader() {
-      return () async =>
-          ({required double time, required double opacity}) => mockPainter;
+    ShaderLoader createTestLoader({
+      void Function(double time, double opacity)? onCreatePainter,
+    }) {
+      return () async => ({required double time, required double opacity}) {
+        onCreatePainter?.call(time, opacity);
+        return mockPainter;
+      };
     }
 
     group('renders', () {
@@ -65,44 +69,55 @@ void main() {
       });
     });
 
-    testWidgets('uses default opacity of 0.07', (tester) async {
-      await tester.pumpWidget(
-        TvStaticNoise(shaderLoader: createTestLoader()),
-      );
-      await tester.pump();
+    testWidgets('passes default opacity to painter factory', (tester) async {
+      double? receivedOpacity;
 
-      final widget = tester.widget<TvStaticNoise>(
-        find.byType(TvStaticNoise),
-      );
-      expect(widget.opacity, equals(0.07));
-    });
-
-    testWidgets('uses custom opacity', (tester) async {
       await tester.pumpWidget(
         TvStaticNoise(
-          opacity: 0.5,
-          shaderLoader: createTestLoader(),
+          shaderLoader: createTestLoader(
+            onCreatePainter: (_, opacity) => receivedOpacity = opacity,
+          ),
         ),
       );
       await tester.pump();
 
-      final widget = tester.widget<TvStaticNoise>(
-        find.byType(TvStaticNoise),
-      );
-      expect(widget.opacity, equals(0.5));
+      expect(receivedOpacity, equals(TvStaticNoise.defaultOpacity));
     });
 
-    testWidgets('ticker triggers rebuilds', (tester) async {
+    testWidgets('passes custom opacity to painter factory', (tester) async {
+      double? receivedOpacity;
+
       await tester.pumpWidget(
-        TvStaticNoise(shaderLoader: createTestLoader()),
+        TvStaticNoise(
+          opacity: 0.5,
+          shaderLoader: createTestLoader(
+            onCreatePainter: (_, opacity) => receivedOpacity = opacity,
+          ),
+        ),
       );
       await tester.pump();
 
-      // Advance the ticker to trigger _onTick and rebuild.
+      expect(receivedOpacity, equals(0.5));
+    });
+
+    testWidgets('passes updated time to painter after tick', (tester) async {
+      final receivedTimes = <double>[];
+
+      await tester.pumpWidget(
+        TvStaticNoise(
+          shaderLoader: createTestLoader(
+            onCreatePainter: (time, _) => receivedTimes.add(time),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final initialTime = receivedTimes.last;
+
+      // Advance enough to cross a 12-fps frame boundary.
       await tester.pump(const Duration(seconds: 1));
 
-      // The widget should still render CustomPaint after ticker updates.
-      expect(find.byType(CustomPaint), findsOneWidget);
+      expect(receivedTimes.last, greaterThan(initialTime));
     });
 
     testWidgets(
@@ -136,6 +151,44 @@ void main() {
       // Remove the widget — should dispose without errors.
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'renders $SizedBox and does not throw when shader loading fails',
+      (tester) async {
+        await tester.pumpWidget(
+          TvStaticNoise(
+            shaderLoader: () async => throw Exception('GPU unsupported'),
+          ),
+        );
+        await tester.pump();
+
+        // Should remain as SizedBox, no crash.
+        expect(find.byType(SizedBox), findsOneWidget);
+        expect(find.byType(CustomPaint), findsNothing);
+        expect(tester.takeException(), isNull);
+
+        // Clean up ticker.
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+
+    group('asserts opacity', () {
+      test('throws AssertionError when opacity is negative', () {
+        expect(
+          () => TvStaticNoise(opacity: -0.1),
+          throwsAssertionError,
+        );
+      });
+
+      test('throws AssertionError when opacity is greater than 1', () {
+        expect(
+          () => TvStaticNoise(opacity: 1.1),
+          throwsAssertionError,
+        );
+      });
     });
   });
 }

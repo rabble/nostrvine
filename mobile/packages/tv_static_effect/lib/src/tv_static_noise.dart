@@ -2,6 +2,7 @@
 // ABOUTME: Mimics old television "no signal" snow for permission screens.
 
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -29,12 +30,18 @@ class TvStaticNoise extends StatefulWidget {
   /// Creates a [TvStaticNoise] widget.
   const TvStaticNoise({
     super.key,
-    this.opacity = 0.07,
+    this.opacity = defaultOpacity,
     @visibleForTesting this.shaderLoader,
-  });
+  }) : assert(
+         opacity >= 0.0 && opacity <= 1.0,
+         'opacity must be between 0.0 and 1.0',
+       );
 
   /// Overall opacity of the noise layer.
   final double opacity;
+
+  /// Default opacity of the noise layer.
+  static const defaultOpacity = 0.07;
 
   /// Optional shader loader override for testing.
   final ShaderLoader? shaderLoader;
@@ -47,8 +54,12 @@ class _TvStaticNoiseState extends State<TvStaticNoise>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
   double _elapsed = 0;
+  int _frame = -1;
   PainterFactory? _createPainter;
   bool _loaded = false;
+
+  /// Internal frame rate the shader quantizes to.
+  static const _shaderFps = 12;
 
   @override
   void initState() {
@@ -59,15 +70,28 @@ class _TvStaticNoiseState extends State<TvStaticNoise>
   }
 
   Future<void> _loadShader() async {
-    final loader = widget.shaderLoader ?? _defaultShaderLoader;
-    _createPainter = await loader();
-    if (mounted) {
-      setState(() => _loaded = true);
+    try {
+      final loader = widget.shaderLoader ?? _defaultShaderLoader;
+      _createPainter = await loader();
+      if (mounted) {
+        setState(() => _loaded = true);
+      }
+    } catch (e, s) {
+      developer.log(
+        'Failed to load TV static shader',
+        name: 'TvStaticNoise',
+        error: e,
+        stackTrace: s,
+      );
     }
   }
 
   void _onTick(Duration elapsed) {
-    setState(() => _elapsed = elapsed.inMilliseconds / 1000.0);
+    final seconds = elapsed.inMilliseconds / 1000.0;
+    final frame = (seconds * _shaderFps).floor();
+    if (frame == _frame) return;
+    _frame = frame;
+    setState(() => _elapsed = seconds);
   }
 
   @override
@@ -93,11 +117,12 @@ class _TvStaticNoiseState extends State<TvStaticNoise>
 
 // coverage:ignore-start
 
+/// Asset path for the TV static fragment shader.
+const _shaderAssetPath = 'packages/tv_static_effect/shaders/tv_static.frag';
+
 /// Default shader loader that loads the real GLSL fragment shader.
 Future<PainterFactory> _defaultShaderLoader() async {
-  final program = await ui.FragmentProgram.fromAsset(
-    'packages/tv_static_effect/shaders/tv_static.frag',
-  );
+  final program = await ui.FragmentProgram.fromAsset(_shaderAssetPath);
   // Explicit types required — Dart does not infer named parameter types
   // from the return type of the enclosing function.
   // ignore: avoid_types_on_closure_parameters
@@ -107,27 +132,27 @@ Future<PainterFactory> _defaultShaderLoader() async {
 
 class _TvStaticPainter extends CustomPainter {
   _TvStaticPainter({
-    required this.program,
+    required ui.FragmentProgram program,
     required this.time,
     required this.opacity,
-  });
+  }) : _shader = program.fragmentShader(),
+       _paint = Paint();
 
-  final ui.FragmentProgram program;
+  final ui.FragmentShader _shader;
+  final Paint _paint;
   final double time;
   final double opacity;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final shader = program.fragmentShader()
+    _shader
       ..setFloat(0, size.width) // uSize.x
       ..setFloat(1, size.height) // uSize.y
       ..setFloat(2, time) // uTime
       ..setFloat(3, opacity); // uOpacity
 
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..shader = shader,
-    );
+    _paint.shader = _shader;
+    canvas.drawRect(Offset.zero & size, _paint);
   }
 
   @override
