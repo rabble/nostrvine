@@ -185,7 +185,7 @@ class VineBottomNav extends ConsumerWidget {
   }
 }
 
-/// Camera button widget that disables when a background upload is in progress.
+/// Camera button in the center of the bottom navigation bar.
 class _CameraButton extends StatelessWidget {
   const _CameraButton({required this.onTap});
 
@@ -199,22 +199,15 @@ class _CameraButton extends StatelessWidget {
       label: 'Open camera',
       child: GestureDetector(
         onTap: onTap,
-        child: Opacity(
-          opacity: 1.0,
-          child: Container(
-            width: 72,
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: VineTheme.cameraButtonGreen,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              DivineIconName.cameraRetro.assetPath,
-              width: 32,
-              height: 32,
-            ),
+        child: Container(
+          width: 72,
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          decoration: BoxDecoration(
+            color: VineTheme.cameraButtonGreen,
+            borderRadius: BorderRadius.circular(20),
           ),
+          child: const DivineIcon(icon: .cameraRetro, size: 32),
         ),
       ),
     );

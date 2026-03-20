@@ -80,7 +80,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     await prefs.setBool(_kWhySixSecondsShownKey, true);
     if (!mounted) return;
 
-    VineBottomSheetPrompt.show(
+    await VineBottomSheetPrompt.show(
       context: context,
       sticker: .grandfather,
       title: 'Why six seconds?',
