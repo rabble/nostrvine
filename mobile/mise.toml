@@ -22,6 +22,7 @@ run = "docker compose -f ../local_stack/docker-compose.yml logs -f"
 
 [tasks.local_build]
 description = "Build APK with LOCAL environment"
+depends = ["setup_hooks"]
 run = "flutter build apk --debug --dart-define=DEFAULT_ENV=LOCAL"
 
 [tasks.local_install]
@@ -61,5 +62,5 @@ run = "bash ../scripts/install-hooks.sh"
 
 [tasks.e2e_test]
 description = "Run E2E tests with log profiling (starts Docker stack, captures merged timeline)"
-depends = ["local_up"]
+depends = ["setup_hooks", "local_up"]
 run = "bash ../local_stack/profile.sh {{ arg(i=0, name='test_path', default='integration_test/auth/') }}"

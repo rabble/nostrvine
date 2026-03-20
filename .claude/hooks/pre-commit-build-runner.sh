@@ -7,6 +7,13 @@
 
 set -e
 
+# Filter: only run on git commit commands
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+[ -z "$COMMAND" ] && exit 0
+FIRST_CMD=$(echo "$COMMAND" | head -1 | sed 's/\s*&&.*//' | sed 's/\s*|.*//' | sed 's/\s*;.*//')
+echo "$FIRST_CMD" | grep -qE '^\s*git\s+commit\b' || exit 0
+
 # Get staged Dart files (excluding generated files)
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.dart$' | grep -v '\.g\.dart$' | grep -v '\.freezed\.dart$' || true)
 

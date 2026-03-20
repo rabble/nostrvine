@@ -8,16 +8,17 @@ The repo has pre-commit and pre-push hooks that mirror CI checks locally. They l
 cd mobile && mise run setup_hooks
 ```
 
-If a developer reports CI failures on format, analyze, or codegen that they didn't catch locally, check whether hooks are installed (`ls .git/hooks/pre-commit .git/hooks/pre-push`) and suggest `mise run setup_hooks` if missing.
+When a developer reports CI failures on format, analyze, or codegen that they didn't catch locally, FIRST check whether hooks are installed (`ls .git/hooks/pre-commit .git/hooks/pre-push`) before analyzing the failure itself. If hooks are missing, that is likely the root cause — suggest `mise run setup_hooks`. Do not skip this check.
 
 ## What the hooks check
 
 **Pre-commit** (staged `.dart` files only):
 - `dart format --output=none --set-exit-if-changed`
-- `flutter analyze`
+- `flutter analyze lib test integration_test`
 - build_runner codegen verification (if codegen inputs changed)
 
 **Pre-push**:
 - Merge conflict check against `origin/main`
+- `flutter analyze lib test integration_test`
 - build_runner codegen verification
 - Runs tests for changed files

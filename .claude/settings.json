@@ -27,7 +27,18 @@
         ]
       },
       {
-        "matcher": "Bash(git commit:*)",
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-git-hooks.sh",
+            "timeout": 3000,
+            "statusMessage": "Checking git hooks..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",

@@ -7,7 +7,7 @@ set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 GIT_COMMON_DIR="$(git rev-parse --git-common-dir)"
 if [[ "$GIT_COMMON_DIR" != /* ]]; then
-  GIT_COMMON_DIR="$REPO_ROOT/$GIT_COMMON_DIR"
+  GIT_COMMON_DIR="$(cd "$GIT_COMMON_DIR" && pwd)"
 fi
 HOOKS_DIR="$GIT_COMMON_DIR/hooks"
 
@@ -83,7 +83,7 @@ echo "Format OK"
 
 # Run flutter analyze (medium speed)
 echo "[2/3] Running analyzer..."
-if ! mise exec -- flutter analyze 2>/dev/null; then
+if ! mise exec -- flutter analyze lib test integration_test 2>/dev/null; then
     echo ""
     echo "Analysis failed!"
     echo "Fix the issues above before committing"
@@ -215,6 +215,17 @@ if [ "$TOTAL_CHANGED" -gt 10 ]; then
 fi
 echo ""
 
+# Run flutter analyze (mirrors CI)
+echo "Running analyzer..."
+if ! mise exec -- flutter analyze lib test integration_test 2>/dev/null; then
+    echo ""
+    echo "Analysis failed!"
+    echo "Fix the issues above before pushing."
+    exit 1
+fi
+echo "Analysis OK"
+echo ""
+
 # Mirror CI's generated-file check for codegen inputs
 CODEGEN_INPUTS=$(printf '%s\n' "$CHANGED_FILES" | list_codegen_inputs)
 if [ -n "$CODEGEN_INPUTS" ]; then
@@ -279,8 +290,9 @@ for file in $CHANGED_FILES; do
     fi
 done
 
-# Remove duplicates and mobile/ prefix for flutter test
-TEST_FILES=$(echo "$TEST_FILES" | tr ' ' '\n' | sort -u | sed 's|^mobile/||' | grep -v '^$' || true)
+# Remove duplicates, strip mobile/ prefix, and exclude integration tests
+# (integration tests require an emulator and can't mix with unit tests)
+TEST_FILES=$(echo "$TEST_FILES" | tr ' ' '\n' | sort -u | sed 's|^mobile/||' | grep -v '^$' | grep -v '^integration_test/' || true)
 
 if [ -z "$TEST_FILES" ]; then
     echo "No corresponding test files found for changed files"
