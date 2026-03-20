@@ -499,23 +499,28 @@ class MainActivity : FlutterActivity() {
                             createRequest.customFields = customFields
                         }
 
+                        val mainHandler = Handler(Looper.getMainLooper())
                         provider.createRequest(createRequest, object : ZendeskCallback<Request>() {
                             override fun onSuccess(request: Request?) {
-                                if (isActivityDestroyed || isFinishing) {
-                                    Log.w(ZENDESK_TAG, "Dropped ticket result: activity destroyed")
-                                    return
+                                mainHandler.post {
+                                    if (isActivityDestroyed || isFinishing) {
+                                        Log.w(ZENDESK_TAG, "Dropped ticket result: activity destroyed")
+                                        return@post
+                                    }
+                                    Log.d(ZENDESK_TAG, "Ticket created successfully - ID: ${request?.id}")
+                                    result.success(true)
                                 }
-                                Log.d(ZENDESK_TAG, "Ticket created successfully - ID: ${request?.id}")
-                                result.success(true)
                             }
 
                             override fun onError(error: ErrorResponse?) {
-                                if (isActivityDestroyed || isFinishing) {
-                                    Log.w(ZENDESK_TAG, "Dropped ticket error: activity destroyed")
-                                    return
+                                mainHandler.post {
+                                    if (isActivityDestroyed || isFinishing) {
+                                        Log.w(ZENDESK_TAG, "Dropped ticket error: activity destroyed")
+                                        return@post
+                                    }
+                                    Log.e(ZENDESK_TAG, "Failed to create ticket: ${error?.reason}")
+                                    result.success(false)
                                 }
-                                Log.e(ZENDESK_TAG, "Failed to create ticket: ${error?.reason}")
-                                result.success(false)
                             }
                         })
                     } catch (e: Exception) {
