@@ -2173,7 +2173,7 @@ void main() {
     // -----------------------------------------------------------------
 
     group('moderation DM scenarios', () {
-      /// The moderation pubkey from [ModerationLabelService].
+      /// The fallback moderation pubkey from [ModerationLabelService].
       const moderationPubkey =
           ModerationLabelService.fallbackModerationPubkeyHex;
 
