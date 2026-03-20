@@ -412,6 +412,11 @@ class SoundsRepository {
 
       try {
         final audioEvent = AudioEvent.fromNostrEvent(event);
+
+        // Skip events without a title or playable URL
+        if (audioEvent.title == null || audioEvent.title!.isEmpty) continue;
+        if (audioEvent.url == null || audioEvent.url!.isEmpty) continue;
+
         _cache[audioEvent.id] = audioEvent;
         audioEvents.add(audioEvent);
       } catch (e) {

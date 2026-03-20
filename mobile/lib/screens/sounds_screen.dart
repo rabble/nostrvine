@@ -279,8 +279,18 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     // Convert bundled VineSounds to AudioEvents
     final bundledSounds =
         bundledSoundsAsync.whenOrNull(
-          data: (service) =>
-              service.sounds.map(AudioEvent.fromBundledSound).toList(),
+          data: (service) {
+            final count = service.sounds.length;
+            return service.sounds
+                .indexed
+                .map(
+                  (e) => AudioEvent.fromBundledSound(
+                    e.$2,
+                    index: count - 1 - e.$1,
+                  ),
+                )
+                .toList();
+          },
         ) ??
         <AudioEvent>[];
 

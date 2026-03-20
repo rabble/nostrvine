@@ -124,6 +124,12 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       );
 
       await audioService.loadAudio(widget.sound.url!);
+      if (mounted) {
+        setState(() {
+          _isPlayingPreview = true;
+          _isLoadingPreview = false;
+        });
+      }
       await audioService.play();
 
       if (mounted) {
@@ -290,7 +296,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
 }
 
 /// Header section displaying sound info and action buttons.
-class _SoundHeader extends ConsumerWidget {
+class _SoundHeader extends ConsumerStatefulWidget {
   const _SoundHeader({
     required this.sound,
     required this.usageCount,
@@ -307,8 +313,37 @@ class _SoundHeader extends ConsumerWidget {
   final VoidCallback onPreviewTap;
   final VoidCallback onUseSoundTap;
 
+  @override
+  ConsumerState<_SoundHeader> createState() => _SoundHeaderState();
+}
+
+class _SoundHeaderState extends ConsumerState<_SoundHeader> {
+  String? _artistName;
+  String? _license;
+  String? _sourceUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _lookUpAttribution();
+  }
+
+  void _lookUpAttribution() {
+    final sound = widget.sound;
+    if (!sound.isBundled) return;
+
+    final soundId = sound.id.replaceFirst('${AudioEvent.bundledMarker}_', '');
+    final service = ref.read(soundLibraryServiceSyncProvider);
+    final vineSound = service.getSoundById(soundId);
+    if (vineSound != null) {
+      _artistName = vineSound.artist;
+      _license = vineSound.license;
+      _sourceUrl = vineSound.sourceUrl;
+    }
+  }
+
   String get _formattedDuration {
-    final seconds = sound.duration;
+    final seconds = widget.sound.duration;
     if (seconds == null || seconds <= 0) return '';
     if (seconds < 60) {
       return '${seconds.toStringAsFixed(1)}s';
@@ -319,29 +354,13 @@ class _SoundHeader extends ConsumerWidget {
   }
 
   String get _videoCountText {
-    if (usageCount == 0) return 'No videos yet';
-    if (usageCount == 1) return '1 video';
-    return '$usageCount videos';
+    if (widget.usageCount == 0) return 'No videos yet';
+    if (widget.usageCount == 1) return '1 video';
+    return '${widget.usageCount} videos';
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Look up attribution info for bundled sounds
-    String? artistName;
-    String? license;
-    String? sourceUrl;
-
-    if (sound.isBundled) {
-      final soundId = sound.id.replaceFirst('${AudioEvent.bundledMarker}_', '');
-      final service = ref.watch(soundLibraryServiceSyncProvider);
-      final vineSound = service.getSoundById(soundId);
-      if (vineSound != null) {
-        artistName = vineSound.artist;
-        license = vineSound.license;
-        sourceUrl = vineSound.sourceUrl;
-      }
-    }
-
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: VineTheme.cardBackground,
@@ -368,9 +387,10 @@ class _SoundHeader extends ConsumerWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
                   children: [
                     Text(
-                      sound.title ?? 'Original sound',
+                      widget.sound.title ?? 'Original sound',
                       style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 18,
@@ -379,16 +399,13 @@ class _SoundHeader extends ConsumerWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
                     _buildMetadataRow(),
-                    if (artistName != null) ...[
-                      const SizedBox(height: 4),
+                    if (_artistName != null)
                       _AttributionInfo(
-                        artistName: artistName,
-                        license: license,
-                        sourceUrl: sourceUrl,
+                        artistName: _artistName!,
+                        license: _license,
+                        sourceUrl: _sourceUrl,
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -406,8 +423,8 @@ class _SoundHeader extends ConsumerWidget {
                   identifier: 'sound_detail_preview_button',
                   button: true,
                   child: OutlinedButton.icon(
-                    onPressed: onPreviewTap,
-                    icon: isLoadingPreview
+                    onPressed: widget.onPreviewTap,
+                    icon: widget.isLoadingPreview
                         ? const SizedBox(
                             width: 18,
                             height: 18,
@@ -417,10 +434,10 @@ class _SoundHeader extends ConsumerWidget {
                             ),
                           )
                         : Icon(
-                            isPlaying ? Icons.stop : Icons.play_arrow,
+                            widget.isPlaying ? Icons.stop : Icons.play_arrow,
                             size: 20,
                           ),
-                    label: Text(isPlaying ? 'Stop' : 'Preview'),
+                    label: Text(widget.isPlaying ? 'Stop' : 'Preview'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: VineTheme.vineGreen,
                       side: const BorderSide(color: VineTheme.vineGreen),
@@ -441,7 +458,7 @@ class _SoundHeader extends ConsumerWidget {
                   identifier: 'sound_detail_use_button',
                   button: true,
                   child: ElevatedButton.icon(
-                    onPressed: onUseSoundTap,
+                    onPressed: widget.onUseSoundTap,
                     icon: const Icon(Icons.add, size: 20),
                     label: const Text('Use Sound'),
                     style: ElevatedButton.styleFrom(
@@ -493,39 +510,48 @@ class _AttributionInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 4,
-      children: [
-        Text(
-          [
-            'by $artistName',
-            if (license != null) license,
-          ].join(' · '),
-          style: const TextStyle(
-            color: VineTheme.secondaryText,
-            fontSize: 12,
-          ),
+    final attributionText = [
+      'by $artistName',
+      if (license != null) license,
+    ].join(' · ');
+
+    return Text.rich(
+      TextSpan(
+        style: const TextStyle(
+          color: VineTheme.secondaryText,
+          fontSize: 12,
         ),
-        if (sourceUrl != null)
-          GestureDetector(
-            onTap: () async {
-              final uri = Uri.parse(sourceUrl!);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: const Text(
-              'View source',
-              style: TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 12,
-                decoration: TextDecoration.underline,
-                decorationColor: VineTheme.vineGreen,
+        children: [
+          TextSpan(text: attributionText),
+          if (sourceUrl != null) ...[
+            const TextSpan(text: ' · '),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: GestureDetector(
+                onTap: () async {
+                  final uri = Uri.parse(sourceUrl!);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(
+                      uri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  }
+                },
+                child: const Text(
+                  'View source',
+                  style: TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.vineGreen,
+                  ),
+                ),
               ),
             ),
-          ),
-      ],
+          ],
+        ],
+      ),
     );
   }
 }
