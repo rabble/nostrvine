@@ -225,7 +225,7 @@ void main() {
 
         // Permission sheet should be visible
         expect(
-          find.text('Gallery Access Needed'),
+          find.text('Let us save your videos'),
           findsOneWidget,
         );
 
