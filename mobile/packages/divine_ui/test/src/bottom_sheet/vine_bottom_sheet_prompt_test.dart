@@ -55,9 +55,9 @@ void main() {
     String title = 'Test Title',
     String subtitle = 'Test subtitle text',
     String? additionalText,
-    String primaryButtonText = 'Continue',
+    String? primaryButtonText,
     VoidCallback? onPrimaryPressed,
-    String secondaryButtonText = 'Not now',
+    String? secondaryButtonText,
     VoidCallback? onSecondaryPressed,
     String? tertiaryButtonText,
     VoidCallback? onTertiaryPressed,
@@ -72,9 +72,9 @@ void main() {
             subtitle: subtitle,
             additionalText: additionalText,
             primaryButtonText: primaryButtonText,
-            onPrimaryPressed: onPrimaryPressed ?? () {},
+            onPrimaryPressed: onPrimaryPressed,
             secondaryButtonText: secondaryButtonText,
-            onSecondaryPressed: onSecondaryPressed ?? () {},
+            onSecondaryPressed: onSecondaryPressed,
             tertiaryButtonText: tertiaryButtonText,
             onTertiaryPressed: onTertiaryPressed,
           ),
@@ -107,17 +107,23 @@ void main() {
         expect(find.text('Capture and edit videos'), findsOneWidget);
       });
 
-      testWidgets('primary button', (tester) async {
+      testWidgets('primary button when provided', (tester) async {
         await tester.pumpWidget(
-          buildSubject(primaryButtonText: 'Go'),
+          buildSubject(
+            primaryButtonText: 'Go',
+            onPrimaryPressed: () {},
+          ),
         );
 
         expect(find.text('Go'), findsOneWidget);
       });
 
-      testWidgets('secondary button', (tester) async {
+      testWidgets('secondary button when provided', (tester) async {
         await tester.pumpWidget(
-          buildSubject(secondaryButtonText: 'Cancel'),
+          buildSubject(
+            secondaryButtonText: 'Cancel',
+            onSecondaryPressed: () {},
+          ),
         );
 
         expect(find.text('Cancel'), findsOneWidget);
@@ -134,14 +140,41 @@ void main() {
       testWidgets('no additional text when null', (tester) async {
         await tester.pumpWidget(buildSubject());
 
-        // Only title and subtitle texts, plus button labels
         expect(find.text('Test Title'), findsOneWidget);
         expect(find.text('Test subtitle text'), findsOneWidget);
-        // 4 DivineButton widgets: primary + secondary
-        expect(find.byType(DivineButton), findsNWidgets(2));
       });
 
-      testWidgets('tertiary button when provided', (tester) async {
+      testWidgets('no buttons when all null', (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        expect(find.byType(DivineButton), findsNothing);
+      });
+
+      testWidgets('only primary button', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            primaryButtonText: 'OK',
+            onPrimaryPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+        expect(find.text('OK'), findsOneWidget);
+      });
+
+      testWidgets('only secondary button', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            secondaryButtonText: 'Skip',
+            onSecondaryPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+        expect(find.text('Skip'), findsOneWidget);
+      });
+
+      testWidgets('only tertiary button', (tester) async {
         await tester.pumpWidget(
           buildSubject(
             tertiaryButtonText: 'Learn more',
@@ -149,14 +182,23 @@ void main() {
           ),
         );
 
+        expect(find.byType(DivineButton), findsOneWidget);
         expect(find.text('Learn more'), findsOneWidget);
-        expect(find.byType(DivineButton), findsNWidgets(3));
       });
 
-      testWidgets('no tertiary button when null', (tester) async {
-        await tester.pumpWidget(buildSubject());
+      testWidgets('all three buttons', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            primaryButtonText: 'Continue',
+            onPrimaryPressed: () {},
+            secondaryButtonText: 'Not now',
+            onSecondaryPressed: () {},
+            tertiaryButtonText: 'Learn more',
+            onTertiaryPressed: () {},
+          ),
+        );
 
-        expect(find.byType(DivineButton), findsNWidgets(2));
+        expect(find.byType(DivineButton), findsNWidgets(3));
       });
     });
 
@@ -168,6 +210,7 @@ void main() {
 
         await tester.pumpWidget(
           buildSubject(
+            primaryButtonText: 'Continue',
             onPrimaryPressed: () => primaryTapped = true,
           ),
         );
@@ -185,6 +228,7 @@ void main() {
 
         await tester.pumpWidget(
           buildSubject(
+            secondaryButtonText: 'Not now',
             onSecondaryPressed: () => secondaryTapped = true,
           ),
         );
