@@ -882,7 +882,7 @@ final class ModerationLabelServiceProvider
 }
 
 String _$moderationLabelServiceHash() =>
-    r'd792ccdba759d461ff86ca3bd6f62aa46463a85a';
+    r'45b724bac4937ca6647a775d5dc7e4d87ad27c23';
 
 /// Audio sharing preference service for managing whether audio is available
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
