@@ -15,15 +15,21 @@ import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class InviteApiService {
-  InviteApiService({http.Client? client, Nip98AuthService? authService})
-    : _client = client ?? http.Client(),
-      _authService = authService;
+  InviteApiService({
+    http.Client? client,
+    Nip98AuthService? authService,
+    bool? forceOpenOnboarding,
+  }) : _client = client ?? http.Client(),
+       _authService = authService,
+       _forceOpenOnboarding =
+           forceOpenOnboarding ?? AppConfig.isGhActionsPrPreviewBuild;
 
   static String get _baseUrl => AppConfig.inviteServerBaseUrl;
   static const Duration _defaultTimeout = Duration(seconds: 20);
 
   final http.Client _client;
   final Nip98AuthService? _authService;
+  final bool _forceOpenOnboarding;
 
   static String normalizeCode(String raw) {
     final alphanumericOnly = raw.replaceAll(RegExp('[^A-Za-z0-9]'), '');
@@ -60,7 +66,15 @@ class InviteApiService {
       }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return InviteClientConfig.fromJson(json);
+      final config = InviteClientConfig.fromJson(json);
+      if (!_forceOpenOnboarding) {
+        return config;
+      }
+
+      return InviteClientConfig(
+        mode: OnboardingMode.open,
+        supportEmail: config.supportEmail,
+      );
     } on TimeoutException {
       throw const ApiException('Invite configuration request timed out');
     } catch (error) {

@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
@@ -27,11 +30,20 @@ class _MockPendingVerificationService extends Mock
 
 class _MockAuthService extends Mock implements AuthService {}
 
+class _MockHttpClient extends Mock implements http.Client {}
+
+class _MockResponse extends Mock implements http.Response {}
+
 void main() {
   late _MockInviteApiService mockInviteApiService;
   late _MockKeycastOAuth mockOAuth;
   late _MockPendingVerificationService mockPendingVerificationService;
   late _MockAuthService mockAuthService;
+
+  setUpAll(() {
+    registerFallbackValue(Uri.parse('https://example.com'));
+    registerFallbackValue(<String, String>{});
+  });
 
   setUp(() {
     mockInviteApiService = _MockInviteApiService();
@@ -45,7 +57,10 @@ void main() {
     ).thenAnswer((_) => const Stream<AuthState>.empty());
   });
 
-  Widget createTestWidget({bool hasAccessGrant = false}) {
+  Widget createTestWidget({
+    bool hasAccessGrant = false,
+    InviteApiService? inviteApiService,
+  }) {
     final container = ProviderContainer(
       overrides: [
         ...getStandardTestOverrides(mockAuthService: mockAuthService),
@@ -55,8 +70,9 @@ void main() {
         ),
       ],
     );
+    final service = inviteApiService ?? mockInviteApiService;
     final inviteGateBloc = InviteGateBloc(
-      inviteApiService: mockInviteApiService,
+      inviteApiService: service,
     );
 
     if (hasAccessGrant) {
@@ -73,7 +89,7 @@ void main() {
     return UncontrolledProviderScope(
       container: container,
       child: RepositoryProvider<InviteApiService>.value(
-        value: mockInviteApiService,
+        value: service,
         child: BlocProvider.value(
           value: inviteGateBloc,
           child: MaterialApp.router(
@@ -124,6 +140,39 @@ void main() {
 
       expect(find.text('Invite Gate'), findsOneWidget);
     });
+
+    testWidgets(
+      'preview bypass allows direct create-account access without invite grant',
+      (tester) async {
+        final mockClient = _MockHttpClient();
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(200);
+        when(() => response.body).thenReturn(
+          jsonEncode({
+            'onboarding_mode': 'invite_code_required',
+            'support_email': 'support@divine.video',
+          }),
+        );
+        when(
+          () => mockClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => response);
+
+        final previewInviteApiService = InviteApiService(
+          client: mockClient,
+          forceOpenOnboarding: true,
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(inviteApiService: previewInviteApiService),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.widgetWithText(DivineAuthTextField, 'Email'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('shows create-account flow when access grant exists', (
       tester,
