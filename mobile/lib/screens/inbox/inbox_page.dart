@@ -3,6 +3,7 @@
 // ABOUTME: MyFollowingBloc from Riverpod providers.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
@@ -30,25 +31,28 @@ class InboxPage extends ConsumerWidget {
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (_) => ConversationListBloc(
-            dmRepository: dmRepository,
-            followRepository: followRepository,
-          )..add(const ConversationListStarted()),
-        ),
-        BlocProvider(
-          create: (_) => DmUnreadCountCubit(dmRepository: dmRepository),
-        ),
-        BlocProvider(
-          create: (_) => MyFollowingBloc(
-            followRepository: followRepository,
-            contentBlocklistService: blocklistService,
-          )..add(const MyFollowingListLoadRequested()),
-        ),
-      ],
-      child: const InboxView(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => ConversationListBloc(
+              dmRepository: dmRepository,
+              followRepository: followRepository,
+            )..add(const ConversationListStarted()),
+          ),
+          BlocProvider(
+            create: (_) => DmUnreadCountCubit(dmRepository: dmRepository),
+          ),
+          BlocProvider(
+            create: (_) => MyFollowingBloc(
+              followRepository: followRepository,
+              contentBlocklistService: blocklistService,
+            )..add(const MyFollowingListLoadRequested()),
+          ),
+        ],
+        child: const InboxView(),
+      ),
     );
   }
 }
