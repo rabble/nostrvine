@@ -11,6 +11,7 @@ import 'package:openvine/widgets/video_recorder/preview/video_recorder_macos_pre
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_mobile_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_focus_point.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_ghost_frame.dart';
 
 /// Displays the camera preview with animated aspect ratio changes.
 ///
@@ -94,6 +95,7 @@ class _StackItems extends ConsumerWidget {
           VideoRecorderCameraPlaceholder(
             errorMessage: state.initializationErrorMessage,
           ),
+        const VideoRecorderGhostFrame(),
         const _OverlayGrid(),
         const VideoRecorderFocusPoint(),
       ],

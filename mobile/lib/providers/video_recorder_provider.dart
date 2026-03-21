@@ -1036,6 +1036,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       hasFlash: _cameraService.hasFlash,
       canSwitchCamera: _cameraService.canSwitchCamera,
       selectedSound: state.selectedSound,
+      showLastClipOverlay: state.showLastClipOverlay,
     );
   }
 

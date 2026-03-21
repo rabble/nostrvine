@@ -23,30 +23,38 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
     // Use the last clip that has a ghost frame, not just the last clip.
     // This prevents the overlay from disappearing while recording a new
     // clip that doesn't have a ghost frame yet.
-    final ghostFramePath = ref.watch(
+    final ghostData = ref.watch(
       clipManagerProvider.select((s) {
         for (var i = s.clips.length - 1; i >= 0; i--) {
-          final path = s.clips[i].ghostFramePath;
-          if (path != null) return path;
+          final clip = s.clips[i];
+          if (clip.ghostFramePath != null) {
+            return (
+              path: clip.ghostFramePath!,
+              isFrontCamera: clip.isFrontCameraLens,
+            );
+          }
         }
         return null;
       }),
     );
 
-    final showGhost = showOverlay && ghostFramePath != null;
+    final showGhost = showOverlay && ghostData != null;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       child: showGhost
           ? IgnorePointer(
-              key: ValueKey(ghostFramePath),
+              key: ValueKey('ghost-frame-${ghostData.path}'),
               child: Opacity(
                 opacity: 0.48,
-                child: Image.file(
-                  File(ghostFramePath),
-                  fit: .cover,
-                  width: .infinity,
-                  height: .infinity,
+                child: Transform.flip(
+                  flipX: ghostData.isFrontCamera,
+                  child: Image.file(
+                    File(ghostData.path),
+                    fit: .cover,
+                    width: .infinity,
+                    height: .infinity,
+                  ),
                 ),
               ),
             )
