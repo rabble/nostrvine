@@ -195,7 +195,6 @@ void main() {
             notifications: mockNotifications,
             unreadCount: 5,
             nextCursor: 'cursor_abc',
-            hasMore: false, // Changed: Provider auto-loads if hasMore && < 10 items
           ),
         );
 
