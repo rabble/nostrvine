@@ -68,9 +68,7 @@ enum DivineCameraLens {
   ///
   /// This includes both [front] and [frontUltraWide] lenses.
   static bool isFrontCameraLens(String? value) {
-    final lens = fromNativeString(value);
-
-    return lens == .front || lens == .frontUltraWide;
+    return fromNativeString(value).isFrontFacing;
   }
 
   /// Parses a list of native strings to a list of lens types.

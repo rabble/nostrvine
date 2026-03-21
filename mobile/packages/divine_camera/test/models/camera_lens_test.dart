@@ -271,6 +271,32 @@ void main() {
       });
     });
 
+    group('isFrontFacing', () {
+      test('returns true for front', () {
+        expect(DivineCameraLens.front.isFrontFacing, isTrue);
+      });
+
+      test('returns true for frontUltraWide', () {
+        expect(DivineCameraLens.frontUltraWide.isFrontFacing, isTrue);
+      });
+
+      test('returns false for back', () {
+        expect(DivineCameraLens.back.isFrontFacing, isFalse);
+      });
+
+      test('returns false for ultraWide', () {
+        expect(DivineCameraLens.ultraWide.isFrontFacing, isFalse);
+      });
+
+      test('returns false for telephoto', () {
+        expect(DivineCameraLens.telephoto.isFrontFacing, isFalse);
+      });
+
+      test('returns false for macro', () {
+        expect(DivineCameraLens.macro.isFrontFacing, isFalse);
+      });
+    });
+
     group('isFrontCameraLens', () {
       test('returns true for front', () {
         expect(DivineCameraLens.isFrontCameraLens('front'), isTrue);
