@@ -206,8 +206,9 @@ void main() {
         );
       });
 
-      testWidgets('applies $Transform.flip for front camera clips',
-          (tester) async {
+      testWidgets('applies $Transform.flip for front camera clips', (
+        tester,
+      ) async {
         final frontCameraClip = DivineVideoClip(
           id: 'front_cam_clip',
           video: EditorVideo.file('/path/to/video.mp4'),
