@@ -47,6 +47,10 @@ class RelayNotification {
   final bool read;
   final String? content;
 
+  /// Unique identifier for deduplication.
+  /// Falls back to sourceEventId if API doesn't provide an id field.
+  String get uniqueId => id.isNotEmpty ? id : sourceEventId;
+
   static DateTime _parseDateTime(dynamic value) {
     if (value == null) return DateTime.now();
     if (value is int) {
