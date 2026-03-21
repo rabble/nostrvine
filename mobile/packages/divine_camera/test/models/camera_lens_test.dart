@@ -222,7 +222,10 @@ void main() {
       });
 
       test('returns correct name for frontUltraWide', () {
-        expect(DivineCameraLens.frontUltraWide.displayName, equals('Front Wide'));
+        expect(
+          DivineCameraLens.frontUltraWide.displayName,
+          equals('Front Wide'),
+        );
       });
 
       test('returns correct name for back', () {
