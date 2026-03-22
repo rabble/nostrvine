@@ -38,6 +38,15 @@ class _InboxViewState extends ConsumerState<InboxView> {
 
   @override
   Widget build(BuildContext context) {
+    // Re-filter conversation list when blocklist changes.
+    ref.listen(blocklistVersionProvider, (previous, current) {
+      if (previous != null && current > previous) {
+        context.read<ConversationListBloc>().add(
+          const ConversationListBlocklistChanged(),
+        );
+      }
+    });
+
     // Watch notification unread count for the badge.
     final notificationCount = ref.watch(relayNotificationUnreadCountProvider);
 

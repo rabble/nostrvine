@@ -71,13 +71,13 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       case MoreSheetResult.unfollow:
         await followRepository.toggleFollow(otherPubkey);
       case MoreSheetResult.blockConfirmed:
-        blocklistService.blockUser(
+        await blocklistService.blockUser(
           otherPubkey,
           ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
         );
         if (mounted) context.pop();
       case MoreSheetResult.unblockConfirmed:
-        blocklistService.unblockUser(otherPubkey);
+        await blocklistService.unblockUser(otherPubkey);
     }
   }
 

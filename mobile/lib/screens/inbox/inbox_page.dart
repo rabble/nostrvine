@@ -39,6 +39,7 @@ class InboxPage extends ConsumerWidget {
             create: (_) => ConversationListBloc(
               dmRepository: dmRepository,
               followRepository: followRepository,
+              contentBlocklistService: blocklistService,
             )..add(const ConversationListStarted()),
           ),
           BlocProvider(

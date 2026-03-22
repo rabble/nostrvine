@@ -273,6 +273,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       controller?.setActive(active: isHome);
     });
 
+    // Refresh feed when blocklist changes (block from profile, DM, or relay).
+    ref.listen(blocklistVersionProvider, (previous, current) {
+      if (previous != null && current > previous) {
+        context.read<VideoFeedBloc>().add(const VideoFeedBlocklistChanged());
+      }
+    });
+
     // Pause/resume for overlays (drawer, pages, bottom sheets), but only when
     // on the home tab. Without this guard, closing an overlay while on
     // another tab would incorrectly resume the home feed audio.

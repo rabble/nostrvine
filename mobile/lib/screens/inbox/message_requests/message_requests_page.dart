@@ -24,6 +24,7 @@ class MessageRequestsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
     return MultiBlocProvider(
       providers: [
@@ -31,6 +32,7 @@ class MessageRequestsPage extends ConsumerWidget {
           create: (_) => ConversationListBloc(
             dmRepository: dmRepository,
             followRepository: followRepository,
+            contentBlocklistService: blocklistService,
           )..add(const ConversationListStarted()),
         ),
         BlocProvider(

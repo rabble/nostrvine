@@ -102,12 +102,12 @@ void main() {
       expect(stats['internal_blocks'], isA<int>());
     });
 
-    test('invokes onChanged callback for local block changes', () {
+    test('invokes onChanged callback for local block changes', () async {
       var changeCount = 0;
       service = ContentBlocklistService(onChanged: () => changeCount++);
 
-      service.blockUser('blocked_pubkey');
-      service.unblockUser('blocked_pubkey');
+      await service.blockUser('blocked_pubkey');
+      await service.unblockUser('blocked_pubkey');
 
       expect(changeCount, equals(2));
     });

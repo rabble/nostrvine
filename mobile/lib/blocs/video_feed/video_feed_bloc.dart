@@ -66,6 +66,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     on<VideoFeedAutoRefreshRequested>(_onAutoRefreshRequested);
     on<VideoFeedFollowingListChanged>(_onFollowingListChanged);
     on<VideoFeedCuratedListsChanged>(_onCuratedListsChanged);
+    on<VideoFeedBlocklistChanged>(_onBlocklistChanged);
   }
 
   final VideosRepository _videosRepository;
@@ -373,6 +374,37 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     );
 
     await _loadVideos(FeedMode.following, emit, skipCache: true);
+  }
+
+  /// Handle blocklist changes.
+  ///
+  /// When [event.blockedPubkey] is provided, removes that user's videos
+  /// from the current state instantly (no network call). When null,
+  /// triggers a full refresh to pick up bulk blocklist changes.
+  Future<void> _onBlocklistChanged(
+    VideoFeedBlocklistChanged event,
+    Emitter<VideoFeedState> emit,
+  ) async {
+    final pubkey = event.blockedPubkey;
+    if (pubkey != null) {
+      final filtered = state.videos.where((v) => v.pubkey != pubkey).toList();
+      if (filtered.length != state.videos.length) {
+        emit(state.copyWith(videos: filtered));
+      }
+      return;
+    }
+
+    // General blocklist change — full refresh.
+    if (state.status == VideoFeedStatus.loading) return;
+    emit(
+      state.copyWith(
+        status: VideoFeedStatus.loading,
+        videos: [],
+        hasMore: true,
+        clearError: true,
+      ),
+    );
+    await _loadVideos(state.mode, emit, skipCache: true);
   }
 
   /// Load videos for the specified mode.
