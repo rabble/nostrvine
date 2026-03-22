@@ -245,6 +245,18 @@ jobs:
               ].join('\n');
             }
 
+            async function upsertBotComment(body) {
+              const comments = await github.rest.issues.listComments({
+                ...repo, issue_number: pr.number, per_page: 30,
+              });
+              const existing = comments.data.find(c => c.body && c.body.includes(BOT_MARKER));
+              if (existing) {
+                await github.rest.issues.updateComment({ ...repo, comment_id: existing.id, body });
+              } else {
+                await github.rest.issues.createComment({ ...repo, issue_number: pr.number, body });
+              }
+            }
+
             async function addLabel(name) {
               try {
                 await github.rest.issues.getLabel({ ...repo, name });
