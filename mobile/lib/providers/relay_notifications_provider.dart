@@ -510,9 +510,16 @@ class RelayNotifications extends _$RelayNotifications {
   }
 
   /// Mark a single notification as read
+  ///
+  /// If [notificationId] is empty (e.g., the API returned a notification
+  /// without an id field), this method performs only the local optimistic
+  /// update and skips the API call to avoid sending an invalid payload.
   Future<void> markAsRead(String notificationId) async {
     final currentState = await future;
     if (!ref.mounted) return;
+
+    // Skip API call for empty IDs but still allow local update
+    final shouldPersistToApi = notificationId.isNotEmpty;
 
     // Optimistic update
     final updatedNotifications = currentState.notifications.map((n) {
@@ -532,6 +539,16 @@ class RelayNotifications extends _$RelayNotifications {
         unreadCount: newUnreadCount,
       ),
     );
+
+    // Skip API call for empty IDs - the server requires valid notification IDs
+    if (!shouldPersistToApi) {
+      Log.debug(
+        'RelayNotifications: Skipping markAsRead API call - no valid notification ID',
+        name: 'RelayNotificationsProvider',
+        category: LogCategory.system,
+      );
+      return;
+    }
 
     // Persist to server
     try {
@@ -658,7 +675,7 @@ class RelayNotifications extends _$RelayNotifications {
 
     // Dedupe initial batch
     for (final n in response.notifications) {
-      final id = n.uniqueId.toLowerCase();
+      final id = n.dedupeKey.toLowerCase();
       if (mutableExcludeIds.contains(id)) continue;
 
       // Skip follow notifications from pubkeys we already have
@@ -705,7 +722,7 @@ class RelayNotifications extends _$RelayNotifications {
       // Dedupe new batch
       var addedAny = false;
       for (final n in moreResponse.notifications) {
-        final id = n.uniqueId.toLowerCase();
+        final id = n.dedupeKey.toLowerCase();
         if (mutableExcludeIds.contains(id)) continue;
 
         if (n.notificationType.toLowerCase() == 'follow') {

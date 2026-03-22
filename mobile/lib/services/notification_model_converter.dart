@@ -23,7 +23,7 @@ NotificationModel notificationModelFromRelayApi(
   );
 
   return NotificationModel(
-    id: relay.uniqueId,
+    id: relay.id,
     type: type,
     actorPubkey: relay.sourcePubkey,
     actorName: actorName,

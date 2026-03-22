@@ -47,9 +47,10 @@ class RelayNotification {
   final bool read;
   final String? content;
 
-  /// Unique identifier for deduplication.
+  /// Stable key for local deduplication and filtering.
   /// Falls back to sourceEventId if API doesn't provide an id field.
-  String get uniqueId => id.isNotEmpty ? id : sourceEventId;
+  /// Note: Use [id] (not this) for API write operations like markAsRead.
+  String get dedupeKey => id.isNotEmpty ? id : sourceEventId;
 
   static DateTime _parseDateTime(dynamic value) {
     if (value == null) return DateTime.now();
