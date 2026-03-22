@@ -1622,6 +1622,117 @@ void main() {
           controller.dispose();
         });
       });
+
+      group('maxLoopDuration', () {
+        test('seeks to zero when position exceeds maxLoopDuration', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            maxLoopDuration: const Duration(milliseconds: 6_300),
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          // Configure player as playing past the max duration
+          when(() => setup.state.playing).thenReturn(true);
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 6400));
+
+          // Simulate buffer ready (starts playback + position timer)
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Wait for position timer to fire
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          // Verify seek(Duration.zero) was called (loop enforcement)
+          verify(() => setup.player.seek(Duration.zero)).called(
+            greaterThanOrEqualTo(1),
+          );
+
+          controller.dispose();
+        });
+
+        test('does not seek when position is within maxLoopDuration', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            maxLoopDuration: const Duration(milliseconds: 6300),
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          // Configure player as playing within allowed duration
+          when(() => setup.state.playing).thenReturn(true);
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 3000));
+
+          // Simulate buffer ready
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Clear any seek calls from initial playback
+          clearInteractions(setup.player);
+          when(() => setup.player.seek(any())).thenAnswer((_) async {});
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 3000));
+
+          // Wait for position timer
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          // Verify seek(Duration.zero) was NOT called for loop enforcement
+          verifyNever(() => setup.player.seek(Duration.zero));
+
+          controller.dispose();
+        });
+
+        test('does not enforce loop when maxLoopDuration is null', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          // Configure player as playing past 6.3s
+          when(() => setup.state.playing).thenReturn(true);
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 7000));
+
+          // Simulate buffer ready
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Clear any seek calls from initial playback
+          clearInteractions(setup.player);
+          when(() => setup.player.seek(any())).thenAnswer((_) async {});
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 7000));
+
+          // Wait for position timer
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          // With no maxLoopDuration, seek(Duration.zero) from loop
+          // enforcement should NOT be called
+          verifyNever(() => setup.player.seek(Duration.zero));
+
+          controller.dispose();
+        });
+      });
     });
 
     group('ChangeNotifier', () {
