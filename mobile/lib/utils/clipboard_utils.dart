@@ -23,20 +23,7 @@ class ClipboardUtils {
     await Clipboard.setData(ClipboardData(text: text));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check, color: VineTheme.onPrimary),
-              const SizedBox(width: 8),
-              Text(
-                message,
-                style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
-              ),
-            ],
-          ),
-          backgroundColor: VineTheme.vineGreen,
-          duration: const Duration(seconds: 2),
-        ),
+        DivineSnackbarContainer.snackBar(message),
       );
     }
   }
