@@ -483,6 +483,12 @@ VideoPlayerController individualVideoController(
   bool? lastIsInitialized;
   bool? lastIsBuffering;
   bool? lastHasError;
+  // Track whether we've already checked for deferred duration (non-Divine videos
+  // may report Duration.zero at init time, with the real duration arriving later)
+  bool deferredDurationChecked = false;
+  // Track whether a listener-initiated seek is in progress to avoid spamming
+  // seekTo on every frame while the previous seek hasn't completed yet
+  bool listenerSeekInProgress = false;
 
   void stateChangeListener() {
     // Guard against platform callbacks firing after player disposal.
@@ -494,6 +500,62 @@ VideoPlayerController individualVideoController(
     } catch (e) {
       if (_isDisposalError(e)) return;
       rethrow;
+    }
+
+    // === Scenario 1: Deferred duration ===
+    // Some remote videos (especially non-Divine servers or HLS streams) report
+    // Duration.zero at init time. Once the real duration arrives and exceeds
+    // 6.3s, start the loop enforcement timer we missed at init.
+    if (!deferredDurationChecked &&
+        loopEnforcementTimer == null &&
+        value.isInitialized &&
+        value.duration > maxPlaybackDuration) {
+      deferredDurationChecked = true;
+      loopEnforcementTimer = Timer.periodic(loopCheckInterval, (timer) {
+        if (!controller.value.isPlaying) return;
+        if (controller.value.position >= maxPlaybackDuration) {
+          safeSeekTo(controller, params.videoId, Duration.zero);
+        }
+      });
+      Log.info(
+        '⏱️ [DEFERRED-DURATION] Started loop enforcement timer for '
+        '${params.videoId} (duration resolved to '
+        '${value.duration.inMilliseconds}ms > '
+        '${maxPlaybackDuration.inMilliseconds}ms)',
+        name: 'LoopEnforcement',
+        category: LogCategory.video,
+      );
+    }
+
+    // === Scenarios 2 & 3: seekTo silently failing / timer not firing ===
+    // Belt-and-suspenders: enforce 6.3s limit directly in the listener.
+    // The periodic timer checks every 200ms, but seekTo can silently fail
+    // on servers that don't support HTTP range requests. This listener fires
+    // on every platform position callback (~60fps), catching cases the timer
+    // misses. Debounced via listenerSeekInProgress to avoid spamming seeks.
+    if (value.isPlaying &&
+        value.position >= maxPlaybackDuration &&
+        !listenerSeekInProgress) {
+      listenerSeekInProgress = true;
+      Log.debug(
+        '🔄 [LISTENER-ENFORCE] Seeking ${params.videoId} to 0 '
+        '(position: ${value.position.inMilliseconds}ms, '
+        'timer active: ${loopEnforcementTimer != null})',
+        name: 'LoopEnforcement',
+        category: LogCategory.video,
+      );
+      safeSeekTo(controller, params.videoId, Duration.zero).then((success) {
+        listenerSeekInProgress = false;
+        if (!success) {
+          Log.warning(
+            '⚠️ [LISTENER-ENFORCE] seekTo failed for ${params.videoId} '
+            '(controller may be disposed or server may not support range '
+            'requests)',
+            name: 'LoopEnforcement',
+            category: LogCategory.video,
+          );
+        }
+      });
     }
 
     // Only log significant state changes, not every position update
@@ -648,6 +710,7 @@ VideoPlayerController individualVideoController(
         // Short videos use native looping; long videos get enforced loop at 6.3s
         final videoDuration = controller.value.duration;
         if (videoDuration > maxPlaybackDuration) {
+          deferredDurationChecked = true;
           loopEnforcementTimer = Timer.periodic(loopCheckInterval, (timer) {
             // Skip check if video is paused
             if (!controller.value.isPlaying) return;
@@ -658,7 +721,19 @@ VideoPlayerController individualVideoController(
             }
           });
           Log.info(
-            '⏱️ Started loop enforcement timer for ${params.videoId} (duration: ${videoDuration.inMilliseconds}ms > ${maxPlaybackDuration.inMilliseconds}ms)',
+            '⏱️ [INIT-DURATION] Started loop enforcement timer for '
+            '${params.videoId} (duration: ${videoDuration.inMilliseconds}ms '
+            '> ${maxPlaybackDuration.inMilliseconds}ms)',
+            name: 'LoopEnforcement',
+            category: LogCategory.video,
+          );
+        } else if (videoDuration == Duration.zero) {
+          // Duration unknown at init — listener will start timer when it
+          // resolves (Scenario 1: deferred duration). Log so we can track
+          // how often this happens in production.
+          Log.info(
+            '⏳ [DEFERRED-DURATION] Video ${params.videoId} has duration '
+            '0ms at init — listener will monitor for real duration',
             name: 'LoopEnforcement',
             category: LogCategory.video,
           );
