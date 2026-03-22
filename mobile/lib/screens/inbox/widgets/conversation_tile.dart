@@ -22,12 +22,14 @@ class ConversationTile extends ConsumerWidget {
     required this.conversation,
     required this.currentUserPubkey,
     required this.onTap,
+    this.onLongPress,
     super.key,
   });
 
   final DmConversation conversation;
   final String currentUserPubkey;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,6 +70,7 @@ class ConversationTile extends ConsumerWidget {
           );
           onTap();
         },
+        onLongPress: onLongPress,
         behavior: HitTestBehavior.opaque,
         child: DecoratedBox(
           decoration: const BoxDecoration(

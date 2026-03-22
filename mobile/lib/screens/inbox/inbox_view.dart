@@ -11,17 +11,20 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
 import 'package:openvine/screens/inbox/new_message_sheet.dart';
+import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
@@ -220,7 +223,7 @@ class _ConversationListContent extends StatelessWidget {
   }
 }
 
-class _ConversationList extends StatelessWidget {
+class _ConversationList extends ConsumerWidget {
   const _ConversationList({
     required this.currentUserPubkey,
   });
@@ -230,7 +233,7 @@ class _ConversationList extends StatelessWidget {
   final String currentUserPubkey;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final conversations = context
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
@@ -307,6 +310,11 @@ class _ConversationList extends StatelessWidget {
             conversation: conversation,
             currentUserPubkey: currentUserPubkey,
             onTap: () => _onConversationTapped(context, conversation),
+            onLongPress: () => _onConversationLongPressed(
+              context,
+              ref,
+              conversation,
+            ),
           );
         },
       ),
@@ -331,5 +339,128 @@ class _ConversationList extends StatelessWidget {
         .toList();
 
     _pushConversation(context, conversation.id, otherPubkeys);
+  }
+
+  Future<void> _onConversationLongPressed(
+    BuildContext context,
+    WidgetRef ref,
+    DmConversation conversation,
+  ) async {
+    final otherPubkey = conversation.participantPubkeys.firstWhere(
+      (pk) => pk != currentUserPubkey,
+      orElse: () => conversation.participantPubkeys.first,
+    );
+
+    final profile = await ref.read(
+      fetchUserProfileProvider(otherPubkey).future,
+    );
+    final displayName = profile?.bestDisplayName ?? 'user';
+
+    final muteService = ref.read(conversationMuteServiceProvider);
+    final isMuted = muteService.isMuted(conversation.id);
+
+    if (!context.mounted) return;
+
+    final action = await ConversationActionsSheet.show(
+      context,
+      displayName: displayName,
+      isMuted: isMuted,
+    );
+
+    if (action == null || !context.mounted) return;
+
+    switch (action) {
+      case ConversationAction.toggleMute:
+        final nowMuted = await muteService.toggleMute(conversation.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                nowMuted ? 'Conversation muted' : 'Conversation unmuted',
+              ),
+            ),
+          );
+        }
+
+      case ConversationAction.report:
+        final reportingService = await ref.read(
+          contentReportingServiceProvider.future,
+        );
+        if (!context.mounted) return;
+        final reported = await reportingService.reportUser(
+          userPubkey: otherPubkey,
+          reason: ContentFilterReason.other,
+          details: 'Reported from DM conversation',
+        );
+        if (context.mounted && reported.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Reported $displayName')),
+          );
+        }
+
+      case ConversationAction.block:
+        final blocklistService = ref.read(contentBlocklistServiceProvider);
+        final authService = ref.read(authServiceProvider);
+        blocklistService.blockUser(
+          otherPubkey,
+          ourPubkey: authService.currentPublicKeyHex ?? '',
+        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Blocked $displayName')),
+          );
+        }
+
+      case ConversationAction.remove:
+        if (!context.mounted) return;
+        final confirmed = await _confirmRemove(context, displayName);
+        if (confirmed && context.mounted) {
+          final dmRepo = ref.read(dmRepositoryProvider);
+          await dmRepo.removeConversation(conversation.id);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Conversation removed')),
+            );
+          }
+        }
+    }
+  }
+
+  Future<bool> _confirmRemove(
+    BuildContext context,
+    String displayName,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Remove conversation?',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        content: Text(
+          'This will delete your conversation with $displayName. '
+          'This action cannot be undone.',
+          style: const TextStyle(color: VineTheme.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Remove',
+              style: VineTheme.bodyMediumFont(color: VineTheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 }
