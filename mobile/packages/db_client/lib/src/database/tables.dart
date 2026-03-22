@@ -723,6 +723,14 @@ class DirectMessages extends Table {
   /// URL of an encrypted thumbnail (same key/nonce).
   TextColumn get thumbnailUrl => text().nullable().named('thumbnail_url')();
 
+  /// Whether this message has been soft-deleted via a NIP-09 kind 5 event.
+  ///
+  /// Soft-deleting (rather than hard-deleting) preserves the `giftWrapId` so
+  /// the dedup check (`hasGiftWrap`) continues to reject the relay
+  /// re-delivering the gift-wrapped event on the next poll cycle.
+  BoolColumn get isDeleted =>
+      boolean().withDefault(const Constant(false)).named('is_deleted')();
+
   /// Hex public key of the account that received/sent this message.
   /// NULL for legacy messages created before multi-account support.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();

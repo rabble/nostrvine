@@ -30,6 +30,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       _onMessageSent,
       transformer: sequential(),
     );
+    on<ConversationMessageDeleted>(
+      _onMessageDeleted,
+      transformer: droppable(),
+    );
   }
 
   final DmRepository _dmRepository;
@@ -64,6 +68,19 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         );
       },
     );
+  }
+
+  Future<void> _onMessageDeleted(
+    ConversationMessageDeleted event,
+    Emitter<ConversationState> emit,
+  ) async {
+    try {
+      await _dmRepository.deleteMessageForEveryone(event.rumorId);
+      // The watchMessages stream automatically excludes deleted messages,
+      // so the UI updates reactively — no manual state mutation needed.
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+    }
   }
 
   Future<void> _onMessageSent(

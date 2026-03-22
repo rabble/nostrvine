@@ -23,6 +23,7 @@ class MessageBubble extends StatelessWidget {
     required this.isSent,
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
+    this.onLongPress,
     super.key,
   });
 
@@ -38,6 +39,9 @@ class MessageBubble extends StatelessWidget {
   /// from the same sender.  When true the tail corner is rendered.
   final bool isLastInGroup;
 
+  /// Called when the user long-presses the bubble.
+  final VoidCallback? onLongPress;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -49,37 +53,40 @@ class MessageBubble extends StatelessWidget {
       ),
       child: Align(
         alignment: isSent ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.75,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isSent
-                ? VineTheme.primaryAccessible
-                : VineTheme.containerLow,
-            borderRadius: _borderRadius,
-          ),
-          child: Column(
-            crossAxisAlignment: isSent
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
-            children: [
-              if (isFirstInGroup)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    timestamp,
-                    style: VineTheme.labelSmallFont(
-                      color: VineTheme.onSurfaceMuted,
+        child: GestureDetector(
+          onLongPress: onLongPress,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isSent
+                  ? VineTheme.primaryAccessible
+                  : VineTheme.containerLow,
+              borderRadius: _borderRadius,
+            ),
+            child: Column(
+              crossAxisAlignment: isSent
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                if (isFirstInGroup)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      timestamp,
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
                     ),
                   ),
+                Text(
+                  message,
+                  style: VineTheme.bodyMediumFont(),
                 ),
-              Text(
-                message,
-                style: VineTheme.bodyMediumFont(),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

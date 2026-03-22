@@ -225,6 +225,30 @@ class _MessageList extends StatelessWidget {
   final List<DmMessage> messages;
   final String currentPubkey;
 
+  Future<void> _onMessageLongPress(
+    BuildContext context,
+    DmMessage message,
+    bool isSent,
+  ) async {
+    final action = await MessageActionsSheet.show(
+      context: context,
+      isSent: isSent,
+    );
+    if (action == null) return;
+    if (!context.mounted) return;
+
+    switch (action) {
+      case MessageAction.copy:
+        await ClipboardUtils.copy(context, message.content);
+      case MessageAction.delete:
+        context.read<ConversationBloc>().add(
+          ConversationMessageDeleted(rumorId: message.id),
+        );
+      case MessageAction.report:
+        break; // Report handled by PR #2389
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -250,6 +274,7 @@ class _MessageList extends StatelessWidget {
           isSent: isSent,
           isFirstInGroup: isFirstInGroup,
           isLastInGroup: isLastInGroup,
+          onLongPress: () => _onMessageLongPress(context, message, isSent),
         );
       },
     );
