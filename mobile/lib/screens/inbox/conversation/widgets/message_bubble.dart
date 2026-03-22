@@ -69,43 +69,51 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: isFirstInGroup ? 8 : 2,
-        bottom: isLastInGroup ? 8 : 2,
-      ),
-      child: Align(
-        alignment: isSent ? Alignment.centerRight : Alignment.centerLeft,
-        child: GestureDetector(
-          onLongPress: onLongPress,
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * 0.75,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSent ? VineTheme.surfaceContainer : VineTheme.neutral10,
-              borderRadius: _borderRadius,
-            ),
-            child: Column(
-              crossAxisAlignment: isSent
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                if (isFirstInGroup)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      timestamp,
-                      style: VineTheme.labelSmallFont(
-                        color: VineTheme.onSurfaceMuted,
+    return Semantics(
+      label: isSent ? 'Sent message' : 'Received message',
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: isFirstInGroup ? 8 : 2,
+          bottom: isLastInGroup ? 8 : 2,
+        ),
+        child: Align(
+          alignment: isSent ? Alignment.centerRight : Alignment.centerLeft,
+          child: GestureDetector(
+            onLongPress: onLongPress,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                color: isSent
+                    ? VineTheme.surfaceContainer
+                    : VineTheme.neutral10,
+                borderRadius: _borderRadius,
+              ),
+              child: Column(
+                crossAxisAlignment: isSent
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  if (isFirstInGroup)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        timestamp,
+                        style: VineTheme.labelSmallFont(
+                          color: VineTheme.onSurfaceMuted,
+                        ),
                       ),
                     ),
-                  ),
-                _MessageText(message: message),
-              ],
+                  _MessageText(message: message),
+                ],
+              ),
             ),
           ),
         ),
@@ -126,10 +134,30 @@ class MessageBubble extends StatelessWidget {
   }
 }
 
+/// Trusted domains that open without an external-link warning.
+const _trustedDomains = {
+  'divine.video',
+  'invite.divine.video',
+  'login.divine.video',
+  'media.divine.video',
+  'relay.divine.video',
+  'cdn.divine.video',
+  'stream.divine.video',
+};
+
+/// Returns `true` if [host] is a trusted Divine domain.
+bool _isTrustedDomain(String host) {
+  final lower = host.toLowerCase();
+  return _trustedDomains.any(
+    (d) => lower == d || lower.endsWith('.$d'),
+  );
+}
+
 /// Renders message text with clickable URLs and email addresses.
 ///
 /// Links matching [_linkRegex] are styled as underlined links. URLs open in
 /// an external browser; email addresses open the default mail client.
+/// External (non-Divine) URLs show a confirmation before opening.
 /// Non-link text is rendered with the default body medium style.
 class _MessageText extends StatelessWidget {
   const _MessageText({required this.message});
@@ -143,19 +171,15 @@ class _MessageText extends StatelessWidget {
     }
 
     return Text.rich(
-      TextSpan(children: _buildSpans()),
+      TextSpan(children: _buildSpans(context)),
     );
   }
 
-  List<TextSpan> _buildSpans() {
+  List<TextSpan> _buildSpans(BuildContext context) {
     final spans = <TextSpan>[];
     final defaultStyle = VineTheme.bodyMediumFont();
-    const linkStyle = TextStyle(
+    final linkStyle = defaultStyle.copyWith(
       color: VineTheme.info,
-      fontSize: 14,
-      fontWeight: FontWeight.w400,
-      height: 20 / 14,
-      letterSpacing: 0.25,
       decoration: TextDecoration.underline,
       decorationColor: VineTheme.info,
     );
@@ -176,7 +200,8 @@ class _MessageText extends StatelessWidget {
         TextSpan(
           text: link,
           style: linkStyle,
-          recognizer: TapGestureRecognizer()..onTap = () => _openLink(link),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => _openLink(context, link),
         ),
       );
 
@@ -195,7 +220,7 @@ class _MessageText extends StatelessWidget {
     return spans;
   }
 
-  Future<void> _openLink(String link) async {
+  Future<void> _openLink(BuildContext context, String link) async {
     final Uri? uri;
     if (_emailRegex.hasMatch(link)) {
       uri = Uri(scheme: 'mailto', path: link);
@@ -207,6 +232,50 @@ class _MessageText extends StatelessWidget {
       uri = Uri.tryParse(normalized);
     }
     if (uri == null) return;
+
+    // Show a warning for external (non-Divine) URLs.
+    if (uri.scheme != 'mailto' && !_isTrustedDomain(uri.host)) {
+      if (!context.mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: Text(
+            'Open external link?',
+            style: VineTheme.titleMediumFont(),
+          ),
+          content: Text(
+            'This link goes to an external site and may not be safe:\n\n'
+            '$uri',
+            style: VineTheme.bodyMediumFont(
+              color: VineTheme.secondaryText,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(
+                'Cancel',
+                style: VineTheme.bodyMediumFont(
+                  color: VineTheme.onSurface,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(
+                'Open',
+                style: VineTheme.bodyMediumFont(
+                  color: VineTheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

@@ -43,9 +43,9 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: const Text(
+    title: Text(
       'Report Message',
-      style: TextStyle(color: VineTheme.whiteText),
+      style: VineTheme.titleMediumFont(),
     ),
     content: SizedBox(
       width: double.maxFinite,
@@ -53,19 +53,17 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Why are you reporting this message?',
-              style: TextStyle(color: VineTheme.whiteText),
+              style: VineTheme.bodyMediumFont(),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Divine will act on content reports within 24 hours by '
               'removing the content and ejecting the user who provided '
               'the offending content.',
-              style: TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: VineTheme.secondaryText,
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
               ),
             ),
             const SizedBox(height: 16),
@@ -77,8 +75,8 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
                     .map(
                       (reason) => RadioListTile<ContentFilterReason>(
                         title: Text(
-                          _getReasonDisplayName(reason),
-                          style: const TextStyle(color: VineTheme.whiteText),
+                          reason.description,
+                          style: VineTheme.bodyMediumFont(),
                         ),
                         value: reason,
                       ),
@@ -90,18 +88,20 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
             TextField(
               controller: _detailsController,
               enableInteractiveSelection: true,
-              style: const TextStyle(color: VineTheme.whiteText),
-              decoration: const InputDecoration(
+              style: VineTheme.bodyMediumFont(),
+              decoration: InputDecoration(
                 labelText: 'Additional details (optional)',
-                labelStyle: TextStyle(color: VineTheme.secondaryText),
+                labelStyle: VineTheme.bodyMediumFont(
+                  color: VineTheme.secondaryText,
+                ),
               ),
               maxLines: 3,
             ),
             const SizedBox(height: 8),
             CheckboxListTile(
-              title: const Text(
+              title: Text(
                 'Block this user',
-                style: TextStyle(color: VineTheme.whiteText),
+                style: VineTheme.bodyMediumFont(),
               ),
               value: _blockUser,
               onChanged: (value) => setState(() => _blockUser = value ?? false),
@@ -130,9 +130,9 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
     if (_isSubmitting) return;
     if (_selectedReason == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a reason for reporting this message'),
-          backgroundColor: VineTheme.error,
+        DivineSnackbarContainer.snackBar(
+          'Please select a reason for reporting this message',
+          error: true,
         ),
       );
       return;
@@ -154,7 +154,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
         authorPubkey: widget.senderPubkey,
         reason: _selectedReason!,
         details: _detailsController.text.trim().isEmpty
-            ? _getReasonDisplayName(_selectedReason!)
+            ? _selectedReason!.description
             : _detailsController.text.trim(),
       );
 
@@ -168,7 +168,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
               widget.senderPubkey,
               reason:
                   'Reported and blocked for '
-                  '${_getReasonDisplayName(_selectedReason!)}',
+                  '${_selectedReason!.description}',
             );
 
             final blocklistService = ref.read(contentBlocklistServiceProvider);
@@ -214,9 +214,9 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to report message: ${result.error}'),
-              backgroundColor: VineTheme.error,
+            DivineSnackbarContainer.snackBar(
+              'Failed to report message: ${result.error}',
+              error: true,
             ),
           );
         }
@@ -230,9 +230,9 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to report message: $e'),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            'Failed to report message: $e',
+            error: true,
           ),
         );
       }
@@ -243,20 +243,6 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
     }
   }
 
-  String _getReasonDisplayName(ContentFilterReason reason) {
-    return switch (reason) {
-      ContentFilterReason.spam => 'Spam or Unwanted Content',
-      ContentFilterReason.harassment => 'Harassment, Bullying, or Threats',
-      ContentFilterReason.violence => 'Violent or Extremist Content',
-      ContentFilterReason.sexualContent => 'Sexual or Adult Content',
-      ContentFilterReason.copyright => 'Copyright Violation',
-      ContentFilterReason.falseInformation => 'False Information',
-      ContentFilterReason.csam => 'Child Safety Violation',
-      ContentFilterReason.aiGenerated => 'AI-Generated Content',
-      ContentFilterReason.other => 'Other Policy Violation',
-    };
-  }
-
   String _formatReportDm({
     required ContentFilterReason reason,
     required String messageId,
@@ -264,7 +250,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
   }) {
     final buffer = StringBuffer()
       ..writeln('DM Message Report')
-      ..writeln('Reason: ${_getReasonDisplayName(reason)}')
+      ..writeln('Reason: ${reason.description}')
       ..writeln('Message ID: $messageId');
     if (details.isNotEmpty) {
       buffer.writeln('Details: $details');
