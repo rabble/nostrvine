@@ -280,12 +280,11 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     final bundledSounds =
         bundledSoundsAsync.whenOrNull(
           data: (service) {
-            final count = service.sounds.length;
             return service.sounds.indexed
                 .map(
                   (e) => AudioEvent.fromBundledSound(
                     e.$2,
-                    index: count - 1 - e.$1,
+                    index: e.$1,
                   ),
                 )
                 .toList();
