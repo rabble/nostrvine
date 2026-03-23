@@ -13,7 +13,11 @@ sealed class UserSearchEvent extends Equatable {
 
 /// Request to search for users with a query
 final class UserSearchQueryChanged extends UserSearchEvent {
-  const UserSearchQueryChanged(this.query, {this.fetchResults = true});
+  const UserSearchQueryChanged(
+    this.query, {
+    this.fetchResults = true,
+    this.localContacts = const [],
+  });
 
   /// The search query string
   final String query;
@@ -21,8 +25,12 @@ final class UserSearchQueryChanged extends UserSearchEvent {
   /// Whether to fetch the full result payload instead of just a count.
   final bool fetchResults;
 
+  /// Optional local contacts to merge with network results.
+  /// Network results take precedence; local contacts fill gaps.
+  final List<UserProfile> localContacts;
+
   @override
-  List<Object?> get props => [query, fetchResults];
+  List<Object?> get props => [query, fetchResults, localContacts];
 }
 
 /// Request to clear search results and reset to initial state

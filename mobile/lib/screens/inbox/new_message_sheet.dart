@@ -103,15 +103,16 @@ class _NewMessageSheetState extends State<NewMessageSheet> {
       _searchBloc.add(const UserSearchCleared());
       setState(() => _filteredContacts = _contacts);
     } else {
-      _searchBloc.add(UserSearchQueryChanged(trimmed));
-      setState(() {
-        _filteredContacts = _contacts.where((profile) {
-          final name = profile.bestDisplayName.toLowerCase();
-          final nip05 = (profile.nip05 ?? '').toLowerCase();
-          return name.contains(trimmed.toLowerCase()) ||
-              nip05.contains(trimmed.toLowerCase());
-        }).toList();
-      });
+      final filtered = _contacts.where((profile) {
+        final name = profile.bestDisplayName.toLowerCase();
+        final nip05 = (profile.nip05 ?? '').toLowerCase();
+        return name.contains(trimmed.toLowerCase()) ||
+            nip05.contains(trimmed.toLowerCase());
+      }).toList();
+      _searchBloc.add(
+        UserSearchQueryChanged(trimmed, localContacts: filtered),
+      );
+      setState(() => _filteredContacts = filtered);
     }
   }
 
@@ -149,7 +150,6 @@ class _NewMessageSheetState extends State<NewMessageSheet> {
               child: _searchQuery.isNotEmpty
                   ? _NetworkResults(
                       searchBloc: _searchBloc,
-                      localResults: _filteredContacts,
                       onSelectUser: _selectUser,
                     )
                   : _ContactsList(
@@ -289,49 +289,31 @@ class _ContactsList extends StatelessWidget {
 class _NetworkResults extends StatelessWidget {
   const _NetworkResults({
     required this.searchBloc,
-    required this.localResults,
     required this.onSelectUser,
   });
 
   final UserSearchBloc searchBloc;
-  final List<UserProfile> localResults;
   final ValueChanged<UserProfile> onSelectUser;
-
-  /// O(n+m) merge: network results take precedence, local fills gaps.
-  /// Uses LinkedHashMap to preserve insertion order and dedup by pubkey.
-  List<UserProfile> _mergeResults(List<UserProfile> networkResults) {
-    if (networkResults.isEmpty) return localResults;
-    if (localResults.isEmpty) return networkResults;
-
-    final merged = <String, UserProfile>{};
-    for (final profile in networkResults) {
-      merged[profile.pubkey] = profile;
-    }
-    for (final profile in localResults) {
-      merged.putIfAbsent(profile.pubkey, () => profile);
-    }
-    return merged.values.toList();
-  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<UserSearchBloc, UserSearchState>(
       bloc: searchBloc,
       builder: (context, state) {
-        final merged = _mergeResults(state.results);
+        final results = state.results;
 
         return switch (state.status) {
           // First load with no local matches — show spinner
-          UserSearchStatus.loading when merged.isEmpty => const Center(
+          UserSearchStatus.loading when results.isEmpty => const Center(
             child: CircularProgressIndicator(color: VineTheme.primary),
           ),
           // Loading but we have local/prior results — show them
           UserSearchStatus.loading => _UserResultsList(
-            results: merged,
+            results: results,
             onSelectUser: onSelectUser,
           ),
-          UserSearchStatus.success when merged.isNotEmpty => _UserResultsList(
-            results: merged,
+          UserSearchStatus.success when results.isNotEmpty => _UserResultsList(
+            results: results,
             onSelectUser: onSelectUser,
           ),
           UserSearchStatus.success => Center(
@@ -346,8 +328,8 @@ class _NetworkResults extends StatelessWidget {
             ),
           ),
           // Failure with local fallback
-          UserSearchStatus.failure when merged.isNotEmpty => _UserResultsList(
-            results: merged,
+          UserSearchStatus.failure when results.isNotEmpty => _UserResultsList(
+            results: results,
             onSelectUser: onSelectUser,
           ),
           UserSearchStatus.failure => Center(
@@ -361,11 +343,7 @@ class _NetworkResults extends StatelessWidget {
               ),
             ),
           ),
-          UserSearchStatus.initial => _ContactsList(
-            contacts: localResults,
-            isLoaded: true,
-            onSelectUser: onSelectUser,
-          ),
+          UserSearchStatus.initial => const SizedBox.shrink(),
         };
       },
     );

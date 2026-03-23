@@ -76,11 +76,13 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     // the search to get stuck in loading/empty-success states with no recovery
     // path (the user could never re-trigger the same query).
 
+    final local = event.localContacts;
+
     emit(
       state.copyWith(
         status: UserSearchStatus.loading,
         query: query,
-        results: const [],
+        results: local,
         resultCount: null,
         isLoadingMore: false,
       ),
@@ -105,18 +107,20 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
       _feedTracker?.markFirstVideosReceived('user_search', results.length);
 
+      final merged = _mergeWithLocal(results, local);
+
       emit(
         state.copyWith(
           status: UserSearchStatus.success,
-          results: results,
-          resultCount: results.length,
+          results: merged,
+          resultCount: merged.length,
           offset: results.length,
           hasMore: results.length == _pageSize,
           isLoadingMore: false,
         ),
       );
 
-      _feedTracker?.markFeedDisplayed('user_search', results.length);
+      _feedTracker?.markFeedDisplayed('user_search', merged.length);
     } on Exception catch (e) {
       _feedTracker?.trackFeedError(
         'user_search',
@@ -161,5 +165,24 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
   void _onCleared(UserSearchCleared event, Emitter<UserSearchState> emit) {
     emit(const UserSearchState());
+  }
+
+  /// Merges network results with local contacts, deduplicating by pubkey.
+  /// Network results take precedence; local contacts fill gaps.
+  static List<UserProfile> _mergeWithLocal(
+    List<UserProfile> networkResults,
+    List<UserProfile> localContacts,
+  ) {
+    if (localContacts.isEmpty) return networkResults;
+    if (networkResults.isEmpty) return localContacts;
+
+    final merged = <String, UserProfile>{};
+    for (final profile in networkResults) {
+      merged[profile.pubkey] = profile;
+    }
+    for (final profile in localContacts) {
+      merged.putIfAbsent(profile.pubkey, () => profile);
+    }
+    return merged.values.toList();
   }
 }
