@@ -7431,6 +7431,119 @@ void main() {
         );
       });
     });
+
+    group('relay fallback DB persistence', () {
+      late MockNostrClient mockNostrClient;
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+      late MockVideoLocalStorage mockLocalStorage;
+
+      setUp(() {
+        mockNostrClient = MockNostrClient();
+        when(() => mockNostrClient.publicKey).thenReturn('user-pubkey');
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getRecentVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenThrow(const FunnelcakeException('unavailable'));
+        when(
+          () => mockFunnelcakeClient.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenThrow(const FunnelcakeException('unavailable'));
+        mockLocalStorage = MockVideoLocalStorage();
+        when(
+          () => mockLocalStorage.saveFeedResponseBody(any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.getFeedResponseBody(any()),
+        ).thenAnswer((_) async => null);
+      });
+
+      test('getNewVideos relay path persists to DB', () async {
+        final event = _createVideoEvent(
+          id: 'relay-video',
+          pubkey: 'test-pubkey',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repo.getNewVideos();
+
+        expect(result, hasLength(1));
+        verify(
+          () => mockLocalStorage.saveFeedResponseBody('latest', any()),
+        ).called(1);
+      });
+
+      test(
+        'getNewVideos relay path does not persist paginated results',
+        () async {
+          final event = _createVideoEvent(
+            id: 'relay-video',
+            pubkey: 'test-pubkey',
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1704067200,
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [event]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+          );
+
+          await repo.getNewVideos(until: 1704067200);
+
+          verifyNever(
+            () => mockLocalStorage.saveFeedResponseBody(any(), any()),
+          );
+        },
+      );
+
+      test('getHomeFeedVideos relay path persists to DB', () async {
+        final event = _createVideoEvent(
+          id: 'relay-home-video',
+          pubkey: 'author-1',
+          videoUrl: 'https://example.com/home.mp4',
+          createdAt: 1704067200,
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repo.getHomeFeedVideos(
+          authors: ['author-1'],
+          userPubkey: 'user-pubkey',
+        );
+
+        expect(result.videos, hasLength(1));
+        verify(
+          () => mockLocalStorage.saveFeedResponseBody('home', any()),
+        ).called(1);
+      });
+    });
   });
 }
 

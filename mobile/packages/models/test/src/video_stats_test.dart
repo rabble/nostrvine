@@ -1508,5 +1508,126 @@ void main() {
         );
       });
     });
+
+    group('fromVideoEvent', () {
+      test('round-trips correctly through toJson and fromJson', () {
+        final videoEvent = VideoEvent(
+          id: 'event-abc123',
+          pubkey: 'pubkey-def456',
+          createdAt: 1700000000,
+          content: 'A test video description',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          title: 'Test Title',
+          videoUrl: 'https://example.com/video.mp4',
+          thumbnailUrl: 'https://example.com/thumb.jpg',
+          vineId: 'vine-dtag',
+          publishedAt: '1699999000',
+          sha256: 'abc123hash',
+          authorName: 'Test Author',
+          authorAvatar: 'https://example.com/avatar.jpg',
+          blurhash: 'LEHV6nWB2yk8',
+          dimensions: '1080x1920',
+          originalLikes: 42,
+          originalComments: 7,
+          originalReposts: 3,
+          originalLoops: 1234,
+          rawTags: const {'platform': 'vine'},
+          contentWarningLabels: const ['adult'],
+          moderationLabels: const ['nudity'],
+          textTrackRef: '34236:abc:subtitles',
+          textTrackContent: 'WEBVTT\n\n00:00.000 --> 00:05.000\nHello',
+        );
+
+        final stats = VideoStats.fromVideoEvent(videoEvent);
+
+        expect(stats.id, equals('event-abc123'));
+        expect(stats.pubkey, equals('pubkey-def456'));
+        expect(stats.kind, equals(34236));
+        expect(stats.dTag, equals('vine-dtag'));
+        expect(stats.title, equals('Test Title'));
+        expect(stats.description, equals('A test video description'));
+        expect(stats.videoUrl, equals('https://example.com/video.mp4'));
+        expect(stats.thumbnail, equals('https://example.com/thumb.jpg'));
+        expect(stats.sha256, equals('abc123hash'));
+        expect(stats.authorName, equals('Test Author'));
+        expect(stats.authorAvatar, equals('https://example.com/avatar.jpg'));
+        expect(stats.blurhash, equals('LEHV6nWB2yk8'));
+        expect(stats.dimensions, equals('1080x1920'));
+        expect(stats.reactions, equals(42));
+        expect(stats.comments, equals(7));
+        expect(stats.reposts, equals(3));
+        expect(stats.loops, equals(1234));
+        expect(stats.engagementScore, equals(0));
+        expect(stats.publishedAt, equals(1699999000));
+        expect(stats.contentWarningLabels, equals(['adult']));
+        expect(stats.moderationLabels, equals(['nudity']));
+        expect(stats.textTrackRef, equals('34236:abc:subtitles'));
+        expect(
+          stats.textTrackContent,
+          equals('WEBVTT\n\n00:00.000 --> 00:05.000\nHello'),
+        );
+
+        // Round-trip: fromVideoEvent → toJson → fromJson → toVideoEvent
+        final json = stats.toJson();
+        final restored = VideoStats.fromJson(json);
+        final restoredEvent = restored.toVideoEvent();
+
+        expect(restoredEvent.id, equals(videoEvent.id));
+        expect(restoredEvent.pubkey, equals(videoEvent.pubkey));
+        expect(restoredEvent.title, equals(videoEvent.title));
+        expect(restoredEvent.videoUrl, equals(videoEvent.videoUrl));
+        expect(restoredEvent.thumbnailUrl, equals(videoEvent.thumbnailUrl));
+        expect(restoredEvent.content, equals(videoEvent.content));
+        expect(restoredEvent.sha256, equals(videoEvent.sha256));
+        expect(restoredEvent.authorName, equals(videoEvent.authorName));
+        expect(restoredEvent.authorAvatar, equals(videoEvent.authorAvatar));
+        expect(restoredEvent.blurhash, equals(videoEvent.blurhash));
+        expect(restoredEvent.dimensions, equals(videoEvent.dimensions));
+        expect(restoredEvent.originalLikes, equals(videoEvent.originalLikes));
+        expect(
+          restoredEvent.originalComments,
+          equals(videoEvent.originalComments),
+        );
+        expect(
+          restoredEvent.originalReposts,
+          equals(videoEvent.originalReposts),
+        );
+        expect(restoredEvent.originalLoops, equals(videoEvent.originalLoops));
+      });
+
+      test('handles null optional fields', () {
+        final videoEvent = VideoEvent(
+          id: 'minimal-event',
+          pubkey: 'minimal-pubkey',
+          createdAt: 1700000000,
+          content: '',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+        );
+
+        final stats = VideoStats.fromVideoEvent(videoEvent);
+
+        expect(stats.id, equals('minimal-event'));
+        expect(stats.pubkey, equals('minimal-pubkey'));
+        expect(stats.kind, equals(34236));
+        expect(stats.dTag, isEmpty);
+        expect(stats.title, isEmpty);
+        expect(stats.description, isNull);
+        expect(stats.thumbnail, isEmpty);
+        expect(stats.videoUrl, isEmpty);
+        expect(stats.sha256, isNull);
+        expect(stats.authorName, isNull);
+        expect(stats.authorAvatar, isNull);
+        expect(stats.blurhash, isNull);
+        expect(stats.dimensions, isNull);
+        expect(stats.reactions, equals(0));
+        expect(stats.comments, equals(0));
+        expect(stats.reposts, equals(0));
+        expect(stats.engagementScore, equals(0));
+        expect(stats.loops, isNull);
+        expect(stats.publishedAt, isNull);
+        expect(stats.textTrackRef, isNull);
+        expect(stats.textTrackContent, isNull);
+      });
+    });
   });
 }

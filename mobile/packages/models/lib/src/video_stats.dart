@@ -46,6 +46,43 @@ class VideoStats {
     @Deprecated('Use moderationLabels') List<String>? contentLabels,
   }) : moderationLabels = contentLabels ?? moderationLabels;
 
+  /// Creates a [VideoStats] from a [VideoEvent].
+  ///
+  /// This allows relay-fetched videos to be serialized to the same JSON
+  /// format used by the DB feed cache, so both Funnelcake and relay results
+  /// can be persisted and read back through the same path.
+  factory VideoStats.fromVideoEvent(VideoEvent video) {
+    return VideoStats(
+      id: video.id,
+      pubkey: video.pubkey,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(video.createdAt * 1000),
+      kind: 34236,
+      dTag: video.vineId ?? '',
+      title: video.title ?? '',
+      description: video.content.isNotEmpty ? video.content : null,
+      thumbnail: video.thumbnailUrl ?? '',
+      videoUrl: video.videoUrl ?? '',
+      sha256: video.sha256,
+      authorName: video.authorName,
+      authorAvatar: video.authorAvatar,
+      blurhash: video.blurhash,
+      dimensions: video.dimensions,
+      reactions: video.originalLikes ?? 0,
+      comments: video.originalComments ?? 0,
+      reposts: video.originalReposts ?? 0,
+      engagementScore: 0,
+      loops: video.originalLoops,
+      publishedAt: video.publishedAt != null
+          ? int.tryParse(video.publishedAt!)
+          : null,
+      rawTags: video.rawTags,
+      contentWarningLabels: video.contentWarningLabels,
+      moderationLabels: video.moderationLabels,
+      textTrackRef: video.textTrackRef,
+      textTrackContent: video.textTrackContent,
+    );
+  }
+
   /// Creates a [VideoStats] from JSON response.
   ///
   /// Handles the nested format returned by Funnelcake API:
