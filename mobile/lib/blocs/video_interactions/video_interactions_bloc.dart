@@ -289,6 +289,10 @@ class VideoInteractionsBloc
     VideoInteractionsCommentCountUpdated event,
     Emitter<VideoInteractionsState> emit,
   ) {
+    _commentsRepository.updateCachedCommentCount(
+      _eventId,
+      event.commentCount,
+    );
     emit(state.copyWith(commentCount: event.commentCount));
   }
 }

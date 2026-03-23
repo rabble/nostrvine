@@ -1159,6 +1159,52 @@ void main() {
           throwsA(isA<CountCommentsFailedException>()),
         );
       });
+
+      test('returns cached count on second call without relay query', () async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 42),
+        );
+
+        final first = await repository.getCommentsCount(testRootEventId);
+        final second = await repository.getCommentsCount(testRootEventId);
+
+        expect(first, equals(42));
+        expect(second, equals(42));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
+
+      test('updateCachedCommentCount overrides cached value', () async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 5),
+        );
+
+        await repository.getCommentsCount(testRootEventId);
+        repository.updateCachedCommentCount(testRootEventId, 10);
+        final cached = await repository.getCommentsCount(testRootEventId);
+
+        expect(cached, equals(10));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
+
+      test('cache is incremented after postComment', () async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 5),
+        );
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (inv) async => inv.positionalArguments.first as Event,
+        );
+
+        await repository.getCommentsCount(testRootEventId);
+        await repository.postComment(
+          content: 'hello',
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+        );
+        final cached = await repository.getCommentsCount(testRootEventId);
+
+        expect(cached, equals(6));
+      });
     });
 
     group('deleteComment', () {
