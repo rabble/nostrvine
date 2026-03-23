@@ -6,10 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 
 /// Inbox page (DM conversation list + notifications).
@@ -30,6 +33,10 @@ class InboxPage extends ConsumerWidget {
     final dmRepository = ref.watch(dmRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final reportingService = ref.watch(contentReportingServiceProvider).value;
+    final currentUserPubkey =
+        ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -39,6 +46,7 @@ class InboxPage extends ConsumerWidget {
             create: (_) => ConversationListBloc(
               dmRepository: dmRepository,
               followRepository: followRepository,
+              contentBlocklistService: blocklistService,
             )..add(const ConversationListStarted()),
           ),
           BlocProvider(
@@ -49,6 +57,17 @@ class InboxPage extends ConsumerWidget {
               followRepository: followRepository,
               contentBlocklistService: blocklistService,
             )..add(const MyFollowingListLoadRequested()),
+          ),
+          BlocProvider(
+            create: (_) => ConversationMuteCubit(prefs: prefs),
+          ),
+          BlocProvider(
+            create: (_) => ConversationActionsCubit(
+              contentReportingService: reportingService,
+              contentBlocklistService: blocklistService,
+              dmRepository: dmRepository,
+              currentUserPubkey: currentUserPubkey,
+            ),
           ),
         ],
         child: const InboxView(),

@@ -277,7 +277,7 @@ class AnalyticsTrending extends _$AnalyticsTrending {
 
     try {
       final client = ref.read(funnelcakeApiClientProvider);
-      final stats = await client.getTrendingVideos(limit: 100);
+      final stats = await client.getTrendingVideos();
       final videos = stats.map((v) => v.toVideoEvent()).toList();
 
       // Check if provider is still mounted after async gap
@@ -410,7 +410,7 @@ class AnalyticsPopular extends _$AnalyticsPopular {
     try {
       final client = ref.read(funnelcakeApiClientProvider);
       // Popular uses the trending videos API
-      final stats = await client.getTrendingVideos(limit: 100);
+      final stats = await client.getTrendingVideos();
       final videos = stats.map((v) => v.toVideoEvent()).toList();
 
       // Update state with new popular videos

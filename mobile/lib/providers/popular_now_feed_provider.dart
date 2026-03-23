@@ -95,7 +95,7 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
 
       try {
-        final stats = await client.getRecentVideos(limit: 100);
+        final stats = await client.getRecentVideos();
         final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
@@ -150,7 +150,7 @@ class PopularNowFeed extends _$PopularNowFeed {
       subscribe: (service) async {
         await service.subscribeToVideoFeed(
           subscriptionType: SubscriptionType.popularNow,
-          limit: 100,
+          limit: AppConstants.paginationBatchSize,
           sortBy: VideoSortField.createdAt, // Newest videos first
         );
       },
@@ -232,10 +232,7 @@ class PopularNowFeed extends _$PopularNowFeed {
         );
 
         // Use cursor (before parameter) for pagination
-        final stats = await client.getRecentVideos(
-          limit: 100,
-          before: _nextCursor,
-        );
+        final stats = await client.getRecentVideos(before: _nextCursor);
         final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
@@ -396,7 +393,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     if (_usingRestApi) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
-        final stats = await client.getRecentVideos(limit: 100);
+        final stats = await client.getRecentVideos();
         final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         // Check if provider is still mounted after async gap
@@ -447,7 +444,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     try {
       await videoEventService.subscribeToVideoFeed(
         subscriptionType: SubscriptionType.popularNow,
-        limit: 100,
+        limit: AppConstants.paginationBatchSize,
         sortBy: VideoSortField.createdAt,
         force: true,
       );

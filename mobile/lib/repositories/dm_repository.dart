@@ -190,7 +190,11 @@ class DmRepository {
     if (_giftWrapSubscription != null || _disposed || !isInitialized) return;
 
     final filter = nostr_filter.Filter(
-      kinds: [EventKind.giftWrap, EventKind.directMessage],
+      kinds: [
+        EventKind.giftWrap,
+        EventKind.directMessage,
+        EventKind.eventDeletion,
+      ],
       p: [_userPubkey],
     );
 
@@ -267,7 +271,11 @@ class DmRepository {
         // Instead, fetch the most recent events and rely on dedup to skip
         // already-processed ones.
         final filter = nostr_filter.Filter(
-          kinds: [EventKind.giftWrap, EventKind.directMessage],
+          kinds: [
+            EventKind.giftWrap,
+            EventKind.directMessage,
+            EventKind.eventDeletion,
+          ],
           p: [_userPubkey],
           limit: 20,
         );
@@ -298,10 +306,56 @@ class DmRepository {
 
   /// Routes an incoming event to the correct handler based on kind.
   Future<void> _handleIncomingEvent(Event event) async {
-    if (event.kind == EventKind.directMessage) {
+    if (event.kind == EventKind.eventDeletion) {
+      await _handleDeletionEvent(event);
+    } else if (event.kind == EventKind.directMessage) {
       await _handleNip04Event(event);
     } else {
       await _handleGiftWrapEvent(event);
+    }
+  }
+
+  /// Handles an incoming NIP-09 kind 5 deletion event.
+  ///
+  /// For each `e` tag, validates that the event author matches the original
+  /// message sender (NIP-09 requirement) before soft-deleting.
+  Future<void> _handleDeletionEvent(Event deletionEvent) async {
+    try {
+      for (final tag in deletionEvent.tags) {
+        if (tag.length < 2 || tag[0] != 'e') continue;
+        final rumorId = tag[1];
+
+        final row = await _directMessagesDao.getMessageById(rumorId);
+        if (row == null) continue;
+
+        // NIP-09: only the original author may delete.
+        if (row.senderPubkey != deletionEvent.pubkey) {
+          Log.debug(
+            'Ignoring kind 5 for $rumorId: author mismatch '
+            '(event=${deletionEvent.pubkey}, '
+            'sender=${row.senderPubkey})',
+            category: LogCategory.system,
+          );
+          continue;
+        }
+
+        if (row.isDeleted) continue; // Already processed.
+
+        await _directMessagesDao.markMessageDeleted(rumorId);
+        await _refreshConversationPreview(row.conversationId);
+
+        Log.debug(
+          'Applied kind 5 deletion for message $rumorId',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to process kind 5 event: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -756,6 +810,145 @@ class DmRepository {
     }
 
     return results;
+  }
+
+  // -------------------------------------------------------------------------
+  // Delete (NIP-09 Kind 5)
+  // -------------------------------------------------------------------------
+
+  /// Delete a sent message for everyone via NIP-09 kind 5.
+  ///
+  /// Publishes a kind 5 event referencing the rumor event ID, then
+  /// soft-deletes the local row so the gift-wrap dedup continues to work.
+  ///
+  /// Only the sender of [rumorId] may delete it (NIP-09 requirement).
+  ///
+  /// Throws [StateError] if not initialized.
+  /// Throws [ArgumentError] if the message doesn't exist or the current
+  /// user is not the sender.
+  Future<void> deleteMessageForEveryone(String rumorId) async {
+    _assertInitialized();
+
+    final row = await _directMessagesDao.getMessageById(rumorId);
+    if (row == null) {
+      throw ArgumentError.value(
+        rumorId,
+        'rumorId',
+        'message not found',
+      );
+    }
+    if (row.senderPubkey != _userPubkey) {
+      throw ArgumentError.value(
+        rumorId,
+        'rumorId',
+        'only the sender can delete a message',
+      );
+    }
+
+    // Resolve conversation participants so the kind 5 event carries `p` tags.
+    // This ensures the relay subscription (filtered by `#p`) delivers the
+    // deletion to the other party.
+    final conversation = await _conversationsDao.getConversation(
+      row.conversationId,
+    );
+    final pTags = <List<String>>[];
+    if (conversation != null) {
+      final pubkeys =
+          (jsonDecode(conversation.participantPubkeys) as List<dynamic>)
+              .cast<String>();
+      for (final pk in pubkeys) {
+        if (pk != _userPubkey) {
+          pTags.add(['p', pk]);
+        }
+      }
+    }
+
+    // Build and sign the kind 5 event (NIP-09).
+    final event = Event(
+      _userPubkey,
+      EventKind.eventDeletion,
+      [
+        ['e', rumorId],
+        ['k', '14'],
+        ...pTags,
+      ],
+      '',
+    );
+
+    final signer = _signer!;
+    final signed = await signer.signEvent(event);
+    if (signed == null) {
+      throw StateError('Failed to sign kind 5 deletion event');
+    }
+
+    // Publish to relays (best-effort — client-side processing is primary).
+    await _nostrClient.publishEvent(signed);
+
+    // Soft-delete locally so the UI updates immediately.
+    await _directMessagesDao.markMessageDeleted(rumorId);
+
+    // Update conversation preview if the deleted message was the latest.
+    await _refreshConversationPreview(row.conversationId);
+
+    Log.info(
+      'Deleted message $rumorId via kind 5',
+      category: LogCategory.system,
+    );
+  }
+
+  /// Refreshes the conversation preview after a message is deleted.
+  ///
+  /// If the deleted message was the last message shown in the conversation
+  /// list, the preview falls back to the next most recent non-deleted
+  /// message.
+  Future<void> _refreshConversationPreview(String conversationId) async {
+    final pubkey = _userPubkey.isEmpty ? null : _userPubkey;
+    final remaining = await _directMessagesDao.getMessagesForConversation(
+      conversationId,
+      limit: 1,
+      ownerPubkey: pubkey,
+    );
+
+    final conversation = await _conversationsDao.getConversation(
+      conversationId,
+    );
+    if (conversation == null) return;
+
+    if (remaining.isEmpty) {
+      // All messages deleted — clear the preview.
+      await _conversationsDao.upsertConversation(
+        id: conversationId,
+        participantPubkeys: conversation.participantPubkeys,
+        isGroup: conversation.isGroup,
+        createdAt: conversation.createdAt,
+        // Explicit nulls clear the previous preview after deletion.
+        lastMessageContent: null, // ignore: avoid_redundant_argument_values
+        lastMessageTimestamp: null, // ignore: avoid_redundant_argument_values
+        lastMessageSenderPubkey:
+            null, // ignore: avoid_redundant_argument_values
+        currentUserHasSent: conversation.currentUserHasSent,
+        ownerPubkey: conversation.ownerPubkey,
+        dmProtocol: conversation.dmProtocol,
+      );
+    } else {
+      final latest = remaining.first;
+      final previewContent = latest.messageKind == EventKind.fileMessage
+          ? _filePreviewText(latest.fileType)
+          : latest.content;
+
+      await _conversationsDao.upsertConversation(
+        id: conversationId,
+        participantPubkeys: conversation.participantPubkeys,
+        isGroup: conversation.isGroup,
+        createdAt: conversation.createdAt,
+        lastMessageContent: previewContent,
+        lastMessageTimestamp: latest.createdAt,
+        lastMessageSenderPubkey: latest.senderPubkey,
+        currentUserHasSent: conversation.currentUserHasSent,
+        ownerPubkey: conversation.ownerPubkey,
+        dmProtocol: conversation.dmProtocol,
+      );
+    }
   }
 
   // -------------------------------------------------------------------------

@@ -65,7 +65,7 @@ void main() {
       verify(
         () => mockService.subscribeToVideoFeed(
           subscriptionType: SubscriptionType.popularNow,
-          limit: 100,
+          limit: 50,
           sortBy: any(that: isNotNull, named: 'sortBy'),
           force: true, // CRITICAL: Must force refresh to bypass caching
         ),
@@ -90,7 +90,7 @@ void main() {
         verify(
           () => mockService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.popularNow,
-            limit: 100,
+            limit: 50,
             sortBy: any(that: isNotNull, named: 'sortBy'),
             force: true, // CRITICAL: Must force refresh to bypass caching
           ),

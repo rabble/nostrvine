@@ -81,6 +81,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get messages for a conversation, newest first.
+  ///
+  /// Excludes soft-deleted messages (NIP-09 kind 5).
   Future<List<DirectMessageRow>> getMessagesForConversation(
     String conversationId, {
     int? limit,
@@ -91,6 +93,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ..where(
         (t) =>
             t.conversationId.equals(conversationId) &
+            t.isDeleted.equals(false) &
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
@@ -104,6 +107,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Watch messages for a conversation (reactive stream), newest first.
+  ///
+  /// Excludes soft-deleted messages (NIP-09 kind 5).
   Stream<List<DirectMessageRow>> watchMessagesForConversation(
     String conversationId, {
     int? limit,
@@ -113,6 +118,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ..where(
         (t) =>
             t.conversationId.equals(conversationId) &
+            t.isDeleted.equals(false) &
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
@@ -123,6 +129,29 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ]);
     if (limit != null) query.limit(limit);
     return query.watch();
+  }
+
+  /// Soft-delete a message by rumor event ID (NIP-09 kind 5).
+  ///
+  /// Sets `is_deleted = true` instead of removing the row so the
+  /// `gift_wrap_id` remains for deduplication.
+  ///
+  /// Returns `true` if the row was updated, `false` if [rumorId] was not
+  /// found.
+  Future<bool> markMessageDeleted(String rumorId) async {
+    final rows =
+        await (update(directMessages)..where((t) => t.id.equals(rumorId)))
+            .write(const DirectMessagesCompanion(isDeleted: Value(true)));
+    return rows > 0;
+  }
+
+  /// Look up a message by rumor event ID.
+  ///
+  /// Used to validate sender pubkey before applying a kind 5 deletion.
+  Future<DirectMessageRow?> getMessageById(String id) {
+    return (select(
+      directMessages,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Check if a gift wrap event has already been processed (dedup).
