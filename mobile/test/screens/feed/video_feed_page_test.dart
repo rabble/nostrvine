@@ -164,6 +164,42 @@ void main() {
 
       verify(() => videoFeedController.setActive(active: true)).called(1);
     });
+
+    testWidgets(
+      'does not resume when videos load while overlay is open',
+      (tester) async {
+        // Start with loading state
+        whenListen(
+          videoFeedBloc,
+          Stream<VideoFeedState>.fromIterable([
+            const VideoFeedState(
+              status: VideoFeedStatus.success,
+            ),
+          ]),
+          initialState: const VideoFeedState(),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final element = tester.element(find.byType(VideoFeedView));
+        final container = ProviderScope.containerOf(element);
+
+        // Open overlay while BLoC is still loading
+        container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+        await tester.pump();
+
+        clearInteractions(videoFeedController);
+
+        // BLoC transitions to success (videos arrive)
+        await tester.pump();
+
+        // Controller must NOT be re-activated — overlay is still open
+        verifyNever(
+          () => videoFeedController.setActive(active: true),
+        );
+      },
+    );
   });
 
   group('VideoFeedView tab switch integration', () {
