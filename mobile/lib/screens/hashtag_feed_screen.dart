@@ -16,7 +16,6 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:rxdart/rxdart.dart';
 
 class HashtagFeedScreen extends ConsumerStatefulWidget {
@@ -372,85 +371,15 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           );
         }
 
-        // Use grid view when embedded (in explore), full-screen list when standalone
-        if (widget.embedded) {
-          return ComposableVideoGrid(
-            videos: videos,
-            useMasonryLayout: true,
-            onVideoTap:
-                widget.onVideoTap ??
-                (videoList, index) {
-                  _navigateToFullscreenFeed(context, videoList, index);
-                },
-            onRefresh: _loadHashtagVideos,
-          );
-        }
-
-        // Standalone mode: full-screen scrollable list
-        final isLoadingMore = isLoadingHashtag;
-
-        return RefreshIndicator(
-          semanticsLabel: 'searching for more videos',
-          color: VineTheme.onPrimary,
-          backgroundColor: VineTheme.vineGreen,
+        return ComposableVideoGrid(
+          videos: videos,
+          useMasonryLayout: true,
+          onVideoTap:
+              widget.onVideoTap ??
+              (videoList, index) {
+                _navigateToFullscreenFeed(context, videoList, index);
+              },
           onRefresh: _loadHashtagVideos,
-          child: ListView.builder(
-            // Add 1 for loading indicator if still loading
-            itemCount: videos.length + (isLoadingMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Show loading indicator as last item
-              if (index == videos.length) {
-                return Container(
-                  height: MediaQuery.of(context).size.height,
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Getting more videos about #${widget.hashtag}...',
-                        style: const TextStyle(
-                          color: VineTheme.primaryText,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Please wait while we fetch from relays',
-                        style: TextStyle(
-                          color: VineTheme.secondaryText,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              final video = videos[index];
-              return GestureDetector(
-                onTap: () {
-                  _navigateToFullscreenFeed(context, videos, index);
-                },
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height,
-                  width: double.infinity,
-                  child: VideoFeedItem(
-                    video: video,
-                    index: index,
-                    contextTitle: '#${widget.hashtag}',
-                    forceShowOverlay: true,
-                    trafficSource: ViewTrafficSource.search,
-                    sourceDetail: widget.hashtag,
-                  ),
-                ),
-              );
-            },
-          ),
         );
       },
     );
@@ -466,7 +395,6 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         title: '#${widget.hashtag}',
         showBackButton: true,
         onBackPressed: context.pop,
-        backgroundColor: VineTheme.vineGreen,
       ),
       body: body,
     );
