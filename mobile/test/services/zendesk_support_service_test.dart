@@ -535,7 +535,7 @@ void main() {
     test(
       'createTicket without auth context still works (no refresh attempt)',
       () async {
-        var methodCalls = <String>[];
+        final methodCalls = <String>[];
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(channel, (MethodCall call) async {
@@ -568,7 +568,7 @@ void main() {
     test(
       'createTicket with auth context attempts JWT refresh before SDK call',
       () async {
-        var methodCalls = <String>[];
+        final methodCalls = <String>[];
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(channel, (MethodCall call) async {
@@ -609,7 +609,7 @@ void main() {
     );
 
     test('showNewTicketScreen without auth context skips refresh', () async {
-      var methodCalls = <String>[];
+      final methodCalls = <String>[];
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall call) async {
@@ -634,7 +634,7 @@ void main() {
     });
 
     test('showTicketListScreen without auth context skips refresh', () async {
-      var methodCalls = <String>[];
+      final methodCalls = <String>[];
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall call) async {
