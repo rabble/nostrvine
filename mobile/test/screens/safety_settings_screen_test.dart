@@ -27,12 +27,12 @@ class MockContentBlocklistService extends Mock
   Set<String> get runtimeBlockedUsers => Set.unmodifiable(_runtimeBlocklist);
 
   @override
-  void blockUser(String pubkey, {String? ourPubkey}) {
+  Future<void> blockUser(String pubkey, {String? ourPubkey}) async {
     _runtimeBlocklist.add(pubkey);
   }
 
   @override
-  void unblockUser(String pubkey) {
+  Future<void> unblockUser(String pubkey) async {
     _runtimeBlocklist.remove(pubkey);
   }
 

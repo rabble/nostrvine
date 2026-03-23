@@ -8,14 +8,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
 import 'package:openvine/screens/inbox/new_message_sheet.dart';
+import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
@@ -38,6 +42,15 @@ class _InboxViewState extends ConsumerState<InboxView> {
 
   @override
   Widget build(BuildContext context) {
+    // Re-filter conversation list when blocklist changes.
+    ref.listen(blocklistVersionProvider, (previous, current) {
+      if (previous != null && current > previous) {
+        context.read<ConversationListBloc>().add(
+          const ConversationListBlocklistChanged(),
+        );
+      }
+    });
+
     // Watch notification unread count for the badge.
     final notificationCount = ref.watch(relayNotificationUnreadCountProvider);
 
@@ -220,7 +233,7 @@ class _ConversationListContent extends StatelessWidget {
   }
 }
 
-class _ConversationList extends StatelessWidget {
+class _ConversationList extends ConsumerWidget {
   const _ConversationList({
     required this.currentUserPubkey,
   });
@@ -230,7 +243,7 @@ class _ConversationList extends StatelessWidget {
   final String currentUserPubkey;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final conversations = context
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
@@ -307,6 +320,11 @@ class _ConversationList extends StatelessWidget {
             conversation: conversation,
             currentUserPubkey: currentUserPubkey,
             onTap: () => _onConversationTapped(context, conversation),
+            onLongPress: () => _onConversationLongPressed(
+              context,
+              ref,
+              conversation,
+            ),
           );
         },
       ),
@@ -331,5 +349,128 @@ class _ConversationList extends StatelessWidget {
         .toList();
 
     _pushConversation(context, conversation.id, otherPubkeys);
+  }
+
+  Future<void> _onConversationLongPressed(
+    BuildContext context,
+    WidgetRef ref,
+    DmConversation conversation,
+  ) async {
+    final otherPubkey = conversation.participantPubkeys.firstWhere(
+      (pk) => pk != currentUserPubkey,
+      orElse: () => conversation.participantPubkeys.first,
+    );
+
+    final profile = await ref.read(
+      fetchUserProfileProvider(otherPubkey).future,
+    );
+    final displayName = profile?.bestDisplayName ?? 'user';
+
+    if (!context.mounted) return;
+
+    final muteCubit = context.read<ConversationMuteCubit>();
+    final isMuted = muteCubit.state.isMuted(conversation.id);
+
+    final actionsCubit = context.read<ConversationActionsCubit>();
+    final isBlocked = actionsCubit.isBlocked(otherPubkey);
+
+    final action = await ConversationActionsSheet.show(
+      context,
+      displayName: displayName,
+      isMuted: isMuted,
+      isBlocked: isBlocked,
+    );
+
+    if (action == null || !context.mounted) return;
+
+    switch (action) {
+      case ConversationAction.toggleMute:
+        final nowMuted = await muteCubit.toggleMute(conversation.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                nowMuted ? 'Conversation muted' : 'Conversation unmuted',
+              ),
+            ),
+          );
+        }
+
+      case ConversationAction.report:
+        final reported = await actionsCubit.reportUser(otherPubkey);
+        if (context.mounted && reported) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Reported $displayName')),
+          );
+        }
+
+      case ConversationAction.block:
+        if (isBlocked) {
+          actionsCubit.unblockUser(otherPubkey);
+        } else {
+          actionsCubit.blockUser(otherPubkey);
+        }
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isBlocked ? 'Unblocked $displayName' : 'Blocked $displayName',
+              ),
+            ),
+          );
+        }
+
+      case ConversationAction.remove:
+        if (!context.mounted) return;
+        final confirmed = await _confirmRemove(context, displayName);
+        if (confirmed && context.mounted) {
+          final removed = await actionsCubit.removeConversation(
+            conversation.id,
+          );
+          if (context.mounted && removed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Removed conversation')),
+            );
+          }
+        }
+    }
+  }
+
+  Future<bool> _confirmRemove(
+    BuildContext context,
+    String displayName,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: Text(
+          'Remove conversation?',
+          style: VineTheme.titleLargeFont(),
+        ),
+        content: Text(
+          'This will delete your conversation with $displayName. '
+          'This action cannot be undone.',
+          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Remove',
+              style: VineTheme.bodyMediumFont(color: VineTheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 }

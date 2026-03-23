@@ -35,6 +35,7 @@ class PooledVideoFeed extends StatefulWidget {
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.onScrollOffsetChanged,
+    this.maxLoopDuration,
     super.key,
   });
 
@@ -70,6 +71,9 @@ class PooledVideoFeed extends StatefulWidget {
 
   /// How many videos from the end should trigger [onNearEnd].
   final int nearEndThreshold;
+
+  /// Maximum playback duration before automatically seeking back to zero.
+  final Duration? maxLoopDuration;
 
   /// Called continuously as the feed scrolls with the fractional page position.
   ///
@@ -125,6 +129,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
         initialIndex: _currentIndex,
         preloadAhead: widget.preloadAhead,
         preloadBehind: widget.preloadBehind,
+        maxLoopDuration: widget.maxLoopDuration,
       );
       _ownsController = true;
     }
@@ -212,6 +217,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
         initialIndex: _currentIndex,
         preloadAhead: widget.preloadAhead,
         preloadBehind: widget.preloadBehind,
+        maxLoopDuration: widget.maxLoopDuration,
       );
       _videoCount = _controller.videoCount;
       _controller.addListener(_onControllerChanged);

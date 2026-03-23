@@ -12,10 +12,6 @@ import 'package:profile_repository/profile_repository.dart';
 part 'other_profile_event.dart';
 part 'other_profile_state.dart';
 
-/// Callback to increment the blocklist version provider,
-/// notifying other BLoCs that the blocklist has changed.
-typedef BlocklistVersionIncrementer = void Function();
-
 /// BLoC for managing the state of viewing another user's profile.
 ///
 /// Implements the cache+fresh pattern:
@@ -35,12 +31,10 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     required ContentBlocklistService contentBlocklistService,
     required String currentUserPubkey,
     required FollowRepository followRepository,
-    BlocklistVersionIncrementer? onBlocklistChanged,
   }) : _profileRepository = profileRepository,
        _blocklistService = contentBlocklistService,
        _currentUserPubkey = currentUserPubkey,
        _followRepository = followRepository,
-       _onBlocklistChanged = onBlocklistChanged,
        super(const OtherProfileInitial()) {
     on<OtherProfileLoadRequested>(_onLoadRequested);
     on<OtherProfileRefreshRequested>(_onRefreshRequested);
@@ -52,7 +46,6 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   final ContentBlocklistService _blocklistService;
   final String _currentUserPubkey;
   final FollowRepository _followRepository;
-  final BlocklistVersionIncrementer? _onBlocklistChanged;
 
   /// The pubkey of the profile being viewed.
   final String pubkey;
@@ -142,7 +135,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     OtherProfileBlockRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
-    _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
+    await _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
 
     // Unfollow the user if we're currently following them
     if (_followRepository.isFollowing(pubkey)) {
@@ -157,15 +150,12 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         );
       }
     }
-
-    _onBlocklistChanged?.call();
   }
 
   Future<void> _onUnblockRequested(
     OtherProfileUnblockRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
-    _blocklistService.unblockUser(pubkey);
-    _onBlocklistChanged?.call();
+    await _blocklistService.unblockUser(pubkey);
   }
 }

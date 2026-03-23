@@ -35,7 +35,7 @@ final videosForProfileRouteProvider = Provider<AsyncValue<VideoFeedState>>((
 
   // Subscribe (service manages lifecycle internally; this is idempotent)
   final svc = ref.watch(videoEventServiceProvider);
-  svc.subscribeToUserVideos(hex, limit: 100);
+  svc.subscribeToUserVideos(hex);
   Log.info(
     'ProfileFeedProvider: subscribed to user=$hex',
     name: 'ProfileFeedProvider',

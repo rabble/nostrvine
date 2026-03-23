@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -286,17 +287,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _lastPooledVideos = state.pooledVideos;
   }
 
-  /// Handles seek commands from the BLoC.
-  void _handleSeekCommand(SeekCommand command) {
-    final controller = _controller;
-    if (controller == null) return;
-
-    controller.seek(command.position);
-    context.read<FullscreenFeedBloc>().add(
-      const FullscreenFeedSeekCommandHandled(),
-    );
-  }
-
   void _triggerLoadMore() {
     context.read<FullscreenFeedBloc>().add(
       const FullscreenFeedLoadMoreRequested(),
@@ -339,14 +329,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
           FullscreenFeedVideoCacheStarted(index: index),
         );
       },
-      // Hook: Dispatch position updates for loop enforcement
-      positionCallback: (index, position) {
-        if (!mounted) return;
-        context.read<FullscreenFeedBloc>().add(
-          FullscreenFeedPositionUpdated(index: index, position: position),
-        );
-      },
-      positionCallbackInterval: const Duration(milliseconds: 100),
+      maxLoopDuration: VideoEditorConstants.maxDuration,
     );
   }
 
@@ -365,17 +348,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
           listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
           listener: (context, state) => _handleVideosChanged(state),
-        ),
-        // Handle seek commands
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) =>
-              curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
-          listener: (context, state) {
-            final command = state.seekCommand;
-            if (command != null) {
-              _handleSeekCommand(command);
-            }
-          },
         ),
       ],
       child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
@@ -495,6 +467,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                     onNearEnd: (index) => _onNearEnd(state, index),
                     nearEndThreshold: 0,
                     onScrollOffsetChanged: (page) => _pagePosition.value = page,
+                    maxLoopDuration: VideoEditorConstants.maxDuration,
                     itemBuilder: (context, video, index, {required isActive}) {
                       if (state.videos.isEmpty) {
                         debugPrint(

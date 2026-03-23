@@ -771,7 +771,6 @@ class VideosRepository {
         // Fetch videos by author from Funnelcake API
         final authorVideoStats = await _funnelcakeApiClient!.getVideosByAuthor(
           pubkey: pubkey,
-          limit: 100,
         );
 
         // Find videos matching our d-tags and convert to VideoEvent

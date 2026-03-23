@@ -46,3 +46,8 @@ class ConversationListMarkRead extends ConversationListEvent {
   @override
   List<Object?> get props => [conversationId];
 }
+
+/// The blocklist changed — re-filter conversations to hide blocked users.
+class ConversationListBlocklistChanged extends ConversationListEvent {
+  const ConversationListBlocklistChanged();
+}
