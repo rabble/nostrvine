@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -372,6 +373,23 @@ class ContentBlocklistService {
   /// Filter a list of content by removing blocked authors
   List<T> filterContent<T>(List<T> content, String Function(T) getPubkey) =>
       content.where((item) => !shouldFilterFromFeeds(getPubkey(item))).toList();
+
+  /// Filter DM conversations where the other participant is blocked.
+  ///
+  /// [userPubkey] is the current user's pubkey, used to identify which
+  /// participant is "the other one" in each conversation.
+  List<DmConversation> filterBlockedConversations(
+    List<DmConversation> conversations, {
+    required String userPubkey,
+  }) {
+    return conversations.where((conv) {
+      final otherPubkey = conv.participantPubkeys.firstWhere(
+        (pk) => pk != userPubkey,
+        orElse: () => '',
+      );
+      return otherPubkey.isEmpty || !shouldFilterFromFeeds(otherPubkey);
+    }).toList();
+  }
 
   /// Check if user is in internal (permanent) blocklist
   bool isInternallyBlocked(String pubkey) =>

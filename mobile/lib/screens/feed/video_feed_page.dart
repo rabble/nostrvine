@@ -54,6 +54,8 @@ class VideoFeedPage extends ConsumerWidget {
         .read(divineHostFilterServiceProvider)
         .showDivineHostedOnly;
 
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
     return BlocProvider(
       key: ValueKey('video-feed-$showDivineHostedOnly'),
       create: (_) => VideoFeedBloc(
@@ -61,6 +63,7 @@ class VideoFeedPage extends ConsumerWidget {
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
         profileRepository: profileRepository,
+        contentBlocklistService: blocklistService,
         userPubkey: authService.currentPublicKeyHex,
         sharedPreferences: sharedPreferences,
         serveCachedHomeFeed: !showDivineHostedOnly,

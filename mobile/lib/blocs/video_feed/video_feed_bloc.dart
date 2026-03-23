@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -39,6 +40,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     required FollowRepository followRepository,
     required CuratedListRepository curatedListRepository,
     ProfileRepository? profileRepository,
+    ContentBlocklistService? contentBlocklistService,
     String? userPubkey,
     SharedPreferences? sharedPreferences,
     bool serveCachedHomeFeed = true,
@@ -49,6 +51,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
        _profileRepository = profileRepository,
+       _blocklistService = contentBlocklistService,
        _userPubkey = userPubkey,
        _sharedPreferences = sharedPreferences,
        _serveCachedHomeFeed = serveCachedHomeFeed,
@@ -73,6 +76,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   final FollowRepository _followRepository;
   final CuratedListRepository _curatedListRepository;
   final ProfileRepository? _profileRepository;
+  final ContentBlocklistService? _blocklistService;
   final String? _userPubkey;
   final SharedPreferences? _sharedPreferences;
   final bool _serveCachedHomeFeed;
@@ -380,11 +384,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   ///
   /// When [event.blockedPubkey] is provided, removes that user's videos
   /// from the current state instantly (no network call). When null,
-  /// triggers a full refresh to pick up bulk blocklist changes.
-  Future<void> _onBlocklistChanged(
+  /// filters the current videos against the full blocklist in-memory.
+  void _onBlocklistChanged(
     VideoFeedBlocklistChanged event,
     Emitter<VideoFeedState> emit,
-  ) async {
+  ) {
     final pubkey = event.blockedPubkey;
     if (pubkey != null) {
       final filtered = state.videos.where((v) => v.pubkey != pubkey).toList();
@@ -394,17 +398,17 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       return;
     }
 
-    // General blocklist change — full refresh.
-    if (state.status == VideoFeedStatus.loading) return;
-    emit(
-      state.copyWith(
-        status: VideoFeedStatus.loading,
-        videos: [],
-        hasMore: true,
-        clearError: true,
-      ),
+    // General blocklist change — filter current videos in-memory.
+    final service = _blocklistService;
+    if (service == null) return;
+
+    final filtered = service.filterContent<VideoEvent>(
+      state.videos,
+      (v) => v.pubkey,
     );
-    await _loadVideos(state.mode, emit, skipCache: true);
+    if (filtered.length != state.videos.length) {
+      emit(state.copyWith(videos: filtered));
+    }
   }
 
   /// Load videos for the specified mode.

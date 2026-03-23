@@ -103,12 +103,12 @@ final class VideoFeedCuratedListsChanged extends VideoFeedEvent {
 /// A user was blocked or the blocklist changed.
 ///
 /// When [blockedPubkey] is provided, the handler removes that user's videos
-/// from the current state without a network round-trip. When null, a full
-/// refresh is triggered (used as a safety net for relay-sync or bulk changes).
+/// from the current state without a network round-trip. When null, the handler
+/// filters current videos against the full blocklist in-memory.
 final class VideoFeedBlocklistChanged extends VideoFeedEvent {
   const VideoFeedBlocklistChanged({this.blockedPubkey});
 
-  /// The pubkey that was just blocked, or null for a general refresh.
+  /// The pubkey that was just blocked, or null for a general blocklist change.
   final String? blockedPubkey;
 
   @override

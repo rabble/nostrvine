@@ -96,10 +96,21 @@ class ConversationListBloc
           data.accepted,
           split.followed,
         );
+        final userPubkey = _dmRepository.userPubkey;
         return state.copyWith(
           status: ConversationListStatus.loaded,
-          conversations: _filterBlocked(merged),
-          requestConversations: _filterBlocked(split.requests),
+          conversations:
+              _blocklistService?.filterBlockedConversations(
+                merged,
+                userPubkey: userPubkey,
+              ) ??
+              merged,
+          requestConversations:
+              _blocklistService?.filterBlockedConversations(
+                split.requests,
+                userPubkey: userPubkey,
+              ) ??
+              split.requests,
           potentialRequests: data.potentialRequests,
           hasMore: data.accepted.length >= state.currentLimit,
           isLoadingMore: false,
@@ -176,20 +187,5 @@ class ConversationListBloc
     Emitter<ConversationListState> emit,
   ) {
     add(const ConversationListStarted());
-  }
-
-  /// Filter conversations where the other participant is blocked.
-  List<DmConversation> _filterBlocked(List<DmConversation> conversations) {
-    final service = _blocklistService;
-    if (service == null) return conversations;
-
-    final userPubkey = _dmRepository.userPubkey;
-    return conversations.where((conv) {
-      final otherPubkey = conv.participantPubkeys.firstWhere(
-        (pk) => pk != userPubkey,
-        orElse: () => '',
-      );
-      return otherPubkey.isEmpty || !service.shouldFilterFromFeeds(otherPubkey);
-    }).toList();
   }
 }
