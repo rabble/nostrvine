@@ -3,27 +3,15 @@
 
 import 'dart:developer' as developer;
 
-import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
-import 'package:stream_transform/stream_transform.dart';
 
 part 'new_message_search_event.dart';
 part 'new_message_search_state.dart';
-
-/// Event transformer that debounces and restarts on new events.
-EventTransformer<E> _debounceRestartable<E>() {
-  return (events, mapper) {
-    return restartable<E>().call(
-      events.debounce(searchDebounceDuration),
-      mapper,
-    );
-  };
-}
 
 /// BLoC for the new message sheet that loads followed contacts and searches
 /// for users to start a DM conversation.
@@ -38,7 +26,7 @@ class NewMessageSearchBloc
     on<NewMessageSearchStarted>(_onStarted);
     on<NewMessageSearchQueryChanged>(
       _onQueryChanged,
-      transformer: _debounceRestartable(),
+      transformer: debounceRestartable(),
     );
     on<NewMessageSearchCleared>(_onCleared);
   }

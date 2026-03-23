@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/screens/inbox/bloc/new_message_search_bloc.dart';
+import 'package:openvine/screens/inbox/bloc/bloc.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -124,41 +124,28 @@ class _ResultsBody extends StatelessWidget {
           NewMessageSearchStatus.loadingContacts => const Center(
             child: CircularProgressIndicator(color: VineTheme.primary),
           ),
-          NewMessageSearchStatus.idle => _ContactsList(
-            contacts: state.contacts,
+          NewMessageSearchStatus.idle => _UserProfileList(
+            profiles: state.contacts,
+            emptyMessage: 'No contacts found.\nFollow people to see them here.',
           ),
           NewMessageSearchStatus.searching when state.results.isEmpty =>
             const Center(
               child: CircularProgressIndicator(color: VineTheme.primary),
             ),
-          NewMessageSearchStatus.searching => _UserResultsList(
-            results: state.results,
+          NewMessageSearchStatus.searching => _UserProfileList(
+            profiles: state.results,
           ),
           NewMessageSearchStatus.searchSuccess when state.results.isNotEmpty =>
-            _UserResultsList(results: state.results),
-          NewMessageSearchStatus.searchSuccess => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                'No users found',
-                style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceMuted,
-                ),
-              ),
-            ),
+            _UserProfileList(profiles: state.results),
+          NewMessageSearchStatus.searchSuccess => const _UserProfileList(
+            profiles: [],
+            emptyMessage: 'No users found',
           ),
           NewMessageSearchStatus.searchFailure when state.results.isNotEmpty =>
-            _UserResultsList(results: state.results),
-          NewMessageSearchStatus.searchFailure => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                'Search failed. Please try again.',
-                style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceMuted,
-                ),
-              ),
-            ),
+            _UserProfileList(profiles: state.results),
+          NewMessageSearchStatus.searchFailure => const _UserProfileList(
+            profiles: [],
+            emptyMessage: 'Search failed. Please try again.',
           ),
         };
       },
@@ -236,19 +223,23 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _ContactsList extends StatelessWidget {
-  const _ContactsList({required this.contacts});
+class _UserProfileList extends StatelessWidget {
+  const _UserProfileList({
+    required this.profiles,
+    this.emptyMessage,
+  });
 
-  final List<UserProfile> contacts;
+  final List<UserProfile> profiles;
+  final String? emptyMessage;
 
   @override
   Widget build(BuildContext context) {
-    if (contacts.isEmpty) {
+    if (profiles.isEmpty && emptyMessage != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
-            'No contacts found.\nFollow people to see them here.',
+            emptyMessage!,
             style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
             textAlign: TextAlign.center,
           ),
@@ -257,7 +248,7 @@ class _ContactsList extends StatelessWidget {
     }
 
     return ListView.separated(
-      itemCount: contacts.length,
+      itemCount: profiles.length,
       separatorBuilder: (_, _) => const Divider(
         height: 1,
         thickness: 1,
@@ -265,33 +256,7 @@ class _ContactsList extends StatelessWidget {
         indent: 72,
       ),
       itemBuilder: (context, index) {
-        final profile = contacts[index];
-        return _UserTile(
-          profile: profile,
-          onTap: () => Navigator.of(context).pop(profile),
-        );
-      },
-    );
-  }
-}
-
-class _UserResultsList extends StatelessWidget {
-  const _UserResultsList({required this.results});
-
-  final List<UserProfile> results;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      itemCount: results.length,
-      separatorBuilder: (_, _) => const Divider(
-        height: 1,
-        thickness: 1,
-        color: VineTheme.outlineMuted,
-        indent: 72,
-      ),
-      itemBuilder: (context, index) {
-        final profile = results[index];
+        final profile = profiles[index];
         return _UserTile(
           profile: profile,
           onTap: () => Navigator.of(context).pop(profile),
