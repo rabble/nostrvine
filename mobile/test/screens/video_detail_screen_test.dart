@@ -46,7 +46,8 @@ void main() {
 
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
-      // Stub configuredRelays (needed by analyticsApiService provider)
+      // Stub configuredRelays (used when resolving Funnelcake base URL for
+      // funnelcakeApiClientProvider).
       when(() => mockNostrClient.configuredRelays).thenReturn(<String>[]);
       when(() => mockNostrClient.publicKey).thenReturn('');
       when(() => mockNostrClient.isInitialized).thenReturn(true);

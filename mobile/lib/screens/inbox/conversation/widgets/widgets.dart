@@ -3,3 +3,4 @@ export 'empty_conversation.dart';
 export 'message_actions_sheet.dart';
 export 'message_bubble.dart';
 export 'message_input_bar.dart';
+export 'report_message_dialog.dart';

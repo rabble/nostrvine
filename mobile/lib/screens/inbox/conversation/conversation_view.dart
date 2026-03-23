@@ -245,7 +245,14 @@ class _MessageList extends StatelessWidget {
           ConversationMessageDeleted(rumorId: message.id),
         );
       case MessageAction.report:
-        break; // Report handled by PR #2389
+        if (!context.mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (_) => ReportMessageDialog(
+            messageId: message.id,
+            senderPubkey: message.senderPubkey,
+          ),
+        );
     }
   }
 

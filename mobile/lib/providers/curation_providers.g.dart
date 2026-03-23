@@ -333,7 +333,7 @@ final class AnalyticsTrendingProvider
   }
 }
 
-String _$analyticsTrendingHash() => r'91eae1566af8e7cfd2ef83a8c7d39996a5f1a4cf';
+String _$analyticsTrendingHash() => r'b99515b211faaff536c3bae0d0405ef69c39d065';
 
 /// Provider for analytics-based trending videos with cursor pagination
 
@@ -392,7 +392,7 @@ final class AnalyticsPopularProvider
   }
 }
 
-String _$analyticsPopularHash() => r'ed1bc63e7cbed5a2a84c006d45e327a1d5da0480';
+String _$analyticsPopularHash() => r'79772fd2bd481d73840647dcecb5c1684c2e37af';
 
 /// Provider for analytics-based popular videos
 

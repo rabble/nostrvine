@@ -66,7 +66,7 @@ void main() {
         verify(
           () => mockService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.popularNow,
-            limit: 100,
+            limit: 50,
             sortBy: any(named: 'sortBy', that: isNotNull),
           ),
         ).called(greaterThanOrEqualTo(1));
@@ -231,7 +231,7 @@ void main() {
         verify(
           () => mockService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.popularNow,
-            limit: 100,
+            limit: 50,
             sortBy: any(named: 'sortBy', that: isNotNull),
             force: true, // Should force refresh
           ),

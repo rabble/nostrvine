@@ -68,6 +68,7 @@ class VideoFeedController extends ChangeNotifier {
     this.positionCallback,
     this.positionCallbackInterval = const Duration(milliseconds: 250),
     this.slowLoadThreshold = const Duration(seconds: 8),
+    this.maxLoopDuration,
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
        _currentIndex = initialIndex.clamp(
@@ -116,6 +117,17 @@ class VideoFeedController extends ChangeNotifier {
   /// When exceeded, the index state's `isSlowLoad` flag is set so the
   /// UI can show a slow-loading indicator or skip action.
   final Duration slowLoadThreshold;
+
+  /// Maximum playback duration before automatically seeking back to zero.
+  ///
+  /// When set, videos whose position exceeds this duration are
+  /// automatically seeked back to [Duration.zero], creating a loop.
+  /// This is useful for enforcing a maximum loop length on videos
+  /// that are longer than the allowed duration.
+  ///
+  /// When `null`, no loop enforcement is applied (the player's own
+  /// [PlaylistMode] controls looping).
+  final Duration? maxLoopDuration;
 
   /// Unmodifiable list of videos.
   List<VideoItem> get videos => List.unmodifiable(_videos);
@@ -999,6 +1011,20 @@ class VideoFeedController extends ChangeNotifier {
           player,
           player.state.position.inMilliseconds,
         );
+      }
+
+      // Loop enforcement: seek back to zero when position exceeds
+      // maxLoopDuration.
+      if (maxLoopDuration != null &&
+          index == _currentIndex &&
+          player.state.playing &&
+          player.state.position >= maxLoopDuration!) {
+        _logDebug(
+          'loop_enforcement ${_videoDebugDetails(index)} '
+          'positionMs=${player.state.position.inMilliseconds} '
+          'maxMs=${maxLoopDuration!.inMilliseconds}',
+        );
+        unawaited(player.seek(Duration.zero));
       }
 
       if (positionCallback != null && player.state.playing) {
