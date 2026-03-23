@@ -8121,6 +8121,42 @@ void main() {
       );
 
       test(
+        '_parseCachedFeedBody returns empty for non-Map non-List JSON',
+        () async {
+          // A plain JSON string decodes to a String, which is neither
+          // Map nor List — exercises the else branch (line 1115).
+          when(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).thenAnswer((_) async => '"just a string"');
+
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          final result = await repo.getHomeFeedVideos(
+            authors: ['author-1'],
+            userPubkey: 'user-pubkey',
+          );
+
+          expect(result.videos, isEmpty);
+        },
+      );
+
+      test(
         '_readFeedFromDb returns null when DB throws',
         () async {
           when(
