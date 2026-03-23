@@ -56,6 +56,7 @@ class ConversationMuteCubit extends Cubit<ConversationMuteState> {
   ///
   /// Returns `true` if the conversation is now muted, `false` if unmuted.
   Future<bool> toggleMute(String conversationId) async {
+    final previousIds = Set<String>.from(state.mutedIds);
     final muted = Set<String>.from(state.mutedIds);
     final nowMuted = !muted.contains(conversationId);
     if (nowMuted) {
@@ -72,7 +73,12 @@ class ConversationMuteCubit extends Cubit<ConversationMuteState> {
       await _save(muted);
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: ConversationMuteStatus.error));
+      emit(
+        state.copyWith(
+          status: ConversationMuteStatus.error,
+          mutedIds: previousIds,
+        ),
+      );
     }
 
     Log.debug(

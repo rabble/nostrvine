@@ -142,6 +142,42 @@ void main() {
           expect(result, isFalse);
         },
       );
+
+      blocTest<ConversationMuteCubit, ConversationMuteState>(
+        'rolls back mutedIds when save fails',
+        setUp: () {
+          when(
+            () => mockPrefs.setString(any(), any()),
+          ).thenThrow(Exception('disk full'));
+        },
+        build: buildCubit,
+        act: (cubit) => cubit.toggleMute(conversationId),
+        expect: () => [
+          isA<ConversationMuteState>()
+              .having(
+                (s) => s.mutedIds.contains(conversationId),
+                'optimistic add',
+                isTrue,
+              )
+              .having(
+                (s) => s.status,
+                'status',
+                ConversationMuteStatus.success,
+              ),
+          isA<ConversationMuteState>()
+              .having(
+                (s) => s.mutedIds.contains(conversationId),
+                'rolled back',
+                isFalse,
+              )
+              .having(
+                (s) => s.status,
+                'status',
+                ConversationMuteStatus.error,
+              ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
     });
 
     group('isMuted', () {

@@ -48,13 +48,13 @@ void main() {
         expect(find.text('Remove conversation'), findsOneWidget);
       });
 
-      testWidgets('renders $Switch widget', (tester) async {
+      testWidgets('renders $SwitchListTile for mute toggle', (tester) async {
         await tester.pumpWidget(buildSubject(onResult: (_) {}));
 
         await tester.tap(find.text('Show sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(Switch), findsOneWidget);
+        expect(find.byType(SwitchListTile), findsOneWidget);
       });
     });
 

@@ -33,85 +33,65 @@ class ConversationActionsSheet {
       context: context,
       scrollable: false,
       expanded: false,
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _MuteActionTile(
-            isMuted: isMuted,
-          ),
-          _ActionTile(
-            icon: DivineIconName.flag,
-            label: 'Report $displayName',
-            result: ConversationAction.report,
-          ),
-          _ActionTile(
-            icon: DivineIconName.eyeSlash,
-            label: 'Block $displayName',
-            isDestructive: true,
-            result: ConversationAction.block,
-          ),
-          const _ActionTile(
-            icon: DivineIconName.trash,
-            label: 'Remove conversation',
-            isDestructive: true,
-            showDivider: false,
-            result: ConversationAction.remove,
-          ),
-        ],
+      body: Semantics(
+        label: 'Conversation actions',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _MuteActionTile(isMuted: isMuted),
+            _ActionTile(
+              icon: DivineIconName.flag,
+              label: 'Report $displayName',
+              result: ConversationAction.report,
+            ),
+            _ActionTile(
+              icon: DivineIconName.eyeSlash,
+              label: 'Block $displayName',
+              isDestructive: true,
+              result: ConversationAction.block,
+            ),
+            const _ActionTile(
+              icon: DivineIconName.trash,
+              label: 'Remove conversation',
+              isDestructive: true,
+              showDivider: false,
+              result: ConversationAction.remove,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _MuteActionTile extends StatelessWidget {
-  const _MuteActionTile({
-    required this.isMuted,
-  });
+  const _MuteActionTile({required this.isMuted});
 
   final bool isMuted;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: isMuted ? 'Unmute conversation' : 'Mute conversation',
-      child: GestureDetector(
-        onTap: () => Navigator.of(context).pop(ConversationAction.toggleMute),
-        behavior: HitTestBehavior.opaque,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            child: Row(
-              spacing: 16,
-              children: [
-                const DivineIcon(
-                  icon: DivineIconName.bellSimple,
-                  color: VineTheme.onSurface,
-                ),
-                Expanded(
-                  child: Text(
-                    'Mute conversation',
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                ),
-                IgnorePointer(
-                  child: Switch(
-                    value: isMuted,
-                    onChanged: (_) {},
-                    activeThumbColor: VineTheme.primary,
-                    inactiveThumbColor: VineTheme.onSurface,
-                    inactiveTrackColor: VineTheme.surfaceContainer,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: VineTheme.outlineDisabled),
         ),
+      ),
+      child: SwitchListTile(
+        value: isMuted,
+        onChanged: (_) =>
+            Navigator.of(context).pop(ConversationAction.toggleMute),
+        title: Text(
+          'Mute conversation',
+          style: VineTheme.titleMediumFont(),
+        ),
+        secondary: const DivineIcon(
+          icon: DivineIconName.bellSimple,
+          color: VineTheme.onSurface,
+        ),
+        activeThumbColor: VineTheme.primary,
+        inactiveThumbColor: VineTheme.onSurface,
+        inactiveTrackColor: VineTheme.surfaceContainer,
       ),
     );
   }

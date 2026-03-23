@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
@@ -33,6 +34,9 @@ class InboxPage extends ConsumerWidget {
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
+    final reportingService = ref.watch(contentReportingServiceProvider).value;
+    final currentUserPubkey =
+        ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -55,6 +59,14 @@ class InboxPage extends ConsumerWidget {
           ),
           BlocProvider(
             create: (_) => ConversationMuteCubit(prefs: prefs),
+          ),
+          BlocProvider(
+            create: (_) => ConversationActionsCubit(
+              contentReportingService: reportingService,
+              contentBlocklistService: blocklistService,
+              dmRepository: dmRepository,
+              currentUserPubkey: currentUserPubkey,
+            ),
           ),
         ],
         child: const InboxView(),

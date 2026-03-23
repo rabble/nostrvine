@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -25,7 +26,6 @@ import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
-import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
@@ -370,6 +370,8 @@ class _ConversationList extends ConsumerWidget {
 
     if (action == null || !context.mounted) return;
 
+    final actionsCubit = context.read<ConversationActionsCubit>();
+
     switch (action) {
       case ConversationAction.toggleMute:
         final nowMuted = await muteCubit.toggleMute(conversation.id);
@@ -384,37 +386,15 @@ class _ConversationList extends ConsumerWidget {
         }
 
       case ConversationAction.report:
-        try {
-          final reportingService = await ref.read(
-            contentReportingServiceProvider.future,
-          );
-          if (!context.mounted) return;
-          final reported = await reportingService.reportUser(
-            userPubkey: otherPubkey,
-            reason: ContentFilterReason.other,
-            details: 'Reported from DM conversation',
-          );
-          if (context.mounted && reported.success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Reported $displayName')),
-            );
-          }
-        } catch (e, stackTrace) {
-          Log.error(
-            'Failed to report user: $e',
-            name: 'InboxView',
-            category: LogCategory.ui,
-            stackTrace: stackTrace,
+        final reported = await actionsCubit.reportUser(otherPubkey);
+        if (context.mounted && reported) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Reported $displayName')),
           );
         }
 
       case ConversationAction.block:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        final authService = ref.read(authServiceProvider);
-        blocklistService.blockUser(
-          otherPubkey,
-          ourPubkey: authService.currentPublicKeyHex ?? '',
-        );
+        actionsCubit.blockUser(otherPubkey);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Blocked $displayName')),
@@ -425,20 +405,12 @@ class _ConversationList extends ConsumerWidget {
         if (!context.mounted) return;
         final confirmed = await _confirmRemove(context, displayName);
         if (confirmed && context.mounted) {
-          try {
-            final dmRepo = ref.read(dmRepositoryProvider);
-            await dmRepo.removeConversation(conversation.id);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Removed conversation')),
-              );
-            }
-          } catch (e, stackTrace) {
-            Log.error(
-              'Failed to remove conversation: $e',
-              name: 'InboxView',
-              category: LogCategory.ui,
-              stackTrace: stackTrace,
+          final removed = await actionsCubit.removeConversation(
+            conversation.id,
+          );
+          if (context.mounted && removed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Removed conversation')),
             );
           }
         }
