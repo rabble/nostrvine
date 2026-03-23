@@ -56,10 +56,10 @@ These complement our existing pre-commit hooks (format, analyze, codegen verific
 
 | Skill | What It Adds | Current State |
 |---|---|---|
-| `/vgv-bloc` | VGV event naming, sealed classes, Page/View pattern | 43+ BLoCs/Cubits already follow these patterns |
+| `/vgv-bloc` | VGV event naming, sealed classes, Page/View pattern | 26 BLoCs/Cubits already follow these patterns |
 | `/vgv-testing` | VGV test naming, `pumpApp`, golden test patterns | 685+ tests with mocktail, bloc_test, Patrol |
 | `/vgv-navigation` | Type-safe GoRouter patterns, redirect strategies | GoRouter with `@TypedGoRoute` already in use |
-| `/vgv-layered-architecture` | Validates 4-layer package structure | 23 packages already follow Data → Repo → BLoC → UI |
+| `/vgv-layered-architecture` | Validates 4-layer package structure | 21 packages already follow Data → Repo → BLoC → UI |
 
 ### Tier 3 — Use with Caution (conflicts with project constraints)
 
@@ -395,7 +395,7 @@ Review mobile/lib/router/ for navigation anti-patterns.
 - Use path dependencies for local packages (never `git:` or pub versions)
 - Barrel exports at every boundary — never import `src/` directly
 - Use `RepositoryProvider` for DI in the widget tree — constructor injection in packages
-- Run `melos bootstrap` after adding new packages
+- Run `flutter pub get` from `mobile/` after adding new packages to the workspace
 
 **Example prompts:**
 ```
@@ -418,10 +418,10 @@ Review the dependency graph of mobile/packages/ for layer violations.
 
 **divine-mobile adaptations:**
 - **Dark mode only** — ignore any light theme suggestions (see Rule 6)
-- Reference `VineTheme` (`mobile/lib/theme/app_theme.dart`) before creating new theme data
-- Use `divine_ui` components (38 widgets) before building custom styled widgets
+- Reference `VineTheme` (`mobile/packages/divine_ui/lib/src/theme/vine_theme.dart`) before creating new theme data
+- Use `divine_ui` components (29 exported components) before building custom styled widgets
 - divine-mobile uses custom fonts (Pacifico, BricolageGrotesque, Inter via Google Fonts) — don't override with system fonts
-- Color system: purple accent (`0xFF8B5CF6`), true black backgrounds (`0xFF000000`)
+- Color system: vineGreen accent (`0xFF27C58B`), surfaceBackground (`0xFF00150D`), true black scaffold (`0xFF000000`)
 - The skill's spacing system pattern (`AppSpacing`) could fill a gap — divine-mobile doesn't have centralized spacing constants yet
 
 **Example prompts:**
@@ -446,7 +446,7 @@ to the divine_ui package.
 **divine-mobile adaptations:**
 - Use `dart_package` template for data/repository packages (not `flutter_package`)
 - After scaffolding, add the package to the root `pubspec.yaml` workspace
-- Update `melos.yaml` if using melos commands
+- Add the package to the `workspace:` section in `mobile/pubspec.yaml`
 - Add CI workflow in `.github/workflows/` for the new package
 - Ensure the scaffolded package uses `very_good_analysis` (already the project standard)
 
@@ -518,7 +518,7 @@ When adding a new domain to the data layer:
 | Accept light theme from material-theming | Divine is dark-mode only | Only use dark theme variant |
 | Use `Widget _buildX()` methods | Violates code_style rules | Extract to separate widget classes |
 | Accept hardcoded URLs or magic numbers | Violates code_style constants rule | Extract to `Constants`/`Config` class |
-| Run `/vgv-create-project` without updating workspace | New package won't be found | Add to `pubspec.yaml` workspace + melos |
+| Run `/vgv-create-project` without updating workspace | New package won't be found | Add to `pubspec.yaml` workspace section |
 | Use `mockito` in generated tests | Project uses `mocktail` exclusively | Specify mocktail in prompts if needed |
 | Truncate Nostr IDs in test fixtures | Violates e2e_testing rules | Always use full npub/nsec/event IDs |
 | Accept `print()` in generated code | Must use `dart:developer` `log()` | Replace with structured logging |
@@ -553,8 +553,8 @@ When adding a new domain to the data layer:
 | `.claude/rules/code_style.md` | Dart style, constants, widget composition |
 | `.claude/rules/ui_theming.md` | Theme system and accessibility basics |
 | `.claude/rules/error_handling.md` | Exception strategy and security |
-| `mobile/lib/theme/app_theme.dart` | VineTheme dark theme definition |
-| `mobile/packages/divine_ui/` | 38 shared UI components |
+| `mobile/packages/divine_ui/lib/src/theme/vine_theme.dart` | VineTheme dark theme definition |
+| `mobile/packages/divine_ui/` | 29 exported UI components |
 
 ### Links
 
