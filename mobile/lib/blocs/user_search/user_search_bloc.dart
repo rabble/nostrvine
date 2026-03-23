@@ -71,14 +71,16 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       return;
     }
 
-    if (query == state.query && state.status != UserSearchStatus.initial) {
-      return;
-    }
+    // No dedup guard here — the restartable() transformer already cancels the
+    // previous in-flight handler via switchMap. Adding a same-query skip caused
+    // the search to get stuck in loading/empty-success states with no recovery
+    // path (the user could never re-trigger the same query).
 
     emit(
       state.copyWith(
         status: UserSearchStatus.loading,
         query: query,
+        results: const [],
         resultCount: null,
         isLoadingMore: false,
       ),

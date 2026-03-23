@@ -103,7 +103,7 @@ class _NewMessageSheetState extends State<NewMessageSheet> {
       _searchBloc.add(const UserSearchCleared());
       setState(() => _filteredContacts = _contacts);
     } else {
-      _searchBloc.add(UserSearchQueryChanged(value));
+      _searchBloc.add(UserSearchQueryChanged(trimmed));
       setState(() {
         _filteredContacts = _contacts.where((profile) {
           final name = profile.bestDisplayName.toLowerCase();
@@ -297,32 +297,43 @@ class _NetworkResults extends StatelessWidget {
   final List<UserProfile> localResults;
   final ValueChanged<UserProfile> onSelectUser;
 
+  /// O(n+m) merge: network results take precedence, local fills gaps.
+  /// Uses LinkedHashMap to preserve insertion order and dedup by pubkey.
+  List<UserProfile> _mergeResults(List<UserProfile> networkResults) {
+    if (networkResults.isEmpty) return localResults;
+    if (localResults.isEmpty) return networkResults;
+
+    final merged = <String, UserProfile>{};
+    for (final profile in networkResults) {
+      merged[profile.pubkey] = profile;
+    }
+    for (final profile in localResults) {
+      merged.putIfAbsent(profile.pubkey, () => profile);
+    }
+    return merged.values.toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<UserSearchBloc, UserSearchState>(
       bloc: searchBloc,
       builder: (context, state) {
+        final merged = _mergeResults(state.results);
+
         return switch (state.status) {
-          UserSearchStatus.loading => const Center(
+          // First load with no local matches — show spinner
+          UserSearchStatus.loading when merged.isEmpty => const Center(
             child: CircularProgressIndicator(color: VineTheme.primary),
           ),
-          UserSearchStatus.success when state.results.isNotEmpty =>
-            ListView.separated(
-              itemCount: state.results.length,
-              separatorBuilder: (_, _) => const Divider(
-                height: 1,
-                thickness: 1,
-                color: VineTheme.outlineMuted,
-                indent: 72,
-              ),
-              itemBuilder: (context, index) {
-                final profile = state.results[index];
-                return _UserTile(
-                  profile: profile,
-                  onTap: () => onSelectUser(profile),
-                );
-              },
-            ),
+          // Loading but we have local/prior results — show them
+          UserSearchStatus.loading => _UserResultsList(
+            results: merged,
+            onSelectUser: onSelectUser,
+          ),
+          UserSearchStatus.success when merged.isNotEmpty => _UserResultsList(
+            results: merged,
+            onSelectUser: onSelectUser,
+          ),
           UserSearchStatus.success => Center(
             child: Padding(
               padding: const EdgeInsets.all(32),
@@ -333,6 +344,11 @@ class _NetworkResults extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          // Failure with local fallback
+          UserSearchStatus.failure when merged.isNotEmpty => _UserResultsList(
+            results: merged,
+            onSelectUser: onSelectUser,
           ),
           UserSearchStatus.failure => Center(
             child: Padding(
@@ -351,6 +367,36 @@ class _NetworkResults extends StatelessWidget {
             onSelectUser: onSelectUser,
           ),
         };
+      },
+    );
+  }
+}
+
+class _UserResultsList extends StatelessWidget {
+  const _UserResultsList({
+    required this.results,
+    required this.onSelectUser,
+  });
+
+  final List<UserProfile> results;
+  final ValueChanged<UserProfile> onSelectUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      itemCount: results.length,
+      separatorBuilder: (_, _) => const Divider(
+        height: 1,
+        thickness: 1,
+        color: VineTheme.outlineMuted,
+        indent: 72,
+      ),
+      itemBuilder: (context, index) {
+        final profile = results[index];
+        return _UserTile(
+          profile: profile,
+          onTap: () => onSelectUser(profile),
+        );
       },
     );
   }

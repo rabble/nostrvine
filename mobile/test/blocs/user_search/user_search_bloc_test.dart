@@ -204,7 +204,19 @@ void main() {
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'does not re-search when query has not changed',
+        're-searches when same query is submitted again',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'flutter',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [createTestProfile('b' * 64, 'Flutter Dev 2')],
+          );
+        },
         build: createBloc,
         seed: () => UserSearchState(
           status: UserSearchStatus.success,
@@ -214,16 +226,29 @@ void main() {
         ),
         act: (bloc) => bloc.add(const UserSearchQueryChanged('flutter')),
         wait: debounceDuration,
-        expect: () => <UserSearchState>[],
+        expect: () => [
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.query, 'query', 'flutter')
+              .having((s) => s.results, 'results', isEmpty),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results, 'results', hasLength(1))
+              .having(
+                (s) => s.results.first.displayName,
+                'displayName',
+                'Flutter Dev 2',
+              ),
+        ],
         verify: (_) {
-          verifyNever(
+          verify(
             () => mockProfileRepository.searchUsers(
-              query: any(named: 'query'),
+              query: 'flutter',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          );
+          ).called(1);
         },
       );
 
@@ -715,7 +740,8 @@ void main() {
       const debounceDuration = Duration(milliseconds: 400);
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'preserves previous results when a subsequent query fails',
+        'clears previous results and emits failure when a subsequent query '
+        'fails',
         setUp: () {
           when(
             () => mockProfileRepository.searchUsers(
@@ -752,10 +778,10 @@ void main() {
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.query, 'query', 'error')
-              .having((s) => s.results.length, 'results preserved', 1),
+              .having((s) => s.results, 'results cleared', isEmpty),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.failure)
-              .having((s) => s.results.length, 'results still preserved', 1),
+              .having((s) => s.results, 'results still empty', isEmpty),
         ],
       );
     });
