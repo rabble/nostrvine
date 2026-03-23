@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7543,6 +7544,616 @@ void main() {
           () => mockLocalStorage.saveFeedResponseBody('home', any()),
         ).called(1);
       });
+    });
+
+    group('DB feed cache on cold start', () {
+      late MockNostrClient mockNostrClient;
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+      late MockVideoLocalStorage mockLocalStorage;
+      late InMemoryFeedCache inMemoryFeedCache;
+
+      /// Builds a valid JSON body from a list of [VideoStats] using the
+      /// `{"videos": [...]}` Funnelcake home feed format.
+      String buildVideoStatsObjectBody(List<VideoStats> stats) {
+        return jsonEncode({
+          'videos': stats.map((s) => s.toJson()).toList(),
+        });
+      }
+
+      /// Builds a valid JSON body from a list of [VideoStats] as a flat
+      /// array (Funnelcake list endpoint / relay-serialized format).
+      String buildVideoStatsArrayBody(List<VideoStats> stats) {
+        return jsonEncode(stats.map((s) => s.toJson()).toList());
+      }
+
+      setUp(() {
+        mockNostrClient = MockNostrClient();
+        when(() => mockNostrClient.publicKey).thenReturn('user-pubkey');
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        mockLocalStorage = MockVideoLocalStorage();
+        when(
+          () => mockLocalStorage.saveFeedResponseBody(any(), any()),
+        ).thenAnswer((_) async {});
+        inMemoryFeedCache = InMemoryFeedCache();
+      });
+
+      test(
+        'getHomeFeedVideos returns DB cached result on cold start',
+        () async {
+          final stats = _createVideoStats(
+            id: 'db-home-video',
+            pubkey: 'author-1',
+            dTag: 'db-home-video',
+            videoUrl: 'https://example.com/home.mp4',
+          );
+          final body = buildVideoStatsObjectBody([stats]);
+
+          when(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).thenAnswer((_) async => body);
+
+          // Funnelcake throws so revalidation falls through to relay
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          final result = await repo.getHomeFeedVideos(
+            authors: ['author-1'],
+            userPubkey: 'user-pubkey',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('db-home-video'));
+          // Verify DB was read
+          verify(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'getNewVideos returns DB cached result on cold start',
+        () async {
+          final stats = _createVideoStats(
+            id: 'db-latest-video',
+            pubkey: 'author-2',
+            dTag: 'db-latest-video',
+            videoUrl: 'https://example.com/latest.mp4',
+          );
+          final body = buildVideoStatsArrayBody([stats]);
+
+          when(
+            () => mockLocalStorage.getFeedResponseBody('latest'),
+          ).thenAnswer((_) async => body);
+
+          // Funnelcake throws so revalidation falls through to relay
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          final result = await repo.getNewVideos();
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('db-latest-video'));
+          verify(
+            () => mockLocalStorage.getFeedResponseBody('latest'),
+          ).called(1);
+        },
+      );
+
+      test(
+        '_revalidateHomeFeed updates caches when Funnelcake succeeds',
+        () async {
+          // Seed DB cache so getHomeFeedVideos hits the DB path and
+          // fires _revalidateHomeFeed via unawaited.
+          final staleStats = _createVideoStats(
+            id: 'stale-video',
+            pubkey: 'author-1',
+            dTag: 'stale-video',
+            videoUrl: 'https://example.com/stale.mp4',
+          );
+          when(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).thenAnswer((_) async => buildVideoStatsObjectBody([staleStats]));
+
+          // Funnelcake returns fresh data during revalidation
+          final freshStats = _createVideoStats(
+            id: 'fresh-video',
+            pubkey: 'author-1',
+            dTag: 'fresh-video',
+            videoUrl: 'https://example.com/fresh.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [freshStats],
+              rawBody: '{"videos":[]}',
+            ),
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          // First call hits DB cache and fires background revalidation
+          await repo.getHomeFeedVideos(
+            authors: ['author-1'],
+            userPubkey: 'user-pubkey',
+          );
+
+          // Let the unawaited revalidation complete
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          // In-memory cache should now have the fresh data
+          final cached = inMemoryFeedCache.get('home');
+          expect(cached, isNotNull);
+          expect(cached!.videos.first.id, equals('fresh-video'));
+          // DB was written during revalidation
+          verify(
+            () => mockLocalStorage.saveFeedResponseBody('home', any()),
+          ).called(1);
+        },
+      );
+
+      test(
+        '_revalidateHomeFeed with videoRefs uses merge path',
+        () async {
+          final staleStats = _createVideoStats(
+            id: 'stale-video',
+            pubkey: 'author-1',
+            dTag: 'stale-video',
+            videoUrl: 'https://example.com/stale.mp4',
+          );
+          when(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).thenAnswer((_) async => buildVideoStatsObjectBody([staleStats]));
+
+          // Funnelcake returns fresh data during revalidation
+          final freshStats = _createVideoStats(
+            id: 'fresh-video',
+            pubkey: 'author-1',
+            dTag: 'fresh-video',
+            videoUrl: 'https://example.com/fresh.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [freshStats],
+              rawBody: '{"videos":[]}',
+            ),
+          );
+
+          // Mock the list video fetch for merge path — the repo fetches
+          // each video ref via queryEvents
+          final listEvent = _createVideoEvent(
+            id: 'list-video-event-id',
+            pubkey: 'list-author',
+            videoUrl: 'https://example.com/list.mp4',
+            createdAt: 1704067200,
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [listEvent]);
+
+          // Stub getVideosByAuthor for the Funnelcake fallback in
+          // getVideosByAddressableIds
+          when(
+            () => mockFunnelcakeClient.getVideosByAuthor(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => <VideoStats>[]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          await repo.getHomeFeedVideos(
+            authors: ['author-1'],
+            videoRefs: {
+              'list-1': ['34236:list-author:list-video'],
+            },
+            userPubkey: 'user-pubkey',
+          );
+
+          // Let the unawaited revalidation complete
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          // In-memory cache should be populated via merge path
+          final cached = inMemoryFeedCache.get('home');
+          expect(cached, isNotNull);
+          expect(cached!.videos, isNotEmpty);
+        },
+      );
+
+      test(
+        '_revalidateHomeFeed handles errors gracefully',
+        () async {
+          final staleStats = _createVideoStats(
+            id: 'stale-video',
+            pubkey: 'author-1',
+            dTag: 'stale-video',
+            videoUrl: 'https://example.com/stale.mp4',
+          );
+          when(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).thenAnswer((_) async => buildVideoStatsObjectBody([staleStats]));
+
+          // Funnelcake throws during revalidation
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(Exception('network error'));
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          // Should not throw — the DB result is returned, revalidation
+          // error is caught internally.
+          final result = await repo.getHomeFeedVideos(
+            authors: ['author-1'],
+            userPubkey: 'user-pubkey',
+          );
+
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('stale-video'));
+        },
+      );
+
+      test(
+        '_revalidateLatestFeed Funnelcake path updates caches',
+        () async {
+          final staleStats = _createVideoStats(
+            id: 'stale-latest',
+            pubkey: 'author-1',
+            dTag: 'stale-latest',
+            videoUrl: 'https://example.com/stale.mp4',
+          );
+          when(
+            () => mockLocalStorage.getFeedResponseBody('latest'),
+          ).thenAnswer((_) async => buildVideoStatsArrayBody([staleStats]));
+
+          // Funnelcake returns fresh data during revalidation
+          final freshStats = _createVideoStats(
+            id: 'fresh-latest',
+            pubkey: 'author-2',
+            dTag: 'fresh-latest',
+            videoUrl: 'https://example.com/fresh.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => [freshStats]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          await repo.getNewVideos();
+
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          final cached = inMemoryFeedCache.get('latest');
+          expect(cached, isNotNull);
+          expect(cached!.videos.first.id, equals('fresh-latest'));
+          verify(
+            () => mockLocalStorage.saveFeedResponseBody('latest', any()),
+          ).called(1);
+        },
+      );
+
+      test(
+        '_revalidateLatestFeed relay fallback path updates caches',
+        () async {
+          final staleStats = _createVideoStats(
+            id: 'stale-latest',
+            pubkey: 'author-1',
+            dTag: 'stale-latest',
+            videoUrl: 'https://example.com/stale.mp4',
+          );
+          when(
+            () => mockLocalStorage.getFeedResponseBody('latest'),
+          ).thenAnswer((_) async => buildVideoStatsArrayBody([staleStats]));
+
+          // Funnelcake throws — forces relay fallback
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+
+          // Relay returns fresh event
+          final freshEvent = _createVideoEvent(
+            id: 'relay-fresh',
+            pubkey: 'author-3',
+            videoUrl: 'https://example.com/relay-fresh.mp4',
+            createdAt: 1704067200,
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [freshEvent]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          await repo.getNewVideos();
+
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          final cached = inMemoryFeedCache.get('latest');
+          expect(cached, isNotNull);
+          expect(cached!.videos, isNotEmpty);
+          verify(
+            () => mockLocalStorage.saveFeedResponseBody('latest', any()),
+          ).called(1);
+        },
+      );
+
+      test(
+        '_revalidateLatestFeed handles errors gracefully',
+        () async {
+          final staleStats = _createVideoStats(
+            id: 'stale-latest',
+            pubkey: 'author-1',
+            dTag: 'stale-latest',
+            videoUrl: 'https://example.com/stale.mp4',
+          );
+          when(
+            () => mockLocalStorage.getFeedResponseBody('latest'),
+          ).thenAnswer((_) async => buildVideoStatsArrayBody([staleStats]));
+
+          // Both Funnelcake and relay throw during revalidation
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenThrow(Exception('relay error'));
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          // Should not throw — stale result returned, error caught
+          final result = await repo.getNewVideos();
+
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('stale-latest'));
+        },
+      );
+
+      test(
+        '_parseCachedFeedBody handles {"videos": [...]} object format',
+        () async {
+          final stats = _createVideoStats(
+            id: 'obj-format-video',
+            pubkey: 'author-1',
+            dTag: 'obj-format-video',
+            videoUrl: 'https://example.com/video.mp4',
+          );
+          final body = buildVideoStatsObjectBody([stats]);
+
+          when(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).thenAnswer((_) async => body);
+
+          // Block revalidation network calls
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          final result = await repo.getHomeFeedVideos(
+            authors: ['author-1'],
+            userPubkey: 'user-pubkey',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('obj-format-video'));
+        },
+      );
+
+      test(
+        '_parseCachedFeedBody handles [...] flat array format',
+        () async {
+          final stats = _createVideoStats(
+            id: 'arr-format-video',
+            pubkey: 'author-2',
+            dTag: 'arr-format-video',
+            videoUrl: 'https://example.com/video.mp4',
+          );
+          final body = buildVideoStatsArrayBody([stats]);
+
+          when(
+            () => mockLocalStorage.getFeedResponseBody('latest'),
+          ).thenAnswer((_) async => body);
+
+          // Block revalidation
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          final result = await repo.getNewVideos();
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('arr-format-video'));
+        },
+      );
+
+      test(
+        '_parseCachedFeedBody handles invalid JSON gracefully',
+        () async {
+          when(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).thenAnswer((_) async => 'not valid json {{{');
+
+          // Funnelcake and relay return data so test doesn't fail on
+          // the network path
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          // Invalid JSON in DB cache should not throw — falls through
+          // to network fetch which returns empty.
+          final result = await repo.getHomeFeedVideos(
+            authors: ['author-1'],
+            userPubkey: 'user-pubkey',
+          );
+
+          expect(result.videos, isEmpty);
+        },
+      );
+
+      test(
+        '_readFeedFromDb returns null when DB throws',
+        () async {
+          when(
+            () => mockLocalStorage.getFeedResponseBody('home'),
+          ).thenThrow(Exception('DB read error'));
+
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('unavailable'));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+            inMemoryFeedCache: inMemoryFeedCache,
+          );
+
+          // DB error should not throw — falls through to network
+          final result = await repo.getHomeFeedVideos(
+            authors: ['author-1'],
+            userPubkey: 'user-pubkey',
+          );
+
+          expect(result.videos, isEmpty);
+        },
+      );
     });
   });
 }
