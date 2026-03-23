@@ -324,9 +324,8 @@ class ZendeskSupportService {
   /// Presents the native Zendesk UI for creating a support ticket.
   /// Returns true if screen shown, false if Zendesk not initialized.
   ///
-  /// Throws:
-  /// * [PlatformException] with code `NO_IDENTITY` if the native SDK has no
-  ///   identity set. Callers should set an identity first.
+  /// If the native SDK returns a `NO_IDENTITY` error, this method
+  /// automatically falls back to anonymous identity and retries once.
   static Future<bool> showNewTicketScreen({
     String? subject,
     String? description,
@@ -393,10 +392,8 @@ class ZendeskSupportService {
   /// Presents the native Zendesk UI showing all tickets from this user.
   /// Returns true if screen shown, false if Zendesk not initialized.
   ///
-  /// Throws:
-  /// * [PlatformException] with code `NO_IDENTITY` if the native SDK has no
-  ///   identity set. Callers should set an identity first via
-  ///   [setJwtIdentity] or [setAnonymousIdentityWithUserInfo].
+  /// If the native SDK returns a `NO_IDENTITY` error, this method
+  /// automatically falls back to anonymous identity and retries once.
   static Future<bool> showTicketListScreen() async {
     if (!_initialized) {
       Log.warning(

@@ -171,6 +171,41 @@ void main() {
         expect(setUserIdentityCalled, isTrue);
       },
     );
+
+    test(
+      'returns false when NO_IDENTITY retry also fails',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setUserIdentity') return true;
+              if (call.method == 'showNewTicket') {
+                throw PlatformException(
+                  code: 'NO_IDENTITY',
+                  message: 'Set an identity before showing Zendesk UI',
+                );
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.setUserIdentity(
+          npub:
+              'npub1test1234567890abcdef1234567890abcdef'
+              '1234567890abcdef1234',
+          displayName: 'Test User',
+        );
+
+        final result = await ZendeskSupportService.showNewTicketScreen();
+
+        expect(result, isFalse);
+      },
+    );
   });
 
   group('ZendeskSupportService.showTicketListScreen', () {
