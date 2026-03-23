@@ -52,6 +52,18 @@ void main() {
       cubit.close();
     });
 
+    group('isBlocked', () {
+      test('delegates to ContentBlocklistService', () {
+        when(() => mockBlocklistService.isBlocked(pubkey)).thenReturn(true);
+
+        final cubit = createCubit();
+        expect(cubit.isBlocked(pubkey), isTrue);
+
+        verify(() => mockBlocklistService.isBlocked(pubkey)).called(1);
+        cubit.close();
+      });
+    });
+
     group('reportUser', () {
       blocTest<ConversationActionsCubit, ConversationActionsState>(
         'returns true when report succeeds',
@@ -132,14 +144,6 @@ void main() {
     group('blockUser', () {
       blocTest<ConversationActionsCubit, ConversationActionsState>(
         'emits processing then success and calls blocklistService',
-        setUp: () {
-          when(
-            () => mockBlocklistService.blockUser(
-              pubkey,
-              ourPubkey: currentUserPubkey,
-            ),
-          ).thenReturn(null);
-        },
         build: createCubit,
         act: (cubit) => cubit.blockUser(pubkey),
         expect: () => [
@@ -159,16 +163,34 @@ void main() {
           ).called(1);
         },
       );
+
+      blocTest<ConversationActionsCubit, ConversationActionsState>(
+        'emits failure and calls addError when blocklistService throws',
+        setUp: () {
+          when(
+            () => mockBlocklistService.blockUser(
+              pubkey,
+              ourPubkey: currentUserPubkey,
+            ),
+          ).thenThrow(Exception('block failed'));
+        },
+        build: createCubit,
+        act: (cubit) => cubit.blockUser(pubkey),
+        expect: () => [
+          const ConversationActionsState(
+            status: ConversationActionsStatus.processing,
+          ),
+          const ConversationActionsState(
+            status: ConversationActionsStatus.failure,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
     });
 
     group('unblockUser', () {
       blocTest<ConversationActionsCubit, ConversationActionsState>(
         'emits processing then success and calls unblockUser',
-        setUp: () {
-          when(
-            () => mockBlocklistService.unblockUser(pubkey),
-          ).thenReturn(null);
-        },
         build: createCubit,
         act: (cubit) => cubit.unblockUser(pubkey),
         expect: () => [
@@ -184,6 +206,26 @@ void main() {
             () => mockBlocklistService.unblockUser(pubkey),
           ).called(1);
         },
+      );
+
+      blocTest<ConversationActionsCubit, ConversationActionsState>(
+        'emits failure and calls addError when unblockUser throws',
+        setUp: () {
+          when(
+            () => mockBlocklistService.unblockUser(pubkey),
+          ).thenThrow(Exception('unblock failed'));
+        },
+        build: createCubit,
+        act: (cubit) => cubit.unblockUser(pubkey),
+        expect: () => [
+          const ConversationActionsState(
+            status: ConversationActionsStatus.processing,
+          ),
+          const ConversationActionsState(
+            status: ConversationActionsStatus.failure,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
       );
     });
 

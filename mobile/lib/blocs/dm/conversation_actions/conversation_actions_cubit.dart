@@ -69,18 +69,31 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
     }
   }
 
+  /// Whether [pubkey] is currently on the blocklist.
+  bool isBlocked(String pubkey) => _blocklistService.isBlocked(pubkey);
+
   /// Block a user from a DM conversation.
   void blockUser(String pubkey) {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
-    _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
-    emit(state.copyWith(status: ConversationActionsStatus.success));
+    try {
+      _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
+      emit(state.copyWith(status: ConversationActionsStatus.success));
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ConversationActionsStatus.failure));
+    }
   }
 
   /// Unblock a previously blocked user.
   void unblockUser(String pubkey) {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
-    _blocklistService.unblockUser(pubkey);
-    emit(state.copyWith(status: ConversationActionsStatus.success));
+    try {
+      _blocklistService.unblockUser(pubkey);
+      emit(state.copyWith(status: ConversationActionsStatus.success));
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ConversationActionsStatus.failure));
+    }
   }
 
   /// Remove a conversation locally.

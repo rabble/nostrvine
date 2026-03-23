@@ -72,23 +72,31 @@ class _MuteActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: VineTheme.outlineDisabled),
+    return Semantics(
+      toggled: isMuted,
+      label: 'Mute conversation',
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: VineTheme.outlineDisabled),
+          ),
         ),
-      ),
-      child: SwitchListTile(
-        value: isMuted,
-        onChanged: (_) =>
-            Navigator.of(context).pop(ConversationAction.toggleMute),
-        title: Text(
-          'Mute conversation',
-          style: VineTheme.titleMediumFont(),
-        ),
-        secondary: const DivineIcon(
-          icon: DivineIconName.bellSimple,
-          color: VineTheme.onSurface,
+        child: SwitchListTile(
+          value: isMuted,
+          activeThumbColor: VineTheme.whiteText,
+          activeTrackColor: VineTheme.primary,
+          inactiveThumbColor: VineTheme.onSurfaceDisabled,
+          inactiveTrackColor: VineTheme.surfaceContainer,
+          onChanged: (_) =>
+              Navigator.of(context).pop(ConversationAction.toggleMute),
+          title: Text(
+            'Mute conversation',
+            style: VineTheme.titleMediumFont(),
+          ),
+          secondary: const DivineIcon(
+            icon: DivineIconName.bellSimple,
+            color: VineTheme.onSurface,
+          ),
         ),
       ),
     );

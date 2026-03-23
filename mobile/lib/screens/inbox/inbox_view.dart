@@ -362,8 +362,8 @@ class _ConversationList extends ConsumerWidget {
     final muteCubit = context.read<ConversationMuteCubit>();
     final isMuted = muteCubit.state.isMuted(conversation.id);
 
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(otherPubkey);
+    final actionsCubit = context.read<ConversationActionsCubit>();
+    final isBlocked = actionsCubit.isBlocked(otherPubkey);
 
     final action = await ConversationActionsSheet.show(
       context,
@@ -373,8 +373,6 @@ class _ConversationList extends ConsumerWidget {
     );
 
     if (action == null || !context.mounted) return;
-
-    final actionsCubit = context.read<ConversationActionsCubit>();
 
     switch (action) {
       case ConversationAction.toggleMute:
