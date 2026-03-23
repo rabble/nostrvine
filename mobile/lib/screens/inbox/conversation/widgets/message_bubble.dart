@@ -69,17 +69,18 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: isSent ? 'Sent message' : 'Received message',
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: isFirstInGroup ? 8 : 2,
-          bottom: isLastInGroup ? 8 : 2,
-        ),
-        child: Align(
-          alignment: isSent ? Alignment.centerRight : Alignment.centerLeft,
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: isFirstInGroup ? 8 : 2,
+        bottom: isLastInGroup ? 8 : 2,
+      ),
+      child: Align(
+        alignment: isSent ? Alignment.centerRight : Alignment.centerLeft,
+        child: Semantics(
+          hint: isSent ? 'Sent message' : 'Received message',
+          onLongPressHint: onLongPress != null ? 'Message actions' : null,
           child: GestureDetector(
             onLongPress: onLongPress,
             child: Container(
