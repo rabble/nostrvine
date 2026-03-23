@@ -325,6 +325,12 @@ class _NotificationTabContentState
                           await _navigateToTarget(context, notification);
                         }
                       },
+                      onProfileTap: () {
+                        _navigateToProfile(
+                          context,
+                          notification.actorPubkey,
+                        );
+                      },
                     ),
                     if (index < notifications.length - 1)
                       const Divider(

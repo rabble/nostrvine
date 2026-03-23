@@ -12,10 +12,12 @@ class NotificationListItem extends StatelessWidget {
   const NotificationListItem({
     required this.notification,
     required this.onTap,
+    this.onProfileTap,
     super.key,
   });
   final NotificationModel notification;
   final VoidCallback onTap;
+  final VoidCallback? onProfileTap;
 
   @override
   Widget build(BuildContext context) {
@@ -92,10 +94,17 @@ class NotificationListItem extends StatelessWidget {
     }
 
     // User avatar with overlay icon
-    return Stack(
-      children: [
-        // Avatar
-        ClipOval(
+    return Semantics(
+      label: notification.actorName != null
+          ? 'View ${notification.actorName} profile'
+          : 'View profile',
+      button: true,
+      child: GestureDetector(
+        onTap: onProfileTap,
+        child: Stack(
+          children: [
+            // Avatar
+            ClipOval(
           child: notification.actorPictureUrl != null
               ? VineCachedImage(
                   imageUrl: notification.actorPictureUrl!,
@@ -151,6 +160,8 @@ class NotificationListItem extends StatelessWidget {
           ),
         ),
       ],
+        ),
+      ),
     );
   }
 
