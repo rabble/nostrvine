@@ -188,20 +188,28 @@ class SupportCenterScreen extends ConsumerWidget {
       return;
     }
 
+    // Try JWT identity first for full ticket history.
+    // If JWT fails (network error, expired token), fall back to anonymous
+    // identity so the user can still see tickets created in this session.
     final jwtSet = await ZendeskSupportService.setJwtIdentity(
       nip98Service: nip98Service,
       relayManagerUrl: relayManagerUrl,
     );
-    if (!jwtSet && context.mounted) {
+    if (!jwtSet) {
+      // Fall back to anonymous identity with user info so the native SDK
+      // has *some* identity set — prevents crash on Samsung devices (#2365).
+      await ZendeskSupportService.setAnonymousIdentityWithUserInfo();
+    }
+
+    final shown = await ZendeskSupportService.showTicketListScreen();
+    if (!shown && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not authenticate with support'),
+          content: Text('Could not open support messages'),
           backgroundColor: VineTheme.error,
         ),
       );
-      return;
     }
-    await ZendeskSupportService.showTicketListScreen();
   }
 
   Future<void> _launchUrl(

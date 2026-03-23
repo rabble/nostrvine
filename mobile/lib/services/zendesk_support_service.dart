@@ -323,6 +323,10 @@ class ZendeskSupportService {
   ///
   /// Presents the native Zendesk UI for creating a support ticket.
   /// Returns true if screen shown, false if Zendesk not initialized.
+  ///
+  /// Throws:
+  /// * [PlatformException] with code `NO_IDENTITY` if the native SDK has no
+  ///   identity set. Callers should set an identity first.
   static Future<bool> showNewTicketScreen({
     String? subject,
     String? description,
@@ -350,6 +354,30 @@ class ZendeskSupportService {
         'Failed to show Zendesk ticket screen: ${e.code} - ${e.message}',
         category: LogCategory.system,
       );
+
+      // NO_IDENTITY: fall back to anonymous identity and retry once.
+      if (e.code == 'NO_IDENTITY') {
+        Log.info(
+          'Retrying ticket screen with anonymous identity fallback',
+          category: LogCategory.system,
+        );
+        final identitySet = await setAnonymousIdentityWithUserInfo();
+        if (identitySet) {
+          try {
+            await _channel.invokeMethod('showNewTicket', {
+              'subject': subject,
+              'description': description,
+              'tags': tags,
+            });
+            return true;
+          } catch (retryError) {
+            Log.error(
+              'Retry with anonymous identity also failed: $retryError',
+              category: LogCategory.system,
+            );
+          }
+        }
+      }
       return false;
     } catch (e) {
       Log.error(
@@ -364,6 +392,11 @@ class ZendeskSupportService {
   ///
   /// Presents the native Zendesk UI showing all tickets from this user.
   /// Returns true if screen shown, false if Zendesk not initialized.
+  ///
+  /// Throws:
+  /// * [PlatformException] with code `NO_IDENTITY` if the native SDK has no
+  ///   identity set. Callers should set an identity first via
+  ///   [setJwtIdentity] or [setAnonymousIdentityWithUserInfo].
   static Future<bool> showTicketListScreen() async {
     if (!_initialized) {
       Log.warning(
@@ -382,6 +415,27 @@ class ZendeskSupportService {
         'Failed to show Zendesk ticket list: ${e.code} - ${e.message}',
         category: LogCategory.system,
       );
+
+      // NO_IDENTITY means the native SDK has no identity set.
+      // Fall back to anonymous identity and retry once before giving up.
+      if (e.code == 'NO_IDENTITY') {
+        Log.info(
+          'Retrying ticket list with anonymous identity fallback',
+          category: LogCategory.system,
+        );
+        final identitySet = await setAnonymousIdentityWithUserInfo();
+        if (identitySet) {
+          try {
+            await _channel.invokeMethod('showTicketList');
+            return true;
+          } catch (retryError) {
+            Log.error(
+              'Retry with anonymous identity also failed: $retryError',
+              category: LogCategory.system,
+            );
+          }
+        }
+      }
       return false;
     } catch (e) {
       Log.error(
