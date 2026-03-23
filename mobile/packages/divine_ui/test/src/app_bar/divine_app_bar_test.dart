@@ -416,15 +416,39 @@ void main() {
         expect(appBar.toolbarHeight, 72);
       });
 
-      testWidgets('has correct leadingWidth', (tester) async {
+      testWidgets('has zero leadingWidth when no leading widget', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildTestWidget(title: 'Test'));
+
+        final appBar = tester.widget<AppBar>(find.byType(AppBar));
+        expect(appBar.leadingWidth, 0);
+      });
+
+      testWidgets('has correct leadingWidth when back button shown', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(title: 'Test', showBackButton: true),
+        );
 
         final appBar = tester.widget<AppBar>(find.byType(AppBar));
         expect(appBar.leadingWidth, 80);
       });
 
-      testWidgets('has zero titleSpacing', (tester) async {
+      testWidgets('uses horizontalPadding as titleSpacing without leading', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildTestWidget(title: 'Test'));
+
+        final appBar = tester.widget<AppBar>(find.byType(AppBar));
+        expect(appBar.titleSpacing, 16);
+      });
+
+      testWidgets('has zero titleSpacing with leading', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(title: 'Test', showBackButton: true),
+        );
 
         final appBar = tester.widget<AppBar>(find.byType(AppBar));
         expect(appBar.titleSpacing, 0);
@@ -472,6 +496,7 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(
             title: 'Test',
+            showBackButton: true,
             style: const DiVineAppBarStyle(
               height: 64,
               leadingWidth: 72,

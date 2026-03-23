@@ -238,31 +238,35 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     };
     final effectiveStyle = modeDefaultStyle.merge(style);
 
+    final hasLeading = showBackButton || showMenuButton || leadingIcon != null;
+
     final appBarContent = AppBar(
       backgroundColor: _getBackgroundColor(),
       surfaceTintColor: surfaceTintColor,
       elevation: 0,
       scrolledUnderElevation: 0,
       toolbarHeight: effectiveStyle.height,
-      leadingWidth: effectiveStyle.leadingWidth,
-      titleSpacing: 0,
+      leadingWidth: hasLeading ? effectiveStyle.leadingWidth : 0,
+      titleSpacing: hasLeading ? 0 : effectiveStyle.horizontalPadding,
       centerTitle: false,
       automaticallyImplyLeading: false,
       forceMaterialTransparency: forceMaterialTransparency,
       systemOverlayStyle: systemOverlayStyle,
       shape: shape,
       bottom: bottom,
-      leading: DiVineAppBarLeading(
-        showBackButton: showBackButton,
-        onBackPressed: onBackPressed,
-        backButtonSemanticLabel: backButtonSemanticLabel,
-        backButtonHeroTag: backButtonHeroTag,
-        showMenuButton: showMenuButton,
-        onMenuPressed: onMenuPressed,
-        leadingIcon: leadingIcon,
-        onLeadingPressed: onLeadingPressed,
-        style: effectiveStyle,
-      ),
+      leading: hasLeading
+          ? DiVineAppBarLeading(
+              showBackButton: showBackButton,
+              onBackPressed: onBackPressed,
+              backButtonSemanticLabel: backButtonSemanticLabel,
+              backButtonHeroTag: backButtonHeroTag,
+              showMenuButton: showMenuButton,
+              onMenuPressed: onMenuPressed,
+              leadingIcon: leadingIcon,
+              onLeadingPressed: onLeadingPressed,
+              style: effectiveStyle,
+            )
+          : null,
       title: DiVineAppBarTitle(
         title: title,
         titleWidget: titleWidget,
