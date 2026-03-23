@@ -638,6 +638,49 @@ void main() {
         expect(cached, equals(11));
       });
 
+      test('cache is adjusted after offline likeEvent', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 10));
+
+        var queuedAction = false;
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => false,
+          queueOfflineAction:
+              ({
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
+              }) async {
+                queuedAction = true;
+              },
+        );
+
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLocalStorage.isLiked(any()),
+        ).thenAnswer((_) async => false);
+
+        await repository.getLikeCount(testEventId);
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+        final cached = await repository.getLikeCount(testEventId);
+
+        expect(queuedAction, isTrue);
+        expect(cached, equals(11));
+      });
+
       test('cache is adjusted after unlikeEvent', () async {
         when(
           () => mockNostrClient.countEvents(any()),

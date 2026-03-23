@@ -1205,6 +1205,23 @@ void main() {
 
         expect(cached, equals(6));
       });
+
+      test('clearCommentCountCache resets count cache', () async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 42),
+        );
+
+        await repository.getCommentsCount(testRootEventId);
+        repository.clearCommentCountCache();
+
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 99),
+        );
+
+        final fresh = await repository.getCommentsCount(testRootEventId);
+        expect(fresh, equals(99));
+        verify(() => mockNostrClient.countEvents(any())).called(2);
+      });
     });
 
     group('deleteComment', () {

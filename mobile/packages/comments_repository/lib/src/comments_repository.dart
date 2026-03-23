@@ -4,6 +4,7 @@
 // chronologically.
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
@@ -343,6 +344,14 @@ class CommentsRepository {
     _commentCountCache[rootEventId] = count;
   }
 
+  /// Clears the in-memory comment count cache.
+  ///
+  /// Should be called on logout so stale counts from a previous user's
+  /// session are not served after re-login.
+  void clearCommentCountCache() {
+    _commentCountCache.clear();
+  }
+
   /// Deletes a comment by publishing a NIP-09 deletion request.
   ///
   /// Creates a Kind 5 event with an `e` tag referencing the comment
@@ -385,7 +394,7 @@ class CommentsRepository {
       if (rootEventId != null) {
         final cached = _commentCountCache[rootEventId];
         if (cached != null) {
-          _commentCountCache[rootEventId] = cached > 0 ? cached - 1 : 0;
+          _commentCountCache[rootEventId] = max(0, cached - 1);
         }
       }
     } on CommentsRepositoryException {

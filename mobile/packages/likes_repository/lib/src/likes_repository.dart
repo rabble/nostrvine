@@ -223,6 +223,9 @@ class LikesRepository {
       await _localStorage?.saveLikeRecord(record);
       _emitLikedIds();
 
+      final cached = _likeCountCache[eventId];
+      if (cached != null) _likeCountCache[eventId] = cached + 1;
+
       return placeholderId;
     }
 
@@ -532,6 +535,7 @@ class LikesRepository {
     final eventsByE = await _nostrClient.queryEvents([filterByE]);
 
     // Count reactions per target event from e-tag query
+    final uncachedIdSet = uncachedIds.toSet();
     for (final id in uncachedIds) {
       counts[id] = 0;
     }
@@ -540,7 +544,7 @@ class LikesRepository {
       for (final tag in event.tags) {
         if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
           final targetId = tag[1];
-          if (uncachedIds.contains(targetId)) {
+          if (uncachedIdSet.contains(targetId)) {
             counts[targetId] = (counts[targetId] ?? 0) + 1;
           }
         }
