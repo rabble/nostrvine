@@ -55,6 +55,8 @@ class VideoFeedPage extends ConsumerWidget {
         .read(divineHostFilterServiceProvider)
         .showDivineHostedOnly;
 
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
     return BlocProvider(
       key: ValueKey('video-feed-$showDivineHostedOnly'),
       create: (_) => VideoFeedBloc(
@@ -62,6 +64,7 @@ class VideoFeedPage extends ConsumerWidget {
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
         profileRepository: profileRepository,
+        contentBlocklistService: blocklistService,
         userPubkey: authService.currentPublicKeyHex,
         sharedPreferences: sharedPreferences,
         serveCachedHomeFeed: !showDivineHostedOnly,
@@ -185,6 +188,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
     controllerMode = effectiveState.mode;
     lastPooledVideos = pooledVideos;
+
+    // If an overlay is open or we're not on the home tab, deactivate
+    // immediately so the video doesn't start playing in the background.
+    final overlayState = ref.read(overlayVisibilityProvider);
+    if (!_isOnHomeTab || overlayState.hasVisibleOverlay) {
+      controller?.setActive(
+        active: false,
+        retainCurrentPlayer: overlayState.shouldRetainPlayer,
+      );
+    }
   }
 
   /// Handles new videos from pagination by adding them to the controller.
@@ -273,6 +286,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       }
 
       controller?.setActive(active: isHome);
+    });
+
+    // Refresh feed when blocklist changes (block from profile, DM, or relay).
+    ref.listen(blocklistVersionProvider, (previous, current) {
+      if (previous != null && current > previous) {
+        context.read<VideoFeedBloc>().add(const VideoFeedBlocklistChanged());
+      }
     });
 
     // Pause/resume for overlays (drawer, pages, bottom sheets), but only when

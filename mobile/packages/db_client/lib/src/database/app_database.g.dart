@@ -8304,6 +8304,21 @@ class $DirectMessagesTable extends DirectMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
     'ownerPubkey',
   );
@@ -8336,6 +8351,7 @@ class $DirectMessagesTable extends DirectMessages
     dimensions,
     blurhash,
     thumbnailUrl,
+    isDeleted,
     ownerPubkey,
   ];
   @override
@@ -8500,6 +8516,12 @@ class $DirectMessagesTable extends DirectMessages
         ),
       );
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
     if (data.containsKey('owner_pubkey')) {
       context.handle(
         _ownerPubkeyMeta,
@@ -8594,6 +8616,10 @@ class $DirectMessagesTable extends DirectMessages
         DriftSqlType.string,
         data['${effectivePrefix}thumbnail_url'],
       ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
       ownerPubkey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
@@ -8668,6 +8694,13 @@ class DirectMessageRow extends DataClass
   /// URL of an encrypted thumbnail (same key/nonce).
   final String? thumbnailUrl;
 
+  /// Whether this message has been soft-deleted via a NIP-09 kind 5 event.
+  ///
+  /// Soft-deleting (rather than hard-deleting) preserves the `giftWrapId` so
+  /// the dedup check (`hasGiftWrap`) continues to reject the relay
+  /// re-delivering the gift-wrapped event on the next poll cycle.
+  final bool isDeleted;
+
   /// Hex public key of the account that received/sent this message.
   /// NULL for legacy messages created before multi-account support.
   final String? ownerPubkey;
@@ -8691,6 +8724,7 @@ class DirectMessageRow extends DataClass
     this.dimensions,
     this.blurhash,
     this.thumbnailUrl,
+    required this.isDeleted,
     this.ownerPubkey,
   });
   @override
@@ -8739,6 +8773,7 @@ class DirectMessageRow extends DataClass
     if (!nullToAbsent || thumbnailUrl != null) {
       map['thumbnail_url'] = Variable<String>(thumbnailUrl);
     }
+    map['is_deleted'] = Variable<bool>(isDeleted);
     if (!nullToAbsent || ownerPubkey != null) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey);
     }
@@ -8790,6 +8825,7 @@ class DirectMessageRow extends DataClass
       thumbnailUrl: thumbnailUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(thumbnailUrl),
+      isDeleted: Value(isDeleted),
       ownerPubkey: ownerPubkey == null && nullToAbsent
           ? const Value.absent()
           : Value(ownerPubkey),
@@ -8823,6 +8859,7 @@ class DirectMessageRow extends DataClass
       dimensions: serializer.fromJson<String?>(json['dimensions']),
       blurhash: serializer.fromJson<String?>(json['blurhash']),
       thumbnailUrl: serializer.fromJson<String?>(json['thumbnailUrl']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
@@ -8849,6 +8886,7 @@ class DirectMessageRow extends DataClass
       'dimensions': serializer.toJson<String?>(dimensions),
       'blurhash': serializer.toJson<String?>(blurhash),
       'thumbnailUrl': serializer.toJson<String?>(thumbnailUrl),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
       'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
@@ -8873,6 +8911,7 @@ class DirectMessageRow extends DataClass
     Value<String?> dimensions = const Value.absent(),
     Value<String?> blurhash = const Value.absent(),
     Value<String?> thumbnailUrl = const Value.absent(),
+    bool? isDeleted,
     Value<String?> ownerPubkey = const Value.absent(),
   }) => DirectMessageRow(
     id: id ?? this.id,
@@ -8902,6 +8941,7 @@ class DirectMessageRow extends DataClass
     dimensions: dimensions.present ? dimensions.value : this.dimensions,
     blurhash: blurhash.present ? blurhash.value : this.blurhash,
     thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
+    isDeleted: isDeleted ?? this.isDeleted,
     ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   DirectMessageRow copyWithCompanion(DirectMessagesCompanion data) {
@@ -8945,6 +8985,7 @@ class DirectMessageRow extends DataClass
       thumbnailUrl: data.thumbnailUrl.present
           ? data.thumbnailUrl.value
           : this.thumbnailUrl,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       ownerPubkey: data.ownerPubkey.present
           ? data.ownerPubkey.value
           : this.ownerPubkey,
@@ -8973,13 +9014,14 @@ class DirectMessageRow extends DataClass
           ..write('dimensions: $dimensions, ')
           ..write('blurhash: $blurhash, ')
           ..write('thumbnailUrl: $thumbnailUrl, ')
+          ..write('isDeleted: $isDeleted, ')
           ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     conversationId,
     senderPubkey,
@@ -8999,8 +9041,9 @@ class DirectMessageRow extends DataClass
     dimensions,
     blurhash,
     thumbnailUrl,
+    isDeleted,
     ownerPubkey,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -9024,6 +9067,7 @@ class DirectMessageRow extends DataClass
           other.dimensions == this.dimensions &&
           other.blurhash == this.blurhash &&
           other.thumbnailUrl == this.thumbnailUrl &&
+          other.isDeleted == this.isDeleted &&
           other.ownerPubkey == this.ownerPubkey);
 }
 
@@ -9047,6 +9091,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
   final Value<String?> dimensions;
   final Value<String?> blurhash;
   final Value<String?> thumbnailUrl;
+  final Value<bool> isDeleted;
   final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const DirectMessagesCompanion({
@@ -9069,6 +9114,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.dimensions = const Value.absent(),
     this.blurhash = const Value.absent(),
     this.thumbnailUrl = const Value.absent(),
+    this.isDeleted = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -9092,6 +9138,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.dimensions = const Value.absent(),
     this.blurhash = const Value.absent(),
     this.thumbnailUrl = const Value.absent(),
+    this.isDeleted = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -9120,6 +9167,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Expression<String>? dimensions,
     Expression<String>? blurhash,
     Expression<String>? thumbnailUrl,
+    Expression<bool>? isDeleted,
     Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
@@ -9144,6 +9192,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       if (dimensions != null) 'dimensions': dimensions,
       if (blurhash != null) 'blurhash': blurhash,
       if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
+      if (isDeleted != null) 'is_deleted': isDeleted,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
@@ -9169,6 +9218,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Value<String?>? dimensions,
     Value<String?>? blurhash,
     Value<String?>? thumbnailUrl,
+    Value<bool>? isDeleted,
     Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
@@ -9192,6 +9242,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       dimensions: dimensions ?? this.dimensions,
       blurhash: blurhash ?? this.blurhash,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      isDeleted: isDeleted ?? this.isDeleted,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
@@ -9257,6 +9308,9 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     if (thumbnailUrl.present) {
       map['thumbnail_url'] = Variable<String>(thumbnailUrl.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
     if (ownerPubkey.present) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
     }
@@ -9288,6 +9342,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
           ..write('dimensions: $dimensions, ')
           ..write('blurhash: $blurhash, ')
           ..write('thumbnailUrl: $thumbnailUrl, ')
+          ..write('isDeleted: $isDeleted, ')
           ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -14087,6 +14142,7 @@ typedef $$DirectMessagesTableCreateCompanionBuilder =
       Value<String?> dimensions,
       Value<String?> blurhash,
       Value<String?> thumbnailUrl,
+      Value<bool> isDeleted,
       Value<String?> ownerPubkey,
       Value<int> rowid,
     });
@@ -14111,6 +14167,7 @@ typedef $$DirectMessagesTableUpdateCompanionBuilder =
       Value<String?> dimensions,
       Value<String?> blurhash,
       Value<String?> thumbnailUrl,
+      Value<bool> isDeleted,
       Value<String?> ownerPubkey,
       Value<int> rowid,
     });
@@ -14216,6 +14273,11 @@ class $$DirectMessagesTableFilterComposer
 
   ColumnFilters<String> get thumbnailUrl => $composableBuilder(
     column: $table.thumbnailUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14329,6 +14391,11 @@ class $$DirectMessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
     builder: (column) => ColumnOrderings(column),
@@ -14421,6 +14488,9 @@ class $$DirectMessagesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
   GeneratedColumn<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
     builder: (column) => column,
@@ -14483,6 +14553,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> dimensions = const Value.absent(),
                 Value<String?> blurhash = const Value.absent(),
                 Value<String?> thumbnailUrl = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DirectMessagesCompanion(
@@ -14505,6 +14576,7 @@ class $$DirectMessagesTableTableManager
                 dimensions: dimensions,
                 blurhash: blurhash,
                 thumbnailUrl: thumbnailUrl,
+                isDeleted: isDeleted,
                 ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
@@ -14529,6 +14601,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> dimensions = const Value.absent(),
                 Value<String?> blurhash = const Value.absent(),
                 Value<String?> thumbnailUrl = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DirectMessagesCompanion.insert(
@@ -14551,6 +14624,7 @@ class $$DirectMessagesTableTableManager
                 dimensions: dimensions,
                 blurhash: blurhash,
                 thumbnailUrl: thumbnailUrl,
+                isDeleted: isDeleted,
                 ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),

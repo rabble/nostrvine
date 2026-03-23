@@ -385,6 +385,13 @@ class AppDatabase extends _$AppDatabase {
 
     // Add dm_protocol column for NIP-04/NIP-17 protocol tracking
     await _addColumnIfMissing('conversations', 'dm_protocol', 'TEXT');
+
+    // Add is_deleted column for NIP-09 kind 5 soft-delete support
+    await _addColumnIfMissing(
+      'direct_messages',
+      'is_deleted',
+      'INTEGER NOT NULL DEFAULT 0',
+    );
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_dm_owner_pubkey
       ON direct_messages (owner_pubkey)

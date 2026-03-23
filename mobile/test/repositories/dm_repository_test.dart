@@ -1296,6 +1296,7 @@ void main() {
               createdAt: 1700000000,
               giftWrapId: _giftWrapEventId,
               messageKind: 14,
+              isDeleted: false,
             ),
           ]),
         );
@@ -1921,6 +1922,7 @@ void main() {
               fileHash: fileHash,
               fileSize: 1024,
               dimensions: '1920x1080',
+              isDeleted: false,
             ),
           ]),
         );
@@ -3355,6 +3357,167 @@ void main() {
           verifyNever(
             () => mockNostrClient.publishEvent(any()),
           );
+        },
+      );
+    });
+
+    // -----------------------------------------------------------------
+    // Delete (NIP-09 Kind 5)
+    // -----------------------------------------------------------------
+
+    group('deleteMessageForEveryone', () {
+      final conversationId = DmRepository.computeConversationId(
+        [_validPubkeyA, _validPubkeyB],
+      );
+
+      test('throws $StateError when not initialized', () {
+        final repo = DmRepository(
+          nostrClient: mockNostrClient,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+        );
+
+        expect(
+          () => repo.deleteMessageForEveryone(_rumorEventId),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('throws $ArgumentError when message not found', () {
+        final repo = createRepository();
+
+        when(
+          () => mockDirectMessagesDao.getMessageById(_rumorEventId),
+        ).thenAnswer((_) async => null);
+
+        expect(
+          () => repo.deleteMessageForEveryone(_rumorEventId),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('not found'),
+            ),
+          ),
+        );
+      });
+
+      test('throws $ArgumentError when current user is not the sender', () {
+        final repo = createRepository();
+
+        when(
+          () => mockDirectMessagesDao.getMessageById(_rumorEventId),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: _rumorEventId,
+            conversationId: conversationId,
+            senderPubkey: _validPubkeyB, // NOT the current user
+            content: 'Hello',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: 14,
+            isDeleted: false,
+          ),
+        );
+
+        expect(
+          () => repo.deleteMessageForEveryone(_rumorEventId),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('only the sender'),
+            ),
+          ),
+        );
+      });
+
+      test(
+        'publishes kind 5 event and soft-deletes locally',
+        () async {
+          final repo = createRepository();
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(_rumorEventId),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA, // current user
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+            ),
+          );
+
+          when(
+            () => mockConversationsDao.getConversation(conversationId),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: conversationId,
+              participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+              isGroup: false,
+              createdAt: 1700000000,
+              isRead: true,
+              currentUserHasSent: true,
+            ),
+          );
+
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => _FakeEvent());
+
+          when(
+            () => mockDirectMessagesDao.markMessageDeleted(_rumorEventId),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              conversationId,
+              limit: 1,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+
+          // Verify kind 5 was published
+          final captured =
+              verify(
+                    () => mockNostrClient.publishEvent(captureAny()),
+                  ).captured.single
+                  as Event;
+          expect(captured.kind, equals(EventKind.eventDeletion));
+          expect(
+            captured.tags,
+            containsAll([
+              ['e', _rumorEventId],
+              ['k', '14'],
+              ['p', _validPubkeyB],
+            ]),
+          );
+
+          // Verify soft-delete
+          verify(
+            () => mockDirectMessagesDao.markMessageDeleted(_rumorEventId),
+          ).called(1);
         },
       );
     });

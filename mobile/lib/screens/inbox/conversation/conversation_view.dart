@@ -71,13 +71,13 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       case MoreSheetResult.unfollow:
         await followRepository.toggleFollow(otherPubkey);
       case MoreSheetResult.blockConfirmed:
-        blocklistService.blockUser(
+        await blocklistService.blockUser(
           otherPubkey,
           ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
         );
         if (mounted) context.pop();
       case MoreSheetResult.unblockConfirmed:
-        blocklistService.unblockUser(otherPubkey);
+        await blocklistService.unblockUser(otherPubkey);
     }
   }
 
@@ -225,6 +225,37 @@ class _MessageList extends StatelessWidget {
   final List<DmMessage> messages;
   final String currentPubkey;
 
+  Future<void> _onMessageLongPress(
+    BuildContext context,
+    DmMessage message,
+    bool isSent,
+  ) async {
+    final action = await MessageActionsSheet.show(
+      context: context,
+      isSent: isSent,
+    );
+    if (action == null) return;
+    if (!context.mounted) return;
+
+    switch (action) {
+      case MessageAction.copy:
+        await ClipboardUtils.copy(context, message.content);
+      case MessageAction.delete:
+        context.read<ConversationBloc>().add(
+          ConversationMessageDeleted(rumorId: message.id),
+        );
+      case MessageAction.report:
+        if (!context.mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (_) => ReportMessageDialog(
+            messageId: message.id,
+            senderPubkey: message.senderPubkey,
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -250,6 +281,7 @@ class _MessageList extends StatelessWidget {
           isSent: isSent,
           isFirstInGroup: isFirstInGroup,
           isLastInGroup: isLastInGroup,
+          onLongPress: () => _onMessageLongPress(context, message, isSent),
         );
       },
     );
