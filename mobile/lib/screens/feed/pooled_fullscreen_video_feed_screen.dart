@@ -287,17 +287,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _lastPooledVideos = state.pooledVideos;
   }
 
-  /// Handles seek commands from the BLoC.
-  void _handleSeekCommand(SeekCommand command) {
-    final controller = _controller;
-    if (controller == null) return;
-
-    controller.seek(command.position);
-    context.read<FullscreenFeedBloc>().add(
-      const FullscreenFeedSeekCommandHandled(),
-    );
-  }
-
   void _triggerLoadMore() {
     context.read<FullscreenFeedBloc>().add(
       const FullscreenFeedLoadMoreRequested(),
@@ -340,14 +329,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
           FullscreenFeedVideoCacheStarted(index: index),
         );
       },
-      // Hook: Dispatch position updates for loop enforcement
-      positionCallback: (index, position) {
-        if (!mounted) return;
-        context.read<FullscreenFeedBloc>().add(
-          FullscreenFeedPositionUpdated(index: index, position: position),
-        );
-      },
-      positionCallbackInterval: const Duration(milliseconds: 100),
       maxLoopDuration: VideoEditorConstants.maxDuration,
     );
   }
@@ -367,17 +348,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
           listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
           listener: (context, state) => _handleVideosChanged(state),
-        ),
-        // Handle seek commands
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) =>
-              curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
-          listener: (context, state) {
-            final command = state.seekCommand;
-            if (command != null) {
-              _handleSeekCommand(command);
-            }
-          },
         ),
       ],
       child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(

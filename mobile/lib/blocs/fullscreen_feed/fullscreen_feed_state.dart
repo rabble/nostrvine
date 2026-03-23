@@ -1,5 +1,5 @@
 // ABOUTME: State for FullscreenFeedBloc
-// ABOUTME: Tracks videos, current index, loading state, and seek commands
+// ABOUTME: Tracks videos, current index, and loading state
 
 part of 'fullscreen_feed_bloc.dart';
 
@@ -15,23 +15,6 @@ enum FullscreenFeedStatus {
   failure,
 }
 
-/// Command for widget to execute a seek operation.
-///
-/// Emitted by bloc when loop enforcement is triggered.
-/// Widget should execute the seek and dispatch [FullscreenFeedSeekCommandHandled].
-class SeekCommand extends Equatable {
-  const SeekCommand({required this.index, required this.position});
-
-  /// Index of the video to seek.
-  final int index;
-
-  /// Position to seek to.
-  final Duration position;
-
-  @override
-  List<Object?> get props => [index, position];
-}
-
 /// State for the FullscreenFeedBloc.
 final class FullscreenFeedState extends Equatable {
   const FullscreenFeedState({
@@ -40,7 +23,6 @@ final class FullscreenFeedState extends Equatable {
     this.currentIndex = 0,
     this.isLoadingMore = false,
     this.canLoadMore = false,
-    this.seekCommand,
   });
 
   /// The current status.
@@ -57,12 +39,6 @@ final class FullscreenFeedState extends Equatable {
 
   /// Whether this feed supports pagination.
   final bool canLoadMore;
-
-  /// Seek command for widget to execute.
-  ///
-  /// When not null, widget should execute the seek operation and dispatch
-  /// [FullscreenFeedSeekCommandHandled] to clear this.
-  final SeekCommand? seekCommand;
 
   /// The current video, if available.
   VideoEvent? get currentVideo =>
@@ -89,8 +65,6 @@ final class FullscreenFeedState extends Equatable {
     int? currentIndex,
     bool? isLoadingMore,
     bool? canLoadMore,
-    SeekCommand? seekCommand,
-    bool clearSeekCommand = false,
   }) {
     return FullscreenFeedState(
       status: status ?? this.status,
@@ -98,7 +72,6 @@ final class FullscreenFeedState extends Equatable {
       currentIndex: currentIndex ?? this.currentIndex,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       canLoadMore: canLoadMore ?? this.canLoadMore,
-      seekCommand: clearSeekCommand ? null : (seekCommand ?? this.seekCommand),
     );
   }
 
@@ -109,6 +82,5 @@ final class FullscreenFeedState extends Equatable {
     currentIndex,
     isLoadingMore,
     canLoadMore,
-    seekCommand,
   ];
 }
