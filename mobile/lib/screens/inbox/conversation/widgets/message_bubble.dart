@@ -159,23 +159,68 @@ bool _isTrustedDomain(String host) {
 /// an external browser; email addresses open the default mail client.
 /// External (non-Divine) URLs show a confirmation before opening.
 /// Non-link text is rendered with the default body medium style.
-class _MessageText extends StatelessWidget {
+///
+/// Span building and gesture recognisers are created in [initState] (and
+/// updated in [didUpdateWidget]) so that they are not re-allocated on every
+/// rebuild.
+class _MessageText extends StatefulWidget {
   const _MessageText({required this.message});
 
   final String message;
 
   @override
-  Widget build(BuildContext context) {
-    if (!_linkRegex.hasMatch(message)) {
-      return Text(message, style: VineTheme.bodyMediumFont());
-    }
+  State<_MessageText> createState() => _MessageTextState();
+}
 
-    return Text.rich(
-      TextSpan(children: _buildSpans(context)),
-    );
+class _MessageTextState extends State<_MessageText> {
+  final List<TapGestureRecognizer> _recognizers = [];
+  bool _hasLinks = false;
+  List<TextSpan> _spans = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _rebuild();
   }
 
-  List<TextSpan> _buildSpans(BuildContext context) {
+  @override
+  void didUpdateWidget(covariant _MessageText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message != widget.message) {
+      _rebuild();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeRecognizers();
+    super.dispose();
+  }
+
+  void _disposeRecognizers() {
+    for (final r in _recognizers) {
+      r.dispose();
+    }
+    _recognizers.clear();
+  }
+
+  void _rebuild() {
+    _disposeRecognizers();
+    _hasLinks = _linkRegex.hasMatch(widget.message);
+    if (_hasLinks) {
+      _spans = _buildSpans();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_hasLinks) {
+      return Text(widget.message, style: VineTheme.bodyMediumFont());
+    }
+    return Text.rich(TextSpan(children: _spans));
+  }
+
+  List<TextSpan> _buildSpans() {
     final spans = <TextSpan>[];
     final defaultStyle = VineTheme.bodyMediumFont();
     final linkStyle = defaultStyle.copyWith(
@@ -185,33 +230,34 @@ class _MessageText extends StatelessWidget {
     );
 
     var lastEnd = 0;
-    for (final match in _linkRegex.allMatches(message)) {
+    for (final match in _linkRegex.allMatches(widget.message)) {
       if (match.start > lastEnd) {
         spans.add(
           TextSpan(
-            text: message.substring(lastEnd, match.start),
+            text: widget.message.substring(lastEnd, match.start),
             style: defaultStyle,
           ),
         );
       }
 
       final link = match.group(0)!;
+      final recognizer = TapGestureRecognizer()..onTap = () => _openLink(link);
+      _recognizers.add(recognizer);
       spans.add(
         TextSpan(
           text: link,
           style: linkStyle,
-          recognizer: TapGestureRecognizer()
-            ..onTap = () => _openLink(context, link),
+          recognizer: recognizer,
         ),
       );
 
       lastEnd = match.end;
     }
 
-    if (lastEnd < message.length) {
+    if (lastEnd < widget.message.length) {
       spans.add(
         TextSpan(
-          text: message.substring(lastEnd),
+          text: widget.message.substring(lastEnd),
           style: defaultStyle,
         ),
       );
@@ -220,7 +266,7 @@ class _MessageText extends StatelessWidget {
     return spans;
   }
 
-  Future<void> _openLink(BuildContext context, String link) async {
+  Future<void> _openLink(String link) async {
     final Uri? uri;
     if (_emailRegex.hasMatch(link)) {
       uri = Uri(scheme: 'mailto', path: link);
