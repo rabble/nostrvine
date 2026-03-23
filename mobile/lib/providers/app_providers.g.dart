@@ -4787,7 +4787,7 @@ final class VideoLocalStorageProvider
   }
 }
 
-String _$videoLocalStorageHash() => r'0be44203ec8edf59105a013aae374c07637a3ba0';
+String _$videoLocalStorageHash() => r'c5af95ff65abba0eb8b1a6859c5b25176230fd5f';
 
 /// Provider for VideosRepository instance
 ///
