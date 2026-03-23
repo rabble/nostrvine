@@ -28,6 +28,7 @@ class ConversationActionsSheet {
     BuildContext context, {
     required String displayName,
     required bool isMuted,
+    required bool isBlocked,
   }) {
     return VineBottomSheet.show<ConversationAction>(
       context: context,
@@ -46,8 +47,8 @@ class ConversationActionsSheet {
             ),
             _ActionTile(
               icon: DivineIconName.eyeSlash,
-              label: 'Block $displayName',
-              isDestructive: true,
+              label: isBlocked ? 'Unblock $displayName' : 'Block $displayName',
+              isDestructive: !isBlocked,
               result: ConversationAction.block,
             ),
             const _ActionTile(
@@ -89,9 +90,6 @@ class _MuteActionTile extends StatelessWidget {
           icon: DivineIconName.bellSimple,
           color: VineTheme.onSurface,
         ),
-        activeThumbColor: VineTheme.primary,
-        inactiveThumbColor: VineTheme.onSurface,
-        inactiveTrackColor: VineTheme.surfaceContainer,
       ),
     );
   }

@@ -362,10 +362,14 @@ class _ConversationList extends ConsumerWidget {
     final muteCubit = context.read<ConversationMuteCubit>();
     final isMuted = muteCubit.state.isMuted(conversation.id);
 
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final isBlocked = blocklistService.isBlocked(otherPubkey);
+
     final action = await ConversationActionsSheet.show(
       context,
       displayName: displayName,
       isMuted: isMuted,
+      isBlocked: isBlocked,
     );
 
     if (action == null || !context.mounted) return;
@@ -394,10 +398,18 @@ class _ConversationList extends ConsumerWidget {
         }
 
       case ConversationAction.block:
-        actionsCubit.blockUser(otherPubkey);
+        if (isBlocked) {
+          actionsCubit.unblockUser(otherPubkey);
+        } else {
+          actionsCubit.blockUser(otherPubkey);
+        }
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Blocked $displayName')),
+            SnackBar(
+              content: Text(
+                isBlocked ? 'Unblocked $displayName' : 'Blocked $displayName',
+              ),
+            ),
           );
         }
 

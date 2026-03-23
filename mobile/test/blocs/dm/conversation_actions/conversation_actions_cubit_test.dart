@@ -130,19 +130,61 @@ void main() {
     });
 
     group('blockUser', () {
-      test('calls blocklistService with correct args', () {
-        final cubit = createCubit();
-        cubit.blockUser(pubkey);
-
-        verify(
-          () => mockBlocklistService.blockUser(
-            pubkey,
-            ourPubkey: currentUserPubkey,
+      blocTest<ConversationActionsCubit, ConversationActionsState>(
+        'emits processing then success and calls blocklistService',
+        setUp: () {
+          when(
+            () => mockBlocklistService.blockUser(
+              pubkey,
+              ourPubkey: currentUserPubkey,
+            ),
+          ).thenReturn(null);
+        },
+        build: createCubit,
+        act: (cubit) => cubit.blockUser(pubkey),
+        expect: () => [
+          const ConversationActionsState(
+            status: ConversationActionsStatus.processing,
           ),
-        ).called(1);
+          const ConversationActionsState(
+            status: ConversationActionsStatus.success,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockBlocklistService.blockUser(
+              pubkey,
+              ourPubkey: currentUserPubkey,
+            ),
+          ).called(1);
+        },
+      );
+    });
 
-        cubit.close();
-      });
+    group('unblockUser', () {
+      blocTest<ConversationActionsCubit, ConversationActionsState>(
+        'emits processing then success and calls unblockUser',
+        setUp: () {
+          when(
+            () => mockBlocklistService.unblockUser(pubkey),
+          ).thenReturn(null);
+        },
+        build: createCubit,
+        act: (cubit) => cubit.unblockUser(pubkey),
+        expect: () => [
+          const ConversationActionsState(
+            status: ConversationActionsStatus.processing,
+          ),
+          const ConversationActionsState(
+            status: ConversationActionsStatus.success,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockBlocklistService.unblockUser(pubkey),
+          ).called(1);
+        },
+      );
     });
 
     group('removeConversation', () {

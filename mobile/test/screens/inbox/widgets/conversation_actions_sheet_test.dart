@@ -13,6 +13,7 @@ void main() {
     Widget buildSubject({
       required ValueChanged<ConversationAction?> onResult,
       bool isMuted = false,
+      bool isBlocked = false,
     }) {
       return testMaterialApp(
         home: Builder(
@@ -24,6 +25,7 @@ void main() {
                     context,
                     displayName: 'Alice',
                     isMuted: isMuted,
+                    isBlocked: isBlocked,
                   );
                   onResult(result);
                 },
@@ -46,6 +48,18 @@ void main() {
         expect(find.text('Report Alice'), findsOneWidget);
         expect(find.text('Block Alice'), findsOneWidget);
         expect(find.text('Remove conversation'), findsOneWidget);
+      });
+
+      testWidgets('renders Unblock label when user is blocked', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(onResult: (_) {}, isBlocked: true),
+        );
+
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Unblock Alice'), findsOneWidget);
+        expect(find.text('Block Alice'), findsNothing);
       });
 
       testWidgets('renders $SwitchListTile for mute toggle', (tester) async {
