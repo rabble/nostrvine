@@ -1908,59 +1908,6 @@ final class SeenVideosServiceProvider
 
 String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
 
-/// Conversation mute service for silencing DM notification sounds
-
-@ProviderFor(conversationMuteService)
-const conversationMuteServiceProvider = ConversationMuteServiceProvider._();
-
-/// Conversation mute service for silencing DM notification sounds
-
-final class ConversationMuteServiceProvider
-    extends
-        $FunctionalProvider<
-          ConversationMuteService,
-          ConversationMuteService,
-          ConversationMuteService
-        >
-    with $Provider<ConversationMuteService> {
-  /// Conversation mute service for silencing DM notification sounds
-  const ConversationMuteServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'conversationMuteServiceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$conversationMuteServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<ConversationMuteService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  ConversationMuteService create(Ref ref) {
-    return conversationMuteService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ConversationMuteService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<ConversationMuteService>(value),
-    );
-  }
-}
-
-String _$conversationMuteServiceHash() =>
-    r'e471778b494db0bcafb8c5002de95c20ff71359c';
-
 /// Content blocklist service for filtering unwanted content from feeds
 ///
 /// Injects SharedPreferences for local block persistence across restarts.

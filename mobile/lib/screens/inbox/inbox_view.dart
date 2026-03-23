@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -356,10 +357,10 @@ class _ConversationList extends ConsumerWidget {
     );
     final displayName = profile?.bestDisplayName ?? 'user';
 
-    final muteService = ref.read(conversationMuteServiceProvider);
-    final isMuted = muteService.isMuted(conversation.id);
-
     if (!context.mounted) return;
+
+    final muteCubit = context.read<ConversationMuteCubit>();
+    final isMuted = muteCubit.state.isMuted(conversation.id);
 
     final action = await ConversationActionsSheet.show(
       context,
@@ -371,7 +372,7 @@ class _ConversationList extends ConsumerWidget {
 
     switch (action) {
       case ConversationAction.toggleMute:
-        final nowMuted = await muteService.toggleMute(conversation.id);
+        final nowMuted = await muteCubit.toggleMute(conversation.id);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -383,18 +384,27 @@ class _ConversationList extends ConsumerWidget {
         }
 
       case ConversationAction.report:
-        final reportingService = await ref.read(
-          contentReportingServiceProvider.future,
-        );
-        if (!context.mounted) return;
-        final reported = await reportingService.reportUser(
-          userPubkey: otherPubkey,
-          reason: ContentFilterReason.other,
-          details: 'Reported from DM conversation',
-        );
-        if (context.mounted && reported.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reported $displayName')),
+        try {
+          final reportingService = await ref.read(
+            contentReportingServiceProvider.future,
+          );
+          if (!context.mounted) return;
+          final reported = await reportingService.reportUser(
+            userPubkey: otherPubkey,
+            reason: ContentFilterReason.other,
+            details: 'Reported from DM conversation',
+          );
+          if (context.mounted && reported.success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Reported $displayName')),
+            );
+          }
+        } catch (e, stackTrace) {
+          Log.error(
+            'Failed to report user: $e',
+            name: 'InboxView',
+            category: LogCategory.ui,
+            stackTrace: stackTrace,
           );
         }
 
@@ -415,11 +425,20 @@ class _ConversationList extends ConsumerWidget {
         if (!context.mounted) return;
         final confirmed = await _confirmRemove(context, displayName);
         if (confirmed && context.mounted) {
-          final dmRepo = ref.read(dmRepositoryProvider);
-          await dmRepo.removeConversation(conversation.id);
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Conversation removed')),
+          try {
+            final dmRepo = ref.read(dmRepositoryProvider);
+            await dmRepo.removeConversation(conversation.id);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Removed conversation')),
+              );
+            }
+          } catch (e, stackTrace) {
+            Log.error(
+              'Failed to remove conversation: $e',
+              name: 'InboxView',
+              category: LogCategory.ui,
+              stackTrace: stackTrace,
             );
           }
         }
@@ -434,14 +453,14 @@ class _ConversationList extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
+        title: Text(
           'Remove conversation?',
-          style: TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.titleLargeFont(),
         ),
         content: Text(
           'This will delete your conversation with $displayName. '
           'This action cannot be undone.',
-          style: const TextStyle(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
         ),
         actions: [
           TextButton(

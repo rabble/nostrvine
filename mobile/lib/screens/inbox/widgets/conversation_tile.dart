@@ -61,6 +61,7 @@ class ConversationTile extends ConsumerWidget {
     return Semantics(
       button: true,
       label: '$displayName conversation',
+      onLongPressHint: 'Show conversation actions',
       child: GestureDetector(
         onTap: () {
           Log.debug(

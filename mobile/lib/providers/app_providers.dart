@@ -50,7 +50,6 @@ import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:openvine/services/conversation_mute_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
@@ -664,13 +663,6 @@ PersonalEventCacheService personalEventCacheService(Ref ref) {
 @riverpod
 SeenVideosService seenVideosService(Ref ref) {
   return SeenVideosService();
-}
-
-/// Conversation mute service for silencing DM notification sounds
-@riverpod
-ConversationMuteService conversationMuteService(Ref ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return ConversationMuteService(prefs: prefs);
 }
 
 /// Content blocklist service for filtering unwanted content from feeds
