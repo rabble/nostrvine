@@ -1,15 +1,14 @@
 // ABOUTME: Smart video thumbnail widget that displays thumbnails or blurhash placeholders
 // ABOUTME: Uses existing thumbnail URLs from video events and falls back to blurhash when missing
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/thumbnail_api_service.dart'
     show ThumbnailSize;
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Smart thumbnail widget that displays thumbnails with blurhash fallback
 class VideoThumbnailWidget extends StatefulWidget {
@@ -332,13 +331,12 @@ class _SafeNetworkImage extends StatelessWidget {
       );
     }
 
-    return CachedNetworkImage(
+    return VineCachedImage(
       imageUrl: url,
       width: width,
       height: height,
       fit: fit,
       alignment: Alignment.topCenter,
-      cacheManager: openVineImageCache,
       // Show transparent container so background surfaceContainer color shows through
       placeholder: (context, url) =>
           Container(width: width, height: height, color: VineTheme.transparent),

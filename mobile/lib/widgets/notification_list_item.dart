@@ -1,13 +1,12 @@
 // ABOUTME: Widget for displaying individual notification items in the notifications list
 // ABOUTME: Shows actor avatar, notification message, timestamp, and action buttons
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/theme/app_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 class NotificationListItem extends StatelessWidget {
   const NotificationListItem({
@@ -98,12 +97,10 @@ class NotificationListItem extends StatelessWidget {
         // Avatar
         ClipOval(
           child: notification.actorPictureUrl != null
-              ? CachedNetworkImage(
+              ? VineCachedImage(
                   imageUrl: notification.actorPictureUrl!,
                   width: 48,
                   height: 48,
-                  fit: BoxFit.cover,
-                  cacheManager: openVineImageCache,
                   placeholder: (context, url) => Container(
                     width: 48,
                     height: 48,
@@ -245,12 +242,10 @@ class NotificationListItem extends StatelessWidget {
     padding: const EdgeInsets.only(left: 8),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: CachedNetworkImage(
+      child: VineCachedImage(
         imageUrl: notification.targetVideoThumbnail!,
         width: 64,
         height: 64,
-        fit: BoxFit.cover,
-        cacheManager: openVineImageCache,
         placeholder: (context, url) => Container(
           width: 64,
           height: 64,
