@@ -16,28 +16,9 @@ A practical guide for using the [Very Good AI Flutter Plugin](https://github.com
 
 ### Install the Plugin
 
-In Claude Code, run:
+Follow the installation instructions in the [plugin README](https://github.com/VeryGoodOpenSource/very_good_ai_flutter_plugin#readme).
 
-```
-/plugin marketplace add VeryGoodOpenSource/very_good_claude_marketplace
-/plugin install very-good-ai-flutter-plugin@very_good_claude_marketplace
-```
-
-This installs:
-- **10 skills** — best-practice guidance activated by context or slash commands
-- **2 hooks** — auto `dart analyze` (blocking) + `dart format` (non-blocking) on every file edit
-- **MCP server** — Very Good CLI tools for scaffolding, testing, and license auditing
-
-### What the Hooks Do
-
-The plugin adds PostToolUse hooks that run after every `Edit` or `Write` on `.dart` files:
-
-| Hook | Behavior | Blocking? |
-|---|---|---|
-| `dart analyze` | Catches lint errors immediately | Yes — Claude must fix before continuing |
-| `dart format` | Auto-formats the file | No — applied silently |
-
-These complement our existing pre-commit hooks (format, analyze, codegen verification). The plugin hooks catch issues **during** Claude's work, not just at commit time.
+The plugin hooks complement our existing pre-commit hooks (format, analyze, codegen verification) by catching issues **during** Claude's work, not just at commit time.
 
 ---
 
@@ -60,13 +41,8 @@ These complement our existing pre-commit hooks (format, analyze, codegen verific
 | `/vgv-testing` | VGV test naming, `pumpApp`, golden test patterns | 685+ tests with mocktail, bloc_test, Patrol |
 | `/vgv-navigation` | Type-safe GoRouter patterns, redirect strategies | GoRouter with `@TypedGoRoute` already in use |
 | `/vgv-layered-architecture` | Validates 4-layer package structure | 21 packages already follow Data → Repo → BLoC → UI |
-
-### Tier 3 — Use with Caution (conflicts with project constraints)
-
-| Skill | Issue | Guidance |
-|---|---|---|
-| `/vgv-material-theming` | Assumes light + dark themes | Divine is **dark-mode only** — skip light theme suggestions |
-| `/vgv-create-project` | Scaffolds from VGV templates | Useful for new packages, but must adapt to existing monorepo structure |
+| `/vgv-material-theming` | Material 3 theming patterns and spacing system | Aligned with architecture — just note divine is **dark-mode only** |
+| `/vgv-create-project` | Scaffolds from VGV templates | Useful for new packages — adapt to existing monorepo workspace |
 
 ---
 
@@ -410,7 +386,7 @@ Review the dependency graph of mobile/packages/ for layer violations.
 
 ### `/vgv-material-theming`
 
-**Priority: Tier 3 — Use with Caution**
+**Priority: Tier 2 — Reinforcing**
 
 **When to use:** When adding new themed components or reviewing theme consistency.
 
@@ -437,7 +413,7 @@ to the divine_ui package.
 
 ### `/vgv-create-project`
 
-**Priority: Tier 3 — Use with Caution**
+**Priority: Tier 2 — Reinforcing**
 
 **When to use:** When scaffolding new packages within the monorepo.
 
