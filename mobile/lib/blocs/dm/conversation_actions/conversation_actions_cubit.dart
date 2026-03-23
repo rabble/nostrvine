@@ -73,10 +73,10 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
   bool isBlocked(String pubkey) => _blocklistService.isBlocked(pubkey);
 
   /// Block a user from a DM conversation.
-  void blockUser(String pubkey) {
+  Future<void> blockUser(String pubkey) async {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
-      _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
+      await _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
       emit(state.copyWith(status: ConversationActionsStatus.success));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
@@ -85,10 +85,10 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
   }
 
   /// Unblock a previously blocked user.
-  void unblockUser(String pubkey) {
+  Future<void> unblockUser(String pubkey) async {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
-      _blocklistService.unblockUser(pubkey);
+      await _blocklistService.unblockUser(pubkey);
       emit(state.copyWith(status: ConversationActionsStatus.success));
     } catch (e, stackTrace) {
       addError(e, stackTrace);

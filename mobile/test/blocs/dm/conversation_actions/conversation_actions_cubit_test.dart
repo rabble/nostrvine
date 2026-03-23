@@ -144,6 +144,14 @@ void main() {
     group('blockUser', () {
       blocTest<ConversationActionsCubit, ConversationActionsState>(
         'emits processing then success and calls blocklistService',
+        setUp: () {
+          when(
+            () => mockBlocklistService.blockUser(
+              pubkey,
+              ourPubkey: currentUserPubkey,
+            ),
+          ).thenAnswer((_) async {});
+        },
         build: createCubit,
         act: (cubit) => cubit.blockUser(pubkey),
         expect: () => [
@@ -172,7 +180,7 @@ void main() {
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
-          ).thenThrow(Exception('block failed'));
+          ).thenAnswer((_) async => throw Exception('block failed'));
         },
         build: createCubit,
         act: (cubit) => cubit.blockUser(pubkey),
@@ -191,6 +199,11 @@ void main() {
     group('unblockUser', () {
       blocTest<ConversationActionsCubit, ConversationActionsState>(
         'emits processing then success and calls unblockUser',
+        setUp: () {
+          when(
+            () => mockBlocklistService.unblockUser(pubkey),
+          ).thenAnswer((_) async {});
+        },
         build: createCubit,
         act: (cubit) => cubit.unblockUser(pubkey),
         expect: () => [
@@ -213,7 +226,7 @@ void main() {
         setUp: () {
           when(
             () => mockBlocklistService.unblockUser(pubkey),
-          ).thenThrow(Exception('unblock failed'));
+          ).thenAnswer((_) async => throw Exception('unblock failed'));
         },
         build: createCubit,
         act: (cubit) => cubit.unblockUser(pubkey),
