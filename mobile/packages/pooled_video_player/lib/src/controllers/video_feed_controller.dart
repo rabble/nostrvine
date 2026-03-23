@@ -109,7 +109,7 @@ class VideoFeedController extends ChangeNotifier {
 
   /// Interval for [positionCallback] invocations.
   ///
-  /// Defaults to 200ms.
+  /// Defaults to 250ms.
   final Duration positionCallbackInterval;
 
   /// Duration after which a loading video is marked as slow.
