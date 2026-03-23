@@ -350,11 +350,15 @@ class CommentsRepository {
   ///
   /// Parameters:
   /// - [commentId]: The ID of the comment event to delete
+  /// - [rootEventId]: Optional root event ID. When provided, the cached
+  ///   comment count for that root event is decremented so subsequent
+  ///   [getCommentsCount] calls return the correct value.
   /// - [reason]: Optional reason for the deletion
   ///
   /// Throws [DeleteCommentFailedException] if broadcasting fails.
   Future<void> deleteComment({
     required String commentId,
+    String? rootEventId,
     String? reason,
   }) async {
     try {
@@ -376,6 +380,13 @@ class CommentsRepository {
         throw const DeleteCommentFailedException(
           'Failed to publish deletion request',
         );
+      }
+
+      if (rootEventId != null) {
+        final cached = _commentCountCache[rootEventId];
+        if (cached != null) {
+          _commentCountCache[rootEventId] = cached > 0 ? cached - 1 : 0;
+        }
       }
     } on CommentsRepositoryException {
       rethrow;

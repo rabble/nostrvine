@@ -1314,6 +1314,40 @@ void main() {
           ),
         );
       });
+
+      test('decrements cached count when rootEventId is provided', () async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 10),
+        );
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (inv) async => inv.positionalArguments.first as Event,
+        );
+
+        await repository.getCommentsCount(testRootEventId);
+        await repository.deleteComment(
+          commentId: testCommentId,
+          rootEventId: testRootEventId,
+        );
+        final cached = await repository.getCommentsCount(testRootEventId);
+
+        expect(cached, equals(9));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
+
+      test('does not decrement when rootEventId is omitted', () async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 10),
+        );
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (inv) async => inv.positionalArguments.first as Event,
+        );
+
+        await repository.getCommentsCount(testRootEventId);
+        await repository.deleteComment(commentId: testCommentId);
+        final cached = await repository.getCommentsCount(testRootEventId);
+
+        expect(cached, equals(10));
+      });
     });
 
     group('watchComments', () {

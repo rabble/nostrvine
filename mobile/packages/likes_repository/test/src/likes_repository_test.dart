@@ -1838,6 +1838,51 @@ void main() {
           () => mockNostrClient.deleteEvent(testReactionEventId),
         ).called(1);
       });
+
+      test('decrements like count cache', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 10));
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+          ),
+        );
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
+
+        repository = createRepository();
+
+        // Populate count cache
+        await repository.getLikeCount(testEventId);
+        // Like so there's a record to unlike
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+        // Execute unlike via sync path
+        await repository.executeUnlikeAction(testEventId);
+
+        // Cache was 10 → likeEvent +1 → 11 → executeUnlikeAction −1 → 10
+        final cached = await repository.getLikeCount(testEventId);
+        expect(cached, equals(10));
+      });
     });
   });
 }

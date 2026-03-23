@@ -377,6 +377,7 @@ class LikesRepository {
       _likeRecords.remove(eventId);
       await _localStorage?.deleteLikeRecord(eventId);
       _emitLikedIds();
+      _decrementLikeCountCache(eventId);
       return;
     }
 
@@ -393,6 +394,7 @@ class LikesRepository {
     _likeRecords.remove(eventId);
     await _localStorage?.deleteLikeRecord(eventId);
     _emitLikedIds();
+    _decrementLikeCountCache(eventId);
   }
 
   /// Toggle like status for an event.
