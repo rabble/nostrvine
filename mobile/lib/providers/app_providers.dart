@@ -910,6 +910,14 @@ Future<void> _setZendeskIdentity(
           .read(currentEnvironmentProvider)
           .relayManagerApiUrl;
 
+      // Store auth context so the service can refresh JWT before each SDK action.
+      // The pre-auth token has a 5-minute TTL, so any delay between login and
+      // ticket creation would fail without a refresh.
+      ZendeskSupportService.storeAuthContext(
+        nip98Service: nip98Service,
+        relayManagerUrl: relayManagerUrl,
+      );
+
       final jwtSet = await ZendeskSupportService.setJwtIdentity(
         nip98Service: nip98Service,
         relayManagerUrl: relayManagerUrl,

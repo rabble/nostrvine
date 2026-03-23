@@ -25,6 +25,10 @@ class ZendeskSupportService {
   static String? _userEmail;
   static String? _userNpub;
 
+  /// Stored references for JWT refresh (set at login, used by _ensureFreshJwt)
+  static Nip98AuthService? _nip98Service;
+  static String? _relayManagerUrl;
+
   /// Public accessors for user identity (used by reserved username requests)
   static String? get userName => _userName;
   static String? get userEmail => _userEmail;
@@ -37,6 +41,8 @@ class ZendeskSupportService {
     _userName = null;
     _userEmail = null;
     _userNpub = null;
+    _nip98Service = null;
+    _relayManagerUrl = null;
   }
 
   /// Initialize Zendesk SDK
@@ -208,6 +214,48 @@ class ZendeskSupportService {
   // JWT Authentication (for native SDK ticket history)
   // ==========================================================================
 
+  /// Store auth context for automatic JWT refresh before SDK actions.
+  /// Call once at login alongside setUserIdentity/setJwtIdentity.
+  /// These references are used by _ensureFreshJwt to refresh the pre-auth
+  /// token transparently before any SDK call, avoiding the 5-minute expiry.
+  static void storeAuthContext({
+    required Nip98AuthService nip98Service,
+    required String relayManagerUrl,
+  }) {
+    _nip98Service = nip98Service;
+    _relayManagerUrl = relayManagerUrl;
+  }
+
+  /// Refresh JWT identity before an SDK action.
+  /// Gets a fresh pre-auth token and sets it as the SDK identity.
+  /// No-op if auth context is not stored or SDK not initialized.
+  /// Returns true if identity was refreshed, false if skipped/failed.
+  static Future<bool> _ensureFreshJwt() async {
+    if (!_initialized || _nip98Service == null || _relayManagerUrl == null) {
+      return false;
+    }
+
+    try {
+      final result = await setJwtIdentity(
+        nip98Service: _nip98Service!,
+        relayManagerUrl: _relayManagerUrl!,
+      );
+      if (result) {
+        Log.info(
+          'Zendesk JWT refreshed before SDK action',
+          category: LogCategory.system,
+        );
+      }
+      return result;
+    } catch (e) {
+      Log.warning(
+        'Zendesk JWT refresh failed (will attempt SDK action anyway): $e',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
   /// Fetches a pre-auth token from relay-manager by proving identity via NIP-98.
   ///
   /// The token is HMAC-signed and nonce-bound — it replaces the raw npub
@@ -336,6 +384,8 @@ class ZendeskSupportService {
       return false;
     }
 
+    await _ensureFreshJwt();
+
     try {
       await _channel.invokeMethod('showNewTicket', {
         'subject': subject,
@@ -372,6 +422,8 @@ class ZendeskSupportService {
       );
       return false;
     }
+
+    await _ensureFreshJwt();
 
     try {
       await _channel.invokeMethod('showTicketList');
@@ -418,6 +470,11 @@ class ZendeskSupportService {
       );
       return false;
     }
+
+    // Refresh JWT before SDK action. The pre-auth token has a 5-minute TTL,
+    // so any delay between login and ticket creation will cause "unauthorized".
+    // This gets a fresh token every time, regardless of how long the user waited.
+    await _ensureFreshJwt();
 
     try {
       final result = await _channel.invokeMethod('createTicket', {

@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/bug_report_service.dart';
-import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,10 +22,6 @@ class SupportCenterScreen extends ConsumerWidget {
     final authService = ref.watch(authServiceProvider);
     final userPubkey = authService.currentPublicKeyHex;
     final bugReportService = ref.read(bugReportServiceProvider);
-    final nip98Service = ref.read(nip98AuthServiceProvider);
-    final relayManagerUrl = ref
-        .read(currentEnvironmentProvider)
-        .relayManagerApiUrl;
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -66,11 +60,7 @@ class SupportCenterScreen extends ConsumerWidget {
                 icon: Icons.chat,
                 title: 'View Support Messages',
                 subtitle: 'Check responses from support',
-                onTap: () => _viewSupportMessages(
-                  context,
-                  nip98Service: nip98Service,
-                  relayManagerUrl: relayManagerUrl,
-                ),
+                onTap: () => _viewSupportMessages(context),
               ),
               _SupportTile(
                 icon: Icons.help,
@@ -171,11 +161,7 @@ class SupportCenterScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _viewSupportMessages(
-    BuildContext context, {
-    required Nip98AuthService nip98Service,
-    required String relayManagerUrl,
-  }) async {
+  Future<void> _viewSupportMessages(BuildContext context) async {
     if (!ZendeskSupportService.isAvailable) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -188,20 +174,16 @@ class SupportCenterScreen extends ConsumerWidget {
       return;
     }
 
-    final jwtSet = await ZendeskSupportService.setJwtIdentity(
-      nip98Service: nip98Service,
-      relayManagerUrl: relayManagerUrl,
-    );
-    if (!jwtSet && context.mounted) {
+    // JWT refresh is handled internally by showTicketListScreen via _ensureFreshJwt
+    final shown = await ZendeskSupportService.showTicketListScreen();
+    if (!shown && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not authenticate with support'),
+          content: Text('Could not open support messages'),
           backgroundColor: VineTheme.error,
         ),
       );
-      return;
     }
-    await ZendeskSupportService.showTicketListScreen();
   }
 
   Future<void> _launchUrl(
