@@ -123,6 +123,7 @@ class VideoEditorAudioChip extends StatelessWidget {
                     padding: const .symmetric(horizontal: 8),
                     child: hasSelectedSound
                         ? Text.rich(
+                            textScaler: TextScaler.noScaling,
                             TextSpan(
                               style: VineTheme.labelLargeFont(),
                               children: [
@@ -147,6 +148,7 @@ class VideoEditorAudioChip extends StatelessWidget {
                             // TODO(l10n): Replace with context.l10n when localization is added.
                             'Add audio',
                             textAlign: .center,
+                            textScaler: TextScaler.noScaling,
                             style: VineTheme.titleMediumFont(),
                           ),
                   ),

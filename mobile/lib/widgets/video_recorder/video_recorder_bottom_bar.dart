@@ -75,7 +75,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                 // TODO(l10n): Replace with context.l10n when localization is added.
                 'Show last clip overlay',
                 style: VineTheme.titleMediumFont(),
-                maxLines: 1,
+                maxLines: 2,
                 overflow: .ellipsis,
               ),
               secondary: const DivineIcon(icon: .userFocus),

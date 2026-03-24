@@ -143,16 +143,16 @@ class _SmoothTimeDisplayState extends State<SmoothTimeDisplay>
   Widget build(BuildContext context) {
     final style =
         widget.style ??
-        const TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 14,
-          fontWeight: .w800,
-          letterSpacing: 0.1,
-          fontFeatures: [.tabularFigures()],
+        VineTheme.titleSmallFont().copyWith(
+          fontFeatures: [const .tabularFigures()],
         );
 
     return RepaintBoundary(
-      child: Text(_displayPosition.toFormattedSeconds(), style: style),
+      child: Text(
+        _displayPosition.toFormattedSeconds(),
+        textScaler: TextScaler.noScaling,
+        style: style,
+      ),
     );
   }
 }
