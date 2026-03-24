@@ -5,6 +5,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -52,6 +53,7 @@ enum RouteType {
   profile,
   likedVideos, // Current user's liked videos feed
   hashtag, // Still supported as push route within explore
+  categoryGallery, // Category gallery pushed from explore categories
   search,
   videoRecorder, // Video recorder screen
   videoEditor, // Video editor screen
@@ -97,6 +99,7 @@ class RouteContext {
     this.videoIndex,
     this.npub,
     this.hashtag,
+    this.categoryName,
     this.searchTerm,
     this.listId,
     this.soundId,
@@ -109,6 +112,7 @@ class RouteContext {
   final int? videoIndex;
   final String? npub;
   final String? hashtag;
+  final String? categoryName;
   final String? searchTerm;
   final String? listId;
   final String? soundId;
@@ -210,6 +214,16 @@ RouteContext parseRoute(String path) {
         type: RouteType.hashtag,
         hashtag: tag,
         videoIndex: index,
+      );
+
+    case 'categories':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final categoryName = Uri.decodeComponent(segments[1]);
+      return RouteContext(
+        type: RouteType.categoryGallery,
+        categoryName: categoryName,
       );
 
     case 'search':
@@ -426,6 +440,13 @@ String buildRoute(RouteContext context) {
     case RouteType.hashtag:
       final hashtag = context.hashtag ?? '';
       return HashtagScreenRouter.pathForTag(hashtag);
+
+    case RouteType.categoryGallery:
+      final categoryName = context.categoryName;
+      if (categoryName == null || categoryName.isEmpty) {
+        return ExploreScreen.path;
+      }
+      return CategoryGalleryScreen.locationFor(categoryName);
 
     case RouteType.search:
       // Grid mode (null videoIndex):

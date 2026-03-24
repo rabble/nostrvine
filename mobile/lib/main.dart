@@ -1039,6 +1039,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           // Hashtag is a standalone screen — pop back
           router.pop();
           return true; // Handled
+        case RouteType.categoryGallery:
+          if (router.canPop()) {
+            router.pop();
+          } else {
+            router.go(ExploreScreen.path);
+          }
+          return true; // Handled
         case RouteType.search:
           // Go back to explore
           router.go(ExploreScreen.path);

@@ -98,6 +98,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.notifications:
     case RouteType.inbox:
     case RouteType.conversation:
+    case RouteType.categoryGallery:
     case RouteType.videoRecorder:
     case RouteType.videoEditor:
     case RouteType.videoMetadata:

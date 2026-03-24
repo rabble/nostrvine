@@ -984,6 +984,7 @@ int tabIndexFromLocation(String loc) {
     case 'discover-lists':
     case 'creator-analytics':
     case 'hashtag':
+    case 'categories':
       return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home

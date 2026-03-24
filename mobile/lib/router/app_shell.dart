@@ -70,6 +70,8 @@ class _AppShellState extends ConsumerState<AppShell> {
           return 'Explore';
         }
         return 'Explore';
+      case RouteType.categoryGallery:
+        return 'Explore';
       case RouteType.notifications:
         return 'Notifications';
       case RouteType.inbox:
