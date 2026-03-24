@@ -261,7 +261,9 @@ class _DivineButtonContent extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
-        Text(label, style: _textStyle),
+        Flexible(
+          child: Text(label, style: _textStyle, textAlign: .center),
+        ),
         if (trailingIcon != null) ...[
           const SizedBox(width: 8),
           DivineIcon(

@@ -18,8 +18,6 @@ import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/forgot_password_dialog.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 import 'package:openvine/widgets/rounded_icon_button.dart';
 
 /// Sign-in screen — Page that provides [DivineAuthCubit].
@@ -310,7 +308,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 const SizedBox(height: 24),
 
                 // Sign in button
-                DivinePrimaryButton(
+                DivineButton(
+                  expanded: true,
                   label: 'Sign in',
                   isLoading: isSubmitting,
                   onPressed: isDisabled
@@ -341,7 +340,9 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 const Spacer(),
 
                 // Alternative login methods
-                DivineSecondaryButton(
+                DivineButton(
+                  type: .secondary,
+                  expanded: true,
                   label: 'Import Nostr key',
                   onPressed: isDisabled
                       ? null
@@ -350,7 +351,9 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
 
                 const SizedBox(height: 12),
 
-                DivineSecondaryButton(
+                DivineButton(
+                  type: .secondary,
+                  expanded: true,
                   label: 'Connect with a signer app',
                   onPressed: isDisabled
                       ? null
@@ -360,7 +363,9 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 if (!kIsWeb &&
                     defaultTargetPlatform == TargetPlatform.android) ...[
                   const SizedBox(height: 12),
-                  DivineSecondaryButton(
+                  DivineButton(
+                    type: .secondary,
+                    expanded: true,
                     label: 'Sign in with Amber',
                     isLoading: _isConnectingAmber,
                     onPressed: isDisabled ? null : _connectWithAmber,
@@ -381,9 +386,15 @@ void _showInfoSheet(BuildContext context) {
   VineBottomSheet.show<void>(
     context: context,
     title: const Text('Sign-in options'),
-    buildScrollBody: (scrollController) => ListView(
-      controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+    buildScrollBody: (scrollController) => Builder(
+      builder: (sheetContext) => ListView(
+        controller: scrollController,
+        padding: EdgeInsets.fromLTRB(
+          24,
+          16,
+          24,
+          32 + MediaQuery.viewPaddingOf(sheetContext).bottom,
+        ),
       children: [
         const _InfoItem(
           title: 'Email & Password',
@@ -414,7 +425,8 @@ void _showInfoSheet(BuildContext context) {
                 'your Nostr keys securely.',
           ),
         ],
-      ],
+        ],
+      ),
     ),
   );
 }

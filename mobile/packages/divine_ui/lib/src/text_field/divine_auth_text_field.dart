@@ -222,73 +222,76 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
     final label = widget.label;
     final hasLabel = label != null && label.isNotEmpty;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          height: _totalHeight,
-          decoration: BoxDecoration(
-            color: _hasError
-                ? VineTheme.errorOverlay
-                : VineTheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(24),
-            border: _hasError
-                ? Border.all(color: VineTheme.error, width: 2)
-                : null,
-          ),
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: _horizontalPadding,
-              right: widget.obscureText ? 8 : _horizontalPadding,
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: _totalHeight,
+            decoration: BoxDecoration(
+              color: _hasError
+                  ? VineTheme.errorOverlay
+                  : VineTheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(24),
+              border: _hasError
+                  ? Border.all(color: VineTheme.error, width: 2)
+                  : null,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _handleContainerTap,
-                    behavior: HitTestBehavior.opaque,
-                    child: _AuthTextFieldContent(
-                      label: label,
-                      hasLabel: hasLabel,
-                      isFloating: _isFloating,
-                      hasError: _hasError,
-                      child: _AuthTextFieldInput(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        obscureText: widget.obscureText && _isObscured,
-                        enabled: widget.enabled,
-                        readOnly: widget.readOnly,
-                        autocorrect: widget.autocorrect,
-                        keyboardType: widget.keyboardType,
-                        textInputAction: widget.textInputAction,
-                        textCapitalization: widget.textCapitalization,
-                        inputFormatters: widget.inputFormatters,
-                        validator: _wrappedValidator,
-                        onTap: widget.onTap,
-                        onChanged: widget.onChanged,
-                        onSubmitted: widget.onSubmitted,
-                        onEditingComplete: widget.onEditingComplete,
-                        maxLength: widget.maxLength,
-                        contentPadding: widget.contentPadding,
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: _horizontalPadding,
+                right: widget.obscureText ? 8 : _horizontalPadding,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _handleContainerTap,
+                      behavior: HitTestBehavior.opaque,
+                      child: _AuthTextFieldContent(
+                        label: label,
+                        hasLabel: hasLabel,
+                        isFloating: _isFloating,
                         hasError: _hasError,
-                        autofillHints: widget.autofillHints,
+                        child: _AuthTextFieldInput(
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          obscureText: widget.obscureText && _isObscured,
+                          enabled: widget.enabled,
+                          readOnly: widget.readOnly,
+                          autocorrect: widget.autocorrect,
+                          keyboardType: widget.keyboardType,
+                          textInputAction: widget.textInputAction,
+                          textCapitalization: widget.textCapitalization,
+                          inputFormatters: widget.inputFormatters,
+                          validator: _wrappedValidator,
+                          onTap: widget.onTap,
+                          onChanged: widget.onChanged,
+                          onSubmitted: widget.onSubmitted,
+                          onEditingComplete: widget.onEditingComplete,
+                          maxLength: widget.maxLength,
+                          contentPadding: widget.contentPadding,
+                          hasError: _hasError,
+                          autofillHints: widget.autofillHints,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if (widget.obscureText)
-                  _VisibilityToggle(
-                    isObscured: _isObscured,
-                    hasText: _hasText,
-                    onToggle: _toggleObscured,
-                  ),
-              ],
+                  if (widget.obscureText)
+                    _VisibilityToggle(
+                      isObscured: _isObscured,
+                      hasText: _hasText,
+                      onToggle: _toggleObscured,
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-        if (_hasError) _ErrorSupportingText(errorText: _effectiveError!),
-      ],
+          if (_hasError) _ErrorSupportingText(errorText: _effectiveError!),
+        ],
+      ),
     );
   }
 }

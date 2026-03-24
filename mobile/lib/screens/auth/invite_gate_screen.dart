@@ -16,8 +16,6 @@ import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 import 'package:openvine/widgets/rounded_icon_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -163,7 +161,8 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
             ],
           ),
         ),
-        primaryButton: DivineSecondaryButton(
+        primaryButton: DivineButton(
+          type: .secondary,
           label: 'OK',
           onPressed: () => context.go(WelcomeScreen.path),
         ),
@@ -199,11 +198,14 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            primaryButton: DivinePrimaryButton(
+            primaryButton: DivineButton(
+              expanded: true,
               label: 'Try again',
               onPressed: _retryConfigLoad,
             ),
-            secondaryButton: DivineSecondaryButton(
+            secondaryButton: DivineButton(
+              expanded: true,
+              type: .secondary,
               label: 'Contact support',
               onPressed: () => _contactSupport('support@divine.video'),
             ),
@@ -269,102 +271,116 @@ class _InviteCodeEntryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
-
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Stack(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  RoundedIconButton(
-                    onPressed: onBack,
-                    icon: const Icon(
-                      Icons.chevron_left,
-                      color: VineTheme.vineGreenLight,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  const Text(
-                    'Add your invite code',
-                    style: TextStyle(
-                      fontFamily: VineTheme.fontFamilyBricolage,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: VineTheme.whiteText,
-                      height: 1.25,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  _InviteCodeInput(
-                    controller: controller,
-                    enabled: !state.isValidatingCode,
-                    errorText: state.inviteCodeError,
-                    onChanged: onChanged,
-                    onSubmitted: onSubmit,
-                  ),
-                  if (state.generalError != null) ...[
-                    const SizedBox(height: 16),
-                    AuthErrorBox(message: state.generalError!),
-                  ],
-                ],
-              ),
-              Positioned(
-                left: -36,
-                bottom: keyboardInset + 148,
-                child: Transform.rotate(
-                  angle: 12 * 3.14159 / 180,
-                  child: Image.asset(
-                    'assets/stickers/confetti.png',
-                    width: 174,
-                    height: 174,
-                    fit: BoxFit.contain,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Stack(
+              children: [
+                Positioned(
+                  top: constraints.maxHeight / 2 - 80,
+                  left: -36,
+                  child: Transform.rotate(
+                    angle: 12 * 3.14159 / 180,
+                    child: const DivineSticker(sticker: .confetti, size: 174),
                   ),
                 ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: keyboardInset + 16,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DivinePrimaryButton(
-                      label: 'Next',
-                      isLoading: state.isValidatingCode,
-                      onPressed: state.isValidatingCode ? null : onSubmit,
-                    ),
-                    const SizedBox(height: 12),
-                    DivineSecondaryButton(
-                      label: 'Join waitlist',
-                      onPressed: state.isValidatingCode ? null : onShowWaitlist,
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: state.isValidatingCode
-                          ? null
-                          : onContactSupport,
-                      child: const Text(
-                        'Contact support',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                          color: VineTheme.lightText,
+
+                Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.viewInsetsOf(context).bottom,
+                  ),
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 16),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: RoundedIconButton(
+                                  onPressed: onBack,
+                                  icon: const Icon(
+                                    Icons.chevron_left,
+                                    color: VineTheme.vineGreenLight,
+                                    size: 28,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              const Text(
+                                'Add your invite code',
+                                style: TextStyle(
+                                  fontFamily: VineTheme.fontFamilyBricolage,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w700,
+                                  color: VineTheme.whiteText,
+                                  height: 1.25,
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              _InviteCodeInput(
+                                controller: controller,
+                                enabled: !state.isValidatingCode,
+                                errorText: state.inviteCodeError,
+                                onChanged: onChanged,
+                                onSubmitted: onSubmit,
+                              ),
+                              if (state.generalError != null) ...[
+                                const SizedBox(height: 16),
+                                AuthErrorBox(message: state.generalError!),
+                              ],
+
+                              const Spacer(),
+
+                              const SizedBox(height: 24),
+                              DivineButton(
+                                expanded: true,
+                                label: 'Next',
+                                isLoading: state.isValidatingCode,
+                                onPressed: state.isValidatingCode
+                                    ? null
+                                    : onSubmit,
+                              ),
+                              const SizedBox(height: 12),
+                              DivineButton(
+                                expanded: true,
+                                type: DivineButtonType.secondary,
+                                label: 'Join waitlist',
+                                onPressed: state.isValidatingCode
+                                    ? null
+                                    : onShowWaitlist,
+                              ),
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: state.isValidatingCode
+                                    ? null
+                                    : onContactSupport,
+                                child: const Text(
+                                  'Contact support',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 15,
+                                    color: VineTheme.lightText,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -734,7 +750,8 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
                 AuthErrorBox(message: _generalError!),
                 const SizedBox(height: 16),
               ],
-              DivinePrimaryButton(
+              DivineButton(
+                type: .secondary,
                 label: 'Join waitlist',
                 isLoading: _isSubmitting,
                 onPressed: _isSubmitting ? null : _submit,

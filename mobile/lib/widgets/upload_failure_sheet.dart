@@ -12,8 +12,6 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 
 /// Shows a bottom sheet when a background upload fails.
 ///
@@ -128,10 +126,16 @@ class _UploadFailureSheetContent extends StatelessWidget {
             ],
 
             const SizedBox(height: 32),
-            DivinePrimaryButton(label: 'Try Again', onPressed: onRetry),
+            DivineButton(
+              expanded: true,
+              label: 'Try Again',
+              onPressed: onRetry,
+            ),
 
             const SizedBox(height: 12),
-            DivineSecondaryButton(
+            DivineButton(
+              expanded: true,
+              type: .secondary,
               label: 'Save to Drafts',
               onPressed: onSaveToDrafts,
             ),
