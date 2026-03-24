@@ -123,7 +123,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.widgetWithText(ElevatedButton, 'Create account'),
+          find.widgetWithText(DivineButton, 'Create account'),
           findsOneWidget,
         );
       });
@@ -172,7 +172,7 @@ void main() {
 
         expect(find.text('One last thing...'), findsOneWidget);
         expect(
-          find.widgetWithText(ElevatedButton, 'Add email & password'),
+          find.widgetWithText(DivineButton, 'Add email & password'),
           findsOneWidget,
         );
         expect(
@@ -223,7 +223,7 @@ void main() {
           await tester.pumpAndSettle();
 
           await tester.tap(
-            find.widgetWithText(ElevatedButton, 'Add email & password'),
+            find.widgetWithText(DivineButton, 'Add email & password'),
           );
           await tester.pumpAndSettle();
 
@@ -274,7 +274,7 @@ void main() {
         );
 
         // Tap create account
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Create account'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Create account'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 

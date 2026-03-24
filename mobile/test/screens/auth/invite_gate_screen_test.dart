@@ -146,7 +146,7 @@ void main() {
         find.byType(TextField),
         'ab12ef34',
       );
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Next'));
+      await tester.tap(find.widgetWithText(DivineButton, 'Next'));
       await tester.pumpAndSettle();
 
       expect(find.text('Create Account'), findsOneWidget);

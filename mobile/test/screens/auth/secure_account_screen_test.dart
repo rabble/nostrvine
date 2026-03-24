@@ -91,7 +91,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.widgetWithText(ElevatedButton, 'Secure account'),
+          find.widgetWithText(DivineButton, 'Secure account'),
           findsOneWidget,
         );
       });
@@ -126,7 +126,7 @@ void main() {
         );
 
         // Tap submit
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Secure account'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
         await tester.pumpAndSettle();
 
         // Should show validation error
@@ -209,7 +209,7 @@ void main() {
           'SecurePass123!',
         );
 
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Secure account'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
         // Use pump() instead of pumpAndSettle() to avoid timer issues
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
@@ -259,7 +259,7 @@ void main() {
           'SecurePass123!',
         );
 
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Secure account'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
         await tester.pumpAndSettle();
 
         expect(find.text('Email already registered'), findsOneWidget);
@@ -286,7 +286,7 @@ void main() {
           'SecurePass123!',
         );
 
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Secure account'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
         await tester.pumpAndSettle();
 
         expect(
