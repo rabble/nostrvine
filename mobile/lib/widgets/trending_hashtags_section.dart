@@ -67,32 +67,43 @@ class _HashtagChipList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
-      itemCount: hashtags.length + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: Center(
-              child: Text('Trending', style: VineTheme.titleSmallFont()),
-            ),
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.5,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 12,
+          bottom: 12,
+        ),
+        itemCount: hashtags.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Center(
+                child: Text('Trending', style: VineTheme.titleSmallFont()),
+              ),
+            );
+          }
+          final hashtag = hashtags[index - 1];
+          return _HashtagChip(
+            hashtag: hashtag,
+            colorIndex: index - 1,
+            onTap: () {
+              if (onHashtagTap != null) {
+                onHashtagTap!(hashtag);
+              } else {
+                context.push(HashtagScreenRouter.pathForTag(hashtag));
+              }
+            },
           );
-        }
-        final hashtag = hashtags[index - 1];
-        return _HashtagChip(
-          hashtag: hashtag,
-          colorIndex: index - 1,
-          onTap: () {
-            if (onHashtagTap != null) {
-              onHashtagTap!(hashtag);
-            } else {
-              context.push(HashtagScreenRouter.pathForTag(hashtag));
-            }
-          },
-        );
-      },
+        },
+      ),
     );
   }
 }

@@ -283,30 +283,38 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                       _videoSearchBloc.add(const VideoSearchCleared());
                     },
                   );
-
-                  final tabBar = TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    padding: const EdgeInsets.only(left: 16),
-                    indicatorColor: VineTheme.tabIndicatorGreen,
-                    indicatorWeight: 4,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: VineTheme.transparent,
-                    labelColor: VineTheme.whiteText,
-                    unselectedLabelColor: VineTheme.tabIconInactive,
-                    labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                    labelStyle: VineTheme.tabTextStyle(),
-                    unselectedLabelStyle: VineTheme.tabTextStyle(
-                      color: VineTheme.tabIconInactive,
-                    ),
-                    tabs: [
-                      Tab(text: 'Videos (${_videoCount(videoState)})'),
-                      Tab(text: 'Users (${_userCount(userSearchState)})'),
-                      Tab(
-                        text: 'Hashtags (${_hashtagCount(hashtagSearchState)})',
+                  final textScaler = MediaQuery.textScalerOf(context).clamp(
+                    maxScaleFactor: 1.35,
+                  );
+                  final tabBar = MediaQuery(
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(textScaler: textScaler),
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      padding: const EdgeInsets.only(left: 16),
+                      indicatorColor: VineTheme.tabIndicatorGreen,
+                      indicatorWeight: 4,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: VineTheme.transparent,
+                      labelColor: VineTheme.whiteText,
+                      unselectedLabelColor: VineTheme.tabIconInactive,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                      labelStyle: VineTheme.tabTextStyle(),
+                      unselectedLabelStyle: VineTheme.tabTextStyle(
+                        color: VineTheme.tabIconInactive,
                       ),
-                    ],
+                      tabs: [
+                        Tab(text: 'Videos (${_videoCount(videoState)})'),
+                        Tab(text: 'Users (${_userCount(userSearchState)})'),
+                        Tab(
+                          text:
+                              'Hashtags (${_hashtagCount(hashtagSearchState)})',
+                        ),
+                      ],
+                    ),
                   );
 
                   final body = BlocListener<VideoSearchBloc, VideoSearchState>(
