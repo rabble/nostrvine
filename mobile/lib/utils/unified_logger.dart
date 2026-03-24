@@ -136,46 +136,41 @@ class UnifiedLogger {
     Object? error,
     StackTrace? stackTrace,
   }) {
-    // Check if this message should be printed to console
-    // Category/level filtering applies ONLY to console output (noise reduction)
-    final shouldPrintToConsole =
-        isLevelEnabled(level) &&
-        (category == null || isCategoryEnabled(category));
+    // Console output — entirely tree-shaken from release builds.
+    // Timestamp formatting, debugPrint, and developer.log only serve the
+    // developer console; nobody reads them in production.
+    if (kDebugMode) {
+      final shouldPrintToConsole =
+          isLevelEnabled(level) &&
+          (category == null || isCategoryEnabled(category));
 
-    // Create timestamp
-    final now = DateTime.now();
-    final timestamp =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}.${now.millisecond.toString().padLeft(3, '0')}';
+      if (shouldPrintToConsole) {
+        final now = DateTime.now();
+        final timestamp =
+            '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}.${now.millisecond.toString().padLeft(3, '0')}';
+        final categoryPrefix = category != null ? '[${category.name}] ' : '';
+        final timestampedMessage = '[$timestamp] $categoryPrefix$message';
 
-    // Format category prefix
-    final categoryPrefix = category != null ? '[${category.name}] ' : '';
+        debugPrint(timestampedMessage);
 
-    // Format message with timestamp and category
-    final timestampedMessage = '[$timestamp] $categoryPrefix$message';
-
-    // Output to console ONLY if category/level filters allow it
-    if (shouldPrintToConsole) {
-      // Always output to Flutter tool console via debugPrint
-      debugPrint(timestampedMessage);
-
-      // Also output to browser DevTools via developer.log (web only)
-      if (kIsWeb) {
-        developer.log(
-          timestampedMessage,
-          name: name ?? 'divine',
-          level: level.value,
-          error: error,
-          stackTrace: stackTrace,
-        );
+        if (kIsWeb) {
+          developer.log(
+            timestampedMessage,
+            name: name ?? 'divine',
+            level: level.value,
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
       }
     }
 
-    // CRITICAL: ALWAYS capture to file regardless of category/level filtering
+    // CRITICAL: ALWAYS capture to memory regardless of category/level filtering
     // Console filtering is for noise reduction during development
-    // File capture must be comprehensive for debugging remote user issues
+    // Memory capture must be comprehensive for debugging remote user issues
     try {
       final logEntry = LogEntry(
-        timestamp: now,
+        timestamp: DateTime.now(),
         level: level,
         message: message,
         category: category,
@@ -183,10 +178,8 @@ class UnifiedLogger {
         error: error?.toString(),
         stackTrace: stackTrace?.toString(),
       );
-      // Logging is now synchronous and non-blocking (in-memory only)
       LogCaptureService.instance.captureLog(logEntry);
     } catch (e) {
-      // Don't let log capture failures break logging
       if (kDebugMode) {
         debugPrint('Failed to capture log: $e');
       }
