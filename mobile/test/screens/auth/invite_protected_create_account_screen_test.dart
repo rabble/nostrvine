@@ -191,7 +191,7 @@ void main() {
 
       expect(find.widgetWithText(DivineAuthTextField, 'Email'), findsOneWidget);
       expect(
-        find.widgetWithText(ElevatedButton, 'Create account'),
+        find.widgetWithText(DivineButton, 'Create account'),
         findsOneWidget,
       );
     });
