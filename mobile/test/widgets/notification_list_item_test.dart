@@ -214,7 +214,7 @@ void main() {
         );
 
         // Tap the Semantics widget with the profile label
-        await tester.tap(find.bySemanticsLabel(RegExp(r'View .* profile')));
+        await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
         await tester.pump();
 
         expect(profileTapped, isTrue);
@@ -230,7 +230,7 @@ void main() {
         );
 
         // Tap avatar area - should not throw
-        await tester.tap(find.bySemanticsLabel(RegExp(r'View .* profile')));
+        await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
         await tester.pump();
 
         // Widget should still be rendered
