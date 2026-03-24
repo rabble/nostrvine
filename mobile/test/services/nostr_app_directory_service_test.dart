@@ -54,6 +54,7 @@ void main() {
       final apps = await service.fetchApprovedApps();
 
       expect(apps, hasLength(1));
+      expect(apps.single.id, '1');
       expect(apps.single.slug, 'primal');
       expect(apps.single.name, 'Primal');
 
@@ -177,7 +178,7 @@ Map<String, dynamic> _appJson({
   required String updatedAt,
 }) {
   return {
-    'id': 'app-$slug',
+    'id': slug == 'primal' ? 1 : 'app-$slug',
     'slug': slug,
     'name': name,
     'tagline': '$name on Nostr',

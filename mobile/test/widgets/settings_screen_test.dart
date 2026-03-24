@@ -8,10 +8,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/go_router.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -43,8 +46,9 @@ void main() {
 
     Widget buildSubject({
       AuthState authState = AuthState.authenticated,
+      MockGoRouter? goRouter,
     }) {
-      return ProviderScope(
+      final app = ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           authServiceProvider.overrideWithValue(mockAuthService),
@@ -55,6 +59,12 @@ void main() {
         ],
         child: const MaterialApp(home: SettingsScreen()),
       );
+
+      if (goRouter == null) {
+        return app;
+      }
+
+      return MockGoRouterProvider(goRouter: goRouter, child: app);
     }
 
     testWidgets('renders app bar with title', (tester) async {
@@ -120,6 +130,28 @@ void main() {
         find.text('Launch vetted Nostr apps in Divine'),
         findsOneWidget,
       );
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('tapping Apps opens the directory route', (tester) async {
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('Apps'),
+        100,
+        scrollable: scrollable,
+      );
+      await tester.tap(find.text('Apps'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockGoRouter.push(AppsDirectoryScreen.path)).called(1);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

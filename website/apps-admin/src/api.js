@@ -16,15 +16,33 @@ async function requestJson(path, options = {}) {
   return response.json();
 }
 
+function normalizeSavedApp(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+
+  if ('app' in payload && 'id' in payload) {
+    const { app, id } = payload;
+    if (app && typeof app === 'object') {
+      return { id, ...app };
+    }
+  }
+
+  return payload;
+}
+
 export function listApps() {
   return requestJson('/v1/admin/apps');
 }
 
 export function saveApp(payload) {
-  return requestJson('/v1/admin/apps', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  const { id, ...appPayload } = payload;
+  const path = id ? `/v1/admin/apps/${id}` : '/v1/admin/apps';
+  const method = id ? 'PUT' : 'POST';
+  return requestJson(path, {
+    method,
+    body: JSON.stringify(appPayload),
+  }).then(normalizeSavedApp);
 }
 
 export function listAuditEvents() {

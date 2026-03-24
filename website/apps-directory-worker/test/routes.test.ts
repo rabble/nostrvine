@@ -105,6 +105,37 @@ function createTestEnv(appRows: AppRow[]): Env {
   };
 }
 
+function primalManifest(overrides: Record<string, unknown> = {}) {
+  return {
+    slug: 'primal',
+    name: 'Primal',
+    tagline: 'A Nostr social app',
+    description: 'Browse and post to Nostr.',
+    icon_url: 'https://primal.net/icon.png',
+    launch_url: 'https://primal.net/app',
+    allowed_origins: ['https://primal.net'],
+    allowed_methods: ['getPublicKey', 'signEvent'],
+    allowed_sign_event_kinds: [1],
+    prompt_required_for: [],
+    status: 'approved',
+    sort_order: 2,
+    ...overrides,
+  };
+}
+
+function primalRow(overrides: Partial<AppRow> = {}): AppRow {
+  return {
+    id: 1,
+    slug: 'primal',
+    status: 'approved',
+    manifest_json: JSON.stringify(primalManifest()),
+    created_at: '2026-03-25T00:00:00.000Z',
+    updated_at: '2026-03-25T00:00:00.000Z',
+    approved_at: '2026-03-25T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 describe('routes', () => {
   it('GET /v1/apps returns JSON items array', async () => {
     const response = await worker.fetch(
@@ -124,21 +155,13 @@ describe('routes', () => {
     const response = await worker.fetch(
       new Request('https://apps.directory.divine.video/v1/apps'),
       createTestEnv([
-        {
-          id: 1,
-          slug: 'primal',
-          status: 'approved',
-          manifest_json: JSON.stringify({
-            slug: 'primal',
-            allowed_origins: ['https://primal.net'],
-            allowed_methods: ['getPublicKey', 'signEvent'],
-            allowed_sign_event_kinds: [1],
-            status: 'approved',
-          }),
-          created_at: '2026-03-25T00:00:00.000Z',
-          updated_at: '2026-03-25T00:00:00.000Z',
-          approved_at: '2026-03-25T00:00:00.000Z',
-        },
+        primalRow({
+          manifest_json: JSON.stringify(
+            primalManifest({
+              prompt_required_for: ['nip44.decrypt'],
+            }),
+          ),
+        }),
       ]),
     );
 
@@ -147,15 +170,96 @@ describe('routes', () => {
     expect(json).toEqual({
       items: [
         {
+          id: 1,
           slug: 'primal',
+          name: 'Primal',
+          tagline: 'A Nostr social app',
+          description: 'Browse and post to Nostr.',
+          icon_url: 'https://primal.net/icon.png',
+          launch_url: 'https://primal.net/app',
           allowed_origins: ['https://primal.net'],
           allowed_methods: ['getPublicKey', 'signEvent'],
           allowed_sign_event_kinds: [1],
-          prompt_required_for: [],
+          prompt_required_for: ['nip44.decrypt'],
           status: 'approved',
+          sort_order: 2,
+          created_at: '2026-03-25T00:00:00.000Z',
+          updated_at: '2026-03-25T00:00:00.000Z',
         },
       ],
     });
+  });
+
+  it('GET /v1/admin/apps returns 403 without access identity headers', async () => {
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/apps'),
+      createTestEnv([]),
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it('GET /v1/admin/apps lists stored apps with access identity headers', async () => {
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/apps', {
+        headers: {
+          'CF-Access-Authenticated-User-Email': 'admin@divine.video',
+        },
+      }),
+      createTestEnv([
+        primalRow({
+          status: 'draft',
+          manifest_json: JSON.stringify(primalManifest({ status: 'draft' })),
+          approved_at: null,
+        }),
+      ]),
+    );
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.items).toEqual([
+      {
+        id: 1,
+        slug: 'primal',
+        name: 'Primal',
+        tagline: 'A Nostr social app',
+        description: 'Browse and post to Nostr.',
+        icon_url: 'https://primal.net/icon.png',
+        launch_url: 'https://primal.net/app',
+        allowed_origins: ['https://primal.net'],
+        allowed_methods: ['getPublicKey', 'signEvent'],
+        allowed_sign_event_kinds: [1],
+        prompt_required_for: [],
+        status: 'draft',
+        sort_order: 2,
+        created_at: '2026-03-25T00:00:00.000Z',
+        updated_at: '2026-03-25T00:00:00.000Z',
+      },
+    ]);
+  });
+
+  it('GET /v1/admin/audit-events returns 403 without access identity headers', async () => {
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/audit-events'),
+      createTestEnv([]),
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it('GET /v1/admin/audit-events returns an empty items list with access identity headers', async () => {
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/audit-events', {
+        headers: {
+          'CF-Access-Authenticated-User-Email': 'admin@divine.video',
+        },
+      }),
+      createTestEnv([]),
+    );
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json).toEqual({ items: [] });
   });
 
   it('POST /v1/admin/apps returns 403 without access identity headers', async () => {
@@ -163,13 +267,7 @@ describe('routes', () => {
       new Request('https://apps.directory.divine.video/v1/admin/apps', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          slug: 'primal',
-          allowed_origins: ['https://primal.net'],
-          allowed_methods: ['getPublicKey', 'signEvent'],
-          allowed_sign_event_kinds: [1],
-          status: 'approved',
-        }),
+        body: JSON.stringify(primalManifest()),
       }),
       createTestEnv([]),
     );
@@ -182,13 +280,7 @@ describe('routes', () => {
       new Request('https://apps.directory.divine.video/v1/admin/apps/1', {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          slug: 'primal',
-          allowed_origins: ['https://primal.net'],
-          allowed_methods: ['getPublicKey', 'signEvent'],
-          allowed_sign_event_kinds: [1],
-          status: 'approved',
-        }),
+        body: JSON.stringify(primalManifest()),
       }),
       createTestEnv([]),
     );
@@ -216,13 +308,7 @@ describe('routes', () => {
           'content-type': 'application/json',
           'CF-Access-Authenticated-User-Email': 'admin@divine.video',
         },
-        body: JSON.stringify({
-          slug: 'primal',
-          allowed_origins: ['https://primal.net'],
-          allowed_methods: ['getPublicKey', 'signEvent'],
-          allowed_sign_event_kinds: [1],
-          status: 'approved',
-        }),
+        body: JSON.stringify(primalManifest()),
       }),
       env,
     );
@@ -230,6 +316,8 @@ describe('routes', () => {
     expect(response.status).toBe(201);
     const json = await response.json();
     expect(json.id).toBe(1);
+    expect(json.name).toBe('Primal');
+    expect(json.launch_url).toBe('https://primal.net/app');
 
     const publicResponse = await worker.fetch(
       new Request('https://apps.directory.divine.video/v1/apps'),
@@ -241,23 +329,7 @@ describe('routes', () => {
   });
 
   it('PUT /v1/admin/apps/:id updates apps with access identity headers', async () => {
-    const env = createTestEnv([
-      {
-        id: 1,
-        slug: 'primal',
-        status: 'approved',
-        manifest_json: JSON.stringify({
-          slug: 'primal',
-          allowed_origins: ['https://primal.net'],
-          allowed_methods: ['getPublicKey', 'signEvent'],
-          allowed_sign_event_kinds: [1],
-          status: 'approved',
-        }),
-        created_at: '2026-03-25T00:00:00.000Z',
-        updated_at: '2026-03-25T00:00:00.000Z',
-        approved_at: '2026-03-25T00:00:00.000Z',
-      },
-    ]);
+    const env = createTestEnv([primalRow()]);
 
     const response = await worker.fetch(
       new Request('https://apps.directory.divine.video/v1/admin/apps/1', {
@@ -266,40 +338,22 @@ describe('routes', () => {
           'content-type': 'application/json',
           'CF-Access-Authenticated-User-Email': 'admin@divine.video',
         },
-        body: JSON.stringify({
-          slug: 'primal',
-          allowed_origins: ['https://primal.net'],
-          allowed_methods: ['getPublicKey'],
-          allowed_sign_event_kinds: [1],
-          status: 'approved',
-        }),
+        body: JSON.stringify(
+          primalManifest({
+            allowed_methods: ['getPublicKey'],
+          }),
+        ),
       }),
       env,
     );
 
     expect(response.status).toBe(200);
     const json = await response.json();
-    expect(json.app.allowed_methods).toEqual(['getPublicKey']);
+    expect(json.allowed_methods).toEqual(['getPublicKey']);
   });
 
   it('POST /v1/admin/apps/:id/revoke revokes apps with access identity headers', async () => {
-    const env = createTestEnv([
-      {
-        id: 1,
-        slug: 'primal',
-        status: 'approved',
-        manifest_json: JSON.stringify({
-          slug: 'primal',
-          allowed_origins: ['https://primal.net'],
-          allowed_methods: ['getPublicKey', 'signEvent'],
-          allowed_sign_event_kinds: [1],
-          status: 'approved',
-        }),
-        created_at: '2026-03-25T00:00:00.000Z',
-        updated_at: '2026-03-25T00:00:00.000Z',
-        approved_at: '2026-03-25T00:00:00.000Z',
-      },
-    ]);
+    const env = createTestEnv([primalRow()]);
 
     const response = await worker.fetch(
       new Request('https://apps.directory.divine.video/v1/admin/apps/1/revoke', {
@@ -313,7 +367,7 @@ describe('routes', () => {
 
     expect(response.status).toBe(200);
     const json = await response.json();
-    expect(json.app.status).toBe('revoked');
+    expect(json.status).toBe('revoked');
 
     const publicResponse = await worker.fetch(
       new Request('https://apps.directory.divine.video/v1/apps'),

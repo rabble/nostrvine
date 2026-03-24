@@ -5,6 +5,8 @@ import { createManifestStore } from './lib/manifest-store';
 
 const ADMIN_APP_ID_PATH = /^\/v1\/admin\/apps\/(\d+)$/;
 const ADMIN_REVOKE_PATH = /^\/v1\/admin\/apps\/(\d+)\/revoke$/;
+const ADMIN_AUDIT_EVENTS_PATH = '/v1/admin/audit-events';
+const ADMIN_APPS_PATH = '/v1/admin/apps';
 
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -17,7 +19,18 @@ const worker = {
         return Response.json({ items: apps });
       }
 
-      if (request.method === 'POST' && url.pathname === '/v1/admin/apps') {
+      if (request.method === 'GET' && url.pathname === ADMIN_APPS_PATH) {
+        requireAdmin(request);
+        const apps = await manifestStore.listAll();
+        return Response.json({ items: apps });
+      }
+
+      if (request.method === 'GET' && url.pathname === ADMIN_AUDIT_EVENTS_PATH) {
+        requireAdmin(request);
+        return Response.json({ items: [] });
+      }
+
+      if (request.method === 'POST' && url.pathname === ADMIN_APPS_PATH) {
         requireAdmin(request);
         const manifest = validateManifest(await parseJson(request));
         const created = await manifestStore.create(manifest);

@@ -22,6 +22,13 @@ function valuesFor(formEl, name) {
     .flatMap((control) => splitValues(control.value));
 }
 
+function firstValueFor(formEl, name) {
+  const control = getControls(formEl).find(
+    (candidate) => candidate && candidate.name === name && !candidate.disabled,
+  );
+  return String(control?.value ?? '').trim();
+}
+
 function uniqueValues(values) {
   const seen = new Set();
   const output = [];
@@ -37,6 +44,11 @@ function parseKinds(values) {
   return uniqueValues(values)
     .map((value) => Number.parseInt(value, 10))
     .filter((value) => Number.isInteger(value));
+}
+
+function parseInteger(value, fallback = 0) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) ? parsed : fallback;
 }
 
 function setTextValue(form, name, value) {
@@ -55,7 +67,14 @@ export function serializeForm(formEl) {
   const promptRequiredFor = uniqueValues(valuesFor(formEl, 'prompt_required_for'));
 
   return {
-    slug: valuesFor(formEl, 'slug')[0] || '',
+    slug: firstValueFor(formEl, 'slug'),
+    name: firstValueFor(formEl, 'name'),
+    tagline: firstValueFor(formEl, 'tagline'),
+    description: firstValueFor(formEl, 'description'),
+    icon_url: firstValueFor(formEl, 'icon_url'),
+    launch_url: firstValueFor(formEl, 'launch_url'),
+    status: firstValueFor(formEl, 'status') || 'draft',
+    sort_order: parseInteger(firstValueFor(formEl, 'sort_order')),
     allowed_origins: allowedOrigins,
     allowed_methods: allowedMethods,
     allowed_sign_event_kinds: parseKinds(valuesFor(formEl, 'allowed_sign_event_kinds')),
@@ -72,6 +91,38 @@ export function createAppForm() {
     <div class="form-field">
       <label for="slug">Slug</label>
       <input id="slug" name="slug" autocomplete="off" required />
+    </div>
+    <div class="form-field">
+      <label for="name">Name</label>
+      <input id="name" name="name" autocomplete="off" required />
+    </div>
+    <div class="form-field">
+      <label for="tagline">Tagline</label>
+      <input id="tagline" name="tagline" autocomplete="off" />
+    </div>
+    <div class="form-field">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" placeholder="What this app does and why it is allowed here."></textarea>
+    </div>
+    <div class="form-field">
+      <label for="icon_url">Icon URL</label>
+      <input id="icon_url" name="icon_url" autocomplete="off" placeholder="https://example.com/icon.png" />
+    </div>
+    <div class="form-field">
+      <label for="launch_url">Launch URL</label>
+      <input id="launch_url" name="launch_url" autocomplete="off" placeholder="https://example.com/app" required />
+    </div>
+    <div class="form-field">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        <option value="draft">Draft</option>
+        <option value="approved">Approved</option>
+        <option value="revoked">Revoked</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label for="sort_order">Sort order</label>
+      <input id="sort_order" name="sort_order" type="number" inputmode="numeric" value="0" />
     </div>
     <div class="form-field">
       <label for="allowed_origins">Allowed origins</label>
@@ -105,6 +156,13 @@ export function createAppForm() {
   function loadManifest(manifest = {}) {
     setTextValue(form, 'id', manifest.id || '');
     setTextValue(form, 'slug', manifest.slug || '');
+    setTextValue(form, 'name', manifest.name || '');
+    setTextValue(form, 'tagline', manifest.tagline || '');
+    setTextValue(form, 'description', manifest.description || '');
+    setTextValue(form, 'icon_url', manifest.icon_url || '');
+    setTextValue(form, 'launch_url', manifest.launch_url || '');
+    setTextValue(form, 'status', manifest.status || 'draft');
+    setTextValue(form, 'sort_order', manifest.sort_order ?? 0);
     setListValue(form, 'allowed_origins', manifest.allowed_origins || []);
     setListValue(form, 'allowed_methods', manifest.allowed_methods || []);
     setListValue(form, 'allowed_sign_event_kinds', (manifest.allowed_sign_event_kinds || []).map(String));
@@ -115,6 +173,13 @@ export function createAppForm() {
     loadManifest({
       id: '',
       slug: '',
+      name: '',
+      tagline: '',
+      description: '',
+      icon_url: '',
+      launch_url: '',
+      status: 'draft',
+      sort_order: 0,
       allowed_origins: [],
       allowed_methods: [],
       allowed_sign_event_kinds: [],

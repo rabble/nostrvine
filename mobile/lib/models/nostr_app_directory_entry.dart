@@ -22,7 +22,7 @@ class NostrAppDirectoryEntry {
 
   factory NostrAppDirectoryEntry.fromJson(Map<String, dynamic> json) {
     return NostrAppDirectoryEntry(
-      id: json['id'] as String? ?? '',
+      id: _readId(json['id']),
       slug: json['slug'] as String? ?? '',
       name: json['name'] as String? ?? '',
       tagline: json['tagline'] as String? ?? '',
@@ -81,6 +81,19 @@ class NostrAppDirectoryEntry {
   static List<String> _readStringList(dynamic value) {
     if (value is! List) return const [];
     return value.whereType<String>().toList(growable: false);
+  }
+
+  static String _readId(dynamic value) {
+    if (value == null) {
+      return '';
+    }
+    if (value is String) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt().toString();
+    }
+    return value.toString();
   }
 
   static List<int> _readIntList(dynamic value) {

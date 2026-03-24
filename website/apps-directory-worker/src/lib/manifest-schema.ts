@@ -13,11 +13,17 @@ export type ManifestStatus = 'draft' | 'approved' | 'revoked';
 
 export interface AppManifest {
   slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  icon_url: string;
+  launch_url: string;
   allowed_origins: string[];
   allowed_methods: SupportedMethod[];
   allowed_sign_event_kinds: number[];
   status: ManifestStatus;
   prompt_required_for: SupportedMethod[];
+  sort_order: number;
 }
 
 export function validateManifest(input: unknown): AppManifest {
@@ -26,6 +32,11 @@ export function validateManifest(input: unknown): AppManifest {
   }
 
   const slug = asTrimmedNonEmptyString(input.slug, 'slug');
+  const name = asTrimmedNonEmptyString(input.name, 'name');
+  const tagline = asOptionalTrimmedString(input.tagline);
+  const description = asOptionalTrimmedString(input.description);
+  const iconUrl = validateOptionalUrl(input.icon_url, 'icon_url');
+  const launchUrl = validateRequiredUrl(input.launch_url, 'launch_url');
   const allowedOrigins = validateOrigins(input.allowed_origins);
   const allowedMethods = validateMethods(input.allowed_methods, 'allowed_methods');
   const allowedSignEventKinds = validateKinds(input.allowed_sign_event_kinds);
@@ -34,14 +45,21 @@ export function validateManifest(input: unknown): AppManifest {
     input.prompt_required_for,
     'prompt_required_for',
   );
+  const sortOrder = validateSortOrder(input.sort_order);
 
   return {
     slug,
+    name,
+    tagline,
+    description,
+    icon_url: iconUrl,
+    launch_url: launchUrl,
     allowed_origins: allowedOrigins,
     allowed_methods: allowedMethods,
     allowed_sign_event_kinds: allowedSignEventKinds,
     status,
     prompt_required_for: promptRequiredFor,
+    sort_order: sortOrder,
   };
 }
 
@@ -130,6 +148,18 @@ function validateStatus(value: unknown): ManifestStatus {
   return status as ManifestStatus;
 }
 
+function validateSortOrder(value: unknown): number {
+  if (value === undefined) {
+    return 0;
+  }
+
+  if (!Number.isInteger(value)) {
+    throw new Error('sort_order must be an integer');
+  }
+
+  return Number(value);
+}
+
 function asTrimmedNonEmptyString(value: unknown, fieldName: string): string {
   if (typeof value !== 'string') {
     throw new Error(`${fieldName} must be a string`);
@@ -141,6 +171,39 @@ function asTrimmedNonEmptyString(value: unknown, fieldName: string): string {
   }
 
   return trimmed;
+}
+
+function asOptionalTrimmedString(value: unknown): string {
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error('optional manifest fields must be strings');
+  }
+
+  return value.trim();
+}
+
+function validateRequiredUrl(value: unknown, fieldName: string): string {
+  const url = tryParseUrl(asTrimmedNonEmptyString(value, fieldName), fieldName);
+  if (url.protocol !== 'https:') {
+    throw new Error(`${fieldName} must use https`);
+  }
+  return url.toString();
+}
+
+function validateOptionalUrl(value: unknown, fieldName: string): string {
+  const trimmed = asOptionalTrimmedString(value);
+  if (!trimmed) {
+    return '';
+  }
+
+  const url = tryParseUrl(trimmed, fieldName);
+  if (url.protocol !== 'https:') {
+    throw new Error(`${fieldName} must use https`);
+  }
+  return url.toString();
 }
 
 function tryParseUrl(value: string, fieldName: string): URL {
