@@ -58,7 +58,7 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         expect(find.text('Record a Video'), findsOneWidget);
-        expect(find.byType(ElevatedButton), findsOneWidget);
+        expect(find.byType(DivineButton), findsOneWidget);
       });
 
       testWidgets('hides record button when showRecordButton is false', (

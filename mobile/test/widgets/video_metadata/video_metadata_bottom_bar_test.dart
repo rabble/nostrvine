@@ -94,11 +94,14 @@ void main() {
 
       // Post button should have reduced opacity when metadata is invalid
       // Find the AnimatedOpacity that is an ancestor of the Post button
+      // Use .first to get DivineButton's AnimatedOpacity (actual disabled state)
       final animatedOpacity = tester.widget<AnimatedOpacity>(
-        find.ancestor(
-          of: find.text('Post'),
-          matching: find.byType(AnimatedOpacity),
-        ),
+        find
+            .ancestor(
+              of: find.text('Post'),
+              matching: find.byType(AnimatedOpacity),
+            )
+            .first,
       );
       expect(animatedOpacity.opacity, lessThan(1));
     });
@@ -135,11 +138,14 @@ void main() {
 
       // Buttons should be fully opaque when valid
       // Find the AnimatedOpacity that is an ancestor of the Post button
+      // Use .first to get DivineButton's AnimatedOpacity (actual disabled state)
       final animatedOpacity = tester.widget<AnimatedOpacity>(
-        find.ancestor(
-          of: find.text('Post'),
-          matching: find.byType(AnimatedOpacity),
-        ),
+        find
+            .ancestor(
+              of: find.text('Post'),
+              matching: find.byType(AnimatedOpacity),
+            )
+            .first,
       );
       expect(animatedOpacity.opacity, equals(1.0));
     });
