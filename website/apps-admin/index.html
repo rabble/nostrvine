@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Divine Apps Admin</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <p class="eyebrow">apps.admin.divine.video</p>
+      <h1>Vetted Nostr app sandbox</h1>
+      <p class="lede">Manage allowlisted apps, review audit rows, and keep the browser bridge tight.</p>
+      <div id="status" class="status" aria-live="polite"></div>
+    </header>
+
+    <main class="grid">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Apps</h2>
+          <button id="new-app" type="button" class="button secondary">New app</button>
+        </div>
+        <div id="app-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Edit app</h2>
+          <button id="refresh" type="button" class="button secondary">Refresh</button>
+        </div>
+        <div id="app-form"></div>
+      </section>
+
+      <section class="panel panel-wide">
+        <div class="panel-header">
+          <h2>Audit events</h2>
+        </div>
+        <div id="audit-list"></div>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
