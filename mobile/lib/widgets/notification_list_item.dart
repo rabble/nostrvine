@@ -105,61 +105,61 @@ class NotificationListItem extends StatelessWidget {
           children: [
             // Avatar
             ClipOval(
-          child: notification.actorPictureUrl != null
-              ? VineCachedImage(
-                  imageUrl: notification.actorPictureUrl!,
-                  width: 48,
-                  height: 48,
-                  placeholder: (context, url) => Container(
-                    width: 48,
-                    height: 48,
-                    color: VineTheme.cardBackground,
-                  ),
-                  errorWidget: (context, url, error) {
-                    // Log the failed URL for debugging
-                    if (error.toString().contains('Invalid image data') ||
-                        error.toString().contains('Image codec failed')) {
-                      Log.warning(
-                        'Invalid image data for actor avatar URL: $url - Error: $error',
-                        name: 'NotificationListItem',
-                        category: LogCategory.ui,
-                      );
-                    } else {
-                      Log.debug(
-                        'Actor avatar load failed, URL: $url - Error: $error',
-                        name: 'NotificationListItem',
-                        category: LogCategory.ui,
-                      );
-                    }
-                    return _buildDefaultAvatar();
-                  },
-                )
-              : _buildDefaultAvatar(),
-        ),
+              child: notification.actorPictureUrl != null
+                  ? VineCachedImage(
+                      imageUrl: notification.actorPictureUrl!,
+                      width: 48,
+                      height: 48,
+                      placeholder: (context, url) => Container(
+                        width: 48,
+                        height: 48,
+                        color: VineTheme.cardBackground,
+                      ),
+                      errorWidget: (context, url, error) {
+                        // Log the failed URL for debugging
+                        if (error.toString().contains('Invalid image data') ||
+                            error.toString().contains('Image codec failed')) {
+                          Log.warning(
+                            'Invalid image data for actor avatar URL: $url - Error: $error',
+                            name: 'NotificationListItem',
+                            category: LogCategory.ui,
+                          );
+                        } else {
+                          Log.debug(
+                            'Actor avatar load failed, URL: $url - Error: $error',
+                            name: 'NotificationListItem',
+                            category: LogCategory.ui,
+                          );
+                        }
+                        return _buildDefaultAvatar();
+                      },
+                    )
+                  : _buildDefaultAvatar(),
+            ),
 
-        // Type icon overlay
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: _getIconBackgroundColor(),
-              shape: BoxShape.circle,
-              border: Border.all(
-                width: 2,
+            // Type icon overlay
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: _getIconBackgroundColor(),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    notification.typeIcon,
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                ),
               ),
             ),
-            child: Center(
-              child: Text(
-                notification.typeIcon,
-                style: const TextStyle(fontSize: 10),
-              ),
-            ),
-          ),
-        ),
-      ],
+          ],
         ),
       ),
     );
