@@ -181,7 +181,7 @@ class _CategoryGalleryBody extends StatelessWidget {
   final CategoriesState state;
   final VoidCallback onRetry;
   final void Function(List<VideoEvent>, int) onVideoTap;
-  final VoidCallback onLoadMore;
+  final Future<void> Function() onLoadMore;
   final Future<void> Function() onRefresh;
   final Widget? galleryOverride;
 
