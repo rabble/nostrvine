@@ -13,6 +13,7 @@ import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
@@ -232,6 +233,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Nostr Settings',
                 subtitle: 'Relays, media servers, keys, and account',
                 onTap: () => context.push(NostrSettingsScreen.path),
+              ),
+              _SettingsTile(
+                icon: Icons.apps,
+                title: 'Apps',
+                subtitle: 'Launch vetted Nostr apps in Divine',
+                onTap: () => context.push(AppsDirectoryScreen.path),
               ),
               _SettingsTile(
                 icon: Icons.gavel,

@@ -9,9 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/apps/app_detail_screen.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
@@ -591,6 +594,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: SettingsScreen.path,
         name: SettingsScreen.routeName,
         builder: (_, _) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppsDirectoryScreen.path,
+        name: AppsDirectoryScreen.routeName,
+        builder: (_, _) => const AppsDirectoryScreen(),
+      ),
+      GoRoute(
+        path: AppDetailScreen.path,
+        name: AppDetailScreen.routeName,
+        builder: (_, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          final initialEntry = state.extra is NostrAppDirectoryEntry
+              ? state.extra! as NostrAppDirectoryEntry
+              : null;
+          return AppDetailScreen(
+            slug: slug,
+            initialEntry: initialEntry,
+          );
+        },
       ),
       GoRoute(
         path: SupportCenterScreen.path,

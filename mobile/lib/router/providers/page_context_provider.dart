@@ -2,6 +2,8 @@
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/apps/app_detail_screen.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -99,6 +101,7 @@ class RouteContext {
   const RouteContext({
     required this.type,
     this.videoIndex,
+    this.appSlug,
     this.npub,
     this.hashtag,
     this.categoryName,
@@ -112,6 +115,7 @@ class RouteContext {
 
   final RouteType type;
   final int? videoIndex;
+  final String? appSlug;
   final String? npub;
   final String? hashtag;
   final String? categoryName;
@@ -273,6 +277,15 @@ RouteContext parseRoute(String path) {
 
     case 'settings':
       return const RouteContext(type: RouteType.settings);
+
+    case 'apps':
+      if (segments.length > 1) {
+        return RouteContext(
+          type: RouteType.settings,
+          appSlug: Uri.decodeComponent(segments[1]),
+        );
+      }
+      return const RouteContext(type: RouteType.settings, appSlug: '');
 
     case 'creator-analytics':
       return const RouteContext(type: RouteType.creatorAnalytics);
@@ -488,6 +501,14 @@ String buildRoute(RouteContext context) {
       return VideoMetadataScreen.path;
 
     case RouteType.settings:
+      if (context.appSlug != null) {
+        if (context.appSlug!.isEmpty) {
+          return AppsDirectoryScreen.path;
+        }
+        return AppDetailScreen.pathForSlug(
+          Uri.encodeComponent(context.appSlug!),
+        );
+      }
       return SettingsScreen.path;
 
     case RouteType.relaySettings:

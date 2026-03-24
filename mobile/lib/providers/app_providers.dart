@@ -66,6 +66,7 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
+import 'package:openvine/services/nostr_app_directory_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
@@ -102,6 +103,18 @@ import 'package:sound_service/sound_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';
+
+final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
+  ref,
+) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final client = Client();
+  ref.onDispose(client.close);
+  return NostrAppDirectoryService(
+    sharedPreferences: prefs,
+    client: client,
+  );
+});
 
 // =============================================================================
 // FOUNDATIONAL SERVICES (No dependencies)

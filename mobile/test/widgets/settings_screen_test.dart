@@ -106,6 +106,7 @@ void main() {
         'Content Preferences',
         'Moderation Controls',
         'Nostr Settings',
+        'Apps',
       ]) {
         await tester.scrollUntilVisible(
           find.text(title),
@@ -114,6 +115,11 @@ void main() {
         );
         expect(find.text(title), findsOneWidget);
       }
+
+      expect(
+        find.text('Launch vetted Nostr apps in Divine'),
+        findsOneWidget,
+      );
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
