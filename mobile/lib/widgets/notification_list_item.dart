@@ -42,7 +42,7 @@ class NotificationListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Main message
-                    _buildMessage(),
+                    _buildMessage(context),
                     const SizedBox(height: 4),
 
                     // Additional content (comment text, etc.)
@@ -177,16 +177,14 @@ class NotificationListItem extends StatelessWidget {
     ),
   );
 
-  Widget _buildMessage() {
-    const textStyle = TextStyle(
-      fontSize: 14,
-      color: VineTheme.whiteText,
-    );
+  Widget _buildMessage(BuildContext context) {
+    final textStyle = VineTheme.bodyMediumFont();
 
     final actorName = notification.actorName;
     if (_messageStartsWithActorName(actorName)) {
       // Build rich text with bold actor name
       return RichText(
+        textScaler: MediaQuery.textScalerOf(context),
         text: TextSpan(
           style: textStyle,
           children: [

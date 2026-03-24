@@ -52,7 +52,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
+      expanded: false,
       scrollable: false,
+      isScrollControlled: true,
       body: MoreSheetContent(
         userIdHex: otherPubkey,
         displayName: displayName,

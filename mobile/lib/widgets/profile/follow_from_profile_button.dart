@@ -210,36 +210,12 @@ class _FollowingButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
+    return DivineButton(
+      expanded: true,
+      type: .secondary,
       onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        backgroundColor: VineTheme.surfaceContainer,
-        foregroundColor: VineTheme.vineGreen,
-        side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            DivineIconName.userCheck.assetPath,
-            width: 24,
-            height: 24,
-            colorFilter: const ColorFilter.mode(
-              VineTheme.vineGreen,
-              BlendMode.srcIn,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Following',
-            style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+      label: 'Following',
+      leadingIcon: .userCheck,
     );
   }
 }
@@ -252,35 +228,11 @@ class _FollowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
+    return DivineButton(
       onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: VineTheme.vineGreen,
-        foregroundColor: VineTheme.onPrimary,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            DivineIconName.userPlus.assetPath,
-            width: 24,
-            height: 24,
-            colorFilter: const ColorFilter.mode(
-              VineTheme.onPrimary,
-              BlendMode.srcIn,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Follow',
-            style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+      expanded: true,
+      leadingIcon: DivineIconName.userPlus,
+      label: 'Follow',
     );
   }
 }

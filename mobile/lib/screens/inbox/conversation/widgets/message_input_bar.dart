@@ -76,21 +76,23 @@ class _MessageInputBarState extends State<MessageInputBar> {
             children: [
               // Text input
               Expanded(
-                child: TextField(
-                  controller: _controller,
-                  style: VineTheme.bodyLargeFont(),
-                  cursorColor: VineTheme.primary,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _handleSend(),
-                  decoration: InputDecoration(
-                    hintText: 'Say something...',
-                    hintStyle: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceMuted,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                child: MediaQuery.withNoTextScaling(
+                  child: TextField(
+                    controller: _controller,
+                    style: VineTheme.bodyLargeFont(),
+                    cursorColor: VineTheme.primary,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _handleSend(),
+                    decoration: InputDecoration(
+                      hintText: 'Say something...',
+                      hintStyle: VineTheme.bodyLargeFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),

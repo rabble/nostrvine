@@ -116,24 +116,26 @@ class _MoreSheetContentState extends State<MoreSheetContent>
 
     final isTransitioning = _targetMode != MoreSheetMode.menu;
 
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      alignment: Alignment.topCenter,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final opacity = isTransitioning
-              ? (_displayedMode != MoreSheetMode.menu
-                    ? _fadeInAnimation.value
-                    : 0.0)
-              : _fadeOutAnimation.value;
+    return SingleChildScrollView(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final opacity = isTransitioning
+                ? (_displayedMode != MoreSheetMode.menu
+                      ? _fadeInAnimation.value
+                      : 0.0)
+                : _fadeOutAnimation.value;
 
-          return Opacity(
-            opacity: isTransitioning ? opacity : _fadeOutAnimation.value,
-            child: _buildContent(),
-          );
-        },
+            return Opacity(
+              opacity: isTransitioning ? opacity : _fadeOutAnimation.value,
+              child: _buildContent(),
+            );
+          },
+        ),
       ),
     );
   }

@@ -88,11 +88,17 @@ class _FollowingUserButton extends ConsumerWidget {
             UserAvatar(imageUrl: imageUrl, name: displayName, size: 48),
             Text(
               displayName,
-              style: VineTheme.bodySmallFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
+              textScaler: TextScaler.noScaling,
+              style:
+                  VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ).copyWith(
+                    fontSize: MediaQuery.textScalerOf(
+                      context,
+                    ).scale(VineTheme.bodySmallFont().fontSize!).clamp(0, 18),
+                  ),
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ],
