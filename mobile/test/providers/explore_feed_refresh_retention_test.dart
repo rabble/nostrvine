@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,7 +18,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:riverpod/riverpod.dart';
+import 'package:openvine/services/video_filter_builder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -148,6 +149,121 @@ void main() {
           'popular-now-refreshed',
         ]);
         expect(finalState.isRefreshing, isFalse);
+      },
+    );
+
+    test(
+      'popular now refresh during resume-time rebuild stays on REST path',
+      () async {
+        final resumeBuildCompleter = Completer<List<VideoStats>>();
+        final refreshCompleter = Completer<List<VideoStats>>();
+        var recentCallCount = 0;
+
+        when(
+          () => mockFunnelcakeApiClient.getRecentVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) {
+          recentCallCount += 1;
+          if (recentCallCount == 1) {
+            return Future.value([_videoStats('popular-now-initial')]);
+          }
+          if (recentCallCount == 2) {
+            return resumeBuildCompleter.future;
+          }
+          return refreshCompleter.future;
+        });
+
+        when(() => mockVideoEventService.popularNowVideos).thenReturn([]);
+        when(
+          () => mockVideoEventService.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.popularNow,
+            limit: AppConstants.paginationBatchSize,
+            sortBy: VideoSortField.createdAt,
+            force: true,
+          ),
+        ).thenAnswer((_) async {});
+
+        List<Object> overridesFor(bool appReady) => [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          appReadyProvider.overrideWithValue(appReady),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistServiceProvider.overrideWithValue(
+            mockBlocklistService,
+          ),
+          funnelcakeApiClientProvider.overrideWithValue(
+            mockFunnelcakeApiClient,
+          ),
+          funnelcakeAvailableProvider.overrideWith(
+            _AlwaysAvailableFunnelcake.new,
+          ),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
+        ];
+
+        final container = ProviderContainer(
+          overrides: overridesFor(true).cast(),
+        );
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final subscription = container.listen(
+          popularNowFeedProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        final initialState = await container.read(
+          popularNowFeedProvider.future,
+        );
+        expect(initialState.videos.map((video) => video.id), [
+          'popular-now-initial',
+        ]);
+
+        container.updateOverrides(overridesFor(false).cast());
+        await container.read(funnelcakeAvailableProvider.future);
+        await pumpEventQueue();
+        await pumpEventQueue();
+
+        final backgroundState = container.read(popularNowFeedProvider).value;
+        expect(backgroundState, isNotNull);
+        expect(backgroundState!.videos.map((video) => video.id), [
+          'popular-now-initial',
+        ]);
+
+        container.updateOverrides(overridesFor(true).cast());
+        await container.read(funnelcakeAvailableProvider.future);
+        await pumpEventQueue();
+
+        final refreshFuture = container
+            .read(popularNowFeedProvider.notifier)
+            .refresh();
+        await pumpEventQueue();
+
+        final refreshingState = container.read(popularNowFeedProvider).value;
+        expect(refreshingState, isNotNull);
+        expect(refreshingState!.videos.map((video) => video.id), [
+          'popular-now-initial',
+        ]);
+        expect(refreshingState.isRefreshing, isTrue);
+        expect(
+          recentCallCount,
+          3,
+          reason:
+              'Refresh should keep using REST while the resume rebuild is in flight',
+        );
+        verifyNever(
+          () => mockVideoEventService.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.popularNow,
+            limit: AppConstants.paginationBatchSize,
+            sortBy: VideoSortField.createdAt,
+            force: true,
+          ),
+        );
+
+        resumeBuildCompleter.complete([_videoStats('popular-now-resumed')]);
+        refreshCompleter.complete([_videoStats('popular-now-refreshed')]);
+        await refreshFuture;
       },
     );
 
