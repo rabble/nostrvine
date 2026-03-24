@@ -721,6 +721,147 @@ void main() {
       expect(result, true);
       expect(methodCalls, ['showTicketList']);
     });
+
+    test(
+      'showTicketListScreen reuses a recent JWT refresh for consecutive calls',
+      () async {
+        final methodCalls = <String>[];
+        var refreshCallCount = 0;
+        final now = DateTime.utc(2026, 3, 24, 12);
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://relay-manager.divine.video',
+        );
+        ZendeskSupportService.setTestHooks(
+          now: () => now,
+          jwtIdentityRefresh:
+              ({
+                required Nip98AuthService nip98Service,
+                required String relayManagerUrl,
+              }) async {
+                refreshCallCount++;
+                return true;
+              },
+        );
+
+        methodCalls.clear();
+
+        final firstResult = await ZendeskSupportService.showTicketListScreen();
+        final secondResult = await ZendeskSupportService.showTicketListScreen();
+
+        expect(firstResult, isTrue);
+        expect(secondResult, isTrue);
+        expect(refreshCallCount, 1);
+        expect(methodCalls.where((m) => m == 'showTicketList').length, 2);
+      },
+    );
+
+    test(
+      'showTicketListScreen refreshes again once cached JWT is stale',
+      () async {
+        var refreshCallCount = 0;
+        var now = DateTime.utc(2026, 3, 24, 12);
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://relay-manager.divine.video',
+        );
+        ZendeskSupportService.setTestHooks(
+          now: () => now,
+          jwtIdentityRefresh:
+              ({
+                required Nip98AuthService nip98Service,
+                required String relayManagerUrl,
+              }) async {
+                refreshCallCount++;
+                return true;
+              },
+        );
+
+        final firstResult = await ZendeskSupportService.showTicketListScreen();
+        now = now.add(const Duration(minutes: 5));
+        final secondResult = await ZendeskSupportService.showTicketListScreen();
+
+        expect(firstResult, isTrue);
+        expect(secondResult, isTrue);
+        expect(refreshCallCount, 2);
+      },
+    );
+
+    test(
+      'clearUserIdentity clears stored auth context for future SDK actions',
+      () async {
+        final methodCalls = <String>[];
+        var refreshCallCount = 0;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'clearUserIdentity') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://relay-manager.divine.video',
+        );
+        ZendeskSupportService.setTestHooks(
+          jwtIdentityRefresh:
+              ({
+                required Nip98AuthService nip98Service,
+                required String relayManagerUrl,
+              }) async {
+                refreshCallCount++;
+                return true;
+              },
+        );
+
+        await ZendeskSupportService.clearUserIdentity();
+        methodCalls.clear();
+
+        final result = await ZendeskSupportService.showTicketListScreen();
+
+        expect(result, isTrue);
+        expect(refreshCallCount, 0);
+        expect(methodCalls, ['showTicketList']);
+      },
+    );
   });
 }
 

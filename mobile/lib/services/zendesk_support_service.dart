@@ -9,11 +9,18 @@ import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
+typedef JwtIdentityRefresh =
+    Future<bool> Function({
+      required Nip98AuthService nip98Service,
+      required String relayManagerUrl,
+    });
+
 /// Service for interacting with Zendesk Support SDK
 class ZendeskSupportService {
   static const MethodChannel _channel = MethodChannel(
     'com.openvine/zendesk_support',
   );
+  static const Duration _jwtRefreshReuseWindow = Duration(minutes: 4);
 
   static bool _initialized = false;
 
@@ -28,6 +35,9 @@ class ZendeskSupportService {
   /// Stored references for JWT refresh (set at login, used by _ensureFreshJwt)
   static Nip98AuthService? _nip98Service;
   static String? _relayManagerUrl;
+  static DateTime? _lastJwtRefreshAt;
+  static DateTime Function() _now = DateTime.now;
+  static JwtIdentityRefresh? _jwtIdentityRefreshOverride;
 
   /// Public accessors for user identity (used by reserved username requests)
   static String? get userName => _userName;
@@ -41,8 +51,26 @@ class ZendeskSupportService {
     _userName = null;
     _userEmail = null;
     _userNpub = null;
+    _clearAuthContext();
+    _now = DateTime.now;
+    _jwtIdentityRefreshOverride = null;
+  }
+
+  @visibleForTesting
+  static void setTestHooks({
+    DateTime Function()? now,
+    JwtIdentityRefresh? jwtIdentityRefresh,
+  }) {
+    if (now != null) {
+      _now = now;
+    }
+    _jwtIdentityRefreshOverride = jwtIdentityRefresh;
+  }
+
+  static void _clearAuthContext() {
     _nip98Service = null;
     _relayManagerUrl = null;
+    _lastJwtRefreshAt = null;
   }
 
   /// Initialize Zendesk SDK
@@ -176,6 +204,7 @@ class ZendeskSupportService {
     _userName = null;
     _userEmail = null;
     _userNpub = null;
+    _clearAuthContext();
     if (_initialized) {
       try {
         await _channel.invokeMethod('clearUserIdentity');
@@ -224,23 +253,38 @@ class ZendeskSupportService {
   }) {
     _nip98Service = nip98Service;
     _relayManagerUrl = relayManagerUrl;
+    _lastJwtRefreshAt = null;
   }
 
   /// Refresh JWT identity before an SDK action.
   /// Gets a fresh pre-auth token and sets it as the SDK identity.
+  /// Reuses a recent successful refresh to avoid redundant network work.
   /// No-op if auth context is not stored or SDK not initialized.
-  /// Returns true if identity was refreshed, false if skipped/failed.
+  /// Returns true if identity is fresh or refreshed, false if skipped/failed.
   static Future<bool> _ensureFreshJwt() async {
     if (!_initialized || _nip98Service == null || _relayManagerUrl == null) {
       return false;
     }
 
+    final lastJwtRefreshAt = _lastJwtRefreshAt;
+    final now = _now();
+    if (lastJwtRefreshAt != null &&
+        now.difference(lastJwtRefreshAt) < _jwtRefreshReuseWindow) {
+      Log.debug(
+        'Zendesk JWT refresh skipped - recent token still fresh',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
     try {
-      final result = await setJwtIdentity(
+      final refreshJwt = _jwtIdentityRefreshOverride ?? setJwtIdentity;
+      final result = await refreshJwt(
         nip98Service: _nip98Service!,
         relayManagerUrl: _relayManagerUrl!,
       );
       if (result) {
+        _lastJwtRefreshAt = _now();
         Log.info(
           'Zendesk JWT refreshed before SDK action',
           category: LogCategory.system,
