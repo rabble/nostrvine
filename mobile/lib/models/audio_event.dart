@@ -321,11 +321,13 @@ class AudioEvent {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AudioEvent && other.id == id;
+    return other is AudioEvent &&
+        other.id == id &&
+        other.startOffset == startOffset;
   }
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, startOffset);
 
   @override
   String toString() {

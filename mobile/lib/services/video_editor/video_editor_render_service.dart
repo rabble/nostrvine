@@ -652,6 +652,7 @@ class VideoEditorRenderService {
       enableAudio: originalAudioVolume > 0 || hasCustomAudio,
       originalAudioVolume: originalAudioVolume,
       customAudioVolume: customAudioVolume,
+      customAudioStartTime: parameters?.customAudioTrack?.startTime,
       imageBytes: parameters?.layers.isNotEmpty == true
           ? parameters?.image
           : null,

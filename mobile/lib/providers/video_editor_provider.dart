@@ -938,6 +938,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         audio: soundTrack.isBundled
             ? EditorAudio.asset(soundTrack.assetPath!)
             : EditorAudio.network(soundTrack.url!),
+        startTime: soundTrack.startOffset,
       ),
     );
   }
