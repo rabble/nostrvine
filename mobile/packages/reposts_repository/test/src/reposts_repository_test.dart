@@ -598,6 +598,52 @@ void main() {
 
         expect(count, equals(0));
       });
+
+      test(
+        'caches relay-fetched count and reuses on second call',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer(
+            (_) async => const CountResult(count: 15),
+          );
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+          );
+
+          final first = await repository.getRepostCount(testAddressableId);
+          final second = await repository.getRepostCount(testAddressableId);
+
+          expect(first, equals(15));
+          expect(second, equals(15));
+          verify(() => mockNostrClient.countEvents(any())).called(1);
+        },
+      );
+    });
+
+    group('getRepostCountByEventId', () {
+      test(
+        'caches relay-fetched count and reuses on second call',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer(
+            (_) async => const CountResult(count: 7),
+          );
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+          );
+
+          final first = await repository.getRepostCountByEventId(testEventId);
+          final second = await repository.getRepostCountByEventId(testEventId);
+
+          expect(first, equals(7));
+          expect(second, equals(7));
+          verify(() => mockNostrClient.countEvents(any())).called(1);
+        },
+      );
     });
 
     group('count caching via toggleRepost', () {

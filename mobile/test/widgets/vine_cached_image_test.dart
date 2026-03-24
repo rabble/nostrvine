@@ -1,0 +1,130 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/services/image_cache_manager.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
+
+void main() {
+  group(VineCachedImage, () {
+    const testUrl = 'https://example.com/image.jpg';
+
+    testWidgets('renders $CachedNetworkImage with correct imageUrl', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: testUrl),
+        ),
+      );
+
+      expect(find.byType(CachedNetworkImage), findsOneWidget);
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(cached.imageUrl, equals(testUrl));
+    });
+
+    testWidgets('uses openVineImageCache as cacheManager', (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: testUrl),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(cached.cacheManager, equals(openVineImageCache));
+    });
+
+    testWidgets('defaults fit to BoxFit.cover', (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: testUrl),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(cached.fit, equals(BoxFit.cover));
+    });
+
+    testWidgets('defaults alignment to Alignment.center', (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: testUrl),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(cached.alignment, equals(Alignment.center));
+    });
+
+    testWidgets('passes width and height through', (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(
+            imageUrl: testUrl,
+            width: 100,
+            height: 200,
+          ),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(cached.width, equals(100));
+      expect(cached.height, equals(200));
+    });
+
+    testWidgets('passes fit and alignment through', (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(
+            imageUrl: testUrl,
+            fit: BoxFit.contain,
+            alignment: Alignment.topCenter,
+          ),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(cached.fit, equals(BoxFit.contain));
+      expect(cached.alignment, equals(Alignment.topCenter));
+    });
+
+    testWidgets('passes memCacheWidth and memCacheHeight through', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(
+            imageUrl: testUrl,
+            memCacheWidth: 256,
+            memCacheHeight: 512,
+          ),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(cached.memCacheWidth, equals(256));
+      expect(cached.memCacheHeight, equals(512));
+    });
+  });
+}

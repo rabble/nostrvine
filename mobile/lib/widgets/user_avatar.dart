@@ -3,11 +3,10 @@
 
 import 'dart:math' as math;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 enum UserAvatarPlaceholderTone {
   auto,
@@ -135,10 +134,8 @@ class UserAvatar extends StatelessWidget {
     }
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return CachedNetworkImage(
+      return VineCachedImage(
         imageUrl: imageUrl!,
-        fit: BoxFit.cover,
-        cacheManager: openVineImageCache,
         placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) {
           if (error.toString().contains('Invalid image data') ||

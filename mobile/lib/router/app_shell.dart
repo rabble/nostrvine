@@ -74,9 +74,6 @@ class _AppShellState extends ConsumerState<AppShell> {
         return 'Notifications';
       case RouteType.inbox:
         return 'Inbox';
-      case RouteType.hashtag:
-        final raw = ctx?.hashtag ?? '';
-        return raw.isEmpty ? '#—' : '#$raw';
       case RouteType.profile:
         final npub = ctx?.npub ?? '';
         if (npub == 'me') {
@@ -115,8 +112,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   int? _tabIndexFromRouteType(RouteType type) {
     return switch (type) {
       RouteType.home => 0,
-      // Hashtag is part of explore tab
-      RouteType.explore || RouteType.hashtag => 1,
+      RouteType.explore => 1,
       RouteType.notifications || RouteType.inbox => 2,
       RouteType.profile => 3,
       // Not a main tab route
@@ -190,8 +186,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     final routeType = ctx?.type;
 
     // Check if title should be tappable (Explore-related routes)
-    final isTappable =
-        routeType == RouteType.explore || routeType == RouteType.hashtag;
+    final isTappable = routeType == RouteType.explore;
 
     final titleWidget = Text(
       title,
@@ -305,8 +300,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
-        final isSubRoute =
-            ctx.type == RouteType.hashtag || ctx.type == RouteType.search;
+        final isSubRoute = ctx.type == RouteType.search;
         final isExploreVideo =
             ctx.type == RouteType.explore && ctx.videoIndex != null;
         // Notifications base state is index 0, not null
@@ -370,7 +364,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                       // Check if we're in a sub-route (hashtag, search, etc.)
                       // If so, navigate back to parent route
                       switch (ctx.type) {
-                        case RouteType.hashtag:
                         case RouteType.search:
                           // Go back to explore
                           return context.go(ExploreScreen.path);

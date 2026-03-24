@@ -30,6 +30,7 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
@@ -397,25 +398,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
-
-          // HASHTAG route - grid mode (no index)
-          GoRoute(
-            path: HashtagScreenRouter.path,
-            name: HashtagScreenRouter.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.hashtagGrid,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const HashtagScreenRouter(),
-                  settings: const RouteSettings(
-                    name: HashtagScreenRouter.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
+      ),
+
+      // HASHTAG route - standalone screen (no bottom nav)
+      GoRoute(
+        path: HashtagScreenRouter.path,
+        name: HashtagScreenRouter.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) {
+          final tag = st.pathParameters['tag'];
+          if (tag == null || tag.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid hashtag')),
+            );
+          }
+          final decoded = Uri.decodeComponent(tag);
+          return HashtagFeedScreen(hashtag: decoded);
+        },
       ),
 
       // DM conversation detail (pushed from inbox, no bottom nav)
@@ -809,9 +810,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = st.extra as Map<String, dynamic>?;
           final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
 
-          return VideoEditorScreen(
-            fromLibrary: fromLibrary,
-          );
+          return VideoEditorScreen(fromLibrary: fromLibrary);
         },
       ),
       GoRoute(
@@ -923,8 +922,6 @@ int tabIndexFromLocation(String loc) {
       return 0;
     case 'explore':
       return 1;
-    case 'hashtag':
-      return 1; // Hashtag keeps explore tab active
     case 'notifications':
     case 'inbox':
       return 2; // Inbox replaces notifications in the same tab position
@@ -962,6 +959,7 @@ int tabIndexFromLocation(String loc) {
     case 'list':
     case 'discover-lists':
     case 'creator-analytics':
+    case 'hashtag':
       return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home

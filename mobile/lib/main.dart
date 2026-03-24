@@ -1036,6 +1036,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // If so, navigate back to parent route
       switch (ctx.type) {
         case RouteType.hashtag:
+          // Hashtag is a standalone screen — pop back
+          router.pop();
+          return true; // Handled
         case RouteType.search:
           // Go back to explore
           router.go(ExploreScreen.path);
@@ -1173,15 +1176,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     Widget wrapped = MultiRepositoryProvider(
       providers: [
         RepositoryProvider(
-          create: (_) => InviteApiService(
-            authService: ref.read(nip98AuthServiceProvider),
-          ),
+          create: (_) =>
+              InviteApiService(authService: ref.read(nip98AuthServiceProvider)),
           dispose: (service) => service.dispose(),
         ),
         BlocProvider(
-          create: (_) => DmUnreadCountCubit(
-            dmRepository: ref.read(dmRepositoryProvider),
-          ),
+          create: (_) =>
+              DmUnreadCountCubit(dmRepository: ref.read(dmRepositoryProvider)),
         ),
       ],
       child: MultiBlocProvider(

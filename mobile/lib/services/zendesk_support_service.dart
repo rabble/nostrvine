@@ -1,11 +1,13 @@
 // ABOUTME: Flutter wrapper for Zendesk Support (native SDK + REST API fallback)
 // ABOUTME: Provides ticket creation via native iOS/Android SDKs or REST API for desktop
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/config/zendesk_config.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -21,6 +23,9 @@ class ZendeskSupportService {
     'com.openvine/zendesk_support',
   );
   static const Duration _jwtRefreshReuseWindow = Duration(minutes: 4);
+
+  static final CrashReportingService _crashlytics =
+      CrashReportingService.instance;
 
   static bool _initialized = false;
 
@@ -415,6 +420,9 @@ class ZendeskSupportService {
   ///
   /// Presents the native Zendesk UI for creating a support ticket.
   /// Returns true if screen shown, false if Zendesk not initialized.
+  ///
+  /// If the native SDK returns a `NO_IDENTITY` error, this method
+  /// automatically falls back to anonymous identity and retries once.
   static Future<bool> showNewTicketScreen({
     String? subject,
     String? description,
@@ -444,6 +452,30 @@ class ZendeskSupportService {
         'Failed to show Zendesk ticket screen: ${e.code} - ${e.message}',
         category: LogCategory.system,
       );
+
+      // NO_IDENTITY: fall back to anonymous identity and retry once.
+      if (e.code == 'NO_IDENTITY') {
+        Log.info(
+          'Retrying ticket screen with anonymous identity fallback',
+          category: LogCategory.system,
+        );
+        final identitySet = await setAnonymousIdentityWithUserInfo();
+        if (identitySet) {
+          try {
+            await _channel.invokeMethod('showNewTicket', {
+              'subject': subject,
+              'description': description,
+              'tags': tags,
+            });
+            return true;
+          } catch (retryError) {
+            Log.error(
+              'Retry with anonymous identity also failed: $retryError',
+              category: LogCategory.system,
+            );
+          }
+        }
+      }
       return false;
     } catch (e) {
       Log.error(
@@ -458,6 +490,9 @@ class ZendeskSupportService {
   ///
   /// Presents the native Zendesk UI showing all tickets from this user.
   /// Returns true if screen shown, false if Zendesk not initialized.
+  ///
+  /// If the native SDK returns a `NO_IDENTITY` error, this method
+  /// automatically falls back to anonymous identity and retries once.
   static Future<bool> showTicketListScreen() async {
     if (!_initialized) {
       Log.warning(
@@ -481,6 +516,27 @@ class ZendeskSupportService {
         'Failed to show Zendesk ticket list: ${e.code} - ${e.message}',
         category: LogCategory.system,
       );
+
+      // NO_IDENTITY means the native SDK has no identity set.
+      // Fall back to anonymous identity and retry once before giving up.
+      if (e.code == 'NO_IDENTITY') {
+        Log.info(
+          'Retrying ticket list with anonymous identity fallback',
+          category: LogCategory.system,
+        );
+        final identitySet = await setAnonymousIdentityWithUserInfo();
+        if (identitySet) {
+          try {
+            await _channel.invokeMethod('showTicketList');
+            return true;
+          } catch (retryError) {
+            Log.error(
+              'Retry with anonymous identity also failed: $retryError',
+              category: LogCategory.system,
+            );
+          }
+        }
+      }
       return false;
     } catch (e) {
       Log.error(
@@ -543,6 +599,14 @@ class ZendeskSupportService {
         Log.warning(
           'Failed to create Zendesk ticket: $subject',
           category: LogCategory.system,
+        );
+        _crashlytics.log('Zendesk SDK returned false for ticket: $subject');
+        unawaited(
+          _crashlytics.recordError(
+            Exception('Zendesk SDK returned false'),
+            StackTrace.current,
+            reason: 'zendesk_sdk_returned_false',
+          ),
         );
         return false;
       }
@@ -616,10 +680,18 @@ class ZendeskSupportService {
         requesterEmail: _userEmail,
         tags: tags,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Unexpected error creating Zendesk ticket: $e',
         category: LogCategory.system,
+      );
+      _crashlytics.log('Zendesk createTicket failed: $subject');
+      unawaited(
+        _crashlytics.recordError(
+          e,
+          stackTrace,
+          reason: 'zendesk_ticket_unexpected_error',
+        ),
       );
       return false;
     }
@@ -713,6 +785,16 @@ class ZendeskSupportService {
           'Zendesk API error: ${response.statusCode} - ${response.body}',
           category: LogCategory.system,
         );
+        _crashlytics.log(
+          'Zendesk REST API error ${response.statusCode}: $subject',
+        );
+        unawaited(
+          _crashlytics.recordError(
+            Exception('Zendesk REST API HTTP error'),
+            StackTrace.current,
+            reason: 'zendesk_rest_api_http_error',
+          ),
+        );
         return false;
       }
     } catch (e, stackTrace) {
@@ -721,6 +803,14 @@ class ZendeskSupportService {
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
+      );
+      _crashlytics.log('Zendesk REST API exception for ticket: $subject');
+      unawaited(
+        _crashlytics.recordError(
+          e,
+          stackTrace,
+          reason: 'zendesk_rest_api_exception',
+        ),
       );
       return false;
     }
@@ -932,6 +1022,16 @@ class ZendeskSupportService {
           'Zendesk API error: ${response.statusCode} - ${response.body}',
           category: LogCategory.system,
         );
+        _crashlytics.log(
+          'Zendesk form API error ${response.statusCode}: $label',
+        );
+        unawaited(
+          _crashlytics.recordError(
+            Exception('Zendesk form API HTTP error'),
+            StackTrace.current,
+            reason: 'zendesk_form_api_http_error',
+          ),
+        );
         return false;
       }
     } catch (e, stackTrace) {
@@ -940,6 +1040,14 @@ class ZendeskSupportService {
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
+      );
+      _crashlytics.log('Zendesk form API exception for: $label');
+      unawaited(
+        _crashlytics.recordError(
+          e,
+          stackTrace,
+          reason: 'zendesk_form_api_exception',
+        ),
       );
       return false;
     }

@@ -204,8 +204,8 @@ class ClickableHashtagText extends ConsumerWidget {
     // Notify parent about video state change if callback provided
     onVideoStateChange?.call();
 
-    // Navigate to hashtag grid view (no index = grid mode)
-    context.go(HashtagScreenRouter.pathForTag(hashtag));
+    // Navigate to standalone hashtag screen (outside shell, no bottom nav)
+    context.push(HashtagScreenRouter.pathForTag(hashtag));
   }
 
   void _navigateToProfile(BuildContext context, String hexPubkey) {

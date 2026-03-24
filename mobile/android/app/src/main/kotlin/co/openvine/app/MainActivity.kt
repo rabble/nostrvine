@@ -329,6 +329,15 @@ class MainActivity : FlutterActivity() {
                             return@setMethodCallHandler
                         }
 
+                        // Guard: Zendesk SDK requires an identity before showing UI.
+                        // Without one the Activity crashes on launch, killing the app
+                        // process (reported on Samsung Note 20 Ultra, issue #2365).
+                        if (Zendesk.INSTANCE.identity == null) {
+                            Log.w(ZENDESK_TAG, "No identity set — cannot show ticket screen")
+                            result.error("NO_IDENTITY", "Set an identity before showing Zendesk UI", null)
+                            return@setMethodCallHandler
+                        }
+
                         // Note: Zendesk Android SDK v5.1.2 does not support pre-filling
                         // subject/tags in RequestActivity. Users must fill these in the UI.
                         // This is a known limitation of the Android SDK vs iOS SDK.
@@ -351,6 +360,15 @@ class MainActivity : FlutterActivity() {
                         // Guard against launching when activity is finishing/destroyed
                         if (isFinishing || isDestroyed) {
                             result.error("ACTIVITY_DESTROYED", "Activity is not available", null)
+                            return@setMethodCallHandler
+                        }
+
+                        // Guard: Zendesk SDK requires an identity before showing UI.
+                        // Without one the Activity crashes on launch, killing the app
+                        // process (reported on Samsung Note 20 Ultra, issue #2365).
+                        if (Zendesk.INSTANCE.identity == null) {
+                            Log.w(ZENDESK_TAG, "No identity set — cannot show ticket list")
+                            result.error("NO_IDENTITY", "Set an identity before showing Zendesk UI", null)
                             return@setMethodCallHandler
                         }
 
@@ -499,6 +517,9 @@ class MainActivity : FlutterActivity() {
                             createRequest.customFields = customFields
                         }
 
+                        // Zendesk SDK fires callbacks on a background thread,
+                        // but Flutter platform channels require the main thread.
+                        // Without this dispatch the app crashes (issue #1679).
                         val mainHandler = Handler(Looper.getMainLooper())
                         provider.createRequest(createRequest, object : ZendeskCallback<Request>() {
                             override fun onSuccess(request: Request?) {

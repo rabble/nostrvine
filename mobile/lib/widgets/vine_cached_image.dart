@@ -1,0 +1,46 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/widgets.dart';
+import 'package:openvine/services/image_cache_manager.dart';
+
+/// A wrapper around [CachedNetworkImage] that always uses
+/// [openVineImageCache] as the cache manager.
+class VineCachedImage extends StatelessWidget {
+  const VineCachedImage({
+    required this.imageUrl,
+    super.key,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+    this.alignment = Alignment.center,
+    this.placeholder,
+    this.errorWidget,
+    this.memCacheWidth,
+    this.memCacheHeight,
+  });
+
+  final String imageUrl;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final Alignment alignment;
+  final PlaceholderWidgetBuilder? placeholder;
+  final LoadingErrorWidgetBuilder? errorWidget;
+  final int? memCacheWidth;
+  final int? memCacheHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      width: width,
+      height: height,
+      fit: fit,
+      alignment: alignment,
+      cacheManager: openVineImageCache,
+      placeholder: placeholder,
+      errorWidget: errorWidget,
+      memCacheWidth: memCacheWidth,
+      memCacheHeight: memCacheHeight,
+    );
+  }
+}
