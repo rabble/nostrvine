@@ -1,0 +1,11 @@
+name = "divine-apps-directory-worker"
+main = "src/index.ts"
+compatibility_date = "2024-06-01"
+
+[vars]
+ADMIN_ORIGIN = "https://apps.admin.divine.video"
+
+[[d1_databases]]
+binding = "APPS_DB"
+database_name = "divine_apps_directory"
+database_id = "local-dev"
