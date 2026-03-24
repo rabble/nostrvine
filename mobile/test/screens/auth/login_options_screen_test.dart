@@ -227,7 +227,7 @@ void main() {
         );
 
         // Tap sign in
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Sign in'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -278,7 +278,7 @@ void main() {
         );
 
         // Tap sign in
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Sign in'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -292,7 +292,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap sign in without entering anything
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Sign in'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
