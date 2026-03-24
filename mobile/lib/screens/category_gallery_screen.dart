@@ -251,7 +251,9 @@ class _CategoryGalleryHeader extends StatelessWidget {
                       Expanded(
                         child: Text(
                           category.displayName,
-                          style: VineTheme.titleMediumFont(),
+                          style: VineTheme.titleMediumFont().copyWith(
+                            decoration: TextDecoration.none,
+                          ),
                         ),
                       ),
                     ],
@@ -361,10 +363,7 @@ class _CategorySortSegment extends StatelessWidget {
                       ? VineTheme.onPrimaryButton
                       : VineTheme.onSurfaceMuted,
                 ).copyWith(
-                  decoration: TextDecoration.underline,
-                  decorationColor: isSelected
-                      ? VineTheme.onPrimaryButton
-                      : VineTheme.onSurfaceMuted,
+                  decoration: TextDecoration.none,
                 ),
           ),
         ),
