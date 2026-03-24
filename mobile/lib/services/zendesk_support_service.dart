@@ -699,6 +699,10 @@ class ZendeskSupportService {
 
   // ========================================================================
   // REST API Methods (for platforms without native SDK: macOS, Windows, Web)
+  //
+  // macOS builds are internal-only. These methods require ZENDESK_API_TOKEN
+  // (basic auth), which is NOT configured in Codemagic production builds.
+  // Internal users report bugs via Slack/GitHub instead.
   // ========================================================================
 
   /// Check if REST API is available (for platforms without native SDK)
@@ -951,7 +955,7 @@ class ZendeskSupportService {
       );
     }
 
-    // Fall back to REST API for desktop platforms
+    // Fall back to REST API for desktop platforms (macOS internal builds only)
     Log.info(
       '🎫 Native SDK not available, using REST API fallback',
       category: LogCategory.system,
@@ -1131,7 +1135,7 @@ class ZendeskSupportService {
       );
     }
 
-    // Fall back to REST API for desktop platforms
+    // Fall back to REST API for desktop platforms (macOS internal builds only)
     Log.info(
       '💡 Native SDK not available, using REST API fallback',
       category: LogCategory.system,
