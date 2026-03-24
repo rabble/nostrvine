@@ -10,10 +10,13 @@ CREATE TABLE IF NOT EXISTS sandbox_apps (
 
 CREATE TABLE IF NOT EXISTS sandbox_audit_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  app_id INTEGER,
-  actor_email TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  payload_json TEXT,
+  app_id INTEGER NOT NULL,
+  origin TEXT NOT NULL,
+  user_pubkey TEXT NOT NULL,
+  method TEXT NOT NULL,
+  event_kind INTEGER,
+  decision TEXT NOT NULL,
+  error_code TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (app_id) REFERENCES sandbox_apps (id)
 );

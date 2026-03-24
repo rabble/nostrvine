@@ -13,8 +13,22 @@ interface AppRow {
   approved_at: string | null;
 }
 
-function createTestEnv(appRows: AppRow[]): Env {
+interface AuditRow {
+  id: number;
+  app_id: number;
+  origin: string;
+  user_pubkey: string;
+  method: string;
+  event_kind: number | null;
+  decision: string;
+  error_code: string | null;
+  created_at: string;
+}
+
+function createTestEnv(appRows: AppRow[], auditRows: AuditRow[] = []): Env {
   let nextId = appRows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
+  let nextAuditId =
+    auditRows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
 
   return {
     APPS_DB: {
@@ -35,6 +49,10 @@ function createTestEnv(appRows: AppRow[]): Env {
               }
 
               return { results: appRows };
+            }
+
+            if (sql.includes('FROM sandbox_audit_events')) {
+              return { results: auditRows };
             }
 
             return { results: [] };
@@ -96,6 +114,26 @@ function createTestEnv(appRows: AppRow[]): Env {
               return { success: true, meta: { changes: 1 } };
             }
 
+            if (sql.includes('INSERT INTO sandbox_audit_events')) {
+              const row: AuditRow = {
+                id: nextAuditId,
+                app_id: Number(params[0]),
+                origin: String(params[1]),
+                user_pubkey: String(params[2]),
+                method: String(params[3]),
+                event_kind: params[4] == null ? null : Number(params[4]),
+                decision: String(params[5]),
+                error_code: params[6] == null ? null : String(params[6]),
+                created_at: String(params[7]),
+              };
+              auditRows.push(row);
+              nextAuditId += 1;
+              return {
+                success: true,
+                meta: { last_row_id: row.id, changes: 1 },
+              };
+            }
+
             return { success: true, meta: { changes: 0 } };
           },
         };
@@ -136,6 +174,38 @@ function primalRow(overrides: Partial<AppRow> = {}): AppRow {
   };
 }
 
+function createNip98AuthHeader(options: {
+  requestUrl: string;
+  method: string;
+  pubkey?: string;
+  kind?: number;
+  createdAt?: number;
+  tags?: Array<Array<string>>;
+}): string {
+  const {
+    requestUrl,
+    method,
+    pubkey = 'f'.repeat(64),
+    kind = 27235,
+    createdAt = Math.floor(Date.now() / 1000),
+    tags = [
+      ['u', requestUrl],
+      ['method', method],
+    ],
+  } = options;
+
+  const event = {
+    id: '0'.repeat(64),
+    pubkey,
+    created_at: createdAt,
+    kind,
+    tags,
+    content: '',
+    sig: '1'.repeat(128),
+  };
+  return `Nostr ${Buffer.from(JSON.stringify(event), 'utf8').toString('base64')}`;
+}
+
 describe('routes', () => {
   it('GET /v1/apps returns JSON items array', async () => {
     const response = await worker.fetch(
@@ -158,6 +228,7 @@ describe('routes', () => {
         primalRow({
           manifest_json: JSON.stringify(
             primalManifest({
+              allowed_methods: ['getPublicKey', 'signEvent', 'nip44.decrypt'],
               prompt_required_for: ['nip44.decrypt'],
             }),
           ),
@@ -178,7 +249,7 @@ describe('routes', () => {
           icon_url: 'https://primal.net/icon.png',
           launch_url: 'https://primal.net/app',
           allowed_origins: ['https://primal.net'],
-          allowed_methods: ['getPublicKey', 'signEvent'],
+          allowed_methods: ['getPublicKey', 'signEvent', 'nip44.decrypt'],
           allowed_sign_event_kinds: [1],
           prompt_required_for: ['nip44.decrypt'],
           status: 'approved',
@@ -262,6 +333,141 @@ describe('routes', () => {
     expect(json).toEqual({ items: [] });
   });
 
+  it('POST /v1/audit-events rejects missing authorization headers', async () => {
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/audit-events', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          app_id: 1,
+          origin: 'https://primal.net',
+          method: 'signEvent',
+          event_kind: 1,
+          decision: 'allowed',
+        }),
+      }),
+      createTestEnv([]),
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it('POST /v1/audit-events rejects invalid NIP-98 tokens', async () => {
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/audit-events', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: 'Nostr not-valid-base64',
+        },
+        body: JSON.stringify({
+          app_id: 1,
+          origin: 'https://primal.net',
+          method: 'signEvent',
+          event_kind: 1,
+          decision: 'allowed',
+        }),
+      }),
+      createTestEnv([]),
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it('POST /v1/audit-events accepts valid payloads and stores rows', async () => {
+    const env = createTestEnv([]);
+    const requestUrl = 'https://apps.directory.divine.video/v1/audit-events';
+    const createdAt = Math.floor(Date.now() / 1000);
+
+    const postResponse = await worker.fetch(
+      new Request(requestUrl, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: createNip98AuthHeader({
+            requestUrl,
+            method: 'POST',
+            createdAt,
+          }),
+        },
+        body: JSON.stringify({
+          app_id: 1,
+          origin: 'https://primal.net',
+          method: 'signEvent',
+          event_kind: 1,
+          decision: 'allowed',
+        }),
+      }),
+      env,
+    );
+
+    expect(postResponse.status).toBe(200);
+    expect(await postResponse.json()).toEqual({ success: true });
+
+    const listResponse = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/audit-events', {
+        headers: {
+          'CF-Access-Authenticated-User-Email': 'admin@divine.video',
+        },
+      }),
+      env,
+    );
+
+    expect(listResponse.status).toBe(200);
+    const listJson = await listResponse.json();
+    expect(listJson.items).toHaveLength(1);
+    expect(listJson.items[0]).toMatchObject({
+      app_id: 1,
+      origin: 'https://primal.net',
+      user_pubkey: 'f'.repeat(64),
+      method: 'signEvent',
+      event_kind: 1,
+      decision: 'allowed',
+      error_code: null,
+    });
+  });
+
+  it('GET /v1/admin/audit-events lists persisted audit rows with access identity headers', async () => {
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/audit-events', {
+        headers: {
+          'CF-Access-Authenticated-User-Email': 'admin@divine.video',
+        },
+      }),
+      createTestEnv([], [
+        {
+          id: 7,
+          app_id: 1,
+          origin: 'https://primal.net',
+          user_pubkey: 'a'.repeat(64),
+          method: 'nip44.decrypt',
+          event_kind: null,
+          decision: 'prompt_allowed',
+          error_code: null,
+          created_at: '2026-03-25T00:00:00.000Z',
+        },
+      ]),
+    );
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json).toEqual({
+      items: [
+        {
+          id: 7,
+          app_id: 1,
+          origin: 'https://primal.net',
+          user_pubkey: 'a'.repeat(64),
+          method: 'nip44.decrypt',
+          event_kind: null,
+          decision: 'prompt_allowed',
+          error_code: null,
+          created_at: '2026-03-25T00:00:00.000Z',
+        },
+      ],
+    });
+  });
+
   it('POST /v1/admin/apps returns 403 without access identity headers', async () => {
     const response = await worker.fetch(
       new Request('https://apps.directory.divine.video/v1/admin/apps', {
@@ -341,6 +547,7 @@ describe('routes', () => {
         body: JSON.stringify(
           primalManifest({
             allowed_methods: ['getPublicKey'],
+            allowed_sign_event_kinds: [],
           }),
         ),
       }),

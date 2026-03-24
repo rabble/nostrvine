@@ -1,10 +1,13 @@
 import { requireAdmin } from './lib/admin-auth';
+import { createAuditStore, validateAuditPayload } from './lib/audit-store';
 import type { Env } from './lib/env';
 import { validateManifest } from './lib/manifest-schema';
 import { createManifestStore } from './lib/manifest-store';
+import { verifyNip98 } from './lib/nip98';
 
 const ADMIN_APP_ID_PATH = /^\/v1\/admin\/apps\/(\d+)$/;
 const ADMIN_REVOKE_PATH = /^\/v1\/admin\/apps\/(\d+)\/revoke$/;
+const AUDIT_EVENTS_PATH = '/v1/audit-events';
 const ADMIN_AUDIT_EVENTS_PATH = '/v1/admin/audit-events';
 const ADMIN_APPS_PATH = '/v1/admin/apps';
 
@@ -13,6 +16,7 @@ const worker = {
     try {
       const url = new URL(request.url);
       const manifestStore = createManifestStore(env.APPS_DB);
+      const auditStore = createAuditStore(env.APPS_DB);
 
       if (request.method === 'GET' && url.pathname === '/v1/apps') {
         const apps = await manifestStore.listApproved();
@@ -27,7 +31,18 @@ const worker = {
 
       if (request.method === 'GET' && url.pathname === ADMIN_AUDIT_EVENTS_PATH) {
         requireAdmin(request);
-        return Response.json({ items: [] });
+        const audits = await auditStore.listAll();
+        return Response.json({ items: audits });
+      }
+
+      if (request.method === 'POST' && url.pathname === AUDIT_EVENTS_PATH) {
+        const userPubkey = await verifyNip98(request);
+        const payload = validateAuditPayload(await parseJson(request));
+        await auditStore.insert({
+          ...payload,
+          user_pubkey: userPubkey,
+        });
+        return Response.json({ success: true });
       }
 
       if (request.method === 'POST' && url.pathname === ADMIN_APPS_PATH) {
