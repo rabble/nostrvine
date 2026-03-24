@@ -233,45 +233,50 @@ class _ProfileVideosEmptyState extends StatelessWidget {
       SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.videocam_outlined,
-                color: VineTheme.lightText,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No Videos Yet',
-                style: TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isOwnProfile
-                    ? 'Share your first video to see it here'
-                    : "This user hasn't shared any videos yet",
-                style: const TextStyle(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.videocam_outlined,
                   color: VineTheme.lightText,
-                  fontSize: 14,
+                  size: 64,
                 ),
-              ),
-              const SizedBox(height: 32),
-              IconButton(
-                onPressed: onRefresh,
-                icon: const Icon(
-                  Icons.refresh,
-                  color: VineTheme.vineGreen,
-                  size: 28,
+                const SizedBox(height: 16),
+                const Text(
+                  'No Videos Yet',
+                  textAlign: .center,
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                tooltip: 'Refresh',
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  isOwnProfile
+                      ? 'Share your first video to see it here'
+                      : "This user hasn't shared any videos yet",
+                  textAlign: .center,
+                  style: const TextStyle(
+                    color: VineTheme.lightText,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                IconButton(
+                  onPressed: onRefresh,
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: VineTheme.vineGreen,
+                    size: 28,
+                  ),
+                  tooltip: 'Refresh',
+                ),
+              ],
+            ),
           ),
         ),
       ),

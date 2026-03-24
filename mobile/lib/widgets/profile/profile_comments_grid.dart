@@ -159,37 +159,42 @@ class _CommentsEmptyState extends StatelessWidget {
       SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.chat_bubble_outline,
-                color: VineTheme.onSurfaceMuted,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                isOwnProfile ? 'No Comments Yet' : 'No Comments',
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isOwnProfile
-                    ? 'Your comments and replies will '
-                          'appear here'
-                    : 'Their comments and replies will '
-                          'appear here',
-                style: const TextStyle(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.chat_bubble_outline,
                   color: VineTheme.onSurfaceMuted,
-                  fontSize: 14,
+                  size: 64,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  isOwnProfile ? 'No Comments Yet' : 'No Comments',
+                  textAlign: .center,
+                  style: const TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isOwnProfile
+                      ? 'Your comments and replies will '
+                            'appear here'
+                      : 'Their comments and replies will '
+                            'appear here',
+                  textAlign: .center,
+                  style: const TextStyle(
+                    color: VineTheme.onSurfaceMuted,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

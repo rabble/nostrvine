@@ -174,35 +174,40 @@ class _CollabsEmptyState extends StatelessWidget {
       SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.people_outline,
-                color: VineTheme.onSurfaceMuted,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No Collabs Yet',
-                style: TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isOwnProfile
-                    ? 'Videos you collaborate on will appear here'
-                    : 'Videos they collaborate on will appear here',
-                style: const TextStyle(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.people_outline,
                   color: VineTheme.onSurfaceMuted,
-                  fontSize: 14,
+                  size: 64,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Text(
+                  'No Collabs Yet',
+                  textAlign: .center,
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isOwnProfile
+                      ? 'Videos you collaborate on will appear here'
+                      : 'Videos they collaborate on will appear here',
+                  textAlign: .center,
+                  style: const TextStyle(
+                    color: VineTheme.onSurfaceMuted,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -465,6 +465,7 @@ class _VideosTab extends StatelessWidget {
                 Text(
                   'Enter keywords, hashtags, or user names',
                   style: TextStyle(color: VineTheme.secondaryText),
+                  textAlign: .center,
                 ),
               ],
             ),

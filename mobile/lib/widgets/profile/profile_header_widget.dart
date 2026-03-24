@@ -148,6 +148,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
                 // Profile picture and stats row
                 Row(
+                  spacing: 20,
                   children: [
                     // Profile picture
                     _ProfileAvatarWithColor(
@@ -155,34 +156,41 @@ class ProfileHeaderWidget extends ConsumerWidget {
                       profileColor: profileColor,
                     ),
 
-                    const SizedBox(width: 20),
-
                     // Stats
                     Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Flexible(
-                            child: ProfileStatColumn(
-                              count: profileStats?.videoCount ?? videoCount,
-                              label: 'Videos',
-                              isLoading: false,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            scrollDirection: .horizontal,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth: constraints.maxWidth,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                spacing: 12,
+                                children: [
+                                  ProfileStatColumn(
+                                    count:
+                                        profileStats?.videoCount ?? videoCount,
+                                    label: 'Videos',
+                                    isLoading: false,
+                                  ),
+                                  ProfileFollowersStat(
+                                    pubkey: userIdHex,
+                                    displayName: displayName,
+                                    isOwnProfile: isOwnProfile,
+                                  ),
+                                  ProfileFollowingStat(
+                                    pubkey: userIdHex,
+                                    displayName: displayName,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Flexible(
-                            child: ProfileFollowersStat(
-                              pubkey: userIdHex,
-                              displayName: displayName,
-                              isOwnProfile: isOwnProfile,
-                            ),
-                          ),
-                          Flexible(
-                            child: ProfileFollowingStat(
-                              pubkey: userIdHex,
-                              displayName: displayName,
-                            ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
                     ),
                   ],
