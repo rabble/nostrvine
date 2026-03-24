@@ -426,6 +426,70 @@ void main() {
       expect(fieldIds, contains(14677341431695));
     });
 
+    test('subject passes through without prefix modification', () async {
+      String? capturedSubject;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedSubject = call.arguments['subject'] as String?;
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      // Subject should be passed exactly as provided -- no "fix:" prefix
+      await ZendeskSupportService.createStructuredBugReport(
+        subject: 'Links not working in DMs',
+        description: 'When I tap a link it does nothing',
+        reportId: 'test-subject-001',
+        appVersion: '1.0.7+497',
+        deviceInfo: {'platform': 'ios'},
+      );
+
+      expect(capturedSubject, 'Links not working in DMs');
+      expect(capturedSubject, isNot(startsWith('fix:')));
+    });
+
+    test('subject with user-typed prefix is not double-prefixed', () async {
+      String? capturedSubject;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedSubject = call.arguments['subject'] as String?;
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      // If a user types "fix: something" it should pass through as-is
+      await ZendeskSupportService.createStructuredBugReport(
+        subject: 'fix: video upload stuck',
+        description: 'Video stays at processing forever',
+        reportId: 'test-subject-002',
+        appVersion: '1.0.7+497',
+        deviceInfo: {'platform': 'ios'},
+      );
+
+      expect(capturedSubject, 'fix: video upload stuck');
+      expect(capturedSubject, isNot(startsWith('fix: fix:')));
+    });
+
     test('falls back to REST API when SDK not initialized', () async {
       // Reset _initialized by calling initialize with a handler that fails
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
