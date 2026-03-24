@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
-    show SecureKeyContainer, SecureKeyStorage;
+    show NostrKeyManager, SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -145,6 +145,7 @@ class AuthService implements BackgroundAwareService {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
     SecureKeyStorage? keyStorage,
+    NostrKeyManager? nostrKeyManager,
     KeycastOAuth? oauthClient,
     FlutterSecureStorage? flutterSecureStorage,
     OAuthConfig? oauthConfig,
@@ -153,6 +154,7 @@ class AuthService implements BackgroundAwareService {
     String? profileCheckIndexerUrl,
     List<String>? indexerRelays,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
+       _nostrKeyManager = nostrKeyManager,
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
@@ -166,6 +168,7 @@ class AuthService implements BackgroundAwareService {
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
   final SecureKeyStorage _keyStorage;
+  final NostrKeyManager? _nostrKeyManager;
   final UserDataCleanupService _userDataCleanupService;
   final KeycastOAuth? _oauthClient;
   final FlutterSecureStorage? _flutterSecureStorage;
@@ -2764,6 +2767,20 @@ class AuthService implements BackgroundAwareService {
           name: 'AuthService',
           category: LogCategory.auth,
         );
+        final cachedPrimaryIdentity = _restoreFromLoadedPrimaryIdentity(
+          lastNpub,
+        );
+        if (cachedPrimaryIdentity != null) {
+          Log.info(
+            '_restoreLastUsedAccountOrFallback: '
+            'reused already-loaded primary identity — '
+            'pubkey=${cachedPrimaryIdentity.publicKeyHex}',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await _setupUserSession(cachedPrimaryIdentity, source);
+          return;
+        }
         final container = await _keyStorage.getIdentityKeyContainer(lastNpub);
         if (container != null) {
           Log.info(
@@ -2801,6 +2818,33 @@ class AuthService implements BackgroundAwareService {
 
     // Fall back to the original behaviour (load primary key, or create new).
     await _checkExistingAuth();
+  }
+
+  SecureKeyContainer? _restoreFromLoadedPrimaryIdentity(String lastNpub) {
+    final keyManager = _nostrKeyManager;
+    final publicKeyHex = keyManager?.publicKey;
+    final privateKeyHex = keyManager?.privateKey;
+
+    if (publicKeyHex == null || privateKeyHex == null) {
+      return null;
+    }
+
+    final primaryNpub = NostrKeyUtils.encodePubKey(publicKeyHex);
+    if (primaryNpub != lastNpub) {
+      return null;
+    }
+
+    try {
+      return SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
+    } catch (e) {
+      Log.warning(
+        '_restoreFromLoadedPrimaryIdentity: failed to reuse loaded identity: '
+        '$e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
   }
 
   /// Check for existing authentication
@@ -3032,13 +3076,16 @@ class AuthService implements BackgroundAwareService {
 
       await prefs.setString(_kLastUsedNpubKey, keyContainer.npub);
 
+      final followingCacheKey = 'following_list_${keyContainer.publicKeyHex}';
+      final hasFollowingCache = prefs.containsKey(followingCacheKey);
+
       // Pre-fetch following list from REST API BEFORE setting auth state.
       // The router redirect fires synchronously on auth state change and reads
       // following_list_{pubkey} from SharedPreferences. If the cache is empty
       // (identity change cleared it, or first login), the redirect sends the
       // user to /explore instead of /home. By fetching here, we ensure the
       // cache is populated before the redirect fires.
-      if (_preFetchFollowing != null) {
+      if (_preFetchFollowing != null && !hasFollowingCache) {
         Log.debug(
           '_setupUserSession: pre-fetching following list...',
           name: 'AuthService',
@@ -3059,6 +3106,13 @@ class AuthService implements BackgroundAwareService {
             category: LogCategory.auth,
           );
         }
+      } else if (hasFollowingCache) {
+        Log.debug(
+          '_setupUserSession: following list already cached — '
+          'skipping pre-fetch',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
       }
 
       Log.info(

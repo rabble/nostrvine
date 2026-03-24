@@ -26,6 +26,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -721,6 +722,27 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   /// Initialize non-critical background services.
   /// Critical services are already initialized before runApp in _initializeCoreServices.
   void _initializeBackgroundServices() {
+    Future.microtask(() {
+      unawaited(
+        ref
+            .read(popularNowFeedProvider.future)
+            .then((state) {
+              Log.info(
+                '[INIT] Warmed New feed with ${state.videos.length} videos',
+                name: 'Main',
+                category: LogCategory.system,
+              );
+            })
+            .catchError((Object error, StackTrace stackTrace) {
+              Log.warning(
+                '[INIT] New feed warmup failed (non-critical): $error',
+                name: 'Main',
+                category: LogCategory.system,
+              );
+            }),
+      );
+    });
+
     // Initialize mutual mute list sync in background
     Future.microtask(() async {
       try {
