@@ -152,13 +152,41 @@ class CategoryGalleryView extends StatelessWidget {
               onChanged: onSortChanged,
             ),
           ),
-          Expanded(child: _buildBody()),
+          Expanded(
+            child: _CategoryGalleryBody(
+              state: state,
+              onRetry: onRetry,
+              onVideoTap: onVideoTap,
+              onLoadMore: onLoadMore,
+              onRefresh: onRefresh,
+              galleryOverride: galleryOverride,
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildBody() {
+class _CategoryGalleryBody extends StatelessWidget {
+  const _CategoryGalleryBody({
+    required this.state,
+    required this.onRetry,
+    required this.onVideoTap,
+    required this.onLoadMore,
+    required this.onRefresh,
+    this.galleryOverride,
+  });
+
+  final CategoriesState state;
+  final VoidCallback onRetry;
+  final void Function(List<VideoEvent>, int) onVideoTap;
+  final VoidCallback onLoadMore;
+  final Future<void> Function() onRefresh;
+  final Widget? galleryOverride;
+
+  @override
+  Widget build(BuildContext context) {
     switch (state.videosStatus) {
       case CategoriesVideosStatus.initial:
       case CategoriesVideosStatus.loading:
@@ -168,9 +196,9 @@ class CategoryGalleryView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Could not load videos',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
               ),
               const SizedBox(height: 16),
               ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
@@ -179,10 +207,10 @@ class CategoryGalleryView extends StatelessWidget {
         );
       case CategoriesVideosStatus.loaded:
         if (state.videos.isEmpty && galleryOverride == null) {
-          return const Center(
+          return Center(
             child: Text(
               'No videos in this category',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
             ),
           );
         }
