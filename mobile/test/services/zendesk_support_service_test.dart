@@ -723,6 +723,43 @@ void main() {
     });
 
     test(
+      'showTicketListScreen falls back to anonymous identity when JWT refresh fails',
+      () async {
+        final methodCalls = <String>[];
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setUserIdentity') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+        ZendeskSupportService.setUserIdentity(
+          npub: 'npub1fallback1234567890abcdef1234567890abcdef1234567890abcdef',
+          displayName: 'Fallback User',
+        );
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://relay-manager.divine.video',
+        );
+
+        methodCalls.clear();
+
+        final result = await ZendeskSupportService.showTicketListScreen();
+
+        expect(result, isTrue);
+        expect(methodCalls, ['setUserIdentity', 'showTicketList']);
+      },
+    );
+
+    test(
       'showTicketListScreen reuses a recent JWT refresh for consecutive calls',
       () async {
         final methodCalls = <String>[];

@@ -467,7 +467,10 @@ class ZendeskSupportService {
       return false;
     }
 
-    await _ensureFreshJwt();
+    final jwtReady = await _ensureFreshJwt();
+    if (!jwtReady) {
+      await setAnonymousIdentityWithUserInfo();
+    }
 
     try {
       await _channel.invokeMethod('showTicketList');
