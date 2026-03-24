@@ -252,6 +252,7 @@ flutter:
   assets:
     - assets/videos/
     - assets/sounds/
+    - assets/categories/
     - assets/top_1000_hashtags.json
     - assets/fonts/
     - google_fonts/

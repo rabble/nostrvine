@@ -93,6 +93,38 @@ void main() {
           ),
         ],
       );
+
+      blocTest<CategoriesBloc, CategoriesState>(
+        'orders featured categories first using the curated design order',
+        setUp: () {
+          when(() => mockApiClient.getCategories(limit: 100)).thenAnswer(
+            (_) async => [
+              {'name': 'technology', 'video_count': 30},
+              {'name': 'music', 'video_count': 20},
+              {'name': 'fashion', 'video_count': 10},
+              {'name': 'animals', 'video_count': 40},
+              {'name': 'comedy', 'video_count': 15},
+              {'name': 'art', 'video_count': 50},
+            ],
+          );
+        },
+        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
+        act: (bloc) => bloc.add(const CategoriesLoadRequested()),
+        expect: () => [
+          const CategoriesState(categoriesStatus: CategoriesStatus.loading),
+          const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: [
+              VideoCategory(name: 'animals', videoCount: 40),
+              VideoCategory(name: 'fashion', videoCount: 10),
+              VideoCategory(name: 'music', videoCount: 20),
+              VideoCategory(name: 'art', videoCount: 50),
+              VideoCategory(name: 'technology', videoCount: 30),
+              VideoCategory(name: 'comedy', videoCount: 15),
+            ],
+          ),
+        ],
+      );
     });
 
     group('CategorySelected', () {

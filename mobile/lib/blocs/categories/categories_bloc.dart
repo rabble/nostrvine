@@ -41,11 +41,24 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
           .map(VideoCategory.fromJson)
           .where((c) => c.name.isNotEmpty && c.videoCount > 0)
           .toList();
+      final indexedCategories = categories.indexed.toList()
+        ..sort((left, right) {
+          final featuredComparison = left.$2.featuredRank.compareTo(
+            right.$2.featuredRank,
+          );
+          if (featuredComparison != 0) {
+            return featuredComparison;
+          }
+          return left.$1.compareTo(right.$1);
+        });
+      final orderedCategories = indexedCategories
+          .map((entry) => entry.$2)
+          .toList();
 
       emit(
         state.copyWith(
           categoriesStatus: CategoriesStatus.loaded,
-          categories: categories,
+          categories: orderedCategories,
         ),
       );
     } on FunnelcakeException catch (e) {

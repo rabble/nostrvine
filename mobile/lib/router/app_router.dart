@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
@@ -21,6 +22,7 @@ import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -833,6 +835,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: VideoMetadataScreen.path,
         name: VideoMetadataScreen.routeName,
         builder: (_, st) => const VideoMetadataScreen(),
+      ),
+      GoRoute(
+        path: CategoryGalleryScreen.path,
+        name: CategoryGalleryScreen.routeName,
+        builder: (_, st) {
+          final categoryName = st.pathParameters['categoryName'];
+          final category =
+              st.extra as VideoCategory? ??
+              VideoCategory(
+                name: categoryName ?? '',
+                videoCount: 0,
+              );
+
+          if (category.name.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid category')),
+            );
+          }
+
+          return CategoryGalleryScreen(category: category);
+        },
       ),
       // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
       GoRoute(
