@@ -53,6 +53,9 @@ void main() {
       expect(find.text('Hot'), findsOneWidget);
       expect(find.text('New'), findsOneWidget);
       expect(find.text('Classic'), findsOneWidget);
+
+      final hotText = tester.widget<Text>(find.text('Hot'));
+      expect(hotText.style?.decoration, TextDecoration.underline);
     });
 
     testWidgets('calls back when a different sort option is tapped', (

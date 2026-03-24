@@ -355,11 +355,17 @@ class _CategorySortSegment extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: VineTheme.titleMediumFont(
-              color: isSelected
-                  ? VineTheme.onPrimaryButton
-                  : VineTheme.onSurfaceMuted,
-            ),
+            style:
+                VineTheme.titleMediumFont(
+                  color: isSelected
+                      ? VineTheme.onPrimaryButton
+                      : VineTheme.onSurfaceMuted,
+                ).copyWith(
+                  decoration: TextDecoration.underline,
+                  decorationColor: isSelected
+                      ? VineTheme.onPrimaryButton
+                      : VineTheme.onSurfaceMuted,
+                ),
           ),
         ),
       ),
