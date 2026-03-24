@@ -196,7 +196,7 @@ class _CategoryGalleryBody extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              const Text(
                 'Could not load videos',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
               ),
@@ -207,7 +207,7 @@ class _CategoryGalleryBody extends StatelessWidget {
         );
       case CategoriesVideosStatus.loaded:
         if (state.videos.isEmpty && galleryOverride == null) {
-          return Center(
+          return const Center(
             child: Text(
               'No videos in this category',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
