@@ -395,36 +395,36 @@ void _showInfoSheet(BuildContext context) {
           24,
           32 + MediaQuery.viewPaddingOf(sheetContext).bottom,
         ),
-      children: [
-        const _InfoItem(
-          title: 'Email & Password',
-          description:
-              'Sign in with your Divine account. If you registered '
-              'with an email and password, use them here.',
-        ),
-        const SizedBox(height: 16),
-        const _InfoItem(
-          title: 'Import Nostr key',
-          description:
-              'Already have a Nostr identity? Import your nsec '
-              'private key from another client.',
-        ),
-        const SizedBox(height: 16),
-        const _InfoItem(
-          title: 'Signer App',
-          description:
-              'Connect using a NIP-46 compatible remote signer '
-              'like nsecBunker for enhanced key security.',
-        ),
-        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
+        children: [
+          const _InfoItem(
+            title: 'Email & Password',
+            description:
+                'Sign in with your Divine account. If you registered '
+                'with an email and password, use them here.',
+          ),
           const SizedBox(height: 16),
           const _InfoItem(
-            title: 'Amber',
+            title: 'Import Nostr key',
             description:
-                'Use the Amber signer app on Android to manage '
-                'your Nostr keys securely.',
+                'Already have a Nostr identity? Import your nsec '
+                'private key from another client.',
           ),
-        ],
+          const SizedBox(height: 16),
+          const _InfoItem(
+            title: 'Signer App',
+            description:
+                'Connect using a NIP-46 compatible remote signer '
+                'like nsecBunker for enhanced key security.',
+          ),
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
+            const SizedBox(height: 16),
+            const _InfoItem(
+              title: 'Amber',
+              description:
+                  'Use the Amber signer app on Android to manage '
+                  'your Nostr keys securely.',
+            ),
+          ],
         ],
       ),
     ),

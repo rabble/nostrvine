@@ -5,7 +5,6 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
 
 /// Action buttons shown on profile page

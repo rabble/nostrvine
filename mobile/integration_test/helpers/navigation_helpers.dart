@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
 
 /// Navigate from the welcome screen to the create account screen.
 ///
@@ -79,7 +78,7 @@ Future<void> registerNewUser(
 
   // Submit — use widgetWithText to avoid matching the page title
   final submitButton = find.widgetWithText(
-    DivinePrimaryButton,
+    DivineButton,
     'Create account',
   );
   expect(submitButton, findsOneWidget);
@@ -111,7 +110,7 @@ Future<void> loginWithCredentials(
   await tester.pumpAndSettle();
 
   // Submit — use widgetWithText to avoid matching the page title
-  final submitButton = find.widgetWithText(DivinePrimaryButton, 'Sign in');
+  final submitButton = find.widgetWithText(DivineButton, 'Sign in');
   expect(submitButton, findsOneWidget);
   await tester.tap(submitButton);
 }
