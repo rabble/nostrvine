@@ -15,8 +15,6 @@ P1 launch means the app is ready to submit to the App Store for review and to cu
 - `mobile/packages/` - Shared packages for repositories, models, Nostr clients, UI, media, auth, and utilities.
 - `docs/` - Canonical repository docs, release docs, and the historical archive index.
 - `mobile/docs/` - Product, protocol, testing, and mobile-specific implementation docs.
-- `website/` - Supporting website assets used by the broader Divine project.
-
 ## Getting Started
 
 ```bash
