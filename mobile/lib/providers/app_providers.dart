@@ -66,7 +66,9 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
+import 'package:openvine/services/nostr_app_bridge_policy.dart';
 import 'package:openvine/services/nostr_app_directory_service.dart';
+import 'package:openvine/services/nostr_app_grant_store.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
@@ -113,6 +115,20 @@ final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
   return NostrAppDirectoryService(
     sharedPreferences: prefs,
     client: client,
+  );
+});
+
+final nostrAppGrantStoreProvider = Provider<NostrAppGrantStore>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return NostrAppGrantStore(sharedPreferences: prefs);
+});
+
+final nostrAppBridgePolicyProvider = Provider<NostrAppBridgePolicy>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final grantStore = ref.watch(nostrAppGrantStoreProvider);
+  return NostrAppBridgePolicy(
+    grantStore: grantStore,
+    currentUserPubkey: authService.currentPublicKeyHex,
   );
 });
 
