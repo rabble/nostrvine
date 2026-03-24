@@ -909,6 +909,24 @@ void main() {
           ),
         ],
       );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'writes updated count back to repository cache',
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          commentCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(12)),
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.updateCachedCommentCount(
+              testEventId,
+              12,
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('close', () {

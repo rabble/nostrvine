@@ -1,8 +1,13 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This document describes an older ProofMode model and should not be used as the current launch or reviewer source of truth.
+
 # ProofMode Implementation - Simplified Guardian Project Model
 
 ## Overview
 
-OpenVine uses Guardian Project's battle-tested `libproofmode` native libraries (iOS and Android) for cryptographic proof generation. The ProofMode data is **much simpler** than the original NIP spec draft - it focuses on cryptographic verification rather than session tracking.
+Divine uses Guardian Project's battle-tested `libproofmode` native libraries (iOS and Android) for cryptographic proof generation. The ProofMode data is **much simpler** than the original NIP spec draft - it focuses on cryptographic verification rather than session tracking.
 
 ## What Guardian Project Provides
 

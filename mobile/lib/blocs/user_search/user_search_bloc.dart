@@ -9,23 +9,12 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
-import 'package:stream_transform/stream_transform.dart';
 
 part 'user_search_event.dart';
 part 'user_search_state.dart';
 
 /// Number of results per page
 const _pageSize = 50;
-
-/// Event transformer that debounces and restarts on new events
-EventTransformer<E> _debounceRestartable<E>() {
-  return (events, mapper) {
-    return restartable<E>().call(
-      events.debounce(searchDebounceDuration),
-      mapper,
-    );
-  };
-}
 
 /// BLoC for searching user profiles.
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
@@ -38,7 +27,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
        super(const UserSearchState()) {
     on<UserSearchQueryChanged>(
       _onQueryChanged,
-      transformer: _debounceRestartable(),
+      transformer: debounceRestartable(),
     );
     on<UserSearchCleared>(_onCleared);
     on<UserSearchLoadMore>(_onLoadMore, transformer: sequential());
@@ -71,14 +60,16 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       return;
     }
 
-    if (query == state.query && state.status != UserSearchStatus.initial) {
-      return;
-    }
+    // No dedup guard here — the restartable() transformer already cancels the
+    // previous in-flight handler via switchMap. Adding a same-query skip caused
+    // the search to get stuck in loading/empty-success states with no recovery
+    // path (the user could never re-trigger the same query).
 
     emit(
       state.copyWith(
         status: UserSearchStatus.loading,
         query: query,
+        results: const [],
         resultCount: null,
         isLoadingMore: false,
       ),

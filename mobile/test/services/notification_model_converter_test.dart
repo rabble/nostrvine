@@ -9,13 +9,14 @@ import 'package:openvine/services/relay_notification_api_service.dart';
 void main() {
   group('notificationModelFromRelayApi', () {
     RelayNotification makeRelayNotification({
+      String id = 'notif-1',
       String notificationType = 'reaction',
       int sourceKind = 7,
       String? referencedEventId = 'video-event-1',
       String? content,
     }) {
       return RelayNotification(
-        id: 'notif-1',
+        id: id,
         sourcePubkey:
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         sourceEventId:
@@ -112,6 +113,44 @@ void main() {
 
         expect(model.type, NotificationType.system);
         expect(model.message, 'You have a new update');
+      },
+    );
+
+    test(
+      'preserves original relay.id for API calls, not uniqueId fallback',
+      () {
+        // When API returns a notification without an id field, the model
+        // should have an empty id (not fall back to sourceEventId) so that
+        // markAsRead can detect it and skip the API call.
+        final relayWithEmptyId = makeRelayNotification(
+          id: '',
+        );
+
+        final model = notificationModelFromRelayApi(
+          relayWithEmptyId,
+          actorName: 'Alice',
+        );
+
+        // Model.id should be empty (the original relay.id), not sourceEventId
+        expect(model.id, isEmpty);
+        expect(model.type, NotificationType.like);
+      },
+    );
+
+    test(
+      'uses relay.id when provided by API',
+      () {
+        final relayWithId = makeRelayNotification(
+          id: 'real-notification-id-123',
+        );
+
+        final model = notificationModelFromRelayApi(
+          relayWithId,
+          actorName: 'Alice',
+        );
+
+        // Model.id should be the actual notification ID from the API
+        expect(model.id, 'real-notification-id-123');
       },
     );
   });

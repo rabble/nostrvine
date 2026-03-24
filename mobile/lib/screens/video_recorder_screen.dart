@@ -24,7 +24,6 @@ import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_pr
 import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_ghost_frame.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
@@ -351,11 +350,8 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
                       child: Stack(
                         fit: .expand,
                         children: [
-                          // Camera preview
+                          // Camera preview (includes ghost frame)
                           VideoRecorderCameraPreview(),
-
-                          // Ghost Frame
-                          VideoRecorderGhostFrame(),
 
                           // Audio progress bar (shows during recording with sound)
                           VideoRecorderAudioProgressBar(),

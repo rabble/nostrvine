@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This file may reference deleted screens, older branding, or superseded implementation details. Start with docs/README.md and docs/archive/README.md for current guidance.
+
 # Merge Plan: theming-d0.1 into main (after main merge)
 
 **Date:** 2026-01-09

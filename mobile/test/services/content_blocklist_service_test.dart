@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -94,6 +95,65 @@ void main() {
       expect(filtered.first['content'], equals('allowed'));
     });
 
+    test('filterBlockedConversations filters blocked participants', () {
+      const userPubkey = 'current_user';
+      const blockedPubkey = 'blocked_user';
+      const allowedPubkey = 'allowed_user';
+
+      service.blockUser(blockedPubkey);
+
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final conversations = [
+        DmConversation(
+          id: 'conv1',
+          participantPubkeys: const [userPubkey, blockedPubkey],
+          isGroup: false,
+          createdAt: now,
+        ),
+        DmConversation(
+          id: 'conv2',
+          participantPubkeys: const [userPubkey, allowedPubkey],
+          isGroup: false,
+          createdAt: now,
+        ),
+      ];
+
+      final filtered = service.filterBlockedConversations(
+        conversations,
+        userPubkey: userPubkey,
+      );
+
+      expect(filtered, hasLength(1));
+      expect(filtered.first.id, equals('conv2'));
+    });
+
+    test('filterBlockedConversations returns all when no blocks', () {
+      const userPubkey = 'current_user';
+
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final conversations = [
+        DmConversation(
+          id: 'conv1',
+          participantPubkeys: const [userPubkey, 'other1'],
+          isGroup: false,
+          createdAt: now,
+        ),
+        DmConversation(
+          id: 'conv2',
+          participantPubkeys: const [userPubkey, 'other2'],
+          isGroup: false,
+          createdAt: now,
+        ),
+      ];
+
+      final filtered = service.filterBlockedConversations(
+        conversations,
+        userPubkey: userPubkey,
+      );
+
+      expect(filtered, hasLength(2));
+    });
+
     test('should provide blocking stats', () {
       final stats = service.blockingStats;
 
@@ -102,12 +162,12 @@ void main() {
       expect(stats['internal_blocks'], isA<int>());
     });
 
-    test('invokes onChanged callback for local block changes', () {
+    test('invokes onChanged callback for local block changes', () async {
       var changeCount = 0;
       service = ContentBlocklistService(onChanged: () => changeCount++);
 
-      service.blockUser('blocked_pubkey');
-      service.unblockUser('blocked_pubkey');
+      await service.blockUser('blocked_pubkey');
+      await service.unblockUser('blocked_pubkey');
 
       expect(changeCount, equals(2));
     });

@@ -1,129 +1,118 @@
 # Android Deployment Guide
 
-## Quick Start
+Status: Launch-critical
+Validated against: `mobile/build_android.sh`, `mobile/deploy_android.sh`, `mobile/android/app/build.gradle.kts`, and `mobile/android/app/src/main/AndroidManifest.xml` on 2026-03-19.
 
-### 1. One-Time Setup (First Deploy Only)
+This is the current Android release path for Divine.
 
-**Create Google Play Service Account**:
+## App Metadata
 
-1. Go to [Google Play Console](https://play.google.com/console)
-2. Navigate to **Setup** → **API access**
-3. Click **Create new service account** or use existing
-4. Click the Google Cloud Console link that appears
-5. Create service account with name "OpenVine Deploy"
-6. Click **Create and Continue**
-7. Grant role: **Service Account User**
-8. Click **Done**
-9. Click on the service account email
-10. Go to **Keys** tab → **Add Key** → **Create new key**
-11. Choose **JSON** format
-12. Download the JSON key file
-13. Save it as: `android/play-store-service-account.json`
+- App name: `Divine`
+- Application ID: `co.openvine.app`
+- Namespace: `co.openvine.app`
+- Release artifact: `build/app/outputs/bundle/release/app-release.aab`
 
-**Grant Permissions in Play Console**:
+## Preferred Build Flow
 
-1. Back in Play Console → API access
-2. Find your service account in the list
-3. Click **Grant access**
-4. Under **App permissions**, select your app
-5. Grant **Release manager** role
-6. Click **Invite user**
+From `mobile/`:
 
-### 2. Deploy Commands
+```bash
+./build_android.sh release
+```
 
-**Deploy to Internal Testing** (no review, instant, 100 testers):
+What the script does:
+
+1. Loads `.env` dart defines if present.
+2. Auto-increments the build number for release builds.
+3. Runs `flutter clean`, `flutter pub get`, and `build_runner`.
+4. Builds a signed release AAB for Play Console upload.
+
+## Upload Options
+
+### Manual Play Console upload
+
+1. Build the release AAB with `./build_android.sh release`.
+2. Open Google Play Console.
+3. Upload `build/app/outputs/bundle/release/app-release.aab`.
+4. Add release notes and assign the correct testing or production track.
+
+### Scripted upload helper
+
 ```bash
 ./deploy_android.sh internal
-```
-
-**Deploy to Closed Testing** (alpha/beta, requires review):
-```bash
 ./deploy_android.sh closed
-```
-
-**Deploy to Production** (full review):
-```bash
 ./deploy_android.sh production
 ```
 
-### 3. Options
+The helper requires:
 
-**Skip build** (use existing AAB):
-```bash
-./deploy_android.sh internal --skip-build
-```
+- `android/play-store-service-account.json`
+- working Fastlane installation
+- a previously built or buildable release AAB
 
-**Build only** (don't upload):
-```bash
-./deploy_android.sh internal --skip-upload
-```
+#### Deploy Script Flags
 
-**With version and notes**:
-```bash
-./deploy_android.sh internal \
-  --version "v0.1.0" \
-  --notes "Bug fixes and performance improvements"
-```
+| Flag | Description |
+|------|-------------|
+| `--skip-build` | Skip the build step and upload an existing AAB |
+| `--skip-upload` | Build only, do not upload to Play Console |
+| `--version <version>` | Override the version name (e.g. `--version 1.0.7`) |
+| `--notes <text>` | Set release notes for the upload (e.g. `--notes "Bug fixes"`) |
 
-## What the Script Does
+## Google Play Service Account Setup
 
-1. ✅ Checks for fastlane setup (creates if needed)
-2. ✅ Verifies Google Play API credentials
-3. ✅ Runs `flutter clean` and `flutter pub get`
-4. ✅ Builds release app bundle (AAB)
-5. ✅ Uploads to specified Play Store track
-6. ✅ Shows next steps
+To use the scripted upload helper, you need a Google Play service account:
 
-## Manual Upload (if script fails)
-
-If the automated script doesn't work, you can still upload manually:
-
-1. Build AAB:
-   ```bash
-   flutter build appbundle --release
-   ```
-
-2. Upload via Play Console:
-   - Go to Testing → Internal testing
-   - Click "Create new release"
-   - Upload `build/app/outputs/bundle/release/app-release.aab`
-   - Add release notes
-   - Review and start rollout
-
-## Troubleshooting
-
-**Error: Service account JSON not found**
-- Make sure you saved the JSON key as `android/play-store-service-account.json`
-
-**Error: Permission denied**
-- Verify the service account has "Release manager" role in Play Console
-
-**Error: Build failed**
-- Run `flutter doctor` to check for issues
-- Make sure keystore and key.properties are configured
-
-**Error: Upload failed**
-- Check that your app is already created in Play Console
-- Verify the package name matches
-
-## Track Differences
-
-| Track | Review Time | Testers | Rollout Speed |
-|-------|-------------|---------|---------------|
-| **Internal** | None | 100 max | Instant |
-| **Closed** | 1-2 days | Unlimited | Within hours after approval |
-| **Production** | 3-7 days | Public | Gradual rollout |
-
-## Files
-
-- `deploy_android.sh` - Main deployment script
-- `android/fastlane/Fastfile` - Fastlane configuration (auto-generated)
-- `android/play-store-service-account.json` - API credentials (gitignored)
-- `build/app/outputs/bundle/release/app-release.aab` - Built app bundle
+1. Open [Google Play Console](https://play.google.com/console) and navigate to **Settings > API access**.
+2. Click **Create service account** and follow the link to Google Cloud Console.
+3. In Google Cloud Console, create a new service account with a descriptive name (e.g. `divine-play-deploy`).
+4. Back in Google Play Console, click **Grant access** on the new service account.
+5. Assign the **Release manager** role so it can upload builds and manage releases.
+6. On the service account row, create a new JSON key and download it.
+7. Save the file as `android/play-store-service-account.json` inside the `mobile/` directory.
 
 ## Security Notes
 
-- The service account JSON file contains sensitive credentials
-- It's already in `.gitignore` - **never commit it**
-- Store it securely (e.g., 1Password, encrypted storage)
-- Rotate keys periodically for security
+- `android/play-store-service-account.json` is gitignored. **Never commit this file.**
+- Store the JSON key securely (e.g. team password manager or encrypted CI secrets).
+- Rotate the service account key periodically and revoke old keys after rotation.
+- Limit service account permissions to only what is needed for deployment.
+
+## Track Differences
+
+| Track | Review Time | Tester Limit | Rollout Speed |
+|-------|-------------|--------------|---------------|
+| Internal | None (immediate) | Up to 100 internal testers | Instant |
+| Closed | Typically < 24 hours | Up to 2,000 testers per group | Within hours of approval |
+| Production | 1-7 days (first review may be longer) | Unlimited | Staged rollout (e.g. 5% → 20% → 100%) |
+
+## Pre-Upload Checks
+
+- Confirm `mobile/pubspec.yaml` version/build is correct.
+- Confirm signing configuration and keystore access are available locally or in CI.
+- Confirm release notes are ready.
+- Confirm the manifest still removes Advertising ID and dependency-added location/Bluetooth permissions that are not used in this release.
+
+## Manifest Notes For Store Compliance
+
+Current Android manifest behavior:
+
+- uses camera and microphone for recording
+- uses media permissions for profile image and gallery interactions
+- removes Advertising ID permission
+- removes unused dependency-added Bluetooth, location, and nearby permissions
+- registers deep links for `divine.video` and `login.divine.video`
+
+## Troubleshooting
+
+### Release build fails
+
+- Run `flutter doctor`.
+- Check keystore availability and `android/key.properties`.
+- Re-run `flutter pub get` and `dart run build_runner build --delete-conflicting-outputs`.
+
+### Upload helper fails
+
+- Confirm `android/play-store-service-account.json` exists.
+- Confirm Fastlane is installed and authenticated.
+- Fall back to manual Play Console upload if needed.

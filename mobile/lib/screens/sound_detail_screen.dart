@@ -1,7 +1,6 @@
 // ABOUTME: Detail screen for viewing a sound and videos using that sound.
 // ABOUTME: Displays sound info, preview/use buttons, and grid of related videos.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +15,7 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -855,9 +855,8 @@ class _VideoThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return CachedNetworkImage(
+      return VineCachedImage(
         imageUrl: thumbnailUrl!,
-        fit: BoxFit.cover,
         placeholder: (context, url) => const _ThumbnailPlaceholder(),
         errorWidget: (context, url, error) => const _ThumbnailPlaceholder(),
       );

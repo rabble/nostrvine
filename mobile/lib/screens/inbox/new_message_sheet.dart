@@ -1,13 +1,13 @@
 // ABOUTME: Bottom sheet for composing a new direct message.
 // ABOUTME: Shows searchable user list for selecting a DM recipient.
-// ABOUTME: Reuses UserSearchBloc for search and profile loading.
+// ABOUTME: Uses NewMessageSearchBloc for contact loading and search.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
-import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/screens/inbox/bloc/bloc.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -16,22 +16,22 @@ import 'package:profile_repository/profile_repository.dart';
 /// Shows the user's followed contacts initially. Typing in the search
 /// field queries for users by name or npub. Selecting a user returns
 /// their [UserProfile] and dismisses the sheet.
-class NewMessageSheet extends StatefulWidget {
+class NewMessageSheet extends StatelessWidget {
   const NewMessageSheet({
     required this.profileRepository,
-    this.followRepository,
+    required this.followRepository,
     super.key,
   });
 
   final ProfileRepository profileRepository;
-  final FollowRepository? followRepository;
+  final FollowRepository followRepository;
 
   /// Shows the sheet and returns the selected [UserProfile], or null if
   /// the user dismissed without selecting.
   static Future<UserProfile?> show(
     BuildContext context, {
     required ProfileRepository profileRepository,
-    FollowRepository? followRepository,
+    required FollowRepository followRepository,
   }) {
     return showModalBottomSheet<UserProfile>(
       context: context,
@@ -46,84 +46,44 @@ class NewMessageSheet extends StatefulWidget {
   }
 
   @override
-  State<NewMessageSheet> createState() => _NewMessageSheetState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => NewMessageSearchBloc(
+        profileRepository: profileRepository,
+        followRepository: followRepository,
+      )..add(const NewMessageSearchStarted()),
+      child: const _NewMessageSheetView(),
+    );
+  }
 }
 
-class _NewMessageSheetState extends State<NewMessageSheet> {
-  final _searchController = TextEditingController();
-  late final UserSearchBloc _searchBloc;
-  List<UserProfile> _contacts = [];
-  List<UserProfile> _filteredContacts = [];
-  bool _contactsLoaded = false;
-  String _searchQuery = '';
+class _NewMessageSheetView extends StatefulWidget {
+  const _NewMessageSheetView();
 
   @override
-  void initState() {
-    super.initState();
-    _searchBloc = UserSearchBloc(
-      profileRepository: widget.profileRepository,
-      hasVideos: false,
-    );
-    _loadContacts();
-  }
+  State<_NewMessageSheetView> createState() => _NewMessageSheetViewState();
+}
 
-  Future<void> _loadContacts() async {
-    final followRepo = widget.followRepository;
-    if (followRepo == null) {
-      setState(() => _contactsLoaded = true);
-      return;
-    }
+class _NewMessageSheetViewState extends State<_NewMessageSheetView> {
+  final _searchController = TextEditingController();
 
-    final pubkeys = followRepo.followingPubkeys;
-    final futures = pubkeys.map(
-      (pk) => widget.profileRepository.getCachedProfile(pubkey: pk),
-    );
-    final results = await Future.wait(futures);
-    final profiles = results.whereType<UserProfile>().toList()
-      ..sort(
-        (a, b) => a.bestDisplayName.toLowerCase().compareTo(
-          b.bestDisplayName.toLowerCase(),
-        ),
-      );
-
-    if (mounted) {
-      setState(() {
-        _contacts = profiles;
-        _filteredContacts = profiles;
-        _contactsLoaded = true;
-      });
-    }
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _onSearchChanged(String value) {
     final trimmed = value.trim();
-    setState(() => _searchQuery = trimmed);
-
     if (trimmed.isEmpty) {
-      _searchBloc.add(const UserSearchCleared());
-      setState(() => _filteredContacts = _contacts);
+      context.read<NewMessageSearchBloc>().add(
+        const NewMessageSearchCleared(),
+      );
     } else {
-      _searchBloc.add(UserSearchQueryChanged(value));
-      setState(() {
-        _filteredContacts = _contacts.where((profile) {
-          final name = profile.bestDisplayName.toLowerCase();
-          final nip05 = (profile.nip05 ?? '').toLowerCase();
-          return name.contains(trimmed.toLowerCase()) ||
-              nip05.contains(trimmed.toLowerCase());
-        }).toList();
-      });
+      context.read<NewMessageSearchBloc>().add(
+        NewMessageSearchQueryChanged(trimmed),
+      );
     }
-  }
-
-  void _selectUser(UserProfile profile) {
-    Navigator.of(context).pop(profile);
-  }
-
-  @override
-  void dispose() {
-    _searchBloc.close();
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
@@ -145,22 +105,50 @@ class _NewMessageSheetState extends State<NewMessageSheet> {
                 onChanged: _onSearchChanged,
               ),
             ),
-            Expanded(
-              child: _searchQuery.isNotEmpty
-                  ? _NetworkResults(
-                      searchBloc: _searchBloc,
-                      localResults: _filteredContacts,
-                      onSelectUser: _selectUser,
-                    )
-                  : _ContactsList(
-                      contacts: _filteredContacts,
-                      isLoaded: _contactsLoaded,
-                      onSelectUser: _selectUser,
-                    ),
-            ),
+            const Expanded(child: _ResultsBody()),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ResultsBody extends StatelessWidget {
+  const _ResultsBody();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NewMessageSearchBloc, NewMessageSearchState>(
+      builder: (context, state) {
+        return switch (state.status) {
+          NewMessageSearchStatus.loadingContacts => const Center(
+            child: CircularProgressIndicator(color: VineTheme.primary),
+          ),
+          NewMessageSearchStatus.idle => _UserProfileList(
+            profiles: state.contacts,
+            emptyMessage: 'No contacts found.\nFollow people to see them here.',
+          ),
+          NewMessageSearchStatus.searching when state.results.isEmpty =>
+            const Center(
+              child: CircularProgressIndicator(color: VineTheme.primary),
+            ),
+          NewMessageSearchStatus.searching => _UserProfileList(
+            profiles: state.results,
+          ),
+          NewMessageSearchStatus.searchSuccess when state.results.isNotEmpty =>
+            _UserProfileList(profiles: state.results),
+          NewMessageSearchStatus.searchSuccess => const _UserProfileList(
+            profiles: [],
+            emptyMessage: 'No users found',
+          ),
+          NewMessageSearchStatus.searchFailure when state.results.isNotEmpty =>
+            _UserProfileList(profiles: state.results),
+          NewMessageSearchStatus.searchFailure => const _UserProfileList(
+            profiles: [],
+            emptyMessage: 'Search failed. Please try again.',
+          ),
+        };
+      },
     );
   }
 }
@@ -235,31 +223,23 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _ContactsList extends StatelessWidget {
-  const _ContactsList({
-    required this.contacts,
-    required this.isLoaded,
-    required this.onSelectUser,
+class _UserProfileList extends StatelessWidget {
+  const _UserProfileList({
+    required this.profiles,
+    this.emptyMessage,
   });
 
-  final List<UserProfile> contacts;
-  final bool isLoaded;
-  final ValueChanged<UserProfile> onSelectUser;
+  final List<UserProfile> profiles;
+  final String? emptyMessage;
 
   @override
   Widget build(BuildContext context) {
-    if (!isLoaded) {
-      return const Center(
-        child: CircularProgressIndicator(color: VineTheme.primary),
-      );
-    }
-
-    if (contacts.isEmpty) {
+    if (profiles.isEmpty && emptyMessage != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
-            'No contacts found.\nFollow people to see them here.',
+            emptyMessage!,
             style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
             textAlign: TextAlign.center,
           ),
@@ -268,7 +248,7 @@ class _ContactsList extends StatelessWidget {
     }
 
     return ListView.separated(
-      itemCount: contacts.length,
+      itemCount: profiles.length,
       separatorBuilder: (_, _) => const Divider(
         height: 1,
         thickness: 1,
@@ -276,81 +256,11 @@ class _ContactsList extends StatelessWidget {
         indent: 72,
       ),
       itemBuilder: (context, index) {
-        final profile = contacts[index];
+        final profile = profiles[index];
         return _UserTile(
           profile: profile,
-          onTap: () => onSelectUser(profile),
+          onTap: () => Navigator.of(context).pop(profile),
         );
-      },
-    );
-  }
-}
-
-class _NetworkResults extends StatelessWidget {
-  const _NetworkResults({
-    required this.searchBloc,
-    required this.localResults,
-    required this.onSelectUser,
-  });
-
-  final UserSearchBloc searchBloc;
-  final List<UserProfile> localResults;
-  final ValueChanged<UserProfile> onSelectUser;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<UserSearchBloc, UserSearchState>(
-      bloc: searchBloc,
-      builder: (context, state) {
-        return switch (state.status) {
-          UserSearchStatus.loading => const Center(
-            child: CircularProgressIndicator(color: VineTheme.primary),
-          ),
-          UserSearchStatus.success when state.results.isNotEmpty =>
-            ListView.separated(
-              itemCount: state.results.length,
-              separatorBuilder: (_, _) => const Divider(
-                height: 1,
-                thickness: 1,
-                color: VineTheme.outlineMuted,
-                indent: 72,
-              ),
-              itemBuilder: (context, index) {
-                final profile = state.results[index];
-                return _UserTile(
-                  profile: profile,
-                  onTap: () => onSelectUser(profile),
-                );
-              },
-            ),
-          UserSearchStatus.success => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                'No users found',
-                style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceMuted,
-                ),
-              ),
-            ),
-          ),
-          UserSearchStatus.failure => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                'Search failed. Please try again.',
-                style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceMuted,
-                ),
-              ),
-            ),
-          ),
-          UserSearchStatus.initial => _ContactsList(
-            contacts: localResults,
-            isLoaded: true,
-            onSelectUser: onSelectUser,
-          ),
-        };
       },
     );
   }

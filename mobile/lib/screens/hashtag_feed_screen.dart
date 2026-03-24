@@ -16,7 +16,6 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:rxdart/rxdart.dart';
 
 class HashtagFeedScreen extends ConsumerStatefulWidget {
@@ -69,12 +68,11 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   /// Load videos from both Funnelcake REST API and WebSocket in parallel.
   /// Funnelcake is fast and provides complete video data - show immediately.
   /// WebSocket provides real-time updates and additional videos.
-  Future<void> _loadHashtagVideos({bool forceRefresh = false}) async {
+  Future<void> _loadHashtagVideos() async {
     if (!mounted) return;
 
     Log.info(
-      '🏷️ HashtagFeedScreen: Loading #${widget.hashtag}'
-      '${forceRefresh ? ' (force refresh)' : ''}',
+      '🏷️ HashtagFeedScreen: Loading #${widget.hashtag}',
       category: LogCategory.video,
     );
 
@@ -83,7 +81,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     // Run both fetches in parallel for speed
     // Always try Funnelcake - it will fail fast if unavailable
     final futures = <Future<void>>[
-      _fetchFromFunnelcake(forceRefresh: forceRefresh),
+      _fetchFromFunnelcake(),
       _subscribeViaWebSocket(hashtagService),
     ];
 
@@ -96,7 +94,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
   /// Fetch videos from Funnelcake REST API and update state immediately.
   /// Fetches trending AND classic videos in parallel, then interleaves 50/50.
-  Future<void> _fetchFromFunnelcake({bool forceRefresh = false}) async {
+  Future<void> _fetchFromFunnelcake() async {
     try {
       final client = ref.read(funnelcakeApiClientProvider);
 
@@ -111,10 +109,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
       // Fetch trending AND classic videos in parallel
       final results = await Future.wait([
-        client.getVideosByHashtag(
-          hashtag: widget.hashtag,
-          limit: 100,
-        ),
+        client.getVideosByHashtag(hashtag: widget.hashtag),
         client.getClassicVideosByHashtag(hashtag: widget.hashtag),
       ]).timeout(const Duration(seconds: 5));
 
@@ -376,85 +371,15 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           );
         }
 
-        // Use grid view when embedded (in explore), full-screen list when standalone
-        if (widget.embedded) {
-          return ComposableVideoGrid(
-            videos: videos,
-            useMasonryLayout: true,
-            onVideoTap:
-                widget.onVideoTap ??
-                (videoList, index) {
-                  _navigateToFullscreenFeed(context, videoList, index);
-                },
-            onRefresh: () => _loadHashtagVideos(forceRefresh: true),
-          );
-        }
-
-        // Standalone mode: full-screen scrollable list
-        final isLoadingMore = isLoadingHashtag;
-
-        return RefreshIndicator(
-          semanticsLabel: 'searching for more videos',
-          color: VineTheme.onPrimary,
-          backgroundColor: VineTheme.vineGreen,
-          onRefresh: () => _loadHashtagVideos(forceRefresh: true),
-          child: ListView.builder(
-            // Add 1 for loading indicator if still loading
-            itemCount: videos.length + (isLoadingMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Show loading indicator as last item
-              if (index == videos.length) {
-                return Container(
-                  height: MediaQuery.of(context).size.height,
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Getting more videos about #${widget.hashtag}...',
-                        style: const TextStyle(
-                          color: VineTheme.primaryText,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Please wait while we fetch from relays',
-                        style: TextStyle(
-                          color: VineTheme.secondaryText,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              final video = videos[index];
-              return GestureDetector(
-                onTap: () {
-                  _navigateToFullscreenFeed(context, videos, index);
-                },
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height,
-                  width: double.infinity,
-                  child: VideoFeedItem(
-                    video: video,
-                    index: index,
-                    contextTitle: '#${widget.hashtag}',
-                    forceShowOverlay: true,
-                    trafficSource: ViewTrafficSource.search,
-                    sourceDetail: widget.hashtag,
-                  ),
-                ),
-              );
-            },
-          ),
+        return ComposableVideoGrid(
+          videos: videos,
+          useMasonryLayout: true,
+          onVideoTap:
+              widget.onVideoTap ??
+              (videoList, index) {
+                _navigateToFullscreenFeed(context, videoList, index);
+              },
+          onRefresh: _loadHashtagVideos,
         );
       },
     );
@@ -470,7 +395,6 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         title: '#${widget.hashtag}',
         showBackButton: true,
         onBackPressed: context.pop,
-        backgroundColor: VineTheme.vineGreen,
       ),
       body: body,
     );

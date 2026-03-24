@@ -1,16 +1,15 @@
 // ABOUTME: Safety Settings screen - navigation hub for moderation and user safety
 // ABOUTME: Provides age verification gate and navigation to sub-screens
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 class SafetySettingsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -409,12 +408,10 @@ class _BlockedUserTile extends ConsumerWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(11),
           child: profile?.picture != null && profile!.picture!.isNotEmpty
-              ? CachedNetworkImage(
+              ? VineCachedImage(
                   imageUrl: profile.picture!,
                   width: 38,
                   height: 38,
-                  fit: BoxFit.cover,
-                  cacheManager: openVineImageCache,
                   placeholder: (context, url) => Image.asset(
                     'assets/icon/acid_avatar.png',
                     width: 38,

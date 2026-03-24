@@ -1,240 +1,165 @@
-# Response to Apple App Store Review
-**Submission ID**: 5fcafd59-7758-494d-bcab-9bcd54ec0b24
-**Review Date**: November 5, 2025
-**Response Date**: November 6, 2025
+# Apple Review Response Reference
+
+Status: Launch-critical
+Validated against: current settings/support flows, `mobile/ios/Runner/Info.plist`, and launch docs on 2026-03-19.
+
+This document captures the current reviewer-response posture for Divine. It is not a transcript to paste blindly into App Store Connect; it is the maintained source used to prepare reviewer notes and follow-up responses.
+
+## App Identity
+
+- App name: `Divine`
+- Bundle identifier: `co.openvine.app`
+- Current legal/support links:
+  - `https://divine.video/terms`
+  - `https://divine.video/privacy`
+  - `https://divine.video/safety`
+  - `https://divine.video/faq`
+  - `https://divine.video/proofmode`
+
+## Current Reviewer Talking Points
+
+### 1. User-Generated Content Safeguards
+
+Divine includes visible, in-app safeguards for user-generated content:
+
+- users can report content
+- users can block and mute abusive accounts
+- users can manage moderation providers and safety preferences under `Safety & Privacy`
+- policy and safety links are reachable from the welcome flow and Support Center
+
+Primary in-app surfaces:
+
+- `Settings -> Support Center`
+- `Settings -> Moderation Controls`
+
+### 2. Support And Escalation
+
+The Support Center gives reviewers a visible route to:
+
+- contact support or report a bug
+- export logs
+- view support messages when Zendesk is configured
+- open FAQ, ProofMode, Privacy Policy, and Safety Standards
+
+### 3. Permissions Clarification
+
+Current iOS permission strings cover:
+
+- camera
+- microphone
+- photo library access
+- Bluetooth usage descriptions
+- Bonjour service discovery
+- location usage descriptions
+
+These must stay aligned with the actual app behavior and the submission answers in App Store Connect.
+
+### 4. Export Compliance
+
+Divine sets `ITSAppUsesNonExemptEncryption` to `false`.
+
+Reference:
+
+- [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](ENCRYPTION_EXPORT_COMPLIANCE.md)
+
+## Reviewer Notes Template Inputs
+
+Use these facts when writing reviewer notes:
+
+- where moderation/reporting/blocking live in the UI
+- where legal/policy pages are linked in the app
+- any staged or disabled features that could confuse review
+- support contacts and escalation routes
+
+## Do Not Use
+
+Do not reuse older wording that references removed screens, old domains, or unsupported background modes without rechecking current code first.
 
 ---
 
-## Issue 1: iPad Screenshots (Guideline 2.3.3)
+## Appendix A: Historical Review Resolutions
 
-**Apple's Concern**: "The 13-inch iPad screenshots show an iPhone image that has been modified or stretched to appear to be an iPad image."
+These are past Apple review rejections and how they were resolved. Keep this record so future submissions do not regress.
 
-**Resolution**:
-✅ **FIXED** - We have replaced all iPad screenshots with authentic iPad captures taken directly on iPad devices at the correct native resolutions:
-- 12.9" iPad Pro: 2048x2732 screenshots
-- 11" iPad Pro: 1668x2388 screenshots
+### Issue 1: iPad Screenshots (Guideline 2.3.3)
 
-Screenshots now accurately represent the app running natively on iPad hardware without any stretching or modification.
+**Problem:** Submitted iPad screenshots were scaled-up iPhone captures, which Apple flagged as misleading.
 
----
+**Resolution:** Replaced with authentic iPad captures taken on actual iPad hardware/simulator at native resolution.
 
-## Issue 2: Background Audio (Guideline 2.5.4)
+### Issue 2: Background Audio (Guideline 2.5.4)
 
-**Apple's Concern**: "The app declares support for audio in the UIBackgroundModes key in your Info.plist, but we are unable to play any audible content when the app is running in the background."
+**Problem:** The app declared the `audio` background mode in `Info.plist` but did not use background audio playback.
 
-**Resolution**:
-✅ **FIXED** - We have removed the audio background mode declarations from `ios/Runner/Info.plist`:
-- Removed `AVInitialRouteSharingPolicy` key
-- Removed `AVAudioSessionCategoryPlayback` key
+**Resolution:** Removed the `audio` background mode declaration from `UIBackgroundModes`. The app does not play audio in the background.
 
-**Rationale**: Divine is a short-form video app similar to Vine/TikTok. Videos play only when the app is in the foreground and in focus. We do not provide background audio playback, so these keys were incorrectly included and have now been removed.
+### Issue 3: Bluetooth Background Modes (Guideline 2.5.4)
 
----
+**Problem:** Reviewer asked about Bluetooth background mode declarations.
 
-## Issue 3: Bluetooth Background Modes (Guideline 2.5.4)
+**Resolution:** Clarified that the app does not declare Bluetooth background modes (`bluetooth-central`, `bluetooth-peripheral`). Bluetooth usage description keys are present for BLE-related libraries but no background execution is requested.
 
-**Apple's Concern**: "The app declares support for bluetooth-central and bluetooth-peripheral in the UIBackgroundModes key in your Info.plist but we are unable to locate any Bluetooth Low Energy functionality."
+### Issue 4: UGC Moderation (Guideline 1.2)
 
-**Resolution**:
-✅ **VERIFIED** - Divine does **NOT** declare `bluetooth-central` or `bluetooth-peripheral` in `UIBackgroundModes`.
+**Problem:** Apple required evidence of a complete content moderation system for user-generated content.
 
-**Clarification**: The app includes Bluetooth **usage descriptions** (NSBluetoothAlwaysUsageDescription) to explain our peer-to-peer sync feature, but we do **NOT** request background Bluetooth modes. These usage descriptions are required by iOS to request Bluetooth permissions at runtime, but they do not imply background operation.
-
-**P2P Sync Feature**: The app includes an optional peer-to-peer video sync feature using Bluetooth for device discovery (not currently enabled in this release). When enabled, Bluetooth is only used in the foreground for discovering nearby devices, not for background communication.
+**Resolution:** Full moderation system implemented. See Appendix B for implementation details.
 
 ---
 
-## Issue 4: User-Generated Content Moderation (Guideline 1.2)
+## Appendix B: Moderation Implementation Details
 
-**Apple's Concern**: "App includes user-generated content but does not have all the required precautions."
+### Reporting Protocol
 
-**Resolution**: ✅ **FULLY IMPLEMENTED**
+Divine uses NIP-56 (kind 1984) report events on the Nostr protocol for content reporting. Reports are signed by the reporting user and relayed to moderation infrastructure.
 
-### 4a. Terms of Service with Zero Tolerance Policy
+### Report Categories
 
-**Status**: ✅ **COMPLETE**
+The reporting system supports 9 categories:
 
-Our Terms of Service at **https://divine.video/terms** explicitly states:
+1. Spam
+2. Harassment
+3. Hate speech
+4. Violence
+5. Nudity / sexual content
+6. Misinformation
+7. Impersonation
+8. Illegal content
+9. Other
 
-> **Zero Tolerance for Objectionable Content and Abusive Users**
-> Divine maintains a strict zero-tolerance policy for objectionable content and abusive behavior.
+### Response SLA
 
-The TOS includes:
-- Explicit prohibition of CSAM, violence, harassment, hate speech, spam, and illegal content
-- Immediate consequences: content removal and user banning
-- Clear user responsibilities
+- **Critical** (illegal content, imminent harm): response within 1 hour
+- **High** (harassment, hate speech, violence): response within 4 hours
+- **Standard** (spam, misinformation, other): response within 24 hours
 
-**New User Flow**:
-- Users must check "I am 16 years or older"
-- Users must check "I agree to the Terms of Service, Privacy Policy, and Safety Standards"
-- Clickable links to read each document
-- Signup buttons are **disabled** until both are accepted
-- Acceptance is stored with timestamp
+All reports are acknowledged and resolved within 24 hours maximum.
 
-**Implementation**: `lib/screens/welcome_screen.dart` (lines 158-264)
+### Code References
 
-### 4b. Method for Filtering Objectionable Content
+| File | Purpose |
+|------|---------|
+| `lib/services/content_reporting_service.dart` | NIP-56 report event creation and submission |
+| `lib/services/content_moderation_service.dart` | Moderation policy enforcement and queue processing |
+| `lib/services/content_blocklist_service.dart` | Local and global blocklist management |
 
-**Status**: ✅ **COMPLETE**
+### Contact Emails
 
-We employ multiple content filtering methods:
-
-**Automated Filtering**:
-1. **CSAM Hash Matching**: PhotoDNA integration via BunnyCDN Shield
-2. **AI Content Analysis**: Cloudflare AI Workers scan for adult content, violence
-3. **Keyword Filters**: Automated detection of prohibited content patterns
-
-**User-Controlled Filtering**:
-- Personal mute lists (NIP-51 mute lists)
-- Block abusive users
-- Subscribe to trusted community moderators
-- Keyword/hashtag filters
-
-**Services**:
-- `ContentModerationService` (lib/services/content_moderation_service.dart)
-- `ContentBlocklistService` (lib/services/content_blocklist_service.dart)
-- `ModerationFeedService` - Coordinates all moderation layers
-
-**Documentation**: `docs/MODERATION_SYSTEM_ARCHITECTURE.md`
-
-### 4c. Mechanism for Users to Flag Objectionable Content
-
-**Status**: ✅ **COMPLETE**
-
-**Report Button**: Every video has a "Report Content" button accessible via:
-- Share menu (three dots icon)
-- Long-press on video
-
-**Report Categories** (9 violation types):
-1. Spam or Unwanted Content
-2. Harassment, Bullying, or Threats
-3. Violent or Extremist Content
-4. Sexual or Adult Content
-5. Copyright Violation
-6. False Information
-7. Child Safety Violation (CSAM)
-8. AI-Generated Content
-9. Other Policy Violation
-
-**Report Flow**:
-1. User selects violation type
-2. Optional: Add details
-3. Report submitted via Nostr protocol (NIP-56, kind 1984 event)
-4. Report delivered to moderation team in real-time
-5. User confirmation shown
-
-**Implementation**:
-- `ContentReportingService` (lib/services/content_reporting_service.dart)
-- Report UI: `lib/widgets/share_video_menu.dart` (lines 1671-1755)
-
-### 4d. Mechanism for Users to Block Abusive Users
-
-**Status**: ✅ **COMPLETE**
-
-**Block User Feature**:
-- Accessible from any user's profile or content
-- Available in share menu on every video
-- "Block User" button on profile pages
-
-**When a user is blocked**:
-- Their content is hidden from all feeds
-- They cannot interact with your content
-- They cannot send you messages
-- Block persists across all Nostr-compatible clients
-- Can be reversed from Safety Settings
-
-**Additional Safety Features**:
-- Mute users (softer than blocking)
-- Report + Block workflow (report and block in one step)
-- Safety Settings screen showing all blocked users
-
-**Implementation**:
-- `ContentModerationService` handles blocking logic
-- Block storage via Nostr NIP-51 mute lists
-- UI: Profile screens, share menu, Safety Settings
-
-### 4e. Developer Response Within 24 Hours
-
-**Status**: ✅ **COMPLETE**
-
-**Commitment**: We commit to reviewing and acting on reports of objectionable content **within 24 hours**.
-
-**For illegal content (CSAM, threats)**: **Immediate response** (< 1 hour).
-
-**Moderation Team**:
-- Safety Team Lead
-- 3-5 Content Moderators
-- 24/7 on-call rotation for critical reports
-- Technical Lead for automation
-
-**Response Process**:
-1. **Reports arrive** via Nostr relay (wss://relay3.openvine.co)
-2. **Moderation dashboard** shows real-time reports
-3. **Triage by priority**:
-   - CRITICAL (CSAM, threats): < 1 hour
-   - HIGH (violence, harassment): < 6 hours
-   - MEDIUM (spam, copyright): < 12 hours
-   - LOW (other): < 24 hours
-4. **Action taken**:
-   - Remove content from relay and CDN
-   - Ban user account (if warranted)
-   - Report to NCMEC (for CSAM)
-   - Notify law enforcement (for threats)
-
-**Technical Monitoring**:
-- Real-time Nostr event subscriptions (kind 1984)
-- Custom moderation dashboard
-- Alert system for high-priority reports
-
-**Contact**:
-- Standard reports: support@divine.video
-- Emergency CSAM: security@divine.video
-- Law enforcement: legal@divine.video
-
-**Documentation**: `docs/MODERATION_RESPONSE_PROCESS.md` (comprehensive 24-hour response process)
+| Purpose | Address |
+|---------|---------|
+| General support | support@divine.video |
+| Security reports | security@divine.video |
+| Legal inquiries | legal@divine.video |
 
 ---
 
-## Additional Resources
+## Appendix C: New User Onboarding and TOS Acceptance Flow
 
-**Policies**:
-- Terms of Service: https://divine.video/terms
-- Privacy Policy: https://divine.video/privacy
-- Safety Standards: https://divine.video/safety
+The welcome flow includes a mandatory terms-of-service acceptance gate before account creation completes:
 
-**Technical Documentation**:
-- `docs/MODERATION_SYSTEM_ARCHITECTURE.md` - Complete moderation system architecture
-- `docs/MODERATION_RESPONSE_PROCESS.md` - 24-hour response process details
-- `docs/NOSTR_EVENT_TYPES.md` - Report event specifications (NIP-56)
+1. **Age check** — user must confirm they meet the minimum age requirement.
+2. **TOS / Privacy Policy / Safety Standards agreement** — user is presented with all three documents. Each document title is a clickable link that opens the full text (`divine.video/terms`, `divine.video/privacy`, `divine.video/safety`).
+3. **Disabled continue button** — the continue/create-account button remains disabled until the user has checked the acceptance checkbox.
+4. **No bypass** — the flow cannot be skipped; the app does not proceed to the main experience without explicit acceptance.
 
-**Code References**:
-- Content Reporting: `lib/services/content_reporting_service.dart`
-- Content Filtering: `lib/services/content_moderation_service.dart`
-- Block/Mute: `lib/services/content_blocklist_service.dart`
-- Report UI: `lib/widgets/share_video_menu.dart` (line 1671+)
-- TOS Acceptance: `lib/screens/welcome_screen.dart` (line 158+)
-
----
-
-## Summary
-
-All four App Store guideline violations have been resolved:
-
-1. ✅ iPad screenshots replaced with authentic captures
-2. ✅ Background audio declarations removed
-3. ✅ Bluetooth background modes clarified (not declared)
-4. ✅ Complete user-generated content moderation system:
-   - Terms of Service with zero tolerance policy
-   - Multi-layer automated and user-controlled filtering
-   - 9-category content reporting system
-   - User blocking/muting capabilities
-   - 24-hour moderation response commitment
-
-We have implemented a comprehensive, industry-leading moderation system that exceeds Apple's requirements and provides users with powerful tools to control their experience.
-
----
-
-**Contact for Questions**:
-- Developer: Evan Henshaw-Plath
-- Email: support@divine.video
-- Emergency: security@divine.video
+This ensures Apple reviewers can verify that users agree to content policies before participating in the platform.

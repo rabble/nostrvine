@@ -1,6 +1,9 @@
-# OpenVine Event Types Documentation
+# Divine Event Types Documentation
 
-This document outlines the required Nostr event types (kinds) that OpenVine uses for proper functionality.
+Status: Current
+Validated against: current protocol documentation references on 2026-03-19.
+
+This document outlines the required Nostr event types (kinds) that Divine uses for proper functionality.
 
 ## Core Event Types
 
@@ -222,7 +225,7 @@ The video feed requires both event types working together:
 
 ## Migration Notes
 
-If updating existing OpenVine installations:
+If updating existing Divine installations:
 1. Ensure VideoEventService filter includes Kind 16 events
 2. Update UI components to handle repost indicators
 3. Verify UserProfileService properly caches Kind 0 events

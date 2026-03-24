@@ -147,7 +147,9 @@ class _NotificationTabContentState
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
 
-    if (maxScroll - currentScroll <= 200) {
+    // Only trigger loadMore if scrolling is actually possible and near bottom
+    // Provider handles all state checks (hasMore, isRefreshing, isLoadingMore)
+    if (maxScroll > 0 && maxScroll - currentScroll <= 200) {
       ref.read(relayNotificationsProvider.notifier).loadMore();
     }
   }
@@ -271,7 +273,11 @@ class _NotificationTabContentState
               controller: _scrollController,
               itemCount:
                   notifications.length +
-                  (feedState.hasMoreContent && feedState.isLoadingMore ? 1 : 0),
+                  (feedState.hasMoreContent &&
+                          feedState.isLoadingMore &&
+                          !feedState.isRefreshing
+                      ? 1
+                      : 0),
               itemBuilder: (context, index) {
                 // Loading indicator at bottom
                 if (index >= notifications.length) {

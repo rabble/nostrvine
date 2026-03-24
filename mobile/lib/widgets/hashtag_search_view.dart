@@ -128,7 +128,7 @@ class _HashtagResultTile extends StatelessWidget {
             'HashtagSearchView: Tapped hashtag: $hashtag',
             category: LogCategory.video,
           );
-          context.go(HashtagScreenRouter.pathForTag(hashtag));
+          context.push(HashtagScreenRouter.pathForTag(hashtag));
         },
       ),
     );
@@ -173,10 +173,7 @@ class _HashtagSearchErrorState extends StatelessWidget {
         children: [
           Icon(Icons.error_outline, size: 64, color: VineTheme.error),
           SizedBox(height: 16),
-          Text(
-            'Search failed',
-            style: TextStyle(color: VineTheme.lightText),
-          ),
+          Text('Search failed', style: TextStyle(color: VineTheme.lightText)),
         ],
       ),
     );

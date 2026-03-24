@@ -3,7 +3,8 @@
 
 import 'dart:async';
 
-import 'package:divine_camera/divine_camera.dart' show CameraLensMetadata;
+import 'package:divine_camera/divine_camera.dart'
+    show CameraLensMetadata, DivineCameraLens;
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
@@ -51,6 +52,10 @@ class DivineVideoClip {
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
   bool get isProcessing =>
       processingCompleter != null && !processingCompleter!.isCompleted;
+
+  /// Whether this clip was recorded with a front-facing camera.
+  bool get isFrontCameraLens =>
+      DivineCameraLens.isFrontCameraLens(lensMetadata?.lensType);
 
   /// Returns the thumbnail timestamp, or a fallback of 210ms or half the
   /// video duration (whichever is smaller) if not set.

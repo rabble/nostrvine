@@ -15,8 +15,14 @@ import 'package:models/models.dart';
 /// Funnelcake provides a ClickHouse-backed analytics API that offers
 /// faster queries than Nostr relays for video data and engagement metrics.
 ///
-/// This client handles HTTP requests only. Caching should be implemented
-/// by consumers of this client.
+/// **Stateless:** This client has no in-memory caching — every call hits
+/// the network. Callers that need request deduplication or stale-while-
+/// revalidate behavior should manage that at a higher layer.
+///
+/// **Errors:** Unlike the legacy analytics service (which often returned
+/// empty lists on HTTP failures), this client throws typed subclasses of
+/// `FunnelcakeException` (for example `FunnelcakeApiException`,
+/// `FunnelcakeTimeoutException`). Call sites should use `try`/`catch`.
 ///
 /// Example usage:
 /// ```dart
@@ -917,7 +923,9 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<List<TrendingHashtag>> fetchTrendingHashtags({int limit = 20}) async {
+  Future<List<TrendingHashtag>> fetchTrendingHashtags({
+    int limit = 20,
+  }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -54,6 +55,8 @@ class VideoFeedPage extends ConsumerWidget {
         .read(divineHostFilterServiceProvider)
         .showDivineHostedOnly;
 
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
     return BlocProvider(
       key: ValueKey('video-feed-$showDivineHostedOnly'),
       create: (_) => VideoFeedBloc(
@@ -61,6 +64,7 @@ class VideoFeedPage extends ConsumerWidget {
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
         profileRepository: profileRepository,
+        contentBlocklistService: blocklistService,
         userPubkey: authService.currentPublicKeyHex,
         sharedPreferences: sharedPreferences,
         serveCachedHomeFeed: !showDivineHostedOnly,
@@ -173,6 +177,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     controller = VideoFeedController(
       videos: pooledVideos,
       pool: PlayerPool.instance,
+      maxLoopDuration: VideoEditorConstants.maxDuration,
       onVideoReady: (index, player) {
         if (!_hasMarkedVideoReady && index == 0) {
           _hasMarkedVideoReady = true;
@@ -183,6 +188,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
     controllerMode = effectiveState.mode;
     lastPooledVideos = pooledVideos;
+
+    // If an overlay is open or we're not on the home tab, deactivate
+    // immediately so the video doesn't start playing in the background.
+    final overlayState = ref.read(overlayVisibilityProvider);
+    if (!_isOnHomeTab || overlayState.hasVisibleOverlay) {
+      controller?.setActive(
+        active: false,
+        retainCurrentPlayer: overlayState.shouldRetainPlayer,
+      );
+    }
   }
 
   /// Handles new videos from pagination by adding them to the controller.
@@ -271,6 +286,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       }
 
       controller?.setActive(active: isHome);
+    });
+
+    // Refresh feed when blocklist changes (block from profile, DM, or relay).
+    ref.listen(blocklistVersionProvider, (previous, current) {
+      if (previous != null && current > previous) {
+        context.read<VideoFeedBloc>().add(const VideoFeedBlocklistChanged());
+      }
     });
 
     // Pause/resume for overlays (drawer, pages, bottom sheets), but only when
@@ -382,6 +404,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   PooledVideoFeed(
                     key: ValueKey(state.mode),
                     videos: pooledVideos,
+                    maxLoopDuration: VideoEditorConstants.maxDuration,
                     controller: controller,
                     onScrollOffsetChanged: (page) => _pagePosition.value = page,
                     itemBuilder: (context, video, index, {required isActive}) {

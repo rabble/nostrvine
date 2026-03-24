@@ -40,8 +40,7 @@ mobile platforms.
 * **Widgets are for UI:** Everything in Flutter's UI is a widget. Compose
   complex UIs from smaller, reusable widgets.
 * **Navigation:** Use a modern routing package like `auto_route` or `go_router`.
-  See the [navigation guide](./navigation.md) for a detailed example using
-  `go_router`.
+  For current repo patterns, inspect [mobile/lib/router/app_router.dart](../mobile/lib/router/app_router.dart).
 
 ## Package Management
 * **Pub Tool:** To manage packages, use the `pub` tool, if available.
@@ -786,6 +785,5 @@ education levels, and learning styles.
   labels for UI elements.
 * **Screen Reader Testing:** Regularly test your app with TalkBack (Android) and
   VoiceOver (iOS).
-
 
 

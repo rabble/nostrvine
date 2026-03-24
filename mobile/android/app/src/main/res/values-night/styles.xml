@@ -17,4 +17,9 @@
     <style name="NormalTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <!-- Zendesk SDK Activities require an explicit AppCompat theme.
+         Must be present in every qualifier variant to avoid Samsung One UI
+         theme resolution failures (issue #2365). -->
+    <style name="ZendeskTheme" parent="Theme.AppCompat.DayNight.NoActionBar" />
 </resources>

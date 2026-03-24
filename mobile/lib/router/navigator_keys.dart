@@ -44,11 +44,6 @@ class NavigatorKeys {
     debugLabel: 'search-feed',
   );
 
-  /// Hashtag navigator key for grid mode (no video index).
-  static final hashtagGrid = GlobalKey<NavigatorState>(
-    debugLabel: 'hashtag-grid',
-  );
-
   /// Inbox tab navigator key (Messages + Notifications).
   static final inbox = GlobalKey<NavigatorState>(debugLabel: 'inbox');
 

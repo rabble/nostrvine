@@ -455,6 +455,39 @@ void main() {
         expect(notification.createdAt.month, 11);
         expect(notification.createdAt.day, 14);
       });
+
+      group('dedupeKey', () {
+        test('returns id when id is present', () {
+          final notification = RelayNotification(
+            id: 'notif_123',
+            sourcePubkey: 'author_pubkey',
+            sourceEventId: 'event_abc',
+            sourceKind: 7,
+            notificationType: 'reaction',
+            createdAt: DateTime.now(),
+            read: false,
+          );
+
+          expect(notification.dedupeKey, 'notif_123');
+        });
+
+        test('falls back to sourceEventId when id is empty', () {
+          final notification = RelayNotification(
+            id: '',
+            sourcePubkey: 'author_pubkey',
+            sourceEventId: 'event_abc',
+            sourceKind: 7,
+            notificationType: 'reaction',
+            createdAt: DateTime.now(),
+            read: false,
+          );
+
+          // dedupeKey falls back to sourceEventId for deduplication
+          expect(notification.dedupeKey, 'event_abc');
+          // But id itself remains empty (used for API calls)
+          expect(notification.id, isEmpty);
+        });
+      });
     });
 
     group('NotificationsResponse model', () {

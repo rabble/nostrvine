@@ -95,10 +95,7 @@ class ProfileFeed extends _$ProfileFeed {
       );
 
       try {
-        final stats = await funnelcakeClient.getVideosByAuthor(
-          pubkey: userId,
-          limit: 100,
-        );
+        final stats = await funnelcakeClient.getVideosByAuthor(pubkey: userId);
         final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (apiVideos.isNotEmpty) {
@@ -152,7 +149,7 @@ class ProfileFeed extends _$ProfileFeed {
     if (!_usingRestApi) {
       // Subscribe to this user's videos (non-blocking: events stream in
       // progressively via VideoEventService)
-      await videoEventService.subscribeToUserVideos(userId, limit: 100);
+      await videoEventService.subscribeToUserVideos(userId);
 
       // Return immediately with whatever videos are available.
       // Progressive updates arrive via the video update/new video listeners
@@ -430,10 +427,7 @@ class ProfileFeed extends _$ProfileFeed {
   Future<void> _refreshFromRestApi() async {
     try {
       final client = ref.read(funnelcakeApiClientProvider);
-      final stats = await client.getVideosByAuthor(
-        pubkey: userId,
-        limit: 100,
-      );
+      final stats = await client.getVideosByAuthor(pubkey: userId);
       final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
       if (!ref.mounted) return;
@@ -545,7 +539,6 @@ class ProfileFeed extends _$ProfileFeed {
 
         final stats = await client.getVideosByAuthor(
           pubkey: userId,
-          limit: 100,
           before: _nextCursor,
         );
         final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
@@ -727,10 +720,7 @@ class ProfileFeed extends _$ProfileFeed {
     if (funnelcakeAvailable) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
-        final stats = await client.getVideosByAuthor(
-          pubkey: userId,
-          limit: 100,
-        );
+        final stats = await client.getVideosByAuthor(pubkey: userId);
         final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
@@ -804,7 +794,7 @@ class ProfileFeed extends _$ProfileFeed {
     _nextCursor = null;
 
     final videoEventService = ref.read(videoEventServiceProvider);
-    await videoEventService.subscribeToUserVideos(userId, limit: 100);
+    await videoEventService.subscribeToUserVideos(userId);
 
     if (!ref.mounted) return;
 

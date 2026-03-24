@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -111,13 +112,15 @@ class ContentBlocklistService {
   }
 
   /// Save blocked users to SharedPreferences
-  void _saveBlockedUsers() {
+  ///
+  /// Awaits the platform write so the block survives an immediate app kill.
+  Future<void> _saveBlockedUsers() async {
     final prefs = _prefs;
     if (prefs == null) return;
 
     try {
       final json = jsonEncode(_runtimeBlocklist.toList());
-      prefs.setString(_blockedUsersPrefsKey, json);
+      await prefs.setString(_blockedUsersPrefsKey, json);
     } catch (e) {
       Log.error(
         'Failed to persist blocked users: $e',
@@ -153,13 +156,15 @@ class ContentBlocklistService {
   }
 
   /// Save severed followers to SharedPreferences
-  void _saveSeveredFollowers() {
+  ///
+  /// Awaits the platform write so the data survives an immediate app kill.
+  Future<void> _saveSeveredFollowers() async {
     final prefs = _prefs;
     if (prefs == null) return;
 
     try {
       final json = jsonEncode(_severedFollowers.toList());
-      prefs.setString(_severedFollowersPrefsKey, json);
+      await prefs.setString(_severedFollowersPrefsKey, json);
     } catch (e) {
       Log.error(
         'Failed to persist severed followers: $e',
@@ -293,9 +298,10 @@ class ContentBlocklistService {
   /// Add a public key to the runtime blocklist
   ///
   /// Persists to SharedPreferences and publishes to Nostr (kind 30000).
+  /// Awaits the local write so the block survives an immediate app kill.
   /// If [ourPubkey] is provided, it will be used to prevent self-blocking.
   /// Otherwise falls back to [_ourPubkey] set during [syncMuteListsInBackground].
-  void blockUser(String pubkey, {String? ourPubkey}) {
+  Future<void> blockUser(String pubkey, {String? ourPubkey}) async {
     // Guard: Prevent blocking self
     final selfPubkey = ourPubkey ?? _ourPubkey;
     if (selfPubkey != null && pubkey == selfPubkey) {
@@ -309,7 +315,7 @@ class ContentBlocklistService {
 
     if (!_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.add(pubkey);
-      _saveBlockedUsers();
+      await _saveBlockedUsers();
       _publishBlockListToNostr();
       _notifyChanged();
 
@@ -324,18 +330,19 @@ class ContentBlocklistService {
     // list even after unblocking (until they explicitly re-follow).
     if (!_severedFollowers.contains(pubkey)) {
       _severedFollowers.add(pubkey);
-      _saveSeveredFollowers();
+      await _saveSeveredFollowers();
     }
   }
 
   /// Remove a public key from the runtime blocklist
   ///
   /// Persists to SharedPreferences and publishes updated list to Nostr.
+  /// Awaits the local write so the change survives an immediate app kill.
   /// Note: Cannot remove users from internal blocklist.
-  void unblockUser(String pubkey) {
+  Future<void> unblockUser(String pubkey) async {
     if (_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.remove(pubkey);
-      _saveBlockedUsers();
+      await _saveBlockedUsers();
       _publishBlockListToNostr();
       _notifyChanged();
 
@@ -366,6 +373,23 @@ class ContentBlocklistService {
   /// Filter a list of content by removing blocked authors
   List<T> filterContent<T>(List<T> content, String Function(T) getPubkey) =>
       content.where((item) => !shouldFilterFromFeeds(getPubkey(item))).toList();
+
+  /// Filter DM conversations where the other participant is blocked.
+  ///
+  /// [userPubkey] is the current user's pubkey, used to identify which
+  /// participant is "the other one" in each conversation.
+  List<DmConversation> filterBlockedConversations(
+    List<DmConversation> conversations, {
+    required String userPubkey,
+  }) {
+    return conversations.where((conv) {
+      final otherPubkey = conv.participantPubkeys.firstWhere(
+        (pk) => pk != userPubkey,
+        orElse: () => '',
+      );
+      return otherPubkey.isEmpty || !shouldFilterFromFeeds(otherPubkey);
+    }).toList();
+  }
 
   /// Check if user is in internal (permanent) blocklist
   bool isInternallyBlocked(String pubkey) =>

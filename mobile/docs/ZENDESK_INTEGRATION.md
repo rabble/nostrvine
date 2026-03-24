@@ -1,221 +1,145 @@
-# Zendesk Support SDK Integration
+# Zendesk Support Integration
 
-## Overview
+Status: Current
+Validated against: `mobile/lib/services/zendesk_support_service.dart` and `mobile/lib/screens/settings/support_center_screen.dart` on 2026-03-19.
 
-OpenVine now integrates with Zendesk Support SDK for professional bug reporting and customer support. The integration provides native iOS/Android support ticket submission with graceful fallback to email when Zendesk is not configured.
+Divine integrates Zendesk Support to provide native support-message flows when credentials are configured. The app keeps working without Zendesk by falling back to in-app bug reporting and exportable logs.
 
-## Features
+## User Entry Point
 
-- **Native Support UI**: Users tap "Contact Support" in Settings to open Zendesk's native ticket creation screen
-- **Graceful Degradation**: App works fully without Zendesk credentials, falling back to email bug reports
-- **Platform Channels**: Custom Flutter platform channels bridge to official Zendesk iOS/Android SDKs
-- **Zero Impact**: Non-configured builds continue working normally with email fallback
+Users reach support from:
 
-## Architecture
+- `Settings -> Support Center`
+
+Current Support Center actions:
+
+- contact support / report a bug
+- save logs
+- view support messages
+- open FAQ
+- open ProofMode information
+- open Privacy Policy
+- open Safety Standards
+
+## Integration Shape
 
 ```
-Settings Screen
-    ↓
-ZendeskSupportService (Flutter)
-    ↓
-MethodChannel ("com.openvine/zendesk_support")
-    ↓
-    ├── iOS: AppDelegate.swift → Zendesk Support SDK
-    └── Android: MainActivity.kt → Zendesk Support SDK
+Support Center
+  -> BugReportService for local bug report flows and log export
+  -> ZendeskSupportService for native ticket UI and ticket history
+  -> external policy/support URLs on divine.video
 ```
+
+## Platform Channel Architecture
+
+The Zendesk native SDKs are accessed through a Flutter `MethodChannel`. The service layer abstracts platform details so the rest of the app never touches native code directly.
+
+```
+Settings (UI)
+  -> ZendeskSupportService (Dart)
+       -> MethodChannel('com.divine.zendesk')
+            -> iOS: ZendeskPlugin (Swift, uses ZendeskSDK pod)
+            -> Android: ZendeskPlugin (Kotlin, uses Zendesk Support SDK)
+```
+
+All calls through the channel are fire-and-forget or return simple status maps. The native side handles SDK lifecycle, view presentation, and push-token registration.
+
+## Current Service Behavior
+
+`ZendeskSupportService`:
+
+- initializes from dart defines at app startup
+- stores user identity details locally
+- can set anonymous identity for unauthenticated users
+- upgrades to JWT identity by fetching a pre-auth token through the relay-manager API
+- opens the native ticket composer and ticket list when the SDK is available
+
+If Zendesk is unavailable:
+
+- the Support Center still supports bug reporting and log export
+- ticket history is unavailable
+
+### Identity Upgrade Flow
+
+When the app launches or the user is not yet authenticated, the service registers an **anonymous identity** with the Zendesk SDK so ticket creation still works.
+
+Once the user authenticates (login or registration), the service upgrades to a **JWT pre-auth identity**:
+
+1. The service calls the relay-manager API to fetch a Zendesk JWT token scoped to the authenticated user.
+2. On success, it replaces the anonymous identity with the JWT identity via the platform channel. Existing tickets become associated with the authenticated user.
+3. **Fallback**: If the JWT token fetch fails (network error, server error, expired session), the service logs the failure and retries with the anonymous identity so the user can still reach support. The upgrade is reattempted on the next app foreground or manual support-center open.
 
 ## Configuration
 
-### Step 1: Get Zendesk Credentials
+### Dart Define Configuration
 
-From your Zendesk account dashboard:
-- **App ID**: Zendesk application identifier
-- **Client ID**: OAuth client ID for API access
-- **Zendesk URL**: Your Zendesk instance URL (e.g., `https://openvine.zendesk.com`)
+The Zendesk SDK requires four dart defines injected at build time:
 
-### Step 2: Create .env File
+| Define | Purpose |
+|--------|---------|
+| `ZENDESK_APP_ID` | Identifies the Zendesk mobile SDK application |
+| `ZENDESK_CLIENT_ID` | OAuth client ID for SDK authentication |
+| `ZENDESK_URL` | Base URL of the Zendesk instance (e.g. `https://divine.zendesk.com`) |
+| `ZENDESK_API_TOKEN` | Server-side API token used for JWT identity minting |
 
-Copy the example file and fill in your credentials:
+**Local development**: Values are loaded automatically from the `.env` file in `mobile/`. The `.env` file is gitignored and must be created manually from `.env.example` or obtained from the team.
 
-```bash
-cd mobile
-cp .env.example .env
-```
-
-Edit `.env`:
+**CI / production builds**: Values are passed explicitly via `--dart-define` flags:
 
 ```bash
-ZENDESK_APP_ID=your_app_id_here
-ZENDESK_CLIENT_ID=your_client_id_here
-ZENDESK_URL=https://openvine.zendesk.com
+flutter build ios \
+  --dart-define=ZENDESK_APP_ID=<value> \
+  --dart-define=ZENDESK_CLIENT_ID=<value> \
+  --dart-define=ZENDESK_URL=<value> \
+  --dart-define=ZENDESK_API_TOKEN=<value>
 ```
 
-**Important**: `.env` is gitignored to protect credentials. Never commit real credentials.
+If any define is missing or empty, `ZendeskSupportService` skips initialization and the app falls back to email-based support and local bug reporting.
 
-### Step 3: Build with Credentials
+## Current Files
 
-Credentials are injected at build time via `--dart-define`:
-
-```bash
-# Development builds (loads from .env automatically)
-flutter run
-
-# Production builds
-flutter build ios --dart-define=ZENDESK_APP_ID=xxx --dart-define=ZENDESK_CLIENT_ID=yyy
-flutter build apk --dart-define=ZENDESK_APP_ID=xxx --dart-define=ZENDESK_CLIENT_ID=yyy
-```
-
-## Usage
-
-### For Users
-
-1. Open Settings screen
-2. Scroll to Support section
-3. Tap "Contact Support"
-4. Fill out ticket in native Zendesk UI
-5. Submit ticket
-
-If Zendesk is not configured, users will see the email bug report dialog as before.
-
-### For Developers
-
-**Check availability:**
-```dart
-if (ZendeskSupportService.isAvailable) {
-  // Zendesk initialized and ready
-}
-```
-
-**Show new ticket screen:**
-```dart
-final success = await ZendeskSupportService.showNewTicketScreen(
-  subject: 'Support Request',  // iOS only - Android users fill in UI
-  tags: ['mobile', 'bug'],      // iOS only - Android users fill in UI
-);
-```
-
-**Platform Limitations:**
-- **iOS**: Supports pre-filling subject and tags
-- **Android**: SDK v5.1.2 does not support pre-filling - users must fill these fields in the UI
-- **Both**: Description field not supported by either SDK
-
-**Show ticket list:**
-```dart
-final success = await ZendeskSupportService.showTicketListScreen();
-```
-
-## Implementation Details
-
-### Files Modified
-
-**Configuration:**
-- `lib/config/zendesk_config.dart` - Credential configuration
-- `.env.example` - Credential template
-
-**Flutter Service:**
-- `lib/services/zendesk_support_service.dart` - Platform channel wrapper
-
-**iOS Platform:**
-- `ios/Podfile` - Add ZendeskSupportSDK dependency
-- `ios/Runner/AppDelegate.swift` - Implement platform channel handlers
-
-**Android Platform:**
-- `android/build.gradle.kts` - Add Zendesk Maven repository
-- `android/app/build.gradle.kts` - Add Zendesk SDK + AndroidX AppCompat dependencies
-- `android/app/src/main/kotlin/co/openvine/app/MainActivity.kt` - Implement platform channel handlers
-
-**App Integration:**
-- `lib/main.dart` - Initialize Zendesk at app startup
-- `lib/screens/settings_screen.dart` - Replace bug report with Contact Support
-
-### Platform Channel Methods
-
-**Method**: `initialize`
-- Configures Zendesk SDK with credentials
-- Sets anonymous user identity
-- Returns `true` on success, `false` if credentials missing
-
-**Method**: `showNewTicket`
-- Launches native ticket creation UI
-- Optional subject and tags parameters
-- Returns `true` on success
-
-**Method**: `showTicketList`
-- Launches native ticket list UI (user's past tickets)
-- Returns `true` on success
-
-## Testing
-
-### Without Credentials
-
-1. Build without `.env` file or credentials
-2. App should start normally
-3. Settings → Contact Support should show email dialog
-4. Verify no crashes or errors
-
-### With Credentials
-
-1. Configure `.env` with valid Zendesk credentials
-2. Build and run app
-3. Settings → Contact Support should show Zendesk native UI
-4. Submit test ticket
-5. Verify ticket appears in Zendesk dashboard
+- `mobile/lib/services/zendesk_support_service.dart`
+- `mobile/lib/screens/settings/support_center_screen.dart`
+- `mobile/lib/config/zendesk_config.dart`
+- native platform handlers in the iOS and Android app targets
 
 ## Troubleshooting
 
-### iOS Build Fails
+### iOS build fails with Zendesk pod errors
+
+The Zendesk iOS SDK is installed via CocoaPods. If `pod install` fails or Xcode reports missing modules:
 
 ```bash
-cd ios
-pod install
+cd mobile/ios
+rm -rf Pods Podfile.lock .symlinks
 cd ..
-flutter clean
-flutter build ios
+flutter clean && flutter pub get
+cd ios && pod install
 ```
 
-### Android Build Fails
+If the error persists, also clear Xcode derived data:
 
 ```bash
-flutter clean
-flutter pub get
-flutter build apk
+rm -rf ~/Library/Developer/Xcode/DerivedData
 ```
 
-### Zendesk Not Initializing
+### Zendesk not initializing
 
-Check logs for initialization status:
-```
-[STARTUP] Zendesk Support SDK initialized successfully
-```
+Check the debug console for log lines from `ZendeskSupportService`. Common causes:
 
-Or if skipped:
-```
-[STARTUP] Zendesk Support SDK not initialized (credentials not configured)
-```
+- One or more dart defines are missing or empty. Verify `.env` contains all four keys.
+- The native plugin failed to register. Confirm `ZendeskPlugin` is listed in the iOS `AppDelegate` / Android `MainActivity` plugin registry.
+- Network is unreachable at init time. The service logs the failure and retries on next access.
 
-### Support Button Shows Email Dialog
+### Support button shows email dialog instead of Zendesk UI
 
-This means Zendesk is not available. Reasons:
-1. `.env` file missing or empty
-2. Credentials not passed to build via `--dart-define`
-3. Platform channel initialization failed (check native logs)
+This means the SDK credentials are not configured or initialization was skipped. The app intentionally falls back to a `mailto:` link when Zendesk is unavailable. To fix:
 
-## Migration from Old Bug Reporting
+1. Confirm all four dart defines are set (see Configuration above).
+2. Restart the app (hot-reload does not re-run SDK initialization).
+3. Check logs for initialization errors.
 
-The old Cloudflare Worker bug report endpoint is still available as a fallback. When Zendesk is not configured, the app automatically uses the email dialog.
+## Notes For Launch
 
-No user action required - the transition is transparent.
-
-## Future Enhancements
-
-- User identity sync (once authenticated, set Zendesk identity)
-- Attachment support (screenshots, logs)
-- In-app chat (requires Zendesk Messaging SDK instead of Support SDK)
-- Custom ticket fields
-
-## References
-
-- [Zendesk Support SDK for iOS](https://developer.zendesk.com/documentation/zendesk-web-widget-sdks/sdks/ios/getting_started/)
-- [Zendesk Support SDK for Android](https://developer.zendesk.com/documentation/zendesk-web-widget-sdks/sdks/android/getting_started/)
-- Design Doc: `mobile/docs/plans/2025-11-15-zendesk-support-integration-design.md`
-- Implementation Plan: `mobile/docs/plans/2025-11-15-zendesk-support-integration.md`
+- Make sure Support Center copy and screenshots match the current UI, not the older drawer-based flows.
+- Re-validate support contacts and external policy links before store submission.

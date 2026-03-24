@@ -374,7 +374,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
 
     try {
-      await _commentsRepository.deleteComment(commentId: event.commentId);
+      await _commentsRepository.deleteComment(
+        commentId: event.commentId,
+        rootEventId: state.rootEventId,
+      );
 
       // Remove the comment from the Map
       final updatedCommentsById = Map<String, Comment>.from(state.commentsById)
@@ -682,7 +685,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
     try {
       // Step 1: Delete the original comment
-      await _commentsRepository.deleteComment(commentId: originalCommentId);
+      await _commentsRepository.deleteComment(
+        commentId: originalCommentId,
+        rootEventId: state.rootEventId,
+      );
 
       // Step 2: Post new comment with same threading tags
       final postedComment = await _commentsRepository.postComment(

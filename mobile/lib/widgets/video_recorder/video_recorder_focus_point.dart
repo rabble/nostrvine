@@ -31,8 +31,7 @@ class _VideoRecorderFocusPointState
   bool get _isPreviewMirrored {
     if (kIsWeb) return false;
     final camera = DivineCamera.instance;
-    final isFront = camera.lens == DivineCameraLens.front;
-    if (!isFront) return false;
+    if (!camera.lens.isFrontFacing) return false;
 
     // On iOS, mirror preview only when native isn't mirroring
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {

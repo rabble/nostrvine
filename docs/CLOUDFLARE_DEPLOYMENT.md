@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This file is not the current release path for Divine and may reference older OpenVine or web-first deployment flows. Start with docs/P1_LAUNCH_HUB.md and docs/RELEASE_CHECKLIST.md for current guidance.
+
 # OpenVine Web App Deployment Guide
 
 This guide explains how to deploy the OpenVine Flutter web app to Cloudflare Pages at app.openvine.co.

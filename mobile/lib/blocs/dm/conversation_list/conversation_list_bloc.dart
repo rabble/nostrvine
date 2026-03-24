@@ -11,6 +11,7 @@ import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'conversation_list_event.dart';
@@ -21,8 +22,10 @@ class ConversationListBloc
   ConversationListBloc({
     required DmRepository dmRepository,
     required FollowRepository followRepository,
+    ContentBlocklistService? contentBlocklistService,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
+       _blocklistService = contentBlocklistService,
        super(const ConversationListState()) {
     on<ConversationListStarted>(
       _onStarted,
@@ -43,10 +46,14 @@ class ConversationListBloc
     on<ConversationListNavigationConsumed>(
       _onNavigationConsumed,
     );
+    on<ConversationListBlocklistChanged>(
+      _onBlocklistChanged,
+    );
   }
 
   final DmRepository _dmRepository;
   final FollowRepository _followRepository;
+  final ContentBlocklistService? _blocklistService;
 
   Future<void> _onStarted(
     ConversationListStarted event,
@@ -85,13 +92,25 @@ class ConversationListBloc
           userPubkey: _dmRepository.userPubkey,
           isFollowing: _followRepository.isFollowing,
         );
+        final merged = DmRepository.mergeAndSort(
+          data.accepted,
+          split.followed,
+        );
+        final userPubkey = _dmRepository.userPubkey;
         return state.copyWith(
           status: ConversationListStatus.loaded,
-          conversations: DmRepository.mergeAndSort(
-            data.accepted,
-            split.followed,
-          ),
-          requestConversations: split.requests,
+          conversations:
+              _blocklistService?.filterBlockedConversations(
+                merged,
+                userPubkey: userPubkey,
+              ) ??
+              merged,
+          requestConversations:
+              _blocklistService?.filterBlockedConversations(
+                split.requests,
+                userPubkey: userPubkey,
+              ) ??
+              split.requests,
           potentialRequests: data.potentialRequests,
           hasMore: data.accepted.length >= state.currentLimit,
           isLoadingMore: false,
@@ -160,5 +179,13 @@ class ConversationListBloc
     Emitter<ConversationListState> emit,
   ) {
     emit(state.copyWith(clearNavigationTarget: true));
+  }
+
+  /// Re-trigger the watched streams so blocked users are filtered out.
+  void _onBlocklistChanged(
+    ConversationListBlocklistChanged event,
+    Emitter<ConversationListState> emit,
+  ) {
+    add(const ConversationListStarted());
   }
 }

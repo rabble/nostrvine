@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This generated failure inventory is not maintained as a current source of truth.
+
 # Failing Tests by Category
 
 **Generated**: 2025-10-25

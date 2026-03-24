@@ -1,4 +1,7 @@
-# OpenVine Geo-Blocker
+# Divine Geo-Blocker
+
+Status: Current
+Validated against: `geo-blocker/src` on 2026-03-19.
 
 Tiny Cloudflare Worker that checks if a user's IP is in a restricted region (currently Mississippi due to age verification laws).
 

@@ -1,10 +1,10 @@
 // ABOUTME: Sticker display widget supporting both asset and network images.
 // ABOUTME: Includes memory-efficient caching based on displayed size.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show StickerData;
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// A sticker widget that displays an image from either an asset or URL.
 ///
@@ -77,9 +77,9 @@ class _RawImage extends StatelessWidget {
             cacheHeight: cacheHeight,
             errorBuilder: (context, error, stackTrace) => const _ErrorImage(),
           )
-        : CachedNetworkImage(
+        : VineCachedImage(
             imageUrl: sticker.networkUrl!,
-            fit: .contain,
+            fit: BoxFit.contain,
             memCacheWidth: cacheWidth,
             memCacheHeight: cacheHeight,
             placeholder: (context, url) =>

@@ -1766,10 +1766,12 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
-  return CommentsRepository(
+  final repository = CommentsRepository(
     nostrClient: nostrClient,
     funnelcakeApiClient: funnelcakeClient,
   );
+  ref.onDispose(repository.clearCommentCountCache);
+  return repository;
 }
 
 // =============================================================================

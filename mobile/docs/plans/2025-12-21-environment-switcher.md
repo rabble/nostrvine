@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This file may reference deleted screens, older branding, or superseded implementation details. Start with docs/README.md and docs/archive/README.md for current guidance.
+
 # Environment Switcher Implementation Plan (v2)
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

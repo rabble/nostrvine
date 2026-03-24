@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This migration tracker predates the current Divine branding and should not be used as a source of truth for launch work.
+
 # NostrVine → OpenVine Migration Progress
 
 ## Migration Status: COMPLETE ✅

@@ -1,5 +1,8 @@
 # PRD: Incremental UI Migration from Riverpod to BLoC
 
+Status: Current
+Validated against: current mobile architecture direction on 2026-03-19.
+
 ## Status
 - **Owner:** mobile team
 - **State:** In progress
@@ -11,7 +14,7 @@ The codebase currently uses mixed patterns (Riverpod + BLoC + service notifiers)
 Recent profile/follower issues exposed fragility in layered provider/service paths and motivated a clearer UI-state direction.
 
 ## Decision
-For UI state, OpenVine is moving incrementally toward **BLoC/Cubit as the default pattern**.
+For UI state, Divine is moving incrementally toward **BLoC/Cubit as the default pattern**.
 
 Riverpod is not being removed everywhere immediately. Existing Riverpod code remains where migration has not yet happened or where non-UI/service-level usage is still stable.
 

@@ -4,6 +4,7 @@
 // chronologically.
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
@@ -44,6 +45,13 @@ class CommentsRepository {
 
   final NostrClient _nostrClient;
   final FunnelcakeApiClient? _funnelcakeApiClient;
+
+  /// In-memory cache of comment counts keyed by root event ID.
+  ///
+  /// Prevents redundant relay queries when the same video is scrolled
+  /// back into view. Adjusted on post/delete and can be set externally
+  /// via [updateCachedCommentCount] (e.g. from the comments sheet).
+  final Map<String, int> _commentCountCache = {};
 
   /// Subscription ID for the active comment watch, if any.
   String? _watchSubscriptionId;
@@ -243,6 +251,9 @@ class CommentsRepository {
         throw const PostCommentFailedException('Failed to publish comment');
       }
 
+      final cached = _commentCountCache[rootEventId];
+      if (cached != null) _commentCountCache[rootEventId] = cached + 1;
+
       return Comment(
         id: sentEvent.id,
         content: trimmedContent,
@@ -278,12 +289,17 @@ class CommentsRepository {
     String rootEventId, {
     String? rootAddressableId,
   }) async {
+    final cached = _commentCountCache[rootEventId];
+    if (cached != null) return cached;
+
     try {
       // NIP-22: Filter by Kind 1111 and uppercase E tag
       final filterByE = Filter(
         kinds: const [_commentKind],
         uppercaseE: [rootEventId],
       );
+
+      int count;
 
       // If we have an addressable ID, also query by uppercase A tag
       if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
@@ -305,14 +321,35 @@ class CommentsRepository {
         // (since comments should have at least one of these tags)
         final countByE = results[0].count;
         final countByA = results[1].count;
-        return countByE > countByA ? countByE : countByA;
+        count = countByE > countByA ? countByE : countByA;
+      } else {
+        final result = await _nostrClient.countEvents([filterByE]);
+        count = result.count;
       }
 
-      final result = await _nostrClient.countEvents([filterByE]);
-      return result.count;
+      _commentCountCache[rootEventId] = count;
+      return count;
     } on Exception catch (e) {
       throw CountCommentsFailedException('Failed to count comments: $e');
     }
+  }
+
+  /// Updates the cached comment count for a root event.
+  ///
+  /// Called by the UI layer (e.g. after the comments sheet is dismissed)
+  /// to keep the cache in sync with the authoritative count from the
+  /// loaded comment thread. This avoids a stale NIP-45 COUNT when the
+  /// user scrolls back to the same video.
+  void updateCachedCommentCount(String rootEventId, int count) {
+    _commentCountCache[rootEventId] = count;
+  }
+
+  /// Clears the in-memory comment count cache.
+  ///
+  /// Should be called on logout so stale counts from a previous user's
+  /// session are not served after re-login.
+  void clearCommentCountCache() {
+    _commentCountCache.clear();
   }
 
   /// Deletes a comment by publishing a NIP-09 deletion request.
@@ -322,11 +359,15 @@ class CommentsRepository {
   ///
   /// Parameters:
   /// - [commentId]: The ID of the comment event to delete
+  /// - [rootEventId]: Optional root event ID. When provided, the cached
+  ///   comment count for that root event is decremented so subsequent
+  ///   [getCommentsCount] calls return the correct value.
   /// - [reason]: Optional reason for the deletion
   ///
   /// Throws [DeleteCommentFailedException] if broadcasting fails.
   Future<void> deleteComment({
     required String commentId,
+    String? rootEventId,
     String? reason,
   }) async {
     try {
@@ -348,6 +389,13 @@ class CommentsRepository {
         throw const DeleteCommentFailedException(
           'Failed to publish deletion request',
         );
+      }
+
+      if (rootEventId != null) {
+        final cached = _commentCountCache[rootEventId];
+        if (cached != null) {
+          _commentCountCache[rootEventId] = max(0, cached - 1);
+        }
       }
     } on CommentsRepositoryException {
       rethrow;

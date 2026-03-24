@@ -214,6 +214,37 @@ void main() {
     );
   });
 
+  group('getFallbackUrl', () {
+    const hash =
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+    test('returns HLS URL for Divine-hosted videos', () {
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      final fallback = video.getFallbackUrl();
+      expect(fallback, isNotNull);
+      expect(fallback, contains('/hls/'));
+      expect(fallback, contains('.m3u8'));
+    });
+
+    test('returns null for non-Divine videos', () {
+      final video = _createVideoWithUrl(
+        'https://blossom.primal.net/test/video.mp4',
+      );
+
+      expect(video.getFallbackUrl(), isNull);
+    });
+
+    test('returns different URL than getOptimalVideoUrlForPlatform', () {
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      final primary = video.getOptimalVideoUrlForPlatform();
+      final fallback = video.getFallbackUrl();
+
+      expect(primary, isNot(equals(fallback)));
+    });
+  });
+
   group('toPooledVideoItems', () {
     test('uses MP4 720p URL for Divine-hosted pooled playback', () {
       const hash =

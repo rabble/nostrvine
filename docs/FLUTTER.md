@@ -40,8 +40,7 @@ mobile platforms.
 * **Widgets are for UI:** Everything in Flutter's UI is a widget. Compose
   complex UIs from smaller, reusable widgets.
 * **Navigation:** Use a modern routing package like `auto_route` or `go_router`.
-  See the [navigation guide](./navigation.md) for a detailed example using
-  `go_router`.
+  For current repo patterns, inspect [mobile/lib/router/app_router.dart](../mobile/lib/router/app_router.dart).
 * **CRITICAL - No Modals Policy:** Do NOT use modal dialogs, bottom sheets, or
   any modal overlays unless Rabble explicitly requests them. Even if requested,
   try to convince them to use full-screen navigation instead. Modals interrupt
@@ -171,7 +170,7 @@ linter:
 
 **Current direction: incremental UI migration from Riverpod to BLoC.**
 
-OpenVine currently runs a hybrid state-management model. Riverpod remains in parts
+Divine currently runs a hybrid state-management model. Riverpod remains in parts
 of the codebase, but new and migrated UI flows should prefer BLoC/Cubit.
 
 **Source of truth for migration status and rationale:**
@@ -802,5 +801,3 @@ education levels, and learning styles.
   labels for UI elements.
 * **Screen Reader Testing:** Regularly test your app with TalkBack (Android) and
   VoiceOver (iOS).
-
-

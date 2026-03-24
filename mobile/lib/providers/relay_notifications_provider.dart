@@ -24,6 +24,7 @@ class NotificationFeedState {
     this.unreadCount = 0,
     this.hasMoreContent = false,
     this.isLoadingMore = false,
+    this.isRefreshing = false,
     this.isInitialLoad = true,
     this.error,
     this.lastUpdated,
@@ -33,6 +34,7 @@ class NotificationFeedState {
   final int unreadCount;
   final bool hasMoreContent;
   final bool isLoadingMore;
+  final bool isRefreshing;
   final bool isInitialLoad;
   final String? error;
   final DateTime? lastUpdated;
@@ -42,6 +44,7 @@ class NotificationFeedState {
     int? unreadCount,
     bool? hasMoreContent,
     bool? isLoadingMore,
+    bool? isRefreshing,
     bool? isInitialLoad,
     String? error,
     DateTime? lastUpdated,
@@ -51,6 +54,7 @@ class NotificationFeedState {
       unreadCount: unreadCount ?? this.unreadCount,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       isInitialLoad: isInitialLoad ?? this.isInitialLoad,
       error: error,
       lastUpdated: lastUpdated ?? this.lastUpdated,
@@ -78,6 +82,13 @@ class RelayNotifications extends _$RelayNotifications {
   // Pagination state
   String? _nextCursor;
   bool _hasMoreFromApi = true;
+
+  // Guard against concurrent refresh/loadMore
+  bool _isRefreshing = false;
+
+  /// Minimum items to show before stopping auto-load.
+  /// If consolidation reduces items below this, we automatically fetch more.
+  static const _minVisibleItems = 10;
 
   // Auto-refresh timer
   Timer? _autoRefreshTimer;
@@ -195,23 +206,24 @@ class RelayNotifications extends _$RelayNotifications {
     state = const AsyncData(NotificationFeedState(notifications: []));
 
     try {
-      // Fetch initial notifications from REST API
-      final response = await apiService.getNotifications(
+      final result = await _fetchRawNotifications(
         pubkey: currentUserPubkey,
+        resetCursor: true,
       );
 
-      if (!ref.mounted) {
+      if (!ref.mounted || result.notifications.isEmpty) {
         keepAliveLink.close();
-        return NotificationFeedState.empty;
+        return NotificationFeedState(
+          notifications: const [],
+          unreadCount: result.unreadCount,
+          hasMoreContent: result.hasMore,
+          isInitialLoad: false,
+          lastUpdated: DateTime.now(),
+        );
       }
 
-      // Update pagination state
-      _nextCursor = response.nextCursor;
-      _hasMoreFromApi = response.hasMore;
-
-      // Enrich notifications with profile data
       final enrichedNotifications = await _enrichNotifications(
-        response.notifications,
+        result.notifications,
       );
 
       if (!ref.mounted) {
@@ -226,8 +238,9 @@ class RelayNotifications extends _$RelayNotifications {
         typeBreakdown[typeName] = (typeBreakdown[typeName] ?? 0) + 1;
       }
       Log.info(
-        'RelayNotifications: Loaded ${enrichedNotifications.length} notifications, '
-        'unread: ${response.unreadCount}, hasMore: ${response.hasMore}, '
+        'RelayNotifications: Loaded ${enrichedNotifications.length} notifications '
+        '(from ${result.notifications.length} raw), '
+        'unread: ${result.unreadCount}, hasMore: ${result.hasMore}, '
         'types: $typeBreakdown',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
@@ -236,8 +249,8 @@ class RelayNotifications extends _$RelayNotifications {
       keepAliveLink.close();
       return NotificationFeedState(
         notifications: enrichedNotifications,
-        unreadCount: response.unreadCount,
-        hasMoreContent: response.hasMore,
+        unreadCount: result.unreadCount,
+        hasMoreContent: result.hasMore,
         isInitialLoad: false,
         lastUpdated: DateTime.now(),
       );
@@ -262,6 +275,16 @@ class RelayNotifications extends _$RelayNotifications {
 
     if (!ref.mounted) return;
 
+    // Check both private guard and state for safety against race conditions
+    if (_isRefreshing || currentState.isRefreshing) {
+      Log.debug(
+        'RelayNotifications: loadMore() skipped - refresh in progress',
+        name: 'RelayNotificationsProvider',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     if (currentState.isLoadingMore) {
       Log.debug(
         'RelayNotifications: loadMore() skipped - already loading',
@@ -271,7 +294,7 @@ class RelayNotifications extends _$RelayNotifications {
       return;
     }
 
-    if (!_hasMoreFromApi) {
+    if (!currentState.hasMoreContent) {
       Log.debug(
         'RelayNotifications: loadMore() skipped - no more content',
         name: 'RelayNotificationsProvider',
@@ -293,71 +316,69 @@ class RelayNotifications extends _$RelayNotifications {
         return;
       }
 
-      final apiService = ref.read(relayNotificationApiServiceProvider);
+      // Get existing IDs and follow pubkeys to exclude
+      final existingIds = currentState.notifications
+          .map((n) => n.id.toLowerCase())
+          .toSet();
+      final existingFollowPubkeys = currentState.notifications
+          .where((n) => n.type == NotificationType.follow)
+          .map((n) => n.actorPubkey.toLowerCase())
+          .toSet();
 
       Log.info(
-        'RelayNotifications: Loading more with cursor: $_nextCursor',
+        'RelayNotifications: Loading more with cursor: $_nextCursor '
+        '(have ${currentState.notifications.length} existing)',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
 
-      final response = await apiService.getNotifications(
+      final result = await _fetchRawNotifications(
         pubkey: currentUserPubkey,
-        before: _nextCursor,
+        excludeIds: existingIds,
+        excludeFollowPubkeys: existingFollowPubkeys,
       );
 
       if (!ref.mounted) return;
 
-      // Deduplicate (case-insensitive for Nostr IDs)
-      final existingIds = currentState.notifications
-          .map((n) => n.id.toLowerCase())
-          .toSet();
-      final newRelayNotifications = response.notifications
-          .where((n) => !existingIds.contains(n.id.toLowerCase()))
-          .toList();
+      if (result.notifications.isEmpty) {
+        Log.info(
+          'RelayNotifications: No new unique notifications to add',
+          name: 'RelayNotificationsProvider',
+          category: LogCategory.system,
+        );
+        state = AsyncData(
+          currentState.copyWith(
+            hasMoreContent: result.hasMore,
+            isLoadingMore: false,
+          ),
+        );
+        return;
+      }
 
-      // Enrich with profile data
-      final enrichedNew = await _enrichNotifications(newRelayNotifications);
+      final enrichedNew = await _enrichNotifications(result.notifications);
 
       if (!ref.mounted) return;
 
-      // Update pagination state
-      _nextCursor = response.nextCursor;
-      _hasMoreFromApi = response.hasMore;
+      final allNotifications = [
+        ...currentState.notifications,
+        ...enrichedNew,
+      ];
 
-      if (enrichedNew.isNotEmpty) {
-        final allNotifications = [
-          ...currentState.notifications,
-          ...enrichedNew,
-        ];
-        Log.info(
-          'RelayNotifications: Loaded ${enrichedNew.length} more notifications '
-          '(total: ${allNotifications.length})',
-          name: 'RelayNotificationsProvider',
-          category: LogCategory.system,
-        );
+      Log.info(
+        'RelayNotifications: Loaded ${enrichedNew.length} more notifications '
+        '(total: ${allNotifications.length})',
+        name: 'RelayNotificationsProvider',
+        category: LogCategory.system,
+      );
 
-        state = AsyncData(
-          currentState.copyWith(
-            notifications: allNotifications,
-            unreadCount: response.unreadCount,
-            hasMoreContent: response.hasMore,
-            isLoadingMore: false,
-          ),
-        );
-      } else {
-        Log.info(
-          'RelayNotifications: All returned notifications already in state',
-          name: 'RelayNotificationsProvider',
-          category: LogCategory.system,
-        );
-        state = AsyncData(
-          currentState.copyWith(
-            hasMoreContent: response.hasMore,
-            isLoadingMore: false,
-          ),
-        );
-      }
+      state = AsyncData(
+        currentState.copyWith(
+          notifications: allNotifications,
+          unreadCount: result.unreadCount,
+          hasMoreContent: result.hasMore,
+          isLoadingMore: false,
+        ),
+      );
     } catch (e) {
       Log.error(
         'RelayNotifications: Error loading more: $e',
@@ -410,41 +431,51 @@ class RelayNotifications extends _$RelayNotifications {
       category: LogCategory.system,
     );
 
-    final currentState = await future;
-    if (!ref.mounted) return;
+    // Prevent loadMore from running during refresh - set BEFORE await
+    _isRefreshing = true;
 
-    // Reset pagination state
-    _nextCursor = null;
-    _hasMoreFromApi = true;
+    final currentState = await future;
+    if (!ref.mounted) {
+      _isRefreshing = false;
+      return;
+    }
+
+    // Update state to show refreshing (hides load-more indicator in UI)
+    state = AsyncData(currentState.copyWith(isRefreshing: true));
 
     final authService = ref.read(authServiceProvider);
     final currentUserPubkey = authService.currentPublicKeyHex;
 
-    if (currentUserPubkey == null || !authService.isAuthenticated) return;
+    if (currentUserPubkey == null || !authService.isAuthenticated) {
+      _isRefreshing = false;
+      return;
+    }
 
     final apiService = ref.read(relayNotificationApiServiceProvider);
-    if (!apiService.isAvailable) return;
+    if (!apiService.isAvailable) {
+      _isRefreshing = false;
+      return;
+    }
 
     try {
-      final response = await apiService.getNotifications(
+      final result = await _fetchRawNotifications(
         pubkey: currentUserPubkey,
+        resetCursor: true,
       );
 
       if (!ref.mounted) return;
 
-      _nextCursor = response.nextCursor;
-      _hasMoreFromApi = response.hasMore;
-
       final enrichedNotifications = await _enrichNotifications(
-        response.notifications,
+        result.notifications,
       );
 
       if (!ref.mounted) return;
 
       Log.info(
         'RelayNotifications: Refreshed with '
-        '${enrichedNotifications.length} notifications, '
-        'unread: ${response.unreadCount}, hasMore: ${response.hasMore}',
+        '${enrichedNotifications.length} notifications '
+        '(from ${result.notifications.length} raw), '
+        'unread: ${result.unreadCount}, hasMore: ${result.hasMore}',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
@@ -452,8 +483,8 @@ class RelayNotifications extends _$RelayNotifications {
       state = AsyncData(
         NotificationFeedState(
           notifications: enrichedNotifications,
-          unreadCount: response.unreadCount,
-          hasMoreContent: response.hasMore,
+          unreadCount: result.unreadCount,
+          hasMoreContent: result.hasMore,
           isInitialLoad: false,
           lastUpdated: DateTime.now(),
         ),
@@ -466,8 +497,12 @@ class RelayNotifications extends _$RelayNotifications {
       );
       // Keep existing data on error
       if (ref.mounted) {
-        state = AsyncData(currentState.copyWith(error: e.toString()));
+        state = AsyncData(
+          currentState.copyWith(isRefreshing: false, error: e.toString()),
+        );
       }
+    } finally {
+      _isRefreshing = false;
     }
 
     // Restart auto-refresh timer
@@ -475,9 +510,16 @@ class RelayNotifications extends _$RelayNotifications {
   }
 
   /// Mark a single notification as read
+  ///
+  /// If [notificationId] is empty (e.g., the API returned a notification
+  /// without an id field), this method performs only the local optimistic
+  /// update and skips the API call to avoid sending an invalid payload.
   Future<void> markAsRead(String notificationId) async {
     final currentState = await future;
     if (!ref.mounted) return;
+
+    // Skip API call for empty IDs but still allow local update
+    final shouldPersistToApi = notificationId.isNotEmpty;
 
     // Optimistic update
     final updatedNotifications = currentState.notifications.map((n) {
@@ -497,6 +539,16 @@ class RelayNotifications extends _$RelayNotifications {
         unreadCount: newUnreadCount,
       ),
     );
+
+    // Skip API call for empty IDs - the server requires valid notification IDs
+    if (!shouldPersistToApi) {
+      Log.debug(
+        'RelayNotifications: Skipping markAsRead API call - no valid notification ID',
+        name: 'RelayNotificationsProvider',
+        category: LogCategory.system,
+      );
+      return;
+    }
 
     // Persist to server
     try {
@@ -561,11 +613,156 @@ class RelayNotifications extends _$RelayNotifications {
     }
   }
 
+  /// Result type for _fetchRawNotifications
+  ({
+    List<RelayNotification> notifications,
+    int unreadCount,
+    bool hasMore,
+  })
+  _makeFetchResult(
+    List<RelayNotification> notifications,
+    int unreadCount,
+    bool hasMore,
+  ) => (
+    notifications: notifications,
+    unreadCount: unreadCount,
+    hasMore: hasMore,
+  );
+
+  /// Fetch raw notifications until we have at least [_minVisibleItems] after consolidation.
+  ///
+  /// Handles pagination, deduplication, and auto-loading in a single place.
+  /// Used by build(), refresh(), and loadMore().
+  Future<
+    ({
+      List<RelayNotification> notifications,
+      int unreadCount,
+      bool hasMore,
+    })
+  >
+  _fetchRawNotifications({
+    required String pubkey,
+    Set<String>? excludeIds,
+    Set<String>? excludeFollowPubkeys,
+    bool resetCursor = false,
+  }) async {
+    final apiService = ref.read(relayNotificationApiServiceProvider);
+
+    if (resetCursor) {
+      _nextCursor = null;
+      _hasMoreFromApi = true;
+    }
+
+    final allRawNotifications = <RelayNotification>[];
+    final mutableExcludeIds = excludeIds?.toSet() ?? <String>{};
+    final mutableExcludeFollowPubkeys =
+        excludeFollowPubkeys?.toSet() ?? <String>{};
+    var unreadCount = 0;
+
+    // Initial fetch
+    final response = await apiService.getNotifications(
+      pubkey: pubkey,
+      before: _nextCursor,
+    );
+
+    if (!ref.mounted) {
+      return _makeFetchResult([], 0, false);
+    }
+
+    _nextCursor = response.nextCursor;
+    _hasMoreFromApi = response.hasMore;
+    unreadCount = response.unreadCount;
+
+    // Dedupe initial batch
+    for (final n in response.notifications) {
+      final id = n.dedupeKey.toLowerCase();
+      if (mutableExcludeIds.contains(id)) continue;
+
+      // Skip follow notifications from pubkeys we already have
+      if (n.notificationType.toLowerCase() == 'follow') {
+        final pk = n.sourcePubkey.toLowerCase();
+        if (mutableExcludeFollowPubkeys.contains(pk)) continue;
+        mutableExcludeFollowPubkeys.add(pk);
+      }
+
+      mutableExcludeIds.add(id);
+      allRawNotifications.add(n);
+    }
+
+    // Keep fetching until we have enough unique items after consolidation
+    var consolidatedCount = _consolidateFollowNotifications(
+      allRawNotifications,
+    ).length;
+
+    while (consolidatedCount < _minVisibleItems &&
+        _hasMoreFromApi &&
+        ref.mounted) {
+      Log.debug(
+        'RelayNotifications: Only $consolidatedCount unique items after '
+        'consolidation (have ${allRawNotifications.length} raw), '
+        'fetching more (need $_minVisibleItems)',
+        name: 'RelayNotificationsProvider',
+        category: LogCategory.system,
+      );
+
+      final moreResponse = await apiService.getNotifications(
+        pubkey: pubkey,
+        before: _nextCursor,
+      );
+
+      if (!ref.mounted) {
+        return _makeFetchResult([], 0, false);
+      }
+
+      _nextCursor = moreResponse.nextCursor;
+      _hasMoreFromApi = moreResponse.hasMore;
+
+      if (moreResponse.notifications.isEmpty) break;
+
+      // Dedupe new batch
+      var addedAny = false;
+      for (final n in moreResponse.notifications) {
+        final id = n.dedupeKey.toLowerCase();
+        if (mutableExcludeIds.contains(id)) continue;
+
+        if (n.notificationType.toLowerCase() == 'follow') {
+          final pk = n.sourcePubkey.toLowerCase();
+          if (mutableExcludeFollowPubkeys.contains(pk)) continue;
+          mutableExcludeFollowPubkeys.add(pk);
+        }
+
+        mutableExcludeIds.add(id);
+        allRawNotifications.add(n);
+        addedAny = true;
+      }
+
+      if (!addedAny && !_hasMoreFromApi) break;
+
+      consolidatedCount = _consolidateFollowNotifications(
+        allRawNotifications,
+      ).length;
+    }
+
+    return _makeFetchResult(allRawNotifications, unreadCount, _hasMoreFromApi);
+  }
+
   /// Enrich RelayNotification objects with profile data
   Future<List<NotificationModel>> _enrichNotifications(
     List<RelayNotification> relayNotifications,
   ) async {
     if (relayNotifications.isEmpty) return [];
+
+    // DEBUG: Log all raw notifications before consolidation
+    final rawPubkeys = relayNotifications.map((n) => n.sourcePubkey).toList();
+    final uniqueRawPubkeys = rawPubkeys.toSet();
+    Log.debug(
+      'RelayNotifications: _enrichNotifications INPUT - '
+      '${relayNotifications.length} notifications, '
+      '${uniqueRawPubkeys.length} unique pubkeys, '
+      'first 5 pubkeys: ${rawPubkeys.take(5).map((p) => p.isEmpty ? "(empty)" : p.substring(0, 8)).join(", ")}',
+      name: 'RelayNotificationsProvider',
+      category: LogCategory.system,
+    );
 
     // First, consolidate follow notifications (keep only most recent per user)
     final consolidatedNotifications = _consolidateFollowNotifications(
@@ -616,6 +813,13 @@ class RelayNotifications extends _$RelayNotifications {
       );
     }
 
+    Log.debug(
+      'RelayNotifications: _enrichNotifications OUTPUT - '
+      '${enriched.length} notifications after enrichment',
+      name: 'RelayNotificationsProvider',
+      category: LogCategory.system,
+    );
+
     return enriched;
   }
 
@@ -637,6 +841,17 @@ class RelayNotifications extends _$RelayNotifications {
         otherNotifications.add(notification);
       }
     }
+
+    // Debug: Log type breakdown before consolidation
+    Log.debug(
+      'RelayNotifications: _consolidateFollowNotifications - '
+      'total: ${notifications.length}, '
+      'follows: ${followNotifications.length}, '
+      'other: ${otherNotifications.length}, '
+      'unique follow pubkeys: ${followNotifications.map((f) => f.sourcePubkey).toSet().length}',
+      name: 'RelayNotificationsProvider',
+      category: LogCategory.system,
+    );
 
     // Keep only the most recent follow notification per source pubkey
     final latestFollowByPubkey = <String, RelayNotification>{};

@@ -29,6 +29,13 @@ void main() {
       test('converts macro to correct string', () {
         expect(DivineCameraLens.macro.toNativeString(), equals('macro'));
       });
+
+      test('converts frontUltraWide to correct string', () {
+        expect(
+          DivineCameraLens.frontUltraWide.toNativeString(),
+          equals('frontUltraWide'),
+        );
+      });
     });
 
     group('fromNativeString', () {
@@ -64,6 +71,13 @@ void main() {
         expect(
           DivineCameraLens.fromNativeString('macro'),
           equals(DivineCameraLens.macro),
+        );
+      });
+
+      test('parses frontUltraWide correctly', () {
+        expect(
+          DivineCameraLens.fromNativeString('frontUltraWide'),
+          equals(DivineCameraLens.frontUltraWide),
         );
       });
 
@@ -141,11 +155,22 @@ void main() {
       test('macro returns front', () {
         expect(DivineCameraLens.macro.opposite, equals(DivineCameraLens.front));
       });
+
+      test('frontUltraWide returns back', () {
+        expect(
+          DivineCameraLens.frontUltraWide.opposite,
+          equals(DivineCameraLens.back),
+        );
+      });
     });
 
     group('isFrontFacing', () {
       test('returns true for front camera', () {
         expect(DivineCameraLens.front.isFrontFacing, isTrue);
+      });
+
+      test('returns true for frontUltraWide', () {
+        expect(DivineCameraLens.frontUltraWide.isFrontFacing, isTrue);
       });
 
       test('returns false for back camera', () {
@@ -170,6 +195,10 @@ void main() {
         expect(DivineCameraLens.front.isBackFacing, isFalse);
       });
 
+      test('returns false for frontUltraWide', () {
+        expect(DivineCameraLens.frontUltraWide.isBackFacing, isFalse);
+      });
+
       test('returns true for back camera', () {
         expect(DivineCameraLens.back.isBackFacing, isTrue);
       });
@@ -190,6 +219,13 @@ void main() {
     group('displayName', () {
       test('returns correct name for front', () {
         expect(DivineCameraLens.front.displayName, equals('Front'));
+      });
+
+      test('returns correct name for frontUltraWide', () {
+        expect(
+          DivineCameraLens.frontUltraWide.displayName,
+          equals('Front Wide'),
+        );
       });
 
       test('returns correct name for back', () {
@@ -214,6 +250,10 @@ void main() {
         expect(DivineCameraLens.front.shortLabel, equals('1x'));
       });
 
+      test('returns 0.5x for frontUltraWide', () {
+        expect(DivineCameraLens.frontUltraWide.shortLabel, equals('0.5x'));
+      });
+
       test('returns 1x for back', () {
         expect(DivineCameraLens.back.shortLabel, equals('1x'));
       });
@@ -228,6 +268,66 @@ void main() {
 
       test('returns Macro for macro', () {
         expect(DivineCameraLens.macro.shortLabel, equals('Macro'));
+      });
+    });
+
+    group('isFrontFacing', () {
+      test('returns true for front', () {
+        expect(DivineCameraLens.front.isFrontFacing, isTrue);
+      });
+
+      test('returns true for frontUltraWide', () {
+        expect(DivineCameraLens.frontUltraWide.isFrontFacing, isTrue);
+      });
+
+      test('returns false for back', () {
+        expect(DivineCameraLens.back.isFrontFacing, isFalse);
+      });
+
+      test('returns false for ultraWide', () {
+        expect(DivineCameraLens.ultraWide.isFrontFacing, isFalse);
+      });
+
+      test('returns false for telephoto', () {
+        expect(DivineCameraLens.telephoto.isFrontFacing, isFalse);
+      });
+
+      test('returns false for macro', () {
+        expect(DivineCameraLens.macro.isFrontFacing, isFalse);
+      });
+    });
+
+    group('isFrontCameraLens', () {
+      test('returns true for front', () {
+        expect(DivineCameraLens.isFrontCameraLens('front'), isTrue);
+      });
+
+      test('returns true for frontUltraWide', () {
+        expect(DivineCameraLens.isFrontCameraLens('frontUltraWide'), isTrue);
+      });
+
+      test('returns false for back', () {
+        expect(DivineCameraLens.isFrontCameraLens('back'), isFalse);
+      });
+
+      test('returns false for ultraWide', () {
+        expect(DivineCameraLens.isFrontCameraLens('ultraWide'), isFalse);
+      });
+
+      test('returns false for telephoto', () {
+        expect(DivineCameraLens.isFrontCameraLens('telephoto'), isFalse);
+      });
+
+      test('returns false for macro', () {
+        expect(DivineCameraLens.isFrontCameraLens('macro'), isFalse);
+      });
+
+      test('returns false for null', () {
+        expect(DivineCameraLens.isFrontCameraLens(null), isFalse);
+      });
+
+      test('returns false for unknown value', () {
+        expect(DivineCameraLens.isFrontCameraLens('unknown'), isFalse);
       });
     });
   });

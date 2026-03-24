@@ -1,6 +1,6 @@
 // ABOUTME: BLoC for fullscreen video feed playback
 // ABOUTME: Receives video stream from source, manages playback index and pagination
-// ABOUTME: Handles cache resolution, background caching, and loop enforcement
+// ABOUTME: Handles cache resolution and background caching
 
 import 'dart:async';
 import 'dart:collection';
@@ -17,11 +17,6 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 
 part 'fullscreen_feed_event.dart';
 part 'fullscreen_feed_state.dart';
-
-/// Maximum playback duration before looping back to start.
-///
-/// Keep aligned with provider-based playback loop enforcement (6.3s).
-const maxPlaybackDuration = Duration(milliseconds: 6300);
 
 /// Maximum number of concurrent background cache downloads.
 ///
@@ -44,11 +39,11 @@ const _maxConcurrentCacheDownloads = 1;
 ///
 /// The source BLoC/provider remains the single source of truth for the video
 /// list. This BLoC only manages fullscreen-specific state (current index,
-/// loading indicators, seek commands).
+/// loading indicators).
 ///
 /// **Playback hooks integration:**
 /// - Background caching triggered via [FullscreenFeedVideoCacheStarted]
-/// - Loop enforcement via [FullscreenFeedPositionUpdated] → [SeekCommand]
+/// - Loop enforcement handled by [VideoFeedController.maxLoopDuration]
 /// - Cache resolution happens at the player level (individual_video_providers)
 class FullscreenFeedBloc
     extends Bloc<FullscreenFeedEvent, FullscreenFeedState> {
@@ -72,8 +67,6 @@ class FullscreenFeedBloc
     on<FullscreenFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<FullscreenFeedIndexChanged>(_onIndexChanged);
     on<FullscreenFeedVideoCacheStarted>(_onVideoCacheStarted);
-    on<FullscreenFeedPositionUpdated>(_onPositionUpdated);
-    on<FullscreenFeedSeekCommandHandled>(_onSeekCommandHandled);
   }
 
   final Stream<List<VideoEvent>> _videosStream;
@@ -303,31 +296,6 @@ class FullscreenFeedBloc
         unawaited(_processCacheQueue());
       }
     }
-  }
-
-  /// Handle position update - check for loop enforcement.
-  ///
-  /// When the playback position exceeds [maxPlaybackDuration], emits a
-  /// [SeekCommand] for the widget to execute (seek back to zero).
-  void _onPositionUpdated(
-    FullscreenFeedPositionUpdated event,
-    Emitter<FullscreenFeedState> emit,
-  ) {
-    if (event.position >= maxPlaybackDuration) {
-      emit(
-        state.copyWith(
-          seekCommand: SeekCommand(index: event.index, position: Duration.zero),
-        ),
-      );
-    }
-  }
-
-  /// Handle seek command handled - clear the seek command from state.
-  void _onSeekCommandHandled(
-    FullscreenFeedSeekCommandHandled event,
-    Emitter<FullscreenFeedState> emit,
-  ) {
-    emit(state.copyWith(clearSeekCommand: true));
   }
 
   @override

@@ -1,8 +1,15 @@
-# Profile Repository
+# profile_repository
 
-[![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
+Status: Current
+Validated against: `pubspec.yaml` on 2026-03-19.
 
-Repository for managing user profiles (Kind 0 metadata) with Nostr.
+Purpose: repository for user profiles, metadata sync, and profile fetch/update flows around Nostr kind `0`.
 
-[very_good_analysis_badge]: https://img.shields.io/badge/style-very_good_analysis-B22C89.svg
-[very_good_analysis_link]: https://pub.dev/packages/very_good_analysis
+Used by: profile, search, and account-related mobile surfaces.
+
+Test locally:
+
+```bash
+cd mobile/packages/profile_repository
+dart test
+```

@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:divine_camera/divine_camera.dart' show CameraLensMetadata;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,7 +55,10 @@ void main() {
       }
     });
 
-    DivineVideoClip createClip({String? ghostFramePath}) {
+    DivineVideoClip createClip({
+      String? ghostFramePath,
+      CameraLensMetadata? lensMetadata,
+    }) {
       return DivineVideoClip(
         id: 'clip_test',
         video: EditorVideo.file('/path/to/video.mp4'),
@@ -63,6 +67,7 @@ void main() {
         targetAspectRatio: .vertical,
         originalAspectRatio: 9 / 16,
         ghostFramePath: ghostFramePath,
+        lensMetadata: lensMetadata,
       );
     }
 
@@ -199,6 +204,78 @@ void main() {
           ),
           findsOneWidget,
         );
+      });
+
+      testWidgets('applies $Transform.flip for front camera clips', (
+        tester,
+      ) async {
+        final frontCameraClip = DivineVideoClip(
+          id: 'front_cam_clip',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          ghostFramePath: tempFile.path,
+          lensMetadata: const CameraLensMetadata(lensType: 'front'),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoRecorderProvider.overrideWith(
+                () => _OverlayEnabledRecorderNotifier(mockCamera),
+              ),
+              clipManagerProvider.overrideWith(() {
+                return _TestClipManagerNotifier([frontCameraClip]);
+              }),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: VideoRecorderGhostFrame()),
+            ),
+          ),
+        );
+
+        // Find Transform widget with flipX enabled
+        final transformFinder = find.byWidgetPredicate(
+          (w) => w is Transform && w.transform.getColumn(0)[0] == -1.0,
+        );
+        expect(transformFinder, findsOneWidget);
+      });
+
+      testWidgets('does not flip for back camera clips', (tester) async {
+        final backCameraClip = DivineVideoClip(
+          id: 'back_cam_clip',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          ghostFramePath: tempFile.path,
+          lensMetadata: const CameraLensMetadata(lensType: 'back'),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoRecorderProvider.overrideWith(
+                () => _OverlayEnabledRecorderNotifier(mockCamera),
+              ),
+              clipManagerProvider.overrideWith(() {
+                return _TestClipManagerNotifier([backCameraClip]);
+              }),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: VideoRecorderGhostFrame()),
+            ),
+          ),
+        );
+
+        // Transform with flipX=false has matrix[0][0] == 1.0
+        final transformFinder = find.byWidgetPredicate(
+          (w) => w is Transform && w.transform.getColumn(0)[0] == 1.0,
+        );
+        expect(transformFinder, findsOneWidget);
       });
     });
   });

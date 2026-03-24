@@ -88,7 +88,7 @@ class _HashtagChipList extends StatelessWidget {
             if (onHashtagTap != null) {
               onHashtagTap!(hashtag);
             } else {
-              context.go(HashtagScreenRouter.pathForTag(hashtag));
+              context.push(HashtagScreenRouter.pathForTag(hashtag));
             }
           },
         );

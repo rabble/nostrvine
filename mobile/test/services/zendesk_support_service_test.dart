@@ -124,6 +124,88 @@ void main() {
 
       expect(result, false);
     });
+
+    test(
+      'retries with anonymous identity when NO_IDENTITY error',
+      () async {
+        var showNewTicketCallCount = 0;
+        var setUserIdentityCalled = false;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setUserIdentity') {
+                setUserIdentityCalled = true;
+                return true;
+              }
+              if (call.method == 'showNewTicket') {
+                showNewTicketCallCount++;
+                if (showNewTicketCallCount == 1) {
+                  throw PlatformException(
+                    code: 'NO_IDENTITY',
+                    message: 'Set an identity before showing Zendesk UI',
+                  );
+                }
+                return null;
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.setUserIdentity(
+          npub:
+              'npub1test1234567890abcdef1234567890abcdef'
+              '1234567890abcdef1234',
+          displayName: 'Test User',
+        );
+
+        final result = await ZendeskSupportService.showNewTicketScreen();
+
+        expect(result, isTrue);
+        expect(showNewTicketCallCount, 2);
+        expect(setUserIdentityCalled, isTrue);
+      },
+    );
+
+    test(
+      'returns false when NO_IDENTITY retry also fails',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setUserIdentity') return true;
+              if (call.method == 'showNewTicket') {
+                throw PlatformException(
+                  code: 'NO_IDENTITY',
+                  message: 'Set an identity before showing Zendesk UI',
+                );
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.setUserIdentity(
+          npub:
+              'npub1test1234567890abcdef1234567890abcdef'
+              '1234567890abcdef1234',
+          displayName: 'Test User',
+        );
+
+        final result = await ZendeskSupportService.showNewTicketScreen();
+
+        expect(result, isFalse);
+      },
+    );
   });
 
   group('ZendeskSupportService.showTicketListScreen', () {
@@ -157,6 +239,89 @@ void main() {
       expect(result, true);
       expect(showTicketListCalled, true);
     });
+
+    test(
+      'retries with anonymous identity when NO_IDENTITY error',
+      () async {
+        var showTicketListCallCount = 0;
+        var setUserIdentityCalled = false;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setUserIdentity') {
+                setUserIdentityCalled = true;
+                return true;
+              }
+              if (call.method == 'showTicketList') {
+                showTicketListCallCount++;
+                if (showTicketListCallCount == 1) {
+                  throw PlatformException(
+                    code: 'NO_IDENTITY',
+                    message: 'Set an identity before showing Zendesk UI',
+                  );
+                }
+                return null;
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        // Set user identity so anonymous fallback has name/email
+        ZendeskSupportService.setUserIdentity(
+          npub:
+              'npub1test1234567890abcdef1234567890abcdef'
+              '1234567890abcdef1234',
+          displayName: 'Test User',
+        );
+
+        final result = await ZendeskSupportService.showTicketListScreen();
+
+        expect(result, isTrue);
+        expect(showTicketListCallCount, 2);
+        expect(setUserIdentityCalled, isTrue);
+      },
+    );
+
+    test(
+      'returns false when NO_IDENTITY retry also fails',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setUserIdentity') return true;
+              if (call.method == 'showTicketList') {
+                throw PlatformException(
+                  code: 'NO_IDENTITY',
+                  message: 'Set an identity before showing Zendesk UI',
+                );
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.setUserIdentity(
+          npub:
+              'npub1test1234567890abcdef1234567890abcdef'
+              '1234567890abcdef1234',
+          displayName: 'Test User',
+        );
+
+        final result = await ZendeskSupportService.showTicketListScreen();
+
+        expect(result, isFalse);
+      },
+    );
   });
 
   group('ZendeskSupportService.setUserIdentity', () {
