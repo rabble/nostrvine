@@ -4,6 +4,7 @@ import {
   SUPPORTED_METHODS,
   validateManifest,
 } from '../src/lib/manifest-schema';
+import { seedManifests } from '../src/lib/seed-manifests';
 
 describe('manifest schema', () => {
   it('validates a supported manifest', () => {
@@ -142,5 +143,21 @@ describe('manifest schema', () => {
       'nip44.encrypt',
       'nip44.decrypt',
     ]);
+  });
+
+  it('validates the bundled seed manifests', () => {
+    expect(seedManifests.map((manifest) => manifest.slug)).toEqual([
+      'flotilla',
+      'habla',
+      'zap-stream',
+      'primal',
+      'yakihonne',
+      'shopstr',
+      'nostrnests',
+    ]);
+
+    for (const manifest of seedManifests) {
+      expect(validateManifest(manifest)).toEqual(manifest);
+    }
   });
 });

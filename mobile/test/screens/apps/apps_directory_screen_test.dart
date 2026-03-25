@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -35,6 +36,18 @@ void main() {
       );
     }
 
+    Widget buildEmbeddedSubject() {
+      const app = MaterialApp(home: AppsDirectoryScreen(embedded: true));
+      return ProviderScope(
+        overrides: [
+          nostrAppDirectoryServiceProvider.overrideWithValue(
+            mockDirectoryService,
+          ),
+        ],
+        child: app,
+      );
+    }
+
     testWidgets('loads approved apps from the directory service', (
       tester,
     ) async {
@@ -47,6 +60,18 @@ void main() {
 
       expect(find.text('Primal'), findsOneWidget);
       expect(find.text('Fast Nostr feeds and messages'), findsOneWidget);
+    });
+
+    testWidgets('embedded mode omits its own app bar', (tester) async {
+      when(() => mockDirectoryService.fetchApprovedApps()).thenAnswer(
+        (_) async => [_fixture()],
+      );
+
+      await tester.pumpWidget(buildEmbeddedSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DiVineAppBar), findsNothing);
+      expect(find.text('Primal'), findsOneWidget);
     });
 
     testWidgets('tapping an app opens its detail route', (tester) async {

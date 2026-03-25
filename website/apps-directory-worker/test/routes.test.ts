@@ -44,11 +44,17 @@ function createTestEnv(appRows: AppRow[], auditRows: AuditRow[] = []): Env {
               if (sql.includes('WHERE status = ?')) {
                 const status = String(params[0] ?? '');
                 return {
-                  results: appRows.filter((row) => row.status === status),
+                  results: appRows
+                    .filter((row) => row.status === status)
+                    .sort((left, right) => left.slug.localeCompare(right.slug)),
                 };
               }
 
-              return { results: appRows };
+              return {
+                results: [...appRows].sort((left, right) =>
+                  left.slug.localeCompare(right.slug),
+                ),
+              };
             }
 
             if (sql.includes('FROM sandbox_audit_events')) {
@@ -61,6 +67,12 @@ function createTestEnv(appRows: AppRow[], auditRows: AuditRow[] = []): Env {
             if (sql.includes('FROM sandbox_apps') && sql.includes('WHERE id = ?')) {
               const id = Number(params[0]);
               const row = appRows.find((candidate) => candidate.id === id);
+              return row ?? null;
+            }
+
+            if (sql.includes('FROM sandbox_apps') && sql.includes('WHERE slug = ?')) {
+              const slug = String(params[0] ?? '');
+              const row = appRows.find((candidate) => candidate.slug === slug);
               return row ?? null;
             }
 
@@ -505,6 +517,17 @@ describe('routes', () => {
     expect(response.status).toBe(403);
   });
 
+  it('POST /v1/admin/apps/bootstrap returns 403 without access identity headers', async () => {
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/apps/bootstrap', {
+        method: 'POST',
+      }),
+      createTestEnv([]),
+    );
+
+    expect(response.status).toBe(403);
+  });
+
   it('POST /v1/admin/apps creates apps with access identity headers', async () => {
     const env = createTestEnv([]);
     const response = await worker.fetch(
@@ -582,5 +605,77 @@ describe('routes', () => {
     );
     const publicJson = await publicResponse.json();
     expect(publicJson.items).toEqual([]);
+  });
+
+  it('POST /v1/admin/apps/bootstrap seeds the bundled vetted apps', async () => {
+    const env = createTestEnv([]);
+
+    const response = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/apps/bootstrap', {
+        method: 'POST',
+        headers: {
+          'CF-Access-Authenticated-User-Email': 'admin@divine.video',
+        },
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.created).toBe(7);
+    expect(json.updated).toBe(0);
+    expect(json.items).toHaveLength(7);
+
+    const publicResponse = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/apps'),
+      env,
+    );
+    const publicJson = await publicResponse.json();
+    expect(publicJson.items.map((item: { slug: string }) => item.slug)).toEqual([
+      'flotilla',
+      'habla',
+      'nostrnests',
+      'primal',
+      'shopstr',
+      'yakihonne',
+      'zap-stream',
+    ]);
+  });
+
+  it('POST /v1/admin/apps/bootstrap updates existing seeded apps without duplicating them', async () => {
+    const env = createTestEnv([]);
+
+    await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/apps/bootstrap', {
+        method: 'POST',
+        headers: {
+          'CF-Access-Authenticated-User-Email': 'admin@divine.video',
+        },
+      }),
+      env,
+    );
+
+    const secondResponse = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/admin/apps/bootstrap', {
+        method: 'POST',
+        headers: {
+          'CF-Access-Authenticated-User-Email': 'admin@divine.video',
+        },
+      }),
+      env,
+    );
+
+    expect(secondResponse.status).toBe(200);
+    const secondJson = await secondResponse.json();
+    expect(secondJson.created).toBe(0);
+    expect(secondJson.updated).toBe(7);
+    expect(secondJson.items).toHaveLength(7);
+
+    const publicResponse = await worker.fetch(
+      new Request('https://apps.directory.divine.video/v1/apps'),
+      env,
+    );
+    const publicJson = await publicResponse.json();
+    expect(publicJson.items).toHaveLength(7);
   });
 });

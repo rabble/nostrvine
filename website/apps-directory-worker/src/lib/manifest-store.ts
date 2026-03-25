@@ -166,12 +166,50 @@ export class ManifestStore {
     return manifest ?? null;
   }
 
+  async getBySlug(slug: string): Promise<StoredAppManifest | null> {
+    const row = await this.database
+      .prepare(
+        `
+          SELECT id, manifest_json, created_at, updated_at
+          FROM sandbox_apps
+          WHERE slug = ?
+        `,
+      )
+      .bind(slug)
+      .first<ManifestRow>();
+
+    if (!row) {
+      return null;
+    }
+
+    const [manifest] = flattenRow(row);
+    return manifest ?? null;
+  }
+
   async getByIdOrThrow(id: number): Promise<StoredAppManifest> {
     const manifest = await this.getById(id);
     if (!manifest) {
       throw new Error(`App not found: ${id}`);
     }
     return manifest;
+  }
+
+  async upsertBySlug(manifest: AppManifest): Promise<{
+    manifest: StoredAppManifest;
+    operation: 'created' | 'updated';
+  }> {
+    const existing = await this.getBySlug(manifest.slug);
+    if (existing == null) {
+      return {
+        manifest: await this.create(manifest),
+        operation: 'created',
+      };
+    }
+
+    return {
+      manifest: (await this.update(existing.id, manifest))!,
+      operation: 'updated',
+    };
   }
 }
 

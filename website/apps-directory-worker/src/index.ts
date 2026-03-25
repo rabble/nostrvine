@@ -4,12 +4,14 @@ import type { Env } from './lib/env';
 import { validateManifest } from './lib/manifest-schema';
 import { createManifestStore } from './lib/manifest-store';
 import { verifyNip98 } from './lib/nip98';
+import { seedManifests } from './lib/seed-manifests';
 
 const ADMIN_APP_ID_PATH = /^\/v1\/admin\/apps\/(\d+)$/;
 const ADMIN_REVOKE_PATH = /^\/v1\/admin\/apps\/(\d+)\/revoke$/;
 const AUDIT_EVENTS_PATH = '/v1/audit-events';
 const ADMIN_AUDIT_EVENTS_PATH = '/v1/admin/audit-events';
 const ADMIN_APPS_PATH = '/v1/admin/apps';
+const ADMIN_APPS_BOOTSTRAP_PATH = '/v1/admin/apps/bootstrap';
 
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -50,6 +52,30 @@ const worker = {
         const manifest = validateManifest(await parseJson(request));
         const created = await manifestStore.create(manifest);
         return Response.json(created, { status: 201 });
+      }
+
+      if (request.method === 'POST' && url.pathname === ADMIN_APPS_BOOTSTRAP_PATH) {
+        requireAdmin(request);
+
+        let created = 0;
+        let updated = 0;
+        const items = [];
+
+        for (const manifest of seedManifests) {
+          const result = await manifestStore.upsertBySlug(manifest);
+          items.push(result.manifest);
+          if (result.operation === 'created') {
+            created += 1;
+          } else {
+            updated += 1;
+          }
+        }
+
+        return Response.json({
+          created,
+          updated,
+          items,
+        });
       }
 
       if (request.method === 'PUT' && ADMIN_APP_ID_PATH.test(url.pathname)) {

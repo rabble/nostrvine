@@ -8,12 +8,18 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
+import 'package:openvine/utils/nostr_apps_platform_support.dart';
 
 class AppsDirectoryScreen extends ConsumerStatefulWidget {
   static const routeName = 'apps-directory';
   static const path = '/apps';
 
-  const AppsDirectoryScreen({super.key});
+  const AppsDirectoryScreen({
+    super.key,
+    this.embedded = false,
+  });
+
+  final bool embedded;
 
   @override
   ConsumerState<AppsDirectoryScreen> createState() =>
@@ -26,7 +32,9 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
   @override
   void initState() {
     super.initState();
-    _appsFuture = _loadApps();
+    _appsFuture = nostrAppsSandboxSupported
+        ? _loadApps()
+        : Future.value(const <NostrAppDirectoryEntry>[]);
   }
 
   Future<List<NostrAppDirectoryEntry>> _loadApps() {
@@ -43,14 +51,16 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: DiVineAppBar(
-        title: 'Apps',
-        showBackButton: true,
-        onBackPressed: context.pop,
-      ),
-      backgroundColor: VineTheme.backgroundColor,
-      body: Align(
+    if (!nostrAppsSandboxSupported) {
+      return _buildFrame(
+        context,
+        const _AppsDirectoryUnsupportedMessage(),
+      );
+    }
+
+    final content = Material(
+      color: VineTheme.backgroundColor,
+      child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
@@ -123,6 +133,24 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
         ),
       ),
     );
+
+    return _buildFrame(context, content);
+  }
+
+  Widget _buildFrame(BuildContext context, Widget body) {
+    if (widget.embedded) {
+      return body;
+    }
+
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: 'Apps',
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      backgroundColor: VineTheme.backgroundColor,
+      body: body,
+    );
   }
 }
 
@@ -169,6 +197,42 @@ class _AppsDirectoryMessage extends StatelessWidget {
             DivineButton(
               label: actionLabel,
               onPressed: onAction,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
+  const _AppsDirectoryUnsupportedMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Apps run in Divine mobile',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: VineTheme.whiteText,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'The vetted app sandbox is disabled on web for now.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: VineTheme.lightText,
+                fontSize: 15,
+              ),
             ),
           ],
         ),

@@ -12,12 +12,13 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
@@ -26,6 +27,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/nip05_verification_service.dart';
+import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -235,12 +237,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Relays, media servers, keys, and account',
                 onTap: () => context.push(NostrSettingsScreen.path),
               ),
-              _SettingsTile(
-                icon: Icons.apps,
-                title: 'Apps',
-                subtitle: 'Launch vetted Nostr apps in Divine',
-                onTap: () => context.push(AppsDirectoryScreen.path),
-              ),
+              if (nostrAppsSandboxSupported)
+                _SettingsTile(
+                  icon: Icons.apps,
+                  title: 'Apps',
+                  subtitle: 'Launch vetted Nostr apps in Divine',
+                  onTap: () {
+                    ref.read(forceExploreTabNameProvider.notifier).state =
+                        'apps';
+                    context.go(ExploreScreen.path);
+                  },
+                ),
               _SettingsTile(
                 icon: Icons.gavel,
                 title: 'Legal',
