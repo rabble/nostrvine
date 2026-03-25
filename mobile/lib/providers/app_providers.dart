@@ -26,6 +26,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/categories_repository.dart';
 import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
@@ -1209,6 +1210,15 @@ HashtagRepository hashtagRepository(Ref ref) {
       return results;
     },
   );
+}
+
+/// Provider for CategoriesRepository instance.
+///
+/// Keep-alive so the categories cache survives tab and screen transitions.
+@Riverpod(keepAlive: true)
+CategoriesRepository categoriesRepository(Ref ref) {
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  return CategoriesRepository(funnelcakeApiClient: funnelcakeClient);
 }
 
 /// Provider for ProfileRepository instance

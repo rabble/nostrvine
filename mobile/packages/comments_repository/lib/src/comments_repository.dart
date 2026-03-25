@@ -49,8 +49,9 @@ class CommentsRepository {
   /// In-memory cache of comment counts keyed by root event ID.
   ///
   /// Prevents redundant relay queries when the same video is scrolled
-  /// back into view. Adjusted on post/delete and can be set externally
-  /// via [updateCachedCommentCount] (e.g. from the comments sheet).
+  /// back into view. Adjusted on post/delete, and automatically updated
+  /// when [loadComments] receives an authoritative total count from the
+  /// server or relay (so callers never need to push counts back in).
   final Map<String, int> _commentCountCache = {};
 
   /// Subscription ID for the active comment watch, if any.
@@ -102,12 +103,17 @@ class CommentsRepository {
             offset: offset,
           );
           if (response != null) {
-            return _buildThreadFromRestComments(
+            final thread = _buildThreadFromRestComments(
               response,
               rootEventId,
               rootEventKind,
               rootAddressableId: rootAddressableId,
             );
+            // Auto-update the count cache with the authoritative REST total.
+            if (thread.totalCount > 0) {
+              _commentCountCache[rootEventId] = thread.totalCount;
+            }
+            return thread;
           }
         } on FunnelcakeException {
           // Fall back to relay query when REST bootstrap is unavailable.
@@ -125,6 +131,8 @@ class CommentsRepository {
         limit: limit,
         until: untilTimestamp,
       );
+
+      CommentThread thread;
 
       // If we have an addressable ID, also query by uppercase A tag
       // Some clients may reference addressable events using A instead of E
@@ -151,21 +159,30 @@ class CommentsRepository {
           eventMap[event.id] = event;
         }
 
-        return _buildThreadFromEvents(
+        thread = _buildThreadFromEvents(
           eventMap.values.toList(),
           rootEventId,
           rootEventKind,
           rootAddressableId: rootAddressableId,
         );
+      } else {
+        // No addressable ID - just query by E tag
+        final events = await _nostrClient.queryEvents([filterByE]);
+        thread = _buildThreadFromEvents(
+          events,
+          rootEventId,
+          rootEventKind,
+        );
       }
 
-      // No addressable ID - just query by E tag
-      final events = await _nostrClient.queryEvents([filterByE]);
-      return _buildThreadFromEvents(
-        events,
-        rootEventId,
-        rootEventKind,
-      );
+      // Auto-update the count cache with the authoritative total so that
+      // callers (e.g. VideoInteractionsBloc) don't need to push counts back
+      // into the repository manually.
+      if (before == null && thread.totalCount > 0) {
+        _commentCountCache[rootEventId] = thread.totalCount;
+      }
+
+      return thread;
     } on Exception catch (e) {
       throw LoadCommentsFailedException('Failed to load comments: $e');
     }
