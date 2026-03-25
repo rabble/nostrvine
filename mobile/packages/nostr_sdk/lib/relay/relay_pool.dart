@@ -66,6 +66,31 @@ class RelayPool {
     this.onNotice,
   });
 
+  List<Subscription> _subscriptionsSnapshot() =>
+      _subscriptions.values.toList(growable: false);
+
+  List<Subscription> _initQueriesSnapshot() =>
+      _initQuery.values.toList(growable: false);
+
+  List<Relay> _relaysSnapshot() => _relays.values.toList(growable: false);
+
+  List<Relay> _tempRelaysSnapshot() =>
+      _tempRelays.values.toList(growable: false);
+
+  List<Relay> _cacheRelaysSnapshot() =>
+      _cacheRelays.values.toList(growable: false);
+
+  List<String> _relayKeysSnapshot() => _relays.keys.toList(growable: false);
+
+  List<MapEntry<String, Relay>> _relayEntriesSnapshot() =>
+      _relays.entries.toList(growable: false);
+
+  List<MapEntry<String, Relay>> _tempRelayEntriesSnapshot() =>
+      _tempRelays.entries.toList(growable: false);
+
+  List<MapEntry<String, Relay>> _cacheRelayEntriesSnapshot() =>
+      _cacheRelays.entries.toList(growable: false);
+
   Future<bool> add(
     Relay relay, {
     bool autoSubscribe = false,
@@ -94,7 +119,7 @@ class RelayPool {
             '🔄 autoSubscribe: re-sending ${_subscriptions.length} '
             'subscriptions to ${relay.url}';
         log(msg);
-        for (Subscription subscription in _subscriptions.values) {
+        for (final subscription in _subscriptionsSnapshot()) {
           // Save the subscription to the relay so that after AUTH completes
           // the relay can re-send it. Without this, autoSubscribe sends the
           // subscription once but it dies if the relay requires AUTH —
@@ -105,7 +130,7 @@ class RelayPool {
         }
       }
       if (init) {
-        for (Subscription subscription in _initQuery.values) {
+        for (final subscription in _initQueriesSnapshot()) {
           relayDoQuery(relay, subscription, false);
         }
       }
@@ -121,7 +146,7 @@ class RelayPool {
 
   List<Relay> activeRelays() {
     List<Relay> list = [];
-    var it = _relays.values;
+    final it = _relaysSnapshot();
     for (var relay in it) {
       if (relay.relayStatus.connected == ClientConnected.connected) {
         list.add(relay);
@@ -131,7 +156,7 @@ class RelayPool {
   }
 
   void removeAll() {
-    var keys = _relays.keys;
+    final keys = _relayKeysSnapshot();
     for (var url in keys) {
       _relays[url]?.disconnect();
       _relays[url]?.dispose();
@@ -196,7 +221,7 @@ class RelayPool {
   }
 
   void _broadcaseToCache(Map<String, dynamic> event) {
-    for (var relay in _cacheRelays.values) {
+    for (final relay in _cacheRelaysSnapshot()) {
       relay.send(["EVENT", event]);
     }
   }
@@ -299,8 +324,7 @@ class RelayPool {
         var callback = _queryCompleteCallbacks[subId];
         if (callback != null) {
           // need to callback, check if all relay complete query
-          List<Relay> list = [..._relays.values];
-          list.addAll(_tempRelays.values);
+          final list = [..._relaysSnapshot(), ..._tempRelaysSnapshot()];
           bool completeQuery = true;
           for (var r in list) {
             if (r.checkQuery(subId)) {
@@ -533,7 +557,7 @@ class RelayPool {
 
     // normal relay, usually will query all the normal relays, but if targetRelays has provide, it only query from the provided querys.
     if (relayTypes.contains(RelayType.normal)) {
-      for (var entry in _relays.entries) {
+      for (final entry in _relayEntriesSnapshot()) {
         var relayAddr = entry.key;
         var relay = entry.value;
 
@@ -549,7 +573,7 @@ class RelayPool {
 
     // cache relay
     if (relayTypes.contains(RelayType.cache)) {
-      for (var relay in _cacheRelays.values) {
+      for (final relay in _cacheRelaysSnapshot()) {
         relayDoSubscribe(relay, subscription, sendAfterAuth);
       }
     }
@@ -622,33 +646,33 @@ class RelayPool {
     _subscriptionEoseRelays.remove(id);
     if (subscription != null) {
       // check query and send close
-      var it = _relays.values;
+      var it = _relaysSnapshot();
       for (var relay in it) {
         relay.checkAndCompleteSubscription(id);
       }
 
-      it = _tempRelays.values;
+      it = _tempRelaysSnapshot();
       for (var relay in it) {
         relay.checkAndCompleteSubscription(id);
       }
 
-      it = _cacheRelays.values;
+      it = _cacheRelaysSnapshot();
       for (var relay in it) {
         relay.checkAndCompleteSubscription(id);
       }
     } else {
       // check query and send close
-      var it = _relays.values;
+      var it = _relaysSnapshot();
       for (var relay in it) {
         relay.checkAndCompleteQuery(id);
       }
 
-      it = _tempRelays.values;
+      it = _tempRelaysSnapshot();
       for (var relay in it) {
         relay.checkAndCompleteQuery(id);
       }
 
-      it = _cacheRelays.values;
+      it = _cacheRelaysSnapshot();
       for (var relay in it) {
         relay.checkAndCompleteQuery(id);
       }
@@ -736,7 +760,7 @@ class RelayPool {
 
     // normal relay, usually will query all the normal relays, but if targetRelays has provide, it only query from the provided querys.
     if (relayTypes.contains(RelayType.normal)) {
-      for (var entry in _relays.entries) {
+      for (final entry in _relayEntriesSnapshot()) {
         var relayAddr = entry.key;
         var relay = entry.value;
 
@@ -752,7 +776,7 @@ class RelayPool {
 
     // cache relay
     if (relayTypes.contains(RelayType.cache)) {
-      for (var relay in _cacheRelays.values) {
+      for (final relay in _cacheRelaysSnapshot()) {
         relayDoQuery(relay, subscription, sendAfterAuth);
       }
     }
@@ -769,7 +793,7 @@ class RelayPool {
   }) async {
     bool hadSubmitSend = false;
 
-    for (Relay relay in _relays.values) {
+    for (final relay in _relaysSnapshot()) {
       if (message[0] == "EVENT") {
         if (!relay.relayStatus.writeAccess) {
           continue;
@@ -838,7 +862,7 @@ class RelayPool {
   }
 
   void reconnect() {
-    for (var relay in _relays.values) {
+    for (final relay in _relaysSnapshot()) {
       relay.connect();
     }
   }
@@ -898,7 +922,7 @@ class RelayPool {
   }
 
   bool readable() {
-    for (var relay in _relays.values) {
+    for (final relay in _relaysSnapshot()) {
       if (relay.relayStatus.connected == ClientConnected.connected &&
           relay.relayStatus.readAccess) {
         return true;
@@ -926,14 +950,16 @@ class RelayPool {
   /// Get current authentication configuration for all relays
   Map<String, bool> getRelayAuthConfig() {
     Map<String, bool> config = {};
-    _relays.forEach((url, relay) {
+    for (final entry in _relayEntriesSnapshot()) {
+      final url = entry.key;
+      final relay = entry.value;
       config[url] = relay.relayStatus.alwaysAuth;
-    });
+    }
     return config;
   }
 
   bool writable() {
-    for (var relay in _relays.values) {
+    for (final relay in _relaysSnapshot()) {
       if (relay.relayStatus.connected == ClientConnected.connected &&
           relay.relayStatus.writeAccess) {
         return true;
@@ -1052,7 +1078,7 @@ class RelayPool {
 
     // Add normal relays
     if (relayTypes.contains(RelayType.normal)) {
-      for (var relay in _relays.values) {
+      for (final relay in _relaysSnapshot()) {
         if (!relaysToTry.contains(relay)) {
           relaysToTry.add(relay);
         }
@@ -1061,7 +1087,7 @@ class RelayPool {
 
     // Add cache relays
     if (relayTypes.contains(RelayType.cache)) {
-      for (var relay in _cacheRelays.values) {
+      for (final relay in _cacheRelaysSnapshot()) {
         if (!relaysToTry.contains(relay)) {
           relaysToTry.add(relay);
         }
@@ -1111,21 +1137,21 @@ class RelayPool {
     final relays = <String>{};
 
     // Check normal relays
-    for (final entry in _relays.entries) {
+    for (final entry in _relayEntriesSnapshot()) {
       if (entry.value.hasSubscriptionById(subscriptionId)) {
         relays.add(entry.key);
       }
     }
 
     // Check temp relays
-    for (final entry in _tempRelays.entries) {
+    for (final entry in _tempRelayEntriesSnapshot()) {
       if (entry.value.hasSubscriptionById(subscriptionId)) {
         relays.add(entry.key);
       }
     }
 
     // Check cache relays
-    for (final entry in _cacheRelays.entries) {
+    for (final entry in _cacheRelayEntriesSnapshot()) {
       if (entry.value.hasSubscriptionById(subscriptionId)) {
         relays.add(entry.key);
       }

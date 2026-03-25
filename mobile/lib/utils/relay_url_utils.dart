@@ -40,3 +40,25 @@ String resolveApiBaseUrlFromRelays({
 
   return relayWsToHttpBase(selectedRelay);
 }
+
+/// Resolve a pinned REST API base URL from configured relays.
+///
+/// Unlike [resolveApiBaseUrlFromRelays], this never falls through to an
+/// arbitrary configured relay. If the pinned relay host is not configured, it
+/// returns the provided environment fallback instead.
+String resolvePinnedApiBaseUrlFromRelays({
+  required List<String> configuredRelays,
+  required String fallbackBaseUrl,
+  String pinnedRelayHost = 'relay.divine.video',
+}) {
+  final pinnedRelay = configuredRelays.where((url) {
+    final host = Uri.tryParse(url)?.host.toLowerCase();
+    return host == pinnedRelayHost.toLowerCase();
+  });
+
+  if (pinnedRelay.isEmpty) {
+    return fallbackBaseUrl;
+  }
+
+  return relayWsToHttpBase(pinnedRelay.first);
+}
