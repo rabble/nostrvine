@@ -65,7 +65,7 @@ void main() {
       );
     });
 
-    Options? _capturedOptions;
+    Options? capturedOptions;
 
     /// Sets up mocks for a video upload and captures the [Options] passed
     /// to `dio.put` so tests can inspect the headers.
@@ -111,7 +111,7 @@ void main() {
           onSendProgress: any(named: 'onSendProgress'),
         ),
       ).thenAnswer((invocation) async {
-        _capturedOptions =
+        capturedOptions =
             invocation.namedArguments[const Symbol('options')] as Options?;
         return mockResponse;
       });
@@ -156,8 +156,8 @@ void main() {
             proofManifestJson: manifest,
           );
 
-          expect(_capturedOptions, isNotNull);
-          final headers = _capturedOptions!.headers!;
+          expect(capturedOptions, isNotNull);
+          final headers = capturedOptions!.headers!;
           expect(headers, contains('X-ProofMode-Manifest'));
 
           final decoded = utf8.decode(
@@ -187,7 +187,7 @@ void main() {
             proofManifestJson: manifest,
           );
 
-          final headers = _capturedOptions!.headers!;
+          final headers = capturedOptions!.headers!;
           expect(headers, contains('X-ProofMode-Signature'));
 
           final decoded = utf8.decode(
@@ -217,7 +217,7 @@ void main() {
             proofManifestJson: manifest,
           );
 
-          final headers = _capturedOptions!.headers!;
+          final headers = capturedOptions!.headers!;
           expect(headers, contains('X-ProofMode-Attestation'));
 
           final decoded = utf8.decode(
@@ -246,7 +246,7 @@ void main() {
           proofManifestJson: manifest,
         );
 
-        final headers = _capturedOptions!.headers!;
+        final headers = capturedOptions!.headers!;
         expect(headers, contains('X-ProofMode-C2PA'));
 
         final decoded = utf8.decode(
@@ -275,7 +275,7 @@ void main() {
           proofManifestJson: manifest,
         );
 
-        final headers = _capturedOptions!.headers!;
+        final headers = capturedOptions!.headers!;
         expect(headers, isNot(contains('X-ProofMode-Signature')));
         expect(headers, contains('X-ProofMode-Attestation'));
       });
@@ -298,7 +298,7 @@ void main() {
           proofManifestJson: manifest,
         );
 
-        final headers = _capturedOptions!.headers!;
+        final headers = capturedOptions!.headers!;
         expect(headers, contains('X-ProofMode-Signature'));
         expect(headers, isNot(contains('X-ProofMode-Attestation')));
       });
@@ -316,7 +316,7 @@ void main() {
           proofManifestJson: null,
         );
 
-        final headers = _capturedOptions!.headers!;
+        final headers = capturedOptions!.headers!;
         expect(headers, isNot(contains('X-ProofMode-Manifest')));
         expect(headers, isNot(contains('X-ProofMode-Signature')));
         expect(headers, isNot(contains('X-ProofMode-Attestation')));
@@ -371,7 +371,7 @@ void main() {
             proofManifestJson: manifest,
           );
 
-          final headers = _capturedOptions!.headers!;
+          final headers = capturedOptions!.headers!;
           expect(headers, contains('X-ProofMode-Manifest'));
           expect(headers, contains('X-ProofMode-Signature'));
           expect(headers, contains('X-ProofMode-Attestation'));
