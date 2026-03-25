@@ -19,6 +19,7 @@ import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
@@ -231,6 +232,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Nostr Settings',
                 subtitle: 'Relays, media servers, keys, and account',
                 onTap: () => context.push(NostrSettingsScreen.path),
+              ),
+              _SettingsTile(
+                icon: Icons.gavel,
+                title: 'Legal',
+                subtitle:
+                    'Terms of Service, Privacy Policy, Safety Standards, '
+                    'DMCA, Open Source Licenses',
+                onTap: () => context.push(LegalScreen.path),
               ),
 
               const SizedBox(height: 24),

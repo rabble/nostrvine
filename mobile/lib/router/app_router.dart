@@ -54,6 +54,7 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -597,6 +598,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const SupportCenterScreen(),
       ),
       GoRoute(
+        path: LegalScreen.path,
+        name: LegalScreen.routeName,
+        builder: (_, _) => const LegalScreen(),
+      ),
+      GoRoute(
         path: ContentPreferencesScreen.path,
         name: ContentPreferencesScreen.routeName,
         builder: (_, _) => const ContentPreferencesScreen(),
@@ -963,6 +969,7 @@ int tabIndexFromLocation(String loc) {
     case 'content-filters':
     case 'content-preferences':
     case 'support-center':
+    case 'legal':
     case 'nostr-settings':
     case 'developer-options':
     case 'edit-profile':

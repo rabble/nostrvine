@@ -35,6 +35,7 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -83,6 +84,7 @@ enum RouteType {
   sound, // Sound detail screen for audio reuse
   contentPreferences, // Content preferences (language, audio, filters)
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
+  legal, // Legal screen (ToS, Privacy, Safety, DMCA, Licenses)
   nostrSettings, // Nostr settings (relays, media servers, keys, account)
   secureAccount,
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
@@ -302,6 +304,9 @@ RouteContext parseRoute(String path) {
     case 'support-center':
       return const RouteContext(type: RouteType.supportCenter);
 
+    case 'legal':
+      return const RouteContext(type: RouteType.legal);
+
     case 'nostr-settings':
       return const RouteContext(type: RouteType.nostrSettings);
 
@@ -511,6 +516,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.supportCenter:
       return SupportCenterScreen.path;
+
+    case RouteType.legal:
+      return LegalScreen.path;
 
     case RouteType.nostrSettings:
       return NostrSettingsScreen.path;
