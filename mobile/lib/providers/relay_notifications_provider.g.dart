@@ -166,7 +166,7 @@ final class RelayNotificationApiServiceProvider
 }
 
 String _$relayNotificationApiServiceHash() =>
-    r'8df75ff03a5603d7766269c738ed089f407853f4';
+    r'173d70a683aaddef8c8e3b1be8b85facfb247cfa';
 
 /// Provider to get current unread notification count
 
