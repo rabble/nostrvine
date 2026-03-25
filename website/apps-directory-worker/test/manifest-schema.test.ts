@@ -16,7 +16,7 @@ describe('manifest schema', () => {
         icon_url: 'https://primal.net/icon.png',
         launch_url: 'https://primal.net/app',
         allowed_origins: ['https://primal.net'],
-        allowed_methods: ['getPublicKey', 'signEvent'],
+        allowed_methods: ['getPublicKey', 'signEvent', 'nip44.decrypt'],
         allowed_sign_event_kinds: [1],
         prompt_required_for: ['nip44.decrypt'],
         status: 'approved',
@@ -30,7 +30,7 @@ describe('manifest schema', () => {
       icon_url: 'https://primal.net/icon.png',
       launch_url: 'https://primal.net/app',
       allowed_origins: ['https://primal.net'],
-      allowed_methods: ['getPublicKey', 'signEvent'],
+      allowed_methods: ['getPublicKey', 'signEvent', 'nip44.decrypt'],
       allowed_sign_event_kinds: [1],
       prompt_required_for: ['nip44.decrypt'],
       status: 'approved',
@@ -78,6 +78,49 @@ describe('manifest schema', () => {
         status: 'approved',
       }),
     ).toThrow('allowed_methods');
+  });
+
+  it('rejects launch URLs outside the approved origins', () => {
+    expect(() =>
+      validateManifest({
+        slug: 'primal',
+        name: 'Primal',
+        launch_url: 'https://evil.example/app',
+        allowed_origins: ['https://primal.net'],
+        allowed_methods: ['getPublicKey'],
+        allowed_sign_event_kinds: [],
+        status: 'approved',
+      }),
+    ).toThrow('launch_url');
+  });
+
+  it('rejects prompt rules for methods the app does not allow', () => {
+    expect(() =>
+      validateManifest({
+        slug: 'primal',
+        name: 'Primal',
+        launch_url: 'https://primal.net/app',
+        allowed_origins: ['https://primal.net'],
+        allowed_methods: ['getPublicKey'],
+        allowed_sign_event_kinds: [],
+        prompt_required_for: ['nip44.decrypt'],
+        status: 'approved',
+      }),
+    ).toThrow('prompt_required_for');
+  });
+
+  it('rejects signEvent kinds when signEvent is not allowed', () => {
+    expect(() =>
+      validateManifest({
+        slug: 'primal',
+        name: 'Primal',
+        launch_url: 'https://primal.net/app',
+        allowed_origins: ['https://primal.net'],
+        allowed_methods: ['getPublicKey'],
+        allowed_sign_event_kinds: [1],
+        status: 'approved',
+      }),
+    ).toThrow('allowed_sign_event_kinds');
   });
 
   it('rejects missing launch metadata', () => {

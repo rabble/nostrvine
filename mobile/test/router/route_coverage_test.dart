@@ -153,6 +153,22 @@ void main() {
       });
     });
 
+    group('Apps routes hide the bottom nav', () {
+      test('${AppsDirectoryScreen.path} is treated as a non-tab route', () {
+        expect(tabIndexFromLocation(AppsDirectoryScreen.path), -1);
+      });
+
+      test(
+        '${AppDetailScreen.pathForSlug('primal')} is treated as a non-tab route',
+        () {
+          expect(
+            tabIndexFromLocation(AppDetailScreen.pathForSlug('primal')),
+            -1,
+          );
+        },
+      );
+    });
+
     group('Tab routes parse correctly', () {
       test('${VideoFeedPage.path} parses to RouteType.home with index 0', () {
         final context = parseRoute(VideoFeedPage.path);

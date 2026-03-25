@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 
 class AppDetailScreen extends ConsumerStatefulWidget {
   static const routeName = 'app-detail';
@@ -34,6 +35,15 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
   void initState() {
     super.initState();
     _entryFuture = _loadEntry();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.slug != widget.slug ||
+        oldWidget.initialEntry?.id != widget.initialEntry?.id) {
+      _entryFuture = _loadEntry();
+    }
   }
 
   Future<NostrAppDirectoryEntry?> _loadEntry() async {
@@ -136,10 +146,15 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
                           title: 'Runtime prompts',
                           child: _PillList(items: app.promptRequiredFor),
                         ),
-                        const _AppDetailMessage(
-                          title: 'Sandbox launch comes next',
-                          subtitle:
-                              'This slice wires the vetted directory and routing foundation.',
+                        const SizedBox(height: 8),
+                        DivineButton(
+                          label: 'Open In Sandbox',
+                          onPressed: () {
+                            context.push(
+                              NostrAppSandboxScreen.pathForAppId(app.id),
+                              extra: app,
+                            );
+                          },
                         ),
                       ],
                     ),

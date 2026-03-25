@@ -19,6 +19,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -66,10 +67,12 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
+import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/services/nostr_app_audit_service.dart';
 import 'package:openvine/services/nostr_app_bridge_policy.dart';
+import 'package:openvine/services/nostr_app_bridge_service.dart';
 import 'package:openvine/services/nostr_app_directory_service.dart';
 import 'package:openvine/services/nostr_app_grant_store.dart';
-import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
@@ -129,6 +132,28 @@ final nostrAppBridgePolicyProvider = Provider<NostrAppBridgePolicy>((ref) {
   return NostrAppBridgePolicy(
     grantStore: grantStore,
     currentUserPubkey: authService.currentPublicKeyHex,
+  );
+});
+
+final nostrAppAuditServiceProvider = Provider<NostrAppAuditService>((ref) {
+  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
+  final client = Client();
+  ref.onDispose(client.close);
+  return NostrAppAuditService(
+    workerBaseUri: Uri.parse(AppConfig.appsDirectoryBaseUrl),
+    nip98AuthService: nip98AuthService,
+    httpClient: client,
+  );
+});
+
+final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final policy = ref.watch(nostrAppBridgePolicyProvider);
+  final auditService = ref.watch(nostrAppAuditServiceProvider);
+  return NostrAppBridgeService(
+    authService: authService,
+    policy: policy,
+    auditService: auditService,
   );
 });
 

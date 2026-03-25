@@ -16,13 +16,24 @@ void main() {
       grantStore = NostrAppGrantStore(sharedPreferences: sharedPreferences);
       policy = NostrAppBridgePolicy(
         grantStore: grantStore,
-        currentUserPubkey: 'user-pubkey',
+        currentUserPubkey: 'f' * 64,
       );
     });
 
-    test('prompts for signEvent when origin, method, and kind are allowed', () {
+    test('allows getPublicKey for an allowed origin without a prompt', () {
       final evaluation = policy.evaluate(
-        app: _fixtureApp(),
+        app: _app(),
+        origin: Uri.parse('https://primal.net'),
+        method: 'getPublicKey',
+      );
+
+      expect(evaluation.decision, BridgeDecision.allow);
+      expect(evaluation.capability, 'getPublicKey');
+    });
+
+    test('prompts for signEvent when the manifest requires it', () {
+      final evaluation = policy.evaluate(
+        app: _app(promptRequiredFor: const ['signEvent']),
         origin: Uri.parse('https://primal.net'),
         method: 'signEvent',
         eventKind: 1,
@@ -32,9 +43,28 @@ void main() {
       expect(evaluation.capability, 'signEvent:1');
     });
 
-    test('denies requests from blocked origins', () {
+    test('allows a prompted capability after a stored grant', () async {
+      await grantStore.saveGrant(
+        userPubkey: 'f' * 64,
+        appId: 'primal-app',
+        origin: 'https://primal.net',
+        capability: 'signEvent:1',
+      );
+
       final evaluation = policy.evaluate(
-        app: _fixtureApp(),
+        app: _app(promptRequiredFor: const ['signEvent']),
+        origin: Uri.parse('https://primal.net'),
+        method: 'signEvent',
+        eventKind: 1,
+      );
+
+      expect(evaluation.decision, BridgeDecision.allow);
+      expect(evaluation.capability, 'signEvent:1');
+    });
+
+    test('blocks requests from a non-allowlisted origin', () {
+      final evaluation = policy.evaluate(
+        app: _app(),
         origin: Uri.parse('https://evil.example'),
         method: 'getPublicKey',
       );
@@ -43,9 +73,9 @@ void main() {
       expect(evaluation.reasonCode, 'blocked_origin');
     });
 
-    test('denies blocked methods', () {
+    test('blocks methods outside the manifest allowlist', () {
       final evaluation = policy.evaluate(
-        app: _fixtureApp(),
+        app: _app(),
         origin: Uri.parse('https://primal.net'),
         method: 'nip44.decrypt',
       );
@@ -54,9 +84,9 @@ void main() {
       expect(evaluation.reasonCode, 'blocked_method');
     });
 
-    test('denies blocked signEvent kinds', () {
+    test('blocks signEvent kinds outside the manifest allowlist', () {
       final evaluation = policy.evaluate(
-        app: _fixtureApp(),
+        app: _app(),
         origin: Uri.parse('https://primal.net'),
         method: 'signEvent',
         eventKind: 4,
@@ -65,58 +95,27 @@ void main() {
       expect(evaluation.decision, BridgeDecision.deny);
       expect(evaluation.reasonCode, 'blocked_event_kind');
     });
-
-    test('allows low-risk methods without a prompt', () {
-      final evaluation = policy.evaluate(
-        app: _fixtureApp(),
-        origin: Uri.parse('https://primal.net'),
-        method: 'getPublicKey',
-      );
-
-      expect(evaluation.decision, BridgeDecision.allow);
-      expect(evaluation.capability, 'getPublicKey');
-    });
-
-    test(
-      'allows previously granted capabilities without prompting again',
-      () async {
-        await grantStore.saveGrant(
-          userPubkey: 'user-pubkey',
-          appId: '1',
-          origin: 'https://primal.net',
-          capability: 'signEvent:1',
-        );
-
-        final evaluation = policy.evaluate(
-          app: _fixtureApp(),
-          origin: Uri.parse('https://primal.net'),
-          method: 'signEvent',
-          eventKind: 1,
-        );
-
-        expect(evaluation.decision, BridgeDecision.allow);
-        expect(evaluation.reasonCode, 'remembered_grant');
-      },
-    );
   });
 }
 
-NostrAppDirectoryEntry _fixtureApp() {
+NostrAppDirectoryEntry _app({
+  List<String> promptRequiredFor = const [],
+}) {
   return NostrAppDirectoryEntry(
-    id: '1',
+    id: 'primal-app',
     slug: 'primal',
     name: 'Primal',
-    tagline: 'Fast Nostr feeds and messages',
-    description: 'A vetted Nostr client for timelines and DMs.',
-    iconUrl: 'https://cdn.divine.video/primal.png',
+    tagline: 'A social client',
+    description: 'A vetted Nostr app.',
+    iconUrl: 'https://primal.net/icon.png',
     launchUrl: 'https://primal.net/app',
     allowedOrigins: const ['https://primal.net'],
     allowedMethods: const ['getPublicKey', 'signEvent'],
     allowedSignEventKinds: const [1],
-    promptRequiredFor: const ['nip44.encrypt'],
+    promptRequiredFor: promptRequiredFor,
     status: 'approved',
     sortOrder: 1,
-    createdAt: DateTime.parse('2026-03-24T08:00:00Z'),
-    updatedAt: DateTime.parse('2026-03-25T08:00:00Z'),
+    createdAt: DateTime.utc(2026, 3, 25),
+    updatedAt: DateTime.utc(2026, 3, 25),
   );
 }

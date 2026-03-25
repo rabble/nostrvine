@@ -46,6 +46,13 @@ export function validateManifest(input: unknown): AppManifest {
     'prompt_required_for',
   );
   const sortOrder = validateSortOrder(input.sort_order);
+  validateManifestConsistency({
+    launchUrl,
+    allowedOrigins,
+    allowedMethods,
+    allowedSignEventKinds,
+    promptRequiredFor,
+  });
 
   return {
     slug,
@@ -61,6 +68,42 @@ export function validateManifest(input: unknown): AppManifest {
     prompt_required_for: promptRequiredFor,
     sort_order: sortOrder,
   };
+}
+
+function validateManifestConsistency({
+  launchUrl,
+  allowedOrigins,
+  allowedMethods,
+  allowedSignEventKinds,
+  promptRequiredFor,
+}: {
+  launchUrl: string;
+  allowedOrigins: string[];
+  allowedMethods: SupportedMethod[];
+  allowedSignEventKinds: number[];
+  promptRequiredFor: SupportedMethod[];
+}): void {
+  const launchOrigin = new URL(launchUrl).origin;
+  if (!allowedOrigins.includes(launchOrigin)) {
+    throw new Error('launch_url must use an allowed origin');
+  }
+
+  if (
+    allowedSignEventKinds.length > 0 &&
+    !allowedMethods.includes('signEvent')
+  ) {
+    throw new Error(
+      'allowed_sign_event_kinds requires signEvent in allowed_methods',
+    );
+  }
+
+  for (const promptedMethod of promptRequiredFor) {
+    if (!allowedMethods.includes(promptedMethod)) {
+      throw new Error(
+        'prompt_required_for must only include methods in allowed_methods',
+      );
+    }
+  }
 }
 
 function validateOrigins(value: unknown): string[] {

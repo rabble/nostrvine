@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -135,6 +136,48 @@ void main() {
       expect(uploaded, 0);
       expect(service.queuedEvents, hasLength(1));
     });
+
+    test('coalesces concurrent upload attempts', () async {
+      final responseCompleter = Completer<http.Response>();
+      var requestCount = 0;
+      final service = NostrAppAuditService(
+        workerBaseUri: Uri.parse('https://apps.directory.divine.video'),
+        nip98AuthService: mockNip98AuthService,
+        httpClient: MockClient((_) {
+          requestCount += 1;
+          return responseCompleter.future;
+        }),
+      );
+
+      service.record(_auditEvent());
+
+      when(
+        () => mockNip98AuthService.createAuthToken(
+          url: any(named: 'url'),
+          method: HttpMethod.post,
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer(
+        (_) async => Nip98Token(
+          token: 'audit-token',
+          signedEvent: _createMockEvent(),
+          createdAt: DateTime.utc(2026, 3, 25),
+          expiresAt: DateTime.utc(2026, 3, 25).add(const Duration(minutes: 10)),
+        ),
+      );
+
+      final firstUpload = service.uploadQueuedEvents();
+      await Future<void>.delayed(Duration.zero);
+      final secondUpload = service.uploadQueuedEvents();
+
+      expect(requestCount, 1);
+
+      responseCompleter.complete(http.Response('{"success":true}', 200));
+
+      expect(await firstUpload, 1);
+      expect(await secondUpload, 1);
+      expect(service.queuedEvents, isEmpty);
+    });
   });
 }
 
@@ -150,7 +193,7 @@ NostrAppAuditEvent _auditEvent({
     eventKind: 1,
     decision: decision,
     errorCode: errorCode,
-    createdAt: DateTime.utc(2026, 3, 25, 8, 0),
+    createdAt: DateTime.utc(2026, 3, 25, 8),
   );
 }
 

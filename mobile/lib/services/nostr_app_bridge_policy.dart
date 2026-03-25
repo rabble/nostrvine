@@ -25,6 +25,24 @@ class NostrAppBridgePolicy {
   final NostrAppGrantStore _grantStore;
   final String? _currentUserPubkey;
 
+  Future<void> rememberGrant({
+    required NostrAppDirectoryEntry app,
+    required Uri origin,
+    required String capability,
+  }) async {
+    final userPubkey = _currentUserPubkey;
+    if (userPubkey == null || userPubkey.isEmpty) {
+      return;
+    }
+
+    await _grantStore.saveGrant(
+      userPubkey: userPubkey,
+      appId: app.id,
+      origin: origin.origin,
+      capability: capability,
+    );
+  }
+
   BridgeEvaluation evaluate({
     required NostrAppDirectoryEntry app,
     required Uri origin,

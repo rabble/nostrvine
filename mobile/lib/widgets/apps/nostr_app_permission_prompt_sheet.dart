@@ -38,7 +38,7 @@ class NostrAppPermissionPromptSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'This app is requesting access through Divine\'s vetted sandbox.',
+            "This app is requesting access through Divine's vetted sandbox.",
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
           const SizedBox(height: 20),

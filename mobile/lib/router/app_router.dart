@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
+import 'package:openvine/screens/apps/apps_permissions_screen.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
@@ -98,7 +101,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       routeObserver,
       PageLoadObserver(),
       VideoStopNavigatorObserver(),
-      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      if (Firebase.apps.isNotEmpty)
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
     ],
     // Refresh router when auth state changes
     refreshListenable: authListenable,
@@ -601,6 +605,32 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const AppsDirectoryScreen(),
       ),
       GoRoute(
+        path: AppsPermissionsScreen.path,
+        name: AppsPermissionsScreen.routeName,
+        builder: (_, state) {
+          final authService = ref.read(authServiceProvider);
+          final grantStore = ref.read(nostrAppGrantStoreProvider);
+          return AppsPermissionsScreen(
+            grantStore: grantStore,
+            currentUserPubkey: authService.currentPublicKeyHex,
+          );
+        },
+      ),
+      GoRoute(
+        path: NostrAppSandboxScreen.path,
+        name: NostrAppSandboxScreen.routeName,
+        builder: (_, state) {
+          final app = state.extra is NostrAppDirectoryEntry
+              ? state.extra! as NostrAppDirectoryEntry
+              : null;
+          final appId = state.pathParameters['appId'] ?? '';
+          return _ResolvedSandboxRouteScreen(
+            appId: appId,
+            initialApp: app,
+          );
+        },
+      ),
+      GoRoute(
         path: AppDetailScreen.path,
         name: AppDetailScreen.routeName,
         builder: (_, state) {
@@ -981,6 +1011,7 @@ int tabIndexFromLocation(String loc) {
     case 'liked-videos':
       return 3; // Liked videos keeps profile tab active
     case 'search':
+    case 'apps':
     case 'settings':
     case 'relay-settings':
     case 'relay-diagnostic':
@@ -1033,5 +1064,108 @@ class _StreamListenable extends ChangeNotifier {
   void dispose() {
     _subscription.cancel();
     super.dispose();
+  }
+}
+
+class _MissingSandboxAppScreen extends StatelessWidget {
+  const _MissingSandboxAppScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: 'Sandbox unavailable',
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      backgroundColor: VineTheme.backgroundColor,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Open vetted apps from the directory so Divine can apply the right sandbox policy.',
+            textAlign: TextAlign.center,
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResolvedSandboxRouteScreen extends ConsumerStatefulWidget {
+  const _ResolvedSandboxRouteScreen({
+    required this.appId,
+    this.initialApp,
+  });
+
+  final String appId;
+  final NostrAppDirectoryEntry? initialApp;
+
+  @override
+  ConsumerState<_ResolvedSandboxRouteScreen> createState() =>
+      _ResolvedSandboxRouteScreenState();
+}
+
+class _ResolvedSandboxRouteScreenState
+    extends ConsumerState<_ResolvedSandboxRouteScreen> {
+  late Future<NostrAppDirectoryEntry?> _appFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _appFuture = _loadApp();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ResolvedSandboxRouteScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.appId != widget.appId ||
+        oldWidget.initialApp?.id != widget.initialApp?.id) {
+      _appFuture = _loadApp();
+    }
+  }
+
+  Future<NostrAppDirectoryEntry?> _loadApp() async {
+    final initialApp = widget.initialApp;
+    if (initialApp != null) {
+      return initialApp;
+    }
+
+    final apps = await ref
+        .read(nostrAppDirectoryServiceProvider)
+        .fetchApprovedApps();
+    for (final app in apps) {
+      if (app.id == widget.appId) {
+        return app;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<NostrAppDirectoryEntry?>(
+      future: _appFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return Scaffold(
+            appBar: DiVineAppBar(
+              title: 'Loading sandbox',
+              showBackButton: true,
+              onBackPressed: context.pop,
+            ),
+            backgroundColor: VineTheme.backgroundColor,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final app = snapshot.data;
+        if (app == null) {
+          return const _MissingSandboxAppScreen();
+        }
+        return NostrAppSandboxScreen(app: app);
+      },
+    );
   }
 }

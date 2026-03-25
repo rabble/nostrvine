@@ -1,4 +1,3 @@
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/apps/nostr_app_permission_prompt_sheet.dart';

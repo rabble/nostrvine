@@ -9,6 +9,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
+import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -117,6 +118,7 @@ void main() {
         'Moderation Controls',
         'Nostr Settings',
         'Apps',
+        'App Permissions',
       ]) {
         await tester.scrollUntilVisible(
           find.text(title),
@@ -130,6 +132,30 @@ void main() {
         find.text('Launch vetted Nostr apps in Divine'),
         findsOneWidget,
       );
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('tapping App Permissions opens the permissions route', (
+      tester,
+    ) async {
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('App Permissions'),
+        100,
+        scrollable: scrollable,
+      );
+      await tester.tap(find.text('App Permissions'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockGoRouter.push(AppsPermissionsScreen.path)).called(1);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

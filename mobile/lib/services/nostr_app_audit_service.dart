@@ -18,6 +18,7 @@ class NostrAppAuditService {
   final Nip98AuthService _nip98AuthService;
   final http.Client _httpClient;
   final List<NostrAppAuditEvent> _queuedEvents = [];
+  Future<int>? _activeUpload;
 
   UnmodifiableListView<NostrAppAuditEvent> get queuedEvents =>
       UnmodifiableListView(_queuedEvents);
@@ -26,7 +27,23 @@ class NostrAppAuditService {
     _queuedEvents.add(event);
   }
 
-  Future<int> uploadQueuedEvents() async {
+  Future<int> uploadQueuedEvents() {
+    final activeUpload = _activeUpload;
+    if (activeUpload != null) {
+      return activeUpload;
+    }
+
+    final upload = _uploadQueuedEvents();
+    _activeUpload = upload;
+    upload.whenComplete(() {
+      if (identical(_activeUpload, upload)) {
+        _activeUpload = null;
+      }
+    });
+    return upload;
+  }
+
+  Future<int> _uploadQueuedEvents() async {
     var uploadedCount = 0;
 
     while (_queuedEvents.isNotEmpty) {
