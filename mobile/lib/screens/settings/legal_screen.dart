@@ -30,6 +30,7 @@ class LegalScreen extends StatelessWidget {
                 icon: Icons.description,
                 title: 'Terms of Service',
                 subtitle: 'Usage terms and conditions',
+                isExternal: true,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/terms',
@@ -40,6 +41,7 @@ class LegalScreen extends StatelessWidget {
                 icon: Icons.privacy_tip,
                 title: 'Privacy Policy',
                 subtitle: 'How we handle your data',
+                isExternal: true,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/privacy',
@@ -50,6 +52,7 @@ class LegalScreen extends StatelessWidget {
                 icon: Icons.shield,
                 title: 'Safety Standards',
                 subtitle: 'Community guidelines and safety',
+                isExternal: true,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/safety',
@@ -60,6 +63,7 @@ class LegalScreen extends StatelessWidget {
                 icon: Icons.copyright,
                 title: 'DMCA',
                 subtitle: 'Copyright and takedown policy',
+                isExternal: true,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/dmca',
@@ -120,12 +124,14 @@ class _LegalTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isExternal = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool isExternal;
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +149,11 @@ class _LegalTile extends StatelessWidget {
         subtitle,
         style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       ),
-      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+      trailing: Icon(
+        isExternal ? Icons.open_in_new : Icons.chevron_right,
+        color: VineTheme.lightText,
+        size: isExternal ? 20 : 24,
+      ),
       onTap: onTap,
     );
   }
