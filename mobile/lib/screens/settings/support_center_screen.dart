@@ -82,26 +82,6 @@ class SupportCenterScreen extends ConsumerWidget {
                   'ProofMode',
                 ),
               ),
-              _SupportTile(
-                icon: Icons.privacy_tip,
-                title: 'Privacy Policy',
-                subtitle: 'How we handle your data',
-                onTap: () => _launchUrl(
-                  context,
-                  'https://divine.video/privacy',
-                  'Privacy Policy',
-                ),
-              ),
-              _SupportTile(
-                icon: Icons.shield,
-                title: 'Safety Standards',
-                subtitle: 'Community guidelines and safety',
-                onTap: () => _launchUrl(
-                  context,
-                  'https://divine.video/safety',
-                  'Safety Standards',
-                ),
-              ),
             ],
           ),
         ),
