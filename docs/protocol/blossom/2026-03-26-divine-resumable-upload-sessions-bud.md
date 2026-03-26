@@ -1,5 +1,7 @@
 Status: Draft Divine Extension
 
+Mobile client status: Implemented behind capability discovery and legacy fallback in `mobile/lib/services/blossom_upload_service.dart` and `mobile/lib/services/upload_manager.dart`.
+
 # Divine Resumable Upload Sessions for Blossom
 
 ## Summary
@@ -40,6 +42,7 @@ X-Divine-Upload-Data-Host: https://upload.divine.video
 ```
 
 Clients must treat absence of these headers as "legacy single-shot upload only".
+The current mobile implementation probes `HEAD /upload` before each video upload attempt and only enters the resumable flow when `resumable-sessions` is present.
 
 ## Control Plane
 
@@ -87,6 +90,7 @@ Rules:
 - `uploadUrl` is opaque.
 - Clients must not derive semantics from its host or path.
 - `requiredHeaders` are scoped to this session only.
+- The current mobile client persists `uploadId`, `uploadUrl`, `chunkSize`, `nextOffset`, `expiresAt`, and `requiredHeaders` in `PendingUpload` so interrupted uploads can resume after restart.
 
 ### `POST /upload/{uploadId}/complete`
 
@@ -179,6 +183,7 @@ This keeps the heavy chunk path cheap while preserving Blossom ownership of uplo
 - `422`: final size or SHA-256 mismatch during completion
 
 Servers should include an explanatory reason in the response body or `X-Reason` header.
+The current mobile client treats `404` and `410` session errors as terminal "session expired" failures and clears the persisted resumable session state.
 
 ## Storage Backend
 
@@ -197,3 +202,4 @@ Clients must not depend on backend-specific behavior.
 
 - This extension is designed to be easy to upstream later, but it starts as a Divine-only optional feature.
 - If the design proves stable, it can be proposed as a draft BUD for broader Blossom adoption.
+- Repo-local coverage uses a fake Dio-backed integration test because the resumable upload server endpoints are not implemented in this repository's local stack yet.

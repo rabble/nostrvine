@@ -1,4 +1,4 @@
-Status: Draft
+Status: Implemented In Mobile Client
 
 # Blossom Resumable Upload Sessions Design
 
@@ -126,6 +126,14 @@ Data plane on `upload.divine.video`:
 - `PendingUpload` persists resumable session fields so interrupted uploads can resume.
 - The app continues publishing the normal canonical blob URL and streaming URLs after completion.
 
+**Implementation Notes**
+
+- The mobile client now probes `HEAD /upload` before each video upload attempt and stays on legacy `PUT /upload` unless `X-Divine-Upload-Extensions: resumable-sessions` is present.
+- `PendingUpload` persists a `BlossomResumableUploadSession` value with `uploadId`, `uploadUrl`, `chunkSize`, `nextOffset`, `expiresAt`, and `requiredHeaders`.
+- `UploadManager.initialize()` now auto-resumes persisted `uploading` and `retrying` records that still have resumable session state.
+- `404` and `410` session failures are treated as terminal expired-session errors. The upload record moves to `failed` and clears the persisted session so the next user retry starts clean.
+- ProofMode headers remain wired to the legacy single-shot upload path. The Divine resumable protocol contract in this repo does not yet define ProofMode metadata on `init` or `complete`.
+
 **File Boundaries**
 
 - Protocol and handoff docs:
@@ -151,7 +159,8 @@ Data plane on `upload.divine.video`:
   - resume after restart
   - resume after app backgrounding
   - fallback to legacy `PUT /upload` for unsupported servers
-- Integration coverage for the Divine resumable happy path using a fake server or controlled local stack.
+- Integration coverage for the Divine resumable happy path using a Dio-backed fake protocol server in `mobile/test/integration/blossom_resumable_upload_integration_test.dart`.
+- Local harness now routes both `media.divine.video` and `upload.divine.video` through `local_stack/blossom-proxy/default.conf.template` so host separation can be exercised once the server endpoints exist.
 
 **Risks**
 
