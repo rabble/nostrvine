@@ -1,4 +1,5 @@
 export 'metadata_badges_row.dart';
+export 'metadata_categories_section.dart';
 export 'metadata_expanded_sheet.dart';
 export 'metadata_section.dart';
 export 'metadata_sounds_section.dart';

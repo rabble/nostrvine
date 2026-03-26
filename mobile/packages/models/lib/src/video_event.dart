@@ -34,6 +34,7 @@ class VideoEvent {
     this.sha256,
     this.fileSize,
     this.hashtags = const [],
+    this.categories = const [],
     this.publishedAt,
     this.rawTags = const {},
     this.vineId,
@@ -656,6 +657,12 @@ class VideoEvent {
   final String? sha256;
   final int? fileSize;
   final List<String> hashtags;
+
+  /// VLM-classified category names from Funnelcake (e.g., "animals", "music").
+  ///
+  /// Empty until the API includes a `categories` field in video responses.
+  final List<String> categories;
+
   final DateTime timestamp;
   final String? publishedAt;
   final Map<String, String> rawTags;
@@ -1117,6 +1124,7 @@ class VideoEvent {
     String? sha256,
     int? fileSize,
     List<String>? hashtags,
+    List<String>? categories,
     DateTime? timestamp,
     String? publishedAt,
     Map<String, String>? rawTags,
@@ -1168,6 +1176,7 @@ class VideoEvent {
     sha256: sha256 ?? this.sha256,
     fileSize: fileSize ?? this.fileSize,
     hashtags: hashtags ?? this.hashtags,
+    categories: categories ?? this.categories,
     timestamp: timestamp ?? this.timestamp,
     publishedAt: publishedAt ?? this.publishedAt,
     rawTags: rawTags ?? this.rawTags,

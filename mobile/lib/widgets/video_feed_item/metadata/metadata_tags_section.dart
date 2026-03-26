@@ -1,21 +1,24 @@
 // ABOUTME: Tags section for the metadata expanded sheet.
-// ABOUTME: Displays hashtag chips (green "#" prefix) in a wrapping layout
-// ABOUTME: without a section label, matching Figma node 12345:71463.
+// ABOUTME: Displays category chips (accent-colored with emoji) and hashtag
+// ABOUTME: chips (green "#" prefix) in a wrapping layout without a section
+// ABOUTME: label, matching Figma node 12345:71463.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_categories_section.dart'
+    show CategoryChip;
 
-/// Tags section showing hashtag chips.
+/// Tags section showing category chips and hashtag chips.
 ///
-/// Hashtag chips have a green "#" prefix. Classic Vine videos prepend a
-/// "classic" hashtag chip.
+/// Category chips have accent-colored backgrounds with emoji. Hashtag chips
+/// have a green "#" prefix. Classic Vine videos prepend a "classic" hashtag.
 ///
 /// Unlike other metadata sections, this section has **no label** and **no
 /// bottom border** per Figma spec — chips sit directly between the stats row
 /// and the Creator section.
 ///
-/// Returns [SizedBox.shrink] when the video has no tags.
+/// Returns [SizedBox.shrink] when the video has no tags and no categories.
 ///
 /// Matches Figma node `12345:71463`.
 class MetadataTagsSection extends StatelessWidget {
@@ -31,7 +34,10 @@ class MetadataTagsSection extends StatelessWidget {
       ...video.hashtags,
     ];
 
-    if (allHashtags.isEmpty) return const SizedBox.shrink();
+    final hasCategories = video.categories.isNotEmpty;
+    final hasHashtags = allHashtags.isNotEmpty;
+
+    if (!hasCategories && !hasHashtags) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -39,6 +45,10 @@ class MetadataTagsSection extends StatelessWidget {
         spacing: 8,
         runSpacing: 8,
         children: [
+          // Category chips first (accent-colored with emoji)
+          for (var i = 0; i < video.categories.length; i++)
+            CategoryChip(categoryName: video.categories[i], index: i),
+          // Then hashtag chips
           for (final tag in allHashtags) _HashtagChip(tag: tag),
         ],
       ),

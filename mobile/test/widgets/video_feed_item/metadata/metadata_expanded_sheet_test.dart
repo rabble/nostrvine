@@ -53,6 +53,7 @@ UserProfile _makeProfile(String pubkey, String name) => UserProfile(
 
 VideoEvent _makeVideo({
   List<String> hashtags = const [],
+  List<String> categories = const [],
   List<String> collaboratorPubkeys = const [],
   InspiredByInfo? inspiredByVideo,
   List<String>? reposterPubkeys,
@@ -69,6 +70,7 @@ VideoEvent _makeVideo({
   title: title,
   videoUrl: 'https://example.com/video.mp4',
   hashtags: hashtags,
+  categories: categories,
   collaboratorPubkeys: collaboratorPubkeys,
   inspiredByVideo: inspiredByVideo,
   reposterPubkeys: reposterPubkeys,
@@ -320,6 +322,36 @@ void main() {
       );
 
       // No hashtag chips should appear.
+      expect(find.text('#'), findsNothing);
+    });
+
+    testWidgets('renders category chips with accent colors', (tester) async {
+      final video = _makeVideo(
+        categories: ['animals', 'music'],
+        hashtags: ['cool'],
+      );
+      await tester.pumpWidget(
+        buildSubject(child: MetadataTagsSection(video: video)),
+      );
+
+      // Category chips show display name and emoji
+      expect(find.text('Animals'), findsOneWidget);
+      expect(find.text('Music'), findsOneWidget);
+      expect(find.text('🐾'), findsOneWidget);
+      expect(find.text('🎵'), findsOneWidget);
+      // Hashtag chip still present
+      expect(find.text('cool'), findsOneWidget);
+      expect(find.text('#'), findsOneWidget);
+    });
+
+    testWidgets('renders only categories when no hashtags', (tester) async {
+      final video = _makeVideo(categories: ['sports']);
+      await tester.pumpWidget(
+        buildSubject(child: MetadataTagsSection(video: video)),
+      );
+
+      expect(find.text('Sports'), findsOneWidget);
+      expect(find.text('🏆'), findsOneWidget);
       expect(find.text('#'), findsNothing);
     });
   });
