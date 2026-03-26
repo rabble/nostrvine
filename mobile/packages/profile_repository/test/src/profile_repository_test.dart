@@ -1989,6 +1989,173 @@ void main() {
           expect(emissions.last.length, greaterThanOrEqualTo(1));
         });
 
+        test('continues when REST fails and yields WS results', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'test',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenThrow(Exception('REST API error'));
+
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockNostrClient.queryUsers('test', limit: 200),
+          ).thenAnswer((_) async => [mockProfileEvent]);
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(query: 'test')
+              .last;
+
+          expect(result, hasLength(1));
+          expect(result.first.pubkey, equals(testPubkey));
+        });
+
+        test('continues when WS fails and yields REST results', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'test',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'a' * 64,
+                displayName: 'Test REST',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockNostrClient.queryUsers('test', limit: 200),
+          ).thenThrow(StateError('WebSocket error'));
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(query: 'test')
+              .last;
+
+          expect(result, hasLength(1));
+          expect(result.first.displayName, equals('Test REST'));
+        });
+
+        test('yields enriched results when WS adds new profiles', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'test',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'a' * 64,
+                displayName: 'Test REST',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          final mockWsEvent = MockEvent();
+          when(() => mockWsEvent.kind).thenReturn(0);
+          when(() => mockWsEvent.pubkey).thenReturn('b' * 64);
+          when(() => mockWsEvent.createdAt).thenReturn(1704067200);
+          when(() => mockWsEvent.id).thenReturn('c' * 64);
+          when(
+            () => mockWsEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Test WS'}));
+
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockNostrClient.queryUsers('test', limit: 200),
+          ).thenAnswer((_) async => [mockWsEvent]);
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(query: 'test')
+              .last;
+
+          // Both REST and WS results merged
+          expect(result, hasLength(2));
+        });
+
+        test('uses custom profileSearchFilter when no server sort', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => []);
+
+          final mockWsEvent = MockEvent();
+          when(() => mockWsEvent.kind).thenReturn(0);
+          when(() => mockWsEvent.pubkey).thenReturn('a' * 64);
+          when(() => mockWsEvent.createdAt).thenReturn(1704067200);
+          when(() => mockWsEvent.id).thenReturn('b' * 64);
+          when(
+            () => mockWsEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Alice Test'}));
+
+          when(
+            () => mockNostrClient.queryUsers('test', limit: 200),
+          ).thenAnswer((_) async => [mockWsEvent]);
+
+          var filterCalled = false;
+          final repoWithFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileSearchFilter: (query, profiles) {
+              filterCalled = true;
+              return profiles;
+            },
+          );
+
+          await repoWithFilter.searchUsersProgressive(query: 'test').last;
+
+          expect(filterCalled, isTrue);
+        });
+
         test(
           'skips client-side filter on final yield when sortBy is set',
           () async {
