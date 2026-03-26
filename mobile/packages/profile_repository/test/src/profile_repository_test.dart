@@ -738,6 +738,28 @@ void main() {
           expect(result, isNull);
         });
 
+        test('handles uncaught Error without hanging', () async {
+          // Throw an Error (not Exception) so it escapes
+          // _fetchFromConnectedRelays' catch and hits the
+          // Completer's catchError safety net.
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenThrow(StateError('unexpected'));
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+        });
+
         test('returns relay result when indexer is slower', () async {
           when(
             () => mockNostrClient.fetchProfile(testPubkey),
