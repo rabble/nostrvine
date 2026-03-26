@@ -1112,9 +1112,7 @@ class UploadManager {
 
     final persistedProgress = fileSizeBytes <= 0
         ? upload.uploadProgress
-        : ((session.nextOffset / fileSizeBytes) * 0.8)
-              .clamp(0.0, 0.8)
-              .toDouble();
+        : ((session.nextOffset / fileSizeBytes) * 0.8).clamp(0.0, 0.8);
 
     await _updateUpload(
       upload.copyWith(
