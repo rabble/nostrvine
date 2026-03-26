@@ -758,45 +758,39 @@ void main() {
           expect(result!.displayName, equals('Test User'));
         });
 
-        test('picks newest profile when multiple sources succeed', () async {
-          // Connected relay returns an older profile
-          final olderEvent = MockEvent();
-          when(() => olderEvent.kind).thenReturn(0);
-          when(() => olderEvent.pubkey).thenReturn(testPubkey);
-          when(() => olderEvent.createdAt).thenReturn(1704067200);
-          when(() => olderEvent.id).thenReturn(testEventId);
-          when(() => olderEvent.content).thenReturn(
-            jsonEncode({'display_name': 'Old Name'}),
-          );
+        test(
+          'returns first result without waiting for slower sources',
+          () async {
+            // Connected relay returns immediately
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => mockProfileEvent);
+            // Indexer also has a result but connected relay wins
+            final indexerEvent = MockEvent();
+            when(() => indexerEvent.kind).thenReturn(0);
+            when(() => indexerEvent.pubkey).thenReturn(testPubkey);
+            when(() => indexerEvent.createdAt).thenReturn(1704153600);
+            when(() => indexerEvent.id).thenReturn('idx_$testEventId');
+            when(() => indexerEvent.content).thenReturn(
+              jsonEncode({'display_name': 'Indexer Name'}),
+            );
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+                useCache: any(named: 'useCache'),
+              ),
+            ).thenAnswer((_) async => [indexerEvent]);
 
-          // Indexer returns a newer profile
-          final newerEvent = MockEvent();
-          when(() => newerEvent.kind).thenReturn(0);
-          when(() => newerEvent.pubkey).thenReturn(testPubkey);
-          when(() => newerEvent.createdAt).thenReturn(1704153600);
-          when(() => newerEvent.id).thenReturn('newer_$testEventId');
-          when(() => newerEvent.content).thenReturn(
-            jsonEncode({'display_name': 'New Name'}),
-          );
+            final result = await profileRepository.fetchFreshProfile(
+              pubkey: testPubkey,
+            );
 
-          when(
-            () => mockNostrClient.fetchProfile(testPubkey),
-          ).thenAnswer((_) async => olderEvent);
-          when(
-            () => mockNostrClient.queryEvents(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              useCache: any(named: 'useCache'),
-            ),
-          ).thenAnswer((_) async => [newerEvent]);
-
-          final result = await profileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          );
-
-          expect(result, isNotNull);
-          expect(result!.displayName, equals('New Name'));
-        });
+            // First-result-wins: connected relay completes first
+            expect(result, isNotNull);
+            expect(result!.displayName, equals('Test User'));
+          },
+        );
       });
 
       group('outbox relay fetch', () {
@@ -3854,6 +3848,52 @@ void main() {
         await profileRepository.fetchBatchProfiles(pubkeys: [testPubkey]);
 
         verifyNever(() => mockUserProfilesDao.upsertProfiles(any()));
+      });
+
+      test('picks newest profile per pubkey across sources', () async {
+        // Connected relay returns older profile
+        final olderEvent = MockEvent();
+        when(() => olderEvent.kind).thenReturn(0);
+        when(() => olderEvent.pubkey).thenReturn(testPubkey);
+        when(() => olderEvent.createdAt).thenReturn(1704067200);
+        when(() => olderEvent.id).thenReturn(testEventId);
+        when(() => olderEvent.content).thenReturn(
+          jsonEncode({'display_name': 'Old Name'}),
+        );
+
+        // Indexer returns newer profile for same pubkey
+        final newerEvent = MockEvent();
+        when(() => newerEvent.kind).thenReturn(0);
+        when(() => newerEvent.pubkey).thenReturn(testPubkey);
+        when(() => newerEvent.createdAt).thenReturn(1704153600);
+        when(() => newerEvent.id).thenReturn('newer_$testEventId');
+        when(() => newerEvent.content).thenReturn(
+          jsonEncode({'display_name': 'New Name'}),
+        );
+
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => olderEvent);
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => [newerEvent]);
+        when(
+          () => mockUserProfilesDao.upsertProfiles(any()),
+        ).thenAnswer((_) async {});
+
+        final result = await profileRepository.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, hasLength(1));
+        expect(result[testPubkey]?.displayName, equals('New Name'));
       });
 
       group('outbox relay fallback', () {

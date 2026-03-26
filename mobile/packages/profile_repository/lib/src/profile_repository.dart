@@ -2,6 +2,7 @@
 // ABOUTME: Delegates to NostrClient for relay operations.
 // ABOUTME: Throws ProfilePublishFailedException on publish failure.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
@@ -216,11 +217,8 @@ class ProfileRepository {
   /// Strategy:
   /// 1. Funnelcake REST API (fast, broad coverage)
   /// 2. Connected relays, indexer relays, and outbox relays
-  ///    (NIP-65 write relays) — all fired **in parallel**
-  ///
-  /// When multiple sources return a profile, the newest by
-  /// `createdAt` wins (matching kind 0 replaceable-event
-  /// semantics).
+  ///    (NIP-65 write relays) — all fired **in parallel**,
+  ///    first result wins to minimise latency
   ///
   /// Skips all fetches if the pubkey is confirmed missing.
   /// Deduplicates concurrent calls for the same pubkey —
@@ -291,24 +289,36 @@ class ProfileRepository {
   }
 
   /// Queries connected relays, indexer relays, and outbox relays
-  /// in parallel for a kind 0 profile event. Returns the newest
-  /// profile by `createdAt` when multiple sources succeed
-  /// (matching kind 0 replaceable-event semantics).
+  /// in parallel for a kind 0 profile event. Returns as soon as
+  /// the first source finds a profile (first-result-wins) to
+  /// minimise latency. Falls back to null only when every source
+  /// completes without a result.
   Future<UserProfile?> _fetchFromRelaysParallel(String pubkey) async {
+    final completer = Completer<UserProfile?>();
     final futures = <Future<UserProfile?>>[
       _fetchFromConnectedRelays(pubkey),
       _fetchFromIndexerRelays(pubkey),
       if (_writeRelayResolver != null) _fetchFromOutboxRelays(pubkey),
     ];
 
-    final results = await Future.wait(futures);
-    return results.whereType<UserProfile>().fold<UserProfile?>(
-      null,
-      (best, p) {
-        if (best == null) return p;
-        return p.createdAt.isAfter(best.createdAt) ? p : best;
-      },
-    );
+    var remaining = futures.length;
+
+    for (final future in futures) {
+      unawaited(
+        future.then((result) {
+          if (result != null && !completer.isCompleted) {
+            completer.complete(result);
+          } else {
+            remaining--;
+            if (remaining == 0 && !completer.isCompleted) {
+              completer.complete(null);
+            }
+          }
+        }),
+      );
+    }
+
+    return completer.future;
   }
 
   Future<UserProfile?> _fetchFromConnectedRelays(String pubkey) async {
@@ -1064,46 +1074,35 @@ class ProfileRepository {
         outboxFuture,
       ).wait;
 
-      // Merge results: connected relays first, then indexer, then outbox.
-      // Earlier sources take priority (putIfAbsent).
-      for (final event in relayEvents) {
-        if (event == null || event.kind != 0) continue;
+      // Collect all profiles per pubkey, then pick newest by createdAt.
+      final candidates = <String, List<UserProfile>>{};
+
+      void collectEvent(Event? event) {
+        if (event == null || event.kind != 0) return;
         final profile = UserProfile.fromNostrEvent(event);
-        if (remaining.contains(profile.pubkey)) {
-          results.putIfAbsent(profile.pubkey, () {
-            toCache.add(profile);
-            remaining.remove(profile.pubkey);
-            return profile;
-          });
-        }
+        if (!remaining.contains(profile.pubkey)) return;
+        (candidates[profile.pubkey] ??= []).add(profile);
       }
-      for (final event in indexerEvents) {
-        if (event.kind != 0) continue;
-        final profile = UserProfile.fromNostrEvent(event);
-        if (remaining.contains(profile.pubkey)) {
-          results.putIfAbsent(profile.pubkey, () {
-            toCache.add(profile);
-            remaining.remove(profile.pubkey);
-            return profile;
-          });
-        }
-      }
+
+      relayEvents.forEach(collectEvent);
+      indexerEvents.forEach(collectEvent);
+      outboxEvents.forEach(collectEvent);
+
       if (indexerEvents.isNotEmpty) {
         developer.log(
           'Indexer fallback: found ${indexerEvents.length} profiles',
           name: 'ProfileRepository.fetchBatchProfiles',
         );
       }
-      for (final event in outboxEvents) {
-        if (event.kind != 0) continue;
-        final profile = UserProfile.fromNostrEvent(event);
-        if (remaining.contains(profile.pubkey)) {
-          results.putIfAbsent(profile.pubkey, () {
-            toCache.add(profile);
-            remaining.remove(profile.pubkey);
-            return profile;
-          });
-        }
+
+      // Pick the newest profile per pubkey.
+      for (final entry in candidates.entries) {
+        final newest = entry.value.reduce(
+          (a, b) => b.createdAt.isAfter(a.createdAt) ? b : a,
+        );
+        results[entry.key] = newest;
+        toCache.add(newest);
+        remaining.remove(entry.key);
       }
     }
 
