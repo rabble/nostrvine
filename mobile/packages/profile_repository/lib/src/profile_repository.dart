@@ -1043,10 +1043,7 @@ class ProfileRepository {
                 tempRelays: _profileIndexerRelays,
                 useCache: false,
               )
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => <Event>[],
-              );
+              .timeout(const Duration(seconds: 5));
         } on Exception catch (e) {
           developer.log(
             'Batch indexer fetch failed: $e',

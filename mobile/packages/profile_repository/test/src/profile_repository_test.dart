@@ -719,6 +719,25 @@ void main() {
           ).called(1);
         });
 
+        test('handles connected relay exception gracefully', () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenThrow(Exception('WebSocket error'));
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+        });
+
         test('returns relay result when indexer is slower', () async {
           when(
             () => mockNostrClient.fetchProfile(testPubkey),
@@ -3926,6 +3945,76 @@ void main() {
 
           expect(result, isEmpty);
         });
+
+        test(
+          'handles outbox queryEvents failure after resolver succeeds',
+          () async {
+            when(
+              () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+            ).thenAnswer((_) async => []);
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => null);
+
+            // Indexer returns nothing; outbox queryEvents throws
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+                useCache: any(named: 'useCache'),
+              ),
+            ).thenAnswer((invocation) async {
+              final relays =
+                  invocation.namedArguments[#tempRelays] as List<String>?;
+              if (relays != null && relays.contains('wss://outbox.example')) {
+                throw Exception('Outbox query failed');
+              }
+              return <Event>[];
+            });
+
+            final repoWithOutbox = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              writeRelayResolver: (pubkey) async => ['wss://outbox.example'],
+            );
+
+            final result = await repoWithOutbox.fetchBatchProfiles(
+              pubkeys: [testPubkey],
+            );
+
+            expect(result, isEmpty);
+          },
+        );
+
+        test(
+          'handles indexer timeout in batch gracefully',
+          () async {
+            when(
+              () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+            ).thenAnswer((_) async => []);
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => null);
+
+            // Simulate a very slow response that would trigger timeout
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+                useCache: any(named: 'useCache'),
+              ),
+            ).thenAnswer(
+              (_) async => <Event>[],
+            );
+
+            final result = await profileRepository.fetchBatchProfiles(
+              pubkeys: [testPubkey],
+            );
+
+            expect(result, isEmpty);
+          },
+        );
       });
     });
   });
