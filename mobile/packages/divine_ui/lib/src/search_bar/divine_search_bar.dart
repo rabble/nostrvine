@@ -103,14 +103,9 @@ class _PrefixIcon extends StatelessWidget {
                 ),
               ),
             )
-          : SvgPicture.asset(
-              DivineIconName.search.assetPath,
-              width: 24,
-              height: 24,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.lightText,
-                BlendMode.srcIn,
-              ),
+          : const DivineIcon(
+              icon: .search,
+              color: VineTheme.lightText,
             ),
     );
   }
