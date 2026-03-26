@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/apps/app_detail_screen.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 
 class AppsDirectoryScreen extends ConsumerStatefulWidget {
@@ -104,7 +104,7 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
                     return _AppsDirectoryRow(
                       app: app,
                       onTap: () => context.push(
-                        AppDetailScreen.pathForSlug(app.slug),
+                        NostrAppSandboxScreen.pathForAppId(app.id),
                         extra: app,
                       ),
                     );

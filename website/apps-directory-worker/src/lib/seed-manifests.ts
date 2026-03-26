@@ -2,6 +2,7 @@ import type { AppManifest } from './manifest-schema';
 
 const sharedAllowedMethods: AppManifest['allowed_methods'] = [
   'getPublicKey',
+  'getRelays',
   'signEvent',
   'nip44.encrypt',
   'nip44.decrypt',
@@ -30,6 +31,7 @@ function buildSeedManifest({
   tagline,
   description,
   launchUrl,
+  allowedSignEventKinds = sharedSignEventKinds,
   sortOrder,
 }: {
   slug: string;
@@ -37,6 +39,7 @@ function buildSeedManifest({
   tagline: string;
   description: string;
   launchUrl: string;
+  allowedSignEventKinds?: AppManifest['allowed_sign_event_kinds'];
   sortOrder: number;
 }): AppManifest {
   const origin = new URL(launchUrl).origin;
@@ -50,7 +53,7 @@ function buildSeedManifest({
     launch_url: launchUrl,
     allowed_origins: [origin],
     allowed_methods: [...sharedAllowedMethods],
-    allowed_sign_event_kinds: [...sharedSignEventKinds],
+    allowed_sign_event_kinds: [...allowedSignEventKinds],
     prompt_required_for: [...sharedPromptRequiredFor],
     status: 'approved',
     sort_order: sortOrder,
@@ -119,6 +122,7 @@ export const seedManifests: AppManifest[] = [
     description:
       'A vetted Nostr app for live spaces and community conversations.',
     launchUrl: 'https://nostrnests.com/',
+    allowedSignEventKinds: [...sharedSignEventKinds, 10312, 30312, 30313],
     sortOrder: 7,
   }),
 ];

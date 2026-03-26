@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/nostr_app_audit_event.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -71,6 +72,7 @@ class NostrAppBridgeService {
 
   static const Set<String> _supportedMethods = {
     'getPublicKey',
+    'getRelays',
     'signEvent',
     'nip44.encrypt',
     'nip44.decrypt',
@@ -167,6 +169,8 @@ class NostrAppBridgeService {
     switch (method) {
       case 'getPublicKey':
         result = _handleGetPublicKey();
+      case 'getRelays':
+        result = await _handleGetRelays();
       case 'signEvent':
         result = await _handleSignEvent(args);
       case 'nip44.encrypt':
@@ -192,6 +196,46 @@ class NostrAppBridgeService {
       return const BridgeResult.error('unauthenticated');
     }
     return BridgeResult.success(pubkey);
+  }
+
+  Future<BridgeResult> _handleGetRelays() async {
+    final relayMap = <String, Map<String, bool>>{};
+
+    for (final relay in _authService.userRelays) {
+      relayMap[relay.url] = {
+        'read': relay.read,
+        'write': relay.write,
+      };
+    }
+
+    if (relayMap.isEmpty) {
+      final signerRelays = await _signerFactory(_authService).getRelays();
+      if (signerRelays case final Map relays) {
+        for (final entry in relays.entries) {
+          final key = entry.key;
+          final value = entry.value;
+          if (key is! String || value is! Map) {
+            continue;
+          }
+
+          final read = value['read'];
+          final write = value['write'];
+          relayMap[key] = {
+            'read': read is! bool || read,
+            'write': write is! bool || write,
+          };
+        }
+      }
+    }
+
+    if (relayMap.isEmpty) {
+      relayMap[AppConstants.defaultRelayUrl] = const {
+        'read': true,
+        'write': true,
+      };
+    }
+
+    return BridgeResult.success(relayMap);
   }
 
   Future<BridgeResult> _handleSignEvent(Map<String, dynamic> args) async {

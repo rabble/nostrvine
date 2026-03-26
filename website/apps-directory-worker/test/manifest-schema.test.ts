@@ -139,6 +139,7 @@ describe('manifest schema', () => {
   it('contains the supported method contract', () => {
     expect(SUPPORTED_METHODS).toEqual([
       'getPublicKey',
+      'getRelays',
       'signEvent',
       'nip44.encrypt',
       'nip44.decrypt',

@@ -11,6 +11,7 @@ import 'package:openvine/services/nostr_app_audit_service.dart';
 import 'package:openvine/services/nostr_app_bridge_policy.dart';
 import 'package:openvine/services/nostr_app_bridge_service.dart';
 import 'package:openvine/services/nostr_app_grant_store.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -41,6 +42,12 @@ void main() {
 
       when(() => authService.currentPublicKeyHex).thenReturn('f' * 64);
       when(() => authService.isAuthenticated).thenReturn(true);
+      when(
+        () => authService.userRelays,
+      ).thenReturn(const [
+        DiscoveredRelay(url: 'wss://relay.divine.video'),
+        DiscoveredRelay(url: 'wss://relay.primal.net', write: false),
+      ]);
       when(
         () => authService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -78,16 +85,21 @@ void main() {
       expect(result.data, 'f' * 64);
     });
 
-    test('returns unsupported_method for unknown bridge methods', () async {
+    test('returns the current relay map for getRelays', () async {
       final result = await service.handleRequest(
-        app: _app(),
+        app: _app(
+          allowedMethods: const ['getPublicKey', 'signEvent', 'getRelays'],
+        ),
         origin: Uri.parse('https://primal.net'),
         method: 'getRelays',
         args: const {},
       );
 
-      expect(result.success, isFalse);
-      expect(result.errorCode, 'unsupported_method');
+      expect(result.success, isTrue);
+      expect(result.data, {
+        'wss://relay.divine.video': {'read': true, 'write': true},
+        'wss://relay.primal.net': {'read': true, 'write': false},
+      });
     });
 
     test('fails closed when signEvent requests a blocked kind', () async {

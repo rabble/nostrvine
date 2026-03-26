@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/services/nostr_app_directory_service.dart';
 
 import '../../helpers/go_router.dart';
@@ -89,7 +89,7 @@ void main() {
       expect(find.text('Primal'), findsOneWidget);
     });
 
-    testWidgets('tapping an app opens its detail route', (tester) async {
+    testWidgets('tapping an app opens its integration route', (tester) async {
       final mockGoRouter = MockGoRouter();
       when(
         () => mockGoRouter.push(any(), extra: any(named: 'extra')),
@@ -106,7 +106,7 @@ void main() {
 
       verify(
         () => mockGoRouter.push(
-          AppDetailScreen.pathForSlug('primal'),
+          NostrAppSandboxScreen.pathForAppId('app-primal'),
           extra: any(named: 'extra'),
         ),
       ).called(1);

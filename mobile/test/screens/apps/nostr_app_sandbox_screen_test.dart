@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,25 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('back button uses browser history before leaving the app', (
+      tester,
+    ) async {
+      final platform = _HistoryAwareWebViewPlatform(canGoBackInitially: true);
+      WebViewPlatform.instance = platform;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: NostrAppSandboxScreen(app: _fixtureApp()),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(DiVineAppBarIconButton));
+      await tester.pump();
+
+      expect(platform.controller.goBackCallCount, 1);
+    });
 
     testWidgets(
       'shows a loading state before the integration finishes booting',
@@ -185,6 +205,45 @@ class _ThrowOnBackgroundColorWebViewPlatform extends WebViewPlatform {
   }
 }
 
+class _HistoryAwareWebViewPlatform extends WebViewPlatform {
+  _HistoryAwareWebViewPlatform({required this.canGoBackInitially});
+
+  final bool canGoBackInitially;
+  late final _HistoryAwareWebViewController controller;
+
+  @override
+  PlatformWebViewController createPlatformWebViewController(
+    PlatformWebViewControllerCreationParams params,
+  ) {
+    controller = _HistoryAwareWebViewController(
+      params,
+      canGoBackInitially: canGoBackInitially,
+    );
+    return controller;
+  }
+
+  @override
+  PlatformWebViewWidget createPlatformWebViewWidget(
+    PlatformWebViewWidgetCreationParams params,
+  ) {
+    return _FakeWebViewWidget(params);
+  }
+
+  @override
+  PlatformWebViewCookieManager createPlatformCookieManager(
+    PlatformWebViewCookieManagerCreationParams params,
+  ) {
+    return _FakeCookieManager(params);
+  }
+
+  @override
+  PlatformNavigationDelegate createPlatformNavigationDelegate(
+    PlatformNavigationDelegateCreationParams params,
+  ) {
+    return _FakeNavigationDelegate(params);
+  }
+}
+
 class _ThrowOnBackgroundColorWebViewController
     extends PlatformWebViewController {
   _ThrowOnBackgroundColorWebViewController(super.params)
@@ -213,6 +272,46 @@ class _ThrowOnBackgroundColorWebViewController
 
   @override
   Future<String?> currentUrl() async => 'https://primal.net/app';
+}
+
+class _HistoryAwareWebViewController extends PlatformWebViewController {
+  _HistoryAwareWebViewController(
+    super.params, {
+    required this.canGoBackInitially,
+  }) : super.implementation();
+
+  final bool canGoBackInitially;
+  int goBackCallCount = 0;
+
+  @override
+  Future<void> setJavaScriptMode(JavaScriptMode javaScriptMode) async {}
+
+  @override
+  Future<void> setBackgroundColor(Color color) async {}
+
+  @override
+  Future<void> setPlatformNavigationDelegate(
+    PlatformNavigationDelegate handler,
+  ) async {}
+
+  @override
+  Future<void> addJavaScriptChannel(
+    JavaScriptChannelParams javaScriptChannelParams,
+  ) async {}
+
+  @override
+  Future<void> loadRequest(LoadRequestParams params) async {}
+
+  @override
+  Future<String?> currentUrl() async => 'https://primal.net/app';
+
+  @override
+  Future<bool> canGoBack() async => canGoBackInitially;
+
+  @override
+  Future<void> goBack() async {
+    goBackCallCount += 1;
+  }
 }
 
 class _FakeCookieManager extends PlatformWebViewCookieManager {

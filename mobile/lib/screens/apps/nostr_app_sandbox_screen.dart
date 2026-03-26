@@ -1,6 +1,7 @@
 // ABOUTME: Dedicated integration container for approved third-party apps
 // ABOUTME: Blocks navigation outside approved origins before bridge injection is added
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -265,13 +266,29 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     await controller.runJavaScript(script);
   }
 
+  Future<void> _handleBackPressed() async {
+    final controller = _webViewController;
+    if (controller != null) {
+      final canGoBack = await controller.canGoBack();
+      if (canGoBack) {
+        await controller.goBack();
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    context.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
         title: widget.app.name,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: () {
+          unawaited(_handleBackPressed());
+        },
       ),
       backgroundColor: VineTheme.backgroundColor,
       body: Stack(
@@ -359,6 +376,9 @@ const String _bridgeBootstrapScript = r'''
   window.nostr = {
     getPublicKey() {
       return request('getPublicKey', {});
+    },
+    getRelays() {
+      return request('getRelays', {});
     },
     signEvent(event) {
       return request('signEvent', { event });

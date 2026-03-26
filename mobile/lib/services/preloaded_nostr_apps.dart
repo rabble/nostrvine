@@ -5,6 +5,7 @@ import 'package:openvine/models/nostr_app_directory_entry.dart';
 
 const List<String> _sharedAllowedMethods = [
   'getPublicKey',
+  'getRelays',
   'signEvent',
   'nip44.encrypt',
   'nip44.decrypt',
@@ -96,6 +97,7 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     description:
         'A curated third-party Nostr app for live spaces and community conversations.',
     launchUrl: 'https://nostrnests.com/',
+    allowedSignEventKinds: [..._sharedSignEventKinds, 10312, 30312, 30313],
     sortOrder: 7,
   ),
 ]);
@@ -108,6 +110,9 @@ NostrAppDirectoryEntry _buildPreloadedApp({
   required String description,
   required String launchUrl,
   required int sortOrder,
+  List<String> allowedMethods = _sharedAllowedMethods,
+  List<int> allowedSignEventKinds = _sharedSignEventKinds,
+  List<String> promptRequiredFor = _sharedPromptRequiredFor,
 }) {
   final origin = Uri.parse(launchUrl).origin;
 
@@ -120,9 +125,9 @@ NostrAppDirectoryEntry _buildPreloadedApp({
     iconUrl: '$origin/favicon.ico',
     launchUrl: launchUrl,
     allowedOrigins: [origin],
-    allowedMethods: _sharedAllowedMethods,
-    allowedSignEventKinds: _sharedSignEventKinds,
-    promptRequiredFor: _sharedPromptRequiredFor,
+    allowedMethods: allowedMethods,
+    allowedSignEventKinds: allowedSignEventKinds,
+    promptRequiredFor: promptRequiredFor,
     status: 'approved',
     sortOrder: sortOrder,
     createdAt: null,

@@ -1,5 +1,6 @@
 export const SUPPORTED_METHODS = [
   'getPublicKey',
+  'getRelays',
   'signEvent',
   'nip44.encrypt',
   'nip44.decrypt',
