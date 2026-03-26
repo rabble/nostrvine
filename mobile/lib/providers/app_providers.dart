@@ -1245,12 +1245,14 @@ ProfileRepository? profileRepository(Ref ref) {
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   final relayDiscoveryService = ref.watch(relayDiscoveryServiceProvider);
+  final env = ref.watch(currentEnvironmentProvider);
 
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
+    indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
     writeRelayResolver: (pubkey) async {

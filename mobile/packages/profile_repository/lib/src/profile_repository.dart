@@ -38,10 +38,11 @@ typedef ProfileSearchFilter =
 /// should cache results to avoid repeated lookups.
 typedef WriteRelayResolver = Future<List<String>> Function(String pubkey);
 
-/// Well-known indexer relays that maintain broad coverage of kind 0 events.
-/// Used as a last-resort fallback when main relays and REST API don't have
-/// a profile.
-const _profileIndexerRelays = ['wss://purplepag.es', 'wss://user.kindpag.es'];
+/// Default well-known indexer relays for kind 0 profile lookups.
+const defaultProfileIndexerRelays = [
+  'wss://purplepag.es',
+  'wss://user.kindpag.es',
+];
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
@@ -54,13 +55,15 @@ class ProfileRepository {
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
     WriteRelayResolver? writeRelayResolver,
+    List<String> indexerRelays = defaultProfileIndexerRelays,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
        _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter,
-       _writeRelayResolver = writeRelayResolver;
+       _writeRelayResolver = writeRelayResolver,
+       _indexerRelays = indexerRelays;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
@@ -69,6 +72,7 @@ class ProfileRepository {
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
   final WriteRelayResolver? _writeRelayResolver;
+  final List<String> _indexerRelays;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
   /// same pubkey share the same future instead of firing duplicate requests.
@@ -348,7 +352,7 @@ class ProfileRepository {
             [
               Filter(kinds: [0], authors: [pubkey], limit: 1),
             ],
-            tempRelays: _profileIndexerRelays,
+            tempRelays: _indexerRelays,
             useCache: false,
           )
           .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
@@ -1050,7 +1054,7 @@ class ProfileRepository {
                     limit: remainingList.length,
                   ),
                 ],
-                tempRelays: _profileIndexerRelays,
+                tempRelays: _indexerRelays,
                 useCache: false,
               )
               .timeout(const Duration(seconds: 5));
