@@ -3,9 +3,11 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/utils/hash_util.dart';
@@ -68,6 +70,28 @@ class BlossomHealthCheckResult {
       return 'FAILED: ${errorMessage ?? "Unknown error"}';
     }
   }
+}
+
+class BlossomResumableUploadException implements Exception {
+  const BlossomResumableUploadException(this.message, {this.statusCode});
+
+  final String message;
+  final int? statusCode;
+
+  @override
+  String toString() => message;
+}
+
+class _DivineUploadCapability {
+  const _DivineUploadCapability({
+    required this.supportsResumable,
+    this.controlHost,
+    this.dataHost,
+  });
+
+  final bool supportsResumable;
+  final String? controlHost;
+  final String? dataHost;
 }
 
 class BlossomUploadService {
@@ -232,6 +256,448 @@ class BlossomUploadService {
     }
   }
 
+  String _buildAuthHeader(Event authEvent) {
+    final authEventJson = jsonEncode(authEvent.toJson());
+    return 'Nostr ${base64.encode(utf8.encode(authEventJson))}';
+  }
+
+  Future<String?> _createBlossomAuthHeader({
+    required String url,
+    required String method,
+    required String fileHash,
+    required int fileSize,
+    required String contentDescription,
+  }) async {
+    final authEvent = await _createBlossomAuthEvent(
+      url: url,
+      method: method,
+      fileHash: fileHash,
+      fileSize: fileSize,
+      contentDescription: contentDescription,
+    );
+    if (authEvent == null) {
+      return null;
+    }
+
+    return _buildAuthHeader(authEvent);
+  }
+
+  bool _validateHttpStatus(int? statusCode) =>
+      statusCode != null && statusCode < 500;
+
+  Map<String, String>? _parseRequiredHeaders(dynamic headersData) {
+    if (headersData is! Map) {
+      return null;
+    }
+
+    return headersData.map(
+      (key, value) => MapEntry(key.toString(), value.toString()),
+    );
+  }
+
+  DateTime? _parseDateTimeValue(dynamic rawValue) {
+    final value = rawValue?.toString();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(value);
+  }
+
+  int? _parseUploadOffset(Headers headers) {
+    final rawOffset =
+        headers.value('Upload-Offset') ?? headers.value('upload-offset');
+    return rawOffset == null ? null : int.tryParse(rawOffset);
+  }
+
+  DateTime? _parseUploadExpiresAt(Headers headers) => _parseDateTimeValue(
+    headers.value('Upload-Expires-At') ?? headers.value('upload-expires-at'),
+  );
+
+  Future<_DivineUploadCapability> _fetchDivineUploadCapability(
+    String serverUrl,
+  ) async {
+    try {
+      final response = await dio.head(
+        '$serverUrl/upload',
+        options: Options(validateStatus: _validateHttpStatus),
+      );
+      final extensionsHeader =
+          response.headers.value('X-Divine-Upload-Extensions') ??
+          response.headers.value('x-divine-upload-extensions');
+      final supportsResumable =
+          extensionsHeader
+              ?.split(',')
+              .map((value) => value.trim().toLowerCase())
+              .contains('resumable-sessions') ??
+          false;
+
+      return _DivineUploadCapability(
+        supportsResumable: supportsResumable,
+        controlHost:
+            response.headers.value('X-Divine-Upload-Control-Host') ??
+            response.headers.value('x-divine-upload-control-host'),
+        dataHost:
+            response.headers.value('X-Divine-Upload-Data-Host') ??
+            response.headers.value('x-divine-upload-data-host'),
+      );
+    } on DioException catch (error) {
+      Log.warning(
+        'Capability discovery failed for $serverUrl: ${error.message}',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      return const _DivineUploadCapability(supportsResumable: false);
+    }
+  }
+
+  Future<BlossomResumableUploadSession> _initResumableUpload({
+    required String serverUrl,
+    required String fileHash,
+    required int fileSize,
+    required String contentType,
+    required String fileName,
+  }) async {
+    final authHeader = await _createBlossomAuthHeader(
+      url: '$serverUrl/upload/init',
+      method: 'POST',
+      fileHash: fileHash,
+      fileSize: fileSize,
+      contentDescription: 'Initialize resumable Blossom upload',
+    );
+    if (authHeader == null) {
+      throw const BlossomResumableUploadException(
+        'Failed to create Blossom authentication for resumable upload init',
+      );
+    }
+
+    final response = await dio.post(
+      '$serverUrl/upload/init',
+      data: {
+        'sha256': fileHash,
+        'size': fileSize,
+        'contentType': contentType,
+        'fileName': fileName,
+      },
+      options: Options(
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        },
+        validateStatus: _validateHttpStatus,
+      ),
+    );
+
+    final responseData = response.data;
+    if ((response.statusCode != 200 && response.statusCode != 201) ||
+        responseData is! Map) {
+      throw BlossomResumableUploadException(
+        'Failed to initialize resumable upload: ${response.statusCode} ${response.data}',
+        statusCode: response.statusCode,
+      );
+    }
+
+    final uploadId = responseData['uploadId']?.toString();
+    final uploadUrl = responseData['uploadUrl']?.toString();
+    final chunkSize = (responseData['chunkSize'] as num?)?.toInt();
+    final nextOffset = (responseData['nextOffset'] as num?)?.toInt() ?? 0;
+
+    if (uploadId == null ||
+        uploadId.isEmpty ||
+        uploadUrl == null ||
+        uploadUrl.isEmpty ||
+        chunkSize == null ||
+        chunkSize <= 0) {
+      throw const BlossomResumableUploadException(
+        'Resumable upload init response is missing required fields',
+      );
+    }
+
+    return BlossomResumableUploadSession(
+      uploadId: uploadId,
+      uploadUrl: uploadUrl,
+      chunkSize: chunkSize,
+      nextOffset: nextOffset,
+      expiresAt: _parseDateTimeValue(responseData['expiresAt']),
+      requiredHeaders: _parseRequiredHeaders(responseData['requiredHeaders']),
+    );
+  }
+
+  Future<BlossomResumableUploadSession> _queryResumableUploadSession(
+    BlossomResumableUploadSession session,
+  ) async {
+    final response = await dio.head(
+      session.uploadUrl,
+      options: Options(
+        headers: session.requiredHeaders,
+        validateStatus: _validateHttpStatus,
+      ),
+    );
+
+    if (response.statusCode == 404 || response.statusCode == 410) {
+      throw BlossomResumableUploadException(
+        'Resumable upload session is no longer available',
+        statusCode: response.statusCode,
+      );
+    }
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw BlossomResumableUploadException(
+        'Failed to query resumable upload session: ${response.statusCode}',
+        statusCode: response.statusCode,
+      );
+    }
+
+    return session.copyWith(
+      nextOffset: _parseUploadOffset(response.headers) ?? session.nextOffset,
+      expiresAt: _parseUploadExpiresAt(response.headers) ?? session.expiresAt,
+    );
+  }
+
+  Future<BlossomResumableUploadSession> _uploadChunks({
+    required BlossomResumableUploadSession session,
+    required File file,
+    required int fileSize,
+    void Function(double)? onProgress,
+    void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
+  }) async {
+    var currentSession = session;
+    final fileReader = await file.open();
+
+    try {
+      while (currentSession.nextOffset < fileSize) {
+        final start = currentSession.nextOffset;
+        final endExclusive = math.min(
+          start + currentSession.chunkSize,
+          fileSize,
+        );
+        final chunkLength = endExclusive - start;
+
+        await fileReader.setPosition(start);
+        final chunkBytes = await fileReader.read(chunkLength);
+
+        final response = await dio.put(
+          currentSession.uploadUrl,
+          data: chunkBytes,
+          options: Options(
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'Content-Length': chunkLength.toString(),
+              'Content-Range': 'bytes $start-${endExclusive - 1}/$fileSize',
+              ...?currentSession.requiredHeaders,
+            },
+            validateStatus: _validateHttpStatus,
+          ),
+          onSendProgress: (sent, total) {
+            if (fileSize <= 0) {
+              return;
+            }
+            final progress = 0.2 + ((start + sent) / fileSize) * 0.7;
+            onProgress?.call(progress.clamp(0.2, 0.9));
+          },
+        );
+
+        if (response.statusCode == 404 || response.statusCode == 410) {
+          throw BlossomResumableUploadException(
+            'Resumable upload session expired during chunk upload',
+            statusCode: response.statusCode,
+          );
+        }
+        if (response.statusCode != 200 &&
+            response.statusCode != 201 &&
+            response.statusCode != 204) {
+          final xReason =
+              response.headers.value('X-Reason') ??
+              response.headers.value('x-reason');
+          throw BlossomResumableUploadException(
+            'Chunk upload failed: ${response.statusCode} ${xReason ?? response.data}',
+            statusCode: response.statusCode,
+          );
+        }
+
+        currentSession = currentSession.copyWith(
+          nextOffset: _parseUploadOffset(response.headers) ?? endExclusive,
+          expiresAt:
+              _parseUploadExpiresAt(response.headers) ??
+              currentSession.expiresAt,
+        );
+        onResumableSessionUpdated?.call(currentSession);
+      }
+
+      return currentSession;
+    } finally {
+      await fileReader.close();
+    }
+  }
+
+  Future<BlossomUploadResult> _completeResumableUpload({
+    required String serverUrl,
+    required BlossomResumableUploadSession session,
+    required String fileHash,
+    required int fileSize,
+    void Function(double)? onProgress,
+  }) async {
+    final authHeader = await _createBlossomAuthHeader(
+      url: '$serverUrl/upload/${session.uploadId}/complete',
+      method: 'POST',
+      fileHash: fileHash,
+      fileSize: fileSize,
+      contentDescription: 'Complete resumable Blossom upload',
+    );
+    if (authHeader == null) {
+      throw const BlossomResumableUploadException(
+        'Failed to create Blossom authentication for resumable upload completion',
+      );
+    }
+
+    final response = await dio.post(
+      '$serverUrl/upload/${session.uploadId}/complete',
+      data: const {},
+      options: Options(
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        },
+        validateStatus: _validateHttpStatus,
+      ),
+    );
+
+    return _parseUploadResponse(
+      response,
+      fileHash: fileHash,
+      onProgress: onProgress,
+    );
+  }
+
+  Future<BlossomUploadResult> _uploadToServerResumable({
+    required String serverUrl,
+    required File file,
+    required String fileHash,
+    required int fileSize,
+    required String contentType,
+    BlossomResumableUploadSession? resumableSession,
+    void Function(double)? onProgress,
+    void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
+  }) async {
+    final initialSession = resumableSession == null
+        ? await _initResumableUpload(
+            serverUrl: serverUrl,
+            fileHash: fileHash,
+            fileSize: fileSize,
+            contentType: contentType,
+            fileName: file.uri.pathSegments.isEmpty
+                ? 'upload.bin'
+                : file.uri.pathSegments.last,
+          )
+        : await _queryResumableUploadSession(resumableSession);
+    onResumableSessionUpdated?.call(initialSession);
+
+    final uploadedSession = await _uploadChunks(
+      session: initialSession,
+      file: file,
+      fileSize: fileSize,
+      onProgress: onProgress,
+      onResumableSessionUpdated: onResumableSessionUpdated,
+    );
+
+    return _completeResumableUpload(
+      serverUrl: serverUrl,
+      session: uploadedSession,
+      fileHash: fileHash,
+      fileSize: fileSize,
+      onProgress: onProgress,
+    );
+  }
+
+  BlossomUploadResult _parseUploadResponse(
+    Response<dynamic> response, {
+    required String fileHash,
+    void Function(double)? onProgress,
+  }) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseData = response.data;
+
+      Log.debug(
+        'Server response data type: ${responseData.runtimeType}',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      Log.debug(
+        'Server response data: $responseData',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      if (responseData is Map) {
+        final url = responseData['url']?.toString();
+        final fallbackUrl = responseData['fallbackUrl']?.toString();
+
+        Log.debug(
+          'Parsed response: url=$url, fallbackUrl=$fallbackUrl',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+        String? thumbnailUrl =
+            responseData['thumbnail']?.toString() ?? fallbackUrl;
+
+        String? streamingMp4Url;
+        String? streamingHlsUrl;
+        String? streamingStatus;
+
+        final streamingData = responseData['streaming'];
+        if (streamingData is Map) {
+          streamingMp4Url = streamingData['mp4Url']?.toString();
+          streamingHlsUrl = streamingData['hlsUrl']?.toString();
+          thumbnailUrl =
+              streamingData['thumbnailUrl']?.toString() ??
+              streamingData['thumbnail']?.toString() ??
+              thumbnailUrl;
+          streamingStatus = streamingData['status']?.toString();
+        }
+
+        if (url != null && url.isNotEmpty) {
+          onProgress?.call(1.0);
+
+          return BlossomUploadResult(
+            success: true,
+            url: url,
+            fallbackUrl: fallbackUrl,
+            streamingMp4Url: streamingMp4Url,
+            streamingHlsUrl: streamingHlsUrl,
+            thumbnailUrl: thumbnailUrl,
+            streamingStatus: streamingStatus,
+            videoId: fileHash,
+          );
+        }
+      }
+
+      return const BlossomUploadResult(
+        success: false,
+        errorMessage: 'Upload response missing URL field',
+      );
+    }
+
+    if (response.statusCode == 409) {
+      final existingUrl = '$_defaultServerUrl/$fileHash';
+      onProgress?.call(1.0);
+
+      return BlossomUploadResult(
+        success: true,
+        fallbackUrl: existingUrl,
+        videoId: fileHash,
+      );
+    }
+
+    final xReason =
+        response.headers.value('X-Reason') ??
+        response.headers.value('x-reason');
+
+    return BlossomUploadResult(
+      success: false,
+      errorMessage:
+          'Upload failed: ${response.statusCode} - ${xReason ?? response.data}',
+    );
+  }
+
   /// Core upload logic to a single Blossom server
   ///
   /// This method encapsulates the common upload flow used by all upload methods.
@@ -255,24 +721,19 @@ class BlossomUploadService {
         );
       }
 
-      // Create Blossom auth event (kind 24242)
-      final authEvent = await _createBlossomAuthEvent(
+      final authHeader = await _createBlossomAuthHeader(
         url: '$serverUrl/upload',
         method: 'PUT',
         fileHash: fileHash,
         fileSize: fileSize,
+        contentDescription: 'Upload video to Blossom server',
       );
-
-      if (authEvent == null) {
+      if (authHeader == null) {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Failed to create Blossom authentication',
         );
       }
-
-      // Prepare headers following Blossom spec (BUD-01 requires standard base64 encoding)
-      final authEventJson = jsonEncode(authEvent.toJson());
-      final authHeader = 'Nostr ${base64.encode(utf8.encode(authEventJson))}';
 
       // Add ProofMode headers if manifest is provided
       final headers = <String, dynamic>{
@@ -320,96 +781,10 @@ class BlossomUploadService {
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
-
-      // Handle successful responses
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = response.data;
-
-        Log.debug(
-          'Server response data type: ${responseData.runtimeType}',
-          name: 'BlossomUploadService',
-          category: LogCategory.video,
-        );
-        Log.debug(
-          'Server response data: $responseData',
-          name: 'BlossomUploadService',
-          category: LogCategory.video,
-        );
-
-        if (responseData is Map) {
-          // Extract all URL fields from server response.
-          final url = responseData['url']?.toString();
-          final fallbackUrl = responseData['fallbackUrl']?.toString();
-
-          Log.debug(
-            'Parsed response: url=$url, fallbackUrl=$fallbackUrl',
-            name: 'BlossomUploadService',
-            category: LogCategory.video,
-          );
-          String? thumbnailUrl =
-              responseData['thumbnail']?.toString() ?? fallbackUrl;
-
-          // Extract streaming info if present
-          String? streamingMp4Url;
-          String? streamingHlsUrl;
-          String? streamingStatus;
-
-          final streamingData = responseData['streaming'];
-          if (streamingData is Map) {
-            streamingMp4Url = streamingData['mp4Url']?.toString();
-            streamingHlsUrl = streamingData['hlsUrl']?.toString();
-            thumbnailUrl =
-                streamingData['thumbnailUrl']?.toString() ??
-                streamingData['thumbnail']?.toString() ??
-                thumbnailUrl;
-            streamingStatus = streamingData['status']?.toString();
-          }
-
-          if (url != null && url.isNotEmpty) {
-            onProgress?.call(1.0);
-
-            return BlossomUploadResult(
-              success: true,
-              url: url,
-              fallbackUrl: fallbackUrl,
-              streamingMp4Url: streamingMp4Url,
-              streamingHlsUrl: streamingHlsUrl,
-              thumbnailUrl: thumbnailUrl,
-              streamingStatus: streamingStatus,
-              videoId: fileHash,
-            );
-          }
-        }
-
-        // Response didn't have expected URL
-        return const BlossomUploadResult(
-          success: false,
-          errorMessage: 'Upload response missing URL field',
-        );
-      }
-
-      // Handle 409 Conflict - file already exists
-      if (response.statusCode == 409) {
-        final existingUrl = '$_defaultServerUrl/$fileHash';
-        onProgress?.call(1.0);
-
-        return BlossomUploadResult(
-          success: true,
-          fallbackUrl: existingUrl, // Use fallbackUrl for R2 MP4
-          videoId: fileHash,
-        );
-      }
-
-      // Handle other error responses
-      // Extract X-Reason header for detailed error info (BUD-01 spec)
-      final xReason =
-          response.headers.value('X-Reason') ??
-          response.headers.value('x-reason');
-
-      return BlossomUploadResult(
-        success: false,
-        errorMessage:
-            'Upload failed: ${response.statusCode} - ${xReason ?? response.data}',
+      return _parseUploadResponse(
+        response,
+        fileHash: fileHash,
+        onProgress: onProgress,
       );
     } on DioException catch (e) {
       // Build detailed error message
@@ -470,6 +845,8 @@ class BlossomUploadService {
     required String? proofManifestJson,
     required String? description,
     required List<String>? hashtags,
+    BlossomResumableUploadSession? resumableSession,
+    void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
     void Function(double)? onProgress,
   }) async {
     // Start performance trace for video upload
@@ -538,16 +915,35 @@ class BlossomUploadService {
             name: 'BlossomUploadService',
             category: LogCategory.video,
           );
+          final capability = await _fetchDivineUploadCapability(serverUrl);
+          if (capability.supportsResumable) {
+            Log.info(
+              'Using Divine resumable upload flow for $serverUrl',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+          }
 
-          final result = await _uploadToServer(
-            serverUrl: serverUrl,
-            file: videoFile,
-            fileHash: fileHash,
-            fileSize: fileSize,
-            contentType: 'video/mp4',
-            proofManifestJson: proofManifestJson,
-            onProgress: onProgress,
-          );
+          final result = capability.supportsResumable
+              ? await _uploadToServerResumable(
+                  serverUrl: serverUrl,
+                  file: videoFile,
+                  fileHash: fileHash,
+                  fileSize: fileSize,
+                  contentType: 'video/mp4',
+                  resumableSession: resumableSession,
+                  onProgress: onProgress,
+                  onResumableSessionUpdated: onResumableSessionUpdated,
+                )
+              : await _uploadToServer(
+                  serverUrl: serverUrl,
+                  file: videoFile,
+                  fileHash: fileHash,
+                  fileSize: fileSize,
+                  contentType: 'video/mp4',
+                  proofManifestJson: proofManifestJson,
+                  onProgress: onProgress,
+                );
 
           if (result.success) {
             // Construct the canonical Blossom URL from server + hash
@@ -639,6 +1035,10 @@ class BlossomUploadService {
       await PerformanceMonitoringService.instance.stopTrace('video_upload');
     }
   }
+
+  Future<BlossomResumableUploadSession> resumeUploadSession({
+    required BlossomResumableUploadSession session,
+  }) => _queryResumableUploadSession(session);
 
   /// Upload an image file (e.g. thumbnail) to the configured Blossom server
   ///
