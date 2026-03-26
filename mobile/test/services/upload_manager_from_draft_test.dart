@@ -132,6 +132,8 @@ void main() {
           description: any(named: 'description'),
           hashtags: any(named: 'hashtags'),
           proofManifestJson: any(named: 'proofManifestJson'),
+          resumableSession: any(named: 'resumableSession'),
+          onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer(
