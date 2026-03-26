@@ -5,10 +5,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:patrol/patrol.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// A minimal 320x240 1-second H.264 MP4 (isom brand) with GPS metadata
@@ -56,122 +56,122 @@ const _gpsVideoBase64 =
     'AAAAAAAACIqsAC9gfAAAAABlYXJ0aAAAAAAAHql4eXoAEgAAKzQ3LjM3NjkrMDA4LjU0MTcv';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  group('VideoMetadataStripper Integration Tests', () {
+    late Directory tempDir;
 
-  late Directory tempDir;
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp(
+        'video_metadata_test_',
+      );
+    });
 
-  setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp(
-      'video_metadata_test_',
+    tearDown(() async {
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    /// Writes the embedded GPS-tagged video fixture to a temp file.
+    Future<String> writeFixture(String name) async {
+      final bytes = base64Decode(_gpsVideoBase64);
+      final path = '${tempDir.path}/$name';
+      await File(path).writeAsBytes(bytes);
+      return path;
+    }
+
+    patrolTest(
+      'renderVideo strips GPS metadata from video',
+      ($) async {
+        final inputPath = await writeFixture('gps_video.mp4');
+
+        // Verify GPS metadata is present in source video
+        final sourceMeta = await ProVideoEditor.instance.getMetadata(
+          EditorVideo.file(inputPath),
+        );
+
+        expect(
+          sourceMeta.gpsCoordinates,
+          isNotNull,
+          reason: 'Source video must contain GPS coordinates',
+        );
+        expect(
+          sourceMeta.gpsCoordinates!.latitude,
+          closeTo(47.3769, 0.01),
+        );
+        expect(
+          sourceMeta.gpsCoordinates!.longitude,
+          closeTo(8.5417, 0.01),
+        );
+
+        // Render video through VideoEditorRenderService
+        final clip = DivineVideoClip(
+          id: 'test_gps_clip',
+          video: EditorVideo.file(inputPath),
+          duration: const Duration(seconds: 1),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 1,
+        );
+
+        final outputPath = await VideoEditorRenderService.renderVideo(
+          clips: [clip],
+          aspectRatio: model.AspectRatio.square,
+        );
+
+        expect(outputPath, isNotNull, reason: 'Render must succeed');
+
+        // Verify GPS metadata is stripped after rendering
+        final renderedMeta = await ProVideoEditor.instance.getMetadata(
+          EditorVideo.file(outputPath!),
+        );
+
+        expect(
+          renderedMeta.gpsCoordinates,
+          isNull,
+          reason: 'Rendered video must not contain GPS coordinates',
+        );
+
+        // Clean up rendered file
+        final renderedFile = File(outputPath);
+        if (renderedFile.existsSync()) await renderedFile.delete();
+      },
+    );
+
+    patrolTest(
+      'cropToAspectRatio strips GPS metadata',
+      ($) async {
+        final inputPath = await writeFixture('gps_crop_video.mp4');
+
+        // Verify GPS is present
+        final sourceMeta = await ProVideoEditor.instance.getMetadata(
+          EditorVideo.file(inputPath),
+        );
+        expect(sourceMeta.gpsCoordinates, isNotNull);
+
+        // Crop via the render service
+        final croppedPath = await VideoEditorRenderService.cropToAspectRatio(
+          video: EditorVideo.file(inputPath),
+          aspectRatio: model.AspectRatio.vertical,
+          metadata: sourceMeta,
+        );
+
+        // Verify GPS metadata is stripped after cropping
+        final croppedMeta = await ProVideoEditor.instance.getMetadata(
+          EditorVideo.file(croppedPath),
+        );
+
+        expect(
+          croppedMeta.gpsCoordinates,
+          isNull,
+          reason: 'Cropped video must not contain GPS coordinates',
+        );
+
+        // Clean up
+        if (croppedPath != inputPath) {
+          final croppedFile = File(croppedPath);
+          if (croppedFile.existsSync()) await croppedFile.delete();
+        }
+      },
     );
   });
-
-  tearDown(() async {
-    if (tempDir.existsSync()) {
-      await tempDir.delete(recursive: true);
-    }
-  });
-
-  /// Writes the embedded GPS-tagged video fixture to a temp file.
-  Future<String> writeFixture(String name) async {
-    final bytes = base64Decode(_gpsVideoBase64);
-    final path = '${tempDir.path}/$name';
-    await File(path).writeAsBytes(bytes);
-    return path;
-  }
-
-  testWidgets(
-    'renderVideo strips GPS metadata from video',
-    (tester) async {
-      final inputPath = await writeFixture('gps_video.mp4');
-
-      // Verify GPS metadata is present in source video
-      final sourceMeta = await ProVideoEditor.instance.getMetadata(
-        EditorVideo.file(inputPath),
-      );
-
-      expect(
-        sourceMeta.gpsCoordinates,
-        isNotNull,
-        reason: 'Source video must contain GPS coordinates',
-      );
-      expect(
-        sourceMeta.gpsCoordinates!.latitude,
-        closeTo(47.3769, 0.01),
-      );
-      expect(
-        sourceMeta.gpsCoordinates!.longitude,
-        closeTo(8.5417, 0.01),
-      );
-
-      // Render video through VideoEditorRenderService
-      final clip = DivineVideoClip(
-        id: 'test_gps_clip',
-        video: EditorVideo.file(inputPath),
-        duration: const Duration(seconds: 1),
-        recordedAt: DateTime.now(),
-        targetAspectRatio: model.AspectRatio.square,
-        originalAspectRatio: 1,
-      );
-
-      final outputPath = await VideoEditorRenderService.renderVideo(
-        clips: [clip],
-        aspectRatio: model.AspectRatio.square,
-      );
-
-      expect(outputPath, isNotNull, reason: 'Render must succeed');
-
-      // Verify GPS metadata is stripped after rendering
-      final renderedMeta = await ProVideoEditor.instance.getMetadata(
-        EditorVideo.file(outputPath!),
-      );
-
-      expect(
-        renderedMeta.gpsCoordinates,
-        isNull,
-        reason: 'Rendered video must not contain GPS coordinates',
-      );
-
-      // Clean up rendered file
-      final renderedFile = File(outputPath);
-      if (renderedFile.existsSync()) await renderedFile.delete();
-    },
-  );
-
-  testWidgets(
-    'cropToAspectRatio strips GPS metadata',
-    (tester) async {
-      final inputPath = await writeFixture('gps_crop_video.mp4');
-
-      // Verify GPS is present
-      final sourceMeta = await ProVideoEditor.instance.getMetadata(
-        EditorVideo.file(inputPath),
-      );
-      expect(sourceMeta.gpsCoordinates, isNotNull);
-
-      // Crop via the render service
-      final croppedPath = await VideoEditorRenderService.cropToAspectRatio(
-        video: EditorVideo.file(inputPath),
-        aspectRatio: model.AspectRatio.vertical,
-        metadata: sourceMeta,
-      );
-
-      // Verify GPS metadata is stripped after cropping
-      final croppedMeta = await ProVideoEditor.instance.getMetadata(
-        EditorVideo.file(croppedPath),
-      );
-
-      expect(
-        croppedMeta.gpsCoordinates,
-        isNull,
-        reason: 'Cropped video must not contain GPS coordinates',
-      );
-
-      // Clean up
-      if (croppedPath != inputPath) {
-        final croppedFile = File(croppedPath);
-        if (croppedFile.existsSync()) await croppedFile.delete();
-      }
-    },
-  );
 }
