@@ -915,9 +915,11 @@ class BlossomUploadService {
         );
       }
 
-      if (manifestMap['c2pa_manifest_id'] != null) {
+      final c2paManifestId =
+          manifestMap['c2paManifestId'] ?? manifestMap['c2pa_manifest_id'];
+      if (c2paManifestId != null) {
         headers['X-ProofMode-C2PA'] = _encodeHeaderValue(
-          manifestMap['c2pa_manifest_id'],
+          c2paManifestId,
         );
       }
 

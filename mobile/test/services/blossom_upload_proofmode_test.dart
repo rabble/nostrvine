@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show NativeProofData;
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
@@ -256,6 +257,38 @@ void main() {
         expect(decodedMap['id'], equals('c2pa-123'));
         expect(decodedMap['alg'], equals('sha256'));
       });
+
+      test(
+        'encodes c2paManifestId from NativeProofData JSON shape',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode(
+            const NativeProofData(
+              videoHash: 'abc123',
+              c2paManifestId: 'c2pa-test-id',
+            ).toJson(),
+          );
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          expect(headers, contains('X-ProofMode-C2PA'));
+
+          final decoded = utf8.decode(
+            base64.decode(headers['X-ProofMode-C2PA'] as String),
+          );
+          expect(decoded, equals('c2pa-test-id'));
+        },
+      );
 
       test('omits signature header when pgpSignature is null', () async {
         arrangeUploadMocks();
