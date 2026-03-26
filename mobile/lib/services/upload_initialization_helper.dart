@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -180,6 +181,9 @@ class UploadInitializationHelper {
         }
         if (!Hive.isAdapterRegistered(2)) {
           Hive.registerAdapter(PendingUploadAdapter());
+        }
+        if (!Hive.isAdapterRegistered(3)) {
+          Hive.registerAdapter(BlossomResumableUploadSessionAdapter());
         }
 
         // Try to open the box

@@ -5,9 +5,12 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:hive_ce/hive.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 part 'pending_upload.g.dart';
+
+const Object _pendingUploadUnset = Object();
 
 /// Status of a video upload to Cloudinary
 @HiveType(typeId: 1)
@@ -65,6 +68,7 @@ class PendingUpload {
     this.streamingMp4Url,
     this.streamingHlsUrl,
     this.fallbackUrl,
+    this.resumableSession,
   });
 
   /// Create a new pending upload
@@ -166,6 +170,9 @@ class PendingUpload {
   @HiveField(23)
   final String? fallbackUrl; // R2 MP4 fallback URL from Blossom
 
+  @HiveField(24)
+  final BlossomResumableUploadSession? resumableSession;
+
   /// Get video duration as Duration object
   Duration? get videoDuration => videoDurationMillis != null
       ? Duration(milliseconds: videoDurationMillis!)
@@ -221,6 +228,7 @@ class PendingUpload {
     String? streamingMp4Url,
     String? streamingHlsUrl,
     String? fallbackUrl,
+    Object? resumableSession = _pendingUploadUnset,
   }) => PendingUpload(
     id: id ?? this.id,
     localVideoPath: localVideoPath ?? this.localVideoPath,
@@ -246,6 +254,9 @@ class PendingUpload {
     streamingMp4Url: streamingMp4Url ?? this.streamingMp4Url,
     streamingHlsUrl: streamingHlsUrl ?? this.streamingHlsUrl,
     fallbackUrl: fallbackUrl ?? this.fallbackUrl,
+    resumableSession: identical(resumableSession, _pendingUploadUnset)
+        ? this.resumableSession
+        : resumableSession as BlossomResumableUploadSession?,
   );
 
   /// Check if the upload is in a terminal state

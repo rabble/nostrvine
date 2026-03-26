@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/pending_upload.dart';
 
 void main() {
@@ -145,6 +146,26 @@ void main() {
 
       expect(copied.proofManifestJson, equals(testProofJson));
       expect(copied.hasProofMode, isTrue);
+    });
+
+    test('resumable session metadata does not disturb ProofMode data', () {
+      final upload =
+          PendingUpload.create(
+            localVideoPath: '/path/to/video.mp4',
+            nostrPubkey: 'pubkey123',
+            proofManifestJson: testProofJson,
+          ).copyWith(
+            resumableSession: const BlossomResumableUploadSession(
+              uploadId: 'up_123',
+              uploadUrl: 'https://upload.divine.video/sessions/up_123',
+              chunkSize: 8 * 1024 * 1024,
+              nextOffset: 4 * 1024 * 1024,
+            ),
+          );
+
+      expect(upload.hasProofMode, isTrue);
+      expect(upload.nativeProof?.videoHash, equals(testProofData.videoHash));
+      expect(upload.resumableSession?.uploadId, equals('up_123'));
     });
 
     test('roundtrip serialization preserves NativeProofData', () {
