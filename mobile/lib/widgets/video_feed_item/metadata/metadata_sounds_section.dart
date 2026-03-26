@@ -87,7 +87,10 @@ class _SoundListItem extends ConsumerWidget {
         child: Row(
           spacing: 16,
           children: [
-            const _AudioCover(),
+            const DivineIcon(
+              icon: DivineIconName.waveform,
+              color: VineTheme.onSurfaceVariant,
+            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,51 +124,16 @@ class _SoundListItem extends ConsumerWidget {
       name: 'MetadataSoundsSection',
       category: LogCategory.ui,
     );
-    context.pushWithVideoPause(
-      SoundDetailScreen.pathForId(audio.id),
-      extra: audio,
-    );
-  }
-}
 
-/// 40px rounded placeholder with music note icon.
-///
-/// [AudioEvent] has no cover image field — `url` is the audio file itself.
-/// Always shows the placeholder icon, matching the existing
-/// [AudioAttributionRow] pattern.
-class _AudioCover extends StatelessWidget {
-  const _AudioCover();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: VineTheme.onSurfaceDisabled),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: const _AudioCoverPlaceholder(),
-    );
-  }
-}
-
-class _AudioCoverPlaceholder extends StatelessWidget {
-  const _AudioCoverPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.surfaceContainer,
-      child: Center(
-        child: Icon(
-          Icons.music_note,
-          size: 20,
-          color: VineTheme.onSurfaceVariant,
-        ),
-      ),
-    );
+    // Dismiss the sheet first, then navigate from the root navigator context.
+    // GoRouter extensions can throw when called from inside a modal bottom
+    // sheet (the router is not in the modal's widget tree).
+    final hostContext = Navigator.of(context, rootNavigator: true).context;
+    Navigator.of(context).pop();
+    Future<void>.delayed(Duration.zero).then((_) {
+      if (!hostContext.mounted) return;
+      hostContext.pushWithVideoPause(SoundDetailScreen.pathForId(audio.id));
+    });
   }
 }
 

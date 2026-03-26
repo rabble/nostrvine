@@ -13,6 +13,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_sectio
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 
 /// Expanded metadata bottom sheet for a video.
 ///
@@ -67,6 +68,7 @@ class MetadataExpandedSheet extends StatelessWidget {
                     _TitleSection(video: video),
                     MetadataBadgesRow(video: video),
                     MetadataStatsRow(video: video),
+                    MetadataVerificationSection(video: video),
                     MetadataCreatorSection(pubkey: video.pubkey),
                     MetadataTagsSection(video: video),
                     MetadataCollaboratorsSection(
@@ -91,23 +93,17 @@ class MetadataExpandedSheet extends StatelessWidget {
 }
 
 /// Drag handle indicator at the top of the sheet.
+///
+/// Wraps the shared [VineBottomSheetDragHandle] with the padding specified
+/// in the Figma spec (8px top, 20px bottom).
 class _DragHandle extends StatelessWidget {
   const _DragHandle();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 20),
-      child: Center(
-        child: Container(
-          width: 64,
-          height: 4,
-          decoration: BoxDecoration(
-            color: VineTheme.onSurfaceDisabled,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      ),
+    return const Padding(
+      padding: EdgeInsets.only(top: 8, bottom: 20),
+      child: Center(child: VineBottomSheetDragHandle()),
     );
   }
 }

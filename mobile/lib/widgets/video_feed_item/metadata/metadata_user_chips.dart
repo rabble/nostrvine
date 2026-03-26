@@ -206,8 +206,16 @@ class _TappableUserChip extends ConsumerWidget {
 
   void _navigateToProfile(BuildContext context) {
     final npub = normalizeToNpub(pubkey);
-    if (npub != null) {
-      context.push(OtherProfileScreen.pathForNpub(npub));
-    }
+    if (npub == null) return;
+
+    // Dismiss the sheet first, then navigate from the root navigator context.
+    // GoRouter extensions can throw when called from inside a modal bottom
+    // sheet (the router is not in the modal's widget tree).
+    final hostContext = Navigator.of(context, rootNavigator: true).context;
+    Navigator.of(context).pop();
+    Future<void>.delayed(Duration.zero).then((_) {
+      if (!hostContext.mounted) return;
+      hostContext.push(OtherProfileScreen.pathForNpub(npub));
+    });
   }
 }

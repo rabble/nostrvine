@@ -20,6 +20,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_sectio
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 class _MockVideoInteractionsBloc extends Mock
@@ -280,7 +281,7 @@ void main() {
         buildSubject(child: MetadataTagsSection(video: video)),
       );
 
-      expect(find.text('Tags'), findsOneWidget);
+      // Tags section has no label per Figma spec — only chip text.
       expect(find.text('sick'), findsOneWidget);
       expect(find.text('cool'), findsOneWidget);
       expect(find.text('baller'), findsOneWidget);
@@ -293,7 +294,6 @@ void main() {
         buildSubject(child: MetadataTagsSection(video: video)),
       );
 
-      expect(find.text('Tags'), findsOneWidget);
       expect(find.text('classic'), findsOneWidget);
       expect(find.text('#'), findsOneWidget);
     });
@@ -319,7 +319,8 @@ void main() {
         buildSubject(child: MetadataTagsSection(video: video)),
       );
 
-      expect(find.text('Tags'), findsNothing);
+      // No hashtag chips should appear.
+      expect(find.text('#'), findsNothing);
     });
   });
 
@@ -470,6 +471,42 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // Verification section
+  // ---------------------------------------------------------------------------
+  group(MetadataVerificationSection, () {
+    testWidgets('renders checklist when video has proof data', (tester) async {
+      final video = _makeVideo(
+        rawTags: {
+          'verification': 'verified_mobile',
+          'device_attestation': 'token_abc',
+          'pgp_fingerprint': 'ABCD1234',
+        },
+      );
+      await tester.pumpWidget(
+        buildSubject(child: MetadataVerificationSection(video: video)),
+      );
+
+      expect(find.text('Verification'), findsOneWidget);
+      expect(find.text('Device attestation'), findsOneWidget);
+      expect(find.text('PGP signature'), findsOneWidget);
+      expect(find.text('C2PA Content Credentials'), findsOneWidget);
+      expect(find.text('Proof manifest'), findsOneWidget);
+      // Two passed (device attestation, PGP), two failed (C2PA, manifest)
+      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+      expect(find.byIcon(Icons.cancel), findsNWidgets(2));
+    });
+
+    testWidgets('hides when no proof data', (tester) async {
+      final video = _makeVideo();
+      await tester.pumpWidget(
+        buildSubject(child: MetadataVerificationSection(video: video)),
+      );
+
+      expect(find.text('Verification'), findsNothing);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Sounds section
   // ---------------------------------------------------------------------------
   group(MetadataSoundsSection, () {
@@ -572,15 +609,23 @@ void main() {
       // Badges row (Human-Made from verification, not Classic Vine)
       expect(find.textContaining('Human-Made'), findsOneWidget);
 
+      // Verification section (video has 'verified_mobile' raw tag)
+      expect(find.text('Verification'), findsOneWidget);
+
       // Top section labels
       expect(find.text('Creator'), findsOneWidget);
-      expect(find.text('Tags'), findsOneWidget);
-      expect(find.text('Sebastian Heit'), findsOneWidget);
-      expect(find.text('grease'), findsOneWidget);
 
       // Scroll to reveal sections below the fold
       final listFinder = find.byType(ListView);
-      await tester.drag(listFinder, const Offset(0, -400));
+      await tester.drag(listFinder, const Offset(0, -300));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sebastian Heit'), findsOneWidget);
+      // Tags section has no label per Figma — verify chips directly.
+      expect(find.text('grease'), findsOneWidget);
+
+      // Scroll further to reveal collaborators
+      await tester.drag(listFinder, const Offset(0, -300));
       await tester.pumpAndSettle();
 
       expect(find.text('Collaborators'), findsOneWidget);
@@ -624,7 +669,7 @@ void main() {
       // Present
       expect(find.text('Simple video'), findsOneWidget);
       expect(find.text('Creator'), findsOneWidget);
-      expect(find.text('Tags'), findsOneWidget);
+      // Tags section has no label — verify chip text directly.
       expect(find.text('hello'), findsOneWidget);
 
       // Absent

@@ -1,17 +1,19 @@
 // ABOUTME: Tags section for the metadata expanded sheet.
-// ABOUTME: Displays category chips (accent-colored with emoji) and hashtag
-// ABOUTME: chips (green "#" prefix) in a wrapping layout.
+// ABOUTME: Displays hashtag chips (green "#" prefix) in a wrapping layout
+// ABOUTME: without a section label, matching Figma node 12345:71463.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 
-/// Tags section showing category chips and hashtags.
+/// Tags section showing hashtag chips.
 ///
-/// Category chips (e.g., "Animals") have an accent-colored background and emoji
-/// icon. Hashtag chips have a green "#" prefix. Classic Vine videos prepend a
+/// Hashtag chips have a green "#" prefix. Classic Vine videos prepend a
 /// "classic" hashtag chip.
+///
+/// Unlike other metadata sections, this section has **no label** and **no
+/// bottom border** per Figma spec — chips sit directly between the stats row
+/// and the Creator section.
 ///
 /// Returns [SizedBox.shrink] when the video has no tags.
 ///
@@ -31,8 +33,8 @@ class MetadataTagsSection extends StatelessWidget {
 
     if (allHashtags.isEmpty) return const SizedBox.shrink();
 
-    return MetadataSection(
-      label: 'Tags',
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
