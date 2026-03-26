@@ -53,13 +53,15 @@ void main() {
 
       final apps = await service.fetchApprovedApps();
 
-      expect(apps, hasLength(1));
-      expect(apps.single.id, '1');
-      expect(apps.single.slug, 'primal');
-      expect(apps.single.name, 'Primal');
+      expect(apps, hasLength(_starterSlugs.length));
+      expect(apps.where((app) => app.slug == 'primal').single.id, '1');
+      expect(
+        apps.where((app) => app.slug == 'primal').single.name,
+        'Primal',
+      );
 
       final cachedApps = await service.fetchApprovedApps(useCacheOnly: true);
-      expect(cachedApps.map((app) => app.slug), ['primal']);
+      expect(cachedApps.map((app) => app.slug), _starterSlugs);
       verify(
         () => mockHttpClient.get(
           Uri.parse('https://apps.divine.video/v1/apps'),
@@ -67,6 +69,21 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'fetchApprovedApps with useCacheOnly returns bundled starter apps when cache is empty',
+      () async {
+        final apps = await service.fetchApprovedApps(useCacheOnly: true);
+
+        expect(apps.map((app) => app.slug), _starterSlugs);
+        verifyNever(
+          () => mockHttpClient.get(
+            Uri.parse('https://apps.divine.video/v1/apps'),
+            headers: any(named: 'headers'),
+          ),
+        );
+      },
+    );
 
     test(
       'fetchApprovedApps with useCacheOnly reads cached apps only',
@@ -84,14 +101,35 @@ void main() {
 
         final apps = await service.fetchApprovedApps(useCacheOnly: true);
 
-        expect(apps, hasLength(1));
-        expect(apps.single.slug, 'yakihonne');
+        expect(apps, hasLength(_starterSlugs.length));
+        expect(
+          apps.where((app) => app.slug == 'yakihonne').single.name,
+          'YakiHonne',
+        );
         verifyNever(
           () => mockHttpClient.get(
             Uri.parse('https://apps.divine.video/v1/apps'),
             headers: any(named: 'headers'),
           ),
         );
+      },
+    );
+
+    test(
+      'fetchApprovedApps returns bundled starter apps when remote directory is empty',
+      () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://apps.divine.video/v1/apps'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(jsonEncode({'items': []}), 200),
+        );
+
+        final apps = await service.fetchApprovedApps();
+
+        expect(apps.map((app) => app.slug), _starterSlugs);
       },
     );
 
@@ -118,8 +156,8 @@ void main() {
 
         final apps = await service.fetchApprovedApps();
 
-        expect(apps, hasLength(1));
-        expect(apps.single.slug, 'noauth');
+        expect(apps, hasLength(_starterSlugs.length + 1));
+        expect(apps.any((app) => app.slug == 'noauth'), isTrue);
       },
     );
 
@@ -165,18 +203,34 @@ void main() {
         final apps = await service.fetchApprovedApps();
         final cachedApps = await service.fetchApprovedApps(useCacheOnly: true);
 
-        expect(apps.map((app) => app.slug), ['keep-app']);
-        expect(cachedApps.map((app) => app.slug), ['keep-app']);
+        expect(apps, hasLength(_starterSlugs.length + 1));
+        expect(cachedApps, hasLength(_starterSlugs.length + 1));
+        expect(apps.any((app) => app.slug == 'keep-app'), isTrue);
+        expect(cachedApps.any((app) => app.slug == 'keep-app'), isTrue);
+        expect(apps.any((app) => app.slug == 'old-app'), isFalse);
+        expect(cachedApps.any((app) => app.slug == 'old-app'), isFalse);
       },
     );
   });
 }
 
+const List<String> _starterSlugs = [
+  'flotilla',
+  'habla',
+  'zap-stream',
+  'primal',
+  'yakihonne',
+  'shopstr',
+  'nostrnests',
+];
+
 Map<String, dynamic> _appJson({
   required String slug,
   required String name,
   required String updatedAt,
+  int? sortOrder,
 }) {
+  final launchUrl = _launchUrlForSlug(slug);
   return {
     'id': slug == 'primal' ? 1 : 'app-$slug',
     'slug': slug,
@@ -184,14 +238,35 @@ Map<String, dynamic> _appJson({
     'tagline': '$name on Nostr',
     'description': 'A vetted Nostr app called $name.',
     'icon_url': 'https://cdn.divine.video/$slug.png',
-    'launch_url': 'https://$slug.example.com',
-    'allowed_origins': ['https://$slug.example.com'],
+    'launch_url': launchUrl,
+    'allowed_origins': [Uri.parse(launchUrl).origin],
     'allowed_methods': ['getPublicKey', 'signEvent'],
     'allowed_sign_event_kinds': [1, 7],
     'prompt_required_for': ['signEvent'],
     'status': 'approved',
-    'sort_order': 1,
+    'sort_order': sortOrder ?? _sortOrderBySlug[slug] ?? 100,
     'created_at': '2026-03-24T08:00:00Z',
     'updated_at': updatedAt,
   };
 }
+
+String _launchUrlForSlug(String slug) => switch (slug) {
+  'flotilla' => 'https://app.flotilla.social/',
+  'habla' => 'https://habla.news/',
+  'zap-stream' => 'https://zap.stream/',
+  'primal' => 'https://primal.net/',
+  'yakihonne' => 'https://yakihonne.com/',
+  'shopstr' => 'https://shopstr.store/',
+  'nostrnests' => 'https://nostrnests.com/',
+  _ => 'https://$slug.example.com',
+};
+
+const Map<String, int> _sortOrderBySlug = {
+  'flotilla': 1,
+  'habla': 2,
+  'zap-stream': 3,
+  'primal': 4,
+  'yakihonne': 5,
+  'shopstr': 6,
+  'nostrnests': 7,
+};

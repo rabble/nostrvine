@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
+import 'package:openvine/services/preloaded_nostr_apps.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,7 +30,7 @@ class NostrAppDirectoryService {
     bool useCacheOnly = false,
   }) async {
     if (useCacheOnly) {
-      return _readCachedApps();
+      return _mergeWithPreloadedApps(await _readCachedApps());
     }
 
     final uri = Uri.parse('$_baseUrl/v1/apps');
@@ -45,7 +46,7 @@ class NostrAppDirectoryService {
       );
 
       if (response.statusCode == 304) {
-        return _readCachedApps();
+        return _mergeWithPreloadedApps(await _readCachedApps());
       }
 
       if (response.statusCode != 200) {
@@ -55,15 +56,15 @@ class NostrAppDirectoryService {
         );
       }
 
-      final apps = _parseApps(response.body);
-      await _writeCachedApps(apps);
+      final remoteApps = _parseApps(response.body);
+      await _writeCachedApps(remoteApps);
 
       final responseETag = response.headers['etag'];
       if (responseETag != null && responseETag.isNotEmpty) {
         await _sharedPreferences.setString(eTagCacheKey, responseETag);
       }
 
-      return apps;
+      return _mergeWithPreloadedApps(remoteApps);
     } catch (error, stackTrace) {
       Log.warning(
         'Falling back to cached Nostr app directory: $error',
@@ -75,7 +76,7 @@ class NostrAppDirectoryService {
         name: 'NostrAppDirectoryService',
         category: LogCategory.system,
       );
-      return _readCachedApps();
+      return _mergeWithPreloadedApps(await _readCachedApps());
     }
   }
 
@@ -144,5 +145,21 @@ class NostrAppDirectoryService {
       return sortComparison;
     }
     return left.name.toLowerCase().compareTo(right.name.toLowerCase());
+  }
+
+  List<NostrAppDirectoryEntry> _mergeWithPreloadedApps(
+    List<NostrAppDirectoryEntry> remoteOrCachedApps,
+  ) {
+    final appsBySlug = <String, NostrAppDirectoryEntry>{
+      for (final app in preloadedNostrApps) app.slug: app,
+    };
+
+    for (final app in remoteOrCachedApps) {
+      appsBySlug[app.slug] = app;
+    }
+
+    final apps = appsBySlug.values.toList(growable: false);
+    apps.sort(_compareApps);
+    return List<NostrAppDirectoryEntry>.unmodifiable(apps);
   }
 }
