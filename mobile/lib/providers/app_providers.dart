@@ -25,7 +25,6 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/relay_discovery_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/categories_repository.dart';
 import 'package:openvine/repositories/dm_repository.dart';
@@ -1244,7 +1243,6 @@ ProfileRepository? profileRepository(Ref ref) {
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
-  final relayDiscoveryService = ref.watch(relayDiscoveryServiceProvider);
   final env = ref.watch(currentEnvironmentProvider);
 
   final repo = ProfileRepository(
@@ -1255,12 +1253,6 @@ ProfileRepository? profileRepository(Ref ref) {
     indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
-    writeRelayResolver: (pubkey) async {
-      final npub = NostrKeyUtils.encodePubKey(pubkey);
-      final result = await relayDiscoveryService.discoverRelays(npub);
-      if (!result.success) return [];
-      return result.relays.where((r) => r.write).map((r) => r.url).toList();
-    },
   );
 
   // Pre-load known cached pubkeys and wire into SubscriptionManager

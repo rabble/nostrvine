@@ -29,15 +29,6 @@ const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 typedef ProfileSearchFilter =
     List<UserProfile> Function(String query, List<UserProfile> profiles);
 
-/// Resolves write-relay URLs for a hex pubkey via NIP-65
-/// (kind 10002).
-///
-/// Used by the outbox model: when a profile isn't found on
-/// connected relays, this resolver discovers where the user
-/// publishes and queries those relays directly. Implementations
-/// should cache results to avoid repeated lookups.
-typedef WriteRelayResolver = Future<List<String>> Function(String pubkey);
-
 /// Default indexer relays for kind 0 profile lookups.
 ///
 /// Production wiring overrides this via
@@ -59,7 +50,6 @@ class ProfileRepository {
     ProfileStatsDao? profileStatsDao,
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
-    WriteRelayResolver? writeRelayResolver,
     List<String> indexerRelays = defaultProfileIndexerRelays,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
@@ -67,7 +57,6 @@ class ProfileRepository {
        _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter,
-       _writeRelayResolver = writeRelayResolver,
        _indexerRelays = indexerRelays;
 
   final NostrClient _nostrClient;
@@ -76,7 +65,6 @@ class ProfileRepository {
   final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
-  final WriteRelayResolver? _writeRelayResolver;
   final List<String> _indexerRelays;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
@@ -297,17 +285,16 @@ class ProfileRepository {
     return null;
   }
 
-  /// Queries connected relays, indexer relays, and outbox relays
-  /// in parallel for a kind 0 profile event. Returns as soon as
-  /// the first source finds a profile (first-result-wins) to
-  /// minimise latency. Falls back to null only when every source
-  /// completes without a result.
+  /// Queries connected relays and indexer relays in parallel for a
+  /// kind 0 profile event. Returns as soon as the first source
+  /// finds a profile (first-result-wins) to minimise latency.
+  /// Falls back to null only when every source completes without
+  /// a result.
   Future<UserProfile?> _fetchFromRelaysParallel(String pubkey) async {
     final completer = Completer<UserProfile?>();
     final futures = <Future<UserProfile?>>[
       _fetchFromConnectedRelays(pubkey),
       _fetchFromIndexerRelays(pubkey),
-      if (_writeRelayResolver != null) _fetchFromOutboxRelays(pubkey),
     ];
 
     var remaining = futures.length;
@@ -385,87 +372,6 @@ class ProfileRepository {
       );
     }
     return null;
-  }
-
-  Future<UserProfile?> _fetchFromOutboxRelays(String pubkey) async {
-    try {
-      final writeRelays = await _writeRelayResolver!(pubkey);
-      if (writeRelays.isEmpty) return null;
-
-      developer.log(
-        'Outbox: querying ${writeRelays.length} write relays for $pubkey',
-        name: 'ProfileRepository.fetchFreshProfile',
-      );
-
-      final events = await _nostrClient
-          .queryEvents(
-            [
-              Filter(kinds: [0], authors: [pubkey], limit: 1),
-            ],
-            tempRelays: writeRelays,
-            useCache: false,
-          )
-          .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
-
-      if (events.isNotEmpty && events.first.kind == 0) {
-        final profile = UserProfile.fromNostrEvent(events.first);
-        developer.log(
-          'Fetched from outbox relay: ${profile.bestDisplayName}',
-          name: 'ProfileRepository.fetchFreshProfile',
-        );
-        return profile;
-      }
-    } on Exception catch (e) {
-      developer.log(
-        'Outbox relay fetch failed: $e',
-        name: 'ProfileRepository.fetchFreshProfile',
-      );
-    }
-    return null;
-  }
-
-  /// Resolves write relays for multiple pubkeys and batch-queries them for
-  /// kind 0 profiles. Used by [fetchBatchProfiles] as a parallel source.
-  Future<List<Event>> _fetchBatchFromOutboxRelays(List<String> pubkeys) async {
-    try {
-      // Resolve write relays for all pubkeys concurrently.
-      final relayResults = await Future.wait(
-        pubkeys.map((pk) async {
-          try {
-            return await _writeRelayResolver!(pk);
-          } on Exception {
-            return <String>[];
-          }
-        }),
-      );
-
-      // Collect unique write relay URLs across all pubkeys.
-      final allWriteRelays = <String>{};
-      relayResults.forEach(allWriteRelays.addAll);
-      if (allWriteRelays.isEmpty) return <Event>[];
-
-      developer.log(
-        'Outbox batch: querying ${allWriteRelays.length} write relays '
-        'for ${pubkeys.length} pubkeys',
-        name: 'ProfileRepository.fetchBatchProfiles',
-      );
-
-      return await _nostrClient
-          .queryEvents(
-            [
-              Filter(kinds: [0], authors: pubkeys, limit: pubkeys.length),
-            ],
-            tempRelays: allWriteRelays.toList(),
-            useCache: false,
-          )
-          .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
-    } on Exception catch (e) {
-      developer.log(
-        'Outbox batch fetch failed: $e',
-        name: 'ProfileRepository.fetchBatchProfiles',
-      );
-      return <Event>[];
-    }
   }
 
   /// Publishes profile metadata to Nostr relays and updates the local cache.
@@ -1040,7 +946,7 @@ class ProfileRepository {
       }
     }
 
-    // Step 3: Connected relays, indexer relays, and outbox relays in parallel
+    // Step 3: Connected relays and indexer relays in parallel
     if (remaining.isNotEmpty) {
       final remainingList = remaining.toList();
 
@@ -1080,18 +986,12 @@ class ProfileRepository {
         }
       }();
 
-      // Outbox relay queries (resolve write relays, then batch query)
-      final outboxFuture = _writeRelayResolver != null
-          ? _fetchBatchFromOutboxRelays(remainingList)
-          : Future<List<Event>>.value(<Event>[]);
-
-      final (relayEvents, indexerEvents, outboxEvents) = await (
+      final (relayEvents, indexerEvents) = await (
         relayFuture,
         indexerFuture,
-        outboxFuture,
       ).wait;
 
-      // Collect all profiles per pubkey, then pick newest by createdAt.
+      // Collect all profiles per pubkey, pick newest by createdAt.
       final candidates = <String, List<UserProfile>>{};
 
       void collectEvent(Event? event) {
@@ -1103,7 +1003,6 @@ class ProfileRepository {
 
       relayEvents.forEach(collectEvent);
       indexerEvents.forEach(collectEvent);
-      outboxEvents.forEach(collectEvent);
 
       if (indexerEvents.isNotEmpty) {
         developer.log(
