@@ -1209,11 +1209,6 @@ class _ProfileSetupScreenViewState
         throw Exception('No public key available');
       }
 
-      // Strip EXIF metadata (GPS, device info) before uploading
-      if (!kIsWeb) {
-        await ImageMetadataStripper.stripMetadataInPlace(_selectedImage!);
-      }
-
       final result = await uploadService.uploadImage(
         imageFile: _selectedImage!,
         nostrPubkey: authService.currentPublicKeyHex!,

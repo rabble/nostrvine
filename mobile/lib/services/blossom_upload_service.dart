@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -663,6 +665,11 @@ class BlossomUploadService {
 
       // Report initial progress
       onProgress?.call(0.1);
+
+      // Strip EXIF metadata (GPS, device info) before uploading
+      if (!kIsWeb) {
+        await ImageMetadataStripper.stripMetadataInPlace(imageFile);
+      }
 
       // Calculate file hash for Blossom
       // Note: For images, we need to load into memory for the hash (small files)
