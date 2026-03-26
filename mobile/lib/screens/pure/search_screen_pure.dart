@@ -277,8 +277,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                     ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(
-                              Icons.clear,
+                            icon: const DivineIcon(
+                              icon: .x,
                               color: VineTheme.whiteText,
                             ),
                             onPressed: () {
