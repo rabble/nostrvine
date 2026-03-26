@@ -738,6 +738,46 @@ void main() {
           expect(result, isNotNull);
           expect(result!.displayName, equals('Test User'));
         });
+
+        test('picks newest profile when multiple sources succeed', () async {
+          // Connected relay returns an older profile
+          final olderEvent = MockEvent();
+          when(() => olderEvent.kind).thenReturn(0);
+          when(() => olderEvent.pubkey).thenReturn(testPubkey);
+          when(() => olderEvent.createdAt).thenReturn(1704067200);
+          when(() => olderEvent.id).thenReturn(testEventId);
+          when(() => olderEvent.content).thenReturn(
+            jsonEncode({'display_name': 'Old Name'}),
+          );
+
+          // Indexer returns a newer profile
+          final newerEvent = MockEvent();
+          when(() => newerEvent.kind).thenReturn(0);
+          when(() => newerEvent.pubkey).thenReturn(testPubkey);
+          when(() => newerEvent.createdAt).thenReturn(1704153600);
+          when(() => newerEvent.id).thenReturn('newer_$testEventId');
+          when(() => newerEvent.content).thenReturn(
+            jsonEncode({'display_name': 'New Name'}),
+          );
+
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => olderEvent);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [newerEvent]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('New Name'));
+        });
       });
 
       group('outbox relay fetch', () {

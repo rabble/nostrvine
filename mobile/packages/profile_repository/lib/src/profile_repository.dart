@@ -213,14 +213,19 @@ class ProfileRepository {
 
   /// Fetches a fresh profile and updates the local cache.
   ///
-  /// Uses a layered strategy matching `fetchBatchProfiles`:
+  /// Strategy:
   /// 1. Funnelcake REST API (fast, broad coverage)
-  /// 2. User's connected relays (WebSocket)
-  /// 3. Well-known indexer relays (Purple Pages, Kind Pages)
+  /// 2. Connected relays, indexer relays, and outbox relays
+  ///    (NIP-65 write relays) — all fired **in parallel**
+  ///
+  /// When multiple sources return a profile, the newest by
+  /// `createdAt` wins (matching kind 0 replaceable-event
+  /// semantics).
   ///
   /// Skips all fetches if the pubkey is confirmed missing.
-  /// Deduplicates concurrent calls for the same pubkey — only one fetch
-  /// pipeline runs, and all callers share the result.
+  /// Deduplicates concurrent calls for the same pubkey —
+  /// only one fetch pipeline runs, and all callers share
+  /// the result.
   ///
   /// Returns `null` if no profile exists across all sources.
   /// On success, the profile is automatically cached locally.
@@ -285,8 +290,10 @@ class ProfileRepository {
     return null;
   }
 
-  /// Queries connected relays, indexer relays, and outbox relays in parallel
-  /// for a kind 0 profile event. Returns the first successful result.
+  /// Queries connected relays, indexer relays, and outbox relays
+  /// in parallel for a kind 0 profile event. Returns the newest
+  /// profile by `createdAt` when multiple sources succeed
+  /// (matching kind 0 replaceable-event semantics).
   Future<UserProfile?> _fetchFromRelaysParallel(String pubkey) async {
     final futures = <Future<UserProfile?>>[
       _fetchFromConnectedRelays(pubkey),
@@ -294,9 +301,14 @@ class ProfileRepository {
       if (_writeRelayResolver != null) _fetchFromOutboxRelays(pubkey),
     ];
 
-    // Return the first non-null result; null if all complete without finding.
     final results = await Future.wait(futures);
-    return results.where((r) => r != null).firstOrNull;
+    return results.whereType<UserProfile>().fold<UserProfile?>(
+      null,
+      (best, p) {
+        if (best == null) return p;
+        return p.createdAt.isAfter(best.createdAt) ? p : best;
+      },
+    );
   }
 
   Future<UserProfile?> _fetchFromConnectedRelays(String pubkey) async {
@@ -813,18 +825,19 @@ class ProfileRepository {
     return _funnelcakeApiClient.getBulkProfiles(pubkeys);
   }
 
-  /// Fetches profiles for multiple pubkeys using a layered strategy.
+  /// Fetches profiles for multiple pubkeys using a layered
+  /// strategy.
   ///
   /// Pipeline:
   /// 1. Batch-read Drift for cached profiles
-  /// 2. [FunnelcakeApiClient.getBulkProfiles] for uncached pubkeys
-  /// 3. [NostrClient.queryEvents] with multi-author kind 0 filter for
-  ///    any remaining
+  /// 2. [FunnelcakeApiClient.getBulkProfiles] for uncached
+  /// 3. Connected relays, indexer relays, and outbox relays
+  ///    — all fired **in parallel** for remaining pubkeys
   /// 4. Batch-write all freshly fetched profiles to Drift
-  /// 5. Return combined results as `Map<String, UserProfile>`
   ///
-  /// Errors from the API or relay layers are caught and logged — partial
-  /// results are returned rather than throwing.
+  /// Errors from the API or relay layers are caught and
+  /// logged — partial results are returned rather than
+  /// throwing.
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
   }) async {
@@ -981,7 +994,7 @@ class ProfileRepository {
       }
     }
 
-    // Step 5: Batch-write all freshly fetched to Drift
+    // Step 4: Batch-write all freshly fetched to Drift
     if (toCache.isNotEmpty) {
       _knownCached.addAll(toCache.map((p) => p.pubkey));
       await _userProfilesDao.upsertProfiles(toCache);
