@@ -448,7 +448,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               const Tab(text: 'Categories'),
               if (_forYouAvailable) const Tab(text: 'For You'),
               const Tab(text: 'Lists'),
-              if (nostrAppsSandboxSupported) const Tab(text: 'Apps'),
+              if (nostrAppsSandboxSupported) const Tab(text: 'Integrated Apps'),
             ],
           ),
         ),

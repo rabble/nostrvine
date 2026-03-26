@@ -1074,7 +1074,7 @@ class _MissingSandboxAppScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Sandbox unavailable',
+        title: 'Integration unavailable',
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -1083,7 +1083,7 @@ class _MissingSandboxAppScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Open vetted apps from the directory so Divine can apply the right sandbox policy.',
+            'Open approved integrations from the Integrated Apps tab so Divine can apply the right access policy.',
             textAlign: TextAlign.center,
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
@@ -1151,7 +1151,7 @@ class _ResolvedSandboxRouteScreenState
         if (snapshot.connectionState != ConnectionState.done) {
           return Scaffold(
             appBar: DiVineAppBar(
-              title: 'Loading sandbox',
+              title: 'Loading integration',
               showBackButton: true,
               onBackPressed: context.pop,
             ),

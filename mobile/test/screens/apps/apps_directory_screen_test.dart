@@ -58,6 +58,11 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
+      expect(find.text('Integrated Apps'), findsOneWidget);
+      expect(
+        find.text('Approved third-party apps that run inside Divine'),
+        findsOneWidget,
+      );
       expect(find.text('Primal'), findsOneWidget);
       expect(find.text('Fast Nostr feeds and messages'), findsOneWidget);
     });
@@ -71,6 +76,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DiVineAppBar), findsNothing);
+      expect(
+        find.text('Approved third-party apps that run inside Divine'),
+        findsOneWidget,
+      );
       expect(find.text('Primal'), findsOneWidget);
     });
 
@@ -107,9 +116,11 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('No vetted apps yet'), findsOneWidget);
+      expect(find.text('No approved integrations yet'), findsOneWidget);
       expect(
-        find.text('Check back after the directory refreshes.'),
+        find.text(
+          'Approved third-party apps will appear here as Divine adds them.',
+        ),
         findsOneWidget,
       );
     });

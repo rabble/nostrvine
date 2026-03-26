@@ -118,8 +118,8 @@ void main() {
         'Content Preferences',
         'Moderation Controls',
         'Nostr Settings',
-        'Apps',
-        'App Permissions',
+        'Integrated Apps',
+        'Integration Permissions',
       ]) {
         await tester.scrollUntilVisible(
           find.text(title),
@@ -130,7 +130,7 @@ void main() {
       }
 
       expect(
-        find.text('Launch vetted Nostr apps in Divine'),
+        find.text('Approved third-party apps that run inside Divine'),
         findsOneWidget,
       );
 
@@ -138,7 +138,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('tapping App Permissions opens the permissions route', (
+    testWidgets('tapping Integration Permissions opens the permissions route', (
       tester,
     ) async {
       final mockGoRouter = MockGoRouter();
@@ -149,11 +149,11 @@ void main() {
 
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
-        find.text('App Permissions'),
+        find.text('Integration Permissions'),
         100,
         scrollable: scrollable,
       );
-      await tester.tap(find.text('App Permissions'));
+      await tester.tap(find.text('Integration Permissions'));
       await tester.pumpAndSettle();
 
       verify(() => mockGoRouter.push(AppsPermissionsScreen.path)).called(1);
@@ -162,7 +162,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('tapping Apps opens the directory route', (tester) async {
+    testWidgets('tapping Integrated Apps opens the directory route', (
+      tester,
+    ) async {
       final mockGoRouter = MockGoRouter();
       when(() => mockGoRouter.go(any())).thenReturn(null);
 
@@ -193,11 +195,11 @@ void main() {
 
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
-        find.text('Apps'),
+        find.text('Integrated Apps'),
         100,
         scrollable: scrollable,
       );
-      await tester.tap(find.text('Apps'));
+      await tester.tap(find.text('Integrated Apps'));
       await tester.pumpAndSettle();
 
       verify(() => mockGoRouter.go(ExploreScreen.path)).called(1);

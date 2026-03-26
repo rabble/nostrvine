@@ -11,43 +11,62 @@ import '../../helpers/go_router.dart';
 
 void main() {
   group('AppDetailScreen', () {
-    testWidgets('opens the sandbox route from the launch action', (
-      tester,
-    ) async {
-      final mockGoRouter = MockGoRouter();
-      when(
-        () => mockGoRouter.push(any(), extra: any(named: 'extra')),
-      ).thenAnswer((_) async => null);
+    testWidgets(
+      'shows approved integration messaging and opens the launch action',
+      (
+        tester,
+      ) async {
+        final mockGoRouter = MockGoRouter();
+        when(
+          () => mockGoRouter.push(any(), extra: any(named: 'extra')),
+        ).thenAnswer((_) async => null);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MockGoRouterProvider(
-            goRouter: mockGoRouter,
-            child: MaterialApp(
-              home: AppDetailScreen(
-                slug: 'primal',
-                initialEntry: _fixtureApp(),
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MockGoRouterProvider(
+              goRouter: mockGoRouter,
+              child: MaterialApp(
+                home: AppDetailScreen(
+                  slug: 'primal',
+                  initialEntry: _fixtureApp(),
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(find.byType(DivineButton), 300);
-      await tester.tap(find.byType(DivineButton));
-      await tester.pumpAndSettle();
+        expect(find.text('How it works'), findsOneWidget);
+        expect(
+          find.text(
+            'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Primary origin'), findsOneWidget);
+        expect(find.text('Approved origins'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('Available capabilities'),
+          300,
+        );
+        expect(find.text('Available capabilities'), findsOneWidget);
+        expect(find.text('Ask before'), findsOneWidget);
+        await tester.scrollUntilVisible(find.text('Open Integration'), 300);
+        expect(find.text('Open Integration'), findsOneWidget);
+        await tester.tap(find.byType(DivineButton));
+        await tester.pumpAndSettle();
 
-      final captured = verify(
-        () => mockGoRouter.push(
-          NostrAppSandboxScreen.pathForAppId('primal-app'),
-          extra: captureAny(named: 'extra'),
-        ),
-      ).captured;
-      final pushedApp = captured.single as NostrAppDirectoryEntry;
-      expect(pushedApp.id, 'primal-app');
-      expect(pushedApp.slug, 'primal');
-    });
+        final captured = verify(
+          () => mockGoRouter.push(
+            NostrAppSandboxScreen.pathForAppId('primal-app'),
+            extra: captureAny(named: 'extra'),
+          ),
+        ).captured;
+        final pushedApp = captured.single as NostrAppDirectoryEntry;
+        expect(pushedApp.id, 'primal-app');
+        expect(pushedApp.slug, 'primal');
+      },
+    );
   });
 }
 

@@ -122,6 +122,66 @@ void main() {
       expect(find.text('Primal'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'shows integration unavailable messaging when the app cannot be resolved',
+    (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        'current_user_pubkey_hex': 'f' * 64,
+        'following_list_${'f' * 64}': '["npub1followed"]',
+      });
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final mockAuth = createMockAuthService();
+      final mockDirectoryService = _MockNostrAppDirectoryService();
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
+      when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => mockAuth.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
+      when(
+        mockDirectoryService.fetchApprovedApps,
+      ).thenAnswer((_) async => const []);
+
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: mockAuth,
+          ),
+          nostrAppDirectoryServiceProvider.overrideWithValue(
+            mockDirectoryService,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+      router.go(NostrAppSandboxScreen.pathForAppId('missing-app'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Integration unavailable'), findsOneWidget);
+      expect(
+        find.text(
+          'Open approved integrations from the Integrated Apps tab so Divine can apply the right access policy.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 class _FakeWebViewPlatform extends WebViewPlatform {

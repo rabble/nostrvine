@@ -1,4 +1,4 @@
-// ABOUTME: Dedicated sandbox browser for vetted Nostr apps
+// ABOUTME: Dedicated integration container for approved third-party apps
 // ABOUTME: Blocks navigation outside approved origins before bridge injection is added
 
 import 'dart:convert';
@@ -278,14 +278,14 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
               child: _SandboxStatusCard(
                 title: 'Blocked for safety',
                 subtitle:
-                    'Tried to leave the approved app origin.\n\n$_blockedUri',
+                    'This integration tried to leave its approved origin.\n\n$_blockedUri',
               ),
             )
           else if (_isLoading)
             const Positioned.fill(
               child: _SandboxStatusCard(
-                title: 'Loading app sandbox',
-                subtitle: 'Checking the approved app origin before launch.',
+                title: 'Loading integration',
+                subtitle: 'Checking the approved integration before launch.',
                 showSpinner: true,
               ),
             ),

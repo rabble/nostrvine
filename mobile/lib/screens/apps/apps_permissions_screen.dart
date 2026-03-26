@@ -1,4 +1,4 @@
-// ABOUTME: Screen for reviewing and revoking remembered sandbox permissions
+// ABOUTME: Screen for reviewing and revoking remembered integration permissions
 // ABOUTME: Shows per-user grant entries saved by the Nostr app grant store
 
 import 'package:divine_ui/divine_ui.dart';
@@ -67,7 +67,7 @@ class _AppsPermissionsScreenState extends State<AppsPermissionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'App permissions',
+        title: 'Integration Permissions',
         showBackButton: true,
         onBackPressed: Navigator.of(context).pop,
       ),
@@ -130,13 +130,13 @@ class _AppsPermissionsEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No saved permissions',
+              'No saved integration permissions',
               textAlign: TextAlign.center,
               style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
             ),
             const SizedBox(height: 10),
             Text(
-              'Approved apps will appear here after you remember a sandbox grant.',
+              'Approved integrations will appear here after you remember an access approval.',
               textAlign: TextAlign.center,
               style: VineTheme.bodyLargeFont(
                 color: VineTheme.onSurfaceVariant,

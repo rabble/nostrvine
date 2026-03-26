@@ -1,5 +1,5 @@
-// ABOUTME: Lists vetted Nostr apps fetched from the remote directory service
-// ABOUTME: Provides a simple settings-entry browse surface before the sandbox launches
+// ABOUTME: Lists approved third-party app integrations surfaced inside Divine
+// ABOUTME: Keeps the framing explicitly bounded instead of reading like a browser
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -73,8 +73,8 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
 
               if (snapshot.hasError) {
                 return _AppsDirectoryMessage(
-                  title: 'Could not load apps',
-                  subtitle: 'Pull to try the vetted directory again.',
+                  title: 'Could not load integrated apps',
+                  subtitle: 'Pull to try the approved integrations again.',
                   actionLabel: 'Retry',
                   onAction: _refreshApps,
                 );
@@ -83,8 +83,9 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
               final apps = snapshot.data ?? const <NostrAppDirectoryEntry>[];
               if (apps.isEmpty) {
                 return _AppsDirectoryMessage(
-                  title: 'No vetted apps yet',
-                  subtitle: 'Check back after the directory refreshes.',
+                  title: 'No approved integrations yet',
+                  subtitle:
+                      'Approved third-party apps will appear here as Divine adds them.',
                   actionLabel: 'Refresh',
                   onAction: _refreshApps,
                 );
@@ -93,9 +94,13 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
               return RefreshIndicator(
                 onRefresh: _refreshApps,
                 child: ListView.builder(
-                  itemCount: apps.length,
+                  itemCount: apps.length + 1,
                   itemBuilder: (context, index) {
-                    final app = apps[index];
+                    if (index == 0) {
+                      return const _AppsDirectoryIntro();
+                    }
+
+                    final app = apps[index - 1];
                     return ListTile(
                       leading: const CircleAvatar(
                         backgroundColor: VineTheme.cardBackground,
@@ -144,7 +149,7 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
 
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Apps',
+        title: 'Integrated Apps',
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -205,6 +210,41 @@ class _AppsDirectoryMessage extends StatelessWidget {
   }
 }
 
+class _AppsDirectoryIntro extends StatelessWidget {
+  const _AppsDirectoryIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: VineTheme.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: VineTheme.outlineMuted),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Approved third-party apps',
+              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Approved third-party apps that run inside Divine',
+              style: VineTheme.bodyLargeFont(
+                color: VineTheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
   const _AppsDirectoryUnsupportedMessage();
 
@@ -217,7 +257,7 @@ class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Apps run in Divine mobile',
+              'Integrated Apps run in Divine mobile',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: VineTheme.whiteText,
@@ -227,7 +267,7 @@ class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'The vetted app sandbox is disabled on web for now.',
+              'Approved integrations are only available on mobile for now.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: VineTheme.lightText,

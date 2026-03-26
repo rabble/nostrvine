@@ -42,59 +42,65 @@ void main() {
     registerFallbackValue(() {});
   });
 
-  testWidgets('ExploreScreen includes the Apps tab and embedded directory', (
-    tester,
-  ) async {
-    final directoryService = _MockNostrAppDirectoryService();
-    final videoEventService = _MockVideoEventService();
+  testWidgets(
+    'ExploreScreen includes the Integrated Apps tab and embedded directory',
+    (
+      tester,
+    ) async {
+      final directoryService = _MockNostrAppDirectoryService();
+      final videoEventService = _MockVideoEventService();
 
-    // ignore: unnecessary_lambdas
-    when(() => directoryService.fetchApprovedApps()).thenAnswer(
-      _fetchApprovedAppsAnswer,
-    );
-    when(
-      () => videoEventService.addVideoUpdateListener(any()),
-    ).thenReturn(() {});
-    when(() => videoEventService.filterVideoList(any())).thenAnswer(
-      (invocation) => invocation.positionalArguments.first as List<VideoEvent>,
-    );
-    when(() => videoEventService.discoveryVideos).thenReturn([]);
-    when(() => videoEventService.popularNowVideos).thenReturn([]);
-    when(() => videoEventService.isSubscribed(any())).thenReturn(false);
-    // ignore: invalid_use_of_protected_member
-    when(() => videoEventService.hasListeners).thenReturn(false);
+      // ignore: unnecessary_lambdas
+      when(() => directoryService.fetchApprovedApps()).thenAnswer(
+        _fetchApprovedAppsAnswer,
+      );
+      when(
+        () => videoEventService.addVideoUpdateListener(any()),
+      ).thenReturn(() {});
+      when(() => videoEventService.filterVideoList(any())).thenAnswer(
+        (invocation) =>
+            invocation.positionalArguments.first as List<VideoEvent>,
+      );
+      when(() => videoEventService.discoveryVideos).thenReturn([]);
+      when(() => videoEventService.popularNowVideos).thenReturn([]);
+      when(() => videoEventService.isSubscribed(any())).thenReturn(false);
+      // ignore: invalid_use_of_protected_member
+      when(() => videoEventService.hasListeners).thenReturn(false);
 
-    await tester.pumpWidget(
-      testProviderScope(
-        additionalOverrides: [
-          appForegroundProvider.overrideWith(_FakeAppForeground.new),
-          videoEventServiceProvider.overrideWithValue(videoEventService),
-          routerLocationStreamProvider.overrideWith(
-            (ref) => Stream.value(ExploreScreen.path),
-          ),
-          forceExploreTabNameProvider.overrideWith((ref) => 'apps'),
-          exploreTabVideosProvider.overrideWith((ref) => null),
-          classicVinesAvailableProvider.overrideWith((ref) async => false),
-          forYouAvailableProvider.overrideWithValue(false),
-          allListsProvider.overrideWith(
-            (ref) async => (
-              userLists: <UserList>[],
-              curatedLists: <CuratedList>[],
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            appForegroundProvider.overrideWith(_FakeAppForeground.new),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            routerLocationStreamProvider.overrideWith(
+              (ref) => Stream.value(ExploreScreen.path),
             ),
-          ),
-          curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
-          nostrAppDirectoryServiceProvider.overrideWithValue(directoryService),
-        ],
-        child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
-      ),
-    );
+            forceExploreTabNameProvider.overrideWith((ref) => 'apps'),
+            exploreTabVideosProvider.overrideWith((ref) => null),
+            classicVinesAvailableProvider.overrideWith((ref) async => false),
+            forYouAvailableProvider.overrideWithValue(false),
+            allListsProvider.overrideWith(
+              (ref) async => (
+                userLists: <UserList>[],
+                curatedLists: <CuratedList>[],
+              ),
+            ),
+            curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
+            nostrAppDirectoryServiceProvider.overrideWithValue(
+              directoryService,
+            ),
+          ],
+          child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+        ),
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    expect(find.text('Apps'), findsOneWidget);
-    expect(find.text('Primal'), findsOneWidget);
-    expect(find.text('Fast Nostr feeds and messages'), findsOneWidget);
-  });
+      expect(find.text('Integrated Apps'), findsOneWidget);
+      expect(find.text('Primal'), findsOneWidget);
+      expect(find.text('Fast Nostr feeds and messages'), findsOneWidget);
+    },
+  );
 }
 
 Future<List<NostrAppDirectoryEntry>> _fetchApprovedAppsAnswer(

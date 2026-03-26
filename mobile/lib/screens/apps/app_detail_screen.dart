@@ -1,5 +1,5 @@
-// ABOUTME: App detail screen for vetted Nostr apps
-// ABOUTME: Shows app metadata and capability summary before sandbox launch wiring exists
+// ABOUTME: App detail screen for approved third-party integrations in Divine
+// ABOUTME: Explains the bounded access model before launching an integration
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -70,7 +70,7 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
         final app = snapshot.data;
         return Scaffold(
           appBar: DiVineAppBar(
-            title: app?.name ?? 'App',
+            title: app?.name ?? 'Integrated App',
             showBackButton: true,
             onBackPressed: context.pop,
           ),
@@ -83,9 +83,9 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : app == null
                   ? const _AppDetailMessage(
-                      title: 'App not found',
+                      title: 'Integration not found',
                       subtitle:
-                          'This vetted app is no longer in the directory.',
+                          'This approved integration is no longer available in Divine.',
                     )
                   : ListView(
                       padding: const EdgeInsets.all(16),
@@ -113,6 +113,17 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        const _AppDetailSection(
+                          title: 'How it works',
+                          child: Text(
+                            'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.',
+                            style: TextStyle(
+                              color: VineTheme.whiteText,
+                              fontSize: 15,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
                         _AppDetailSection(
                           title: 'About',
                           child: Text(
@@ -125,7 +136,7 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
                           ),
                         ),
                         _AppDetailSection(
-                          title: 'Launch URL',
+                          title: 'Primary origin',
                           child: Text(
                             app.launchUrl,
                             style: const TextStyle(
@@ -135,20 +146,20 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
                           ),
                         ),
                         _AppDetailSection(
-                          title: 'Allowed origins',
+                          title: 'Approved origins',
                           child: _PillList(items: app.allowedOrigins),
                         ),
                         _AppDetailSection(
-                          title: 'Allowed methods',
+                          title: 'Available capabilities',
                           child: _PillList(items: app.allowedMethods),
                         ),
                         _AppDetailSection(
-                          title: 'Runtime prompts',
+                          title: 'Ask before',
                           child: _PillList(items: app.promptRequiredFor),
                         ),
                         const SizedBox(height: 8),
                         DivineButton(
-                          label: 'Open In Sandbox',
+                          label: 'Open Integration',
                           onPressed: () {
                             context.push(
                               NostrAppSandboxScreen.pathForAppId(app.id),

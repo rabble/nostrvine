@@ -15,21 +15,28 @@ class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
   group('NostrAppSandboxScreen', () {
-    testWidgets('shows a loading state before the sandbox finishes booting', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: NostrAppSandboxScreen(
-            app: _fixtureApp(),
-            sandboxBuilder: (_) => const SizedBox.shrink(),
+    testWidgets(
+      'shows a loading state before the integration finishes booting',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: NostrAppSandboxScreen(
+              app: _fixtureApp(),
+              sandboxBuilder: (_) => const SizedBox.shrink(),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Loading app sandbox'), findsOneWidget);
-    });
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text('Loading integration'), findsOneWidget);
+        expect(
+          find.text('Checking the approved integration before launch.'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('blocks off-origin navigation for safety', (tester) async {
       void Function(Uri uri)? navigationHandler;
@@ -49,7 +56,9 @@ void main() {
 
       expect(find.text('Blocked for safety'), findsOneWidget);
       expect(
-        find.textContaining('Tried to leave the approved app origin'),
+        find.textContaining(
+          'This integration tried to leave its approved origin',
+        ),
         findsOneWidget,
       );
     });

@@ -240,8 +240,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               if (nostrAppsSandboxSupported)
                 _SettingsTile(
                   icon: Icons.apps,
-                  title: 'Apps',
-                  subtitle: 'Launch vetted Nostr apps in Divine',
+                  title: 'Integrated Apps',
+                  subtitle: 'Approved third-party apps that run inside Divine',
                   onTap: () {
                     ref.read(forceExploreTabNameProvider.notifier).state =
                         'apps';
@@ -258,8 +258,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               _SettingsTile(
                 icon: Icons.lock_open,
-                title: 'App Permissions',
-                subtitle: 'Review and revoke remembered sandbox approvals',
+                title: 'Integration Permissions',
+                subtitle: 'Review and revoke remembered integration approvals',
                 onTap: () => context.push(AppsPermissionsScreen.path),
               ),
 

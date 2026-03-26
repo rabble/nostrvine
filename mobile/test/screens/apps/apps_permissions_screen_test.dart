@@ -43,7 +43,7 @@ void main() {
       expect(find.text('https://primal.net'), findsOneWidget);
       expect(find.text('signEvent:1'), findsOneWidget);
       expect(find.text('other-app'), findsNothing);
-      expect(find.text('No saved permissions'), findsNothing);
+      expect(find.text('No saved integration permissions'), findsNothing);
     });
 
     testWidgets('revokes a single grant', (tester) async {
@@ -71,7 +71,7 @@ void main() {
         grantStore.listGrants(userPubkey: 'f' * 64),
         isEmpty,
       );
-      expect(find.text('No saved permissions'), findsOneWidget);
+      expect(find.text('No saved integration permissions'), findsOneWidget);
     });
   });
 }
