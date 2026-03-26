@@ -274,11 +274,7 @@ class ProfileRepository {
       final indexerEvents = await _nostrClient
           .queryEvents(
             [
-              Filter(
-                kinds: [0],
-                authors: [pubkey],
-                limit: 1,
-              ),
+              Filter(kinds: [0], authors: [pubkey], limit: 1),
             ],
             tempRelays: _profileIndexerRelays,
             useCache: false,
@@ -649,6 +645,118 @@ class ProfileRepository {
 
     final queryLower = query.toLowerCase();
     return enrichedProfiles.where((profile) {
+      return profile.bestDisplayName.toLowerCase().contains(queryLower);
+    }).toList();
+  }
+
+  /// Progressively streams user profile search results.
+  ///
+  /// Yields accumulated results as each source completes:
+  /// 1. Local cached profiles (instant)
+  /// 2. Funnelcake REST API results merged with local (fast)
+  /// 3. NIP-50 WebSocket results merged with all (first page only)
+  ///
+  /// Each yield contains the full deduplicated list so far — not just the
+  /// new batch. This matches the progressive pattern used by
+  /// `VideosRepository.searchVideos()`.
+  ///
+  /// Parameters match [searchUsers]. When [offset] > 0 the local and NIP-50
+  /// phases are skipped (only the API phase runs).
+  Stream<List<UserProfile>> searchUsersProgressive({
+    required String query,
+    int limit = 200,
+    int offset = 0,
+    String? sortBy,
+    bool hasVideos = false,
+  }) async* {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+
+    final resultMap = <String, UserProfile>{};
+    final useServerSort = sortBy != null;
+
+    // Phase 1: Local cache (instant, first page only)
+    if (offset == 0) {
+      final local = await searchUsersLocally(query: trimmed);
+      for (final profile in local) {
+        resultMap[profile.pubkey] = profile;
+      }
+      if (resultMap.isNotEmpty) {
+        yield _applyFilter(trimmed, resultMap.values.toList(), useServerSort);
+      }
+    }
+
+    // Phase 2: Funnelcake REST API (fast)
+    final prevCount = resultMap.length;
+    if (_funnelcakeApiClient?.isAvailable ?? false) {
+      try {
+        final restResults = await _funnelcakeApiClient!.searchProfiles(
+          query: trimmed,
+          limit: limit,
+          offset: offset,
+          sortBy: sortBy,
+          hasVideos: hasVideos,
+        );
+        for (final result in restResults) {
+          resultMap[result.pubkey] = result.toUserProfile();
+        }
+      } on Exception catch (e) {
+        developer.log(
+          'REST search failed: $e',
+          name: 'ProfileRepository.searchUsersProgressive',
+        );
+      }
+    }
+
+    // Yield after Phase 2 if new results were added
+    if (resultMap.length > prevCount) {
+      yield _applyFilter(trimmed, resultMap.values.toList(), useServerSort);
+    }
+
+    // Phase 3: NIP-50 WebSocket (first page only)
+    if (offset == 0) {
+      final preWsCount = resultMap.length;
+      try {
+        final events = await _nostrClient.queryUsers(trimmed, limit: limit);
+        for (final event in events) {
+          final profile = UserProfile.fromNostrEvent(event);
+          resultMap.putIfAbsent(profile.pubkey, () => profile);
+        }
+      } on Object catch (e) {
+        developer.log(
+          'NIP-50 search failed: $e',
+          name: 'ProfileRepository.searchUsersProgressive',
+        );
+      }
+
+      // Only enrich + yield again if WS added new profiles
+      if (resultMap.length > preWsCount) {
+        final enriched = await _enrichFromCache(resultMap.values.toList());
+        yield _applyFilter(trimmed, enriched, useServerSort);
+        return;
+      }
+    }
+
+    // Final yield: enriched + filtered (when WS didn't add anything or
+    // was skipped due to offset > 0)
+    final enriched = await _enrichFromCache(resultMap.values.toList());
+    yield _applyFilter(trimmed, enriched, useServerSort);
+  }
+
+  /// Applies the configured search filter or falls back to name matching.
+  List<UserProfile> _applyFilter(
+    String query,
+    List<UserProfile> profiles,
+    bool useServerSort,
+  ) {
+    if (useServerSort) return profiles;
+
+    if (_profileSearchFilter != null) {
+      return _profileSearchFilter(query, profiles);
+    }
+
+    final queryLower = query.toLowerCase();
+    return profiles.where((profile) {
       return profile.bestDisplayName.toLowerCase().contains(queryLower);
     }).toList();
   }
