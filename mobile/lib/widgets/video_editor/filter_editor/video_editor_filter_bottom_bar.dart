@@ -28,46 +28,51 @@ class VideoEditorFilterBottomBar extends ConsumerWidget {
     );
     final scope = VideoEditorScope.of(context);
     final stateManager = scope.editor?.stateManager;
-
-    return ListView.separated(
-      scrollDirection: .horizontal,
-      padding: const .fromLTRB(16, 0, 16, 4),
-      itemCount: filters.length,
-      separatorBuilder: (_, index) {
-        // Add vertical divider after "None"
-        if (index == 0) {
-          return Padding(
-            padding: const .symmetric(horizontal: 8),
-            child: VerticalDivider(
-              color: VineTheme.onSurface.withValues(alpha: 0.3),
-              thickness: 1,
-              indent: 12,
-              endIndent: 12,
-            ),
-          );
-        }
-        return const SizedBox(width: 8);
-      },
-      itemBuilder: (context, index) {
-        final filter = filters[index];
-        final isSelected =
-            selectedFilter?.name == filter.name ||
-            (selectedFilter == null && filter == PresetFilters.none);
-        return _FilterItem(
-          filter: filter,
-          isSelected: isSelected,
-          thumbnailPath: clip.thumbnailPath ?? '',
-          activeFilters: stateManager?.activeFilters ?? [],
-          activeTuneAdjustments: stateManager?.activeTuneAdjustments ?? [],
-          activeBlur: stateManager?.activeBlur ?? 0,
-          onTap: () {
-            context.read<VideoEditorFilterBloc>().add(
-              VideoEditorFilterSelected(filter),
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.25,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: ListView.separated(
+        scrollDirection: .horizontal,
+        padding: const .fromLTRB(16, 0, 16, 4),
+        itemCount: filters.length,
+        separatorBuilder: (_, index) {
+          // Add vertical divider after "None"
+          if (index == 0) {
+            return Padding(
+              padding: const .symmetric(horizontal: 8),
+              child: VerticalDivider(
+                color: VineTheme.onSurface.withValues(alpha: 0.3),
+                thickness: 1,
+                indent: 12,
+                endIndent: 12,
+              ),
             );
-            scope.filterEditor?.setFilter(filter);
-          },
-        );
-      },
+          }
+          return const SizedBox(width: 8);
+        },
+        itemBuilder: (context, index) {
+          final filter = filters[index];
+          final isSelected =
+              selectedFilter?.name == filter.name ||
+              (selectedFilter == null && filter == PresetFilters.none);
+          return _FilterItem(
+            filter: filter,
+            isSelected: isSelected,
+            thumbnailPath: clip.thumbnailPath ?? '',
+            activeFilters: stateManager?.activeFilters ?? [],
+            activeTuneAdjustments: stateManager?.activeTuneAdjustments ?? [],
+            activeBlur: stateManager?.activeBlur ?? 0,
+            onTap: () {
+              context.read<VideoEditorFilterBloc>().add(
+                VideoEditorFilterSelected(filter),
+              );
+              scope.filterEditor?.setFilter(filter);
+            },
+          );
+        },
+      ),
     );
   }
 }

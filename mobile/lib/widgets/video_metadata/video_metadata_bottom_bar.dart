@@ -146,19 +146,25 @@ class VideoMetadataBottomBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const .fromLTRB(16, 0, 16, 4),
-      child: Row(
-        crossAxisAlignment: .end,
-        spacing: 10,
-        children: [
-          Expanded(
-            child: _SaveForLaterButton(
-              onTap: () => _onSaveForLater(context, ref),
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.15,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: Padding(
+        padding: const .fromLTRB(16, 0, 16, 4),
+        child: Row(
+          crossAxisAlignment: .end,
+          spacing: 10,
+          children: [
+            Expanded(
+              child: _SaveForLaterButton(
+                onTap: () => _onSaveForLater(context, ref),
+              ),
             ),
-          ),
-          Expanded(child: _PostButton(onTap: () => _onPost(context, ref))),
-        ],
+            Expanded(child: _PostButton(onTap: () => _onPost(context, ref))),
+          ],
+        ),
       ),
     );
   }
@@ -197,39 +203,10 @@ class _SaveForLaterButton extends ConsumerWidget {
                   '${GallerySaveService.destinationName}',
         button: true,
         enabled: !isSaving && !isProcessing,
-        child: GestureDetector(
-          onTap: isSaving || isProcessing ? null : onTap,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isSaving ? 0.6 : 1.0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: VineTheme.surfaceContainer,
-                border: Border.all(color: VineTheme.containerLow, width: 2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Center(
-                child: isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: VineTheme.primary,
-                        ),
-                      )
-                    // TODO(l10n): Replace with context.l10n when localization
-                    // is added.
-                    : Text(
-                        'Save for Later',
-                        style: VineTheme.titleMediumFont(
-                          color: VineTheme.primary,
-                        ),
-                      ),
-              ),
-            ),
-          ),
+        child: DivineButton(
+          onPressed: isSaving || isProcessing ? null : onTap,
+          type: .secondary,
+          label: 'Save for Later',
         ),
       ),
     );
@@ -263,23 +240,10 @@ class _PostButton extends ConsumerWidget {
             : 'Fill out the form to enable',
         button: true,
         enabled: isValidToPost,
-        child: GestureDetector(
-          onTap: isValidToPost ? onTap : null,
-          child: Container(
-            decoration: BoxDecoration(
-              color: VineTheme.primary,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              // TODO(l10n): Replace with context.l10n when localization is
-              // added.
-              child: Text(
-                'Post',
-                style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
-              ),
-            ),
-          ),
+        child: DivineButton(
+          onPressed: isValidToPost ? onTap : null,
+          expanded: true,
+          label: 'Post',
         ),
       ),
     );

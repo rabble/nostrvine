@@ -31,59 +31,48 @@ class EmptyLibraryState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: .center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: VineTheme.cardBackground,
-              border: .all(color: VineTheme.outlineDisabled, width: 2),
-            ),
-            child: Center(
-              child: DivineIcon(
-                icon: icon,
-                size: 48,
-                color: VineTheme.secondaryText,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Column(
+          mainAxisAlignment: .center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: VineTheme.cardBackground,
+              ),
+              child: Center(
+                child: DivineIcon(
+                  icon: icon,
+                  size: 48,
+                  color: VineTheme.secondaryText,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            title,
-            style: VineTheme.headlineSmallFont(),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
-            textAlign: .center,
-          ),
-          if (showRecordButton) ...[
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => context.pushToCameraWithPermission(),
-              icon: const DivineIcon(
-                icon: DivineIconName.videoCamera,
-                size: 18,
-              ),
-              // TODO(l10n): Replace with context.l10n when localization
-              // is added.
-              label: Text(
-                'Record a Video',
-                style: VineTheme.labelLargeFont(),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.whiteText,
-                padding: const .symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: .circular(12)),
-              ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: VineTheme.headlineSmallFont(),
             ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+              textAlign: .center,
+            ),
+            if (showRecordButton) ...[
+              const SizedBox(height: 32),
+              DivineButton(
+                label: 'Record a Video',
+                leadingIcon: .videoCamera,
+                type: .secondary,
+                onPressed: () => context.pushToCameraWithPermission(),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -8,7 +8,7 @@ enum UserSearchStatus {
   /// Initial state, no search performed yet
   initial,
 
-  /// Currently searching for users
+  /// Currently searching for users (progressive results may be arriving)
   loading,
 
   /// Search completed successfully

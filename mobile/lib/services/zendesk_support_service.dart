@@ -11,11 +11,18 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
+typedef JwtIdentityRefresh =
+    Future<bool> Function({
+      required Nip98AuthService nip98Service,
+      required String relayManagerUrl,
+    });
+
 /// Service for interacting with Zendesk Support SDK
 class ZendeskSupportService {
   static const MethodChannel _channel = MethodChannel(
     'com.openvine/zendesk_support',
   );
+  static const Duration _jwtRefreshReuseWindow = Duration(minutes: 4);
 
   static final CrashReportingService _crashlytics =
       CrashReportingService.instance;
@@ -30,6 +37,13 @@ class ZendeskSupportService {
   static String? _userEmail;
   static String? _userNpub;
 
+  /// Stored references for JWT refresh (set at login, used by _ensureFreshJwt)
+  static Nip98AuthService? _nip98Service;
+  static String? _relayManagerUrl;
+  static DateTime? _lastJwtRefreshAt;
+  static DateTime Function() _now = DateTime.now;
+  static JwtIdentityRefresh? _jwtIdentityRefreshOverride;
+
   /// Public accessors for user identity (used by reserved username requests)
   static String? get userName => _userName;
   static String? get userEmail => _userEmail;
@@ -42,6 +56,26 @@ class ZendeskSupportService {
     _userName = null;
     _userEmail = null;
     _userNpub = null;
+    _clearAuthContext();
+    _now = DateTime.now;
+    _jwtIdentityRefreshOverride = null;
+  }
+
+  @visibleForTesting
+  static void setTestHooks({
+    DateTime Function()? now,
+    JwtIdentityRefresh? jwtIdentityRefresh,
+  }) {
+    if (now != null) {
+      _now = now;
+    }
+    _jwtIdentityRefreshOverride = jwtIdentityRefresh;
+  }
+
+  static void _clearAuthContext() {
+    _nip98Service = null;
+    _relayManagerUrl = null;
+    _lastJwtRefreshAt = null;
   }
 
   /// Initialize Zendesk SDK
@@ -175,6 +209,7 @@ class ZendeskSupportService {
     _userName = null;
     _userEmail = null;
     _userNpub = null;
+    _clearAuthContext();
     if (_initialized) {
       try {
         await _channel.invokeMethod('clearUserIdentity');
@@ -212,6 +247,63 @@ class ZendeskSupportService {
   // ==========================================================================
   // JWT Authentication (for native SDK ticket history)
   // ==========================================================================
+
+  /// Store auth context for automatic JWT refresh before SDK actions.
+  /// Call once at login alongside setUserIdentity/setJwtIdentity.
+  /// These references are used by _ensureFreshJwt to refresh the pre-auth
+  /// token transparently before any SDK call, avoiding the 5-minute expiry.
+  static void storeAuthContext({
+    required Nip98AuthService nip98Service,
+    required String relayManagerUrl,
+  }) {
+    _nip98Service = nip98Service;
+    _relayManagerUrl = relayManagerUrl;
+    _lastJwtRefreshAt = null;
+  }
+
+  /// Refresh JWT identity before an SDK action.
+  /// Gets a fresh pre-auth token and sets it as the SDK identity.
+  /// Reuses a recent successful refresh to avoid redundant network work.
+  /// No-op if auth context is not stored or SDK not initialized.
+  /// Returns true if identity is fresh or refreshed, false if skipped/failed.
+  static Future<bool> _ensureFreshJwt() async {
+    if (!_initialized || _nip98Service == null || _relayManagerUrl == null) {
+      return false;
+    }
+
+    final lastJwtRefreshAt = _lastJwtRefreshAt;
+    final now = _now();
+    if (lastJwtRefreshAt != null &&
+        now.difference(lastJwtRefreshAt) < _jwtRefreshReuseWindow) {
+      Log.debug(
+        'Zendesk JWT refresh skipped - recent token still fresh',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
+    try {
+      final refreshJwt = _jwtIdentityRefreshOverride ?? setJwtIdentity;
+      final result = await refreshJwt(
+        nip98Service: _nip98Service!,
+        relayManagerUrl: _relayManagerUrl!,
+      );
+      if (result) {
+        _lastJwtRefreshAt = _now();
+        Log.info(
+          'Zendesk JWT refreshed before SDK action',
+          category: LogCategory.system,
+        );
+      }
+      return result;
+    } catch (e) {
+      Log.warning(
+        'Zendesk JWT refresh failed (will attempt SDK action anyway): $e',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
 
   /// Fetches a pre-auth token from relay-manager by proving identity via NIP-98.
   ///
@@ -344,6 +436,8 @@ class ZendeskSupportService {
       return false;
     }
 
+    await _ensureFreshJwt();
+
     try {
       await _channel.invokeMethod('showNewTicket', {
         'subject': subject,
@@ -406,6 +500,11 @@ class ZendeskSupportService {
         category: LogCategory.system,
       );
       return false;
+    }
+
+    final jwtReady = await _ensureFreshJwt();
+    if (!jwtReady) {
+      await setAnonymousIdentityWithUserInfo();
     }
 
     try {
@@ -474,6 +573,11 @@ class ZendeskSupportService {
       );
       return false;
     }
+
+    // Refresh JWT before SDK action. The pre-auth token has a 5-minute TTL,
+    // so any delay between login and ticket creation will cause "unauthorized".
+    // This gets a fresh token every time, regardless of how long the user waited.
+    await _ensureFreshJwt();
 
     try {
       final result = await _channel.invokeMethod('createTicket', {
@@ -595,6 +699,10 @@ class ZendeskSupportService {
 
   // ========================================================================
   // REST API Methods (for platforms without native SDK: macOS, Windows, Web)
+  //
+  // macOS builds are internal-only. These methods require ZENDESK_API_TOKEN
+  // (basic auth), which is NOT configured in Codemagic production builds.
+  // Internal users report bugs via Slack/GitHub instead.
   // ========================================================================
 
   /// Check if REST API is available (for platforms without native SDK)
@@ -847,7 +955,7 @@ class ZendeskSupportService {
       );
     }
 
-    // Fall back to REST API for desktop platforms
+    // Fall back to REST API for desktop platforms (macOS internal builds only)
     Log.info(
       '🎫 Native SDK not available, using REST API fallback',
       category: LogCategory.system,
@@ -1027,7 +1135,7 @@ class ZendeskSupportService {
       );
     }
 
-    // Fall back to REST API for desktop platforms
+    // Fall back to REST API for desktop platforms (macOS internal builds only)
     Log.info(
       '💡 Native SDK not available, using REST API fallback',
       category: LogCategory.system,

@@ -15,8 +15,6 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 import 'package:openvine/widgets/error_message.dart';
 import 'package:openvine/widgets/rounded_icon_button.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -159,8 +157,9 @@ class _NewUserLayout extends StatelessWidget {
         ],
 
         if (!isLoading) ...[
-          DivinePrimaryButton(
+          DivineButton(
             label: 'Create a new Divine account',
+            expanded: true,
             onPressed: () => context.read<WelcomeBloc>().add(
               const WelcomeCreateAccountRequested(),
             ),
@@ -168,8 +167,10 @@ class _NewUserLayout extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          DivineSecondaryButton(
+          DivineButton(
             label: 'Sign in with a different account',
+            expanded: true,
+            type: .secondary,
             onPressed: () => context.read<WelcomeBloc>().add(
               const WelcomeLoginOptionsRequested(),
             ),
@@ -222,82 +223,94 @@ class _ReturningUserLayout extends StatelessWidget {
     final account = state.selectedAccount;
     if (account == null) return const SizedBox.shrink();
 
-    return Column(
-      children: [
-        // "Welcome back!" title — centered between top and profile
-        const Expanded(
-          child: Center(
-            child: Text(
-              'Welcome back!',
-              style: TextStyle(
-                fontFamily: VineTheme.fontFamilyBricolage,
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: VineTheme.whiteText,
+    return CustomScrollView(
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Column(
+            children: [
+              // "Welcome back!" title — centered between top and profile
+              const Expanded(
+                child: Center(
+                  child: Text(
+                    'Welcome back!',
+                    style: TextStyle(
+                      fontFamily: VineTheme.fontFamilyBricolage,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: VineTheme.whiteText,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
+
+              // Profile section
+              _ReturningUserProfile(
+                pubkeyHex: account.pubkeyHex,
+                profile: account.profile,
+                onSwitchAccount: state.previousAccounts.length > 1
+                    ? () => _showAccountPicker(
+                        context,
+                        accounts: state.previousAccounts,
+                        selectedPubkeyHex: account.pubkeyHex,
+                      )
+                    : null,
+              ),
+
+              const Spacer(),
+
+              if (lastError != null) ...[
+                ErrorMessage(message: lastError),
+                const SizedBox(height: 16),
+              ],
+
+              // Sign back in button (primary)
+              DivineButton(
+                label: 'Sign back in',
+                isLoading: isLoading,
+                expanded: true,
+                onPressed: () => context.read<WelcomeBloc>().add(
+                  const WelcomeLogBackInRequested(),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Login with different account (secondary)
+              DivineButton(
+                label: 'Sign in with a different account',
+                expanded: true,
+                type: .secondary,
+                onPressed: isLoading
+                    ? null
+                    : () => context.read<WelcomeBloc>().add(
+                        const WelcomeLoginOptionsRequested(),
+                      ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Create new account (tertiary)
+              DivineButton(
+                label: 'Create a new Divine account',
+                expanded: true,
+                type: .secondary,
+                onPressed: isLoading
+                    ? null
+                    : () => context.read<WelcomeBloc>().add(
+                        const WelcomeCreateAccountRequested(),
+                      ),
+              ),
+
+              const SizedBox(height: 20),
+
+              const _TermsNotice(),
+
+              const SizedBox(height: 32),
+            ],
           ),
         ),
-
-        // Profile section
-        _ReturningUserProfile(
-          pubkeyHex: account.pubkeyHex,
-          profile: account.profile,
-          onSwitchAccount: state.previousAccounts.length > 1
-              ? () => _showAccountPicker(
-                  context,
-                  accounts: state.previousAccounts,
-                  selectedPubkeyHex: account.pubkeyHex,
-                )
-              : null,
-        ),
-
-        const Spacer(),
-
-        if (lastError != null) ...[
-          ErrorMessage(message: lastError),
-          const SizedBox(height: 16),
-        ],
-
-        // Sign back in button (primary)
-        DivinePrimaryButton(
-          label: 'Sign back in',
-          isLoading: isLoading,
-          onPressed: () => context.read<WelcomeBloc>().add(
-            const WelcomeLogBackInRequested(),
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Login with different account (secondary)
-        DivineSecondaryButton(
-          label: 'Sign in with a different account',
-          onPressed: isLoading
-              ? null
-              : () => context.read<WelcomeBloc>().add(
-                  const WelcomeLoginOptionsRequested(),
-                ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Create new account (tertiary)
-        DivineSecondaryButton(
-          label: 'Create a new Divine account',
-          onPressed: isLoading
-              ? null
-              : () => context.read<WelcomeBloc>().add(
-                  const WelcomeCreateAccountRequested(),
-                ),
-        ),
-
-        const SizedBox(height: 20),
-
-        const _TermsNotice(),
-
-        const SizedBox(height: 32),
       ],
     );
   }
@@ -605,12 +618,9 @@ class _TermsNoticeState extends State<_TermsNotice> {
 
     return RichText(
       textAlign: TextAlign.center,
+      textScaler: MediaQuery.textScalerOf(context),
       text: TextSpan(
-        style: const TextStyle(
-          fontSize: 13,
-          color: VineTheme.secondaryText,
-          height: 1.4,
-        ),
+        style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
         children: [
           const TextSpan(
             text:

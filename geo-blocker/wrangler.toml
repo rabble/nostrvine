@@ -1,6 +1,0 @@
-name = "openvine-geo-blocker"
-main = "src/index.js"
-compatibility_date = "2024-11-09"
-
-# Routes will be configured after deployment
-# Example: routes = [{ pattern = "geo.divine.video/*", zone_name = "divine.video" }]

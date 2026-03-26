@@ -317,66 +317,72 @@ class _UnifiedShareSheetView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: VineTheme.surfaceBackground,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: BlocBuilder<ShareSheetBloc, ShareSheetState>(
-            builder: (context, state) {
-              final bloc = context.read<ShareSheetBloc>();
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.5,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: Material(
+        color: VineTheme.surfaceBackground,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: BlocBuilder<ShareSheetBloc, ShareSheetState>(
+              builder: (context, state) {
+                final bloc = context.read<ShareSheetBloc>();
 
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _DragIndicator(),
-                  _ShareSheetHeader(video: video),
-                  const Divider(color: VineTheme.cardBackground, height: 1),
-                  _ShareWithSection(
-                    contacts: state.contacts,
-                    contactsLoaded: state.contactsLoaded,
-                    selectedRecipient: state.selectedRecipient,
-                    sentPubkeys: state.sentPubkeys,
-                    onFindPeople: onFindPeople,
-                    onContactTapped: (user) =>
-                        bloc.add(ShareSheetQuickSendRequested(user)),
-                  ),
-                  if (state.selectedRecipient != null)
-                    _MessageInput(
-                      controller: messageController,
-                      recipient: state.selectedRecipient!,
-                      isSending: state.isSending,
-                      onSend: () => bloc.add(
-                        ShareSheetSendRequested(
-                          message: messageController.text,
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _DragIndicator(),
+                    _ShareSheetHeader(video: video),
+                    const Divider(color: VineTheme.cardBackground, height: 1),
+                    _ShareWithSection(
+                      contacts: state.contacts,
+                      contactsLoaded: state.contactsLoaded,
+                      selectedRecipient: state.selectedRecipient,
+                      sentPubkeys: state.sentPubkeys,
+                      onFindPeople: onFindPeople,
+                      onContactTapped: (user) =>
+                          bloc.add(ShareSheetQuickSendRequested(user)),
+                    ),
+                    if (state.selectedRecipient != null)
+                      _MessageInput(
+                        controller: messageController,
+                        recipient: state.selectedRecipient!,
+                        isSending: state.isSending,
+                        onSend: () => bloc.add(
+                          ShareSheetSendRequested(
+                            message: messageController.text,
+                          ),
                         ),
                       ),
-                    ),
-                  if (state.selectedRecipient == null) ...[
-                    const Divider(color: VineTheme.cardBackground, height: 1),
-                    _MoreActionsSection(
-                      video: video,
-                      isOwnContent: isOwnContent,
-                      onSave: () => bloc.add(const ShareSheetSaveRequested()),
-                      onSaveOriginal: onSaveOriginal,
-                      onSaveWithWatermark: onSaveWithWatermark,
-                      onAddToList: onAddToList,
-                      onCopyLink: () =>
-                          bloc.add(const ShareSheetCopyLinkRequested()),
-                      onShareVia: () =>
-                          bloc.add(const ShareSheetShareViaRequested()),
-                      onReport: onReport,
-                      onCopyEventJson: () =>
-                          bloc.add(const ShareSheetCopyEventJsonRequested()),
-                      onCopyEventId: () =>
-                          bloc.add(const ShareSheetCopyEventIdRequested()),
-                    ),
+                    if (state.selectedRecipient == null) ...[
+                      const Divider(color: VineTheme.cardBackground, height: 1),
+                      _MoreActionsSection(
+                        video: video,
+                        isOwnContent: isOwnContent,
+                        onSave: () => bloc.add(const ShareSheetSaveRequested()),
+                        onSaveOriginal: onSaveOriginal,
+                        onSaveWithWatermark: onSaveWithWatermark,
+                        onAddToList: onAddToList,
+                        onCopyLink: () =>
+                            bloc.add(const ShareSheetCopyLinkRequested()),
+                        onShareVia: () =>
+                            bloc.add(const ShareSheetShareViaRequested()),
+                        onReport: onReport,
+                        onCopyEventJson: () =>
+                            bloc.add(const ShareSheetCopyEventJsonRequested()),
+                        onCopyEventId: () =>
+                            bloc.add(const ShareSheetCopyEventIdRequested()),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
                   ],
-                  const SizedBox(height: 8),
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

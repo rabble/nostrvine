@@ -2,6 +2,7 @@
 // ABOUTME: Verifies retry, save-to-drafts actions and UI rendering.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,8 +12,6 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
 
 class _MockDivineVideoDraft extends Mock implements DivineVideoDraft {}
@@ -113,7 +112,7 @@ void main() {
         );
       });
 
-      testWidgets('$DivinePrimaryButton with Try Again label', (tester) async {
+      testWidgets('$DivineButton with Try Again label', (tester) async {
         final upload = BackgroundUpload(
           draft: mockDraft,
           progress: 1,
@@ -124,11 +123,11 @@ void main() {
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(DivinePrimaryButton), findsOneWidget);
+        expect(find.byType(DivineButton), findsAtLeastNWidgets(1));
         expect(find.text('Try Again'), findsOneWidget);
       });
 
-      testWidgets('$DivineSecondaryButton with Save to Drafts label', (
+      testWidgets('$DivineButton with Save to Drafts label', (
         tester,
       ) async {
         final upload = BackgroundUpload(
@@ -141,7 +140,7 @@ void main() {
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(DivineSecondaryButton), findsOneWidget);
+        expect(find.byType(DivineButton), findsAtLeastNWidgets(1));
         expect(find.text('Save to Drafts'), findsOneWidget);
       });
 

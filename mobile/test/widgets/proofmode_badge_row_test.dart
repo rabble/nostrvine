@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/log_capture_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -14,11 +15,40 @@ class _MockModerationLabelService extends Mock
 class _MockVideoModerationStatusService extends Mock
     implements VideoModerationStatusService {}
 
+class _RebuildHost extends StatefulWidget {
+  const _RebuildHost({required this.video, super.key});
+
+  final VideoEvent video;
+
+  @override
+  State<_RebuildHost> createState() => _RebuildHostState();
+}
+
+class _RebuildHostState extends State<_RebuildHost> {
+  int rebuildCount = 0;
+
+  void triggerRebuild() {
+    setState(() {
+      rebuildCount++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text('rebuild:$rebuildCount'),
+        ProofModeBadgeRow(video: widget.video),
+      ],
+    );
+  }
+}
+
 void main() {
   late _MockModerationLabelService mockLabelService;
   late _MockVideoModerationStatusService mockVideoModerationStatusService;
 
-  setUp(() {
+  setUp(() async {
     mockLabelService = _MockModerationLabelService();
     mockVideoModerationStatusService = _MockVideoModerationStatusService();
     when(() => mockLabelService.getAIDetectionResult(any())).thenReturn(null);
@@ -26,6 +56,7 @@ void main() {
     when(
       () => mockVideoModerationStatusService.fetchStatus(any()),
     ).thenAnswer((_) async => null);
+    await LogCaptureService.instance.clearAllLogs();
   });
 
   Widget buildSubject(VideoEvent video) {
@@ -38,6 +69,25 @@ void main() {
       ],
       child: MaterialApp(
         home: Scaffold(body: ProofModeBadgeRow(video: video)),
+      ),
+    );
+  }
+
+  Widget buildRebuildSubject({
+    required VideoEvent video,
+    required GlobalKey<_RebuildHostState> hostKey,
+  }) {
+    return ProviderScope(
+      overrides: [
+        moderationLabelServiceProvider.overrideWithValue(mockLabelService),
+        videoModerationStatusServiceProvider.overrideWithValue(
+          mockVideoModerationStatusService,
+        ),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: _RebuildHost(key: hostKey, video: video),
+        ),
       ),
     );
   }
@@ -194,5 +244,42 @@ void main() {
       expect(find.text('Human Made'), findsOneWidget);
       expect(find.text('Hosted on Divine'), findsNothing);
     });
+
+    testWidgets(
+      'does not capture badge decision logs during rebuilds',
+      (tester) async {
+        final hostKey = GlobalKey<_RebuildHostState>();
+        final video = VideoEvent(
+          id: 'proof_backed_rebuild_video',
+          pubkey: 'pubkey_rebuild',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          content: 'proof backed video for rebuild logging',
+          timestamp: DateTime.now(),
+          videoUrl: 'https://media.divine.video/proof_backed_rebuild_video.mp4',
+          rawTags: const {
+            'verification': 'verified_mobile',
+            'proofmode': '{"proof":"present"}',
+          },
+        );
+
+        await tester.pumpWidget(
+          buildRebuildSubject(video: video, hostKey: hostKey),
+        );
+        await tester.pump();
+
+        hostKey.currentState!.triggerRebuild();
+        await tester.pump();
+
+        hostKey.currentState!.triggerRebuild();
+        await tester.pump();
+
+        final proofModeLogs = LogCaptureService.instance
+            .getRecentLogs()
+            .where((entry) => entry.name == 'ProofModeBadgeRow')
+            .toList();
+
+        expect(proofModeLogs, isEmpty);
+      },
+    );
   });
 }

@@ -14,8 +14,6 @@ import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -116,7 +114,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byType(DivinePrimaryButton), findsOneWidget);
+        expect(find.byType(DivineButton), findsAtLeastNWidgets(1));
       });
 
       testWidgets('displays forgot password link', (tester) async {
@@ -131,7 +129,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.widgetWithText(DivineSecondaryButton, 'Import Nostr key'),
+          find.widgetWithText(DivineButton, 'Import Nostr key'),
           findsOneWidget,
         );
       });
@@ -142,7 +140,7 @@ void main() {
 
         expect(
           find.widgetWithText(
-            DivineSecondaryButton,
+            DivineButton,
             'Connect with a signer app',
           ),
           findsOneWidget,
@@ -229,7 +227,7 @@ void main() {
         );
 
         // Tap sign in
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Sign in'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -280,7 +278,7 @@ void main() {
         );
 
         // Tap sign in
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Sign in'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -294,7 +292,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap sign in without entering anything
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Sign in'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 

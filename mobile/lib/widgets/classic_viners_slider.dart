@@ -138,39 +138,45 @@ class _VinerAvatar extends ConsumerWidget {
     final profile = ref.watch(userProfileReactiveProvider(viner.pubkey)).value;
     final avatarUrl = viner.authorAvatar ?? profile?.picture;
 
-    return Semantics(
-      label: 'View profile for $displayName',
-      button: true,
-      child: GestureDetector(
-        onTap: () => _onTap(context, avatarUrl),
-        child: Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Avatar with rounded square
-              SizedBox(
-                width: 56,
-                height: 56,
-                child: UserAvatar(
-                  imageUrl: avatarUrl,
-                  name: displayName,
-                  size: 56,
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.5,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: Semantics(
+        label: 'View profile for $displayName',
+        button: true,
+        child: GestureDetector(
+          onTap: () => _onTap(context, avatarUrl),
+          child: Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Avatar with rounded square
+                SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: UserAvatar(
+                    imageUrl: avatarUrl,
+                    name: displayName,
+                    size: 56,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              // Display name from classic Vine data
-              SizedBox(
-                width: 70,
-                child: Text(
-                  displayName,
-                  style: VineTheme.titleTinyFont(),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 4),
+                // Display name from classic Vine data
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    displayName,
+                    style: VineTheme.titleTinyFont(),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

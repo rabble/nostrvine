@@ -13,7 +13,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
 
 class KeyImportScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -61,124 +60,124 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Scrollable form content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 32,
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  spacing: 110,
                   children: [
-                    const SizedBox(height: 8),
+                    // Scrollable form content
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
 
-                    // Back button
-                    AuthBackButton(
-                      onPressed: _isImporting ? null : () => context.pop(),
+                        // Back button
+                        AuthBackButton(
+                          onPressed: _isImporting ? null : () => context.pop(),
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // Title
+                        Text(
+                          'Import your\nNostr identity',
+                          style: VineTheme.headlineLargeFont(),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Subtitle
+                        const Text(
+                          'Import your existing Nostr identity using your '
+                          'private key or a bunker URL.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: VineTheme.secondaryText,
+                            height: 1.4,
+                          ),
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // Key input field
+                        DivineAuthTextField(
+                          controller: _keyController,
+                          label: 'Private key or bunker URL',
+                          enabled: !_isImporting,
+                          autocorrect: false,
+                          errorText: _keyError,
+                          onChanged: (value) {
+                            final encrypted = Nip49.isEncryptedKey(
+                              value.trim(),
+                            );
+                            setState(() {
+                              _keyError = null;
+                              _isEncryptedKey = encrypted;
+                              if (!encrypted) _passwordError = null;
+                            });
+                          },
+                        ),
+
+                        if (_isEncryptedKey) ...[
+                          const SizedBox(height: 16),
+                          DivineAuthTextField(
+                            controller: _passwordController,
+                            label: 'Password',
+                            enabled: !_isImporting,
+                            autocorrect: false,
+                            obscureText: true,
+                            errorText: _passwordError,
+                            onChanged: (_) {
+                              if (_passwordError != null) {
+                                setState(() => _passwordError = null);
+                              }
+                            },
+                          ),
+                        ],
+
+                        const SizedBox(height: 24),
+
+                        // Import button
+                        DivineButton(
+                          expanded: true,
+                          label: 'Import Nostr key',
+                          isLoading: _isImporting,
+                          onPressed: _importKey,
+                        ),
+                      ],
                     ),
 
-                    const SizedBox(height: 32),
-
-                    // Title
-                    const Text(
-                      'Import your\nNostr identity',
-                      style: TextStyle(
-                        fontFamily: VineTheme.fontFamilyBricolage,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: VineTheme.whiteText,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Subtitle
-                    const Text(
-                      'Import your existing Nostr identity using your '
-                      'private key or a bunker URL.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: VineTheme.secondaryText,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Key input field
-                    DivineAuthTextField(
-                      controller: _keyController,
-                      label: 'Private key or bunker URL',
-                      enabled: !_isImporting,
-                      autocorrect: false,
-                      errorText: _keyError,
-                      onChanged: (value) {
-                        final encrypted = Nip49.isEncryptedKey(value.trim());
-                        setState(() {
-                          _keyError = null;
-                          _isEncryptedKey = encrypted;
-                          if (!encrypted) _passwordError = null;
-                        });
-                      },
-                    ),
-
-                    if (_isEncryptedKey) ...[
-                      const SizedBox(height: 16),
-                      DivineAuthTextField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        enabled: !_isImporting,
-                        autocorrect: false,
-                        obscureText: true,
-                        errorText: _passwordError,
-                        onChanged: (_) {
-                          if (_passwordError != null) {
-                            setState(() => _passwordError = null);
-                          }
-                        },
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-
-                    // Import button
-                    DivinePrimaryButton(
-                      label: 'Import Nostr key',
-                      isLoading: _isImporting,
-                      onPressed: _importKey,
+                    // Pinned security warning with key overlay
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const _SecurityWarning(),
+                        Positioned(
+                          right: -60,
+                          top: -130,
+                          child: Transform.rotate(
+                            angle: 12 * 3.1415926535 / 180,
+                            child: const DivineSticker(
+                              sticker: DivineStickerName.skeletonKey,
+                              size: 174,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ),
-
-            // Pinned security warning with key overlay
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const _SecurityWarning(),
-                  Positioned(
-                    right: -60,
-                    top: -130,
-                    child: Transform.rotate(
-                      angle: 12 * 3.1415926535 / 180,
-                      child: Image.asset(
-                        'assets/stickers/key.png',
-                        width: 174,
-                        height: 174,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -332,19 +331,21 @@ class _SecurityWarning extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            spacing: 8,
             children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: VineTheme.accentOrange,
+              DivineIcon(
+                icon: .warning,
                 size: 20,
+                color: VineTheme.accentOrange,
               ),
-              SizedBox(width: 8),
-              Text(
-                'Keep your private key secure!',
-                style: TextStyle(
-                  color: VineTheme.accentOrange,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  'Keep your private key secure!',
+                  style: TextStyle(
+                    color: VineTheme.accentOrange,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

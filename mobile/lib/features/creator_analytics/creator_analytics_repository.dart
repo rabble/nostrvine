@@ -51,11 +51,38 @@ abstract class CreatorAnalyticsRepository {
 }
 
 /// Funnelcake-backed implementation with layered fallbacks.
+///
+/// Social counts are cached per-pubkey for [socialCountsCacheDuration]
+/// (default 5 min) to avoid redundant requests when the analytics screen
+/// is reopened within a short period.
 class FunnelcakeCreatorAnalyticsRepository
     implements CreatorAnalyticsRepository {
-  FunnelcakeCreatorAnalyticsRepository(this._client);
+  FunnelcakeCreatorAnalyticsRepository(
+    this._client, {
+    Duration socialCountsCacheDuration = const Duration(minutes: 5),
+  }) : _socialCountsCacheDuration = socialCountsCacheDuration;
 
   final FunnelcakeApiClient _client;
+  final Duration _socialCountsCacheDuration;
+
+  final _socialCountsCache = <String, SocialCounts?>{};
+  final _socialCountsCachedAt = <String, DateTime>{};
+
+  bool _isSocialCountsCacheValid(String pubkey) {
+    final cachedAt = _socialCountsCachedAt[pubkey];
+    return cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _socialCountsCacheDuration;
+  }
+
+  Future<SocialCounts?> _getSocialCounts(String pubkey) async {
+    if (_isSocialCountsCacheValid(pubkey)) {
+      return _socialCountsCache[pubkey];
+    }
+    final result = await _client.getSocialCounts(pubkey);
+    _socialCountsCache[pubkey] = result;
+    _socialCountsCachedAt[pubkey] = DateTime.now();
+    return result;
+  }
 
   @override
   Future<CreatorAnalyticsSnapshot> fetchCreatorAnalytics(String pubkey) async {
@@ -68,7 +95,7 @@ class FunnelcakeCreatorAnalyticsRepository
 
     final sourcesUsed = <AnalyticsDataSource>{};
 
-    final socialFuture = _client.getSocialCounts(pubkey);
+    final socialFuture = _getSocialCounts(pubkey);
     final videos = await _fetchAuthorVideos(pubkey);
     if (videos.isNotEmpty) {
       sourcesUsed.add(AnalyticsDataSource.authorVideos);

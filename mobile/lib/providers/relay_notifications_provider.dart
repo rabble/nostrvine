@@ -886,7 +886,7 @@ class RelayNotifications extends _$RelayNotifications {
 RelayNotificationApiService relayNotificationApiService(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
   final nostrService = ref.watch(nostrServiceProvider);
-  final baseUrl = resolveApiBaseUrlFromRelays(
+  final baseUrl = resolvePinnedApiBaseUrlFromRelays(
     configuredRelays: nostrService.configuredRelays,
     fallbackBaseUrl: environmentConfig.apiBaseUrl,
   );

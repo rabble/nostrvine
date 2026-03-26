@@ -183,40 +183,46 @@ class _FontSelectorButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Select font',
-      value: fontName,
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const .symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
-            borderRadius: .circular(16),
-            border: Border.all(color: VineTheme.outlineMuted, width: 2),
-          ),
-          child: Row(
-            mainAxisSize: .min,
-            spacing: 8,
-            children: [
-              Flexible(
-                child: Text(
-                  fontName,
-                  overflow: .ellipsis,
-                  style: VineTheme.titleMediumFont(color: VineTheme.primary),
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.2,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: Semantics(
+        // TODO(l10n): Replace with context.l10n when localization is added.
+        label: 'Select font',
+        value: fontName,
+        button: true,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const .symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: VineTheme.surfaceContainer,
+              borderRadius: .circular(16),
+              border: Border.all(color: VineTheme.outlineMuted, width: 2),
+            ),
+            child: Row(
+              mainAxisSize: .min,
+              spacing: 8,
+              children: [
+                Flexible(
+                  child: Text(
+                    fontName,
+                    overflow: .ellipsis,
+                    style: VineTheme.titleMediumFont(color: VineTheme.primary),
+                  ),
                 ),
-              ),
-              AnimatedRotation(
-                turns: isOpen ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: const DivineIcon(
-                  icon: .caretDown,
-                  color: VineTheme.primary,
+                AnimatedRotation(
+                  turns: isOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: const DivineIcon(
+                    icon: .caretDown,
+                    color: VineTheme.primary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

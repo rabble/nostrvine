@@ -17,7 +17,8 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
       // Only track video-based routes
       if (ctx.type == RouteType.videoRecorder ||
           ctx.type == RouteType.videoEditor ||
-          ctx.type == RouteType.settings) {
+          ctx.type == RouteType.settings ||
+          ctx.type == RouteType.categoryGallery) {
         return;
       }
 

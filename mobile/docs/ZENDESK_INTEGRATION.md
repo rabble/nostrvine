@@ -44,6 +44,15 @@ Settings (UI)
 
 All calls through the channel are fire-and-forget or return simple status maps. The native side handles SDK lifecycle, view presentation, and push-token registration.
 
+## Platform Auth Paths
+
+| Platform | Auth method | Configured in Codemagic |
+|----------|-------------|------------------------|
+| iOS / Android | Zendesk native SDK via OAuth (`APP_ID` + `CLIENT_ID`) | Yes |
+| macOS (internal only) | REST API via basic auth (`API_TOKEN` + `API_EMAIL`) | No |
+
+JWT pre-auth tokens (minted via relay-manager) enrich user identity on the native SDK but are not the primary auth mechanism -- OAuth handles that.
+
 ## Current Service Behavior
 
 `ZendeskSupportService`:
@@ -73,28 +82,20 @@ Once the user authenticates (login or registration), the service upgrades to a *
 
 ### Dart Define Configuration
 
-The Zendesk SDK requires four dart defines injected at build time:
+The Zendesk SDK uses dart defines injected at build time:
 
 | Define | Purpose |
 |--------|---------|
 | `ZENDESK_APP_ID` | Identifies the Zendesk mobile SDK application |
 | `ZENDESK_CLIENT_ID` | OAuth client ID for SDK authentication |
 | `ZENDESK_URL` | Base URL of the Zendesk instance (e.g. `https://divine.zendesk.com`) |
-| `ZENDESK_API_TOKEN` | Server-side API token used for JWT identity minting |
+| `ZENDESK_API_TOKEN` | REST API basic auth for desktop platforms (macOS internal builds only). Not configured in Codemagic. |
 
 **Local development**: Values are loaded automatically from the `.env` file in `mobile/`. The `.env` file is gitignored and must be created manually from `.env.example` or obtained from the team.
 
-**CI / production builds**: Values are passed explicitly via `--dart-define` flags:
+**CI / production builds (iOS/Android)**: The three SDK defines are passed via `--dart-define` in `codemagic.yaml`. `ZENDESK_API_TOKEN` is not included -- it's only needed for the REST API fallback on desktop (macOS), which is internal-only.
 
-```bash
-flutter build ios \
-  --dart-define=ZENDESK_APP_ID=<value> \
-  --dart-define=ZENDESK_CLIENT_ID=<value> \
-  --dart-define=ZENDESK_URL=<value> \
-  --dart-define=ZENDESK_API_TOKEN=<value>
-```
-
-If any define is missing or empty, `ZendeskSupportService` skips initialization and the app falls back to email-based support and local bug reporting.
+If `ZENDESK_APP_ID` or `ZENDESK_CLIENT_ID` is missing or empty, `ZendeskSupportService` skips initialization and the app falls back to local bug reporting and log export.
 
 ## Current Files
 
@@ -127,7 +128,7 @@ rm -rf ~/Library/Developer/Xcode/DerivedData
 
 Check the debug console for log lines from `ZendeskSupportService`. Common causes:
 
-- One or more dart defines are missing or empty. Verify `.env` contains all four keys.
+- One or more dart defines are missing or empty. Verify `.env` contains the required keys (`ZENDESK_APP_ID`, `ZENDESK_CLIENT_ID`, `ZENDESK_URL`).
 - The native plugin failed to register. Confirm `ZendeskPlugin` is listed in the iOS `AppDelegate` / Android `MainActivity` plugin registry.
 - Network is unreachable at init time. The service logs the failure and retries on next access.
 
@@ -135,7 +136,7 @@ Check the debug console for log lines from `ZendeskSupportService`. Common cause
 
 This means the SDK credentials are not configured or initialization was skipped. The app intentionally falls back to a `mailto:` link when Zendesk is unavailable. To fix:
 
-1. Confirm all four dart defines are set (see Configuration above).
+1. Confirm the required dart defines are set (see Configuration above).
 2. Restart the app (hot-reload does not re-run SDK initialization).
 3. Check logs for initialization errors.
 

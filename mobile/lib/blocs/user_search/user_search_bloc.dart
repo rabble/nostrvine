@@ -1,7 +1,5 @@
 // ABOUTME: BLoC for searching user profiles via ProfileRepository.
 
-import 'dart:developer' as developer;
-
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -76,36 +74,42 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     );
 
     _feedTracker?.startFeedLoad('user_search');
+    var trackedFirst = false;
 
     try {
-      final results = await _profileRepository.searchUsers(
-        query: query,
-        limit: _pageSize,
-        sortBy: 'followers',
-        hasVideos: hasVideos,
+      await emit.forEach<List<UserProfile>>(
+        _profileRepository.searchUsersProgressive(
+          query: query,
+          limit: _pageSize,
+          sortBy: 'followers',
+          hasVideos: hasVideos,
+        ),
+        onData: (results) {
+          if (!trackedFirst && results.isNotEmpty) {
+            trackedFirst = true;
+            _feedTracker?.markFirstVideosReceived(
+              'user_search',
+              results.length,
+            );
+          }
+          return state.copyWith(
+            status: UserSearchStatus.loading,
+            results: results,
+            resultCount: results.length,
+          );
+        },
       );
-
-      final withPic = results.where((p) => p.picture != null).length;
-      developer.log(
-        'Query "$query": ${results.length} results, '
-        '$withPic with picture',
-        name: 'UserSearchBloc',
-      );
-
-      _feedTracker?.markFirstVideosReceived('user_search', results.length);
 
       emit(
         state.copyWith(
           status: UserSearchStatus.success,
-          results: results,
-          resultCount: results.length,
-          offset: results.length,
-          hasMore: results.length == _pageSize,
+          offset: state.results.length,
+          hasMore: state.results.length == _pageSize,
           isLoadingMore: false,
         ),
       );
 
-      _feedTracker?.markFeedDisplayed('user_search', results.length);
+      _feedTracker?.markFeedDisplayed('user_search', state.results.length);
     } on Exception catch (e) {
       _feedTracker?.trackFeedError(
         'user_search',
@@ -125,13 +129,15 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final moreResults = await _profileRepository.searchUsers(
-        query: state.query,
-        limit: _pageSize,
-        offset: state.offset,
-        sortBy: 'followers',
-        hasVideos: hasVideos,
-      );
+      final moreResults = await _profileRepository
+          .searchUsersProgressive(
+            query: state.query,
+            limit: _pageSize,
+            offset: state.offset,
+            sortBy: 'followers',
+            hasVideos: hasVideos,
+          )
+          .last; // Stream always emits at least once for non-empty queries.
 
       final allResults = [...state.results, ...moreResults];
 

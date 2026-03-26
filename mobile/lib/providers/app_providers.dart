@@ -27,6 +27,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_discovery_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/categories_repository.dart';
 import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
@@ -731,6 +732,7 @@ ClipLibraryService clipLibraryService(Ref ref) {
 @Riverpod(keepAlive: true)
 AuthService authService(Ref ref) {
   final keyStorage = ref.watch(secureKeyStorageProvider);
+  final nostrKeyManager = ref.watch(nostrKeyManagerProvider);
   final userDataCleanupService = ref.watch(userDataCleanupServiceProvider);
   final oauthClient = ref.watch(oauthClientProvider);
   final flutterSecureStorage = ref.watch(flutterSecureStorageProvider);
@@ -746,6 +748,7 @@ AuthService authService(Ref ref) {
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
+    nostrKeyManager: nostrKeyManager,
     oauthClient: oauthClient,
     flutterSecureStorage: flutterSecureStorage,
     oauthConfig: oauthConfig,
@@ -910,6 +913,14 @@ Future<void> _setZendeskIdentity(
       final relayManagerUrl = ref
           .read(currentEnvironmentProvider)
           .relayManagerApiUrl;
+
+      // Store auth context so the service can refresh JWT before each SDK action.
+      // The pre-auth token has a 5-minute TTL, so any delay between login and
+      // ticket creation would fail without a refresh.
+      ZendeskSupportService.storeAuthContext(
+        nip98Service: nip98Service,
+        relayManagerUrl: relayManagerUrl,
+      );
 
       final jwtSet = await ZendeskSupportService.setJwtIdentity(
         nip98Service: nip98Service,
@@ -1200,6 +1211,15 @@ HashtagRepository hashtagRepository(Ref ref) {
       return results;
     },
   );
+}
+
+/// Provider for CategoriesRepository instance.
+///
+/// Keep-alive so the categories cache survives tab and screen transitions.
+@Riverpod(keepAlive: true)
+CategoriesRepository categoriesRepository(Ref ref) {
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  return CategoriesRepository(funnelcakeApiClient: funnelcakeClient);
 }
 
 /// Provider for ProfileRepository instance

@@ -22,26 +22,35 @@ class ProfileStatColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final column = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: isLoading
-              ? Text(
-                  '—',
-                  style: VineTheme.titleMediumFont(
-                    color: VineTheme.onSurfaceMuted,
+    final clampedScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.3,
+    );
+
+    final column = MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: clampedScaler),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: isLoading
+                ? Text(
+                    '—',
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+                  )
+                : Text(
+                    count != null
+                        ? StringUtils.formatCompactNumber(count!)
+                        : '—',
+                    style: VineTheme.titleMediumFont(),
                   ),
-                )
-              : Text(
-                  count != null ? StringUtils.formatCompactNumber(count!) : '—',
-                  style: VineTheme.titleMediumFont(),
-                ),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: VineTheme.bodyMediumFont()),
-      ],
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: VineTheme.bodyMediumFont()),
+        ],
+      ),
     );
 
     if (onTap != null) {

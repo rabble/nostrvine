@@ -56,95 +56,100 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     final isCurrentUser =
         currentUserPubkey.isNotEmpty &&
         currentUserPubkey == widget.comment.authorPubkey;
-
-    return GestureDetector(
-      onLongPressStart: (_) {
-        setState(() {
-          _isHeld = true;
-        });
-      },
-      onLongPress: () async {
-        setState(() {
-          _isHeld = false;
-        });
-        await _showOptionsModal(context, isCurrentUser: isCurrentUser);
-      },
-      onLongPressCancel: () {
-        setState(() {
-          _isHeld = false;
-        });
-      },
-      child: ColoredBox(
-        color: _isHeld ? VineTheme.containerLow : VineTheme.transparent,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Thread lines for nested comments
-              if (widget.depth > 0)
-                ...List.generate(
-                  min(widget.depth, 4),
-                  (i) => Container(
-                    width: 24,
-                    decoration: BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: VineTheme.containerLow,
-                          width: i == min(widget.depth, 4) - 1 ? 2 : 1,
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.5,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: GestureDetector(
+        onLongPressStart: (_) {
+          setState(() {
+            _isHeld = true;
+          });
+        },
+        onLongPress: () async {
+          setState(() {
+            _isHeld = false;
+          });
+          await _showOptionsModal(context, isCurrentUser: isCurrentUser);
+        },
+        onLongPressCancel: () {
+          setState(() {
+            _isHeld = false;
+          });
+        },
+        child: ColoredBox(
+          color: _isHeld ? VineTheme.containerLow : VineTheme.transparent,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Thread lines for nested comments
+                if (widget.depth > 0)
+                  ...List.generate(
+                    min(widget.depth, 4),
+                    (i) => Container(
+                      width: 24,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          left: BorderSide(
+                            color: VineTheme.containerLow,
+                            width: i == min(widget.depth, 4) - 1 ? 2 : 1,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              // Comment content
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: widget.depth > 0 ? 8 : 16,
-                    right: 16,
-                    top: widget.depth > 0 ? 10 : 16,
-                    bottom: widget.depth > 0 ? 12 : 20,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _CommentHeader(
-                        authorPubkey: widget.comment.authorPubkey,
-                        relativeTime: widget.comment.relativeTime,
-                        avatarSize: widget.depth >= 2 ? 28.0 : 36.0,
-                      ),
-                      const SizedBox(height: 12),
-                      // Show reply indicator only for orphaned
-                      // replies at depth 0
-                      if (widget.depth == 0 &&
-                          widget.comment.replyToAuthorPubkey != null)
-                        _ReplyIndicator(
-                          parentAuthorPubkey:
-                              widget.comment.replyToAuthorPubkey!,
+                // Comment content
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: widget.depth > 0 ? 8 : 16,
+                      right: 16,
+                      top: widget.depth > 0 ? 10 : 16,
+                      bottom: widget.depth > 0 ? 12 : 20,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _CommentHeader(
+                          authorPubkey: widget.comment.authorPubkey,
+                          relativeTime: widget.comment.relativeTime,
+                          avatarSize: widget.depth >= 2 ? 28.0 : 36.0,
                         ),
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top:
-                              widget.depth == 0 &&
-                                  widget.comment.replyToAuthorPubkey != null
-                              ? 4
-                              : 0,
+                        const SizedBox(height: 12),
+                        // Show reply indicator only for orphaned
+                        // replies at depth 0
+                        if (widget.depth == 0 &&
+                            widget.comment.replyToAuthorPubkey != null)
+                          _ReplyIndicator(
+                            parentAuthorPubkey:
+                                widget.comment.replyToAuthorPubkey!,
+                          ),
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top:
+                                widget.depth == 0 &&
+                                    widget.comment.replyToAuthorPubkey != null
+                                ? 4
+                                : 0,
+                          ),
+                          child: _CommentContent(
+                            commentId: widget.comment.id,
+                            content: widget.comment.content,
+                          ),
                         ),
-                        child: _CommentContent(
+                        const SizedBox(height: 12),
+                        _ActionsRow(
                           commentId: widget.comment.id,
-                          content: widget.comment.content,
+                          authorPubkey: widget.comment.authorPubkey,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _ActionsRow(
-                        commentId: widget.comment.id,
-                        authorPubkey: widget.comment.authorPubkey,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -451,14 +456,14 @@ class _ActionsRow extends StatelessWidget {
             onTap: () {
               context.read<CommentsBloc>().add(CommentReplyToggled(commentId));
             },
-            child: SizedBox(
-              height: 16,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 16),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SvgPicture.asset(
                     DivineIconName.arrowBendDownRight.assetPath,
-                    height: 11,
+                    height: MediaQuery.textScalerOf(context).scale(11),
                     colorFilter: const ColorFilter.mode(
                       VineTheme.onSurface,
                       BlendMode.srcIn,
@@ -536,7 +541,7 @@ class _CommentVoteButtons extends StatelessWidget {
                   ),
                   child: SvgPicture.asset(
                     DivineIconName.arrowFatUp.assetPath,
-                    height: 16,
+                    height: MediaQuery.textScalerOf(context).scale(16),
                     colorFilter: ColorFilter.mode(
                       voteState.isUpvoted
                           ? VineTheme.vineGreen
@@ -585,7 +590,7 @@ class _CommentVoteButtons extends StatelessWidget {
                   ),
                   child: SvgPicture.asset(
                     DivineIconName.arrowFatDown.assetPath,
-                    height: 16,
+                    height: MediaQuery.textScalerOf(context).scale(16),
                     colorFilter: ColorFilter.mode(
                       voteState.isDownvoted
                           ? VineTheme.likeRed

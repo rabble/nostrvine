@@ -5,6 +5,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -32,6 +33,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -52,6 +54,7 @@ enum RouteType {
   profile,
   likedVideos, // Current user's liked videos feed
   hashtag, // Still supported as push route within explore
+  categoryGallery, // Category gallery pushed from explore categories
   search,
   videoRecorder, // Video recorder screen
   videoEditor, // Video editor screen
@@ -81,6 +84,7 @@ enum RouteType {
   sound, // Sound detail screen for audio reuse
   contentPreferences, // Content preferences (language, audio, filters)
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
+  legal, // Legal screen (ToS, Privacy, Safety, DMCA, Licenses)
   nostrSettings, // Nostr settings (relays, media servers, keys, account)
   secureAccount,
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
@@ -97,6 +101,7 @@ class RouteContext {
     this.videoIndex,
     this.npub,
     this.hashtag,
+    this.categoryName,
     this.searchTerm,
     this.listId,
     this.soundId,
@@ -109,6 +114,7 @@ class RouteContext {
   final int? videoIndex;
   final String? npub;
   final String? hashtag;
+  final String? categoryName;
   final String? searchTerm;
   final String? listId;
   final String? soundId;
@@ -212,6 +218,16 @@ RouteContext parseRoute(String path) {
         videoIndex: index,
       );
 
+    case 'categories':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final categoryName = Uri.decodeComponent(segments[1]);
+      return RouteContext(
+        type: RouteType.categoryGallery,
+        categoryName: categoryName,
+      );
+
     case 'search':
       // /search - grid mode, no term
       // /search/term - grid mode with search term
@@ -287,6 +303,9 @@ RouteContext parseRoute(String path) {
 
     case 'support-center':
       return const RouteContext(type: RouteType.supportCenter);
+
+    case 'legal':
+      return const RouteContext(type: RouteType.legal);
 
     case 'nostr-settings':
       return const RouteContext(type: RouteType.nostrSettings);
@@ -427,6 +446,13 @@ String buildRoute(RouteContext context) {
       final hashtag = context.hashtag ?? '';
       return HashtagScreenRouter.pathForTag(hashtag);
 
+    case RouteType.categoryGallery:
+      final categoryName = context.categoryName;
+      if (categoryName == null || categoryName.isEmpty) {
+        return ExploreScreen.path;
+      }
+      return CategoryGalleryScreen.locationFor(categoryName);
+
     case RouteType.search:
       // Grid mode (null videoIndex):
       //   - With term: '/search/{term}'
@@ -490,6 +516,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.supportCenter:
       return SupportCenterScreen.path;
+
+    case RouteType.legal:
+      return LegalScreen.path;
 
     case RouteType.nostrSettings:
       return NostrSettingsScreen.path;

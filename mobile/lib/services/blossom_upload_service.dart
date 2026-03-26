@@ -903,27 +903,24 @@ class BlossomUploadService {
 
       // Extract and encode signature if present
       if (manifestMap['pgpSignature'] != null) {
-        final signature = manifestMap['pgpSignature'] as Map<String, dynamic>;
-        final signatureJson = jsonEncode(signature);
-        headers['X-ProofMode-Signature'] = base64.encode(
-          utf8.encode(signatureJson),
+        headers['X-ProofMode-Signature'] = _encodeHeaderValue(
+          manifestMap['pgpSignature'],
         );
       }
 
       // Extract and encode attestation if present
       if (manifestMap['deviceAttestation'] != null) {
-        final attestation =
-            manifestMap['deviceAttestation'] as Map<String, dynamic>;
-        final attestationJson = jsonEncode(attestation);
-        headers['X-ProofMode-Attestation'] = base64.encode(
-          utf8.encode(attestationJson),
+        headers['X-ProofMode-Attestation'] = _encodeHeaderValue(
+          manifestMap['deviceAttestation'],
         );
       }
 
-      if (manifestMap['c2pa_manifest_id'] != null) {
-        final signature = manifestMap['c2pa_manifest_id'] as String;
-        final signatureJson = jsonEncode(signature);
-        headers['X-ProofMode-C2PA'] = base64.encode(utf8.encode(signatureJson));
+      final c2paManifestId =
+          manifestMap['c2paManifestId'] ?? manifestMap['c2pa_manifest_id'];
+      if (c2paManifestId != null) {
+        headers['X-ProofMode-C2PA'] = _encodeHeaderValue(
+          c2paManifestId,
+        );
       }
 
       Log.info(
@@ -939,6 +936,14 @@ class BlossomUploadService {
       );
       // Don't fail the upload if ProofMode headers can't be added
     }
+  }
+
+  /// Base64-encodes a manifest field value for use as an HTTP header.
+  ///
+  /// Handles both [String] and [Map] values. Maps are JSON-encoded first.
+  String _encodeHeaderValue(dynamic value) {
+    final stringValue = value is String ? value : jsonEncode(value);
+    return base64.encode(utf8.encode(stringValue));
   }
 
   /// Upload an audio file to the configured Blossom server

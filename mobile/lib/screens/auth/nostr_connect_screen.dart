@@ -7,7 +7,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -524,49 +523,54 @@ class _ActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: VineTheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ActionButton(
-              icon: const Icon(
-                Icons.link,
-                color: VineTheme.vineGreen,
-                size: 24,
-              ),
-              label: 'Copy URL',
-              onTap: onCopyUrl,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          scrollDirection: .horizontal,
+          child: Container(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            decoration: BoxDecoration(
+              color: VineTheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: VineTheme.outlineVariant),
             ),
-          ),
-          Expanded(
-            child: _ActionButton(
-              icon: SvgPicture.asset(
-                DivineIconName.shareFat.assetPath,
-                width: 24,
-                height: 24,
-                colorFilter: const ColorFilter.mode(
-                  VineTheme.vineGreen,
-                  BlendMode.srcIn,
+            padding: const .symmetric(horizontal: 12),
+            child: Row(
+              mainAxisAlignment: .spaceAround,
+              spacing: 10,
+              children: [
+                _ActionButton(
+                  icon: DivineIcon(
+                    icon: DivineIconName.linkSimple,
+                    color: VineTheme.vineGreen,
+                    size: MediaQuery.textScalerOf(context).scale(24),
+                  ),
+                  label: 'Copy URL',
+                  onTap: onCopyUrl,
                 ),
-              ),
-              label: 'Share',
-              onTap: onShareUrl,
+                _ActionButton(
+                  icon: DivineIcon(
+                    icon: DivineIconName.shareFat,
+                    color: VineTheme.vineGreen,
+                    size: MediaQuery.textScalerOf(context).scale(24),
+                  ),
+                  label: 'Share',
+                  onTap: onShareUrl,
+                ),
+                _ActionButton(
+                  icon: DivineIcon(
+                    icon: DivineIconName.plus,
+                    color: VineTheme.vineGreen,
+                    size: MediaQuery.textScalerOf(context).scale(24),
+                  ),
+                  label: 'Add bunker',
+                  onTap: onAddBunker,
+                ),
+              ],
             ),
           ),
-          Expanded(
-            child: _ActionButton(
-              icon: const Icon(Icons.add, color: VineTheme.vineGreen, size: 24),
-              label: 'Add bunker',
-              onTap: onAddBunker,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -592,9 +596,9 @@ class _ActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          spacing: 6,
           children: [
             icon,
-            const SizedBox(height: 6),
             Text(
               label,
               style: const TextStyle(
@@ -602,6 +606,7 @@ class _ActionButton extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
+              textAlign: .center,
             ),
           ],
         ),
@@ -632,11 +637,11 @@ class _CompatibilityTable extends StatelessWidget {
                   ),
                 ),
               ),
-              _platformIcon(Icons.adb),
+              _platformIcon(DivineIconName.androidLogo),
               const SizedBox(width: 24),
-              _platformIcon(Icons.apple),
+              _platformIcon(DivineIconName.appleLogo),
               const SizedBox(width: 24),
-              _platformIcon(Icons.language),
+              _platformIcon(DivineIconName.globe),
             ],
           ),
         ),
@@ -660,8 +665,8 @@ class _CompatibilityTable extends StatelessWidget {
     );
   }
 
-  Widget _platformIcon(IconData icon) {
-    return Icon(icon, color: VineTheme.secondaryText, size: 22);
+  Widget _platformIcon(DivineIconName icon) {
+    return DivineIcon(icon: icon, color: VineTheme.secondaryText, size: 22);
   }
 }
 
@@ -782,7 +787,11 @@ class _ErrorContent extends StatelessWidget {
                       ),
                       elevation: 0,
                     ),
-                    icon: const Icon(Icons.refresh),
+                    icon: DivineIcon(
+                      icon: DivineIconName.arrowClockwise,
+                      size: MediaQuery.textScalerOf(context).scale(16),
+                      color: VineTheme.backgroundColor,
+                    ),
                     label: const Text(
                       'Try Again',
                       style: TextStyle(

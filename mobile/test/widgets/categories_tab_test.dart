@@ -1,219 +1,130 @@
-// ABOUTME: Widget tests for the CategoriesTab
-// ABOUTME: Verifies categories grid rendering, category selection, and back navigation
+// ABOUTME: Widget tests for the categories discovery surface.
+// ABOUTME: Verifies loading/error/empty states and the redesigned pinned-first list.
 
-import 'package:bloc_test/bloc_test.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/widgets/categories_tab.dart';
 
-class _MockCategoriesBloc extends MockBloc<CategoriesEvent, CategoriesState>
-    implements CategoriesBloc {}
-
 void main() {
-  late _MockCategoriesBloc mockBloc;
-
-  setUp(() {
-    mockBloc = _MockCategoriesBloc();
-  });
-
-  Widget buildSubject() {
-    return ProviderScope(
-      child: MaterialApp(
-        theme: ThemeData.dark(),
-        home: Scaffold(
-          body: BlocProvider<CategoriesBloc>.value(
-            value: mockBloc,
-            child: BlocBuilder<CategoriesBloc, CategoriesState>(
-              builder: (context, state) {
-                if (state.selectedCategory != null) {
-                  return const Text('Category selected');
-                }
-                return _buildGridFromState(context, state);
-              },
-            ),
-          ),
+  Widget buildSubject({
+    required CategoriesState state,
+    void Function(VideoCategory)? onCategoryTap,
+    VoidCallback? onRetry,
+  }) {
+    return MaterialApp(
+      home: Scaffold(
+        body: CategoriesDiscoveryView(
+          state: state,
+          onCategoryTap: onCategoryTap ?? (_) {},
+          onRetry: onRetry ?? () {},
         ),
       ),
     );
   }
 
-  group(CategoriesTab, () {
-    group('renders', () {
-      testWidgets('loading indicator when status is loading', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const CategoriesState(
+  group('CategoriesDiscoveryView', () {
+    testWidgets('renders loading indicator when status is loading', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: const CategoriesState(
             categoriesStatus: CategoriesStatus.loading,
           ),
-        );
+        ),
+      );
 
-        await tester.pumpWidget(buildSubject());
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      });
+    testWidgets('renders retry state when loading categories fails', (
+      tester,
+    ) async {
+      var retries = 0;
 
-      testWidgets('error message with retry button on error', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const CategoriesState(
+      await tester.pumpWidget(
+        buildSubject(
+          state: const CategoriesState(
             categoriesStatus: CategoriesStatus.error,
             errorMessage: 'Network error',
           ),
-        );
-
-        await tester.pumpWidget(buildSubject());
-
-        expect(
-          find.text('Could not load categories'),
-          findsOneWidget,
-        );
-        expect(find.text('Retry'), findsOneWidget);
-      });
-
-      testWidgets('retry button dispatches CategoriesLoadRequested', (
-        tester,
-      ) async {
-        when(() => mockBloc.state).thenReturn(
-          const CategoriesState(
-            categoriesStatus: CategoriesStatus.error,
-          ),
-        );
-
-        await tester.pumpWidget(buildSubject());
-        await tester.tap(find.text('Retry'));
-
-        verify(
-          () => mockBloc.add(const CategoriesLoadRequested()),
-        ).called(1);
-      });
-
-      testWidgets('empty state when no categories', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const CategoriesState(
-            categoriesStatus: CategoriesStatus.loaded,
-          ),
-        );
-
-        await tester.pumpWidget(buildSubject());
-
-        expect(
-          find.text('No categories available'),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('category cards when categories are loaded', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const CategoriesState(
-            categoriesStatus: CategoriesStatus.loaded,
-            categories: [
-              VideoCategory(name: 'music', videoCount: 1500),
-              VideoCategory(name: 'comedy', videoCount: 900),
-            ],
-          ),
-        );
-
-        await tester.pumpWidget(buildSubject());
-
-        expect(find.text('Music'), findsOneWidget);
-        expect(find.text('Comedy'), findsOneWidget);
-        expect(find.text('1.5K videos'), findsOneWidget);
-        expect(find.text('900 videos'), findsOneWidget);
-      });
-    });
-
-    group('interactions', () {
-      testWidgets('tapping category dispatches CategorySelected', (
-        tester,
-      ) async {
-        const category = VideoCategory(
-          name: 'music',
-          videoCount: 1500,
-        );
-        when(() => mockBloc.state).thenReturn(
-          const CategoriesState(
-            categoriesStatus: CategoriesStatus.loaded,
-            categories: [category],
-          ),
-        );
-
-        await tester.pumpWidget(buildSubject());
-        await tester.tap(find.text('Music'));
-
-        verify(
-          () => mockBloc.add(const CategorySelected(category)),
-        ).called(1);
-      });
-    });
-  });
-}
-
-/// Builds a simplified grid from state for testing.
-/// (Avoids the ConsumerWidget Riverpod dependency in tests.)
-Widget _buildGridFromState(BuildContext context, CategoriesState state) {
-  if (state.categoriesStatus == CategoriesStatus.loading) {
-    return const Center(child: CircularProgressIndicator());
-  }
-
-  if (state.categoriesStatus == CategoriesStatus.error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Could not load categories',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              context.read<CategoriesBloc>().add(
-                const CategoriesLoadRequested(),
-              );
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  if (state.categories.isEmpty) {
-    return const Center(
-      child: Text(
-        'No categories available',
-        style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
-      ),
-    );
-  }
-
-  return ListView(
-    children: state.categories.map((category) {
-      return GestureDetector(
-        onTap: () {
-          context.read<CategoriesBloc>().add(
-            CategorySelected(category),
-          );
-        },
-        child: Column(
-          children: [
-            Text(category.displayName),
-            Text('${_formatCount(category.videoCount)} videos'),
-          ],
+          onRetry: () => retries += 1,
         ),
       );
-    }).toList(),
-  );
-}
 
-String _formatCount(int count) {
-  if (count >= 1000) {
-    final k = count / 1000;
-    return '${k.toStringAsFixed(k.truncateToDouble() == k ? 0 : 1)}K';
-  }
-  return count.toString();
+      expect(find.text('Could not load categories'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+
+      await tester.tap(find.text('Retry'));
+      expect(retries, 1);
+    });
+
+    testWidgets('renders empty state when there are no categories', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+          ),
+        ),
+      );
+
+      expect(find.text('No categories available'), findsOneWidget);
+    });
+
+    testWidgets('renders featured categories first in a vertical tile list', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: [
+              VideoCategory(name: 'animals', videoCount: 1500),
+              VideoCategory(name: 'fashion', videoCount: 1200),
+              VideoCategory(name: 'technology', videoCount: 300),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.byType(GridView), findsNothing);
+      expect(find.text('Animals'), findsOneWidget);
+      expect(find.text('Style'), findsOneWidget);
+      expect(find.text('Technology'), findsOneWidget);
+
+      final animalsTopLeft = tester.getTopLeft(find.text('Animals'));
+      final styleTopLeft = tester.getTopLeft(find.text('Style'));
+      final technologyTopLeft = tester.getTopLeft(find.text('Technology'));
+
+      expect(animalsTopLeft.dy, lessThan(styleTopLeft.dy));
+      expect(styleTopLeft.dy, lessThan(technologyTopLeft.dy));
+    });
+
+    testWidgets('calls back when a category tile is tapped', (tester) async {
+      VideoCategory? tappedCategory;
+
+      await tester.pumpWidget(
+        buildSubject(
+          state: const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: [
+              VideoCategory(name: 'animals', videoCount: 1500),
+            ],
+          ),
+          onCategoryTap: (category) => tappedCategory = category,
+        ),
+      );
+
+      await tester.tap(find.text('Animals'));
+
+      expect(
+        tappedCategory,
+        const VideoCategory(name: 'animals', videoCount: 1500),
+      );
+    });
+  });
 }

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
@@ -21,6 +22,7 @@ import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -50,6 +52,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -595,6 +598,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const SupportCenterScreen(),
       ),
       GoRoute(
+        path: LegalScreen.path,
+        name: LegalScreen.routeName,
+        builder: (_, _) => const LegalScreen(),
+      ),
+      GoRoute(
         path: ContentPreferencesScreen.path,
         name: ContentPreferencesScreen.routeName,
         builder: (_, _) => const ContentPreferencesScreen(),
@@ -834,6 +842,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: VideoMetadataScreen.routeName,
         builder: (_, st) => const VideoMetadataScreen(),
       ),
+      GoRoute(
+        path: CategoryGalleryScreen.path,
+        name: CategoryGalleryScreen.routeName,
+        builder: (_, st) {
+          final categoryName = st.pathParameters['categoryName'];
+          final category =
+              st.extra as VideoCategory? ??
+              VideoCategory(
+                name: categoryName ?? '',
+                videoCount: 0,
+              );
+
+          if (category.name.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid category')),
+            );
+          }
+
+          return CategoryGalleryScreen(category: category);
+        },
+      ),
       // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
       GoRoute(
         path: FullscreenVideoFeedScreen.path,
@@ -939,6 +969,7 @@ int tabIndexFromLocation(String loc) {
     case 'content-filters':
     case 'content-preferences':
     case 'support-center':
+    case 'legal':
     case 'nostr-settings':
     case 'developer-options':
     case 'edit-profile':
@@ -960,6 +991,7 @@ int tabIndexFromLocation(String loc) {
     case 'discover-lists':
     case 'creator-analytics':
     case 'hashtag':
+    case 'categories':
       return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home

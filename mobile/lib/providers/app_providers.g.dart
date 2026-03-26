@@ -2186,7 +2186,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'21c98cd95333c3197814e2d50cdf496c9e3194d6';
+String _$authServiceHash() => r'4bb86052429096d3a396412f9e64f695e882f92e';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -2877,6 +2877,65 @@ final class HashtagRepositoryProvider
 }
 
 String _$hashtagRepositoryHash() => r'aacff5fc9d7d369a80b68ffa4595628b18ab1f99';
+
+/// Provider for CategoriesRepository instance.
+///
+/// Keep-alive so the categories cache survives tab and screen transitions.
+
+@ProviderFor(categoriesRepository)
+const categoriesRepositoryProvider = CategoriesRepositoryProvider._();
+
+/// Provider for CategoriesRepository instance.
+///
+/// Keep-alive so the categories cache survives tab and screen transitions.
+
+final class CategoriesRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CategoriesRepository,
+          CategoriesRepository,
+          CategoriesRepository
+        >
+    with $Provider<CategoriesRepository> {
+  /// Provider for CategoriesRepository instance.
+  ///
+  /// Keep-alive so the categories cache survives tab and screen transitions.
+  const CategoriesRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'categoriesRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$categoriesRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<CategoriesRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CategoriesRepository create(Ref ref) {
+    return categoriesRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CategoriesRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CategoriesRepository>(value),
+    );
+  }
+}
+
+String _$categoriesRepositoryHash() =>
+    r'6a3a483ae2565033933e9891b1742571c6e15fa8';
 
 /// Provider for ProfileRepository instance
 ///

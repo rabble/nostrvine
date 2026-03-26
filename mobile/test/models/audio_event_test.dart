@@ -496,6 +496,31 @@ void main() {
         // Assert
         expect(event1, isNot(equals(event2)));
       });
+
+      test('events with same id but different startOffset are not equal', () {
+        // Arrange
+        const event1 = AudioEvent(
+          id: 'same-id-123456789012345678901234567890123456789012345678901',
+          pubkey: 'pubkey',
+          createdAt: 1700000000,
+          url: 'https://example.com/audio.aac',
+          mimeType: 'audio/aac',
+          // Using default startOffset (Duration.zero)
+        );
+
+        const event2 = AudioEvent(
+          id: 'same-id-123456789012345678901234567890123456789012345678901',
+          pubkey: 'pubkey',
+          createdAt: 1700000000,
+          url: 'https://example.com/audio.aac',
+          mimeType: 'audio/aac',
+          startOffset: Duration(seconds: 5),
+        );
+
+        // Assert - same audio with different start positions are distinct
+        expect(event1, isNot(equals(event2)));
+        expect(event1.hashCode, isNot(equals(event2.hashCode)));
+      });
     });
 
     group('toString', () {

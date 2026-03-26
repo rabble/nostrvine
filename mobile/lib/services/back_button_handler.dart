@@ -49,6 +49,13 @@ class BackButtonHandler {
     // First, check if we're in a sub-route (hashtag, search, etc.)
     // If so, navigate back to parent route
     switch (ctx.type) {
+      case RouteType.categoryGallery:
+        if (_router!.canPop()) {
+          _router!.pop();
+        } else {
+          _router!.go(ExploreScreen.path);
+        }
+        return true; // Handled
       case RouteType.hashtag:
       case RouteType.search:
         // Go back to explore

@@ -16,7 +16,6 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
 
 /// Create account screen — Page that provides [DivineAuthCubit] in sign-up
 /// mode.
@@ -200,7 +199,8 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
               ],
             )
           : null,
-      primaryButton: DivinePrimaryButton(
+      primaryButton: DivineButton(
+        expanded: true,
         label: 'Create account',
         isLoading: isSubmitting,
         onPressed: isDisabled ? null : _submit,
@@ -344,7 +344,8 @@ class _SkipConfirmationSheet extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Add email & password button
-          DivinePrimaryButton(
+          DivineButton(
+            expanded: true,
             label: 'Add email & password',
             onPressed: () => Navigator.pop(context, false),
           ),

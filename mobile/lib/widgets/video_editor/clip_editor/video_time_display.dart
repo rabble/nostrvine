@@ -64,27 +64,33 @@ class VideoTimeDisplay extends StatelessWidget {
         );
 
     final defaultTotalStyle = totalStyle ?? defaultSeparatorStyle;
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.3,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: Text.rich(
+        TextSpan(
+          style: defaultSeparatorStyle,
 
-    return Text.rich(
-      TextSpan(
-        style: defaultSeparatorStyle,
-        children: [
-          WidgetSpan(
-            alignment: .baseline,
-            baseline: .alphabetic,
-            child: SmoothTimeDisplay(
-              isPlayingSelector: isPlayingSelector,
-              currentPositionSelector: currentPositionSelector,
-              maxDuration: maxDuration ?? totalDuration,
-              style: defaultCurrentStyle,
+          children: [
+            WidgetSpan(
+              alignment: .baseline,
+              baseline: .alphabetic,
+              child: SmoothTimeDisplay(
+                isPlayingSelector: isPlayingSelector,
+                currentPositionSelector: currentPositionSelector,
+                maxDuration: maxDuration ?? totalDuration,
+                style: defaultCurrentStyle,
+              ),
             ),
-          ),
-          const TextSpan(text: ' / '),
-          TextSpan(
-            text: '${totalDuration.toFormattedSeconds()}s',
-            style: defaultTotalStyle,
-          ),
-        ],
+            const TextSpan(text: ' / '),
+            TextSpan(
+              text: '${totalDuration.toFormattedSeconds()}s',
+              style: defaultTotalStyle,
+            ),
+          ],
+        ),
       ),
     );
   }

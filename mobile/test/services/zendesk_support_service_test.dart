@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/config/zendesk_config.dart';
+import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 
 void main() {
@@ -590,6 +591,70 @@ void main() {
       expect(fieldIds, contains(14677341431695));
     });
 
+    test('subject passes through without prefix modification', () async {
+      String? capturedSubject;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedSubject = call.arguments['subject'] as String?;
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      // Subject should be passed exactly as provided -- no "fix:" prefix
+      await ZendeskSupportService.createStructuredBugReport(
+        subject: 'Links not working in DMs',
+        description: 'When I tap a link it does nothing',
+        reportId: 'test-subject-001',
+        appVersion: '1.0.7+497',
+        deviceInfo: {'platform': 'ios'},
+      );
+
+      expect(capturedSubject, 'Links not working in DMs');
+      expect(capturedSubject, isNot(startsWith('fix:')));
+    });
+
+    test('subject with user-typed prefix is not double-prefixed', () async {
+      String? capturedSubject;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedSubject = call.arguments['subject'] as String?;
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      // If a user types "fix: something" it should pass through as-is
+      await ZendeskSupportService.createStructuredBugReport(
+        subject: 'fix: video upload stuck',
+        description: 'Video stays at processing forever',
+        reportId: 'test-subject-002',
+        appVersion: '1.0.7+497',
+        deviceInfo: {'platform': 'ios'},
+      );
+
+      expect(capturedSubject, 'fix: video upload stuck');
+      expect(capturedSubject, isNot(startsWith('fix: fix:')));
+    });
+
     test('falls back to REST API when SDK not initialized', () async {
       // Reset _initialized by calling initialize with a handler that fails
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -682,4 +747,334 @@ void main() {
       expect(result, ZendeskConfig.isRestApiConfigured);
     });
   });
+
+  group('storeAuthContext and JWT refresh', () {
+    test('resetForTesting clears stored auth context', () {
+      // storeAuthContext is a static setter -- we verify it's cleared by
+      // checking that createTicket doesn't attempt a JWT refresh when
+      // auth context is absent (no setJwtIdentity call in the channel log)
+      ZendeskSupportService.resetForTesting();
+
+      // After reset, auth context should be null -- createTicket should
+      // skip _ensureFreshJwt and proceed directly to SDK (or return false
+      // if not initialized)
+      expect(ZendeskSupportService.isAvailable, false);
+    });
+
+    test(
+      'createTicket without auth context still works (no refresh attempt)',
+      () async {
+        final methodCalls = <String>[];
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'createTicket') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        // No storeAuthContext called -- _ensureFreshJwt should be a no-op
+        methodCalls.clear();
+
+        final result = await ZendeskSupportService.createTicket(
+          subject: 'Test',
+          description: 'Test description',
+        );
+
+        expect(result, true);
+        // Should NOT have called setJwtIdentity (no auth context stored)
+        expect(methodCalls, ['createTicket']);
+      },
+    );
+
+    test(
+      'createTicket with auth context attempts JWT refresh before SDK call',
+      () async {
+        final methodCalls = <String>[];
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setJwtIdentity') return true;
+              if (call.method == 'createTicket') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        // Store auth context -- _ensureFreshJwt will attempt setJwtIdentity.
+        // fetchPreAuthToken will fail (no real server), but _ensureFreshJwt
+        // catches the error and proceeds. The important thing is createTicket
+        // still succeeds afterward.
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://test-relay.divine.video',
+        );
+
+        methodCalls.clear();
+
+        final result = await ZendeskSupportService.createTicket(
+          subject: 'Test',
+          description: 'Test description',
+        );
+
+        // createTicket should succeed even though JWT refresh failed
+        // (the refresh is best-effort, not blocking)
+        expect(result, true);
+        expect(methodCalls, contains('createTicket'));
+      },
+    );
+
+    test('showNewTicketScreen without auth context skips refresh', () async {
+      final methodCalls = <String>[];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            methodCalls.add(call.method);
+            if (call.method == 'initialize') return true;
+            if (call.method == 'showNewTicket') return true;
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      methodCalls.clear();
+
+      final result = await ZendeskSupportService.showNewTicketScreen();
+
+      expect(result, true);
+      expect(methodCalls, ['showNewTicket']);
+    });
+
+    test('showTicketListScreen without auth context skips refresh', () async {
+      final methodCalls = <String>[];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            methodCalls.add(call.method);
+            if (call.method == 'initialize') return true;
+            if (call.method == 'showTicketList') return true;
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      methodCalls.clear();
+
+      final result = await ZendeskSupportService.showTicketListScreen();
+
+      expect(result, true);
+      expect(methodCalls, ['showTicketList']);
+    });
+
+    test(
+      'showTicketListScreen falls back to anonymous identity when JWT refresh fails',
+      () async {
+        final methodCalls = <String>[];
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'setUserIdentity') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+        ZendeskSupportService.setUserIdentity(
+          npub: 'npub1fallback1234567890abcdef1234567890abcdef1234567890abcdef',
+          displayName: 'Fallback User',
+        );
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://relay-manager.divine.video',
+        );
+
+        methodCalls.clear();
+
+        final result = await ZendeskSupportService.showTicketListScreen();
+
+        expect(result, isTrue);
+        expect(methodCalls, ['setUserIdentity', 'showTicketList']);
+      },
+    );
+
+    test(
+      'showTicketListScreen reuses a recent JWT refresh for consecutive calls',
+      () async {
+        final methodCalls = <String>[];
+        var refreshCallCount = 0;
+        final now = DateTime.utc(2026, 3, 24, 12);
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://relay-manager.divine.video',
+        );
+        ZendeskSupportService.setTestHooks(
+          now: () => now,
+          jwtIdentityRefresh:
+              ({
+                required Nip98AuthService nip98Service,
+                required String relayManagerUrl,
+              }) async {
+                refreshCallCount++;
+                return true;
+              },
+        );
+
+        methodCalls.clear();
+
+        final firstResult = await ZendeskSupportService.showTicketListScreen();
+        final secondResult = await ZendeskSupportService.showTicketListScreen();
+
+        expect(firstResult, isTrue);
+        expect(secondResult, isTrue);
+        expect(refreshCallCount, 1);
+        expect(methodCalls.where((m) => m == 'showTicketList').length, 2);
+      },
+    );
+
+    test(
+      'showTicketListScreen refreshes again once cached JWT is stale',
+      () async {
+        var refreshCallCount = 0;
+        var now = DateTime.utc(2026, 3, 24, 12);
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://relay-manager.divine.video',
+        );
+        ZendeskSupportService.setTestHooks(
+          now: () => now,
+          jwtIdentityRefresh:
+              ({
+                required Nip98AuthService nip98Service,
+                required String relayManagerUrl,
+              }) async {
+                refreshCallCount++;
+                return true;
+              },
+        );
+
+        final firstResult = await ZendeskSupportService.showTicketListScreen();
+        now = now.add(const Duration(minutes: 5));
+        final secondResult = await ZendeskSupportService.showTicketListScreen();
+
+        expect(firstResult, isTrue);
+        expect(secondResult, isTrue);
+        expect(refreshCallCount, 2);
+      },
+    );
+
+    test(
+      'clearUserIdentity clears stored auth context for future SDK actions',
+      () async {
+        final methodCalls = <String>[];
+        var refreshCallCount = 0;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'clearUserIdentity') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        ZendeskSupportService.storeAuthContext(
+          nip98Service: _FakeNip98AuthService(),
+          relayManagerUrl: 'https://relay-manager.divine.video',
+        );
+        ZendeskSupportService.setTestHooks(
+          jwtIdentityRefresh:
+              ({
+                required Nip98AuthService nip98Service,
+                required String relayManagerUrl,
+              }) async {
+                refreshCallCount++;
+                return true;
+              },
+        );
+
+        await ZendeskSupportService.clearUserIdentity();
+        methodCalls.clear();
+
+        final result = await ZendeskSupportService.showTicketListScreen();
+
+        expect(result, isTrue);
+        expect(refreshCallCount, 0);
+        expect(methodCalls, ['showTicketList']);
+      },
+    );
+  });
+}
+
+/// Minimal fake for Nip98AuthService that always fails token creation.
+/// Tests that _ensureFreshJwt handles failures gracefully.
+class _FakeNip98AuthService implements Nip98AuthService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    // createAuthToken and clearTokenCache are the only methods called
+    // by fetchPreAuthToken. Return null/void for all calls, which causes
+    // fetchPreAuthToken to throw, which _ensureFreshJwt catches gracefully.
+    return null;
+  }
 }

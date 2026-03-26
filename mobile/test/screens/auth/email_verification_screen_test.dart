@@ -20,7 +20,6 @@ import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -166,7 +165,7 @@ void main() {
         await tester.pump();
 
         expect(
-          find.widgetWithText(DivinePrimaryButton, 'Open email app'),
+          find.widgetWithText(DivineButton, 'Open email app'),
           findsOneWidget,
         );
       });
@@ -300,7 +299,7 @@ void main() {
         await tester.pump();
 
         expect(
-          find.widgetWithText(DivinePrimaryButton, 'Start over'),
+          find.widgetWithText(DivineButton, 'Start over'),
           findsOneWidget,
         );
       });
@@ -355,7 +354,7 @@ void main() {
         await tester.pump();
 
         expect(
-          find.widgetWithText(DivinePrimaryButton, 'Back to invite code'),
+          find.widgetWithText(DivineButton, 'Back to invite code'),
           findsOneWidget,
         );
       });

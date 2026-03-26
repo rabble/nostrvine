@@ -14,7 +14,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
 
 class SecureAccountScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -183,7 +182,8 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       errorWidget: _generalError != null
           ? AuthErrorBox(message: _generalError!)
           : null,
-      primaryButton: DivinePrimaryButton(
+      primaryButton: DivineButton(
+        expanded: true,
         label: 'Secure account',
         isLoading: _isLoading,
         onPressed: _handleSubmit,

@@ -16,63 +16,71 @@ class VideoEditorMainBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = VideoEditorScope.of(context);
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.25,
+    );
 
-    return SizedBox(
-      height: VideoEditorConstants.bottomBarHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: constraints.maxWidth - 32),
-              child: Row(
-                spacing: 32,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _ActionButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: 'Clips',
-                    icon: .images,
-                    onTap: scope.onOpenClipsEditor,
-                  ),
-                  _ActionButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: 'Text',
-                    icon: .textAa,
-                    onTap: () => scope.editor?.openTextEditor(),
-                  ),
-                  _ActionButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: 'Draw',
-                    icon: .scribble,
-                    onTap: () => scope.editor?.openPaintEditor(),
-                  ),
-                  /* TODO(hm21): uncomment stickers once we have a license for them
-                  _ActionButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: 'Stickers',
-                    icon: .sticker,
-                    onTap: scope.onAddStickers,
-                  ),*/
-                  _ActionButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: 'Volume',
-                    icon: .speakerHigh,
-                    onTap: scope.onAdjustVolume,
-                  ),
-                  _ActionButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: 'Effects',
-                    icon: .fadersHorizontal,
-                    onTap: () => scope.editor?.openFilterEditor(),
-                  ),
-                ],
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: SizedBox(
+        height: VideoEditorConstants.bottomBarHeight,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: constraints.maxWidth - 32,
+                ),
+                child: Row(
+                  spacing: 32,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _ActionButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      label: 'Clips',
+                      icon: .images,
+                      onTap: scope.onOpenClipsEditor,
+                    ),
+                    _ActionButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      label: 'Text',
+                      icon: .textAa,
+                      onTap: () => scope.editor?.openTextEditor(),
+                    ),
+                    _ActionButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      label: 'Draw',
+                      icon: .scribble,
+                      onTap: () => scope.editor?.openPaintEditor(),
+                    ),
+                    /* TODO(hm21): uncomment stickers once we have a license for them
+                    _ActionButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      label: 'Stickers',
+                      icon: .sticker,
+                      onTap: scope.onAddStickers,
+                    ),*/
+                    _ActionButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      label: 'Volume',
+                      icon: .speakerHigh,
+                      onTap: scope.onAdjustVolume,
+                    ),
+                    _ActionButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      label: 'Effects',
+                      icon: .fadersHorizontal,
+                      onTap: () => scope.editor?.openFilterEditor(),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

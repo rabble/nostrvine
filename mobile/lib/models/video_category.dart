@@ -23,11 +23,25 @@ class VideoCategory extends Equatable {
   /// Display name with first letter capitalized.
   String get displayName {
     if (name.isEmpty) return '';
+    final normalizedName = name.toLowerCase();
+    final customLabel = _categoryDisplayNames[normalizedName];
+    if (customLabel != null) {
+      return customLabel;
+    }
     return name[0].toUpperCase() + name.substring(1);
   }
 
   /// Emoji icon for this category.
   String get emoji => _categoryEmojis[name.toLowerCase()] ?? '🎬';
+
+  /// Whether this category is one of the featured Figma categories.
+  bool get isFeatured => _featuredCategoryOrder.contains(name.toLowerCase());
+
+  /// Sort rank for featured-first category ordering.
+  int get featuredRank {
+    final index = _featuredCategoryOrder.indexOf(name.toLowerCase());
+    return index == -1 ? _featuredCategoryOrder.length : index;
+  }
 
   @override
   List<Object?> get props => [name, videoCount];
@@ -39,6 +53,21 @@ class VideoCategory extends Equatable {
     return 0;
   }
 }
+
+const _featuredCategoryOrder = <String>[
+  'animals',
+  'food',
+  'nature',
+  'sports',
+  'fashion',
+  'music',
+  'fitness',
+  'art',
+];
+
+const _categoryDisplayNames = <String, String>{
+  'fashion': 'Style',
+};
 
 /// Mapping of category names to emoji icons.
 const _categoryEmojis = <String, String>{

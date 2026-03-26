@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/bug_report_service.dart';
-import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,10 +22,6 @@ class SupportCenterScreen extends ConsumerWidget {
     final authService = ref.watch(authServiceProvider);
     final userPubkey = authService.currentPublicKeyHex;
     final bugReportService = ref.read(bugReportServiceProvider);
-    final nip98Service = ref.read(nip98AuthServiceProvider);
-    final relayManagerUrl = ref
-        .read(currentEnvironmentProvider)
-        .relayManagerApiUrl;
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -66,11 +60,7 @@ class SupportCenterScreen extends ConsumerWidget {
                 icon: Icons.chat,
                 title: 'View Support Messages',
                 subtitle: 'Check responses from support',
-                onTap: () => _viewSupportMessages(
-                  context,
-                  nip98Service: nip98Service,
-                  relayManagerUrl: relayManagerUrl,
-                ),
+                onTap: () => _viewSupportMessages(context),
               ),
               _SupportTile(
                 icon: Icons.help,
@@ -90,26 +80,6 @@ class SupportCenterScreen extends ConsumerWidget {
                   context,
                   'https://divine.video/proofmode',
                   'ProofMode',
-                ),
-              ),
-              _SupportTile(
-                icon: Icons.privacy_tip,
-                title: 'Privacy Policy',
-                subtitle: 'How we handle your data',
-                onTap: () => _launchUrl(
-                  context,
-                  'https://divine.video/privacy',
-                  'Privacy Policy',
-                ),
-              ),
-              _SupportTile(
-                icon: Icons.shield,
-                title: 'Safety Standards',
-                subtitle: 'Community guidelines and safety',
-                onTap: () => _launchUrl(
-                  context,
-                  'https://divine.video/safety',
-                  'Safety Standards',
                 ),
               ),
             ],
@@ -171,11 +141,7 @@ class SupportCenterScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _viewSupportMessages(
-    BuildContext context, {
-    required Nip98AuthService nip98Service,
-    required String relayManagerUrl,
-  }) async {
+  Future<void> _viewSupportMessages(BuildContext context) async {
     if (!ZendeskSupportService.isAvailable) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -188,19 +154,7 @@ class SupportCenterScreen extends ConsumerWidget {
       return;
     }
 
-    // Try JWT identity first for full ticket history.
-    // If JWT fails (network error, expired token), fall back to anonymous
-    // identity so the user can still see tickets created in this session.
-    final jwtSet = await ZendeskSupportService.setJwtIdentity(
-      nip98Service: nip98Service,
-      relayManagerUrl: relayManagerUrl,
-    );
-    if (!jwtSet) {
-      // Fall back to anonymous identity with user info so the native SDK
-      // has *some* identity set — prevents crash on Samsung devices (#2365).
-      await ZendeskSupportService.setAnonymousIdentityWithUserInfo();
-    }
-
+    // JWT refresh is handled internally by showTicketListScreen via _ensureFreshJwt
     final shown = await ZendeskSupportService.showTicketListScreen();
     if (!shown && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

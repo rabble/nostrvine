@@ -1305,7 +1305,6 @@ class _ProfileSetupScreenViewState
     FocusScope.of(context).unfocus();
     VineBottomSheet.show<void>(
       context: context,
-      scrollable: false,
       children: const [NostrInfoSheetContent()],
     ).then((_) {
       // Unfocus after sheet is dismissed to prevent auto-focus on form fields
@@ -2032,10 +2031,12 @@ class _ExternalNip05Section extends StatelessWidget {
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Use your own NIP-05 address',
-                      style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
+                    Flexible(
+                      child: Text(
+                        'Use your own NIP-05 address',
+                        style: VineTheme.bodyMediumFont(
+                          color: VineTheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],

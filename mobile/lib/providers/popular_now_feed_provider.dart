@@ -37,10 +37,6 @@ class PopularNowFeed extends _$PopularNowFeed {
 
   @override
   Future<VideoFeedState> build() async {
-    // Reset cursor state at start of build to ensure clean state
-    _usingRestApi = false;
-    _nextCursor = null;
-
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
     ref.watch(divineHostFilterVersionProvider);
@@ -142,6 +138,7 @@ class PopularNowFeed extends _$PopularNowFeed {
 
     // Fall back to Nostr subscription
     _usingRestApi = false;
+    _nextCursor = null;
     _builder = VideoFeedBuilder(videoEventService);
 
     // Configure feed for popularNow subscription type
@@ -377,7 +374,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     );
 
     final videoEventService = ref.read(videoEventServiceProvider);
-    final currentState = state.asData?.value;
+    final currentState = state.value;
 
     if (currentState != null && ref.mounted) {
       state = AsyncData(
