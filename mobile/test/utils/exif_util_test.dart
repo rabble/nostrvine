@@ -7,8 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:openvine/utils/exif_util.dart';
 
-/// Creates a minimal JPEG with EXIF data containing GPS and device metadata.
-Uint8List _createJpegWithExif() {
+/// Creates a minimal JPEG with EXIF data containing GPS, device, and
+/// orientation metadata.
+Uint8List _createJpegWithExif({int? orientation}) {
   final image = img.Image(width: 2, height: 2);
 
   // Add GPS EXIF data
@@ -18,6 +19,11 @@ Uint8List _createJpegWithExif() {
   // Add device info
   image.exif.imageIfd[0x010F] = img.IfdValueAscii('TestDevice'); // Make
   image.exif.imageIfd[0x0110] = img.IfdValueAscii('TestModel'); // Model
+
+  // Add orientation tag (default: 6 = 90° CW, common for portrait photos)
+  if (orientation != null) {
+    image.exif.imageIfd.orientation = orientation;
+  }
 
   return Uint8List.fromList(img.encodeJpg(image));
 }
@@ -34,23 +40,73 @@ void main() {
   group(ExifUtil, () {
     group('stripJpegExif', () {
       test('strips GPS and device EXIF from JPEG', () {
-        final jpegWithExif = _createJpegWithExif();
+        final jpegWithExif = _createJpegWithExif(orientation: 6);
 
-        // Verify EXIF is present before stripping
+        // Verify privacy-sensitive EXIF is present before stripping
         final exifBefore = img.decodeJpgExif(jpegWithExif);
         expect(exifBefore, isNotNull);
-        expect(exifBefore!.imageIfd.values, isNotEmpty);
+        expect(exifBefore!.gpsIfd.values, isNotEmpty);
+        expect(exifBefore.imageIfd[0x010F], isNotNull); // Make
+        expect(exifBefore.imageIfd[0x0110], isNotNull); // Model
 
         // Strip EXIF
         final stripped = ExifUtil.stripJpegExif(jpegWithExif);
 
-        // Verify EXIF is absent after stripping
+        // Verify GPS and device info are gone
         final exifAfter = img.decodeJpgExif(stripped);
         expect(
-          exifAfter,
-          isNull,
-          reason: 'EXIF data should be completely removed',
+          exifAfter?.gpsIfd.values,
+          anyOf(isNull, isEmpty),
+          reason: 'GPS data should be removed',
         );
+        expect(
+          exifAfter?.imageIfd[0x010F],
+          isNull,
+          reason: 'Device make should be removed',
+        );
+        expect(
+          exifAfter?.imageIfd[0x0110],
+          isNull,
+          reason: 'Device model should be removed',
+        );
+      });
+
+      test('preserves orientation tag when stripping', () {
+        // Orientation 6 = 90° CW (portrait photo from phone camera)
+        final jpegWithExif = _createJpegWithExif(orientation: 6);
+        final stripped = ExifUtil.stripJpegExif(jpegWithExif);
+
+        final exifAfter = img.decodeJpgExif(stripped);
+        expect(
+          exifAfter?.imageIfd.orientation,
+          equals(6),
+          reason: 'Orientation tag must survive stripping',
+        );
+      });
+
+      test('preserves all 8 EXIF orientation values', () {
+        // EXIF orientation values 1-8 cover all rotation/flip combinations
+        for (var orientation = 1; orientation <= 8; orientation++) {
+          final jpeg = _createJpegWithExif(orientation: orientation);
+          final stripped = ExifUtil.stripJpegExif(jpeg);
+
+          final exifAfter = img.decodeJpgExif(stripped);
+          expect(
+            exifAfter?.imageIfd.orientation,
+            equals(orientation),
+            reason: 'Orientation $orientation must be preserved',
+          );
+        }
+      });
+
+      test('works when source has no orientation tag', () {
+        // No orientation arg → no orientation tag in EXIF
+        final jpegWithExif = _createJpegWithExif();
+        final stripped = ExifUtil.stripJpegExif(jpegWithExif);
+
+        // Should still strip privacy data without error
+        final exifAfter = img.decodeJpgExif(stripped);
+        expect(exifAfter?.imageIfd[0x010F], isNull);
       });
 
       test('output is smaller than input when EXIF was present', () {
