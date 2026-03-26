@@ -62,6 +62,14 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
     return null;
   }
 
+  String _displayPrimaryOrigin(String launchUrl) {
+    final uri = Uri.tryParse(launchUrl);
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+      return launchUrl;
+    }
+    return uri.origin;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<NostrAppDirectoryEntry?>(
@@ -138,7 +146,7 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
                         _AppDetailSection(
                           title: 'Primary origin',
                           child: Text(
-                            app.launchUrl,
+                            _displayPrimaryOrigin(app.launchUrl),
                             style: const TextStyle(
                               color: VineTheme.vineGreen,
                               fontSize: 15,

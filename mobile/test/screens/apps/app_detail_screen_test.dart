@@ -44,6 +44,8 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Primary origin'), findsOneWidget);
+        expect(find.text('https://primal.net'), findsWidgets);
+        expect(find.text('https://primal.net/app'), findsNothing);
         expect(find.text('Approved origins'), findsOneWidget);
         await tester.scrollUntilVisible(
           find.text('Available capabilities'),
