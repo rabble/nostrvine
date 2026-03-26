@@ -34,7 +34,6 @@ part 'profile_feed_provider.g.dart';
 class ProfileFeed extends _$ProfileFeed {
   // REST API mode state
   bool _usingRestApi = false;
-  int? _nextCursor; // Cursor for REST API pagination
   // Cache of video metadata from REST API (preserves loops, likes, etc.)
   // Key: video ID, Value: metadata fields
   final Map<String, _VideoMetadataCache> _metadataCache = {};
@@ -47,9 +46,8 @@ class ProfileFeed extends _$ProfileFeed {
 
   @override
   Future<VideoFeedState> build(String userId) async {
-    // Reset cursor state at start of build to ensure clean state
+    // Reset state at start of build to ensure clean state
     _usingRestApi = false;
-    _nextCursor = null;
     _listenersRegistered = false;
 
     // Watch content filter version — rebuilds when preferences change.
@@ -100,9 +98,8 @@ class ProfileFeed extends _$ProfileFeed {
 
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
-          // Filter out reposts and store cursor
+          // Filter out reposts
           final tempAuthorVideos = apiVideos.where((v) => !v.isRepost).toList();
-          _nextCursor = _getOldestTimestamp(apiVideos);
 
           // Cache metadata for later merging with Nostr data
           _cacheVideoMetadata(tempAuthorVideos);
@@ -263,12 +260,6 @@ class ProfileFeed extends _$ProfileFeed {
       return; // Data is fresh
     }
     refresh();
-  }
-
-  /// Get oldest timestamp from videos for cursor pagination
-  int? _getOldestTimestamp(List<VideoEvent> videos) {
-    if (videos.isEmpty) return null;
-    return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
   }
 
   /// Refresh state - uses REST API when available, otherwise Nostr with metadata preservation
@@ -531,15 +522,16 @@ class ProfileFeed extends _$ProfileFeed {
       // If using REST API, load more using cursor-based pagination
       if (_usingRestApi) {
         final client = ref.read(funnelcakeApiClientProvider);
+        final offset = currentState.videos.length;
         Log.info(
-          'ProfileFeed: Loading more from REST API with cursor: $_nextCursor for user=$userId',
+          'ProfileFeed: Loading more from REST API with offset=$offset for user=$userId',
           name: 'ProfileFeedProvider',
           category: LogCategory.video,
         );
 
         final stats = await client.getVideosByAuthor(
           pubkey: userId,
-          before: _nextCursor,
+          offset: offset,
         );
         final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
 
@@ -554,9 +546,6 @@ class ProfileFeed extends _$ProfileFeed {
               .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => !v.isRepost)
               .toList();
-
-          // Update cursor for next pagination
-          _nextCursor = _getOldestTimestamp(apiVideos);
 
           // Cache metadata from new videos
           _cacheVideoMetadata(newVideos);
@@ -726,9 +715,7 @@ class ProfileFeed extends _$ProfileFeed {
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
-          // Reset cursor for pagination
           _usingRestApi = true;
-          _nextCursor = _getOldestTimestamp(apiVideos);
 
           // Filter out reposts
           var authorVideos = apiVideos.where((v) => !v.isRepost).toList();
@@ -789,9 +776,8 @@ class ProfileFeed extends _$ProfileFeed {
       }
     }
 
-    // Reset cursor state before Nostr refresh (but keep metadata cache!)
+    // Reset state before Nostr refresh (but keep metadata cache!)
     _usingRestApi = false;
-    _nextCursor = null;
 
     final videoEventService = ref.read(videoEventServiceProvider);
     await videoEventService.subscribeToUserVideos(userId);

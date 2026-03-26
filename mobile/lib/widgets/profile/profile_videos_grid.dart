@@ -169,48 +169,78 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         .where((upload) => upload.result == null)
         .length;
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: .fromLTRB(
-            4,
-            4,
-            4,
-            4 + MediaQuery.viewPaddingOf(context).bottom,
-          ),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 4,
-              mainAxisSpacing: 4,
+    // Watch provider state for pagination flags
+    final feedAsync = ref.watch(profileFeedProvider(widget.userIdHex));
+    final hasMoreContent = feedAsync.asData?.value.hasMoreContent ?? false;
+    final isLoadingMore = feedAsync.asData?.value.isLoadingMore ?? false;
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        // Trigger load more when near the bottom
+        if (notification is ScrollUpdateNotification) {
+          final pixels = notification.metrics.pixels;
+          final maxExtent = notification.metrics.maxScrollExtent;
+          // Load more when within 200 pixels of the bottom
+          if (pixels >= maxExtent - 200 && hasMoreContent && !isLoadingMore) {
+            loadMoreProfileVideos();
+          }
+        }
+        return false;
+      },
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              4,
+              4,
+              4,
+              4 + MediaQuery.viewPaddingOf(context).bottom,
             ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final videoEntry = allVideos[index];
-              return switch (videoEntry) {
-                final _GridUploadingVideoEntry uploadEntry =>
-                  _VideoGridUploadingTile(
-                    backgroundUpload: uploadEntry.backgroundUpload,
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 4,
+              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final videoEntry = allVideos[index];
+                return switch (videoEntry) {
+                  final _GridUploadingVideoEntry uploadEntry =>
+                    _VideoGridUploadingTile(
+                      backgroundUpload: uploadEntry.backgroundUpload,
+                    ),
+                  final _GridVideoEventEntry eventEntry => _VideoGridTile(
+                    videoEvent: eventEntry.videoEvent,
+                    userIdHex: widget.userIdHex,
+                    index: index,
+                    onTap: () {
+                      // Adjust index to account for uploading videos
+                      // at the top
+                      final publishedIndex = index - uploadingCount;
+                      if (publishedIndex >= 0) {
+                        _onVideoTapped(
+                          publishedIndex,
+                          onLoadMore: loadMoreProfileVideos,
+                        );
+                      }
+                    },
                   ),
-                final _GridVideoEventEntry eventEntry => _VideoGridTile(
-                  videoEvent: eventEntry.videoEvent,
-                  userIdHex: widget.userIdHex,
-                  index: index,
-                  onTap: () {
-                    // Adjust index to account for uploading videos at the top
-                    final publishedIndex = index - uploadingCount;
-                    if (publishedIndex >= 0) {
-                      _onVideoTapped(
-                        publishedIndex,
-                        onLoadMore: loadMoreProfileVideos,
-                      );
-                    }
-                  },
-                ),
-              };
-            }, childCount: allVideos.length),
+                };
+              }, childCount: allVideos.length),
+            ),
           ),
-        ),
-      ],
+          // Loading indicator at the bottom
+          if (isLoadingMore)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

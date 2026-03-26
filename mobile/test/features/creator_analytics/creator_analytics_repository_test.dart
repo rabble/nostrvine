@@ -104,7 +104,7 @@ void main() {
         () => api.getVideosByAuthor(
           pubkey: pubkey,
           limit: 100,
-          before: any(named: 'before'),
+          offset: any(named: 'offset'),
         ),
       ).thenAnswer(
         (_) async => [
@@ -144,7 +144,7 @@ void main() {
           () => api.getVideosByAuthor(
             pubkey: pubkey,
             limit: 100,
-            before: any(named: 'before'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -185,7 +185,7 @@ void main() {
           () => api.getVideosByAuthor(
             pubkey: pubkey,
             limit: 100,
-            before: any(named: 'before'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer(
           (_) async => [

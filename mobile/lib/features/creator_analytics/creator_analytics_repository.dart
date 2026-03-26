@@ -139,13 +139,12 @@ class FunnelcakeCreatorAnalyticsRepository
     int pageSize = 100,
   }) async {
     final collected = <VideoEvent>[];
-    int? before;
 
     for (var page = 0; page < maxPages; page++) {
       final batchStats = await _client.getVideosByAuthor(
         pubkey: pubkey,
         limit: pageSize,
-        before: before,
+        offset: collected.length,
       );
 
       if (batchStats.isEmpty) break;
@@ -153,16 +152,6 @@ class FunnelcakeCreatorAnalyticsRepository
       collected.addAll(batch);
 
       if (batch.length < pageSize) break;
-
-      final oldestCreatedAt = batch.fold<int>(
-        1 << 31,
-        (oldest, video) => video.createdAt > 0 && video.createdAt < oldest
-            ? video.createdAt
-            : oldest,
-      );
-      if (oldestCreatedAt == (1 << 31)) break;
-      before = oldestCreatedAt - 1;
-      if (before <= 0) break;
     }
 
     final seen = <String>{};

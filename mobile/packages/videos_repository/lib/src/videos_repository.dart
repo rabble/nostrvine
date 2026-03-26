@@ -1247,7 +1247,7 @@ class VideosRepository {
   Future<List<VideoEvent>> getVideosByAuthor({
     required String pubkey,
     int limit = 20,
-    int? before,
+    int? offset,
   }) async {
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
       return [];
@@ -1255,7 +1255,7 @@ class VideosRepository {
     final stats = await _funnelcakeApiClient.getVideosByAuthor(
       pubkey: pubkey,
       limit: limit,
-      before: before,
+      offset: offset,
     );
     return _transformVideoStats(stats);
   }

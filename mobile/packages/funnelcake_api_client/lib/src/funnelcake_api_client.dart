@@ -106,7 +106,7 @@ class FunnelcakeApiClient {
   ///
   /// [pubkey] is the author's public key (hex format).
   /// [limit] is the maximum number of videos to return (defaults to 50).
-  /// [before] is an optional Unix timestamp cursor for pagination.
+  /// [offset] is the number of videos to skip for pagination.
   ///
   /// Returns a list of [VideoStats] objects.
   ///
@@ -119,7 +119,7 @@ class FunnelcakeApiClient {
   Future<List<VideoStats>> getVideosByAuthor({
     required String pubkey,
     int limit = 50,
-    int? before,
+    int? offset,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -130,8 +130,8 @@ class FunnelcakeApiClient {
     }
 
     final queryParams = _videoQueryParameters({'limit': limit.toString()});
-    if (before != null) {
-      queryParams['before'] = before.toString();
+    if (offset != null) {
+      queryParams['offset'] = offset.toString();
     }
 
     final uri = Uri.parse(
