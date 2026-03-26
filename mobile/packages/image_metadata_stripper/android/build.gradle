@@ -46,3 +46,7 @@ android {
         minSdk = 24
     }
 }
+
+dependencies {
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
+}

@@ -2,8 +2,10 @@ package co.openvine.image_metadata_stripper
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.os.Handler
 import android.os.Looper
+import androidx.exifinterface.media.ExifInterface
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -60,6 +62,13 @@ class ImageMetadataStripperPlugin : FlutterPlugin, MethodCallHandler {
 
         executor.execute {
             try {
+                // Read EXIF orientation before decoding
+                val exif = ExifInterface(inputPath)
+                val orientation = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL,
+                )
+
                 val bitmap = BitmapFactory.decodeFile(inputPath)
                 if (bitmap == null) {
                     mainHandler.post {
@@ -72,6 +81,9 @@ class ImageMetadataStripperPlugin : FlutterPlugin, MethodCallHandler {
                     return@execute
                 }
 
+                // Apply EXIF orientation to bitmap
+                val oriented = applyOrientation(bitmap, orientation)
+
                 val format = if (inputPath.lowercase().endsWith(".png")) {
                     Bitmap.CompressFormat.PNG
                 } else {
@@ -81,8 +93,9 @@ class ImageMetadataStripperPlugin : FlutterPlugin, MethodCallHandler {
                 val quality = if (format == Bitmap.CompressFormat.PNG) 100 else 85
 
                 FileOutputStream(File(outputPath)).use { out ->
-                    bitmap.compress(format, quality, out)
+                    oriented.compress(format, quality, out)
                 }
+                if (oriented !== bitmap) oriented.recycle()
                 bitmap.recycle()
 
                 mainHandler.post {
@@ -94,6 +107,31 @@ class ImageMetadataStripperPlugin : FlutterPlugin, MethodCallHandler {
                 }
             }
         }
+    }
+
+    private fun applyOrientation(bitmap: Bitmap, orientation: Int): Bitmap {
+        val matrix = Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL ->
+                matrix.postScale(-1f, 1f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL ->
+                matrix.postScale(1f, -1f)
+            ExifInterface.ORIENTATION_TRANSPOSE -> {
+                matrix.postRotate(90f)
+                matrix.postScale(-1f, 1f)
+            }
+            ExifInterface.ORIENTATION_TRANSVERSE -> {
+                matrix.postRotate(270f)
+                matrix.postScale(-1f, 1f)
+            }
+            else -> return bitmap
+        }
+        return Bitmap.createBitmap(
+            bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true,
+        )
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {

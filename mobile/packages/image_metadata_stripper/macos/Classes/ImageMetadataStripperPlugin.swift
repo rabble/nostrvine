@@ -64,14 +64,26 @@ public class ImageMetadataStripperPlugin: NSObject, FlutterPlugin {
         return
       }
 
-      // Draw into a fresh bitmap context to sever all metadata links
-      let width = srcImage.width
-      let height = srcImage.height
+      // Read EXIF orientation from source image properties
+      let properties = CGImageSourceCopyPropertiesAtIndex(
+        imageSource, 0, nil
+      ) as? [CFString: Any]
+      let orientation = properties?[kCGImagePropertyOrientation]
+        as? UInt32 ?? 1
+
+      let srcWidth = srcImage.width
+      let srcHeight = srcImage.height
+
+      // Orientations 5-8 swap width/height
+      let swapsWidthHeight = orientation >= 5 && orientation <= 8
+      let outWidth = swapsWidthHeight ? srcHeight : srcWidth
+      let outHeight = swapsWidthHeight ? srcWidth : srcHeight
+
       let colorSpace = srcImage.colorSpace ?? CGColorSpaceCreateDeviceRGB()
       guard let ctx = CGContext(
         data: nil,
-        width: width,
-        height: height,
+        width: outWidth,
+        height: outHeight,
         bitsPerComponent: 8,
         bytesPerRow: 0,
         space: colorSpace,
@@ -86,7 +98,16 @@ public class ImageMetadataStripperPlugin: NSObject, FlutterPlugin {
         }
         return
       }
-      ctx.draw(srcImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+      // Apply EXIF orientation transform
+      Self.applyOrientation(
+        ctx, orientation: orientation,
+        width: outWidth, height: outHeight
+      )
+      ctx.draw(
+        srcImage,
+        in: CGRect(x: 0, y: 0, width: srcWidth, height: srcHeight)
+      )
       guard let cleanImage = ctx.makeImage() else {
         DispatchQueue.main.async {
           result(FlutterError(
@@ -115,12 +136,12 @@ public class ImageMetadataStripperPlugin: NSObject, FlutterPlugin {
         return
       }
 
-      var properties: [CFString: Any] = [:]
+      var destProperties: [CFString: Any] = [:]
       if !isPng {
-        properties[kCGImageDestinationLossyCompressionQuality] = 0.85
+        destProperties[kCGImageDestinationLossyCompressionQuality] = 0.85
       }
       CGImageDestinationAddImage(
-        destination, cleanImage, properties as CFDictionary
+        destination, cleanImage, destProperties as CFDictionary
       )
 
       guard CGImageDestinationFinalize(destination) else {
@@ -137,6 +158,45 @@ public class ImageMetadataStripperPlugin: NSObject, FlutterPlugin {
       DispatchQueue.main.async {
         result(nil)
       }
+    }
+  }
+
+  /// Applies an EXIF orientation transform to a CGContext.
+  /// The context must already be sized for the output dimensions.
+  private static func applyOrientation(
+    _ ctx: CGContext,
+    orientation: UInt32,
+    width: Int,
+    height: Int
+  ) {
+    let w = CGFloat(width)
+    let h = CGFloat(height)
+    switch orientation {
+    case 1: break // Normal
+    case 2: // Horizontal flip
+      ctx.translateBy(x: w, y: 0)
+      ctx.scaleBy(x: -1, y: 1)
+    case 3: // 180°
+      ctx.translateBy(x: w, y: h)
+      ctx.rotate(by: .pi)
+    case 4: // Vertical flip
+      ctx.translateBy(x: 0, y: h)
+      ctx.scaleBy(x: 1, y: -1)
+    case 5: // Transpose (flip + 90° CW)
+      ctx.translateBy(x: 0, y: h)
+      ctx.rotate(by: -.pi / 2)
+      ctx.scaleBy(x: -1, y: 1)
+    case 6: // 90° CW
+      ctx.translateBy(x: w, y: 0)
+      ctx.rotate(by: .pi / 2)
+    case 7: // Transverse (flip + 90° CCW)
+      ctx.translateBy(x: w, y: 0)
+      ctx.rotate(by: .pi / 2)
+      ctx.scaleBy(x: -1, y: 1)
+    case 8: // 90° CCW
+      ctx.translateBy(x: 0, y: h)
+      ctx.rotate(by: -.pi / 2)
+    default: break
     }
   }
 }

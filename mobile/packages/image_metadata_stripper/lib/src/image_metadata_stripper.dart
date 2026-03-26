@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -27,14 +28,32 @@ class ImageMetadataStripper {
 
   /// Convenience: strips metadata in-place by writing to a temp file
   /// and replacing the original.
+  ///
+  /// Returns the original [imageFile] on success.
+  /// On failure, logs the error and returns the unmodified [imageFile]
+  /// so the upload can proceed with metadata intact rather than crashing.
   static Future<File> stripMetadataInPlace(File imageFile) async {
     final tempPath = '${imageFile.path}.stripped';
-    await stripMetadata(
-      inputPath: imageFile.path,
-      outputPath: tempPath,
-    );
-    final tempFile = File(tempPath);
-    await tempFile.rename(imageFile.path);
+    try {
+      await stripMetadata(
+        inputPath: imageFile.path,
+        outputPath: tempPath,
+      );
+      final tempFile = File(tempPath);
+      await tempFile.rename(imageFile.path);
+    } on Exception catch (e, stackTrace) {
+      developer.log(
+        'Failed to strip image metadata',
+        name: 'ImageMetadataStripper',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Clean up temp file if it was partially written
+      try {
+        final tempFile = File(tempPath);
+        if (tempFile.existsSync()) await tempFile.delete();
+      } on Exception catch (_) {}
+    }
     return imageFile;
   }
 }
