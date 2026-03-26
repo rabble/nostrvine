@@ -31,7 +31,11 @@ typedef ProfileSearchFilter =
 /// Well-known indexer relays that maintain broad coverage of kind 0 events.
 /// Used as a last-resort fallback when main relays and REST API don't have
 /// a profile.
-const _profileIndexerRelays = ['wss://purplepag.es', 'wss://user.kindpag.es'];
+const _profileIndexerRelays = [
+  'wss://purplepag.es',
+  'wss://user.kindpag.es',
+  'wss://relay.nos.social',
+];
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
