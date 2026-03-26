@@ -78,9 +78,9 @@ Add after the blossom-proxy section, before the invite section. Use the port and
     image: ghcr.io/verse-pbc/relay_builder:latest
     pull_policy: always
     ports:
-      - "47778:7777"
+      - "47778:8080"
     healthcheck:
-      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/7777"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 3s
       timeout: 3s
       retries: 10
@@ -92,9 +92,9 @@ Add after the blossom-proxy section, before the invite section. Use the port and
     image: ghcr.io/verse-pbc/relay_builder:latest
     pull_policy: always
     ports:
-      - "47779:7777"
+      - "47779:8080"
     healthcheck:
-      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/7777"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 3s
       timeout: 3s
       retries: 10
