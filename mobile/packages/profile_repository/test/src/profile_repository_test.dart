@@ -81,6 +81,15 @@ void main() {
         () => mockNostrClient.fetchProfile(testPubkey),
       ).thenAnswer((_) async => mockProfileEvent);
 
+      // Default stub for parallel indexer/outbox queries.
+      when(
+        () => mockNostrClient.queryEvents(
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+          useCache: any(named: 'useCache'),
+        ),
+      ).thenAnswer((_) async => <Event>[]);
+
       when(
         () => mockNostrClient.sendProfile(
           profileContent: any(named: 'profileContent'),
@@ -456,46 +465,32 @@ void main() {
         expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
       });
 
-      test(
-        'skips all fetches for confirmed missing pubkeys',
-        () async {
-          stubAllSourcesMiss();
+      test('skips all fetches for confirmed missing pubkeys', () async {
+        stubAllSourcesMiss();
 
-          // First call — hits all sources, marks missing
-          await profileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          );
+        // First call — hits all sources, marks missing
+        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
 
-          // Second call — should not hit any source
-          await profileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          );
+        // Second call — should not hit any source
+        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
 
-          verify(
-            () => mockNostrClient.fetchProfile(testPubkey),
-          ).called(1);
-        },
-      );
+        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+      });
 
-      test(
-        'deduplicates concurrent calls for the same pubkey',
-        () async {
-          final results = await Future.wait([
-            profileRepository.fetchFreshProfile(pubkey: testPubkey),
-            profileRepository.fetchFreshProfile(pubkey: testPubkey),
-            profileRepository.fetchFreshProfile(pubkey: testPubkey),
-          ]);
+      test('deduplicates concurrent calls for the same pubkey', () async {
+        final results = await Future.wait([
+          profileRepository.fetchFreshProfile(pubkey: testPubkey),
+          profileRepository.fetchFreshProfile(pubkey: testPubkey),
+          profileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ]);
 
-          // All return the same profile
-          for (final r in results) {
-            expect(r?.pubkey, equals(testPubkey));
-          }
-          // Only one relay call
-          verify(
-            () => mockNostrClient.fetchProfile(testPubkey),
-          ).called(1);
-        },
-      );
+        // All return the same profile
+        for (final r in results) {
+          expect(r?.pubkey, equals(testPubkey));
+        }
+        // Only one relay call
+        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+      });
 
       group('with Funnelcake API', () {
         late MockFunnelcakeApiClient mockFunnelcakeClient;
@@ -571,37 +566,29 @@ void main() {
           },
         );
 
-        test(
-          'marks missing immediately when Funnelcake returns '
-          '_noProfile sentinel',
-          () async {
-            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-            when(
-              () => mockFunnelcakeClient.getUserProfile(testPubkey),
-            ).thenAnswer(
-              (_) async => {'_noProfile': true, 'pubkey': testPubkey},
-            );
+        test('marks missing immediately when Funnelcake returns '
+            '_noProfile sentinel', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer((_) async => {'_noProfile': true, 'pubkey': testPubkey});
 
-            final result = await repoWithFunnelcake.fetchFreshProfile(
-              pubkey: testPubkey,
-            );
+          final result = await repoWithFunnelcake.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
 
-            expect(result, isNull);
-            expect(
-              repoWithFunnelcake.isConfirmedMissing(testPubkey),
-              isTrue,
-            );
-            // Should NOT fall through to relay or indexer
-            verifyNever(() => mockNostrClient.fetchProfile(any()));
-            verifyNever(
-              () => mockNostrClient.queryEvents(
-                any(),
-                tempRelays: any(named: 'tempRelays'),
-                useCache: any(named: 'useCache'),
-              ),
-            );
-          },
-        );
+          expect(result, isNull);
+          expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isTrue);
+          // Should NOT fall through to relay or indexer
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+          verifyNever(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          );
+        });
 
         test('skips Funnelcake when not available', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
@@ -612,9 +599,7 @@ void main() {
 
           expect(result, isNotNull);
           expect(result!.displayName, equals('Test User'));
-          verifyNever(
-            () => mockFunnelcakeClient.getUserProfile(any()),
-          );
+          verifyNever(() => mockFunnelcakeClient.getUserProfile(any()));
           verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
         });
       });
@@ -627,9 +612,7 @@ void main() {
           when(() => mockIndexerEvent.kind).thenReturn(0);
           when(() => mockIndexerEvent.pubkey).thenReturn(testPubkey);
           when(() => mockIndexerEvent.createdAt).thenReturn(1704067200);
-          when(() => mockIndexerEvent.id).thenReturn(
-            'idx_$testEventId',
-          );
+          when(() => mockIndexerEvent.id).thenReturn('idx_$testEventId');
           when(() => mockIndexerEvent.content).thenReturn(
             jsonEncode({
               'display_name': 'Indexer User',
@@ -704,6 +687,195 @@ void main() {
 
           expect(result, isNull);
           expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+        });
+      });
+
+      group('parallel relay + indexer fetch', () {
+        test('fires connected and indexer relays concurrently', () async {
+          // Both sources miss — verify both are called
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+          verify(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: false,
+            ),
+          ).called(1);
+        });
+
+        test('returns relay result when indexer is slower', () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => mockProfileEvent);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Test User'));
+        });
+      });
+
+      group('outbox relay fetch', () {
+        late MockEvent mockOutboxEvent;
+        late ProfileRepository repoWithOutbox;
+
+        setUp(() {
+          mockOutboxEvent = MockEvent();
+          when(() => mockOutboxEvent.kind).thenReturn(0);
+          when(() => mockOutboxEvent.pubkey).thenReturn(testPubkey);
+          when(() => mockOutboxEvent.createdAt).thenReturn(1704067200);
+          when(() => mockOutboxEvent.id).thenReturn('outbox_$testEventId');
+          when(() => mockOutboxEvent.content).thenReturn(
+            jsonEncode({
+              'display_name': 'Outbox User',
+              'picture': 'https://example.com/outbox.png',
+            }),
+          );
+        });
+
+        test('queries outbox write relays when resolver is provided', () async {
+          // Connected relays and indexer miss
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((invocation) async {
+            final relays =
+                invocation.namedArguments[#tempRelays] as List<String>?;
+            // Return the outbox event when querying outbox relays
+            if (relays != null && relays.contains('wss://user-relay.example')) {
+              return [mockOutboxEvent];
+            }
+            return <Event>[];
+          });
+
+          repoWithOutbox = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            writeRelayResolver: (pubkey) async => ['wss://user-relay.example'],
+          );
+
+          final result = await repoWithOutbox.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Outbox User'));
+          verify(() => mockUserProfilesDao.upsertProfile(any())).called(1);
+        });
+
+        test('returns null gracefully when resolver returns empty', () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repoWithOutbox = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            writeRelayResolver: (pubkey) async => [],
+          );
+
+          final result = await repoWithOutbox.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+        });
+
+        test('handles resolver exception gracefully', () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          repoWithOutbox = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            writeRelayResolver: (pubkey) async =>
+                throw Exception('Discovery failed'),
+          );
+
+          final result = await repoWithOutbox.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+          expect(repoWithOutbox.isConfirmedMissing(testPubkey), isTrue);
+        });
+
+        test('does not use outbox when resolver is null', () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+          // Only connected relay + indexer query, no outbox
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+          verify(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: false,
+            ),
+          ).called(1);
         });
       });
     });
@@ -2806,16 +2978,12 @@ void main() {
         verify(
           () => mockFunnelcakeClient.getSocialCounts(otherPubkey),
         ).called(1);
-        verifyNever(
-          () => mockFunnelcakeClient.getSocialCounts(testPubkey),
-        );
+        verifyNever(() => mockFunnelcakeClient.getSocialCounts(testPubkey));
       });
 
       test('propagates FunnelcakeApiException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(
-          () => mockFunnelcakeClient.getSocialCounts(any()),
-        ).thenThrow(
+        when(() => mockFunnelcakeClient.getSocialCounts(any())).thenThrow(
           const FunnelcakeApiException(
             message: 'Server error',
             statusCode: 500,
@@ -2929,6 +3097,13 @@ void main() {
           () => mockNostrClient.fetchProfile(testPubkey),
         ).thenAnswer((_) async => relayEvent);
         when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+        when(
           () => mockUserProfilesDao.upsertProfiles(any()),
         ).thenAnswer((_) async {});
 
@@ -2976,6 +3151,13 @@ void main() {
           () => mockNostrClient.fetchProfile(testPubkey3),
         ).thenAnswer((_) async => relayEvent);
         when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+        when(
           () => mockUserProfilesDao.upsertProfiles(any()),
         ).thenAnswer((_) async {});
 
@@ -3020,6 +3202,13 @@ void main() {
         when(
           () => mockNostrClient.fetchProfile(testPubkey),
         ).thenAnswer((_) async => relayEvent);
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
         when(
           () => mockUserProfilesDao.upsertProfiles(any()),
         ).thenAnswer((_) async {});
@@ -3123,86 +3312,75 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test(
-        'skips relay fallback for _noProfile sentinel entries',
-        () async {
-          when(
-            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
-          ).thenAnswer((_) async => []);
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
-            (_) async => const BulkProfilesResponse(
-              profiles: {
-                testPubkey: {'_noProfile': true},
-              },
-            ),
-          );
+      test('skips relay fallback for _noProfile sentinel entries', () async {
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+          (_) async => const BulkProfilesResponse(
+            profiles: {
+              testPubkey: {'_noProfile': true},
+            },
+          ),
+        );
 
-          final repoWithFunnelcake = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
 
-          final result = await repoWithFunnelcake.fetchBatchProfiles(
-            pubkeys: [testPubkey],
-          );
+        final result = await repoWithFunnelcake.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
 
-          expect(result, isEmpty);
-          verifyNever(() => mockNostrClient.fetchProfile(any()));
-          verifyNever(
-            () => mockNostrClient.queryEvents(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              useCache: any(named: 'useCache'),
-            ),
-          );
-          verifyNever(
-            () => mockUserProfilesDao.upsertProfiles(any()),
-          );
-        },
-      );
+        expect(result, isEmpty);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+        verifyNever(() => mockUserProfilesDao.upsertProfiles(any()));
+      });
 
-      test(
-        'processes real profiles alongside _noProfile sentinels',
-        () async {
-          when(
-            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
-          ).thenAnswer((_) async => []);
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
-            (_) async => const BulkProfilesResponse(
-              profiles: {
-                testPubkey: {'display_name': 'Real User'},
-                testPubkey2: {'_noProfile': true},
-              },
-            ),
-          );
-          when(
-            () => mockUserProfilesDao.upsertProfiles(any()),
-          ).thenAnswer((_) async {});
+      test('processes real profiles alongside _noProfile sentinels', () async {
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+          (_) async => const BulkProfilesResponse(
+            profiles: {
+              testPubkey: {'display_name': 'Real User'},
+              testPubkey2: {'_noProfile': true},
+            },
+          ),
+        );
+        when(
+          () => mockUserProfilesDao.upsertProfiles(any()),
+        ).thenAnswer((_) async {});
 
-          final repoWithFunnelcake = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
 
-          final result = await repoWithFunnelcake.fetchBatchProfiles(
-            pubkeys: [testPubkey, testPubkey2],
-          );
+        final result = await repoWithFunnelcake.fetchBatchProfiles(
+          pubkeys: [testPubkey, testPubkey2],
+        );
 
-          expect(result, hasLength(1));
-          expect(
-            result[testPubkey]?.displayName,
-            equals('Real User'),
-          );
-          expect(result.containsKey(testPubkey2), isFalse);
-          verifyNever(() => mockNostrClient.fetchProfile(any()));
-        },
-      );
+        expect(result, hasLength(1));
+        expect(result[testPubkey]?.displayName, equals('Real User'));
+        expect(result.containsKey(testPubkey2), isFalse);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
 
       test('does not batch-write when nothing was fetched', () async {
         final cached = UserProfile(
@@ -3219,6 +3397,97 @@ void main() {
         await profileRepository.fetchBatchProfiles(pubkeys: [testPubkey]);
 
         verifyNever(() => mockUserProfilesDao.upsertProfiles(any()));
+      });
+
+      group('outbox relay fallback', () {
+        test(
+          'queries outbox relays in parallel with relay and indexer',
+          () async {
+            final outboxEvent = MockEvent();
+            when(() => outboxEvent.kind).thenReturn(0);
+            when(() => outboxEvent.pubkey).thenReturn(testPubkey);
+            when(() => outboxEvent.createdAt).thenReturn(1704067200);
+            when(() => outboxEvent.id).thenReturn('outbox_$testEventId');
+            when(
+              () => outboxEvent.content,
+            ).thenReturn(jsonEncode({'display_name': 'Outbox Batch User'}));
+
+            when(
+              () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+            ).thenAnswer((_) async => []);
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockUserProfilesDao.upsertProfiles(any()),
+            ).thenAnswer((_) async {});
+
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+                useCache: any(named: 'useCache'),
+              ),
+            ).thenAnswer((invocation) async {
+              final relays =
+                  invocation.namedArguments[#tempRelays] as List<String>?;
+              if (relays != null &&
+                  relays.contains('wss://user-write.example')) {
+                return [outboxEvent];
+              }
+              return <Event>[];
+            });
+
+            final repoWithOutbox = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              writeRelayResolver: (pubkey) async => [
+                'wss://user-write.example',
+              ],
+            );
+
+            final result = await repoWithOutbox.fetchBatchProfiles(
+              pubkeys: [testPubkey],
+            );
+
+            expect(result, hasLength(1));
+            expect(
+              result[testPubkey]?.displayName,
+              equals('Outbox Batch User'),
+            );
+          },
+        );
+
+        test('handles resolver failure gracefully in batch', () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          final repoWithOutbox = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            writeRelayResolver: (pubkey) async =>
+                throw Exception('Discovery error'),
+          );
+
+          final result = await repoWithOutbox.fetchBatchProfiles(
+            pubkeys: [testPubkey],
+          );
+
+          expect(result, isEmpty);
+        });
       });
     });
   });

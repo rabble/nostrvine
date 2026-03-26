@@ -28,6 +28,15 @@ const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 typedef ProfileSearchFilter =
     List<UserProfile> Function(String query, List<UserProfile> profiles);
 
+/// Resolves write-relay URLs for a hex pubkey via NIP-65
+/// (kind 10002).
+///
+/// Used by the outbox model: when a profile isn't found on
+/// connected relays, this resolver discovers where the user
+/// publishes and queries those relays directly. Implementations
+/// should cache results to avoid repeated lookups.
+typedef WriteRelayResolver = Future<List<String>> Function(String pubkey);
+
 /// Well-known indexer relays that maintain broad coverage of kind 0 events.
 /// Used as a last-resort fallback when main relays and REST API don't have
 /// a profile.
@@ -43,12 +52,14 @@ class ProfileRepository {
     ProfileStatsDao? profileStatsDao,
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
+    WriteRelayResolver? writeRelayResolver,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
        _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
-       _profileSearchFilter = profileSearchFilter;
+       _profileSearchFilter = profileSearchFilter,
+       _writeRelayResolver = writeRelayResolver;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
@@ -56,6 +67,7 @@ class ProfileRepository {
   final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
+  final WriteRelayResolver? _writeRelayResolver;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
   /// same pubkey share the same future instead of firing duplicate requests.
@@ -255,52 +267,13 @@ class ProfileRepository {
       }
     }
 
-    // Step 2: Try user's connected relays (WebSocket).
-    final profileEvent = await _nostrClient.fetchProfile(pubkey);
-    if (profileEvent != null) {
-      final profile = UserProfile.fromNostrEvent(profileEvent);
-      developer.log(
-        'Fetched from relay and caching: ${profile.bestDisplayName}, '
-        'picture=${profile.picture ?? "null"}',
-        name: 'ProfileRepository.fetchFreshProfile',
-      );
+    // Step 2: Fire connected relays, indexer relays, and outbox relays
+    // concurrently. The first source to return a profile wins.
+    final profile = await _fetchFromRelaysParallel(pubkey);
+    if (profile != null) {
       _knownCached.add(pubkey);
       await _userProfilesDao.upsertProfile(profile);
       return profile;
-    }
-
-    // Step 3: Try well-known indexer relays (NIP-65 discovery points).
-    try {
-      final indexerEvents = await _nostrClient
-          .queryEvents(
-            [
-              Filter(
-                kinds: [0],
-                authors: [pubkey],
-                limit: 1,
-              ),
-            ],
-            tempRelays: _profileIndexerRelays,
-            useCache: false,
-          )
-          .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
-
-      if (indexerEvents.isNotEmpty && indexerEvents.first.kind == 0) {
-        final profile = UserProfile.fromNostrEvent(indexerEvents.first);
-        developer.log(
-          'Fetched from indexer relay and caching: '
-          '${profile.bestDisplayName}',
-          name: 'ProfileRepository.fetchFreshProfile',
-        );
-        _knownCached.add(pubkey);
-        await _userProfilesDao.upsertProfile(profile);
-        return profile;
-      }
-    } on Exception catch (e) {
-      developer.log(
-        'Indexer relay fetch failed: $e',
-        name: 'ProfileRepository.fetchFreshProfile',
-      );
     }
 
     // All sources exhausted — mark as confirmed missing.
@@ -310,6 +283,150 @@ class ProfileRepository {
       name: 'ProfileRepository.fetchFreshProfile',
     );
     return null;
+  }
+
+  /// Queries connected relays, indexer relays, and outbox relays in parallel
+  /// for a kind 0 profile event. Returns the first successful result.
+  Future<UserProfile?> _fetchFromRelaysParallel(String pubkey) async {
+    final futures = <Future<UserProfile?>>[
+      _fetchFromConnectedRelays(pubkey),
+      _fetchFromIndexerRelays(pubkey),
+      if (_writeRelayResolver != null) _fetchFromOutboxRelays(pubkey),
+    ];
+
+    // Return the first non-null result; null if all complete without finding.
+    final results = await Future.wait(futures);
+    return results.where((r) => r != null).firstOrNull;
+  }
+
+  Future<UserProfile?> _fetchFromConnectedRelays(String pubkey) async {
+    try {
+      final event = await _nostrClient.fetchProfile(pubkey);
+      if (event != null) {
+        final profile = UserProfile.fromNostrEvent(event);
+        developer.log(
+          'Fetched from relay: ${profile.bestDisplayName}',
+          name: 'ProfileRepository.fetchFreshProfile',
+        );
+        return profile;
+      }
+    } on Exception catch (e) {
+      developer.log(
+        'Connected relay fetch failed: $e',
+        name: 'ProfileRepository.fetchFreshProfile',
+      );
+    }
+    return null;
+  }
+
+  Future<UserProfile?> _fetchFromIndexerRelays(String pubkey) async {
+    try {
+      final events = await _nostrClient
+          .queryEvents(
+            [
+              Filter(kinds: [0], authors: [pubkey], limit: 1),
+            ],
+            tempRelays: _profileIndexerRelays,
+            useCache: false,
+          )
+          .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
+
+      if (events.isNotEmpty && events.first.kind == 0) {
+        final profile = UserProfile.fromNostrEvent(events.first);
+        developer.log(
+          'Fetched from indexer relay: ${profile.bestDisplayName}',
+          name: 'ProfileRepository.fetchFreshProfile',
+        );
+        return profile;
+      }
+    } on Exception catch (e) {
+      developer.log(
+        'Indexer relay fetch failed: $e',
+        name: 'ProfileRepository.fetchFreshProfile',
+      );
+    }
+    return null;
+  }
+
+  Future<UserProfile?> _fetchFromOutboxRelays(String pubkey) async {
+    try {
+      final writeRelays = await _writeRelayResolver!(pubkey);
+      if (writeRelays.isEmpty) return null;
+
+      developer.log(
+        'Outbox: querying ${writeRelays.length} write relays for $pubkey',
+        name: 'ProfileRepository.fetchFreshProfile',
+      );
+
+      final events = await _nostrClient
+          .queryEvents(
+            [
+              Filter(kinds: [0], authors: [pubkey], limit: 1),
+            ],
+            tempRelays: writeRelays,
+            useCache: false,
+          )
+          .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
+
+      if (events.isNotEmpty && events.first.kind == 0) {
+        final profile = UserProfile.fromNostrEvent(events.first);
+        developer.log(
+          'Fetched from outbox relay: ${profile.bestDisplayName}',
+          name: 'ProfileRepository.fetchFreshProfile',
+        );
+        return profile;
+      }
+    } on Exception catch (e) {
+      developer.log(
+        'Outbox relay fetch failed: $e',
+        name: 'ProfileRepository.fetchFreshProfile',
+      );
+    }
+    return null;
+  }
+
+  /// Resolves write relays for multiple pubkeys and batch-queries them for
+  /// kind 0 profiles. Used by [fetchBatchProfiles] as a parallel source.
+  Future<List<Event>> _fetchBatchFromOutboxRelays(List<String> pubkeys) async {
+    try {
+      // Resolve write relays for all pubkeys concurrently.
+      final relayResults = await Future.wait(
+        pubkeys.map((pk) async {
+          try {
+            return await _writeRelayResolver!(pk);
+          } on Exception {
+            return <String>[];
+          }
+        }),
+      );
+
+      // Collect unique write relay URLs across all pubkeys.
+      final allWriteRelays = <String>{};
+      relayResults.forEach(allWriteRelays.addAll);
+      if (allWriteRelays.isEmpty) return <Event>[];
+
+      developer.log(
+        'Outbox batch: querying ${allWriteRelays.length} write relays '
+        'for ${pubkeys.length} pubkeys',
+        name: 'ProfileRepository.fetchBatchProfiles',
+      );
+
+      return await _nostrClient
+          .queryEvents(
+            [
+              Filter(kinds: [0], authors: pubkeys, limit: pubkeys.length),
+            ],
+            tempRelays: allWriteRelays.toList(),
+            useCache: false,
+          )
+          .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
+    } on Exception catch (e) {
+      developer.log(
+        'Outbox batch fetch failed: $e',
+        name: 'ProfileRepository.fetchBatchProfiles',
+      );
+      return <Event>[];
+    }
   }
 
   /// Publishes profile metadata to Nostr relays and updates the local cache.
@@ -767,59 +884,100 @@ class ProfileRepository {
       }
     }
 
-    // Step 3: Individual relay fetches for anything still missing
+    // Step 3: Connected relays, indexer relays, and outbox relays in parallel
     if (remaining.isNotEmpty) {
-      final futures = remaining.toList().map((pubkey) async {
-        try {
-          return await _nostrClient.fetchProfile(pubkey);
-        } on Exception {
-          return null;
-        }
-      });
-      final events = await Future.wait(futures);
-      for (final event in events) {
-        if (event == null || event.kind != 0) continue;
-        final profile = UserProfile.fromNostrEvent(event);
-        results[profile.pubkey] = profile;
-        toCache.add(profile);
-        remaining.remove(profile.pubkey);
-      }
-    }
+      final remainingList = remaining.toList();
 
-    // Step 4: Indexer relay fallback (Purple Pages, Kind Pages)
-    if (remaining.isNotEmpty) {
-      try {
-        final indexerEvents = await _nostrClient
-            .queryEvents(
-              [
-                Filter(
-                  kinds: [0],
-                  authors: remaining.toList(),
-                  limit: remaining.length,
-                ),
-              ],
-              tempRelays: _profileIndexerRelays,
-              useCache: false,
-            )
-            .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
-        for (final event in indexerEvents) {
-          if (event.kind != 0) continue;
-          final profile = UserProfile.fromNostrEvent(event);
-          results[profile.pubkey] = profile;
-          toCache.add(profile);
-          remaining.remove(profile.pubkey);
-        }
-        if (indexerEvents.isNotEmpty) {
+      // Connected relay fetches (one per pubkey, in parallel)
+      final relayFuture = Future.wait(
+        remainingList.map((pubkey) async {
+          try {
+            return await _nostrClient.fetchProfile(pubkey);
+          } on Exception {
+            return null;
+          }
+        }),
+      );
+
+      // Indexer relay batch query
+      final indexerFuture = () async {
+        try {
+          return await _nostrClient
+              .queryEvents(
+                [
+                  Filter(
+                    kinds: [0],
+                    authors: remainingList,
+                    limit: remainingList.length,
+                  ),
+                ],
+                tempRelays: _profileIndexerRelays,
+                useCache: false,
+              )
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => <Event>[],
+              );
+        } on Exception catch (e) {
           developer.log(
-            'Indexer fallback: found ${indexerEvents.length} profiles',
+            'Batch indexer fetch failed: $e',
             name: 'ProfileRepository.fetchBatchProfiles',
           );
+          return <Event>[];
         }
-      } on Exception catch (e) {
+      }();
+
+      // Outbox relay queries (resolve write relays, then batch query)
+      final outboxFuture = _writeRelayResolver != null
+          ? _fetchBatchFromOutboxRelays(remainingList)
+          : Future<List<Event>>.value(<Event>[]);
+
+      final (relayEvents, indexerEvents, outboxEvents) = await (
+        relayFuture,
+        indexerFuture,
+        outboxFuture,
+      ).wait;
+
+      // Merge results: connected relays first, then indexer, then outbox.
+      // Earlier sources take priority (putIfAbsent).
+      for (final event in relayEvents) {
+        if (event == null || event.kind != 0) continue;
+        final profile = UserProfile.fromNostrEvent(event);
+        if (remaining.contains(profile.pubkey)) {
+          results.putIfAbsent(profile.pubkey, () {
+            toCache.add(profile);
+            remaining.remove(profile.pubkey);
+            return profile;
+          });
+        }
+      }
+      for (final event in indexerEvents) {
+        if (event.kind != 0) continue;
+        final profile = UserProfile.fromNostrEvent(event);
+        if (remaining.contains(profile.pubkey)) {
+          results.putIfAbsent(profile.pubkey, () {
+            toCache.add(profile);
+            remaining.remove(profile.pubkey);
+            return profile;
+          });
+        }
+      }
+      if (indexerEvents.isNotEmpty) {
         developer.log(
-          'Indexer fallback failed: $e',
+          'Indexer fallback: found ${indexerEvents.length} profiles',
           name: 'ProfileRepository.fetchBatchProfiles',
         );
+      }
+      for (final event in outboxEvents) {
+        if (event.kind != 0) continue;
+        final profile = UserProfile.fromNostrEvent(event);
+        if (remaining.contains(profile.pubkey)) {
+          results.putIfAbsent(profile.pubkey, () {
+            toCache.add(profile);
+            remaining.remove(profile.pubkey);
+            return profile;
+          });
+        }
       }
     }
 
