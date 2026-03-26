@@ -143,7 +143,7 @@ void main() {
       expect(
         grantStore.hasGrant(
           userPubkey: 'f' * 64,
-          appId: app.id,
+          appId: app.slug,
           origin: 'https://primal.net',
           capability: 'signEvent:1',
         ),

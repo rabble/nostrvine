@@ -134,6 +134,36 @@ void main() {
     );
 
     test(
+      'fetchApprovedApps lets the remote directory hide a bundled starter app',
+      () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://apps.divine.video/v1/apps'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'items': [
+                _appJson(
+                  slug: 'primal',
+                  name: 'Primal',
+                  updatedAt: '2026-03-25T10:00:00Z',
+                  status: 'revoked',
+                ),
+              ],
+            }),
+            200,
+          ),
+        );
+
+        final apps = await service.fetchApprovedApps();
+
+        expect(apps.any((app) => app.slug == 'primal'), isFalse);
+      },
+    );
+
+    test(
       'fetchApprovedApps falls back to cached apps when remote fetch fails',
       () async {
         await sharedPreferences.setString(
@@ -229,6 +259,7 @@ Map<String, dynamic> _appJson({
   required String name,
   required String updatedAt,
   int? sortOrder,
+  String status = 'approved',
 }) {
   final launchUrl = _launchUrlForSlug(slug);
   return {
@@ -243,7 +274,7 @@ Map<String, dynamic> _appJson({
     'allowed_methods': ['getPublicKey', 'signEvent'],
     'allowed_sign_event_kinds': [1, 7],
     'prompt_required_for': ['signEvent'],
-    'status': 'approved',
+    'status': status,
     'sort_order': sortOrder ?? _sortOrderBySlug[slug] ?? 100,
     'created_at': '2026-03-24T08:00:00Z',
     'updated_at': updatedAt,

@@ -91,7 +91,6 @@ class NostrAppDirectoryService {
     final apps = rawItems
         .whereType<Map<String, dynamic>>()
         .map(NostrAppDirectoryEntry.fromJson)
-        .where((app) => app.isApproved)
         .toList();
 
     apps.sort(_compareApps);
@@ -155,7 +154,11 @@ class NostrAppDirectoryService {
     };
 
     for (final app in remoteOrCachedApps) {
-      appsBySlug[app.slug] = app;
+      if (app.isApproved) {
+        appsBySlug[app.slug] = app;
+      } else {
+        appsBySlug.remove(app.slug);
+      }
     }
 
     final apps = appsBySlug.values.toList(growable: false);

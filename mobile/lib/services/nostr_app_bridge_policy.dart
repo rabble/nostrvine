@@ -37,7 +37,7 @@ class NostrAppBridgePolicy {
 
     await _grantStore.saveGrant(
       userPubkey: userPubkey,
-      appId: app.id,
+      appId: app.grantKey,
       origin: origin.origin,
       capability: capability,
     );
@@ -88,7 +88,7 @@ class NostrAppBridgePolicy {
 
     final hasGrant = _grantStore.hasGrant(
       userPubkey: _currentUserPubkey!,
-      appId: app.id,
+      appId: app.grantKey,
       origin: normalizedOrigin,
       capability: capability,
     );

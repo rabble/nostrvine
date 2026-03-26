@@ -57,6 +57,7 @@ class NostrAppDirectoryEntry {
   final DateTime? updatedAt;
 
   bool get isApproved => status == 'approved';
+  String get grantKey => slug.isNotEmpty ? slug : id;
 
   Map<String, dynamic> toJson() {
     return {

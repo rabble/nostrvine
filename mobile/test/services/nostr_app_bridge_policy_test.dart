@@ -46,7 +46,7 @@ void main() {
     test('allows a prompted capability after a stored grant', () async {
       await grantStore.saveGrant(
         userPubkey: 'f' * 64,
-        appId: 'primal-app',
+        appId: 'primal',
         origin: 'https://primal.net',
         capability: 'signEvent:1',
       );
@@ -61,6 +61,28 @@ void main() {
       expect(evaluation.decision, BridgeDecision.allow);
       expect(evaluation.capability, 'signEvent:1');
     });
+
+    test(
+      'allows a remembered grant after the app id changes for the same slug',
+      () async {
+        await grantStore.saveGrant(
+          userPubkey: 'f' * 64,
+          appId: 'primal',
+          origin: 'https://primal.net',
+          capability: 'signEvent:1',
+        );
+
+        final evaluation = policy.evaluate(
+          app: _app(id: '42', promptRequiredFor: const ['signEvent']),
+          origin: Uri.parse('https://primal.net'),
+          method: 'signEvent',
+          eventKind: 1,
+        );
+
+        expect(evaluation.decision, BridgeDecision.allow);
+        expect(evaluation.capability, 'signEvent:1');
+      },
+    );
 
     test('blocks requests from a non-allowlisted origin', () {
       final evaluation = policy.evaluate(
@@ -99,10 +121,11 @@ void main() {
 }
 
 NostrAppDirectoryEntry _app({
+  String id = 'primal-app',
   List<String> promptRequiredFor = const [],
 }) {
   return NostrAppDirectoryEntry(
-    id: 'primal-app',
+    id: id,
     slug: 'primal',
     name: 'Primal',
     tagline: 'A social client',
