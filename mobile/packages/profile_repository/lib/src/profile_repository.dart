@@ -708,7 +708,9 @@ class ProfileRepository {
       }
     }
 
-    // Yield after Phase 2 if new results were added
+    // Yield after Phase 2 if new results were added.
+    // Skips enrichment for faster progressive display; the final Phase 3
+    // yield enriches all results from cache.
     if (resultMap.length > prevCount) {
       yield _applyFilter(trimmed, resultMap.values.toList(), useServerSort);
     }
@@ -723,6 +725,8 @@ class ProfileRepository {
           resultMap.putIfAbsent(profile.pubkey, () => profile);
         }
       } on Object catch (e) {
+        // Intentionally catches Object: WebSocket failures surface as
+        // StateError (an Error, not Exception), unlike the REST phase above.
         developer.log(
           'NIP-50 search failed: $e',
           name: 'ProfileRepository.searchUsersProgressive',

@@ -594,6 +594,46 @@ void main() {
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
+        'uses last emission when stream yields multiple times',
+        setUp: () {
+          final partial = createTestProfiles(5);
+          final full = createTestProfiles(10);
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'alice',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+              hasVideos: true,
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([partial, full]),
+          );
+        },
+        build: createBloc,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: createTestProfiles(50),
+          offset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const UserSearchLoadMore()),
+        expect: () => [
+          isA<UserSearchState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.results.length, 'results.length', 60)
+              .having((s) => s.offset, 'offset', 60)
+              .having((s) => s.hasMore, 'hasMore', false),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
         'sets hasMore to true when load more returns full page',
         setUp: () {
           when(

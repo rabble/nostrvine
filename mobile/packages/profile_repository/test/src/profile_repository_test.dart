@@ -2,6 +2,7 @@ import 'dart:convert';
 
 // Hide Drift table class to avoid collision with ProfileStats domain model.
 import 'package:db_client/db_client.dart' hide Filter, ProfileStats;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,7 +10,6 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:profile_repository/profile_repository.dart';
-import 'package:test/test.dart';
 
 class MockNostrClient extends Mock implements NostrClient {}
 

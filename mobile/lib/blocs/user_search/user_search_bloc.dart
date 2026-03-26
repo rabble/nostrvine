@@ -137,7 +137,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
             sortBy: 'followers',
             hasVideos: hasVideos,
           )
-          .last;
+          .last; // Stream always emits at least once for non-empty queries.
 
       final allResults = [...state.results, ...moreResults];
 
