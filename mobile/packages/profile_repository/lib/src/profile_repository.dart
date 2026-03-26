@@ -38,7 +38,12 @@ typedef ProfileSearchFilter =
 /// should cache results to avoid repeated lookups.
 typedef WriteRelayResolver = Future<List<String>> Function(String pubkey);
 
-/// Default well-known indexer relays for kind 0 profile lookups.
+/// Default indexer relays for kind 0 profile lookups.
+///
+/// Production wiring overrides this via
+/// `EnvironmentConfig.indexerRelays` which may include
+/// additional relays. This constant is the fallback when
+/// no explicit list is provided.
 const defaultProfileIndexerRelays = [
   'wss://purplepag.es',
   'wss://user.kindpag.es',
@@ -307,18 +312,26 @@ class ProfileRepository {
 
     var remaining = futures.length;
 
+    void onDone() {
+      remaining--;
+      if (remaining == 0 && !completer.isCompleted) {
+        completer.complete(null);
+      }
+    }
+
     for (final future in futures) {
       unawaited(
-        future.then((result) {
-          if (result != null && !completer.isCompleted) {
-            completer.complete(result);
-          } else {
-            remaining--;
-            if (remaining == 0 && !completer.isCompleted) {
-              completer.complete(null);
-            }
-          }
-        }),
+        future
+            .then((result) {
+              if (result != null && !completer.isCompleted) {
+                completer.complete(result);
+              } else {
+                onDone();
+              }
+            })
+            .catchError((_) {
+              onDone();
+            }),
       );
     }
 
