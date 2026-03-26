@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/utils/exif_util.dart';
 import 'package:openvine/utils/hash_util.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -664,100 +665,122 @@ class BlossomUploadService {
       // Report initial progress
       onProgress?.call(0.1);
 
-      // Calculate file hash for Blossom
-      // Note: For images, we need to load into memory for the hash (small files)
-      final fileBytes = await imageFile.readAsBytes();
-      final fileHash = HashUtil.sha256Hash(fileBytes);
-      final fileSize = fileBytes.length;
+      // Read file and strip EXIF metadata (GPS, device info) before upload
+      final rawBytes = await imageFile.readAsBytes();
+      final cleanBytes = ExifUtil.stripJpegExif(rawBytes);
 
-      Log.info(
-        'Image file hash: $fileHash, size: $fileSize bytes',
-        name: 'BlossomUploadService',
-        category: LogCategory.video,
-      );
+      // Write cleaned bytes to a temp file for streaming upload
+      final tempDir = imageFile.parent.path;
+      final tempName = '.exif_stripped_${imageFile.uri.pathSegments.last}';
+      final cleanFile = File('$tempDir/$tempName');
 
-      onProgress?.call(0.2);
+      try {
+        await cleanFile.writeAsBytes(cleanBytes);
 
-      // Get ordered list of servers to try
-      final serverUrls = await _getServerUrlsForUpload();
+        // Hash the cleaned bytes so Blossom hash matches uploaded content
+        final fileHash = HashUtil.sha256Hash(cleanBytes);
+        final fileSize = cleanBytes.length;
 
-      Log.info(
-        'Trying ${serverUrls.length} Blossom servers for image upload',
-        name: 'BlossomUploadService',
-        category: LogCategory.video,
-      );
+        Log.info(
+          'Image file hash: $fileHash, size: $fileSize bytes'
+          ' (EXIF stripped: ${rawBytes.length != cleanBytes.length})',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
 
-      BlossomUploadResult? lastError;
+        onProgress?.call(0.2);
 
-      // Try each server in order until one succeeds
-      for (final serverUrl in serverUrls) {
-        try {
-          Log.info(
-            'Attempting image upload to: $serverUrl',
-            name: 'BlossomUploadService',
-            category: LogCategory.video,
-          );
+        // Get ordered list of servers to try
+        final serverUrls = await _getServerUrlsForUpload();
 
-          final result = await _uploadToServer(
-            serverUrl: serverUrl,
-            file: imageFile,
-            fileHash: fileHash,
-            fileSize: fileSize,
-            contentType: mimeType,
-            onProgress: onProgress,
-          );
+        Log.info(
+          'Trying ${serverUrls.length} Blossom servers for image upload',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
 
-          if (result.success) {
-            // Construct canonical Blossom URL from server + hash
-            final canonicalUrl = '$_defaultServerUrl/$fileHash';
+        BlossomUploadResult? lastError;
 
+        // Try each server in order until one succeeds
+        for (final serverUrl in serverUrls) {
+          try {
             Log.info(
-              '✅ Image uploaded to: $serverUrl',
-              name: 'BlossomUploadService',
-              category: LogCategory.video,
-            );
-            Log.info(
-              '  Canonical URL: $canonicalUrl',
+              'Attempting image upload to: $serverUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
 
-            return BlossomUploadResult(
-              success: true,
-              url: canonicalUrl,
-              fallbackUrl: canonicalUrl,
-              videoId: fileHash,
+            final result = await _uploadToServer(
+              serverUrl: serverUrl,
+              file: cleanFile,
+              fileHash: fileHash,
+              fileSize: fileSize,
+              contentType: mimeType,
+              onProgress: onProgress,
             );
+
+            if (result.success) {
+              // Construct canonical Blossom URL from server + hash
+              final canonicalUrl = '$_defaultServerUrl/$fileHash';
+
+              Log.info(
+                '✅ Image uploaded to: $serverUrl',
+                name: 'BlossomUploadService',
+                category: LogCategory.video,
+              );
+              Log.info(
+                '  Canonical URL: $canonicalUrl',
+                name: 'BlossomUploadService',
+                category: LogCategory.video,
+              );
+
+              return BlossomUploadResult(
+                success: true,
+                url: canonicalUrl,
+                fallbackUrl: canonicalUrl,
+                videoId: fileHash,
+              );
+            }
+
+            lastError = result;
+            Log.warning(
+              'Upload to $serverUrl failed: ${result.errorMessage},'
+              ' trying next server...',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+          } catch (e) {
+            Log.warning(
+              'Upload to $serverUrl failed: $e, trying next server...',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+            continue;
           }
+        }
 
-          lastError = result;
-          Log.warning(
-            'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
-            name: 'BlossomUploadService',
-            category: LogCategory.video,
-          );
-        } catch (e) {
-          Log.warning(
-            'Upload to $serverUrl failed: $e, trying next server...',
-            name: 'BlossomUploadService',
-            category: LogCategory.video,
-          );
-          continue;
+        // All servers failed
+        Log.error(
+          '❌ All ${serverUrls.length} servers failed for image upload',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+
+        return lastError ??
+            const BlossomUploadResult(
+              success: false,
+              errorMessage: 'All servers failed',
+            );
+      } finally {
+        // Clean up temp file
+        if (cleanFile.existsSync()) {
+          try {
+            await cleanFile.delete();
+          } catch (_) {
+            // Best-effort cleanup
+          }
         }
       }
-
-      // All servers failed
-      Log.error(
-        '❌ All ${serverUrls.length} servers failed for image upload',
-        name: 'BlossomUploadService',
-        category: LogCategory.video,
-      );
-
-      return lastError ??
-          const BlossomUploadResult(
-            success: false,
-            errorMessage: 'All servers failed',
-          );
     } catch (e) {
       Log.error(
         'Image upload exception: $e',
