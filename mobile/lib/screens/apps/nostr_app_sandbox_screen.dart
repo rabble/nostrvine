@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -68,9 +69,12 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     }
 
     final launchUri = Uri.parse(widget.app.launchUrl);
-    final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(VineTheme.backgroundColor)
+    final controller = WebViewController();
+    controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+    if (defaultTargetPlatform != TargetPlatform.macOS) {
+      controller.setBackgroundColor(VineTheme.backgroundColor);
+    }
+    controller
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) {

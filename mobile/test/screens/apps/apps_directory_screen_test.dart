@@ -65,6 +65,12 @@ void main() {
       );
       expect(find.text('Primal'), findsOneWidget);
       expect(find.text('Fast Nostr feeds and messages'), findsOneWidget);
+      expect(
+        find.text('A vetted Nostr client for timelines and DMs.'),
+        findsOneWidget,
+      );
+      final image = tester.widget<Image>(find.byType(Image).first);
+      expect(image.image, isA<NetworkImage>());
     });
 
     testWidgets('embedded mode omits its own app bar', (tester) async {

@@ -101,30 +101,8 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
                     }
 
                     final app = apps[index - 1];
-                    return ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: VineTheme.cardBackground,
-                        child: Icon(Icons.apps, color: VineTheme.vineGreen),
-                      ),
-                      title: Text(
-                        app.name,
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        app.tagline,
-                        style: const TextStyle(
-                          color: VineTheme.lightText,
-                          fontSize: 14,
-                        ),
-                      ),
-                      trailing: const Icon(
-                        Icons.chevron_right,
-                        color: VineTheme.lightText,
-                      ),
+                    return _AppsDirectoryRow(
+                      app: app,
                       onTap: () => context.push(
                         AppDetailScreen.pathForSlug(app.slug),
                         extra: app,
@@ -155,6 +133,122 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
       ),
       backgroundColor: VineTheme.backgroundColor,
       body: body,
+    );
+  }
+}
+
+class _AppsDirectoryRow extends StatelessWidget {
+  const _AppsDirectoryRow({
+    required this.app,
+    required this.onTap,
+  });
+
+  final NostrAppDirectoryEntry app;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Ink(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: VineTheme.cardBackground,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: VineTheme.outlineMuted),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _AppsDirectoryIcon(iconUrl: app.iconUrl),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        app.name,
+                        style: const TextStyle(
+                          color: VineTheme.whiteText,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        app.tagline,
+                        style: const TextStyle(
+                          color: VineTheme.vineGreen,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        app.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: VineTheme.lightText,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: VineTheme.lightText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppsDirectoryIcon extends StatelessWidget {
+  const _AppsDirectoryIcon({required this.iconUrl});
+
+  final String iconUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: VineTheme.backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Icon(Icons.apps, color: VineTheme.vineGreen),
+    );
+
+    if (iconUrl.isEmpty) {
+      return fallback;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.network(
+        iconUrl,
+        width: 56,
+        height: 56,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback,
+      ),
     );
   }
 }
