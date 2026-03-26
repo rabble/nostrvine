@@ -183,6 +183,24 @@ ThemeData(
 
 ---
 
+## Icons
+
+### Use DivineIcon
+Use `DivineIcon` from `divine_ui` instead of raw `SvgPicture.asset` or Material `Icon` widgets:
+
+**Good:**
+```dart
+const DivineIcon(icon: .search, color: VineTheme.lightText)
+```
+
+**Bad:**
+```dart
+SvgPicture.asset(DivineIconName.search.assetPath, ...)
+Icon(Icons.search, color: VineTheme.lightText)
+```
+
+---
+
 ## Widget Structure
 
 ### Page/View Pattern
