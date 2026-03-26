@@ -122,7 +122,7 @@ void main() {
 
         // Verify GPS metadata is stripped after rendering
         final renderedMeta = await ProVideoEditor.instance.getMetadata(
-          EditorVideo.file(outputPath!),
+          EditorVideo.file(outputPath),
         );
 
         expect(
@@ -132,7 +132,7 @@ void main() {
         );
 
         // Clean up rendered file
-        final renderedFile = File(outputPath);
+        final renderedFile = File(outputPath!);
         if (renderedFile.existsSync()) await renderedFile.delete();
       },
     );
