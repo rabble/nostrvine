@@ -119,6 +119,83 @@ void main() {
           isFalse,
         );
       });
+
+      test('returns original file when stripMetadata throws', () async {
+        final imageFile = File('${tempDir.path}/photo.jpg');
+        final originalBytes = [0xFF, 0xD8, 0xFF, 0xE0];
+        await imageFile.writeAsBytes(originalBytes);
+
+        // Mock throws an exception
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              calls.add(call);
+              throw PlatformException(
+                code: 'DECODE_ERROR',
+                message: 'Failed to decode image',
+              );
+            });
+
+        final result = await ImageMetadataStripper.stripMetadataInPlace(
+          imageFile,
+        );
+
+        // Verify original file is returned unchanged
+        expect(result.path, equals(imageFile.path));
+        expect(await result.readAsBytes(), equals(originalBytes));
+      });
+
+      test('cleans up partial temp file on failure', () async {
+        final imageFile = File('${tempDir.path}/photo.jpg');
+        await imageFile.writeAsBytes([0xFF, 0xD8, 0xFF, 0xE0]);
+        final tempPath = '${imageFile.path}.stripped';
+
+        // Simulate partial write by creating temp file, then mock throws
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              calls.add(call);
+              // Write partial temp file before throwing
+              await File(tempPath).writeAsBytes([0xFF, 0xD8]);
+              throw PlatformException(
+                code: 'WRITE_ERROR',
+                message: 'Failed to write output',
+              );
+            });
+
+        await ImageMetadataStripper.stripMetadataInPlace(imageFile);
+
+        // Verify temp file was cleaned up
+        expect(File(tempPath).existsSync(), isFalse);
+      });
+
+      test('silently handles temp file deletion failure', () async {
+        final imageFile = File('${tempDir.path}/photo.jpg');
+        await imageFile.writeAsBytes([0xFF, 0xD8, 0xFF, 0xE0]);
+        final tempPath = '${imageFile.path}.stripped';
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              calls.add(call);
+              // Create temp file, then make parent readonly so delete fails
+              await File(tempPath).writeAsBytes([0xFF, 0xD8]);
+              await Process.run('chmod', ['a-w', tempDir.path]);
+              throw PlatformException(
+                code: 'DECODE_ERROR',
+                message: 'Failed to decode',
+              );
+            });
+
+        // Should complete without throwing despite deletion failure
+        final result = await ImageMetadataStripper.stripMetadataInPlace(
+          imageFile,
+        );
+
+        // Restore permissions for tearDown cleanup
+        await Process.run('chmod', ['a+w', tempDir.path]);
+
+        expect(result.path, equals(imageFile.path));
+        // Temp file still exists because deletion failed
+        expect(File(tempPath).existsSync(), isTrue);
+      });
     });
   });
 }
