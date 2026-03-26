@@ -1,24 +1,50 @@
 // ABOUTME: Tests for profile grid → fullscreen video navigation
 // ABOUTME: Verifies tapping grid item navigates to correct video index and autoplays
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/state/video_feed_state.dart';
+import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_provider_overrides.dart';
+
+class _MockBackgroundPublishBloc
+    extends MockBloc<BackgroundPublishEvent, BackgroundPublishState>
+    implements BackgroundPublishBloc {}
+
+class _TestProfileFeed extends ProfileFeed {
+  _TestProfileFeed(this._initialState);
+
+  final VideoFeedState _initialState;
+  int loadMoreCallCount = 0;
+
+  @override
+  Future<VideoFeedState> build(String userId) async => _initialState;
+
+  @override
+  Future<void> loadMore() async {
+    loadMoreCallCount++;
+    final currentState = state.asData?.value ?? _initialState;
+    state = AsyncData(currentState.copyWith(isLoadingMore: true));
+  }
+}
 
 void main() {
   setUpAll(() async {
@@ -304,4 +330,83 @@ void main() {
     });
     // TODO(any): Fix and re-enable tests
   }, skip: true);
+
+  group('Profile grid pagination', () {
+    late _MockBackgroundPublishBloc backgroundPublishBloc;
+
+    setUp(() {
+      backgroundPublishBloc = _MockBackgroundPublishBloc();
+      when(() => backgroundPublishBloc.state).thenReturn(
+        const BackgroundPublishState(),
+      );
+      whenListen(
+        backgroundPublishBloc,
+        const Stream<BackgroundPublishState>.empty(),
+        initialState: const BackgroundPublishState(),
+      );
+    });
+
+    testWidgets('scrolling profile grid near bottom requests more videos', (
+      tester,
+    ) async {
+      final videos = List.generate(60, (index) {
+        final createdAt = nowUnix - index;
+        return VideoEvent(
+          id: 'grid-video-$index',
+          pubkey: testUserHex,
+          createdAt: createdAt,
+          content: 'Video $index',
+          timestamp: now.subtract(Duration(seconds: index)),
+          title: 'Grid Video $index',
+          videoUrl: 'https://example.com/v$index.mp4',
+        );
+      });
+
+      late _TestProfileFeed profileFeed;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(
+              createTestAuthService('someone-else'),
+            ),
+            profileFeedProvider(testUserHex).overrideWith(() {
+              profileFeed = _TestProfileFeed(
+                VideoFeedState(
+                  videos: videos,
+                  hasMoreContent: true,
+                ),
+              );
+              return profileFeed;
+            }),
+          ],
+          child: BlocProvider<BackgroundPublishBloc>.value(
+            value: backgroundPublishBloc,
+            child: MaterialApp(
+              home: Scaffold(
+                body: ProfileVideosGrid(
+                  videos: videos,
+                  userIdHex:
+                      '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(profileFeed.loadMoreCallCount, 0);
+
+      await tester.scrollUntilVisible(
+        find.bySemanticsLabel('Video thumbnail 60'),
+        800,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      expect(profileFeed.loadMoreCallCount, 1);
+    });
+  });
 }
