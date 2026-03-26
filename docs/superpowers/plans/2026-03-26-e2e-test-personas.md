@@ -382,21 +382,9 @@ git commit -m "feat(e2e): add kind 10002 relay list publishing helper"
 **Files:**
 - Modify: `mobile/integration_test/helpers/relay_helpers.dart`
 
-- [ ] **Step 1: Add PersonaUser typedef**
+- [ ] **Step 1: Add persona setup wrappers**
 
-```dart
-/// A fully registered test persona with all identity info.
-typedef PersonaUser = ({
-  String pubkey,
-  String privateKey,
-  String email,
-  String password,
-});
-```
-
-- [ ] **Step 2: Add registerTypeAUser()**
-
-This wrapper creates a Divine user persona: registers via Keycast (if needed by the test), publishes kind 10002 to indexer listing both relays, publishes kind 0 to FunnelCake and indexer.
+These wrappers seed relay presence for browsable users (not the logged-in user — Keycast manages that identity, and its private keys are KMS-encrypted in `personal_keys` and not extractable).
 
 ```dart
 /// Set up a Type A (Divine) user's relay presence.
@@ -766,37 +754,92 @@ git commit -m "feat(seed): multi-relay seeding with type A/B personas and kind 0
 
 ---
 
-### Task 7: Write persona E2E tests
+### Task 7: Add kind 7 reaction publishing helper
+
+**Files:**
+- Modify: `mobile/integration_test/helpers/relay_helpers.dart`
+
+- [ ] **Step 1: Add publishTestReactionEvent()**
+
+```dart
+/// Publish a kind 7 reaction event to the specified relay.
+///
+/// Creates a reaction ("+") from [privateKey] targeting [targetEventId]
+/// by [targetPubkey]. Used to seed notification data for testing.
+Future<String> publishTestReactionEvent({
+  required String targetEventId,
+  required String targetPubkey,
+  required String privateKey,
+  int? relayPort,
+}) async {
+  final pubKey = getPublicKey(privateKey);
+
+  final event = Event(pubKey, 7, [
+    ['e', targetEventId],
+    ['p', targetPubkey],
+  ], '+');
+  event.sign(privateKey);
+
+  final eventId = await _publishEvent(event, relayPort: relayPort);
+  debugPrint('Published reaction event: $eventId (target: $targetEventId)');
+  return eventId;
+}
+```
+
+- [ ] **Step 2: Run analyze**
+
+```bash
+cd mobile && mise exec -- flutter analyze integration_test/helpers/relay_helpers.dart
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add mobile/integration_test/helpers/relay_helpers.dart
+git commit -m "feat(e2e): add kind 7 reaction publishing helper"
+```
+
+---
+
+### Task 8: Write persona E2E tests
 
 **Files:**
 - Create: `mobile/integration_test/e2e/persona_test.dart`
+
+**Important context:** Keycast is a NIP-46 remote signer. Private keys are KMS-encrypted in the `personal_keys` table and cannot be extracted. Therefore:
+- The **logged-in user** is always a standard Keycast registration (as in today's tests).
+- The **persona types** (A and B) are seeded *browsable* users with keypairs we generate and control.
+- Tests verify the app can discover and display profiles/content from different relay configurations.
+
+Read the existing test patterns in `integration_test/helpers/navigation_helpers.dart` for the actual registration and login helper signatures before writing tests. Use the same `launchAppGuarded` / `suppressSetStateErrors` / `restoreErrorHandler` / `drainAsyncErrors` pattern from existing tests.
 
 - [ ] **Step 1: Create test file with imports and setup**
 
 ```dart
 // ABOUTME: E2E tests for multi-relay user personas
-// ABOUTME: Verifies that Type A (Divine) and Type B (Nostr-native) users
-// ABOUTME: can browse each other's profiles and content across relays
+// ABOUTME: Verifies that seeded Type A (Divine) and Type B (Nostr-native) users
+// ABOUTME: are discoverable and displayable across different relay configurations
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:patrol/patrol.dart';
 
 import '../helpers/constants.dart';
-import '../helpers/db_helpers.dart';
 import '../helpers/navigation_helpers.dart';
 import '../helpers/relay_helpers.dart';
 import '../helpers/test_setup.dart';
 ```
 
-- [ ] **Step 2: Write browsing test — Type A browses Type B profile**
+- [ ] **Step 2: Write test — browse Type B profile from external relay**
 
-This test logs in as a pre-seeded Type A user, navigates to a Type B user's profile (seeded on external relay), and verifies the profile metadata loads.
+The logged-in user registers normally via Keycast. A Type B user is seeded with keypair we control: kind 10002 on indexer, kind 0 on external relay + indexer. Test navigates to the Type B user's profile and verifies it loads.
 
 ```dart
 patrolTest(
-  'Type A user can browse Type B profile from external relay',
+  'can browse Type B (Nostr-native) profile from external relay',
+  timeout: const Timeout(Duration(minutes: 5)),
   ($) async {
     final tester = $.tester;
     final originalOnError = suppressSetStateErrors();
@@ -805,38 +848,28 @@ patrolTest(
     launchAppGuarded(app.main);
     await tester.pumpAndSettle(const Duration(seconds: 3));
 
-    // Register and log in as Type A user
-    final typeAUser = await registerAndLoginUser(tester, prefix: 'persona-a');
-    await setupTypeAPresence(
-      privateKey: typeAUser.privateKey,
-      name: 'persona-a-test',
+    // Register and log in normally via Keycast
+    // (Use existing helpers from navigation_helpers.dart — check actual
+    // function signatures: navigateToCreateAccount, registerNewUser,
+    // callVerifyEmail, loginWithCredentials, etc.)
+    // ...registration flow...
+
+    // Seed a Type B user with relay presence
+    await setupTypeBPresence(
+      privateKey: generatePrivateKey(),
+      name: 'nostr-native-browse-test',
+      displayName: 'Nostr Native Browse Test',
     );
 
-    // Seed a Type B user on the external relay
-    final typeBProfile = await publishTestProfileEvent(
-      name: 'persona-b-browsed',
-      displayName: 'Nostr Native User',
-      relayPort: localExternalRelayPort,
-    );
-    await publishTestRelayListEvent(
-      relayUrls: [
-        'ws://$localHost:$localRelayPort',
-        'ws://$localHost:$localExternalRelayPort',
-      ],
-      privateKey: typeBProfile.privateKey,
-    );
-    // Also publish to indexer so the app can discover them
-    await publishTestProfileEvent(
-      name: 'persona-b-browsed',
-      displayName: 'Nostr Native User',
-      privateKey: typeBProfile.privateKey,
-      relayPort: localIndexerRelayPort,
-    );
+    // Navigate to the seeded user's profile
+    // (Use search, explore tab, or direct navigation depending on
+    // available helpers. The seeded user should appear in explore
+    // since their videos are on FunnelCake via the seed script.)
 
-    // Navigate to Type B profile and verify metadata loads
-    // (Implementation depends on app navigation — use search or direct nav)
-    // Verify profile name appears
-    final found = await waitForText(tester, 'Nostr Native User', maxSeconds: 15);
+    // Verify profile metadata loaded from external relay
+    final found = await waitForText(
+      tester, 'Nostr Native Browse Test', maxSeconds: 15,
+    );
     expect(found, isTrue);
 
     restoreErrorWidgetBuilder(originalErrorBuilder);
@@ -846,15 +879,100 @@ patrolTest(
 );
 ```
 
-Note: Exact navigation (search, deep link, etc.) depends on existing helpers. Adapt `registerAndLoginUser` and profile navigation to match current test patterns in `integration_test/helpers/navigation_helpers.dart`.
+Note: Exact navigation depends on available helpers in `navigation_helpers.dart`. The implementer should read that file and adapt. The seeded Type B users from `seed.py` (Task 6) will have videos on FunnelCake, making them discoverable in the explore feed.
 
-- [ ] **Step 3: Write browsing test — Type B user sees own profile**
+- [ ] **Step 3: Write test — Type B user's videos appear (mixed relays)**
 
-Test that a Nostr-native user whose profile is on the external relay sees their own profile correctly after logging in.
+Same registration pattern. Seed a Type B user with videos on both FunnelCake and external relay. Navigate to their profile, verify video count matches expected total from both relays.
 
-- [ ] **Step 4: Write regression test — Type B notifications**
+```dart
+patrolTest(
+  'Type B profile shows videos from both FunnelCake and external relay',
+  timeout: const Timeout(Duration(minutes: 5)),
+  ($) async {
+    final tester = $.tester;
+    final originalOnError = suppressSetStateErrors();
+    final originalErrorBuilder = saveErrorWidgetBuilder();
 
-Seed a kind 7 reaction event on FunnelCake targeting Type B user's content, then verify notifications show non-empty results.
+    launchAppGuarded(app.main);
+    await tester.pumpAndSettle(const Duration(seconds: 3));
+
+    // ...registration flow (same as Step 2)...
+
+    // Seed Type B user with videos on both relays
+    final privKey = generatePrivateKey();
+    await setupTypeBPresence(
+      privateKey: privKey,
+      name: 'nostr-native-videos-test',
+      displayName: 'Multi-Relay Video User',
+    );
+    // Video on FunnelCake
+    await publishTestVideoEvent(
+      title: 'Divine upload',
+      privateKey: privKey,
+    );
+    // Video on external relay
+    await publishTestVideoEvent(
+      title: 'External upload',
+      privateKey: privKey,
+      relayPort: localExternalRelayPort,
+    );
+
+    // Navigate to profile, verify videos from both relays appear
+    // ...navigate to profile...
+    // Assert at least 2 videos visible
+    // (Exact finder depends on the profile grid widget)
+
+    restoreErrorWidgetBuilder(originalErrorBuilder);
+    restoreErrorHandler(originalOnError);
+    drainAsyncErrors(tester);
+  },
+);
+```
+
+- [ ] **Step 4: Write regression test — notifications load for multi-relay user (PR #2463)**
+
+Seed a Type B user with content on FunnelCake. Seed a kind 7 reaction targeting that content (also on FunnelCake, since notifications API only reads from FunnelCake). Register as a new user, navigate to notifications. Verify non-empty results — an empty list would indicate the notifications API hit the wrong relay (the PR #2463 bug).
+
+```dart
+patrolTest(
+  'notifications load correctly for user with external relays (PR #2463 regression)',
+  timeout: const Timeout(Duration(minutes: 5)),
+  ($) async {
+    final tester = $.tester;
+    final originalOnError = suppressSetStateErrors();
+    final originalErrorBuilder = saveErrorWidgetBuilder();
+
+    launchAppGuarded(app.main);
+    await tester.pumpAndSettle(const Duration(seconds: 3));
+
+    // ...registration flow...
+    // After registration, get the logged-in user's pubkey from Keycast DB
+    // final userPubkey = await getUserPubkeyByEmail(email);
+
+    // Seed a video from the logged-in user on FunnelCake
+    // (We can't sign as the logged-in user since Keycast holds the key.
+    // Instead, use a seeded Type A user's reaction targeting content
+    // the logged-in user can see in their notifications.)
+    //
+    // Alternative approach: seed a reaction from a generated keypair
+    // targeting a video the logged-in user published during registration.
+    // The exact approach depends on how the app populates notifications
+    // for the logged-in user.
+
+    // Verify notifications tab shows non-empty content
+    // Navigate to notifications tab
+    // Assert notification list is not empty
+    // (An empty list with no error = PR #2463 bug: API hit wrong relay)
+
+    restoreErrorWidgetBuilder(originalErrorBuilder);
+    restoreErrorHandler(originalOnError);
+    drainAsyncErrors(tester);
+  },
+);
+```
+
+Note: The notification regression test depends on how `resolveApiBaseUrlFromRelays()` resolves in LOCAL env after the indexerRelays change. The implementer should verify that `environmentConfig.apiBaseUrl` correctly points to FunnelCake's REST API for LOCAL env, since `relay.divine.video` (the production preferred host) never matches locally.
 
 - [ ] **Step 5: Run the tests**
 
@@ -873,7 +991,7 @@ git commit -m "test(e2e): add persona tests for cross-relay profile and content 
 
 ---
 
-### Task 8: End-to-end verification
+### Task 9: End-to-end verification
 
 **Files:** None (verification only)
 
@@ -907,6 +1025,8 @@ Check emulator logs for relay discovery hitting the indexer relay (47778) instea
 
 - [ ] **Step 5: Final commit if any fixups needed**
 
+Stage only the specific files that were fixed, then commit:
+
 ```bash
-git add -A && git commit -m "fix(e2e): address test feedback from verification"
+git commit -m "fix(e2e): address test feedback from verification"
 ```
