@@ -580,7 +580,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               captureImageByteFormat: .rawStraightRgba,
               customPixelRatio: max(
                 1,
-                VideoEditorConstants.renderWidth / widget.renderSize.width,
+                VideoEditorConstants.quality.resolution.width /
+                    widget.renderSize.width,
               ),
             ),
             mainEditor: MainEditorConfigs(

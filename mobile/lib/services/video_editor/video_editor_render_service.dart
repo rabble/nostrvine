@@ -659,6 +659,10 @@ class VideoEditorRenderService {
       blur: parameters?.blur,
       colorMatrixList: parameters?.colorFilters ?? [],
       imageBytesWithCropping: true,
+      qualityConfig: VideoQualityConfig.custom(
+        bitrate: VideoEditorConstants.quality.bitrate,
+        resolution: VideoEditorConstants.quality.resolution,
+      ),
       transform: globalTransform != null
           ? ExportTransform(
               x: globalTransform.x,
