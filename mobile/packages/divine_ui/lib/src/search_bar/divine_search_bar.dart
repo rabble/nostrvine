@@ -50,8 +50,8 @@ class DivineSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
       child: TextField(
         controller: controller,
         focusNode: focusNode,

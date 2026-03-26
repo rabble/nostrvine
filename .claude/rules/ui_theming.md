@@ -370,6 +370,27 @@ SingleChildScrollView(
 ### Dynamic Font Sizes
 Test with system font size increased to ensure UI remains usable.
 
+### Use minHeight, Not Fixed Height, for Text Containers
+Never use `SizedBox(height: ...)` to wrap widgets that contain text. A fixed height clips content when users increase their device font size. Use `ConstrainedBox` with `minHeight` instead — this preserves the touch-target size while letting the container grow.
+
+**Bad:**
+```dart
+SizedBox(
+  height: 48,
+  child: TextField(...),  // Clips at large font sizes
+)
+```
+
+**Good:**
+```dart
+ConstrainedBox(
+  constraints: const BoxConstraints(minHeight: 48),
+  child: TextField(...),  // Grows with text, keeps 48px minimum
+)
+```
+
+This applies to any wrapper around text-bearing widgets: `TextField`, `Text`, buttons with labels, etc.
+
 ### Testing Accessibility
 - Test with screen readers (TalkBack on Android, VoiceOver on iOS)
 - Use Flutter's accessibility inspector
