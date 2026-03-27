@@ -25,6 +25,26 @@ class PooledPlayer {
   /// Whether this player has been disposed.
   bool get isDisposed => _isDisposed;
 
+  /// Set to `true` by [recycle] to indicate this player was re-keyed from
+  /// a previous URL.
+  ///
+  /// Callers use this to defer publishing the [VideoController] to the UI
+  /// until after new media has been opened, preventing the previous video's
+  /// surface from flashing on the new index even after `stop()` has cleared it.
+  ///
+  /// Reset to `false` automatically once the caller has consumed it.
+  bool _wasRecycled = false;
+
+  /// Whether this player was recycled from another URL since the last open.
+  ///
+  /// Callers must reset this to `false` once they have deferred UI exposure
+  /// past the `open()` call.
+  bool get wasRecycled => _wasRecycled;
+
+  /// Resets the [wasRecycled] flag. Called after `open()` completes for a
+  /// recycled player.
+  void clearRecycled() => _wasRecycled = false;
+
   /// Callbacks invoked synchronously when this player is evicted (recycled
   /// or disposed).
   ///
@@ -53,6 +73,7 @@ class PooledPlayer {
   /// Is a no-op if already disposed.
   void recycle() {
     if (_isDisposed) return;
+    _wasRecycled = true;
     for (final callback in List<VoidCallback>.of(_onEvictedCallbacks)) {
       callback();
     }

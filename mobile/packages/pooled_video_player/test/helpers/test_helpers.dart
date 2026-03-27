@@ -199,6 +199,8 @@ PooledPlayer createMockPooledPlayer({
   when(() => mockPooledPlayer.player).thenReturn(mockPlayer);
   when(() => mockPooledPlayer.videoController).thenReturn(mockController);
   when(() => mockPooledPlayer.isDisposed).thenReturn(isDisposed);
+  when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+  when(mockPooledPlayer.clearRecycled).thenReturn(null);
   when(mockPooledPlayer.recycle).thenReturn(null);
   when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 
@@ -213,11 +215,15 @@ PooledPlayer createMockPooledPlayerFromSetup(MockPlayerSetup setup) {
   final mockPooledPlayer = _MockPooledPlayer();
   final callbacks = <VoidCallback>[];
 
+  var recycled = false;
+
   when(() => mockPooledPlayer.player).thenReturn(setup.player);
   when(
     () => mockPooledPlayer.videoController,
   ).thenReturn(createMockVideoController());
   when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+  when(() => mockPooledPlayer.wasRecycled).thenAnswer((_) => recycled);
+  when(mockPooledPlayer.clearRecycled).thenAnswer((_) => recycled = false);
   when(() => mockPooledPlayer.addOnEvictedCallback(any())).thenAnswer((inv) {
     callbacks.add(inv.positionalArguments.first as VoidCallback);
   });
@@ -227,6 +233,7 @@ PooledPlayer createMockPooledPlayerFromSetup(MockPlayerSetup setup) {
     callbacks.remove(inv.positionalArguments.first as VoidCallback);
   });
   when(mockPooledPlayer.recycle).thenAnswer((_) {
+    recycled = true;
     for (final cb in List<VoidCallback>.of(callbacks)) {
       cb();
     }

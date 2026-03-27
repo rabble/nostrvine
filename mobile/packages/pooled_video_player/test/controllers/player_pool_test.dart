@@ -24,11 +24,15 @@ _MockPooledPlayer _createMockPooledPlayer() {
   final mockPlayer = createMockPlayer();
   final mockController = createMockVideoController();
 
+  var recycled = false;
+
   when(() => mockPooledPlayer.player).thenReturn(mockPlayer);
   when(() => mockPooledPlayer.videoController).thenReturn(mockController);
   when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+  when(() => mockPooledPlayer.wasRecycled).thenAnswer((_) => recycled);
+  when(mockPooledPlayer.clearRecycled).thenAnswer((_) => recycled = false);
+  when(mockPooledPlayer.recycle).thenAnswer((_) => recycled = true);
   when(mockPooledPlayer.dispose).thenAnswer((_) async {});
-  when(mockPooledPlayer.recycle).thenReturn(null);
 
   return mockPooledPlayer;
 }

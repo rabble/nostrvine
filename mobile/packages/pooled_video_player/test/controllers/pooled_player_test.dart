@@ -349,6 +349,27 @@ void main() {
         expect(callCount, equals(1));
         expect(pooledPlayer.isDisposed, isTrue);
       });
+
+      test('sets wasRecycled to true', () {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        );
+
+        expect(pooledPlayer.wasRecycled, isFalse);
+        pooledPlayer.recycle();
+        expect(pooledPlayer.wasRecycled, isTrue);
+      });
+
+      test('clearRecycled resets wasRecycled to false', () {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        );
+
+        (pooledPlayer..recycle()).clearRecycled();
+        expect(pooledPlayer.wasRecycled, isFalse);
+      });
     });
   });
 }
