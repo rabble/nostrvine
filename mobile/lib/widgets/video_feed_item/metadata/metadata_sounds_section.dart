@@ -78,11 +78,11 @@ class _SoundListItem extends ConsumerWidget {
           UserProfile.defaultDisplayNameFor(audio.pubkey);
     }
 
-    return GestureDetector(
-      onTap: () => _navigateToSoundDetail(context),
-      child: Semantics(
-        button: true,
-        label: 'Sound: $soundName by $creatorName. Tap to view details.',
+    return Semantics(
+      button: true,
+      label: 'Sound: $soundName by $creatorName. Tap to view details.',
+      child: GestureDetector(
+        onTap: () => _navigateToSoundDetail(context),
         child: Row(
           spacing: 16,
           children: [
@@ -129,6 +129,8 @@ class _SoundListItem extends ConsumerWidget {
     // sheet (the router is not in the modal's widget tree).
     final hostContext = Navigator.of(context, rootNavigator: true).context;
     Navigator.of(context).pop();
+    // Defer navigation to the next microtask so the pop animation
+    // completes and the modal route is fully removed before pushing.
     Future<void>.delayed(Duration.zero).then((_) {
       if (!hostContext.mounted) return;
       hostContext.pushWithVideoPause(SoundDetailScreen.pathForId(audio.id));

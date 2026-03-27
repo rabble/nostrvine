@@ -63,7 +63,9 @@ class MetadataExpandedSheet extends StatelessWidget {
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: EdgeInsets.zero,
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.paddingOf(context).bottom + 16,
+                  ),
                   children: [
                     _TitleSection(video: video),
                     MetadataBadgesRow(video: video),
@@ -77,10 +79,6 @@ class MetadataExpandedSheet extends StatelessWidget {
                     MetadataInspiredBySection(video: video),
                     MetadataRepostedBySection(video: video),
                     MetadataSoundsSection(video: video),
-                    // Bottom padding for safe area
-                    SizedBox(
-                      height: MediaQuery.paddingOf(context).bottom + 16,
-                    ),
                   ],
                 ),
               ),

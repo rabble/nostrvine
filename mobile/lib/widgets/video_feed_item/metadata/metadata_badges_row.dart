@@ -48,6 +48,7 @@ class MetadataBadgesRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Wrap(
         spacing: 8,
+        runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: children,
       ),
@@ -80,7 +81,9 @@ class _HumanMadeBadge extends StatelessWidget {
                 alignment: PlaceholderAlignment.top,
                 child: Text(
                   'HM',
-                  style: VineTheme.titleSmallFont().copyWith(fontSize: 9),
+                  style: VineTheme.titleSmallFont().copyWith(
+                    fontSize: VineTheme.titleSmallFont().fontSize! / 1.555,
+                  ),
                 ),
               ),
             ],

@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/utils/string_utils.dart';
@@ -35,40 +34,56 @@ class MetadataStatsRow extends StatelessWidget {
               bottom: BorderSide(color: VineTheme.outlineDisabled),
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _StatColumn(
-                  // Sum archived (Classic Vine) and live (diVine) loops
-                  // to match the count shown on the video overlay.
-                  count:
-                      (video.originalLoops ?? 0) +
-                      (int.tryParse(video.rawTags['views'] ?? '') ?? 0),
-                  label: 'Loops',
-                  isLoading: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
-                const _VerticalDivider(),
-                _StatColumn(
-                  count: state.likeCount,
-                  label: 'Likes',
-                  isLoading: isLoading,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: constraints.maxWidth - 48,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _StatColumn(
+                        // Sum archived (Classic Vine) and live (diVine)
+                        // loops to match the count on the video overlay.
+                        count:
+                            (video.originalLoops ?? 0) +
+                            (int.tryParse(
+                                  video.rawTags['views'] ?? '',
+                                ) ??
+                                0),
+                        label: 'Loops',
+                        isLoading: false,
+                      ),
+                      const _VerticalDivider(),
+                      _StatColumn(
+                        count: state.likeCount,
+                        label: 'Likes',
+                        isLoading: isLoading,
+                      ),
+                      const _VerticalDivider(),
+                      _StatColumn(
+                        count: state.commentCount,
+                        label: 'Comments',
+                        isLoading: isLoading,
+                      ),
+                      const _VerticalDivider(),
+                      _StatColumn(
+                        count: state.repostCount,
+                        label: 'Reposts',
+                        isLoading: isLoading,
+                      ),
+                    ],
+                  ),
                 ),
-                const _VerticalDivider(),
-                _StatColumn(
-                  count: state.commentCount,
-                  label: 'Comments',
-                  isLoading: isLoading,
-                ),
-                const _VerticalDivider(),
-                _StatColumn(
-                  count: state.repostCount,
-                  label: 'Reposts',
-                  isLoading: isLoading,
-                ),
-              ],
-            ),
+              );
+            },
           ),
         );
       },
@@ -100,14 +115,8 @@ class _StatColumn extends StatelessWidget {
         Text(
           displayValue,
           // Figma spec: 20px/28px Bricolage Grotesque 800
-          // Between titleMedium (16) and titleLarge (22).
-          style: GoogleFonts.bricolageGrotesque(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            height: 28 / 20,
-            letterSpacing: 0,
-            color: VineTheme.whiteText,
-          ),
+          // titleLargeFont is 22/28 — adjust fontSize to match Figma.
+          style: VineTheme.titleLargeFont().copyWith(fontSize: 20),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

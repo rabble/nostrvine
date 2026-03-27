@@ -63,8 +63,8 @@ class _VerificationCheckItem extends StatelessWidget {
     return Row(
       spacing: 6,
       children: [
-        Icon(
-          passed ? Icons.check_circle : Icons.cancel,
+        DivineIcon(
+          icon: passed ? DivineIconName.checkCircle : DivineIconName.prohibit,
           size: 14,
           color: passed ? VineTheme.success : VineTheme.onSurfaceMuted,
         ),

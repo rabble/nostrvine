@@ -5,12 +5,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_reposters_provider.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -26,11 +26,7 @@ class MetadataCreatorSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return MetadataSection(
       label: 'Creator',
-      child: Wrap(
-        children: [
-          _TappableUserChip(pubkey: pubkey),
-        ],
-      ),
+      child: _TappableUserChip(pubkey: pubkey),
     );
   }
 }
@@ -81,11 +77,7 @@ class MetadataInspiredBySection extends StatelessWidget {
 
     return MetadataSection(
       label: 'Inspired by',
-      child: Wrap(
-        children: [
-          _TappableUserChip(pubkey: pubkey),
-        ],
-      ),
+      child: _TappableUserChip(pubkey: pubkey),
     );
   }
 
@@ -178,11 +170,11 @@ class _TappableUserChip extends ConsumerWidget {
         profileAsync.value?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(pubkey);
 
-    return GestureDetector(
-      onTap: () => _navigateToProfile(context),
-      child: Semantics(
-        button: true,
-        label: '$name. Tap to view profile.',
+    return Semantics(
+      button: true,
+      label: '$name. Tap to view profile.',
+      child: GestureDetector(
+        onTap: () => _navigateToProfile(context),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
@@ -222,9 +214,11 @@ class _TappableUserChip extends ConsumerWidget {
     // sheet (the router is not in the modal's widget tree).
     final hostContext = Navigator.of(context, rootNavigator: true).context;
     Navigator.of(context).pop();
+    // Defer navigation to the next microtask so the pop animation
+    // completes and the modal route is fully removed before pushing.
     Future<void>.delayed(Duration.zero).then((_) {
       if (!hostContext.mounted) return;
-      hostContext.push(OtherProfileScreen.pathForNpub(npub));
+      hostContext.pushWithVideoPause(OtherProfileScreen.pathForNpub(npub));
     });
   }
 }

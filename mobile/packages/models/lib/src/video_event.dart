@@ -660,7 +660,8 @@ class VideoEvent {
 
   /// VLM-classified category names from Funnelcake (e.g., "animals", "music").
   ///
-  /// Empty until the API includes a `categories` field in video responses.
+  // TODO(api): Populate from Funnelcake once the API returns per-video
+  // categories. Currently always empty for relay-sourced events.
   final List<String> categories;
 
   final DateTime timestamp;

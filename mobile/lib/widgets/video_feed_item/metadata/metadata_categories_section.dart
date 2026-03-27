@@ -2,6 +2,7 @@
 // ABOUTME: Shows accent-colored chips with emoji for VLM-classified categories.
 // ABOUTME: Hidden when no categories are available (API support pending).
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/widgets/categories/category_visuals.dart';
@@ -38,18 +39,17 @@ class CategoryChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 4,
         children: [
-          Text(category.emoji, style: const TextStyle(fontSize: 18)),
+          // Emoji renders with system font; only fontSize matters.
+          Text(
+            category.emoji,
+            style: VineTheme.titleMediumFont().copyWith(fontSize: 18),
+          ),
           Flexible(
             child: Text(
               category.displayName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'BricolageGrotesque',
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                height: 20 / 14,
-                letterSpacing: 0.1,
+              style: VineTheme.titleSmallFont(
                 color: visuals.foregroundColor,
               ),
             ),

@@ -3,6 +3,7 @@
 // ABOUTME: data is absent. Covers badges, title, stats, creator, tags,
 // ABOUTME: collaborators, inspired by, reposted by, and sounds sections.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -523,9 +524,16 @@ void main() {
       expect(find.text('PGP signature'), findsOneWidget);
       expect(find.text('C2PA Content Credentials'), findsOneWidget);
       expect(find.text('Proof manifest'), findsOneWidget);
-      // Two passed (device attestation, PGP), two failed (C2PA, manifest)
-      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
-      expect(find.byIcon(Icons.cancel), findsNWidgets(2));
+      // Two passed (device attestation, PGP), two failed (C2PA, manifest).
+      // DivineIcon renders SVGs — find by widget type and icon enum value.
+      final checkIcons = tester
+          .widgetList<DivineIcon>(find.byType(DivineIcon))
+          .where((w) => w.icon == DivineIconName.checkCircle);
+      final failIcons = tester
+          .widgetList<DivineIcon>(find.byType(DivineIcon))
+          .where((w) => w.icon == DivineIconName.prohibit);
+      expect(checkIcons.length, 2);
+      expect(failIcons.length, 2);
     });
 
     testWidgets('hides when no proof data', (tester) async {
