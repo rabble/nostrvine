@@ -27,7 +27,7 @@ class ImageMetadataStripper {
     required String outputPath,
   }) async {
     if (kIsWeb) {
-      await _stripMetadataWeb(inputPath: inputPath, outputPath: outputPath);
+      await stripMetadataWeb(inputPath: inputPath, outputPath: outputPath);
     } else {
       await _channel.invokeMethod<void>('stripImageMetadata', {
         'inputPath': inputPath,
@@ -62,7 +62,7 @@ class ImageMetadataStripper {
       final targetFile = isPng
           ? await tempFile.rename(imageFile.path)
           : await tempFile.rename(
-              '${_withoutExtension(imageFile.path)}.jpg',
+              '${withoutExtension(imageFile.path)}.jpg',
             );
 
       // Remove the original if it had a different path.
@@ -91,7 +91,8 @@ class ImageMetadataStripper {
   /// pure Dart. JPEG EXIF is replaced losslessly (only orientation is
   /// preserved). PNG is decoded and re-encoded (lossless).
   /// Other formats are copied unchanged.
-  static Future<void> _stripMetadataWeb({
+  @visibleForTesting
+  static Future<void> stripMetadataWeb({
     required String inputPath,
     required String outputPath,
   }) async {
@@ -100,7 +101,7 @@ class ImageMetadataStripper {
     final lowerPath = inputPath.toLowerCase();
 
     if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg')) {
-      final clean = _stripJpegExif(bytes);
+      final clean = stripJpegExif(bytes);
       await File(outputPath).writeAsBytes(clean);
       return;
     } else if (lowerPath.endsWith('.png')) {
@@ -119,7 +120,8 @@ class ImageMetadataStripper {
   /// Replaces all JPEG EXIF data with a minimal block that only
   /// contains the orientation tag (if present). No re-encoding,
   /// no quality loss.
-  static Uint8List _stripJpegExif(Uint8List bytes) {
+  @visibleForTesting
+  static Uint8List stripJpegExif(Uint8List bytes) {
     if (bytes.length < 2 || bytes[0] != 0xFF || bytes[1] != 0xD8) {
       return bytes;
     }
@@ -136,7 +138,8 @@ class ImageMetadataStripper {
   }
 
   /// Returns [path] without its file extension (including the dot).
-  static String _withoutExtension(String path) {
+  @visibleForTesting
+  static String withoutExtension(String path) {
     final dotIndex = path.lastIndexOf('.');
     if (dotIndex < 0) return path;
     return path.substring(0, dotIndex);
