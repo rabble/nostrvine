@@ -778,6 +778,20 @@ class VideoEvent {
   /// Whether this video has any Inspired By attribution.
   bool get hasInspiredBy => inspiredByVideo != null || inspiredByNpub != null;
 
+  /// Hex pubkey of the inspiring creator, resolved from either the
+  /// [inspiredByVideo] a-tag or the [inspiredByNpub] NIP-27 mention.
+  ///
+  /// Returns `null` when there is no inspired-by attribution or the npub
+  /// cannot be decoded.
+  String? get inspiredByCreatorPubkey {
+    if (inspiredByVideo != null) return inspiredByVideo!.creatorPubkey;
+    if (inspiredByNpub != null) {
+      final hex = Nip19.decode(inspiredByNpub!);
+      return hex.isNotEmpty ? hex : null;
+    }
+    return null;
+  }
+
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
   bool get isExpired {

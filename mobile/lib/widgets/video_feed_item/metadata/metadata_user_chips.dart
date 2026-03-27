@@ -6,13 +6,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart' hide LogCategory;
+import 'package:models/models.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
@@ -71,34 +69,13 @@ class MetadataInspiredBySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!video.hasInspiredBy) return const SizedBox.shrink();
-
-    final pubkey = _resolveCreatorPubkey();
-    if (pubkey == null || pubkey.isEmpty) return const SizedBox.shrink();
+    final pubkey = video.inspiredByCreatorPubkey;
+    if (pubkey == null) return const SizedBox.shrink();
 
     return MetadataSection(
       label: 'Inspired by',
       child: _TappableUserChip(pubkey: pubkey),
     );
-  }
-
-  String? _resolveCreatorPubkey() {
-    if (video.inspiredByVideo != null) {
-      return video.inspiredByVideo!.creatorPubkey;
-    }
-    if (video.inspiredByNpub != null) {
-      try {
-        return NostrKeyUtils.decode(video.inspiredByNpub!);
-      } catch (e) {
-        Log.warning(
-          'Failed to decode inspiredByNpub ${video.inspiredByNpub}: $e',
-          name: 'MetadataInspiredBySection',
-          category: LogCategory.ui,
-        );
-        return null;
-      }
-    }
-    return null;
   }
 }
 
