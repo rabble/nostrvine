@@ -1,0 +1,44 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/search_results/view/search_results_view.dart';
+import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
+
+/// Page that creates and wires the search BLoCs, then renders
+/// [SearchResultsView].
+class SearchResultsPage extends ConsumerWidget {
+  const SearchResultsPage({this.initialQuery, super.key});
+
+  /// Optional pre-filled search query from the route.
+  final String? initialQuery;
+
+  /// Base path prefix (used for route matching and normalization skips).
+  static const pathPrefix = '/search-results';
+
+  /// Route path pattern for GoRouter.
+  static const path = '$pathPrefix/:query';
+
+  /// Build a path with the given query.
+  static String pathForQuery(String query) =>
+      '$pathPrefix/${Uri.encodeComponent(query)}';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return BlocProvider(
+      create: (_) => VideoSearchBloc(
+        videosRepository: ref.read(videosRepositoryProvider),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Column(
+          children: [
+            SearchResultsAppBar(initialQuery: initialQuery ?? ''),
+            const Expanded(child: SearchResultsView()),
+          ],
+        ),
+      ),
+    );
+  }
+}

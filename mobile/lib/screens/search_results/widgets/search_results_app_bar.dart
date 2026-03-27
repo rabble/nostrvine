@@ -1,0 +1,103 @@
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+
+/// App bar for the search results screen.
+///
+/// Owns the [TextEditingController] and [FocusNode] lifecycle. Dispatches
+/// [VideoSearchQueryChanged] to [VideoSearchBloc] on text changes.
+class SearchResultsAppBar extends StatefulWidget {
+  const SearchResultsAppBar({required this.initialQuery, super.key});
+
+  /// Pre-filled search text. If empty the field requests focus instead.
+  final String initialQuery;
+
+  @override
+  State<SearchResultsAppBar> createState() => _SearchResultsAppBarState();
+}
+
+class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _focusNode = FocusNode();
+    _controller.addListener(_onSearchChanged);
+
+    if (widget.initialQuery.isNotEmpty) {
+      _controller.text = widget.initialQuery;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focusNode.requestFocus();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_onSearchChanged)
+      ..dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    context.read<VideoSearchBloc>().add(
+      VideoSearchQueryChanged(_controller.text),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          spacing: 8,
+          children: [
+            _BackButton(onTap: () => Navigator.of(context).maybePop()),
+            Expanded(
+              child: DivineSearchBar(
+                controller: _controller,
+                focusNode: _focusNode,
+                hintText: 'Search...',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: VineTheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: VineTheme.outlineMuted, width: 2),
+        ),
+        child: const Icon(
+          Icons.chevron_left,
+          color: VineTheme.whiteText,
+          size: 24,
+        ),
+      ),
+    );
+  }
+}

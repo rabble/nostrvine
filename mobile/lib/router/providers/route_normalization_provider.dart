@@ -8,6 +8,7 @@ import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Watches router location changes and redirects to canonical URLs when needed.
@@ -24,7 +25,8 @@ final routeNormalizationProvider = Provider<void>((ref) {
     if (loc.startsWith(WelcomeScreen.path) ||
         loc.startsWith(NostrConnectScreen.path) ||
         loc.contains('${ResetPasswordScreen.path}?token=') ||
-        loc.contains('${EmailVerificationScreen.path}?')) {
+        loc.contains('${EmailVerificationScreen.path}?') ||
+        loc.startsWith(SearchResultsPage.pathPrefix)) {
       Log.info(
         '🔄 RouteNormalizationProvider: skipping normalization for $loc',
         name: 'RouteNormalizationProvider',

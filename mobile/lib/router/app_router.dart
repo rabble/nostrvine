@@ -51,6 +51,7 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -419,6 +420,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           }
           final decoded = Uri.decodeComponent(tag);
           return HashtagFeedScreen(hashtag: decoded);
+        },
+      ),
+      // SEARCH RESULTS - unified search screen (no bottom nav)
+      GoRoute(
+        path: SearchResultsPage.path,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) {
+          final query = st.pathParameters['query'];
+          final decoded = query != null ? Uri.decodeComponent(query) : '';
+          return SearchResultsPage(initialQuery: decoded);
         },
       ),
 
