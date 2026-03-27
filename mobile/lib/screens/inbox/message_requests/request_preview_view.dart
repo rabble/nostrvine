@@ -92,7 +92,7 @@ class _ProfileContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = profile?.picture;
-    final nip05 = profile?.nip05;
+    final nip05 = profile?.displayNip05;
     final followerCount = profile?.followerCount;
     final videoCount = profile?.videoCount;
 
