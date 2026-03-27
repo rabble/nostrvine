@@ -361,6 +361,9 @@ class TestablePlayerPool extends PlayerPool {
       final evicted = _testPlayers.remove(evictUrl);
       if (evicted != null && !evicted.isDisposed) {
         evicted.recycle();
+        // Mirror real PlayerPool._recycleLru(): await stop() so the surface
+        // is cleared before the recycled player is exposed to the UI.
+        await evicted.player.stop();
         recycled = evicted;
         break;
       }

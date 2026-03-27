@@ -264,7 +264,7 @@ class PlayerPool {
     // Recycle or evict LRU players until there is room.
     PooledPlayer? recycled;
     while (_players.length >= maxPlayers && _lruOrder.isNotEmpty) {
-      recycled = _recycleLru();
+      recycled = await _recycleLru();
       if (recycled != null) break; // Got a reusable player — stop evicting.
     }
 
@@ -304,20 +304,30 @@ class PlayerPool {
       ..add(url);
   }
 
-  /// Removes the LRU entry, fires its eviction callbacks, and returns the
-  /// player for reuse.
+  /// Removes the LRU entry, fires its eviction callbacks, awaits
+  /// `player.stop()`, and returns the player for reuse.
   ///
   /// Returns `null` if the LRU order is empty or the player is already
   /// disposed. In that case the caller must fall back to [createPlayer].
   ///
-  /// Synchronous — no async steps, no yield points.
-  PooledPlayer? _recycleLru() {
+  /// Awaiting `player.stop()` before returning provides a hard ordering
+  /// guarantee: the previous video's media surface is fully cleared before
+  /// [getPlayer] resolves, so callers can safely expose the recycled
+  /// [VideoController] to the UI without risk of stale content.
+  Future<PooledPlayer?> _recycleLru() async {
     if (_lruOrder.isEmpty) return null;
 
     final url = _lruOrder.removeAt(0);
     final player = _players.remove(url);
     if (player == null || player.isDisposed) return null;
     player.recycle();
+    // Await stop() so the surface is cleared before this player is returned
+    // to _loadPlayer(), stored in _loadedPlayers, and exposed via _notifyIndex.
+    try {
+      await player.player.stop();
+    } on Exception {
+      // Ignore — mirrors the same pattern in dispose().
+    }
     return player;
   }
 

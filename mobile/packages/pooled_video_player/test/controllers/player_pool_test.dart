@@ -1,6 +1,8 @@
 // ABOUTME: Tests for PlayerPool controller
 // ABOUTME: Validates singleton pattern, pool operations, and LRU eviction
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -303,6 +305,25 @@ void main() {
           expect(identical(player4, createdPlayers[0]), isTrue);
           expect(createdPlayers.length, equals(3)); // no new player created
         });
+
+        test(
+          'stops recycled player before reuse to clear media surface',
+          () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            final evictedPlayer = createdPlayers[0];
+
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            // stop() must be called so the previous video's last frame is
+            // cleared from the surface before the recycled player is exposed
+            // to the UI — preventing a wrong-frame flash.
+            // ignore: unnecessary_lambdas, chained mock calls need lambda for mocktail
+            verify(() => evictedPlayer.player.stop()).called(1);
+          },
+        );
       });
 
       group('hasPlayer', () {
@@ -656,6 +677,66 @@ void main() {
         expect(identical(results[0], results[1]), isTrue);
         expect(serializedPool.playerCount, equals(1));
       });
+
+      test(
+        'getPlayer does not return until stop() completes on recycled player '
+        '— ordering guarantee prevents wrong-frame flash',
+        () async {
+          // Use a Completer to simulate a slow stop() on the LRU player.
+          // getPlayer() must not resolve until stop() completes, proving
+          // the surface is cleared before the caller can expose the
+          // recycled VideoController to the UI via _notifyIndex.
+          final stopCompleter = Completer<void>();
+          var stopCompleted = false;
+
+          // Track how many players have been created so we can stub only
+          // the first one (the future LRU) with a slow stop().
+          var playerIndex = 0;
+          final orderedPool = _SerializedTestPool(
+            maxPlayers: 2,
+            onCreatePlayer: () {
+              final mock = _createMockPooledPlayer();
+              if (playerIndex == 0) {
+                // Capture the inner Player mock directly (before any
+                // when() call that could confuse mocktail's recording).
+                final innerPlayer = mock.player;
+                // Override stop() on the first (LRU) player to block on
+                // stopCompleter — simulating a slow native surface clear.
+                when(innerPlayer.stop).thenAnswer((_) async {
+                  await stopCompleter.future;
+                  stopCompleted = true;
+                });
+              }
+              playerIndex++;
+              return mock;
+            },
+          );
+          addTearDown(orderedPool.dispose);
+
+          // Fill pool to capacity (maxPlayers=2).
+          await orderedPool.getPlayer('https://example.com/v1.mp4');
+          await orderedPool.getPlayer('https://example.com/v2.mp4');
+
+          // Requesting v3 will recycle v1 (LRU). _recycleLru() awaits
+          // stop() on v1's player before returning.
+          var getPlayerReturned = false;
+          final getFuture = orderedPool
+              .getPlayer('https://example.com/v3.mp4')
+              .then((p) => getPlayerReturned = true);
+
+          // stop() is still blocked — getPlayer() must not have returned.
+          await Future<void>.delayed(Duration.zero);
+          expect(stopCompleted, isFalse);
+          expect(getPlayerReturned, isFalse);
+
+          // Unblock stop() — getPlayer() must now complete.
+          stopCompleter.complete();
+          await getFuture;
+
+          expect(stopCompleted, isTrue);
+          expect(getPlayerReturned, isTrue);
+        },
+      );
     });
   });
 }
