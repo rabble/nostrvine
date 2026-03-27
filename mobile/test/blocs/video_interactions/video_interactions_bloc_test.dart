@@ -911,7 +911,7 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'writes updated count back to repository cache',
+        'does not call repository when updating comment count display',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
@@ -919,12 +919,11 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(12)),
         verify: (_) {
-          verify(
-            () => mockCommentsRepository.updateCachedCommentCount(
-              testEventId,
-              12,
-            ),
-          ).called(1);
+          // Repository cache coherence is now owned by
+          // CommentsRepository.loadComments(), not the BLoC.
+          verifyNever(
+            () => mockCommentsRepository.updateCachedCommentCount(any(), any()),
+          );
         },
       );
     });

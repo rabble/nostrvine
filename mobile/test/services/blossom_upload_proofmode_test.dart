@@ -1,36 +1,46 @@
 // ABOUTME: Tests for BlossomUploadService ProofMode header integration
-// ABOUTME: Verifies ProofMode manifest/signature/attestation headers are included in uploads
-//
-// IMPLEMENTATION REQUIRED: This test file requires the following to be created:
-// - lib/services/proofmode_session_service.dart
-//   - ProofManifest class with toJson() method
-//   - RecordingSegment class
-// - lib/services/proofmode_attestation_service.dart
-//   - DeviceAttestation class
-// - lib/services/proofmode_key_service.dart
-//   - ProofSignature class
-//
-// See docs/PROOFMODE_ARCHITECTURE.md for full specification.
+// ABOUTME: Verifies _addProofModeHeaders correctly handles String and Map
+//          values for pgpSignature, deviceAttestation, and c2pa_manifest_id
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show NativeProofData;
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Mock classes
-class MockAuthService extends Mock implements AuthService {}
+class _MockAuthService extends Mock implements AuthService {}
 
-class MockDio extends Mock implements Dio {}
+class _MockDio extends Mock implements Dio {}
 
-class MockFile extends Mock implements File {}
+class _MockFile extends Mock implements File {}
 
-class MockResponse extends Mock implements Response<dynamic> {}
+class _MockResponse extends Mock implements Response<dynamic> {}
+
+const _testPubkey =
+    '04c106a7b7b1ac0a26f0e2ad22aaa2cfc3263bb7749a165545689282d1975c23';
+
+const _pgpSignatureString =
+    '-----BEGIN PGP SIGNATURE-----\n'
+    'Version: BCPG v1.71\n'
+    '\n'
+    'iQIcBAABCAAGBQJpw5g6AAoJEJf6B+TEST1234\n'
+    '=abcd\n'
+    '-----END PGP SIGNATURE-----\n';
+
+const _deviceAttestationString =
+    'Certificate:\n'
+    '    Data:\n'
+    '        Version: 3 (0x2)\n'
+    '        Serial Number: 1 (0x1)\n'
+    '    Signature Algorithm: ecdsa-with-SHA256\n'
+    '        Issuer: O=TEE, CN=test\n';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,113 +51,366 @@ void main() {
     registerFallbackValue(<String, String>{});
   });
 
-  group('BlossomUploadService ProofMode Integration', () {
+  group(BlossomUploadService, () {
     late BlossomUploadService service;
-    late MockAuthService mockAuthService;
-    late MockDio mockDio;
+    late _MockAuthService mockAuthService;
+    late _MockDio mockDio;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-
-      mockAuthService = MockAuthService();
-      mockDio = MockDio();
-
+      mockAuthService = _MockAuthService();
+      mockDio = _MockDio();
       service = BlossomUploadService(
         authService: mockAuthService,
         dio: mockDio,
       );
-
-      await service.setBlossomEnabled(true);
-      await service.setBlossomServer('https://blossom.divine.video');
     });
 
-    test(
-      'PENDING: ProofMode header tests require ProofManifest implementation',
-      () {
-        // This test requires ProofManifest, RecordingSegment, DeviceAttestation,
-        // and ProofSignature classes to be implemented.
-        //
-        // Tests will verify:
-        // - Includes ProofMode headers when ProofManifest is provided
-        // - Uploads without ProofMode headers when no manifest provided
-        // - X-ProofMode-Manifest header contains base64 encoded manifest
-        // - X-ProofMode-Signature header is present
-        // - X-ProofMode-Attestation header is present
-        expect(true, isTrue, reason: 'Placeholder until implementation exists');
-      },
-    );
+    Options? capturedOptions;
 
-    test(
-      'should fix missing file extension in image upload conflict response',
-      () async {
-        // Arrange
-        const testPublicKey =
-            '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    /// Sets up mocks for a video upload and captures the [Options] passed
+    /// to `dio.put` so tests can inspect the headers.
+    void arrangeUploadMocks() {
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.currentPublicKeyHex,
+      ).thenReturn(_testPubkey);
 
-        when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(
-          () => mockAuthService.currentPublicKeyHex,
-        ).thenReturn(testPublicKey);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (_) async => Event(_testPubkey, 24242, [
+          ['t', 'upload'],
+          ['expiration', '9999999999'],
+          ['size', '3'],
+          [
+            'x',
+            '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81',
+          ],
+        ], 'Upload to Blossom'),
+      );
 
-        when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
-          ),
-        ).thenAnswer(
-          (_) async => Event(testPublicKey, 24242, [
-            ['t', 'upload'],
-          ], 'Upload to Blossom'),
+      final mockResponse = _MockResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.headers).thenReturn(Headers());
+      when(() => mockResponse.data).thenReturn(<String, dynamic>{
+        'url': 'https://media.divine.video/abc123',
+        'sha256': 'abc123',
+        'size': 3,
+        'type': 'video/mp4',
+      });
+
+      when(
+        () => mockDio.put<dynamic>(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedOptions =
+            invocation.namedArguments[const Symbol('options')] as Options?;
+        return mockResponse;
+      });
+    }
+
+    File createMockFile() {
+      final mockFile = _MockFile();
+      when(() => mockFile.path).thenReturn('/test/video.mp4');
+      when(mockFile.existsSync).thenReturn(true);
+      when(
+        mockFile.readAsBytes,
+      ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+      when(
+        mockFile.readAsBytesSync,
+      ).thenReturn(Uint8List.fromList([1, 2, 3]));
+      when(mockFile.lengthSync).thenReturn(3);
+      when(mockFile.openRead).thenAnswer(
+        (_) => Stream.value(Uint8List.fromList([1, 2, 3])),
+      );
+      return mockFile;
+    }
+
+    group('_addProofModeHeaders', () {
+      test(
+        'includes X-ProofMode-Manifest header with base64-encoded manifest',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+            'deviceAttestation': _deviceAttestationString,
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          expect(capturedOptions, isNotNull);
+          final headers = capturedOptions!.headers!;
+          expect(headers, contains('X-ProofMode-Manifest'));
+
+          final decoded = utf8.decode(
+            base64.decode(headers['X-ProofMode-Manifest'] as String),
+          );
+          expect(decoded, equals(manifest));
+        },
+      );
+
+      test(
+        'encodes String pgpSignature as base64 without double-encoding',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          expect(headers, contains('X-ProofMode-Signature'));
+
+          final decoded = utf8.decode(
+            base64.decode(headers['X-ProofMode-Signature'] as String),
+          );
+          expect(decoded, equals(_pgpSignatureString));
+        },
+      );
+
+      test(
+        'encodes String deviceAttestation as base64 without double-encoding',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'deviceAttestation': _deviceAttestationString,
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          expect(headers, contains('X-ProofMode-Attestation'));
+
+          final decoded = utf8.decode(
+            base64.decode(headers['X-ProofMode-Attestation'] as String),
+          );
+          expect(decoded, equals(_deviceAttestationString));
+        },
+      );
+
+      test('encodes Map values as JSON then base64', () async {
+        arrangeUploadMocks();
+        final mockFile = createMockFile();
+
+        final c2paMap = {'id': 'c2pa-123', 'alg': 'sha256'};
+        final manifest = jsonEncode({
+          'videoHash': 'abc123',
+          'c2pa_manifest_id': c2paMap,
+        });
+
+        await service.uploadVideo(
+          description: 'test',
+          videoFile: mockFile,
+          nostrPubkey: _testPubkey,
+          title: 'test',
+          hashtags: const [],
+          proofManifestJson: manifest,
         );
 
-        final mockFile = MockFile();
-        when(() => mockFile.path).thenReturn('/test/image.jpg');
-        when(mockFile.existsSync).thenReturn(true);
-        when(
-          mockFile.readAsBytes,
-        ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
-        when(
-          mockFile.readAsBytesSync,
-        ).thenReturn(Uint8List.fromList([1, 2, 3]));
-        when(mockFile.lengthSync).thenReturn(3);
+        final headers = capturedOptions!.headers!;
+        expect(headers, contains('X-ProofMode-C2PA'));
 
-        // Mock 409 Conflict response (file already exists)
-        final mockResponse = MockResponse();
-        when(() => mockResponse.statusCode).thenReturn(409);
-        when(() => mockResponse.headers).thenReturn(Headers());
-        when(() => mockResponse.data).thenReturn({});
+        final decoded = utf8.decode(
+          base64.decode(headers['X-ProofMode-C2PA'] as String),
+        );
+        final decodedMap = jsonDecode(decoded) as Map<String, dynamic>;
+        expect(decodedMap['id'], equals('c2pa-123'));
+        expect(decodedMap['alg'], equals('sha256'));
+      });
 
-        when(
-          () => mockDio.put(
-            any(),
-            data: any(named: 'data'),
-            options: any(named: 'options'),
-            onSendProgress: any(named: 'onSendProgress'),
-          ),
-        ).thenAnswer((_) async => mockResponse);
+      test(
+        'encodes c2paManifestId from NativeProofData JSON shape',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
 
-        // Act
-        final result = await service.uploadImage(
-          imageFile: mockFile,
-          nostrPubkey: testPublicKey,
+          final manifest = jsonEncode(
+            const NativeProofData(
+              videoHash: 'abc123',
+              c2paManifestId: 'c2pa-test-id',
+            ).toJson(),
+          );
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          expect(headers, contains('X-ProofMode-C2PA'));
+
+          final decoded = utf8.decode(
+            base64.decode(headers['X-ProofMode-C2PA'] as String),
+          );
+          expect(decoded, equals('c2pa-test-id'));
+        },
+      );
+
+      test('omits signature header when pgpSignature is null', () async {
+        arrangeUploadMocks();
+        final mockFile = createMockFile();
+
+        final manifest = jsonEncode({
+          'videoHash': 'abc123',
+          'deviceAttestation': _deviceAttestationString,
+        });
+
+        await service.uploadVideo(
+          description: 'test',
+          videoFile: mockFile,
+          nostrPubkey: _testPubkey,
+          title: 'test',
+          hashtags: const [],
+          proofManifestJson: manifest,
         );
 
-        // Assert
-        expect(result.success, isTrue);
-        // Should include file extension based on MIME type
-        expect(result.cdnUrl, contains('.jpg'));
-        // SHA-256 of bytes [1,2,3]
-        expect(
-          result.cdnUrl,
-          equals(
-            'https://cdn.divine.video/039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81.jpg',
-          ),
+        final headers = capturedOptions!.headers!;
+        expect(headers, isNot(contains('X-ProofMode-Signature')));
+        expect(headers, contains('X-ProofMode-Attestation'));
+      });
+
+      test('omits attestation header when deviceAttestation is null', () async {
+        arrangeUploadMocks();
+        final mockFile = createMockFile();
+
+        final manifest = jsonEncode({
+          'videoHash': 'abc123',
+          'pgpSignature': _pgpSignatureString,
+        });
+
+        await service.uploadVideo(
+          description: 'test',
+          videoFile: mockFile,
+          nostrPubkey: _testPubkey,
+          title: 'test',
+          hashtags: const [],
+          proofManifestJson: manifest,
         );
-      },
-      skip:
-          'Flaky: result.success is false in CI; _createBlossomAuthEvent or '
-          'dio.put mock may need adjustment. See BUD-01 409 handling.',
-    );
+
+        final headers = capturedOptions!.headers!;
+        expect(headers, contains('X-ProofMode-Signature'));
+        expect(headers, isNot(contains('X-ProofMode-Attestation')));
+      });
+
+      test('does not add ProofMode headers when manifest is null', () async {
+        arrangeUploadMocks();
+        final mockFile = createMockFile();
+
+        await service.uploadVideo(
+          description: 'test',
+          videoFile: mockFile,
+          nostrPubkey: _testPubkey,
+          title: 'test',
+          hashtags: const [],
+          proofManifestJson: null,
+        );
+
+        final headers = capturedOptions!.headers!;
+        expect(headers, isNot(contains('X-ProofMode-Manifest')));
+        expect(headers, isNot(contains('X-ProofMode-Signature')));
+        expect(headers, isNot(contains('X-ProofMode-Attestation')));
+      });
+
+      test(
+        'does not fail upload when manifest JSON is malformed',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: '{invalid-json',
+          );
+
+          // Upload should still succeed — ProofMode failure is non-fatal
+          verify(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'all three headers present for complete manifest',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+            'deviceAttestation': _deviceAttestationString,
+            'c2pa_manifest_id': 'c2pa-test-id',
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          expect(headers, contains('X-ProofMode-Manifest'));
+          expect(headers, contains('X-ProofMode-Signature'));
+          expect(headers, contains('X-ProofMode-Attestation'));
+          expect(headers, contains('X-ProofMode-C2PA'));
+        },
+      );
+    });
   });
 }

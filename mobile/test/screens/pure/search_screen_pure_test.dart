@@ -49,6 +49,16 @@ void main() {
       fakeVideoEventService = _FakeVideoEventService();
 
       when(
+        () => mockProfileRepository.searchUsersProgressive(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          sortBy: any(named: 'sortBy'),
+          hasVideos: any(named: 'hasVideos'),
+        ),
+      ).thenAnswer((_) => Stream.value(<UserProfile>[]));
+
+      when(
         () => mockProfileRepository.searchUsers(
           query: any(named: 'query'),
           limit: any(named: 'limit'),

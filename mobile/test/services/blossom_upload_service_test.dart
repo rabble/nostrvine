@@ -72,10 +72,15 @@ void main() {
         expect(retrievedUrl, equals(BlossomUploadService.defaultBlossomServer));
       });
 
-      test('should save and retrieve Blossom enabled state', () async {
-        // Act & Assert - Initially disabled by default (uses Divine's server)
-        expect(await service.isBlossomEnabled(), isFalse);
+      test(
+        'should default to custom Blossom server enabled for new installs',
+        () async {
+          // Act & Assert - New installs should default to allowing non-Divine media servers
+          expect(await service.isBlossomEnabled(), isTrue);
+        },
+      );
 
+      test('should save and retrieve Blossom enabled state', () async {
         // Enable custom Blossom server
         await service.setBlossomEnabled(true);
         expect(await service.isBlossomEnabled(), isTrue);

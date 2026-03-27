@@ -1,5 +1,5 @@
 // ABOUTME: Tests for UserSearchBloc - user search via ProfileRepository
-// ABOUTME: Tests loading states, error handling, debouncing, and pagination
+// ABOUTME: Tests streaming states, error handling, debouncing, and pagination
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,16 +66,18 @@ void main() {
       const debounceDuration = Duration(milliseconds: 400);
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'emits [loading, success] when search succeeds',
+        'emits [searching, searching(results), success] when search succeeds',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
+          ).thenAnswer(
+            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
@@ -86,20 +88,22 @@ void main() {
             query: 'alice',
           ),
           isA<UserSearchState>()
-              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.query, 'query', 'alice')
               .having((s) => s.results.length, 'results.length', 1)
               .having(
                 (s) => s.results.first.displayName,
                 'first result name',
                 'Alice',
-              )
+              ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
               .having((s) => s.offset, 'offset', 1)
               .having((s) => s.hasMore, 'hasMore', false),
         ],
         verify: (_) {
           verify(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: 50,
               sortBy: 'followers',
@@ -113,13 +117,13 @@ void main() {
         'sets hasMore to true when results equal page size',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'test',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => createTestProfiles(50));
+          ).thenAnswer((_) => Stream.value(createTestProfiles(50)));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
@@ -130,24 +134,28 @@ void main() {
             query: 'test',
           ),
           isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.results.length, 'results.length', 50),
+          isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.success)
-              .having((s) => s.results.length, 'results.length', 50)
               .having((s) => s.offset, 'offset', 50)
               .having((s) => s.hasMore, 'hasMore', true),
         ],
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'emits [loading, failure] when search fails',
+        'emits [searching, failure] when search fails',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'error',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenThrow(Exception('Network error'));
+          ).thenAnswer(
+            (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('error')),
@@ -172,7 +180,9 @@ void main() {
         expect: () => [const UserSearchState()],
         verify: (_) {
           verifyNever(
-            () => mockProfileRepository.searchUsers(query: any(named: 'query')),
+            () => mockProfileRepository.searchUsersProgressive(
+              query: any(named: 'query'),
+            ),
           );
         },
       );
@@ -185,7 +195,9 @@ void main() {
         expect: () => [const UserSearchState()],
         verify: (_) {
           verifyNever(
-            () => mockProfileRepository.searchUsers(query: any(named: 'query')),
+            () => mockProfileRepository.searchUsersProgressive(
+              query: any(named: 'query'),
+            ),
           );
         },
       );
@@ -198,7 +210,9 @@ void main() {
         expect: () => [const UserSearchState()],
         verify: (_) {
           verifyNever(
-            () => mockProfileRepository.searchUsers(query: any(named: 'query')),
+            () => mockProfileRepository.searchUsersProgressive(
+              query: any(named: 'query'),
+            ),
           );
         },
       );
@@ -207,14 +221,14 @@ void main() {
         're-searches when same query is submitted again',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'flutter',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) async => [createTestProfile('b' * 64, 'Flutter Dev 2')],
+            (_) => Stream.value([createTestProfile('b' * 64, 'Flutter Dev 2')]),
           );
         },
         build: createBloc,
@@ -232,17 +246,22 @@ void main() {
               .having((s) => s.query, 'query', 'flutter')
               .having((s) => s.results, 'results', isEmpty),
           isA<UserSearchState>()
-              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results, 'results', hasLength(1))
               .having(
                 (s) => s.results.first.displayName,
                 'displayName',
                 'Flutter Dev 2',
               ),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
         ],
         verify: (_) {
           verify(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'flutter',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
@@ -270,7 +289,7 @@ void main() {
             () => mockProfileRepository.countUsersLocally(query: 'alice'),
           ).called(1);
           verifyNever(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: any(named: 'query'),
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
@@ -287,13 +306,15 @@ void main() {
             () => mockProfileRepository.countUsersLocally(query: 'alice'),
           ).thenAnswer((_) async => 2);
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
+          ).thenAnswer(
+            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+          );
         },
         build: createBloc,
         act: (bloc) async {
@@ -309,9 +330,14 @@ void main() {
             query: 'alice',
           ),
           isA<UserSearchState>()
-              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results.length, 'results.length', 1)
               .having((s) => s.resultCount, 'resultCount', 1),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
         ],
       );
 
@@ -343,19 +369,26 @@ void main() {
         'trims whitespace from query',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'bob',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) => Stream.value([]));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('  bob  ')),
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(status: UserSearchStatus.loading, query: 'bob'),
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'bob',
+          ),
+          // Stream yields empty list → searching with resultCount: 0
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.resultCount, 'resultCount', 0),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.success)
               .having((s) => s.query, 'query', 'bob')
@@ -363,7 +396,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'bob',
               limit: 50,
               sortBy: 'followers',
@@ -377,19 +410,25 @@ void main() {
         'returns empty results when no users match',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'xyz',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) => Stream.value([]));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('xyz')),
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(status: UserSearchStatus.loading, query: 'xyz'),
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'xyz',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.resultCount, 'resultCount', 0),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.success)
               .having((s) => s.query, 'query', 'xyz')
@@ -401,13 +440,13 @@ void main() {
         'debounces rapid query changes and only processes final query',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'final',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) => Stream.value([]));
         },
         build: createBloc,
         act: (bloc) {
@@ -425,13 +464,16 @@ void main() {
             query: 'final',
           ),
           isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.resultCount, 'resultCount', 0),
+          isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.success)
               .having((s) => s.query, 'query', 'final'),
         ],
         verify: (_) {
           // Only the final query should be processed due to debounce
           verify(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'final',
               limit: 50,
               sortBy: 'followers',
@@ -439,7 +481,7 @@ void main() {
             ),
           ).called(1);
           verifyNever(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'f',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
@@ -447,7 +489,7 @@ void main() {
             ),
           );
           verifyNever(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'fi',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
@@ -455,7 +497,7 @@ void main() {
             ),
           );
           verifyNever(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'fin',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
@@ -463,7 +505,7 @@ void main() {
             ),
           );
           verifyNever(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'fina',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
@@ -472,6 +514,48 @@ void main() {
           );
         },
       );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'emits progressive results from multi-yield stream',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              // First yield: local cached result
+              [createTestProfile('a' * 64, 'Alice Local')],
+              // Second yield: merged with remote
+              [
+                createTestProfile('a' * 64, 'Alice Local'),
+                createTestProfile('b' * 64, 'Alice Remote'),
+              ],
+            ]),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'alice',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.results.length, 'results.length', 1),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.results.length, 'results.length', 2),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results.length, 'results.length', 2),
+        ],
+      );
     });
 
     group('UserSearchLoadMore', () {
@@ -479,14 +563,14 @@ void main() {
         'appends results and updates offset when loading more',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: 50,
               offset: 50,
               sortBy: 'followers',
               hasVideos: true,
             ),
-          ).thenAnswer((_) async => createTestProfiles(10));
+          ).thenAnswer((_) => Stream.value(createTestProfiles(10)));
         },
         build: createBloc,
         seed: () => UserSearchState(
@@ -510,17 +594,57 @@ void main() {
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'sets hasMore to true when load more returns full page',
+        'uses last emission when stream yields multiple times',
         setUp: () {
+          final partial = createTestProfiles(5);
+          final full = createTestProfiles(10);
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: 50,
               offset: 50,
               sortBy: 'followers',
               hasVideos: true,
             ),
-          ).thenAnswer((_) async => createTestProfiles(50));
+          ).thenAnswer(
+            (_) => Stream.fromIterable([partial, full]),
+          );
+        },
+        build: createBloc,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: createTestProfiles(50),
+          offset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const UserSearchLoadMore()),
+        expect: () => [
+          isA<UserSearchState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.results.length, 'results.length', 60)
+              .having((s) => s.offset, 'offset', 60)
+              .having((s) => s.hasMore, 'hasMore', false),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'sets hasMore to true when load more returns full page',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'alice',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+              hasVideos: true,
+            ),
+          ).thenAnswer((_) => Stream.value(createTestProfiles(50)));
         },
         build: createBloc,
         seed: () => UserSearchState(
@@ -584,14 +708,16 @@ void main() {
         'resets isLoadingMore on failure',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: 50,
               offset: 50,
               sortBy: 'followers',
               hasVideos: true,
             ),
-          ).thenThrow(Exception('Network error'));
+          ).thenAnswer(
+            (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+          );
         },
         build: createBloc,
         seed: () => UserSearchState(
@@ -618,16 +744,6 @@ void main() {
     group('UserSearchCleared', () {
       blocTest<UserSearchBloc, UserSearchState>(
         'resets to initial state',
-        setUp: () {
-          when(
-            () => mockProfileRepository.searchUsers(
-              query: 'alice',
-              limit: any(named: 'limit'),
-              sortBy: any(named: 'sortBy'),
-              hasVideos: any(named: 'hasVideos'),
-            ),
-          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
-        },
         build: createBloc,
         seed: () => UserSearchState(
           status: UserSearchStatus.success,
@@ -647,13 +763,13 @@ void main() {
         'passes hasVideos: false to profileRepository when configured',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'test',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) => Stream.value([]));
         },
         build: () => UserSearchBloc(
           profileRepository: mockProfileRepository,
@@ -663,7 +779,7 @@ void main() {
         wait: debounceDuration,
         verify: (_) {
           verify(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'test',
               limit: 50,
               sortBy: 'followers',
@@ -676,13 +792,13 @@ void main() {
         'passes hasVideos: false to profileRepository on load more',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: 50,
               offset: 50,
               sortBy: 'followers',
             ),
-          ).thenAnswer((_) async => createTestProfiles(10));
+          ).thenAnswer((_) => Stream.value(createTestProfiles(10)));
         },
         build: () => UserSearchBloc(
           profileRepository: mockProfileRepository,
@@ -698,7 +814,7 @@ void main() {
         act: (bloc) => bloc.add(const UserSearchLoadMore()),
         verify: (_) {
           verify(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: 50,
               offset: 50,
@@ -712,20 +828,20 @@ void main() {
         'defaults hasVideos to true when not specified',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'test',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) => Stream.value([]));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
         wait: debounceDuration,
         verify: (_) {
           verify(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'test',
               limit: 50,
               sortBy: 'followers',
@@ -744,21 +860,25 @@ void main() {
         'fails',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
+          ).thenAnswer(
+            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+          );
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'error',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenThrow(Exception('Network error'));
+          ).thenAnswer(
+            (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+          );
         },
         build: createBloc,
         act: (bloc) async {
@@ -773,8 +893,13 @@ void main() {
             query: 'alice',
           ),
           isA<UserSearchState>()
-              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results.length, 'results.length', 1),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.query, 'query', 'error')
@@ -793,25 +918,27 @@ void main() {
         'replaces previous results when a new query succeeds',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
+          ).thenAnswer(
+            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+          );
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'bob',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) => Stream.value([
               createTestProfile('b' * 64, 'Bob'),
               createTestProfile('c' * 64, 'Bobby'),
-            ],
+            ]),
           );
         },
         build: createBloc,
@@ -827,24 +954,34 @@ void main() {
             query: 'alice',
           ),
           isA<UserSearchState>()
-              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results.length, 'results.length', 1)
               .having(
                 (s) => s.results.first.displayName,
                 'first result',
                 'Alice',
               ),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.query, 'query', 'bob'),
           isA<UserSearchState>()
-              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results.length, 'results.length', 2)
               .having(
                 (s) => s.results.first.displayName,
                 'first result',
                 'Bob',
               ),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
         ],
       );
     });
@@ -856,13 +993,15 @@ void main() {
         'succeeds without errors when feedTracker is null',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
+            () => mockProfileRepository.searchUsersProgressive(
               query: 'alice',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
+          ).thenAnswer(
+            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+          );
         },
         build: () => UserSearchBloc(profileRepository: mockProfileRepository),
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
@@ -873,8 +1012,13 @@ void main() {
             query: 'alice',
           ),
           isA<UserSearchState>()
-              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results.length, 'results.length', 1),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
         ],
       );
     });
@@ -962,13 +1106,15 @@ void main() {
         'markFeedDisplayed on success',
         setUp: () {
           when(
-            () => mockRepo.searchUsers(
+            () => mockRepo.searchUsersProgressive(
               query: 'alice',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
+          ).thenAnswer(
+            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+          );
         },
         build: createBlocWithTracker,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
@@ -988,13 +1134,15 @@ void main() {
         'calls trackFeedError on failure',
         setUp: () {
           when(
-            () => mockRepo.searchUsers(
+            () => mockRepo.searchUsersProgressive(
               query: 'error',
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenThrow(Exception('Network error'));
+          ).thenAnswer(
+            (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+          );
         },
         build: createBlocWithTracker,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('error')),

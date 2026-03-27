@@ -22,7 +22,7 @@ class VideoClipThumbnailCard extends StatefulWidget {
     required this.onLongPress,
     this.isSelected = false,
     this.disabled = false,
-    this.showDurationBadge = false,
+    this.showDurationBadge = true,
     super.key,
   });
 

@@ -99,16 +99,16 @@ void main() {
       testWidgets('shows loading indicator when search is in progress', (
         tester,
       ) async {
-        // Use a completer to control when the search completes
-        final completer = Completer<List<UserProfile>>();
+        // Use a StreamController to control when results arrive
+        final controller = StreamController<List<UserProfile>>();
         when(
-          () => mockProfileRepo.searchUsers(
+          () => mockProfileRepo.searchUsersProgressive(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
           ),
-        ).thenAnswer((_) => completer.future);
+        ).thenAnswer((_) => controller.stream);
 
         await openSheet(tester);
 
@@ -119,8 +119,9 @@ void main() {
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        // Complete the future to avoid pending timer errors
-        completer.complete([]);
+        // Close the stream to avoid pending timer errors
+        controller.add([]);
+        await controller.close();
         await tester.pumpAndSettle();
       });
 
@@ -129,14 +130,14 @@ void main() {
       ) async {
         final pubkey = 'b' * 64;
         when(
-          () => mockProfileRepo.searchUsers(
+          () => mockProfileRepo.searchUsersProgressive(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
           ),
         ).thenAnswer(
-          (_) async => [
+          (_) => Stream.value([
             UserProfile(
               pubkey: pubkey,
               displayName: 'Bob',
@@ -145,7 +146,7 @@ void main() {
               eventId: 'event-$pubkey',
               rawData: const {'display_name': 'Bob'},
             ),
-          ],
+          ]),
         );
 
         await openSheet(tester);
@@ -161,13 +162,13 @@ void main() {
         'shows "No users found" when search succeeds with empty results',
         (tester) async {
           when(
-            () => mockProfileRepo.searchUsers(
+            () => mockProfileRepo.searchUsersProgressive(
               query: any(named: 'query'),
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) => Stream.value([]));
 
           await openSheet(tester);
 
@@ -181,13 +182,15 @@ void main() {
 
       testWidgets('shows "Search failed" when search fails', (tester) async {
         when(
-          () => mockProfileRepo.searchUsers(
+          () => mockProfileRepo.searchUsersProgressive(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
           ),
-        ).thenThrow(Exception('Network error'));
+        ).thenAnswer(
+          (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+        );
 
         await openSheet(tester);
 
@@ -202,13 +205,13 @@ void main() {
         tester,
       ) async {
         when(
-          () => mockProfileRepo.searchUsers(
+          () => mockProfileRepo.searchUsersProgressive(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer((_) => Stream.value([]));
 
         await openSheet(tester);
 
@@ -288,12 +291,12 @@ void main() {
         'creates UserSearchBloc with hasVideos: false (regression guard)',
         (tester) async {
           when(
-            () => mockProfileRepo.searchUsers(
+            () => mockProfileRepo.searchUsersProgressive(
               query: any(named: 'query'),
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) => Stream.value([]));
 
           await openSheet(tester);
 
@@ -302,10 +305,10 @@ void main() {
           await tester.pump(const Duration(milliseconds: 400));
           await tester.pumpAndSettle();
 
-          // Verify searchUsers was called WITHOUT hasVideos parameter
+          // Verify searchUsersProgressive was called WITHOUT hasVideos
           // (hasVideos: false means the parameter is not passed to the API)
           verify(
-            () => mockProfileRepo.searchUsers(
+            () => mockProfileRepo.searchUsersProgressive(
               query: 'test',
               limit: 50,
               sortBy: 'followers',

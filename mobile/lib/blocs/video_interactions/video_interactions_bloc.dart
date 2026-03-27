@@ -289,10 +289,9 @@ class VideoInteractionsBloc
     VideoInteractionsCommentCountUpdated event,
     Emitter<VideoInteractionsState> emit,
   ) {
-    _commentsRepository.updateCachedCommentCount(
-      _eventId,
-      event.commentCount,
-    );
+    // Only update the BLoC's own display state. Repository cache coherence is
+    // handled automatically by CommentsRepository.loadComments(), which updates
+    // _commentCountCache with the authoritative count on every full load.
     emit(state.copyWith(commentCount: event.commentCount));
   }
 }

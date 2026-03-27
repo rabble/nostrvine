@@ -6,17 +6,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/video_category.dart';
+import 'package:openvine/repositories/categories_repository.dart';
 
 part 'categories_event.dart';
 part 'categories_state.dart';
 
 /// BLoC for video categories.
 ///
-/// Fetches category list from the Funnelcake REST API and manages
-/// loading videos for a selected category with pagination.
+/// Fetches the category list via [CategoriesRepository] (which owns the
+/// in-memory TTL cache) and manages loading videos for a selected category
+/// with pagination.
 class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
-  CategoriesBloc({required FunnelcakeApiClient funnelcakeApiClient})
-    : _apiClient = funnelcakeApiClient,
+  CategoriesBloc({required CategoriesRepository categoriesRepository})
+    : _categoriesRepository = categoriesRepository,
+      _apiClient = categoriesRepository.apiClient,
       super(const CategoriesState()) {
     on<CategoriesLoadRequested>(_onLoadRequested);
     on<CategorySelected>(_onCategorySelected);
@@ -25,6 +28,7 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     on<CategoryDeselected>(_onDeselected);
   }
 
+  final CategoriesRepository _categoriesRepository;
   final FunnelcakeApiClient _apiClient;
 
   Future<void> _onLoadRequested(
@@ -36,29 +40,12 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     emit(state.copyWith(categoriesStatus: CategoriesStatus.loading));
 
     try {
-      final categoriesJson = await _apiClient.getCategories(limit: 100);
-      final categories = categoriesJson
-          .map(VideoCategory.fromJson)
-          .where((c) => c.name.isNotEmpty && c.videoCount > 0)
-          .toList();
-      final indexedCategories = categories.indexed.toList()
-        ..sort((left, right) {
-          final featuredComparison = left.$2.featuredRank.compareTo(
-            right.$2.featuredRank,
-          );
-          if (featuredComparison != 0) {
-            return featuredComparison;
-          }
-          return left.$1.compareTo(right.$1);
-        });
-      final orderedCategories = indexedCategories
-          .map((entry) => entry.$2)
-          .toList();
+      final categories = await _categoriesRepository.getCategories();
 
       emit(
         state.copyWith(
           categoriesStatus: CategoriesStatus.loaded,
-          categories: orderedCategories,
+          categories: categories,
         ),
       );
     } on FunnelcakeException catch (e) {

@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
 import 'package:openvine/models/video_category.dart';
-import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/widgets/categories/category_visuals.dart';
 
@@ -16,11 +16,11 @@ class CategoriesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final apiClient = ref.watch(funnelcakeApiClientProvider);
+    final categoriesRepository = ref.watch(categoriesRepositoryProvider);
 
     return BlocProvider(
       create: (_) =>
-          CategoriesBloc(funnelcakeApiClient: apiClient)
+          CategoriesBloc(categoriesRepository: categoriesRepository)
             ..add(const CategoriesLoadRequested()),
       child: BlocBuilder<CategoriesBloc, CategoriesState>(
         builder: (context, state) {
