@@ -12,6 +12,7 @@ class SearchResultsView extends StatelessWidget {
       child: CustomScrollView(
         slivers: [
           PeopleSection(),
+          TagsSection(),
           VideosSection(),
         ],
       ),
