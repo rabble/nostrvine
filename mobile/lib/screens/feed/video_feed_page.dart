@@ -656,10 +656,11 @@ class _PooledVideoFeedItemContent extends StatefulWidget {
 
 class _PooledVideoFeedItemContentState
     extends State<_PooledVideoFeedItemContent> {
-  final _heartTrigger = ValueNotifier<int>(0);
+  final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
+  int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
 
-  void _handleDoubleTapLike() {
+  void _handleDoubleTapLike(TapDownDetails details) {
     final hasContentWarning = shouldShowContentWarningOverlay(
       contentWarningLabels: widget.video.contentWarningLabels,
       warnLabels: widget.video.warnLabels,
@@ -672,8 +673,11 @@ class _PooledVideoFeedItemContentState
       bloc.add(const VideoInteractionsLikeToggled());
     }
 
-    // Always show heart animation (even if already liked)
-    _heartTrigger.value++;
+    // Always show heart animation at tap position (even if already liked)
+    _heartTrigger.value = (
+      offset: details.localPosition,
+      id: ++_heartTriggerId,
+    );
   }
 
   @override
@@ -725,7 +729,9 @@ class _PooledVideoFeedItemContentState
                 _contentWarningRevealed = true;
               },
             ),
-            DoubleTapHeartOverlay(trigger: _heartTrigger),
+            Positioned.fill(
+              child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+            ),
             if (!video.isFromDivineServer)
               _SlowExternalVideoOverlay(index: widget.index),
           ],

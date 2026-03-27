@@ -651,10 +651,11 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
 
 class _PooledFullscreenItemContentState
     extends ConsumerState<_PooledFullscreenItemContent> {
-  final _heartTrigger = ValueNotifier<int>(0);
+  final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
+  int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
 
-  void _handleDoubleTapLike() {
+  void _handleDoubleTapLike(TapDownDetails details) {
     final showWarning = shouldShowContentWarningOverlay(
       contentWarningLabels: widget.video.contentWarningLabels,
       warnLabels: widget.video.warnLabels,
@@ -667,8 +668,11 @@ class _PooledFullscreenItemContentState
       bloc.add(const VideoInteractionsLikeToggled());
     }
 
-    // Always show heart animation (even if already liked)
-    _heartTrigger.value++;
+    // Always show heart animation at tap position (even if already liked)
+    _heartTrigger.value = (
+      offset: details.localPosition,
+      id: ++_heartTriggerId,
+    );
   }
 
   @override
@@ -771,7 +775,9 @@ class _PooledFullscreenItemContentState
                     );
                   },
                 ),
-                DoubleTapHeartOverlay(trigger: _heartTrigger),
+                Positioned.fill(
+                  child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                ),
               ],
             ),
           );

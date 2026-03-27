@@ -129,7 +129,7 @@ void main() {
       bool enableTapToPause = false,
       bool isActive = true,
       VoidCallback? onTap,
-      VoidCallback? onDoubleTap,
+      ValueChanged<TapDownDetails>? onDoubleTap,
     }) {
       return MaterialApp(
         home: Scaffold(
@@ -633,7 +633,7 @@ void main() {
       testWidgets(
         'gesture detector added when onDoubleTap provided',
         (tester) async {
-          await tester.pumpWidget(buildWidget(onDoubleTap: () {}));
+          await tester.pumpWidget(buildWidget(onDoubleTap: (_) {}));
 
           expect(find.byType(GestureDetector), findsOneWidget);
         },
@@ -645,7 +645,7 @@ void main() {
         (tester) async {
           // Default state has no videoController (loading)
           indexNotifiers[0] = ValueNotifier(const VideoIndexState());
-          await tester.pumpWidget(buildWidget(onDoubleTap: () {}));
+          await tester.pumpWidget(buildWidget(onDoubleTap: (_) {}));
 
           expect(find.byType(GestureDetector), findsNothing);
         },
@@ -654,10 +654,10 @@ void main() {
       testWidgets('double tap calls onDoubleTap when provided', (
         tester,
       ) async {
-        var doubleTapped = false;
+        TapDownDetails? receivedDetails;
 
         await tester.pumpWidget(
-          buildWidget(onDoubleTap: () => doubleTapped = true),
+          buildWidget(onDoubleTap: (details) => receivedDetails = details),
         );
 
         final gesture = find.byType(GestureDetector);
@@ -666,19 +666,19 @@ void main() {
         await tester.tap(gesture);
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(doubleTapped, isTrue);
+        expect(receivedDetails, isNotNull);
       });
 
       testWidgets(
         'onDoubleTap and onTap coexist on same gesture detector',
         (tester) async {
           var tapped = false;
-          var doubleTapped = false;
+          TapDownDetails? receivedDetails;
 
           await tester.pumpWidget(
             buildWidget(
               onTap: () => tapped = true,
-              onDoubleTap: () => doubleTapped = true,
+              onDoubleTap: (details) => receivedDetails = details,
             ),
           );
 
@@ -691,7 +691,7 @@ void main() {
           await tester.tap(gesture);
           await tester.pump(const Duration(milliseconds: 350));
 
-          expect(doubleTapped, isTrue);
+          expect(receivedDetails, isNotNull);
           expect(tapped, isFalse);
         },
       );

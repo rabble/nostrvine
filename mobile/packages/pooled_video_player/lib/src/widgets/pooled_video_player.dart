@@ -82,8 +82,8 @@ class PooledVideoPlayer extends StatelessWidget {
   /// Custom tap handler.
   final VoidCallback? onTap;
 
-  /// Custom double-tap handler.
-  final VoidCallback? onDoubleTap;
+  /// Custom double-tap handler with tap position details.
+  final ValueChanged<TapDownDetails>? onDoubleTap;
 
   void _handleTap(VideoFeedController ctrl) {
     if (onTap != null) {
@@ -157,7 +157,7 @@ class PooledVideoPlayer extends StatelessWidget {
             onTap: onTap != null || enableTapToPause
                 ? () => _handleTap(feedController)
                 : null,
-            onDoubleTap: onDoubleTap,
+            onDoubleTapDown: onDoubleTap,
             child: content,
           );
         }

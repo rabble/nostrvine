@@ -1,9 +1,15 @@
 // ABOUTME: Animated heart overlay shown on double-tap-to-like gesture.
 // ABOUTME: Uses AnimationController with Interval-based scale and opacity
-// ABOUTME: animations. Triggered via a Listenable (typically ValueNotifier).
+// ABOUTME: animations. Triggered via a ValueNotifier<HeartTrigger?>.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+
+/// Data carried by a double-tap heart trigger.
+///
+/// Pairs the tap [offset] with a unique [id] so that consecutive taps at
+/// the same position still notify listeners.
+typedef HeartTrigger = ({Offset offset, int id});
 
 /// Animation durations for the double-tap heart.
 abstract class _HeartAnimation {
@@ -16,18 +22,25 @@ abstract class _HeartAnimation {
   static const fadeStart = 0.6;
 }
 
+/// Size of the heart icon in logical pixels.
+const _heartSize = 120.0;
+
 /// Animated heart overlay that appears on double-tap-to-like.
 ///
 /// Listens to [trigger] and starts a scale-up + fade-out animation each time
-/// the trigger notifies. Wraps itself in [IgnorePointer] so it never consumes
-/// tap events.
+/// the trigger notifies. The heart is positioned at the tap location.
+/// Wraps itself in [IgnorePointer] so it never consumes tap events.
+///
+/// Must be placed inside a [Positioned.fill] (or equivalent) so that the
+/// internal [Stack] + [Positioned] can lay out correctly.
 class DoubleTapHeartOverlay extends StatefulWidget {
   const DoubleTapHeartOverlay({required this.trigger, super.key});
 
-  /// A [Listenable] that triggers the animation when it notifies.
+  /// A [ValueNotifier] that triggers the animation when it notifies.
   ///
-  /// Typically a `ValueNotifier<int>` incremented on each double-tap.
-  final Listenable trigger;
+  /// Set to a [HeartTrigger] with the tap offset and a unique id on each
+  /// double-tap.
+  final ValueNotifier<HeartTrigger?> trigger;
 
   @override
   State<DoubleTapHeartOverlay> createState() => _DoubleTapHeartOverlayState();
@@ -39,6 +52,7 @@ class _DoubleTapHeartOverlayState extends State<DoubleTapHeartOverlay>
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _opacityAnimation;
   bool _visible = false;
+  Offset? _position;
 
   @override
   void initState() {
@@ -91,6 +105,9 @@ class _DoubleTapHeartOverlayState extends State<DoubleTapHeartOverlay>
   }
 
   void _onTrigger() {
+    final value = widget.trigger.value;
+    if (value == null) return;
+    _position = value.offset;
     setState(() => _visible = true);
     _controller.forward(from: 0);
   }
@@ -108,32 +125,27 @@ class _DoubleTapHeartOverlayState extends State<DoubleTapHeartOverlay>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
-          if (!_visible) return const SizedBox.shrink();
-          return Opacity(
-            opacity: _opacityAnimation.value,
-            child: Transform.scale(
-              scale: _scaleAnimation.value,
-              child: child,
-            ),
+          if (!_visible || _position == null) return const SizedBox.shrink();
+          return Stack(
+            children: [
+              Positioned(
+                left: _position!.dx - _heartSize / 2,
+                top: _position!.dy - _heartSize / 2,
+                child: Opacity(
+                  opacity: _opacityAnimation.value,
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: child,
+                  ),
+                ),
+              ),
+            ],
           );
         },
-        child: Center(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: VineTheme.backgroundColor.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: const DivineIcon(
-              icon: DivineIconName.heartDuo,
-              size: 120,
-              color: VineTheme.likeRed,
-            ),
-          ),
+        child: const DivineIcon(
+          icon: DivineIconName.heartDuo,
+          size: _heartSize,
+          color: VineTheme.likeRed,
         ),
       ),
     );
