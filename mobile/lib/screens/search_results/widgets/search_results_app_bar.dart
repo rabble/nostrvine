@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 
 /// App bar for the search results screen.
@@ -47,9 +48,9 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
   }
 
   void _onSearchChanged() {
-    context.read<VideoSearchBloc>().add(
-      VideoSearchQueryChanged(_controller.text),
-    );
+    final query = _controller.text;
+    context.read<VideoSearchBloc>().add(VideoSearchQueryChanged(query));
+    context.read<UserSearchBloc>().add(UserSearchQueryChanged(query));
   }
 
   @override

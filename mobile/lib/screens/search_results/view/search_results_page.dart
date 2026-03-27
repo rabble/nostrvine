@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/search_results/view/search_results_view.dart';
@@ -26,10 +27,19 @@ class SearchResultsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocProvider(
-      create: (_) => VideoSearchBloc(
-        videosRepository: ref.read(videosRepositoryProvider),
-      ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => VideoSearchBloc(
+            videosRepository: ref.read(videosRepositoryProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => UserSearchBloc(
+            profileRepository: ref.read(profileRepositoryProvider)!,
+          ),
+        ),
+      ],
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Column(
