@@ -15,7 +15,7 @@ class VideoEditorConstants {
   /// Prefix key used to identify drafts being published in storage.
   static String publishPrefixId = 'draft_publish';
 
-  /// Task ID used to identify the FFmpeg merge operation when rendering
+  /// Task ID used to identify the merge operation when rendering
   /// multiple clips into a single video.
   static String renderMergeTaskId = 'Divine_Editor_Merger';
 
