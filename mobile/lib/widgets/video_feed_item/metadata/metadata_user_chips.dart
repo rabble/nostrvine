@@ -4,10 +4,10 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/providers/video_reposters_provider.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -15,6 +15,7 @@ import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 
 /// Creator section showing the video author as a tappable chip.
 class MetadataCreatorSection extends StatelessWidget {
@@ -103,28 +104,32 @@ class MetadataInspiredBySection extends StatelessWidget {
 
 /// Reposted-by section showing reposter user chips.
 ///
-/// Fetches reposter pubkeys from the relay via [videoRepostersProvider] and
-/// merges with any pre-populated [VideoEvent.reposterPubkeys] from feed
-/// consolidation. Returns [SizedBox.shrink] when no reposters are found.
-class MetadataRepostedBySection extends ConsumerWidget {
+/// Reads reposter pubkeys from [VideoRepostersCubit] (provided by the
+/// metadata sheet) and merges with any pre-populated
+/// [VideoEvent.reposterPubkeys] from feed consolidation.
+/// Returns [SizedBox.shrink] when no reposters are found.
+class MetadataRepostedBySection extends StatelessWidget {
   const MetadataRepostedBySection({required this.video, super.key});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final repostersAsync = ref.watch(videoRepostersProvider(video.id));
-
-    return repostersAsync.when(
-      data: (relayPubkeys) {
+  Widget build(BuildContext context) {
+    return BlocBuilder<VideoRepostersCubit, VideoRepostersState>(
+      builder: (context, state) {
         final allPubkeys = {
           ...?video.reposterPubkeys,
-          ...relayPubkeys,
+          ...state.pubkeys,
         }.toList();
+
+        if (state.isLoading && allPubkeys.isEmpty) {
+          return _RepostedByContent(
+            pubkeys: video.reposterPubkeys ?? [],
+          );
+        }
+
         return _RepostedByContent(pubkeys: allPubkeys);
       },
-      loading: () => _RepostedByContent(pubkeys: video.reposterPubkeys ?? []),
-      error: (_, _) => _RepostedByContent(pubkeys: video.reposterPubkeys ?? []),
     );
   }
 }

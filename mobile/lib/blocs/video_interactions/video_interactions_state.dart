@@ -76,6 +76,11 @@ class VideoInteractionsState extends Equatable {
   /// Error that occurred, if any.
   final VideoInteractionsError? error;
 
+  /// Whether interaction counts are still loading.
+  bool get isLoading =>
+      status == VideoInteractionsStatus.initial ||
+      status == VideoInteractionsStatus.loading;
+
   /// Whether counts have been fetched.
   bool get hasLoadedCounts => likeCount != null;
 

@@ -794,6 +794,10 @@ class VideoEvent {
   /// Total likes combining original Vine likes and live Nostr reactions.
   int get totalLikes => (originalLikes ?? 0) + (nostrLikeCount ?? 0);
 
+  /// Total loops combining archived Vine loops and live diVine views.
+  int get totalLoops =>
+      (originalLoops ?? 0) + (int.tryParse(rawTags['views'] ?? '') ?? 0);
+
   /// Returns true if this video has an audio reference (Kind 1063).
   bool get hasAudioReference => audioEventId != null;
 
@@ -862,6 +866,12 @@ class VideoEvent {
   bool get isOriginalVine {
     return rawTags['platform'] == 'vine';
   }
+
+  /// All hashtags including the synthetic "classic" tag for original Vines.
+  List<String> get allHashtags => [
+    if (isOriginalVine) 'classic',
+    ...hashtags,
+  ];
 
   /// Vintage recovered Vine: original Vine metrics plus a pre-shutdown date.
   ///

@@ -28,12 +28,7 @@ class MetadataTagsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // "Classic" is treated as a tag per design spec.
-    final allHashtags = [
-      if (video.isOriginalVine) 'classic',
-      ...video.hashtags,
-    ];
-
+    final allHashtags = video.allHashtags;
     final hasCategories = video.categories.isNotEmpty;
     final hasHashtags = allHashtags.isNotEmpty;
 

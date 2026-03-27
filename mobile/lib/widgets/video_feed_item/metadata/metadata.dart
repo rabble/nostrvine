@@ -7,3 +7,4 @@ export 'metadata_stats_row.dart';
 export 'metadata_tags_section.dart';
 export 'metadata_user_chips.dart';
 export 'metadata_verification_section.dart';
+export 'video_reposters_cubit.dart';

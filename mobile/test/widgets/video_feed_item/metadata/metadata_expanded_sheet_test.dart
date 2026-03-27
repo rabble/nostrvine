@@ -14,7 +14,6 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/providers/video_reposters_provider.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -22,10 +21,13 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dar
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
+
+class _MockVideoRepostersCubit extends Mock implements VideoRepostersCubit {}
 
 // Stable 64-char hex pubkeys for deterministic tests.
 const _creatorPubkey =
@@ -91,6 +93,7 @@ const _testAudio = AudioEvent(
 
 void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
+  late _MockVideoRepostersCubit mockRepostersCubit;
 
   setUp(() {
     mockInteractionsBloc = _MockVideoInteractionsBloc();
@@ -105,19 +108,40 @@ void main() {
         repostCount: 15,
       ),
     );
+
+    mockRepostersCubit = _MockVideoRepostersCubit();
+    when(
+      () => mockRepostersCubit.stream,
+    ).thenAnswer((_) => const Stream.empty());
+    when(() => mockRepostersCubit.state).thenReturn(
+      const VideoRepostersState(isLoading: false),
+    );
+    when(() => mockRepostersCubit.close()).thenAnswer((_) async {});
   });
 
   /// Pumps a metadata widget inside the required provider tree.
   Widget buildSubject({
     required Widget child,
     List<Override> providerOverrides = const [],
+    VideoRepostersState? repostersState,
   }) {
+    if (repostersState != null) {
+      when(() => mockRepostersCubit.state).thenReturn(repostersState);
+    }
+
     return UncontrolledProviderScope(
       container: ProviderContainer(overrides: providerOverrides),
       child: MaterialApp(
         home: Scaffold(
-          body: BlocProvider<VideoInteractionsBloc>.value(
-            value: mockInteractionsBloc,
+          body: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+              ),
+              BlocProvider<VideoRepostersCubit>.value(
+                value: mockRepostersCubit,
+              ),
+            ],
             child: child,
           ),
         ),
@@ -443,10 +467,11 @@ void main() {
 
       await tester.pumpWidget(
         buildSubject(
+          repostersState: const VideoRepostersState(
+            pubkeys: [_reposterPubkey],
+            isLoading: false,
+          ),
           providerOverrides: [
-            videoRepostersProvider(video.id).overrideWith(
-              (ref) async => [_reposterPubkey],
-            ),
             fetchUserProfileProvider(_reposterPubkey).overrideWith(
               (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
             ),
@@ -466,9 +491,6 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           providerOverrides: [
-            videoRepostersProvider(video.id).overrideWith(
-              (ref) async => <String>[],
-            ),
             fetchUserProfileProvider(_reposterPubkey).overrideWith(
               (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
             ),
@@ -489,11 +511,6 @@ void main() {
 
       await tester.pumpWidget(
         buildSubject(
-          providerOverrides: [
-            videoRepostersProvider(video.id).overrideWith(
-              (ref) async => <String>[],
-            ),
-          ],
           child: MetadataRepostedBySection(video: video),
         ),
       );
@@ -605,6 +622,10 @@ void main() {
 
       await tester.pumpWidget(
         buildSubject(
+          repostersState: const VideoRepostersState(
+            pubkeys: [_reposterPubkey],
+            isLoading: false,
+          ),
           providerOverrides: [
             fetchUserProfileProvider(_creatorPubkey).overrideWith(
               (ref) async => _makeProfile(_creatorPubkey, 'Sebastian Heit'),
@@ -618,9 +639,6 @@ void main() {
             ),
             fetchUserProfileProvider(_reposterPubkey).overrideWith(
               (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
-            ),
-            videoRepostersProvider(video.id).overrideWith(
-              (ref) async => [_reposterPubkey],
             ),
             soundByIdProvider(_audioEventId).overrideWith(
               (ref) async => _testAudio,
@@ -696,9 +714,6 @@ void main() {
           providerOverrides: [
             fetchUserProfileProvider(_creatorPubkey).overrideWith(
               (ref) async => _makeProfile(_creatorPubkey, 'Test User'),
-            ),
-            videoRepostersProvider(video.id).overrideWith(
-              (ref) async => <String>[],
             ),
           ],
           child: MetadataExpandedSheet(video: video),

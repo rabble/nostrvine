@@ -24,9 +24,7 @@ class MetadataStatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
       builder: (context, state) {
-        final isLoading =
-            state.status == VideoInteractionsStatus.initial ||
-            state.status == VideoInteractionsStatus.loading;
+        final isLoading = state.isLoading;
 
         return DecoratedBox(
           decoration: const BoxDecoration(
@@ -50,14 +48,7 @@ class MetadataStatsRow extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _StatColumn(
-                        // Sum archived (Classic Vine) and live (diVine)
-                        // loops to match the count on the video overlay.
-                        count:
-                            (video.originalLoops ?? 0) +
-                            (int.tryParse(
-                                  video.rawTags['views'] ?? '',
-                                ) ??
-                                0),
+                        count: video.totalLoops,
                         label: 'Loops',
                         isLoading: false,
                       ),

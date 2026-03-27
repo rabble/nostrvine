@@ -5,8 +5,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -14,6 +16,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dar
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 
 /// Expanded metadata bottom sheet for a video.
 ///
@@ -34,12 +37,27 @@ class MetadataExpandedSheet extends StatelessWidget {
   /// Captures the [VideoInteractionsBloc] from the caller's [context] and
   /// re-provides it inside the modal, since [showModalBottomSheet] creates
   /// a separate widget tree without access to the video feed's providers.
+  ///
+  /// Creates a [VideoRepostersCubit] to fetch reposter pubkeys from the
+  /// relay. The cubit is scoped to the modal and auto-closed on dismiss.
   static void show(BuildContext context, VideoEvent video) {
     final interactionsBloc = context.read<VideoInteractionsBloc>();
+    final container = ProviderScope.containerOf(context, listen: false);
+    final videoEventService = container.read(videoEventServiceProvider);
 
     context.showVideoPausingVineBottomSheet<void>(
-      builder: (context) => BlocProvider<VideoInteractionsBloc>.value(
-        value: interactionsBloc,
+      builder: (context) => MultiBlocProvider(
+        providers: [
+          BlocProvider<VideoInteractionsBloc>.value(
+            value: interactionsBloc,
+          ),
+          BlocProvider<VideoRepostersCubit>(
+            create: (_) => VideoRepostersCubit(
+              videoEventService: videoEventService,
+              videoId: video.id,
+            ),
+          ),
+        ],
         child: MetadataExpandedSheet(video: video),
       ),
     );
