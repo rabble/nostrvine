@@ -81,7 +81,6 @@ class _SoundListItem extends ConsumerWidget {
     return GestureDetector(
       onTap: () => _navigateToSoundDetail(context),
       child: Semantics(
-        identifier: 'metadata_sound_item',
         button: true,
         label: 'Sound: $soundName by $creatorName. Tap to view details.',
         child: Row(

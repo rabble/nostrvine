@@ -129,14 +129,24 @@ class MetadataRepostedBySection extends ConsumerWidget {
           ...?video.reposterPubkeys,
           ...relayPubkeys,
         }.toList();
-        return _buildSection(allPubkeys);
+        return _RepostedByContent(pubkeys: allPubkeys);
       },
-      loading: () => _buildSection(video.reposterPubkeys ?? []),
-      error: (_, _) => _buildSection(video.reposterPubkeys ?? []),
+      loading: () => _RepostedByContent(pubkeys: video.reposterPubkeys ?? []),
+      error: (_, _) => _RepostedByContent(pubkeys: video.reposterPubkeys ?? []),
     );
   }
+}
 
-  Widget _buildSection(List<String> pubkeys) {
+/// Content widget for the Reposted-by section.
+///
+/// Returns [SizedBox.shrink] when [pubkeys] is empty.
+class _RepostedByContent extends StatelessWidget {
+  const _RepostedByContent({required this.pubkeys});
+
+  final List<String> pubkeys;
+
+  @override
+  Widget build(BuildContext context) {
     if (pubkeys.isEmpty) return const SizedBox.shrink();
 
     return MetadataSection(
@@ -171,7 +181,6 @@ class _TappableUserChip extends ConsumerWidget {
     return GestureDetector(
       onTap: () => _navigateToProfile(context),
       child: Semantics(
-        identifier: 'metadata_user_chip',
         button: true,
         label: '$name. Tap to view profile.',
         child: Container(
