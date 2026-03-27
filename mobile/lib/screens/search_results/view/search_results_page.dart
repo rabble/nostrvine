@@ -9,6 +9,8 @@ import 'package:openvine/screens/search_results/view/search_results_view.dart';
 import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 
+// TODO(oscar): Move fallback logic into HashtagRepository
+// https://github.com/divinevideo/divine-mobile/issues/2535
 Future<List<String>> _searchLocalHashtags(
   WidgetRef ref,
   String query, {
