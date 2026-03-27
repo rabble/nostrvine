@@ -11,7 +11,8 @@ class SearchResultsView extends StatelessWidget {
       color: VineTheme.backgroundColor,
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: PeopleSection()),
+          PeopleSection(),
+          VideosSection(),
         ],
       ),
     );

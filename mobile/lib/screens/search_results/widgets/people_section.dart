@@ -14,8 +14,8 @@ const _maxPeoplePreview = 3;
 
 /// Always-visible People section with a "People" header.
 ///
-/// Content below the header reacts to [UserSearchBloc] state via
-/// granular [context.select] rebuilds.
+/// Returns a [SliverMainAxisGroup] so the header and content participate
+/// natively in the parent [CustomScrollView]'s sliver protocol.
 class PeopleSection extends StatelessWidget {
   const PeopleSection({this.onSeeAll, super.key});
 
@@ -24,12 +24,12 @@ class PeopleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SectionHeader(title: 'People', onTap: onSeeAll),
-        _PeopleContent(),
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(
+          child: SectionHeader(title: 'People', onTap: onSeeAll),
+        ),
+        SliverToBoxAdapter(child: _PeopleContent()),
       ],
     );
   }
