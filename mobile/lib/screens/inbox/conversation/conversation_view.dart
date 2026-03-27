@@ -94,10 +94,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         : '';
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
-    final displayName =
-        profile?.displayName ??
-        profile?.name ??
-        NostrKeyUtils.truncateNpub(otherPubkey);
+    final displayName = profile?.displayName?.isNotEmpty == true
+        ? profile!.displayName!
+        : profile?.name ?? NostrKeyUtils.truncateNpub(otherPubkey);
     final handle = profile?.handle ?? '';
 
     return Scaffold(
