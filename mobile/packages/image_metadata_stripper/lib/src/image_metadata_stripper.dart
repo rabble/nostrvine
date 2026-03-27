@@ -27,7 +27,10 @@ class ImageMetadataStripper {
     required String outputPath,
   }) async {
     if (kIsWeb) {
+      // coverage:ignore-start
+      // kIsWeb is a compile-time constant; tested via stripMetadataWeb.
       await stripMetadataWeb(inputPath: inputPath, outputPath: outputPath);
+      // coverage:ignore-end
     } else {
       await _channel.invokeMethod<void>('stripImageMetadata', {
         'inputPath': inputPath,
