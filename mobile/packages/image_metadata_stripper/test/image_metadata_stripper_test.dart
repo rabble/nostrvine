@@ -280,8 +280,8 @@ void main() {
       });
 
       test('strips EXIF from JPEG and preserves orientation', () async {
-        final inputFile = File('${tempDir.path}/with_exif.jpg');
-        inputFile.writeAsBytesSync(_jpegWithExif());
+        final inputFile = File('${tempDir.path}/with_exif.jpg')
+          ..writeAsBytesSync(_jpegWithExif());
         final outputPath = '${tempDir.path}/output.jpg';
 
         await ImageMetadataStripper.stripMetadataWeb(
@@ -298,8 +298,8 @@ void main() {
       });
 
       test('handles .jpeg extension', () async {
-        final inputFile = File('${tempDir.path}/photo.jpeg');
-        inputFile.writeAsBytesSync(_jpegWithExif());
+        final inputFile = File('${tempDir.path}/photo.jpeg')
+          ..writeAsBytesSync(_jpegWithExif());
         final outputPath = '${tempDir.path}/output.jpeg';
 
         await ImageMetadataStripper.stripMetadataWeb(
@@ -311,8 +311,8 @@ void main() {
       });
 
       test('re-encodes PNG', () async {
-        final inputFile = File('${tempDir.path}/test.png');
-        inputFile.writeAsBytesSync(_pngBytes());
+        final inputFile = File('${tempDir.path}/test.png')
+          ..writeAsBytesSync(_pngBytes());
         final outputPath = '${tempDir.path}/output.png';
 
         await ImageMetadataStripper.stripMetadataWeb(
@@ -330,8 +330,8 @@ void main() {
 
       test('copies unsupported format as-is', () async {
         final bmp = _bmpBytes();
-        final inputFile = File('${tempDir.path}/test.bmp');
-        inputFile.writeAsBytesSync(bmp);
+        final inputFile = File('${tempDir.path}/test.bmp')
+          ..writeAsBytesSync(bmp);
         final outputPath = '${tempDir.path}/output.bmp';
 
         await ImageMetadataStripper.stripMetadataWeb(
