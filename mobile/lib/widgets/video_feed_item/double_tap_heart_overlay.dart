@@ -4,7 +4,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 /// Animation durations for the double-tap heart.
 abstract class _HeartAnimation {
@@ -129,14 +128,10 @@ class _DoubleTapHeartOverlayState extends State<DoubleTapHeartOverlay>
                 ),
               ],
             ),
-            child: SvgPicture.asset(
-              DivineIconName.heartDuo.assetPath,
-              width: 120,
-              height: 120,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.whiteText,
-                BlendMode.srcIn,
-              ),
+            child: const DivineIcon(
+              icon: DivineIconName.heartDuo,
+              size: 120,
+              color: VineTheme.likeRed,
             ),
           ),
         ),
