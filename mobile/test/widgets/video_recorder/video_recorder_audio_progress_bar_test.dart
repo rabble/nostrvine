@@ -13,9 +13,11 @@ import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
@@ -91,6 +93,10 @@ void main() {
             () => _TestVideoRecorderNotifier(
               mockCamera,
               recordingState: recordingState,
+            ),
+          ),
+          videoEditorProvider.overrideWith(
+            () => _TestVideoEditorNotifier(
               selectedSound: selectedSound,
             ),
           ),
@@ -352,18 +358,27 @@ class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
   _TestVideoRecorderNotifier(
     super.cameraService, {
     this.recordingState = VideoRecorderState.idle,
-    this.selectedSound,
   });
 
   final VideoRecorderState recordingState;
-  final AudioEvent? selectedSound;
 
   @override
   VideoRecorderProviderState build() {
     return VideoRecorderProviderState(
       recordingState: recordingState,
-      selectedSound: selectedSound,
     );
+  }
+}
+
+/// Test notifier for VideoEditorProvider
+class _TestVideoEditorNotifier extends VideoEditorNotifier {
+  _TestVideoEditorNotifier({this.selectedSound});
+
+  final AudioEvent? selectedSound;
+
+  @override
+  VideoEditorProviderState build() {
+    return VideoEditorProviderState(selectedSound: selectedSound);
   }
 }
 

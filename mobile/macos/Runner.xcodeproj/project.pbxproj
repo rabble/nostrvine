@@ -463,7 +463,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "# Codesign media_kit frameworks with ad-hoc signature\nfor framework in \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks\"/*.framework; do\n  if [ -d \"$framework\" ]; then\n    codesign --force --deep --sign - \"$framework\" 2>/dev/null || true\n  fi\ndone\n";
+			shellScript = "# Verify media_kit's mpv runtime was embedded before codesigning.\nmpv_framework=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks/Mpv.framework/Mpv\"\nif [ ! -f \"$mpv_framework\" ]; then\n  echo \"error: Mpv.framework is missing from ${PRODUCT_NAME}.app. Clean the macOS build and verify [CP] Embed Pods Frameworks completed successfully.\" >&2\n  exit 1\nfi\n\n# Codesign media_kit frameworks with ad-hoc signature\nfor framework in \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks\"/*.framework; do\n  if [ -d \"$framework\" ]; then\n    codesign --force --deep --sign - \"$framework\" 2>/dev/null || true\n  fi\ndone\n";
 		};
 		BBC532B406767D40236ED3DB /* FlutterFire: "flutterfire upload-crashlytics-symbols" */ = {
 			isa = PBXShellScriptBuildPhase;

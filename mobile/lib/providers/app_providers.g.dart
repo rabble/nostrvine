@@ -2878,6 +2878,65 @@ final class HashtagRepositoryProvider
 
 String _$hashtagRepositoryHash() => r'aacff5fc9d7d369a80b68ffa4595628b18ab1f99';
 
+/// Provider for CategoriesRepository instance.
+///
+/// Keep-alive so the categories cache survives tab and screen transitions.
+
+@ProviderFor(categoriesRepository)
+const categoriesRepositoryProvider = CategoriesRepositoryProvider._();
+
+/// Provider for CategoriesRepository instance.
+///
+/// Keep-alive so the categories cache survives tab and screen transitions.
+
+final class CategoriesRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CategoriesRepository,
+          CategoriesRepository,
+          CategoriesRepository
+        >
+    with $Provider<CategoriesRepository> {
+  /// Provider for CategoriesRepository instance.
+  ///
+  /// Keep-alive so the categories cache survives tab and screen transitions.
+  const CategoriesRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'categoriesRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$categoriesRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<CategoriesRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CategoriesRepository create(Ref ref) {
+    return categoriesRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CategoriesRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CategoriesRepository>(value),
+    );
+  }
+}
+
+String _$categoriesRepositoryHash() =>
+    r'6a3a483ae2565033933e9891b1742571c6e15fa8';
+
 /// Provider for ProfileRepository instance
 ///
 /// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).

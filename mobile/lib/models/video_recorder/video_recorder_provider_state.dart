@@ -4,7 +4,6 @@
 import 'dart:ui';
 
 import 'package:models/models.dart' as model show AspectRatio;
-import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
@@ -27,7 +26,6 @@ class VideoRecorderProviderState {
     this.flashMode = .auto,
     this.timerDuration = .off,
     this.initializationErrorMessage,
-    this.selectedSound,
     this.showLastClipOverlay = false,
   });
 
@@ -77,11 +75,6 @@ class VideoRecorderProviderState {
   /// Custom error message when camera initialization fails.
   final String? initializationErrorMessage;
 
-  /// Currently selected sound for recording.
-  /// This is the audio track that will play during recording and be associated
-  /// with the recorded video clips.
-  final AudioEvent? selectedSound;
-
   /// Whether to show a semi-transparent overlay of the last recorded clip
   /// on the camera preview (ghost frame).
   final bool showLastClipOverlay;
@@ -102,8 +95,6 @@ class VideoRecorderProviderState {
       (isError ? 'Recording error occurred' : null);
 
   /// Creates a copy of this state with updated values.
-  ///
-  /// Use [clearSelectedSound] = true to explicitly set [selectedSound] to null.
   VideoRecorderProviderState copyWith({
     VideoRecorderState? recordingState,
     double? zoomLevel,
@@ -120,8 +111,6 @@ class VideoRecorderProviderState {
     DivineFlashMode? flashMode,
     TimerDuration? timerDuration,
     String? initializationErrorMessage,
-    AudioEvent? selectedSound,
-    bool clearSelectedSound = false,
     bool? showLastClipOverlay,
   }) {
     return VideoRecorderProviderState(
@@ -141,9 +130,6 @@ class VideoRecorderProviderState {
       timerDuration: timerDuration ?? this.timerDuration,
       initializationErrorMessage:
           initializationErrorMessage ?? this.initializationErrorMessage,
-      selectedSound: clearSelectedSound
-          ? null
-          : (selectedSound ?? this.selectedSound),
       showLastClipOverlay: showLastClipOverlay ?? this.showLastClipOverlay,
     );
   }

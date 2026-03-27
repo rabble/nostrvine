@@ -5,6 +5,7 @@ export 'src/checkbox/checkbox.dart';
 export 'src/divine_snackbar_container.dart';
 export 'src/icon/icon.dart';
 export 'src/partial_circle_spinner.dart';
+export 'src/search_bar/search_bar.dart';
 export 'src/slider/slider.dart';
 export 'src/sticker/sticker.dart';
 export 'src/text_field/text_field.dart';
