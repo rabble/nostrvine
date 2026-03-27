@@ -27,13 +27,11 @@ class NostrServiceFactory {
   /// [NostrClient.addRelays] and awaited BEFORE calling [initialize]
   /// to avoid race conditions.
   static NostrClient create({
+    NostrSigner? signer,
     SecureKeyContainer? keyContainer,
     RelayStatisticsService? statisticsService,
     EnvironmentConfig? environmentConfig,
     AppDbClient? dbClient,
-
-    /// Optional remote RPC signer (e.g. `KeycastRpc`). If provided, this
-    /// signer will be used instead of the local `AuthServiceSigner`.
     NostrSigner? rpcSigner,
   }) {
     final divineRelayUrl =
@@ -44,13 +42,12 @@ class NostrServiceFactory {
       name: 'NostrServiceFactory',
     );
 
-    // Prefer RPC signer when available (KeycastRpc implements NostrSigner),
-    // otherwise fall back to local signer that uses the secure key container.
-    // The signer is the single source of truth for the public key.
-    final signer = rpcSigner ?? AuthServiceSigner(keyContainer);
+    // Prefer explicit signer, fall back to legacy rpcSigner/keyContainer path
+    final effectiveSigner =
+        signer ?? rpcSigner ?? AuthServiceSigner(keyContainer);
 
     // Create NostrClient config - signer is the source of truth for publicKey
-    final config = NostrClientConfig(signer: signer);
+    final config = NostrClientConfig(signer: effectiveSigner);
 
     // Create relay manager config with persistent storage
     // The Divine relay is always the default relay (cannot be removed)

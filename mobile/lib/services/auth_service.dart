@@ -15,6 +15,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -202,6 +203,16 @@ class AuthService implements BackgroundAwareService {
 
   /// Returns the active remote signer (Amber > bunker > OAuth RPC)
   NostrSigner? get rpcSigner => _amberSigner ?? _bunkerSigner ?? _keycastSigner;
+
+  /// The current user's unified signing identity.
+  ///
+  /// Constructed in [_setupUserSession] — bundles the pubkey and signing
+  /// method (local, keycast, bunker, amber) into one [NostrSigner].
+  NostrIdentity? _currentIdentity;
+
+  /// The current user's signing identity (null if not authenticated).
+  NostrIdentity? get currentIdentity => _currentIdentity;
+
   final OAuthConfig _oauthConfig;
 
   // Streaming controllers for reactive auth state
@@ -230,10 +241,10 @@ class AuthService implements BackgroundAwareService {
   String? get currentPublicKeyHex =>
       _currentKeyContainer?.publicKeyHex ?? _currentProfile?.publicKeyHex;
 
-  /// Current secure key container (null if not authenticated)
+  /// Current secure key container (null if not authenticated).
   ///
-  /// Used by NostrClientProvider to create AuthServiceSigner.
-  /// The container provides secure access to private key operations.
+  /// Prefer [currentIdentity] for signing operations. This getter remains
+  /// for callers that need the raw container (e.g. profile display).
   SecureKeyContainer? get currentKeyContainer => _currentKeyContainer;
 
   /// Check if user is authenticated
@@ -2489,6 +2500,8 @@ class AuthService implements BackgroundAwareService {
       }
 
       // Clear session
+      _currentIdentity?.close();
+      _currentIdentity = null;
       _currentKeyContainer?.dispose();
       _currentKeyContainer = null;
       _currentProfile = null;
@@ -2626,8 +2639,10 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
-  /// Create and sign a Nostr event
-  /// Handles both local SecureKeyStorage and remote KeycastRpc signing
+  /// Create and sign a Nostr event.
+  ///
+  /// Delegates signing to the current [NostrIdentity], which transparently
+  /// handles local vs remote (keycast/bunker/amber) signing.
   Future<Event?> createAndSignEvent({
     required int kind,
     required String content,
@@ -2635,7 +2650,8 @@ class AuthService implements BackgroundAwareService {
     String? biometricPrompt,
     int? createdAt,
   }) async {
-    if (!isAuthenticated || _currentKeyContainer == null) {
+    final identity = _currentIdentity;
+    if (!isAuthenticated || identity == null) {
       Log.error(
         'Cannot sign event - user not authenticated',
         name: 'AuthService',
@@ -2661,7 +2677,7 @@ class AuthService implements BackgroundAwareService {
       // Create the unsigned event object
       final driftTolerance = NostrTimestamp.getDriftToleranceForKind(kind);
       final event = Event(
-        _currentKeyContainer!.publicKeyHex,
+        identity.publicKeyHex,
         kind,
         eventTags,
         content,
@@ -2669,31 +2685,15 @@ class AuthService implements BackgroundAwareService {
             createdAt ?? NostrTimestamp.now(driftTolerance: driftTolerance),
       );
 
-      // 2. Branch Signing Logic (Local vs RPC)
-      Event? signedEvent;
-
-      if (rpcSigner case final rpcSigner?) {
-        Log.info(
-          '🚀 Signing kind $kind via Remote RPC '
-          '(authSource=${_authSource.name}, '
-          'eventPubkey=${event.pubkey})',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        signedEvent = await rpcSigner.signEvent(event);
-      } else {
-        Log.info(
-          '🔐 Signing kind $kind via Local Secure Storage '
-          '(authSource=${_authSource.name}, '
-          'eventPubkey=${event.pubkey})',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        signedEvent = await _keyStorage.withPrivateKey<Event?>((privateKey) {
-          event.sign(privateKey);
-          return event;
-        }, biometricPrompt: biometricPrompt);
-      }
+      // Sign via the unified identity (handles local vs remote transparently)
+      Log.info(
+        'Signing kind $kind via ${identity.signingMethod.name} '
+        '(authSource=${_authSource.name}, '
+        'eventPubkey=${event.pubkey})',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      final signedEvent = await identity.signEvent(event);
 
       // 3. Post-Signing Validation and Debugging
       if (signedEvent == null) {
@@ -2710,7 +2710,7 @@ class AuthService implements BackgroundAwareService {
           '❌ Event signature validation FAILED! '
           'kind=$kind, eventPubkey=${signedEvent.pubkey}, '
           'authSource=${_authSource.name}, '
-          'currentPubkey=${_currentKeyContainer?.publicKeyHex}',
+          'currentPubkey=${identity.publicKeyHex}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -2984,6 +2984,33 @@ class AuthService implements BackgroundAwareService {
       );
       _amberSigner!.close();
       _amberSigner = null;
+    }
+
+    // Build the unified signing identity — this replaces the scattered
+    // signer fields as the single source of truth for "sign as this user".
+    _currentIdentity?.close();
+    final remoteSigner = rpcSigner;
+    if (remoteSigner != null) {
+      final signingMethod = switch (source) {
+        AuthenticationSource.amber => SigningMethod.amber,
+        AuthenticationSource.bunker => SigningMethod.bunker,
+        AuthenticationSource.divineOAuth => SigningMethod.keycastRpc,
+        _ => SigningMethod.local,
+      };
+      _currentIdentity = NostrIdentity.remote(
+        publicKeyHex: keyContainer.publicKeyHex,
+        npub: keyContainer.npub,
+        signer: remoteSigner,
+        signingMethod: signingMethod,
+        authSource: source,
+        keyContainer: keyContainer,
+      );
+    } else {
+      _currentIdentity = NostrIdentity.local(
+        keyContainer: keyContainer,
+        keyStorage: _keyStorage,
+        authSource: source,
+      );
     }
 
     // Create user profile
