@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -415,13 +416,14 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     // Show Column with search bar + TabBar + content in grid mode
     return Column(
       children: [
-        // Search bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: DivineSearchBar(
-            controller: _searchController,
+        // Search bar (debug-only until #2470 is complete)
+        if (kDebugMode)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: DivineSearchBar(
+              controller: _searchController,
+            ),
           ),
-        ),
         // Tabs only visible in grid mode
         // Material widget is required for TabBar to render ink splashes
         Material(
