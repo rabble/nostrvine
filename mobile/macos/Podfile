@@ -66,18 +66,23 @@ post_install do |installer|
       phase_name = 'Codesign media_kit frameworks'
       existing_phase = target.shell_script_build_phases.find { |p| p.name == phase_name }
 
-      unless existing_phase
-        phase = target.new_shell_script_build_phase(phase_name)
-        phase.shell_script = <<-SCRIPT
+      phase = existing_phase || target.new_shell_script_build_phase(phase_name)
+      phase.shell_script = <<-SCRIPT
+# Verify media_kit's mpv runtime was embedded before codesigning.
+mpv_framework="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks/Mpv.framework/Mpv"
+if [ ! -f "$mpv_framework" ]; then
+  echo "error: Mpv.framework is missing from ${PRODUCT_NAME}.app. Clean the macOS build and verify [CP] Embed Pods Frameworks completed successfully." >&2
+  exit 1
+fi
+
 # Codesign media_kit frameworks with ad-hoc signature
 for framework in "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"/*.framework; do
   if [ -d "$framework" ]; then
     codesign --force --deep --sign - "$framework" 2>/dev/null || true
   fi
 done
-        SCRIPT
-        phase.shell_path = '/bin/bash'
-      end
+      SCRIPT
+      phase.shell_path = '/bin/bash'
     end
   end
   main_project.save

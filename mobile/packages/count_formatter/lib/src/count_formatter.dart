@@ -1,10 +1,8 @@
-// ABOUTME: Utility for formatting numbers in compact notation (1.2k, 3m).
+// ABOUTME: Utility for formatting numbers in compact human-readable notation.
 // ABOUTME: Used for follower counts, video counts, and similar metrics.
 
 /// Formats numbers in compact human-readable notation.
-class CountFormatter {
-  const CountFormatter._();
-
+abstract class CountFormatter {
   /// Formats [count] as a compact string (e.g., 1.2k, 3m).
   static String formatCompact(Object count) {
     final n = count is int ? count : int.tryParse('$count') ?? 0;

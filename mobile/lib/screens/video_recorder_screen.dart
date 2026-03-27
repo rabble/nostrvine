@@ -223,7 +223,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     );
 
     // Handle initial sound if already selected
-    final initialSound = ref.read(videoRecorderProvider).selectedSound;
+    final initialSound = ref.read(videoEditorProvider).selectedSound;
     Log.info(
       '🎵 initialSound: ${initialSound?.id ?? 'null'}',
       name: 'VideoRecorderScreen',
@@ -233,7 +233,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
     // Listen for future changes using listenManual (works outside build phase)
     _soundSubscription = ref.listenManual<AudioEvent?>(
-      videoRecorderProvider.select((s) => s.selectedSound),
+      videoEditorProvider.select((s) => s.selectedSound),
       (
         previous,
         next,

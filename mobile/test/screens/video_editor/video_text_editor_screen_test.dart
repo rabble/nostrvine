@@ -127,6 +127,19 @@ void main() {
         expect(find.byType(VideoTextEditorScreen), findsOneWidget);
       });
 
+      testWidgets(
+        'disables autocorrect and suggestions for overlay text input',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+          await tester.pump();
+
+          final textField = tester.widget<TextField>(find.byType(TextField));
+
+          expect(textField.autocorrect, isFalse);
+          expect(textField.enableSuggestions, isFalse);
+        },
+      );
+
       testWidgets('renders TextEditor widget', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pump();

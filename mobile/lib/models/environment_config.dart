@@ -101,7 +101,7 @@ class EnvironmentConfig {
     return const [
       'wss://purplepag.es',
       'wss://user.kindpag.es',
-      'wss://relay.damus.io',
+      'wss://relay.nos.social',
     ];
   }
 

@@ -26,16 +26,16 @@ _MockProfileRepository _createMockProfileRepository({
 }) {
   final mock = _MockProfileRepository();
 
-  // Mock searchUsers
+  // Mock searchUsersProgressive (used by UserSearchBloc)
   when(
-    () => mock.searchUsers(
+    () => mock.searchUsersProgressive(
       query: any(named: 'query'),
       limit: any(named: 'limit'),
       offset: any(named: 'offset'),
       sortBy: any(named: 'sortBy'),
       hasVideos: any(named: 'hasVideos'),
     ),
-  ).thenAnswer((_) async => searchResults);
+  ).thenAnswer((_) => Stream.value(searchResults));
 
   // Mock getCachedProfile
   for (final profile in cachedProfiles) {

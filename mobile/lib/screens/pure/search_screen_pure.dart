@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
@@ -268,20 +267,30 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
               return BlocBuilder<HashtagSearchBloc, HashtagSearchState>(
                 bloc: _hashtagSearchBloc,
                 builder: (context, hashtagSearchState) {
-                  final searchBar = _SearchBar(
+                  final searchBar = DivineSearchBar(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    isSearching: _isActiveTabSearching(
+                    isLoading: _isActiveTabSearching(
                       videoState: videoState,
                       userState: userSearchState,
                       hashtagState: hashtagSearchState,
                     ),
-                    onClear: () {
-                      _searchController.clear();
-                      _userSearchBloc.add(const UserSearchCleared());
-                      _hashtagSearchBloc.add(const HashtagSearchCleared());
-                      _videoSearchBloc.add(const VideoSearchCleared());
-                    },
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const DivineIcon(
+                              icon: .x,
+                              color: VineTheme.whiteText,
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              _userSearchBloc.add(const UserSearchCleared());
+                              _hashtagSearchBloc.add(
+                                const HashtagSearchCleared(),
+                              );
+                              _videoSearchBloc.add(const VideoSearchCleared());
+                            },
+                          )
+                        : null,
                   );
                   final textScaler = MediaQuery.textScalerOf(context).clamp(
                     maxScaleFactor: 1.35,
@@ -370,76 +379,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  const _SearchBar({
-    required this.controller,
-    required this.focusNode,
-    required this.isSearching,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool isSearching;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        style: const TextStyle(color: VineTheme.whiteText),
-        decoration: InputDecoration(
-          hintText: 'Find something cool...',
-          hintStyle: TextStyle(
-            color: VineTheme.whiteText.withValues(alpha: 0.6),
-          ),
-          filled: true,
-          fillColor: VineTheme.iconButtonBackground,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          prefixIconConstraints: const BoxConstraints(),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.only(left: 12, right: 8),
-            child: isSearching
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: Padding(
-                      padding: EdgeInsets.all(2),
-                      child: CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  )
-                : SvgPicture.asset(
-                    DivineIconName.search.assetPath,
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.lightText,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-          ),
-          suffixIcon: controller.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, color: VineTheme.whiteText),
-                  onPressed: onClear,
-                )
-              : null,
-        ),
       ),
     );
   }

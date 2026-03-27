@@ -142,7 +142,7 @@ class BlossomUploadService {
   Future<bool> isBlossomEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_useBlossomKey) ??
-        false; // Default to false (use Divine's server)
+        true; // Default to true for new installs (allow custom/non-Divine media servers)
   }
 
   /// Enable or disable Blossom upload

@@ -297,9 +297,9 @@ class _UserTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: VineTheme.titleMediumFont(),
                   ),
-                  if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                  if (profile.handle.isNotEmpty)
                     Text(
-                      '@${profile.nip05}',
+                      profile.handle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.bodyMediumFont(),
