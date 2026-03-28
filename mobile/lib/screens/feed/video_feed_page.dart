@@ -39,9 +39,9 @@ class VideoFeedPage extends ConsumerWidget {
   /// Build path for a specific index.
   static String pathForIndex(int index) => '/home/$index';
 
-  const VideoFeedPage({this.initialMode = FeedMode.following, super.key});
+  const VideoFeedPage({this.initialMode = FeedMode.forYou, super.key});
 
-  /// The feed mode to start with. Defaults to [FeedMode.following].
+  /// The feed mode to start with. Defaults to [FeedMode.forYou].
   final FeedMode initialMode;
 
   @override

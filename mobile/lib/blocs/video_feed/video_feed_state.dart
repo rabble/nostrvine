@@ -49,7 +49,7 @@ final class VideoFeedState extends Equatable {
   const VideoFeedState({
     this.status = VideoFeedStatus.loading,
     this.videos = const [],
-    this.mode = FeedMode.following,
+    this.mode = FeedMode.forYou,
     this.hasMore = true,
     this.isLoadingMore = false,
     this.error,
