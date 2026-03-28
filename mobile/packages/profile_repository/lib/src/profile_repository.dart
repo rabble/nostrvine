@@ -953,56 +953,40 @@ class ProfileRepository {
 
       // Connected relay fetches (one per pubkey, in parallel)
       final relayFuture = Future.wait(
-        remainingList.map((pubkey) async {
-          try {
-            return await _nostrClient.fetchProfile(pubkey);
-          } on Exception catch (e) {
-            developer.log(
-              'Batch connected relay fetch failed for $pubkey: $e',
-              name: 'ProfileRepository.fetchBatchProfiles',
-            );
-            return null;
-          } on Error catch (e) {
-            developer.log(
-              'Batch connected relay fetch errored for $pubkey: $e',
-              name: 'ProfileRepository.fetchBatchProfiles',
-            );
-            return null;
-          }
-        }),
-        eagerError: false,
+        remainingList.map(
+          (pubkey) => Future.sync(() => _nostrClient.fetchProfile(pubkey))
+              .catchError((Object e) {
+                developer.log(
+                  'Batch connected relay fetch failed for $pubkey: $e',
+                  name: 'ProfileRepository.fetchBatchProfiles',
+                );
+                return null;
+              }, test: (_) => true),
+        ),
       );
 
       // Indexer relay batch query
-      final indexerFuture = () async {
-        try {
-          return await _nostrClient
-              .queryEvents(
-                [
-                  Filter(
-                    kinds: [0],
-                    authors: remainingList,
-                    limit: remainingList.length,
-                  ),
-                ],
-                tempRelays: _indexerRelays,
-                useCache: false,
-              )
-              .timeout(const Duration(seconds: 5));
-        } on Exception catch (e) {
-          developer.log(
-            'Batch indexer fetch failed: $e',
-            name: 'ProfileRepository.fetchBatchProfiles',
-          );
-          return <Event>[];
-        } on Error catch (e) {
-          developer.log(
-            'Batch indexer fetch errored: $e',
-            name: 'ProfileRepository.fetchBatchProfiles',
-          );
-          return <Event>[];
-        }
-      }();
+      final indexerFuture = Future.sync(
+            () => _nostrClient.queryEvents(
+              [
+                Filter(
+                  kinds: [0],
+                  authors: remainingList,
+                  limit: remainingList.length,
+                ),
+              ],
+              tempRelays: _indexerRelays,
+              useCache: false,
+            ),
+          )
+          .timeout(const Duration(seconds: 5))
+          .catchError((Object e) {
+            developer.log(
+              'Batch indexer fetch failed: $e',
+              name: 'ProfileRepository.fetchBatchProfiles',
+            );
+            return <Event>[];
+          }, test: (_) => true);
 
       final (relayEvents, indexerEvents) = await (
         relayFuture,
