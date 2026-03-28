@@ -574,38 +574,82 @@ class BlossomUploadService {
     required String fileHash,
     required int fileSize,
     required String contentType,
+    required String? proofManifestJson,
     BlossomResumableUploadSession? resumableSession,
     void Function(double)? onProgress,
     void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
   }) async {
-    final initialSession = resumableSession == null
-        ? await _initResumableUpload(
-            serverUrl: serverUrl,
-            fileHash: fileHash,
-            fileSize: fileSize,
-            contentType: contentType,
-            fileName: file.uri.pathSegments.isEmpty
-                ? 'upload.bin'
-                : file.uri.pathSegments.last,
-          )
-        : await _queryResumableUploadSession(resumableSession);
-    onResumableSessionUpdated?.call(initialSession);
+    var confirmedCommittedOffset = resumableSession?.nextOffset ?? 0;
 
-    final uploadedSession = await _uploadChunks(
-      session: initialSession,
-      file: file,
-      fileSize: fileSize,
-      onProgress: onProgress,
-      onResumableSessionUpdated: onResumableSessionUpdated,
-    );
+    Future<BlossomUploadResult> legacyFallback(Object error) async {
+      Log.warning(
+        'Resumable upload failed before any confirmed chunk commit for '
+        '$serverUrl, falling back to legacy PUT upload: $error',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
 
-    return _completeResumableUpload(
-      serverUrl: serverUrl,
-      session: uploadedSession,
-      fileHash: fileHash,
-      fileSize: fileSize,
-      onProgress: onProgress,
-    );
+      return _uploadToServer(
+        serverUrl: serverUrl,
+        file: file,
+        fileHash: fileHash,
+        fileSize: fileSize,
+        contentType: contentType,
+        proofManifestJson: proofManifestJson,
+        onProgress: onProgress,
+      );
+    }
+
+    try {
+      final initialSession = resumableSession == null
+          ? await _initResumableUpload(
+              serverUrl: serverUrl,
+              fileHash: fileHash,
+              fileSize: fileSize,
+              contentType: contentType,
+              fileName: file.uri.pathSegments.isEmpty
+                  ? 'upload.bin'
+                  : file.uri.pathSegments.last,
+            )
+          : await _queryResumableUploadSession(resumableSession);
+      confirmedCommittedOffset = math.max(
+        confirmedCommittedOffset,
+        initialSession.nextOffset,
+      );
+      onResumableSessionUpdated?.call(initialSession);
+
+      final uploadedSession = await _uploadChunks(
+        session: initialSession,
+        file: file,
+        fileSize: fileSize,
+        onProgress: onProgress,
+        onResumableSessionUpdated: (updatedSession) {
+          confirmedCommittedOffset = math.max(
+            confirmedCommittedOffset,
+            updatedSession.nextOffset,
+          );
+          onResumableSessionUpdated?.call(updatedSession);
+        },
+      );
+
+      return _completeResumableUpload(
+        serverUrl: serverUrl,
+        session: uploadedSession,
+        fileHash: fileHash,
+        fileSize: fileSize,
+        onProgress: onProgress,
+      );
+    } on DioException catch (error) {
+      if (confirmedCommittedOffset <= 0) {
+        return legacyFallback(error);
+      }
+      rethrow;
+    } on BlossomResumableUploadException catch (error) {
+      if (confirmedCommittedOffset <= 0) {
+        return legacyFallback(error);
+      }
+      rethrow;
+    }
   }
 
   BlossomUploadResult _parseUploadResponse(
@@ -931,6 +975,7 @@ class BlossomUploadService {
                   fileHash: fileHash,
                   fileSize: fileSize,
                   contentType: 'video/mp4',
+                  proofManifestJson: proofManifestJson,
                   resumableSession: resumableSession,
                   onProgress: onProgress,
                   onResumableSessionUpdated: onResumableSessionUpdated,
