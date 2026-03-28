@@ -966,7 +966,8 @@ class ProfileRepository {
       );
 
       // Indexer relay batch query
-      final indexerFuture = Future.sync(
+      final indexerFuture =
+          Future.sync(
             () => _nostrClient.queryEvents(
               [
                 Filter(
@@ -978,9 +979,7 @@ class ProfileRepository {
               tempRelays: _indexerRelays,
               useCache: false,
             ),
-          )
-          .timeout(const Duration(seconds: 5))
-          .catchError((Object e) {
+          ).timeout(const Duration(seconds: 5)).catchError((Object e) {
             developer.log(
               'Batch indexer fetch failed: $e',
               name: 'ProfileRepository.fetchBatchProfiles',
