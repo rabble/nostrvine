@@ -32,12 +32,13 @@ typedef ProfileSearchFilter =
 /// Default indexer relays for kind 0 profile lookups.
 ///
 /// Production wiring overrides this via
-/// `EnvironmentConfig.indexerRelays` which may include
-/// additional relays. This constant is the fallback when
-/// no explicit list is provided.
+/// `EnvironmentConfig.indexerRelays`. Keep this fallback
+/// in sync with the environment defaults so non-app
+/// construction paths behave the same way.
 const defaultProfileIndexerRelays = [
   'wss://purplepag.es',
   'wss://user.kindpag.es',
+  'wss://relay.damus.io',
 ];
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
@@ -213,9 +214,9 @@ class ProfileRepository {
   ///
   /// Strategy:
   /// 1. Funnelcake REST API (fast, broad coverage)
-  /// 2. Connected relays, indexer relays, and outbox relays
-  ///    (NIP-65 write relays) — all fired **in parallel**,
-  ///    first result wins to minimise latency
+  /// 2. Connected relays and indexer relays —
+  ///    both fired **in parallel**, first result wins
+  ///    to minimise latency
   ///
   /// Skips all fetches if the pubkey is confirmed missing.
   /// Deduplicates concurrent calls for the same pubkey —
@@ -267,8 +268,8 @@ class ProfileRepository {
       }
     }
 
-    // Step 2: Fire connected relays, indexer relays, and outbox relays
-    // concurrently. The first source to return a profile wins.
+    // Step 2: Fire connected relays and indexer relays concurrently.
+    // The first source to return a profile wins.
     final profile = await _fetchFromRelaysParallel(pubkey);
     if (profile != null) {
       _knownCached.add(pubkey);
@@ -880,8 +881,8 @@ class ProfileRepository {
   /// Pipeline:
   /// 1. Batch-read Drift for cached profiles
   /// 2. [FunnelcakeApiClient.getBulkProfiles] for uncached
-  /// 3. Connected relays, indexer relays, and outbox relays
-  ///    — all fired **in parallel** for remaining pubkeys
+  /// 3. Connected relays and indexer relays —
+  ///    both fired **in parallel** for remaining pubkeys
   /// 4. Batch-write all freshly fetched profiles to Drift
   ///
   /// Errors from the API or relay layers are caught and
@@ -955,10 +956,21 @@ class ProfileRepository {
         remainingList.map((pubkey) async {
           try {
             return await _nostrClient.fetchProfile(pubkey);
-          } on Exception {
+          } on Exception catch (e) {
+            developer.log(
+              'Batch connected relay fetch failed for $pubkey: $e',
+              name: 'ProfileRepository.fetchBatchProfiles',
+            );
+            return null;
+          } on Error catch (e) {
+            developer.log(
+              'Batch connected relay fetch errored for $pubkey: $e',
+              name: 'ProfileRepository.fetchBatchProfiles',
+            );
             return null;
           }
         }),
+        eagerError: false,
       );
 
       // Indexer relay batch query
@@ -980,6 +992,12 @@ class ProfileRepository {
         } on Exception catch (e) {
           developer.log(
             'Batch indexer fetch failed: $e',
+            name: 'ProfileRepository.fetchBatchProfiles',
+          );
+          return <Event>[];
+        } on Error catch (e) {
+          developer.log(
+            'Batch indexer fetch errored: $e',
             name: 'ProfileRepository.fetchBatchProfiles',
           );
           return <Event>[];

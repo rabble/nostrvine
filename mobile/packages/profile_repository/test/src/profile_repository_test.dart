@@ -793,9 +793,9 @@ void main() {
             when(() => indexerEvent.pubkey).thenReturn(testPubkey);
             when(() => indexerEvent.createdAt).thenReturn(1704153600);
             when(() => indexerEvent.id).thenReturn('idx_$testEventId');
-            when(() => indexerEvent.content).thenReturn(
-              jsonEncode({'display_name': 'Indexer Name'}),
-            );
+            when(
+              () => indexerEvent.content,
+            ).thenReturn(jsonEncode({'display_name': 'Indexer Name'}));
             when(
               () => mockNostrClient.queryEvents(
                 any(),
@@ -3585,6 +3585,47 @@ void main() {
         expect(result, isEmpty);
       });
 
+      test(
+        'handles uncaught relay Error gracefully with partial results',
+        () async {
+          final relayEvent = MockEvent();
+          when(() => relayEvent.kind).thenReturn(0);
+          when(() => relayEvent.pubkey).thenReturn(testPubkey2);
+          when(() => relayEvent.createdAt).thenReturn(1704067200);
+          when(() => relayEvent.id).thenReturn('relay_$testEventId');
+          when(
+            () => relayEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Relay User'}));
+
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenThrow(StateError('Relay crashed'));
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey2),
+          ).thenAnswer((_) async => relayEvent);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+          when(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          ).thenAnswer((_) async {});
+
+          final result = await profileRepository.fetchBatchProfiles(
+            pubkeys: [testPubkey, testPubkey2],
+          );
+
+          expect(result, hasLength(1));
+          expect(result[testPubkey2]?.displayName, equals('Relay User'));
+        },
+      );
+
       test('falls back to indexer relay when step 3 returns nothing', () async {
         final indexerEvent = MockEvent();
         when(() => indexerEvent.kind).thenReturn(0);
@@ -3740,9 +3781,9 @@ void main() {
         when(() => olderEvent.pubkey).thenReturn(testPubkey);
         when(() => olderEvent.createdAt).thenReturn(1704067200);
         when(() => olderEvent.id).thenReturn(testEventId);
-        when(() => olderEvent.content).thenReturn(
-          jsonEncode({'display_name': 'Old Name'}),
-        );
+        when(
+          () => olderEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'Old Name'}));
 
         // Indexer returns newer profile for same pubkey
         final newerEvent = MockEvent();
@@ -3750,9 +3791,9 @@ void main() {
         when(() => newerEvent.pubkey).thenReturn(testPubkey);
         when(() => newerEvent.createdAt).thenReturn(1704153600);
         when(() => newerEvent.id).thenReturn('newer_$testEventId');
-        when(() => newerEvent.content).thenReturn(
-          jsonEncode({'display_name': 'New Name'}),
-        );
+        when(
+          () => newerEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'New Name'}));
 
         when(
           () => mockUserProfilesDao.getProfilesByPubkeys(any()),
