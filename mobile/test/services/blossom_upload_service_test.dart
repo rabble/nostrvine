@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:path_provider/path_provider.dart';
@@ -225,6 +226,16 @@ void main() {
         });
 
         when(
+          () => mockDio.head(any(), options: any(named: 'options')),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: 200,
+            headers: Headers(),
+          ),
+        );
+
+        when(
           () => mockDio.put(
             any(),
             data: any(named: 'data'),
@@ -260,7 +271,477 @@ void main() {
       });
 
       test(
-        'should send POST request with raw bytes and NIP-98 auth header',
+        'uses resumable init flow for Divine servers that advertise support',
+        () async {
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(
+              testPublicKey,
+              24242,
+              const [],
+              'Upload video to Blossom server',
+            ),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_resumable_service_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(List<int>.generate(10, (index) => index));
+          final sessionUpdates = <BlossomResumableUploadSession>[];
+
+          when(
+            () => mockDio.head(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                'X-Divine-Upload-Extensions': ['resumable-sessions'],
+                'X-Divine-Upload-Control-Host': ['https://media.divine.video'],
+                'X-Divine-Upload-Data-Host': ['https://upload.divine.video'],
+              }),
+            ),
+          );
+
+          when(
+            () => mockDio.post(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            if (url.endsWith('/upload/init')) {
+              return Response(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                statusCode: 200,
+                data: {
+                  'uploadId': 'up_123',
+                  'uploadUrl': 'https://upload.divine.video/sessions/up_123',
+                  'chunkSize': 4,
+                  'nextOffset': 0,
+                  'requiredHeaders': {'Authorization': 'Bearer session-token'},
+                },
+              );
+            }
+
+            if (url.endsWith('/upload/up_123/complete')) {
+              return Response(
+                requestOptions: RequestOptions(path: '/upload/up_123/complete'),
+                statusCode: 200,
+                data: {
+                  'url': 'https://media.divine.video/final',
+                  'fallbackUrl': 'https://media.divine.video/final',
+                },
+              );
+            }
+
+            throw StateError('Unexpected POST url: $url');
+          });
+
+          var chunkRequestCount = 0;
+          when(
+            () => mockDio.put(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final onSendProgress =
+                invocation.namedArguments[#onSendProgress]
+                    as void Function(int, int)?;
+            final options = invocation.namedArguments[#options] as Options;
+            chunkRequestCount += 1;
+
+            if (chunkRequestCount == 1) {
+              expect(options.headers?['Content-Range'], equals('bytes 0-3/10'));
+              expect(
+                options.headers?['Authorization'],
+                equals('Bearer session-token'),
+              );
+              onSendProgress?.call(4, 4);
+              return Response(
+                requestOptions: RequestOptions(path: '/sessions/up_123'),
+                statusCode: 204,
+                headers: Headers.fromMap({
+                  'Upload-Offset': ['4'],
+                }),
+              );
+            }
+
+            if (chunkRequestCount == 2) {
+              expect(options.headers?['Content-Range'], equals('bytes 4-7/10'));
+              onSendProgress?.call(4, 4);
+              return Response(
+                requestOptions: RequestOptions(path: '/sessions/up_123'),
+                statusCode: 204,
+                headers: Headers.fromMap({
+                  'Upload-Offset': ['8'],
+                }),
+              );
+            }
+
+            expect(options.headers?['Content-Range'], equals('bytes 8-9/10'));
+            onSendProgress?.call(2, 2);
+            return Response(
+              requestOptions: RequestOptions(path: '/sessions/up_123'),
+              statusCode: 204,
+              headers: Headers.fromMap({
+                'Upload-Offset': ['10'],
+              }),
+            );
+          });
+
+          final result = await service.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'Resumable Video',
+            description: null,
+            hashtags: null,
+            proofManifestJson: null,
+            onResumableSessionUpdated: sessionUpdates.add,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.videoId, isNotNull);
+          expect(
+            result.cdnUrl,
+            equals(
+              'https://media.divine.video/'
+              '${result.videoId}',
+            ),
+          );
+          expect(chunkRequestCount, equals(3));
+          expect(sessionUpdates.map((session) => session.nextOffset), [
+            0,
+            4,
+            8,
+            10,
+          ]);
+
+          verifyInOrder([
+            () => mockDio.head(
+              'https://media.divine.video/upload',
+              options: any(named: 'options'),
+            ),
+            () => mockDio.post(
+              'https://media.divine.video/upload/init',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+            () => mockDio.put(
+              'https://upload.divine.video/sessions/up_123',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+            () => mockDio.post(
+              'https://media.divine.video/upload/up_123/complete',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ]);
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'falls back to legacy PUT upload when resumable capability is absent',
+        () async {
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(
+              testPublicKey,
+              24242,
+              const [],
+              'Upload video to Blossom server',
+            ),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_legacy_fallback_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(List<int>.generate(5, (index) => index + 1));
+
+          when(
+            () => mockDio.head(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers(),
+            ),
+          );
+
+          when(
+            () => mockDio.put(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/final',
+                'fallbackUrl': 'https://media.divine.video/final',
+              },
+            ),
+          );
+
+          final result = await service.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'Legacy Video',
+            description: null,
+            hashtags: null,
+            proofManifestJson: null,
+          );
+
+          expect(result.success, isTrue);
+
+          verify(
+            () => mockDio.put(
+              'https://media.divine.video/upload',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockDio.post(
+              'https://media.divine.video/upload/init',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          );
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'falls back to legacy PUT upload when ProofMode data is present',
+        () async {
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          const proofManifest = '{"videoHash":"abc123","pgpSignature":"sig"}';
+
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(
+              testPublicKey,
+              24242,
+              const [],
+              'Upload video to Blossom server',
+            ),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_proofmode_legacy_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(List<int>.generate(5, (index) => index + 1));
+
+          when(
+            () => mockDio.head(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                'X-Divine-Upload-Extensions': ['resumable-sessions'],
+              }),
+            ),
+          );
+
+          when(
+            () => mockDio.put(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/final',
+                'fallbackUrl': 'https://media.divine.video/final',
+              },
+            ),
+          );
+
+          final result = await service.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'ProofMode Video',
+            description: null,
+            hashtags: null,
+            proofManifestJson: proofManifest,
+          );
+
+          expect(result.success, isTrue);
+
+          verify(
+            () => mockDio.put(
+              'https://media.divine.video/upload',
+              data: any(named: 'data'),
+              options: any(
+                named: 'options',
+                that: isA<Options>().having(
+                  (opts) => opts.headers?['X-ProofMode-Manifest'],
+                  'X-ProofMode-Manifest',
+                  isNotNull,
+                ),
+              ),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockDio.post(
+              'https://media.divine.video/upload/init',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          );
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'falls back to legacy PUT upload when capability probe fails',
+        () async {
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(
+              testPublicKey,
+              24242,
+              const [],
+              'Upload video to Blossom server',
+            ),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_capability_probe_fallback_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(List<int>.generate(5, (index) => index + 1));
+
+          when(
+            () => mockDio.head(any(), options: any(named: 'options')),
+          ).thenThrow(
+            DioException(
+              requestOptions: RequestOptions(path: '/upload'),
+              type: DioExceptionType.connectionTimeout,
+              error: 'timed out',
+            ),
+          );
+
+          when(
+            () => mockDio.put(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/final',
+                'fallbackUrl': 'https://media.divine.video/final',
+              },
+            ),
+          );
+
+          final result = await service.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'Capability Probe Fallback Video',
+            description: null,
+            hashtags: null,
+            proofManifestJson: null,
+          );
+
+          expect(result.success, isTrue);
+
+          verify(
+            () => mockDio.put(
+              'https://media.divine.video/upload',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockDio.post(
+              'https://media.divine.video/upload/init',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          );
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'should send PUT request with raw bytes and NIP-98 auth header',
         () async {
           // Arrange
           await service.setBlossomEnabled(true);
@@ -311,7 +792,16 @@ void main() {
             'size': 5,
           });
 
-          // Capture the actual request to verify it uses POST with multipart/form-data
+          when(
+            () => mockDio.head(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers(),
+            ),
+          );
+
           when(
             () => mockDio.put(
               any(),
@@ -356,16 +846,6 @@ void main() {
               onSendProgress: any(named: 'onSendProgress'),
             ),
           ).called(1);
-
-          // Verify PUT was NOT called
-          verifyNever(
-            () => mockDio.put(
-              any(),
-              data: any(named: 'data'),
-              options: any(named: 'options'),
-              onSendProgress: any(named: 'onSendProgress'),
-            ),
-          );
         },
       );
     });

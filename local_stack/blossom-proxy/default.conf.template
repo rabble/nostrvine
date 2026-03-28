@@ -1,3 +1,9 @@
+map $host $blossom_upstream {
+    default http://blossom:7676;
+    media.divine.video http://blossom:7676;
+    upload.divine.video http://blossom:7676;
+}
+
 server {
     listen 80;
     server_name _;
@@ -7,8 +13,9 @@ server {
     resolver 127.0.0.11 valid=30s;
 
     location / {
-        set $upstream http://blossom:7676;
-        proxy_pass $upstream;
+        # Local resumable-upload testing keeps the control-plane and data-plane
+        # hosts distinct even while both route to the same Blossom container.
+        proxy_pass $blossom_upstream;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

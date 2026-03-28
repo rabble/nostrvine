@@ -121,10 +121,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   /// Initialize camera.
   ///
-  /// [videoQuality] specifies the video recording quality (default: FHD/1080p).
+  /// [videoQuality] specifies the video recording quality
+  /// (default: [VideoEditorConstants.quality]).
   Future<void> initialize({
     BuildContext? context,
-    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    DivineVideoQuality videoQuality = VideoEditorConstants.quality,
   }) async {
     _isDestroyed = false;
 

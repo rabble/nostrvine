@@ -93,6 +93,31 @@ void main() {
       expect(true, isTrue, reason: 'Will test with duplicate upload');
     });
 
+    test(
+      'Divine resumable capability is advertised separately from legacy PUT upload',
+      () {
+        const capabilityHeader = 'resumable-sessions';
+        const controlHost = 'https://media.divine.video';
+        const dataHost = 'https://upload.divine.video';
+
+        expect(
+          capabilityHeader,
+          equals('resumable-sessions'),
+          reason: 'Mobile client expects this token on HEAD /upload',
+        );
+        expect(
+          controlHost,
+          equals(BlossomUploadService.defaultBlossomServer),
+          reason: 'Canonical blob URLs stay on the media control-plane host',
+        );
+        expect(
+          dataHost,
+          equals('https://upload.divine.video'),
+          reason: 'Chunk uploads use the opaque upload-session data host',
+        );
+      },
+    );
+
     // LIVE SERVER TEST (skipped by default, run manually with --dart-define=LIVE_TEST=true)
     test(
       'LIVE: upload to api.divine.video should return proper Blossom response',

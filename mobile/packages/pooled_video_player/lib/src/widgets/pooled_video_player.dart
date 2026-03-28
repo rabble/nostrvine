@@ -44,6 +44,7 @@ class PooledVideoPlayer extends StatelessWidget {
     this.overlayBuilder,
     this.enableTapToPause = false,
     this.onTap,
+    this.onDoubleTap,
     super.key,
   });
 
@@ -80,6 +81,9 @@ class PooledVideoPlayer extends StatelessWidget {
 
   /// Custom tap handler.
   final VoidCallback? onTap;
+
+  /// Custom double-tap handler with tap position details.
+  final ValueChanged<TapDownDetails>? onDoubleTap;
 
   void _handleTap(VideoFeedController ctrl) {
     if (onTap != null) {
@@ -145,12 +149,15 @@ class PooledVideoPlayer extends StatelessWidget {
           );
         }
 
-        if ((enableTapToPause || onTap != null) &&
+        if ((enableTapToPause || onTap != null || onDoubleTap != null) &&
             videoController != null &&
             loadState == LoadState.ready) {
           content = GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () => _handleTap(feedController),
+            onTap: onTap != null || enableTapToPause
+                ? () => _handleTap(feedController)
+                : null,
+            onDoubleTapDown: onDoubleTap,
             child: content,
           );
         }

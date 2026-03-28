@@ -170,7 +170,7 @@ void main() {
       });
     });
 
-    group('onDisposedCallback', () {
+    group('onEvictedCallback', () {
       test('invokes callback on dispose', () async {
         final pooledPlayer = PooledPlayer(
           player: mockPlayer,
@@ -178,7 +178,7 @@ void main() {
         );
 
         var callCount = 0;
-        pooledPlayer.addOnDisposedCallback(() => callCount++);
+        pooledPlayer.addOnEvictedCallback(() => callCount++);
 
         await pooledPlayer.dispose();
 
@@ -193,8 +193,8 @@ void main() {
 
         final calls = <String>[];
         pooledPlayer
-          ..addOnDisposedCallback(() => calls.add('a'))
-          ..addOnDisposedCallback(() => calls.add('b'));
+          ..addOnEvictedCallback(() => calls.add('a'))
+          ..addOnEvictedCallback(() => calls.add('b'));
 
         await pooledPlayer.dispose();
 
@@ -208,7 +208,7 @@ void main() {
         );
 
         var wasDisposedInCallback = false;
-        pooledPlayer.addOnDisposedCallback(() {
+        pooledPlayer.addOnEvictedCallback(() {
           // Callback fires BEFORE player.stop(), so isDisposed is true
           // but native resources haven't been torn down yet.
           wasDisposedInCallback = pooledPlayer.isDisposed;
@@ -227,7 +227,7 @@ void main() {
         );
 
         var callCount = 0;
-        pooledPlayer.addOnDisposedCallback(() => callCount++);
+        pooledPlayer.addOnEvictedCallback(() => callCount++);
 
         await pooledPlayer.dispose();
         await pooledPlayer.dispose();
@@ -244,8 +244,8 @@ void main() {
         var callCount = 0;
         void callback() => callCount++;
         pooledPlayer
-          ..addOnDisposedCallback(callback)
-          ..removeOnDisposedCallback(callback);
+          ..addOnEvictedCallback(callback)
+          ..removeOnEvictedCallback(callback);
 
         await pooledPlayer.dispose();
 
@@ -259,12 +259,116 @@ void main() {
         );
 
         var callCount = 0;
-        pooledPlayer.addOnDisposedCallback(() => callCount++);
+        pooledPlayer.addOnEvictedCallback(() => callCount++);
 
         await pooledPlayer.dispose();
 
         expect(callCount, equals(1));
         // Callbacks are cleared — no lingering references.
+      });
+    });
+
+    group('recycle', () {
+      test('invokes callbacks synchronously', () {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        );
+
+        var callCount = 0;
+        pooledPlayer
+          ..addOnEvictedCallback(() => callCount++)
+          ..recycle();
+
+        expect(callCount, equals(1));
+      });
+
+      test('invokes multiple callbacks in registration order', () {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        );
+
+        final calls = <String>[];
+        pooledPlayer
+          ..addOnEvictedCallback(() => calls.add('a'))
+          ..addOnEvictedCallback(() => calls.add('b'))
+          ..recycle();
+
+        expect(calls, equals(['a', 'b']));
+      });
+
+      test('does not set isDisposed', () {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        )..recycle();
+
+        expect(pooledPlayer.isDisposed, isFalse);
+      });
+
+      test('does not call player.stop() or player.dispose()', () {
+        PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        ).recycle();
+
+        verifyNever(() => mockPlayer.stop());
+        verifyNever(() => mockPlayer.dispose());
+      });
+
+      test('clears callbacks after recycle', () {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        );
+
+        var callCount = 0;
+        pooledPlayer
+          ..addOnEvictedCallback(() => callCount++)
+          ..recycle()
+          // Call recycle again — callbacks were cleared, so count stays at 1.
+          ..recycle();
+
+        expect(callCount, equals(1));
+      });
+
+      test('is a no-op if already disposed', () async {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        );
+
+        var callCount = 0;
+        pooledPlayer.addOnEvictedCallback(() => callCount++);
+
+        await pooledPlayer.dispose();
+        // Callbacks were already fired by dispose — recycle should be no-op.
+        pooledPlayer.recycle();
+
+        expect(callCount, equals(1));
+        expect(pooledPlayer.isDisposed, isTrue);
+      });
+
+      test('sets wasRecycled to true', () {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        );
+
+        expect(pooledPlayer.wasRecycled, isFalse);
+        pooledPlayer.recycle();
+        expect(pooledPlayer.wasRecycled, isTrue);
+      });
+
+      test('clearRecycled resets wasRecycled to false', () {
+        final pooledPlayer = PooledPlayer(
+          player: mockPlayer,
+          videoController: mockVideoController,
+        );
+
+        (pooledPlayer..recycle()).clearRecycled();
+        expect(pooledPlayer.wasRecycled, isFalse);
       });
     });
   });

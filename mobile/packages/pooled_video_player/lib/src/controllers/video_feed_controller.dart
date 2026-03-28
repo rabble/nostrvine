@@ -605,14 +605,24 @@ class VideoFeedController extends ChangeNotifier {
         'poolPlayers=${pool.playerCount}',
       );
 
-      _loadedPlayers[index] = pooledPlayer;
-      _notifyIndex(index);
+      // Recycled players must NOT be published to _loadedPlayers or exposed
+      // to the UI via _notifyIndex until after open() completes. Even though
+      // stop() was awaited in _recycleLru(), the VideoController is still
+      // bound to the previous URL's surface. Publishing it at LoadState.loading
+      // would hand a stale controller to the UI before the new media is opened.
+      // Non-recycled players are exposed immediately so the UI can show a
+      // loading spinner while buffering.
+      final isRecycled = pooledPlayer.wasRecycled;
+      if (!isRecycled) {
+        _loadedPlayers[index] = pooledPlayer;
+        _notifyIndex(index);
+      }
 
       // Register a callback so we learn when the pool evicts this player.
       // The identity check in _onPlayerEvicted ensures stale callbacks
       // (from previously-released indices that loaded the same player)
       // are ignored.
-      pooledPlayer.addOnDisposedCallback(
+      pooledPlayer.addOnEvictedCallback(
         () => _onPlayerEvicted(index, pooledPlayer),
       );
 
@@ -630,14 +640,18 @@ class VideoFeedController extends ChangeNotifier {
         return;
       }
 
-      // Expose the allocated player/controller immediately so overlays can
-      // render while the media is still buffering.
-      _notifyIndex(index);
+      if (!isRecycled) {
+        // Expose the allocated player/controller immediately so overlays can
+        // render while the media is still buffering.
+        _notifyIndex(index);
+      }
 
       // Fast path: reuse player that already has media loaded.
       // When a player was released from the controller but stayed in the
       // pool, it retains its loaded media. Skip the expensive open() call
       // that would reset and rebuffer, causing a visible freeze.
+      // This path is never taken for recycled players: hadExistingPlayer is
+      // false (the new URL was not in the pool before getPlayer() was called).
       if (hadExistingPlayer &&
           pooledPlayer.player.state.duration > Duration.zero) {
         _logDebug(
@@ -705,6 +719,14 @@ class VideoFeedController extends ChangeNotifier {
 
       // Guard: index may have been released during open/setPlaylistMode.
       if (_isDisposed || !_loadingIndices.contains(index)) return;
+
+      // For recycled players, open() has now replaced the media surface.
+      // It is safe to publish the controller to the UI for the first time.
+      if (isRecycled) {
+        pooledPlayer.clearRecycled();
+        _loadedPlayers[index] = pooledPlayer;
+        _notifyIndex(index);
+      }
 
       _setupStreamSubscriptions(index, pooledPlayer);
 
