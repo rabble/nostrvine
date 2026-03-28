@@ -166,6 +166,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   bool _contentWarningRevealed = false;
   double _heartScale = 0.0;
   double _heartOpacity = 1.0;
+  Offset _heartPosition = Offset.zero;
 
   /// Triggers the fading pause button animation.
   /// Shows pause icon that fades from 100% to 0% opacity over 500ms.
@@ -225,8 +226,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     });
   }
 
-  /// Handles double-tap to like. Only likes (never unlikes) per Instagram behavior.
-  void _handleDoubleTapLike() {
+  /// Handles double-tap to like. Only likes (never unlikes) per Instagram
+  /// behavior. Stores the tap position for the heart animation.
+  void _handleDoubleTapLike(TapDownDetails details) {
     final state = _interactionsBloc.state;
 
     // Only trigger like if not already liked and not in progress
@@ -234,7 +236,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       _interactionsBloc.add(const VideoInteractionsLikeToggled());
     }
 
-    // Always show heart animation (even if already liked)
+    // Always show heart animation at tap position (even if already liked)
+    _heartPosition = details.localPosition;
     _triggerDoubleTapHeartAnimation();
   }
 
@@ -852,13 +855,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
     final child = GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onDoubleTap: () {
+      onDoubleTapDown: (details) {
         Log.debug(
           '💕 Double-tap detected on VideoFeedItem for ${video.id}',
           name: 'VideoFeedItem',
           category: LogCategory.ui,
         );
-        _handleDoubleTapLike();
+        _handleDoubleTapLike(details);
       },
       onTap: () {
         // Lighter debounce - ignore taps within 150ms of previous tap
@@ -1186,7 +1189,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                               ),
                             // Double-tap heart animation
                             if (_showDoubleTapHeart)
-                              Center(
+                              Positioned(
+                                left: _heartPosition.dx - 60,
+                                top: _heartPosition.dy - 60,
                                 child: AnimatedOpacity(
                                   opacity: _heartOpacity,
                                   duration: const Duration(milliseconds: 400),
@@ -1195,26 +1200,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                     scale: _heartScale,
                                     duration: const Duration(milliseconds: 200),
                                     curve: Curves.elasticOut,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: VineTheme.backgroundColor
-                                                .withValues(alpha: 0.3),
-                                            blurRadius: 20,
-                                            spreadRadius: 5,
-                                          ),
-                                        ],
-                                      ),
-                                      child: SvgPicture.asset(
-                                        DivineIconName.heartDuo.assetPath,
-                                        width: 120,
-                                        height: 120,
-                                        colorFilter: const ColorFilter.mode(
-                                          VineTheme.whiteText,
-                                          BlendMode.srcIn,
-                                        ),
-                                      ),
+                                    child: const DivineIcon(
+                                      icon: DivineIconName.heartDuo,
+                                      size: 120,
+                                      color: VineTheme.likeRed,
                                     ),
                                   ),
                                 ),

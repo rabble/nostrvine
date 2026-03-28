@@ -38,7 +38,7 @@ typedef ProfileSearchFilter =
 const defaultProfileIndexerRelays = [
   'wss://purplepag.es',
   'wss://user.kindpag.es',
-  'wss://relay.damus.io',
+  'wss://relay.nos.social',
 ];
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).

@@ -21,6 +21,8 @@ import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_presentation.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -630,7 +632,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
   }
 }
 
-class _PooledVideoFeedItemContent extends StatelessWidget {
+class _PooledVideoFeedItemContent extends StatefulWidget {
   const _PooledVideoFeedItemContent({
     required this.video,
     required this.index,
@@ -648,7 +650,45 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
   final Set<String>? listSources;
 
   @override
+  State<_PooledVideoFeedItemContent> createState() =>
+      _PooledVideoFeedItemContentState();
+}
+
+class _PooledVideoFeedItemContentState
+    extends State<_PooledVideoFeedItemContent> {
+  final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
+  int _heartTriggerId = 0;
+  bool _contentWarningRevealed = false;
+
+  void _handleDoubleTapLike(TapDownDetails details) {
+    final hasContentWarning = shouldShowContentWarningOverlay(
+      contentWarningLabels: widget.video.contentWarningLabels,
+      warnLabels: widget.video.warnLabels,
+    );
+    if (hasContentWarning && !_contentWarningRevealed) return;
+
+    final bloc = context.read<VideoInteractionsBloc>();
+    final state = bloc.state;
+    if (!state.isLiked && !state.isLikeInProgress) {
+      bloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation at tap position (even if already liked)
+    _heartTrigger.value = (
+      offset: details.localPosition,
+      id: ++_heartTriggerId,
+    );
+  }
+
+  @override
+  void dispose() {
+    _heartTrigger.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final video = widget.video;
     // All videos without dimensions are treated as portrait as its default
     // usecase (e.g. Reels-style vertical videos).
     final isPortrait = !(video.dimensions != null) || video.isPortrait;
@@ -657,10 +697,11 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
     return ColoredBox(
       color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
-        index: index,
-        isActive: isActive,
+        index: widget.index,
+        isActive: widget.isActive,
         thumbnailUrl: video.thumbnailUrl,
-        enableTapToPause: isActive,
+        enableTapToPause: widget.isActive,
+        onDoubleTap: _handleDoubleTapLike,
         videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
           videoController: videoController,
           isPortrait: isPortrait,
@@ -670,23 +711,29 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
           videoId: video.id,
-          feedMode: contextTitle,
-          index: index,
+          feedMode: widget.contextTitle,
+          index: widget.index,
           alignment: alignment,
         ),
         overlayBuilder: (context, videoController, player) => Stack(
           children: [
             FeedVideoOverlay(
               video: video,
-              isActive: isActive,
-              pagePosition: pagePosition,
-              index: index,
+              isActive: widget.isActive,
+              pagePosition: widget.pagePosition,
+              index: widget.index,
               player: player,
               firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
-              listSources: listSources,
+              listSources: widget.listSources,
+              onContentWarningRevealed: () {
+                _contentWarningRevealed = true;
+              },
+            ),
+            Positioned.fill(
+              child: DoubleTapHeartOverlay(trigger: _heartTrigger),
             ),
             if (!video.isFromDivineServer)
-              _SlowExternalVideoOverlay(index: index),
+              _SlowExternalVideoOverlay(index: widget.index),
           ],
         ),
       ),

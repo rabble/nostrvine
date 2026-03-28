@@ -28,6 +28,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -650,7 +651,35 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
 
 class _PooledFullscreenItemContentState
     extends ConsumerState<_PooledFullscreenItemContent> {
+  final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
+  int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
+
+  void _handleDoubleTapLike(TapDownDetails details) {
+    final showWarning = shouldShowContentWarningOverlay(
+      contentWarningLabels: widget.video.contentWarningLabels,
+      warnLabels: widget.video.warnLabels,
+    );
+    if (showWarning && !_contentWarningRevealed) return;
+
+    final bloc = context.read<VideoInteractionsBloc>();
+    final state = bloc.state;
+    if (!state.isLiked && !state.isLikeInProgress) {
+      bloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation at tap position (even if already liked)
+    _heartTrigger.value = (
+      offset: details.localPosition,
+      id: ++_heartTriggerId,
+    );
+  }
+
+  @override
+  void dispose() {
+    _heartTrigger.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -673,6 +702,7 @@ class _PooledFullscreenItemContentState
         isActive: widget.isActive,
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
+        onDoubleTap: _handleDoubleTapLike,
         videoBuilder: (context, videoController, player) =>
             PooledVideoMetricsTracker(
               key: ValueKey('metrics-${video.id}'),
@@ -744,6 +774,9 @@ class _PooledFullscreenItemContentState
                       topOffset: widget.isOwnVideo ? 64 : 8,
                     );
                   },
+                ),
+                Positioned.fill(
+                  child: DoubleTapHeartOverlay(trigger: _heartTrigger),
                 ),
               ],
             ),
