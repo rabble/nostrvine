@@ -11,6 +11,9 @@ typedef MediaSourceResolver = String? Function(VideoItem video);
 /// Called when a video becomes ready for playback.
 typedef VideoReadyCallback = void Function(int index, Player player);
 
+/// Called when a current video repeatedly stalls and should be skipped.
+typedef VideoStalledCallback = void Function(int index);
+
 /// Called periodically with position updates for the active video.
 typedef PositionCallback = void Function(int index, Duration position);
 
