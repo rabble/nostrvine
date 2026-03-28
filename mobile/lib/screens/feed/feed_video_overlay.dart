@@ -74,6 +74,13 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   ConsumerState<FeedVideoOverlay> createState() => _FeedVideoOverlayState();
 }
 
+/// Maximum text scale factor for the video feed overlay.
+///
+/// Clamped to prevent badges, author info, and action buttons from
+/// growing into each other or video content at large accessibility
+/// font sizes.
+const double _maxTextScaleFactor = 1.3;
+
 class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
   bool _contentWarningRevealed = false;
 
@@ -125,6 +132,9 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
         (video.title != null && video.title!.isNotEmpty);
 
     final safeAreaBottom = MediaQuery.viewPaddingOf(context).bottom;
+    final clampedScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: _maxTextScaleFactor,
+    );
 
     return Stack(
       children: [
@@ -179,37 +189,42 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
               ),
             );
           },
-          child: Stack(
-            children: [
-              // ProofMode and Vine badges (top-right)
-              Positioned(
-                top: MediaQuery.viewPaddingOf(context).top + 64,
-                right: 16,
-                child: GestureDetector(
-                  onTap: () => context.showVideoPausingDialog<void>(
-                    builder: (context) => BadgeExplanationModal(video: video),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: clampedScaler,
+            ),
+            child: Stack(
+              children: [
+                // ProofMode and Vine badges (top-right)
+                Positioned(
+                  top: MediaQuery.viewPaddingOf(context).top + 64,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () => context.showVideoPausingDialog<void>(
+                      builder: (context) => BadgeExplanationModal(video: video),
+                    ),
+                    child: ProofModeBadgeRow(video: video),
                   ),
-                  child: ProofModeBadgeRow(video: video),
                 ),
-              ),
-              // Author info and description (bottom-left)
-              Positioned(
-                bottom: 14 + safeAreaBottom,
-                left: 16,
-                right: 80,
-                child: _AuthorInfoSection(
-                  video: video,
-                  hasTextContent: hasTextContent,
-                  listSources: widget.listSources,
+                // Author info and description (bottom-left)
+                Positioned(
+                  bottom: 14 + safeAreaBottom,
+                  left: 16,
+                  right: 80,
+                  child: _AuthorInfoSection(
+                    video: video,
+                    hasTextContent: hasTextContent,
+                    listSources: widget.listSources,
+                  ),
                 ),
-              ),
-              // Action buttons column (bottom-right)
-              Positioned(
-                bottom: 14 + safeAreaBottom,
-                right: 16,
-                child: _ActionButtons(video: video),
-              ),
-            ],
+                // Action buttons column (bottom-right)
+                Positioned(
+                  bottom: 14 + safeAreaBottom,
+                  right: 16,
+                  child: _ActionButtons(video: video),
+                ),
+              ],
+            ),
           ),
         ),
       ],

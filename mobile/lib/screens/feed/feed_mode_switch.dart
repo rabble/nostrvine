@@ -25,8 +25,18 @@ class FeedModeSwitch extends StatelessWidget {
     FeedMode.following: 'Following',
   };
 
+  /// Maximum text scale factor for the header overlay.
+  ///
+  /// Clamped to prevent the header from growing into the badge row
+  /// or video content at large accessibility font sizes.
+  static const double _maxTextScaleFactor = 1.3;
+
   @override
   Widget build(BuildContext context) {
+    final clampedScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: _maxTextScaleFactor,
+    );
+
     return Positioned(
       top: 0,
       left: 0,
@@ -41,66 +51,71 @@ class FeedModeSwitch extends StatelessWidget {
         ),
         child: SafeArea(
           bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.only(
-              top: 8,
-              bottom: 16,
-              left: 20,
-              right: 20,
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: clampedScaler,
             ),
-            child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
-              buildWhen: (prev, curr) => prev.mode != curr.mode,
-              builder: (context, state) {
-                return Row(
-                  children: [
-                    const SizedBox(width: 48),
-                    Expanded(
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () =>
-                              _showFeedModeBottomSheet(context, state.mode),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                feedModeLabels[state.mode] ?? state.mode.name,
-                                style: VineTheme.headlineSmallFont().copyWith(
-                                  shadows: [
-                                    const Shadow(
-                                      color: VineTheme.innerShadow,
-                                      offset: Offset(1, 1),
-                                      blurRadius: 1,
-                                    ),
-                                    const Shadow(
-                                      color: VineTheme.innerShadow,
-                                      offset: Offset(0.4, 0.4),
-                                      blurRadius: 0.6,
-                                    ),
-                                  ],
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: 8,
+                bottom: 16,
+                left: 20,
+                right: 20,
+              ),
+              child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
+                buildWhen: (prev, curr) => prev.mode != curr.mode,
+                builder: (context, state) {
+                  return Row(
+                    children: [
+                      const SizedBox(width: 48),
+                      Expanded(
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () =>
+                                _showFeedModeBottomSheet(context, state.mode),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  feedModeLabels[state.mode] ?? state.mode.name,
+                                  style: VineTheme.headlineSmallFont().copyWith(
+                                    shadows: [
+                                      const Shadow(
+                                        color: VineTheme.innerShadow,
+                                        offset: Offset(1, 1),
+                                        blurRadius: 1,
+                                      ),
+                                      const Shadow(
+                                        color: VineTheme.innerShadow,
+                                        offset: Offset(0.4, 0.4),
+                                        blurRadius: 0.6,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              SvgPicture.asset(
-                                DivineIconName.caretDown.assetPath,
-                                width: 24,
-                                height: 24,
-                                colorFilter: const ColorFilter.mode(
-                                  VineTheme.whiteText,
-                                  BlendMode.srcIn,
+                                const SizedBox(width: 12),
+                                SvgPicture.asset(
+                                  DivineIconName.caretDown.assetPath,
+                                  width: 24,
+                                  height: 24,
+                                  colorFilter: const ColorFilter.mode(
+                                    VineTheme.whiteText,
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    _SearchButton(
-                      onTap: () =>
-                          context.pushWithVideoPause(SearchScreenPure.path),
-                    ),
-                  ],
-                );
-              },
+                      _SearchButton(
+                        onTap: () =>
+                            context.pushWithVideoPause(SearchScreenPure.path),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),

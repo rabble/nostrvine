@@ -734,8 +734,12 @@ class _PooledFullscreenItemContentState
               },
             );
           }
+          final viewData = MediaQueryData.fromView(View.of(context));
+          final clampedScaler = viewData.textScaler.clamp(
+            maxScaleFactor: 1.3,
+          );
           return MediaQuery(
-            data: MediaQueryData.fromView(View.of(context)),
+            data: viewData.copyWith(textScaler: clampedScaler),
             child: Stack(
               children: [
                 if (player != null)
