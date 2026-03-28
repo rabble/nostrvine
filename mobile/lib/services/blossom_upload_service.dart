@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/constants/upload_constants.dart';
 import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -306,13 +307,12 @@ class BlossomUploadService {
   }
 
   int? _parseUploadOffset(Headers headers) {
-    final rawOffset =
-        headers.value('Upload-Offset') ?? headers.value('upload-offset');
+    final rawOffset = headers.value(DivineUploadHeaders.uploadOffset);
     return rawOffset == null ? null : int.tryParse(rawOffset);
   }
 
   DateTime? _parseUploadExpiresAt(Headers headers) => _parseDateTimeValue(
-    headers.value('Upload-Expires-At') ?? headers.value('upload-expires-at'),
+    headers.value(DivineUploadHeaders.uploadExpiresAt),
   );
 
   Future<_DivineUploadCapability> _fetchDivineUploadCapability(
@@ -327,24 +327,20 @@ class BlossomUploadService {
           receiveTimeout: const Duration(seconds: 5),
         ),
       );
-      final extensionsHeader =
-          response.headers.value('X-Divine-Upload-Extensions') ??
-          response.headers.value('x-divine-upload-extensions');
+      final extensionsHeader = response.headers.value(
+        DivineUploadHeaders.extensions,
+      );
       final supportsResumable =
           extensionsHeader
               ?.split(',')
               .map((value) => value.trim().toLowerCase())
-              .contains('resumable-sessions') ??
+              .contains(DivineUploadExtensions.resumableSessions) ??
           false;
 
       return _DivineUploadCapability(
         supportsResumable: supportsResumable,
-        controlHost:
-            response.headers.value('X-Divine-Upload-Control-Host') ??
-            response.headers.value('x-divine-upload-control-host'),
-        dataHost:
-            response.headers.value('X-Divine-Upload-Data-Host') ??
-            response.headers.value('x-divine-upload-data-host'),
+        controlHost: response.headers.value(DivineUploadHeaders.controlHost),
+        dataHost: response.headers.value(DivineUploadHeaders.dataHost),
       );
     } on DioException catch (error) {
       Log.warning(

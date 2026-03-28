@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/constants/upload_constants.dart';
 import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
@@ -76,9 +77,15 @@ void main() {
             requestOptions: RequestOptions(path: '/upload'),
             statusCode: 200,
             headers: Headers.fromMap({
-              'X-Divine-Upload-Extensions': ['resumable-sessions'],
-              'X-Divine-Upload-Control-Host': ['https://media.divine.video'],
-              'X-Divine-Upload-Data-Host': ['https://upload.divine.video'],
+              DivineUploadHeaders.extensions: [
+                DivineUploadExtensions.resumableSessions,
+              ],
+              DivineUploadHeaders.controlHost: [
+                'https://media.divine.video',
+              ],
+              DivineUploadHeaders.dataHost: [
+                'https://upload.divine.video',
+              ],
             }),
           );
         }
@@ -152,7 +159,7 @@ void main() {
           requestOptions: RequestOptions(path: '/sessions/up_123'),
           statusCode: 204,
           headers: Headers.fromMap({
-            'Upload-Offset': [nextOffset],
+            DivineUploadHeaders.uploadOffset: [nextOffset],
           }),
         );
       });
