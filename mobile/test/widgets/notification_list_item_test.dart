@@ -27,6 +27,7 @@ void main() {
     Widget buildTestWidget({
       required NotificationModel notification,
       VoidCallback? onTap,
+      VoidCallback? onProfileTap,
     }) {
       return MaterialApp(
         theme: ThemeData.dark(),
@@ -34,6 +35,7 @@ void main() {
           body: NotificationListItem(
             notification: notification,
             onTap: onTap ?? () {},
+            onProfileTap: onProfileTap,
           ),
         ),
       );
@@ -194,6 +196,45 @@ void main() {
         await tester.pump();
 
         expect(tapped, isTrue);
+      });
+    });
+
+    group('onProfileTap callback', () {
+      testWidgets('fires when avatar is tapped', (
+        WidgetTester tester,
+      ) async {
+        var profileTapped = false;
+        final notification = makeNotification();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            notification: notification,
+            onProfileTap: () => profileTapped = true,
+          ),
+        );
+
+        // Tap the Semantics widget with the profile label
+        await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
+        await tester.pump();
+
+        expect(profileTapped, isTrue);
+      });
+
+      testWidgets('does not crash when onProfileTap is null', (
+        WidgetTester tester,
+      ) async {
+        final notification = makeNotification();
+
+        await tester.pumpWidget(
+          buildTestWidget(notification: notification),
+        );
+
+        // Tap avatar area - should not throw
+        await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
+        await tester.pump();
+
+        // Widget should still be rendered
+        expect(find.byType(NotificationListItem), findsOneWidget);
       });
     });
 

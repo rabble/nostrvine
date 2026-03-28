@@ -97,5 +97,102 @@ void main() {
       expect(sound.matchesSearch('meme'), isTrue);
       expect(sound.matchesSearch('funny'), isTrue);
     });
+
+    test('creates sound with attribution fields', () {
+      final sound = VineSound(
+        id: 'sound_001',
+        title: 'Ambient Loop',
+        assetPath: 'assets/sounds/ambient.mp3',
+        duration: const Duration(seconds: 10),
+        artist: 'Sound Creator',
+        license: 'CC BY 4.0',
+        licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+        sourceUrl: 'https://freesound.org/people/creator/sounds/12345/',
+      );
+
+      expect(sound.license, equals('CC BY 4.0'));
+      expect(
+        sound.licenseUrl,
+        equals('https://creativecommons.org/licenses/by/4.0/'),
+      );
+      expect(
+        sound.sourceUrl,
+        equals('https://freesound.org/people/creator/sounds/12345/'),
+      );
+    });
+
+    test('attribution fields default to null', () {
+      final sound = VineSound(
+        id: 'sound_001',
+        title: 'Simple Sound',
+        assetPath: 'assets/sounds/simple.mp3',
+        duration: const Duration(seconds: 3),
+      );
+
+      expect(sound.license, isNull);
+      expect(sound.licenseUrl, isNull);
+      expect(sound.sourceUrl, isNull);
+    });
+
+    test('fromJson parses attribution fields', () {
+      final json = {
+        'id': 'sound_001',
+        'title': 'Attributed Sound',
+        'assetPath': 'assets/sounds/attributed.mp3',
+        'durationMs': 5000,
+        'artist': 'Freesound User',
+        'tags': <String>[],
+        'license': 'CC0 1.0',
+        'licenseUrl': 'https://creativecommons.org/publicdomain/zero/1.0/',
+        'sourceUrl': 'https://freesound.org/people/user/sounds/99999/',
+      };
+
+      final sound = VineSound.fromJson(json);
+
+      expect(sound.license, equals('CC0 1.0'));
+      expect(
+        sound.licenseUrl,
+        equals('https://creativecommons.org/publicdomain/zero/1.0/'),
+      );
+      expect(
+        sound.sourceUrl,
+        equals('https://freesound.org/people/user/sounds/99999/'),
+      );
+    });
+
+    test('toJson roundtrip preserves attribution fields', () {
+      final sound = VineSound(
+        id: 'sound_001',
+        title: 'Roundtrip Sound',
+        assetPath: 'assets/sounds/roundtrip.mp3',
+        duration: const Duration(seconds: 4),
+        artist: 'Attribution Artist',
+        license: 'CC BY-NC 3.0',
+        licenseUrl: 'https://creativecommons.org/licenses/by-nc/3.0/',
+        sourceUrl: 'https://freesound.org/people/artist/sounds/55555/',
+      );
+
+      final json = sound.toJson();
+      final restored = VineSound.fromJson(json);
+
+      expect(restored.license, equals(sound.license));
+      expect(restored.licenseUrl, equals(sound.licenseUrl));
+      expect(restored.sourceUrl, equals(sound.sourceUrl));
+    });
+
+    test('matchesSearch finds by artist', () {
+      final sound = VineSound(
+        id: 'sound_001',
+        title: 'Generic Title',
+        assetPath: 'assets/sounds/generic.mp3',
+        duration: const Duration(seconds: 3),
+        artist: 'Unique Creator Name',
+      );
+
+      expect(sound.matchesSearch('unique'), isTrue);
+      expect(sound.matchesSearch('creator'), isTrue);
+      expect(sound.matchesSearch('UNIQUE CREATOR'), isTrue);
+      expect(sound.matchesSearch('nonexistent'), isFalse);
+    });
   });
 }

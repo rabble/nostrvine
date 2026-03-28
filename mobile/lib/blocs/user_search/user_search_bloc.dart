@@ -1,7 +1,5 @@
 // ABOUTME: BLoC for searching user profiles via ProfileRepository.
 
-import 'dart:developer' as developer;
-
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,23 +7,12 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
-import 'package:stream_transform/stream_transform.dart';
 
 part 'user_search_event.dart';
 part 'user_search_state.dart';
 
 /// Number of results per page
 const _pageSize = 50;
-
-/// Event transformer that debounces and restarts on new events
-EventTransformer<E> _debounceRestartable<E>() {
-  return (events, mapper) {
-    return restartable<E>().call(
-      events.debounce(searchDebounceDuration),
-      mapper,
-    );
-  };
-}
 
 /// BLoC for searching user profiles.
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
@@ -38,7 +25,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
        super(const UserSearchState()) {
     on<UserSearchQueryChanged>(
       _onQueryChanged,
-      transformer: _debounceRestartable(),
+      transformer: debounceRestartable(),
     );
     on<UserSearchCleared>(_onCleared);
     on<UserSearchLoadMore>(_onLoadMore, transformer: sequential());
@@ -71,50 +58,58 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       return;
     }
 
-    if (query == state.query && state.status != UserSearchStatus.initial) {
-      return;
-    }
+    // No dedup guard here — the restartable() transformer already cancels the
+    // previous in-flight handler via switchMap. Adding a same-query skip caused
+    // the search to get stuck in loading/empty-success states with no recovery
+    // path (the user could never re-trigger the same query).
 
     emit(
       state.copyWith(
         status: UserSearchStatus.loading,
         query: query,
+        results: const [],
         resultCount: null,
         isLoadingMore: false,
       ),
     );
 
     _feedTracker?.startFeedLoad('user_search');
+    var trackedFirst = false;
 
     try {
-      final results = await _profileRepository.searchUsers(
-        query: query,
-        limit: _pageSize,
-        sortBy: 'followers',
-        hasVideos: hasVideos,
+      await emit.forEach<List<UserProfile>>(
+        _profileRepository.searchUsersProgressive(
+          query: query,
+          limit: _pageSize,
+          sortBy: 'followers',
+          hasVideos: hasVideos,
+        ),
+        onData: (results) {
+          if (!trackedFirst && results.isNotEmpty) {
+            trackedFirst = true;
+            _feedTracker?.markFirstVideosReceived(
+              'user_search',
+              results.length,
+            );
+          }
+          return state.copyWith(
+            status: UserSearchStatus.loading,
+            results: results,
+            resultCount: results.length,
+          );
+        },
       );
-
-      final withPic = results.where((p) => p.picture != null).length;
-      developer.log(
-        'Query "$query": ${results.length} results, '
-        '$withPic with picture',
-        name: 'UserSearchBloc',
-      );
-
-      _feedTracker?.markFirstVideosReceived('user_search', results.length);
 
       emit(
         state.copyWith(
           status: UserSearchStatus.success,
-          results: results,
-          resultCount: results.length,
-          offset: results.length,
-          hasMore: results.length == _pageSize,
+          offset: state.results.length,
+          hasMore: state.results.length == _pageSize,
           isLoadingMore: false,
         ),
       );
 
-      _feedTracker?.markFeedDisplayed('user_search', results.length);
+      _feedTracker?.markFeedDisplayed('user_search', state.results.length);
     } on Exception catch (e) {
       _feedTracker?.trackFeedError(
         'user_search',
@@ -134,13 +129,15 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final moreResults = await _profileRepository.searchUsers(
-        query: state.query,
-        limit: _pageSize,
-        offset: state.offset,
-        sortBy: 'followers',
-        hasVideos: hasVideos,
-      );
+      final moreResults = await _profileRepository
+          .searchUsersProgressive(
+            query: state.query,
+            limit: _pageSize,
+            offset: state.offset,
+            sortBy: 'followers',
+            hasVideos: hasVideos,
+          )
+          .last; // Stream always emits at least once for non-empty queries.
 
       final allResults = [...state.results, ...moreResults];
 

@@ -358,7 +358,7 @@ class _ProfileSetupScreenViewState
               ),
               actions: [
                 DiVineAppBarAction(
-                  icon: const SvgIconSource('assets/icon/info.svg'),
+                  icon: SvgIconSource(DivineIconName.info.assetPath),
                   onPressed: () => _showNostrInfoSheet(context),
                   tooltip: 'About Nostr',
                   semanticLabel: 'About Nostr',
@@ -465,7 +465,9 @@ class _ProfileSetupScreenViewState
                                                   ),
                                                   child: Center(
                                                     child: SvgPicture.asset(
-                                                      'assets/icon/cameraPlus.svg',
+                                                      DivineIconName
+                                                          .cameraPlus
+                                                          .assetPath,
                                                       width: 24,
                                                       height: 24,
                                                       colorFilter:
@@ -501,7 +503,9 @@ class _ProfileSetupScreenViewState
                                                 ),
                                                 child: Center(
                                                   child: SvgPicture.asset(
-                                                    'assets/icon/imagesSquare.svg',
+                                                    DivineIconName
+                                                        .imagesSquare
+                                                        .assetPath,
                                                     width: 24,
                                                     height: 24,
                                                     colorFilter:
@@ -534,7 +538,9 @@ class _ProfileSetupScreenViewState
                                                 ),
                                                 child: Center(
                                                   child: SvgPicture.asset(
-                                                    'assets/icon/linkSimple.svg',
+                                                    DivineIconName
+                                                        .linkSimple
+                                                        .assetPath,
                                                     width: 24,
                                                     height: 24,
                                                     colorFilter:
@@ -1171,6 +1177,7 @@ class _ProfileSetupScreenViewState
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
+        requestFullMetadata: false,
       );
 
       if (image != null) {
@@ -1299,7 +1306,6 @@ class _ProfileSetupScreenViewState
     FocusScope.of(context).unfocus();
     VineBottomSheet.show<void>(
       context: context,
-      scrollable: false,
       children: const [NostrInfoSheetContent()],
     ).then((_) {
       // Unfocus after sheet is dismissed to prevent auto-focus on form fields
@@ -2026,10 +2032,12 @@ class _ExternalNip05Section extends StatelessWidget {
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Use your own NIP-05 address',
-                      style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
+                    Flexible(
+                      child: Text(
+                        'Use your own NIP-05 address',
+                        style: VineTheme.bodyMediumFont(
+                          color: VineTheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],

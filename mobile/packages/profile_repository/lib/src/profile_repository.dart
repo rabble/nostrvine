@@ -31,7 +31,11 @@ typedef ProfileSearchFilter =
 /// Well-known indexer relays that maintain broad coverage of kind 0 events.
 /// Used as a last-resort fallback when main relays and REST API don't have
 /// a profile.
-const _profileIndexerRelays = ['wss://purplepag.es', 'wss://user.kindpag.es'];
+const _profileIndexerRelays = [
+  'wss://purplepag.es',
+  'wss://user.kindpag.es',
+  'wss://relay.nos.social',
+];
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
@@ -199,13 +203,18 @@ class ProfileRepository {
     });
   }
 
-  /// Fetches a fresh profile from Nostr relays and updates the local cache.
+  /// Fetches a fresh profile and updates the local cache.
   ///
-  /// Skips the relay fetch if the pubkey is confirmed missing (no Kind 0).
-  /// Deduplicates concurrent calls for the same pubkey — only one relay
-  /// request is made, and all callers share the result.
+  /// Uses a layered strategy matching `fetchBatchProfiles`:
+  /// 1. Funnelcake REST API (fast, broad coverage)
+  /// 2. User's connected relays (WebSocket)
+  /// 3. Well-known indexer relays (Purple Pages, Kind Pages)
   ///
-  /// Returns `null` if no profile exists on relays for the given pubkey.
+  /// Skips all fetches if the pubkey is confirmed missing.
+  /// Deduplicates concurrent calls for the same pubkey — only one fetch
+  /// pipeline runs, and all callers share the result.
+  ///
+  /// Returns `null` if no profile exists across all sources.
   /// On success, the profile is automatically cached locally.
   Future<UserProfile?> fetchFreshProfile({required String pubkey}) {
     if (_confirmedMissing.contains(pubkey)) return Future.value();
@@ -221,25 +230,86 @@ class ProfileRepository {
   }
 
   Future<UserProfile?> _doFetchFreshProfile(String pubkey) async {
-    final profileEvent = await _nostrClient.fetchProfile(pubkey);
-    if (profileEvent == null) {
-      _confirmedMissing.add(pubkey);
-      developer.log(
-        'No profile found for $pubkey (relay miss, marked missing)',
-        name: 'ProfileRepository.fetchFreshProfile',
-      );
-      return null;
+    // Step 1: Try Funnelcake REST API (fast, broad coverage).
+    if (_funnelcakeApiClient?.isAvailable ?? false) {
+      try {
+        final data = await _funnelcakeApiClient!.getUserProfile(pubkey);
+        if (data != null && data['_noProfile'] != true) {
+          final profile = UserProfile.fromFunnelcake(pubkey, data);
+          developer.log(
+            'Fetched from REST API and caching: '
+            '${profile.bestDisplayName}',
+            name: 'ProfileRepository.fetchFreshProfile',
+          );
+          _knownCached.add(pubkey);
+          await _userProfilesDao.upsertProfile(profile);
+          return profile;
+        }
+        // _noProfile sentinel — user exists but has no Kind 0.
+        // Skip relay/indexer fallback.
+        if (data != null && data['_noProfile'] == true) {
+          _confirmedMissing.add(pubkey);
+          return null;
+        }
+      } on Exception catch (e) {
+        developer.log(
+          'REST API fetch failed (falling back to relay): $e',
+          name: 'ProfileRepository.fetchFreshProfile',
+        );
+      }
     }
 
-    final profile = UserProfile.fromNostrEvent(profileEvent);
+    // Step 2: Try user's connected relays (WebSocket).
+    final profileEvent = await _nostrClient.fetchProfile(pubkey);
+    if (profileEvent != null) {
+      final profile = UserProfile.fromNostrEvent(profileEvent);
+      developer.log(
+        'Fetched from relay and caching: ${profile.bestDisplayName}, '
+        'picture=${profile.picture ?? "null"}',
+        name: 'ProfileRepository.fetchFreshProfile',
+      );
+      _knownCached.add(pubkey);
+      await _userProfilesDao.upsertProfile(profile);
+      return profile;
+    }
+
+    // Step 3: Try well-known indexer relays (NIP-65 discovery points).
+    try {
+      final indexerEvents = await _nostrClient
+          .queryEvents(
+            [
+              Filter(kinds: [0], authors: [pubkey], limit: 1),
+            ],
+            tempRelays: _profileIndexerRelays,
+            useCache: false,
+          )
+          .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
+
+      if (indexerEvents.isNotEmpty && indexerEvents.first.kind == 0) {
+        final profile = UserProfile.fromNostrEvent(indexerEvents.first);
+        developer.log(
+          'Fetched from indexer relay and caching: '
+          '${profile.bestDisplayName}',
+          name: 'ProfileRepository.fetchFreshProfile',
+        );
+        _knownCached.add(pubkey);
+        await _userProfilesDao.upsertProfile(profile);
+        return profile;
+      }
+    } on Exception catch (e) {
+      developer.log(
+        'Indexer relay fetch failed: $e',
+        name: 'ProfileRepository.fetchFreshProfile',
+      );
+    }
+
+    // All sources exhausted — mark as confirmed missing.
+    _confirmedMissing.add(pubkey);
     developer.log(
-      'Fetched from relay and caching: ${profile.bestDisplayName}, '
-      'picture=${profile.picture ?? "null"}',
+      'No profile found for $pubkey across all sources, marked missing',
       name: 'ProfileRepository.fetchFreshProfile',
     );
-    _knownCached.add(pubkey);
-    await _userProfilesDao.upsertProfile(profile);
-    return profile;
+    return null;
   }
 
   /// Publishes profile metadata to Nostr relays and updates the local cache.
@@ -583,6 +653,122 @@ class ProfileRepository {
     }).toList();
   }
 
+  /// Progressively streams user profile search results.
+  ///
+  /// Yields accumulated results as each source completes:
+  /// 1. Local cached profiles (instant)
+  /// 2. Funnelcake REST API results merged with local (fast)
+  /// 3. NIP-50 WebSocket results merged with all (first page only)
+  ///
+  /// Each yield contains the full deduplicated list so far — not just the
+  /// new batch. This matches the progressive pattern used by
+  /// `VideosRepository.searchVideos()`.
+  ///
+  /// Parameters match [searchUsers]. When [offset] > 0 the local and NIP-50
+  /// phases are skipped (only the API phase runs).
+  Stream<List<UserProfile>> searchUsersProgressive({
+    required String query,
+    int limit = 200,
+    int offset = 0,
+    String? sortBy,
+    bool hasVideos = false,
+  }) async* {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+
+    final resultMap = <String, UserProfile>{};
+    final useServerSort = sortBy != null;
+
+    // Phase 1: Local cache (instant, first page only)
+    if (offset == 0) {
+      final local = await searchUsersLocally(query: trimmed);
+      for (final profile in local) {
+        resultMap[profile.pubkey] = profile;
+      }
+      if (resultMap.isNotEmpty) {
+        yield _applyFilter(trimmed, resultMap.values.toList(), useServerSort);
+      }
+    }
+
+    // Phase 2: Funnelcake REST API (fast)
+    final prevCount = resultMap.length;
+    if (_funnelcakeApiClient?.isAvailable ?? false) {
+      try {
+        final restResults = await _funnelcakeApiClient!.searchProfiles(
+          query: trimmed,
+          limit: limit,
+          offset: offset,
+          sortBy: sortBy,
+          hasVideos: hasVideos,
+        );
+        for (final result in restResults) {
+          resultMap[result.pubkey] = result.toUserProfile();
+        }
+      } on Exception catch (e) {
+        developer.log(
+          'REST search failed: $e',
+          name: 'ProfileRepository.searchUsersProgressive',
+        );
+      }
+    }
+
+    // Yield after Phase 2 if new results were added.
+    // Skips enrichment for faster progressive display; the final Phase 3
+    // yield enriches all results from cache.
+    if (resultMap.length > prevCount) {
+      yield _applyFilter(trimmed, resultMap.values.toList(), useServerSort);
+    }
+
+    // Phase 3: NIP-50 WebSocket (first page only)
+    if (offset == 0) {
+      final preWsCount = resultMap.length;
+      try {
+        final events = await _nostrClient.queryUsers(trimmed, limit: limit);
+        for (final event in events) {
+          final profile = UserProfile.fromNostrEvent(event);
+          resultMap.putIfAbsent(profile.pubkey, () => profile);
+        }
+      } on Object catch (e) {
+        // Intentionally catches Object: WebSocket failures surface as
+        // StateError (an Error, not Exception), unlike the REST phase above.
+        developer.log(
+          'NIP-50 search failed: $e',
+          name: 'ProfileRepository.searchUsersProgressive',
+        );
+      }
+
+      // Only enrich + yield again if WS added new profiles
+      if (resultMap.length > preWsCount) {
+        final enriched = await _enrichFromCache(resultMap.values.toList());
+        yield _applyFilter(trimmed, enriched, useServerSort);
+        return;
+      }
+    }
+
+    // Final yield: enriched + filtered (when WS didn't add anything or
+    // was skipped due to offset > 0)
+    final enriched = await _enrichFromCache(resultMap.values.toList());
+    yield _applyFilter(trimmed, enriched, useServerSort);
+  }
+
+  /// Applies the configured search filter or falls back to name matching.
+  List<UserProfile> _applyFilter(
+    String query,
+    List<UserProfile> profiles,
+    bool useServerSort,
+  ) {
+    if (useServerSort) return profiles;
+
+    if (_profileSearchFilter != null) {
+      return _profileSearchFilter(query, profiles);
+    }
+
+    final queryLower = query.toLowerCase();
+    return profiles.where((profile) {
+      return profile.bestDisplayName.toLowerCase().contains(queryLower);
+    }).toList();
+  }
+
   /// Fetches a user profile from the Funnelcake REST API.
   ///
   /// Returns profile data as a map, or null if not found.
@@ -596,6 +782,18 @@ class ProfileRepository {
       return null;
     }
     return _funnelcakeApiClient.getUserProfile(pubkey);
+  }
+
+  /// Fetches follower/following counts from the Funnelcake REST API.
+  ///
+  /// Returns [SocialCounts] or null if the API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<SocialCounts?> getSocialCounts(String pubkey) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getSocialCounts(pubkey);
   }
 
   /// Fetches multiple user profiles in bulk from the Funnelcake REST API.
@@ -668,18 +866,10 @@ class ProfileRepository {
             continue;
           }
 
-          final profile = UserProfile(
-            pubkey: pubkey,
-            name: data['name'] as String?,
-            displayName: data['display_name'] as String?,
-            about: data['about'] as String?,
-            picture: data['picture'] as String?,
-            banner: data['banner'] as String?,
-            nip05: data['nip05'] as String?,
-            lud16: data['lud16'] as String?,
-            rawData: data,
-            createdAt: DateTime.now(),
-            eventId: 'rest-bulk-$pubkey',
+          final profile = UserProfile.fromFunnelcake(
+            pubkey,
+            data,
+            eventIdPrefix: 'rest-bulk',
           );
           results[pubkey] = profile;
           toCache.add(profile);

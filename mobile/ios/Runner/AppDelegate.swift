@@ -7,23 +7,26 @@ import SupportSDK
 import SupportProvidersSDK
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // UIScene lifecycle: Called when Flutter engine is ready
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    // Register plugins with the engine
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
     // Set up ProofMode platform channel
-    setupProofModeChannel()
+    setupProofModeChannel(with: engineBridge)
 
     // Set up Zendesk platform channel
-    setupZendeskChannel()
+    setupZendeskChannel(with: engineBridge)
 
-    // Set up Camera Zoom Detector platform channel
-    setupCameraZoomDetectorChannel()
-
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    NSLog("✅ AppDelegate: Implicit Flutter engine initialized with UIScene lifecycle")
   }
 
   // Force portrait orientation for entire app (including camera preview)
@@ -34,19 +37,13 @@ import SupportProvidersSDK
     return .portrait
   }
 
-  private func setupProofModeChannel() {
-
-    guard let controller = window?.rootViewController as? FlutterViewController else {
-      NSLog("❌ ProofMode: Could not get FlutterViewController")
-      return
-    }
-
+  private func setupProofModeChannel(with engineBridge: FlutterImplicitEngineBridge) {
     let channel = FlutterMethodChannel(
       name: "org.openvine/proofmode",
-      binaryMessenger: controller.binaryMessenger
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
 
-    channel.setMethodCallHandler { [weak self] (call, result) in
+    channel.setMethodCallHandler { (call, result) in
       switch call.method {
       case "generateProof":
         guard let args = call.arguments as? [String: Any],
@@ -149,20 +146,16 @@ import SupportProvidersSDK
     NSLog("✅ ProofMode: Platform channel registered with LibProofMode")
   }
 
-  private func setupZendeskChannel() {
-    guard let controller = window?.rootViewController as? FlutterViewController else {
-      NSLog("❌ Zendesk: Could not get FlutterViewController")
-      return
-    }
-
+  private func setupZendeskChannel(with engineBridge: FlutterImplicitEngineBridge) {
     let channel = FlutterMethodChannel(
       name: "com.openvine/zendesk_support",
-      binaryMessenger: controller.binaryMessenger
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
 
-    channel.setMethodCallHandler { [weak self] (call, result) in
-      guard let self = self,
-            let controller = self.window?.rootViewController as? FlutterViewController else {
+    channel.setMethodCallHandler { (call, result) in
+      // Get the root view controller for presenting UI
+      guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let controller = windowScene.windows.first?.rootViewController else {
         result(FlutterError(code: "NO_CONTROLLER", message: "FlutterViewController not available", details: nil))
         return
       }
@@ -371,131 +364,5 @@ import SupportProvidersSDK
     }
 
     NSLog("✅ Zendesk: Platform channel registered")
-  }
-
-  private func setupCameraZoomDetectorChannel() {
-    guard let controller = window?.rootViewController as? FlutterViewController else {
-      NSLog("❌ CameraZoomDetector: Could not get FlutterViewController")
-      return
-    }
-
-    let channel = FlutterMethodChannel(
-      name: "com.openvine/camera_zoom_detector",
-      binaryMessenger: controller.binaryMessenger
-    )
-
-    channel.setMethodCallHandler { (call, result) in
-      switch call.method {
-      case "getPhysicalCameras":
-        NSLog("📷 CameraZoomDetector: Getting physical cameras...")
-
-        guard #available(iOS 10.0, *) else {
-          result([])
-          return
-        }
-
-        // Query back cameras
-        let backDiscoverySession = AVCaptureDevice.DiscoverySession(
-          deviceTypes: [
-            .builtInWideAngleCamera,
-            .builtInUltraWideCamera,
-            .builtInTelephotoCamera
-          ].compactMap { $0 },
-          mediaType: .video,
-          position: .back
-        )
-
-        // Query front cameras
-        let frontDiscoverySession = AVCaptureDevice.DiscoverySession(
-          deviceTypes: [
-            .builtInWideAngleCamera
-          ].compactMap { $0 },
-          mediaType: .video,
-          position: .front
-        )
-
-        // First, get the multi-camera virtual device to query zoom switchover points
-        var telephotoZoomFactor: Double = 2.0  // Default fallback
-
-        if #available(iOS 13.0, *) {
-          // Query multi-camera device to get actual zoom switchover factors
-          let multiCamSession = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.builtInTripleCamera, .builtInDualWideCamera, .builtInDualCamera].compactMap { $0 },
-            mediaType: .video,
-            position: .back
-          )
-
-          if let multiCamDevice = multiCamSession.devices.first {
-            let switchFactors = multiCamDevice.virtualDeviceSwitchOverVideoZoomFactors.map { $0.doubleValue }
-            NSLog("📷 Multi-camera device internal switchover factors: \(switchFactors)")
-
-            // CRITICAL: Apple uses ultra-wide as baseline (internal factor 1 = 0.5x display)
-            // iPhone 13 Pro Max returns [2, 6] which means:
-            //   - Factor 2 = Wide camera (1x display) = 2 / 2 = 1.0x
-            //   - Factor 6 = Telephoto camera (3x display) = 6 / 2 = 3.0x
-            // Conversion: Display zoom = Internal factor / 2
-            if let maxInternalZoom = switchFactors.max(), maxInternalZoom > 1.0 {
-              telephotoZoomFactor = maxInternalZoom / 2.0
-              NSLog("📷 Telephoto display zoom factor: \(telephotoZoomFactor)x (from internal \(maxInternalZoom))")
-            }
-          }
-        }
-
-        var cameras: [[String: Any]] = []
-
-        // Process back cameras
-        for device in backDiscoverySession.devices {
-          // Determine camera type based on device type
-          var cameraType = "wide"
-          if device.deviceType == .builtInUltraWideCamera {
-            cameraType = "ultrawide"
-          } else if device.deviceType == .builtInTelephotoCamera {
-            cameraType = "telephoto"
-          }
-
-          // Get zoom factor relative to wide camera (1.0x baseline)
-          let zoomFactor: Double
-          if device.deviceType == .builtInUltraWideCamera {
-            // Ultrawide is typically 0.5x on all iPhones (13mm vs 26mm)
-            zoomFactor = 0.5
-          } else if device.deviceType == .builtInTelephotoCamera {
-            // Use the zoom factor from multi-camera switchover points
-            zoomFactor = telephotoZoomFactor
-          } else {
-            // Wide angle camera is the baseline (1.0x)
-            zoomFactor = 1.0
-          }
-
-          cameras.append([
-            "type": cameraType,
-            "zoomFactor": zoomFactor,
-            "deviceId": device.uniqueID,
-            "displayName": device.localizedName
-          ])
-
-          NSLog("📷 Found back camera: \(device.localizedName) - \(cameraType) - \(zoomFactor)x")
-        }
-
-        // Process front cameras
-        for device in frontDiscoverySession.devices {
-          cameras.append([
-            "type": "front",
-            "zoomFactor": 1.0,  // Front cameras are always 1.0x
-            "deviceId": device.uniqueID,
-            "displayName": device.localizedName
-          ])
-
-          NSLog("📷 Found front camera: \(device.localizedName) - front - 1.0x")
-        }
-
-        NSLog("📷 CameraZoomDetector: Found \(cameras.count) cameras total")
-        result(cameras)
-
-      default:
-        result(FlutterMethodNotImplemented)
-      }
-    }
-
-    NSLog("✅ CameraZoomDetector: Platform channel registered")
   }
 }

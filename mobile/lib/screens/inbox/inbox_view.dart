@@ -8,14 +8,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
+import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
+import 'package:openvine/screens/inbox/new_message_sheet.dart';
+import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
+import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -30,10 +38,19 @@ class InboxView extends ConsumerStatefulWidget {
 }
 
 class _InboxViewState extends ConsumerState<InboxView> {
-  InboxTab _selectedTab = InboxTab.messages;
+  InboxTab _selectedTab = InboxTab.notifications;
 
   @override
   Widget build(BuildContext context) {
+    // Re-filter conversation list when blocklist changes.
+    ref.listen(blocklistVersionProvider, (previous, current) {
+      if (previous != null && current > previous) {
+        context.read<ConversationListBloc>().add(
+          const ConversationListBlocklistChanged(),
+        );
+      }
+    });
+
     // Watch notification unread count for the badge.
     final notificationCount = ref.watch(relayNotificationUnreadCountProvider);
 
@@ -71,7 +88,7 @@ class _InboxViewState extends ConsumerState<InboxView> {
 /// Pushes the conversation page using the [GoRouter] instance directly,
 /// bypassing the nested Navigator's context which cannot reach GoRouter.
 void _pushConversation(
-  GoRouter router,
+  BuildContext context,
   String conversationId,
   List<String> participantPubkeys,
 ) {
@@ -80,9 +97,8 @@ void _pushConversation(
     name: 'InboxView',
     category: LogCategory.ui,
   );
-  router.pushNamed(
-    ConversationPage.routeName,
-    pathParameters: {'id': conversationId},
+  context.push(
+    ConversationPage.pathForId(conversationId),
     extra: participantPubkeys,
   );
 }
@@ -96,7 +112,6 @@ class _MessagesContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
-    final router = ref.read(goRouterProvider);
 
     return BlocListener<ConversationListBloc, ConversationListState>(
       listenWhen: (prev, curr) =>
@@ -118,36 +133,76 @@ class _MessagesContent extends ConsumerWidget {
         );
 
         _pushConversation(
-          router,
+          context,
           target.conversationId,
           target.participantPubkeys,
         );
       },
-      child: Column(
+      child: Stack(
         children: [
-          // Following users horizontal bar
-          FollowingBar(
-            onUserTapped: (pubkey) {
-              Log.info(
-                '👤 User tapped in following bar: $pubkey',
-                name: 'InboxView',
-                category: LogCategory.ui,
-              );
-              context.read<ConversationListBloc>().add(
-                ConversationListNavigateToUser(pubkey),
-              );
-            },
+          Column(
+            children: [
+              // Following users horizontal bar
+              FollowingBar(
+                onUserTapped: (pubkey) {
+                  Log.info(
+                    '👤 User tapped in following bar: $pubkey',
+                    name: 'InboxView',
+                    category: LogCategory.ui,
+                  );
+                  context.read<ConversationListBloc>().add(
+                    ConversationListNavigateToUser(pubkey),
+                  );
+                },
+              ),
+              // Conversation list or empty state
+              Expanded(
+                child: _ConversationListContent(
+                  currentUserPubkey: currentPubkey,
+                ),
+              ),
+            ],
           ),
-          // Conversation list or empty state
-          Expanded(
-            child: _ConversationListContent(
-              currentUserPubkey: currentPubkey,
-              router: router,
+          // FAB positioned bottom-right
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: InboxFab(
+              onPressed: () => _onNewConversation(context, ref),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _onNewConversation(BuildContext context, WidgetRef ref) async {
+    final profileRepo = ref.read(profileRepositoryProvider);
+    if (profileRepo == null) {
+      Log.warning(
+        'Cannot open new message: profileRepo is null',
+        name: 'InboxView',
+        category: LogCategory.ui,
+      );
+      return;
+    }
+
+    final selectedUser = await NewMessageSheet.show(
+      context,
+      profileRepository: profileRepo,
+      followRepository: ref.read(followRepositoryProvider),
+    );
+
+    if (selectedUser == null || !context.mounted) return;
+
+    final authService = ref.read(authServiceProvider);
+    final currentPubkey = authService.currentPublicKeyHex;
+    if (currentPubkey == null) return;
+
+    final conversationId = DmRepository.computeConversationId(
+      [currentPubkey, selectedUser.pubkey],
+    );
+    _pushConversation(context, conversationId, [selectedUser.pubkey]);
   }
 }
 
@@ -155,11 +210,9 @@ class _MessagesContent extends ConsumerWidget {
 class _ConversationListContent extends StatelessWidget {
   const _ConversationListContent({
     required this.currentUserPubkey,
-    required this.router,
   });
 
   final String currentUserPubkey;
-  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
@@ -175,34 +228,51 @@ class _ConversationListContent extends StatelessWidget {
       ConversationListStatus.error => const InboxEmptyState(),
       ConversationListStatus.loaded => _ConversationList(
         currentUserPubkey: currentUserPubkey,
-        router: router,
       ),
     };
   }
 }
 
-class _ConversationList extends StatelessWidget {
+class _ConversationList extends ConsumerWidget {
   const _ConversationList({
     required this.currentUserPubkey,
-    required this.router,
   });
 
   static const double _paginationThreshold = 200;
 
   final String currentUserPubkey;
-  final GoRouter router;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final conversations = context
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
+        );
+    final requestConversations = context
+        .select<ConversationListBloc, List<DmConversation>>(
+          (bloc) => bloc.state.requestConversations,
         );
     final hasMore = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.hasMore,
     );
 
-    if (conversations.isEmpty) return const InboxEmptyState();
+    final hasRequests = requestConversations.isNotEmpty;
+    final bannerOffset = hasRequests ? 1 : 0;
+
+    if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
+
+    // Only requests, no followed conversations — show banner + empty state
+    if (conversations.isEmpty && hasRequests) {
+      return Column(
+        children: [
+          MessageRequestsBanner(
+            requestCount: requestConversations.length,
+            onTap: () => _openMessageRequests(context),
+          ),
+          const Expanded(child: InboxEmptyState()),
+        ],
+      );
+    }
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -216,9 +286,20 @@ class _ConversationList extends StatelessWidget {
         return false;
       },
       child: ListView.builder(
-        itemCount: conversations.length + (hasMore ? 1 : 0),
+        itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index == conversations.length) {
+          // Banner at position 0 when requests exist
+          if (hasRequests && index == 0) {
+            return MessageRequestsBanner(
+              requestCount: requestConversations.length,
+              onTap: () => _openMessageRequests(context),
+            );
+          }
+
+          final conversationIndex = index - bannerOffset;
+
+          // Loading indicator at the end
+          if (conversationIndex == conversations.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
@@ -234,15 +315,24 @@ class _ConversationList extends StatelessWidget {
             );
           }
 
-          final conversation = conversations[index];
+          final conversation = conversations[conversationIndex];
           return ConversationTile(
             conversation: conversation,
             currentUserPubkey: currentUserPubkey,
             onTap: () => _onConversationTapped(context, conversation),
+            onLongPress: () => _onConversationLongPressed(
+              context,
+              ref,
+              conversation,
+            ),
           );
         },
       ),
     );
+  }
+
+  void _openMessageRequests(BuildContext context) {
+    context.pushNamed(MessageRequestsPage.routeName);
   }
 
   void _onConversationTapped(
@@ -258,6 +348,129 @@ class _ConversationList extends StatelessWidget {
         .where((pk) => pk != currentUserPubkey)
         .toList();
 
-    _pushConversation(router, conversation.id, otherPubkeys);
+    _pushConversation(context, conversation.id, otherPubkeys);
+  }
+
+  Future<void> _onConversationLongPressed(
+    BuildContext context,
+    WidgetRef ref,
+    DmConversation conversation,
+  ) async {
+    final otherPubkey = conversation.participantPubkeys.firstWhere(
+      (pk) => pk != currentUserPubkey,
+      orElse: () => conversation.participantPubkeys.first,
+    );
+
+    final profile = await ref.read(
+      fetchUserProfileProvider(otherPubkey).future,
+    );
+    final displayName = profile?.bestDisplayName ?? 'user';
+
+    if (!context.mounted) return;
+
+    final muteCubit = context.read<ConversationMuteCubit>();
+    final isMuted = muteCubit.state.isMuted(conversation.id);
+
+    final actionsCubit = context.read<ConversationActionsCubit>();
+    final isBlocked = actionsCubit.isBlocked(otherPubkey);
+
+    final action = await ConversationActionsSheet.show(
+      context,
+      displayName: displayName,
+      isMuted: isMuted,
+      isBlocked: isBlocked,
+    );
+
+    if (action == null || !context.mounted) return;
+
+    switch (action) {
+      case ConversationAction.toggleMute:
+        final nowMuted = await muteCubit.toggleMute(conversation.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                nowMuted ? 'Conversation muted' : 'Conversation unmuted',
+              ),
+            ),
+          );
+        }
+
+      case ConversationAction.report:
+        final reported = await actionsCubit.reportUser(otherPubkey);
+        if (context.mounted && reported) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Reported $displayName')),
+          );
+        }
+
+      case ConversationAction.block:
+        if (isBlocked) {
+          actionsCubit.unblockUser(otherPubkey);
+        } else {
+          actionsCubit.blockUser(otherPubkey);
+        }
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isBlocked ? 'Unblocked $displayName' : 'Blocked $displayName',
+              ),
+            ),
+          );
+        }
+
+      case ConversationAction.remove:
+        if (!context.mounted) return;
+        final confirmed = await _confirmRemove(context, displayName);
+        if (confirmed && context.mounted) {
+          final removed = await actionsCubit.removeConversation(
+            conversation.id,
+          );
+          if (context.mounted && removed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Removed conversation')),
+            );
+          }
+        }
+    }
+  }
+
+  Future<bool> _confirmRemove(
+    BuildContext context,
+    String displayName,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: Text(
+          'Remove conversation?',
+          style: VineTheme.titleLargeFont(),
+        ),
+        content: Text(
+          'This will delete your conversation with $displayName. '
+          'This action cannot be undone.',
+          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Remove',
+              style: VineTheme.bodyMediumFont(color: VineTheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 }

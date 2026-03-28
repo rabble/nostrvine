@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This implementation plan may still be useful background, but it is not the active launch source of truth.
+
 # ProofMode Attestation Implementation Plan
 
 ## Executive Summary

@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -26,12 +27,12 @@ class MockContentBlocklistService extends Mock
   Set<String> get runtimeBlockedUsers => Set.unmodifiable(_runtimeBlocklist);
 
   @override
-  void blockUser(String pubkey, {String? ourPubkey}) {
+  Future<void> blockUser(String pubkey, {String? ourPubkey}) async {
     _runtimeBlocklist.add(pubkey);
   }
 
   @override
-  void unblockUser(String pubkey) {
+  Future<void> unblockUser(String pubkey) async {
     _runtimeBlocklist.remove(pubkey);
   }
 
@@ -54,15 +55,9 @@ class MockAccountLabelService extends Mock implements AccountLabelService {
 }
 
 class MockModerationLabelService extends Mock
-    implements ModerationLabelService {
-  @override
-  Set<String> get subscribedLabelers => {
-    ModerationLabelService.divineModerationPubkeyHex,
-  };
+    implements ModerationLabelService {}
 
-  @override
-  Future<void> initialize() async {}
-}
+class MockFollowRepository extends Mock implements FollowRepository {}
 
 class MockAgeVerificationService extends Mock
     implements AgeVerificationService {
@@ -90,6 +85,7 @@ void main() {
     late MockContentReportingService mockReportingService;
     late MockAccountLabelService mockAccountLabelService;
     late MockModerationLabelService mockModerationLabelService;
+    late MockFollowRepository mockFollowRepository;
     late MockAgeVerificationService mockAgeVerificationService;
     late MockContentFilterService mockContentFilterService;
     late DivineHostFilterService divineHostFilterService;
@@ -101,9 +97,53 @@ void main() {
       mockReportingService = MockContentReportingService();
       mockAccountLabelService = MockAccountLabelService();
       mockModerationLabelService = MockModerationLabelService();
+      mockFollowRepository = MockFollowRepository();
       mockAgeVerificationService = MockAgeVerificationService();
       mockContentFilterService = MockContentFilterService();
       divineHostFilterService = DivineHostFilterService(prefs);
+
+      when(
+        () => mockModerationLabelService.initialize(),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockModerationLabelService.divineModerationPubkeyHex,
+      ).thenReturn(ModerationLabelService.fallbackModerationPubkeyHex);
+      when(
+        () => mockModerationLabelService.isDivineLabelerSubscribed,
+      ).thenReturn(true);
+      when(() => mockModerationLabelService.customLabelers).thenReturn({});
+      when(() => mockModerationLabelService.subscribedLabelers).thenReturn({
+        ModerationLabelService.fallbackModerationPubkeyHex,
+      });
+      when(
+        () => mockModerationLabelService.isFollowingModerationEnabled,
+      ).thenReturn(false);
+      when(
+        () => mockModerationLabelService.addLabeler(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockModerationLabelService.removeLabeler(any()),
+      ).thenAnswer((_) async {});
+      when(
+        mockModerationLabelService.addDivineLabeler,
+      ).thenAnswer((_) async {});
+      when(
+        mockModerationLabelService.removeDivineLabeler,
+      ).thenAnswer((_) async {});
+      when(
+        () => mockModerationLabelService.setFollowingModerationEnabled(
+          any(),
+          followedPubkeys: any(named: 'followedPubkeys'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(() => mockFollowRepository.followingPubkeys).thenReturn([
+        'followed_pubkey_1',
+        'followed_pubkey_2',
+      ]);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
     });
 
     Widget createTestWidget() {
@@ -122,6 +162,7 @@ void main() {
           moderationLabelServiceProvider.overrideWithValue(
             mockModerationLabelService,
           ),
+          followRepositoryProvider.overrideWithValue(mockFollowRepository),
           ageVerificationServiceProvider.overrideWithValue(
             mockAgeVerificationService,
           ),
@@ -235,6 +276,31 @@ void main() {
 
       expect(divineHostFilterService.showDivineHostedOnly, isTrue);
     });
+
+    testWidgets(
+      'enables People I follow moderation with current following list',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final tile = find.widgetWithText(SwitchListTile, 'People I follow');
+        expect(tile, findsOneWidget);
+        expect(tester.widget<SwitchListTile>(tile).value, isFalse);
+
+        await tester.scrollUntilVisible(tile, 120);
+        final switchTile = tester.widget<SwitchListTile>(tile);
+        switchTile.onChanged!(true);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockModerationLabelService.setFollowingModerationEnabled(
+            true,
+            followedPubkeys: ['followed_pubkey_1', 'followed_pubkey_2'],
+          ),
+        ).called(1);
+        expect(tester.widget<SwitchListTile>(tile).value, isTrue);
+      },
+    );
   });
 
   group('SafetySettingsScreen Blocked Users Section - Unit Tests', () {

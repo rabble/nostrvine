@@ -75,7 +75,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(widget.listName, style: VineTheme.titleFont()),
+                  Text(widget.listName, style: VineTheme.titleLargeFont()),
                   const SizedBox(height: 2),
                   _buildSubheading(),
                 ],
@@ -329,7 +329,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
 
     return DiVineAppBarAction(
       icon: SvgIconSource(
-        isSubscribed ? 'assets/icon/Check.svg' : 'assets/icon/plus.svg',
+        isSubscribed
+            ? DivineIconName.check.assetPath
+            : DivineIconName.plus.assetPath,
       ),
       backgroundColor: isSubscribed
           ? VineTheme.iconButtonBackground

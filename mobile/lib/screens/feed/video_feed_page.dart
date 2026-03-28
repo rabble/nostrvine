@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -21,51 +22,10 @@ import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_presentation.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-
-/// Compares two [VideoItem] lists for equality by id and url.
-@visibleForTesting
-bool samePooledVideoItems(List<VideoItem>? previous, List<VideoItem> current) {
-  if (previous == null || previous.length != current.length) return false;
-
-  for (var i = 0; i < current.length; i++) {
-    if (previous[i].id != current[i].id || previous[i].url != current[i].url) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/// Returns `true` when [current] is [previous] with items appended.
-@visibleForTesting
-bool isAppendOnlyPooledVideoUpdate(
-  List<VideoItem>? previous,
-  List<VideoItem> current,
-) {
-  if (previous == null || current.length < previous.length) return false;
-
-  for (var i = 0; i < previous.length; i++) {
-    if (previous[i].id != current[i].id || previous[i].url != current[i].url) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/// Compares two [VideoEvent] lists by id only.
-@visibleForTesting
-bool sameVideoEventIds(List<VideoEvent> previous, List<VideoEvent> current) {
-  if (previous.length != current.length) return false;
-
-  for (var i = 0; i < previous.length; i++) {
-    if (previous[i].id != current[i].id) return false;
-  }
-
-  return true;
-}
 
 class VideoFeedPage extends ConsumerWidget {
   /// Route name for this screen.
@@ -80,9 +40,9 @@ class VideoFeedPage extends ConsumerWidget {
   /// Build path for a specific index.
   static String pathForIndex(int index) => '/home/$index';
 
-  const VideoFeedPage({this.initialMode = FeedMode.home, super.key});
+  const VideoFeedPage({this.initialMode = FeedMode.following, super.key});
 
-  /// The feed mode to start with. Defaults to [FeedMode.home].
+  /// The feed mode to start with. Defaults to [FeedMode.following].
   final FeedMode initialMode;
 
   @override
@@ -91,11 +51,14 @@ class VideoFeedPage extends ConsumerWidget {
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
+    final profileRepository = ref.watch(profileRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
     final sharedPreferences = ref.watch(sharedPreferencesProvider);
     final showDivineHostedOnly = ref
         .read(divineHostFilterServiceProvider)
         .showDivineHostedOnly;
+
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
     return BlocProvider(
       key: ValueKey('video-feed-$showDivineHostedOnly'),
@@ -103,6 +66,8 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
+        profileRepository: profileRepository,
+        contentBlocklistService: blocklistService,
         userPubkey: authService.currentPublicKeyHex,
         sharedPreferences: sharedPreferences,
         serveCachedHomeFeed: !showDivineHostedOnly,
@@ -131,8 +96,6 @@ class VideoFeedView extends ConsumerStatefulWidget {
 
 class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     with WidgetsBindingObserver {
-  int? lastPrefetchIndex;
-
   /// Whether the home tab is currently active.
   ///
   /// Used to prevent overlay-close from resuming playback when the user
@@ -224,6 +187,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
         final cached = openVineMediaCache.getCachedFileSync(video.id);
         return cached?.path;
       },
+      maxLoopDuration: VideoEditorConstants.maxDuration,
       onVideoReady: (index, player) {
         if (!_hasMarkedVideoReady && index == 0) {
           _hasMarkedVideoReady = true;
@@ -238,6 +202,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
     controllerMode = effectiveState.mode;
     lastPooledVideos = pooledVideos;
+
+    // If an overlay is open or we're not on the home tab, deactivate
+    // immediately so the video doesn't start playing in the background.
+    final overlayState = ref.read(overlayVisibilityProvider);
+    if (!_isOnHomeTab || overlayState.hasVisibleOverlay) {
+      controller?.setActive(
+        active: false,
+        retainCurrentPlayer: overlayState.shouldRetainPlayer,
+      );
+    }
   }
 
   /// Handles new videos from pagination by adding them to the controller.
@@ -271,7 +245,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     }
     controllerMode = null;
     lastPooledVideos = null;
-    lastPrefetchIndex = null;
   }
 
   bool _samePooledVideos(List<VideoItem> previous, List<VideoItem> current) {
@@ -303,31 +276,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     return true;
   }
 
-  void prefetchProfiles(List<VideoEvent> videos, int index) {
-    if (index == lastPrefetchIndex) return;
-    lastPrefetchIndex = index;
-
-    final safeIndex = index.clamp(0, videos.length - 1);
-    final pubkeys = <String>[];
-
-    if (safeIndex > 0) {
-      pubkeys.add(videos[safeIndex - 1].pubkey);
-    }
-
-    if (safeIndex < videos.length - 1) {
-      pubkeys.add(videos[safeIndex + 1].pubkey);
-    }
-
-    if (pubkeys.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref
-            .read(profileRepositoryProvider)
-            ?.fetchBatchProfiles(pubkeys: pubkeys);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // Pause/resume when navigating away from/back to home tab.
@@ -352,6 +300,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       }
 
       controller?.setActive(active: isHome);
+    });
+
+    // Refresh feed when blocklist changes (block from profile, DM, or relay).
+    ref.listen(blocklistVersionProvider, (previous, current) {
+      if (previous != null && current > previous) {
+        context.read<VideoFeedBloc>().add(const VideoFeedBlocklistChanged());
+      }
     });
 
     // Pause/resume for overlays (drawer, pages, bottom sheets), but only when
@@ -387,6 +342,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           BlocListener<VideoFeedBloc, VideoFeedState>(
             listenWhen: (previous, current) => previous.mode != current.mode,
             listener: (_, state) {
+              _pagePosition.value = 0;
               _resetVideoController();
               handleVideoController(state);
             },
@@ -450,9 +406,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                     videos: state.videos
                         .where((v) => v.videoUrl != null)
                         .toList(),
-                    onActiveVideoChanged: (video, index) {
-                      prefetchProfiles(state.videos, index);
-                    },
                     onNearEnd: (index) {
                       if (state.hasMore) {
                         context.read<VideoFeedBloc>().add(
@@ -467,6 +420,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                     child: PooledVideoFeed(
                       key: _feedKey,
                       videos: pooledVideos,
+                      maxLoopDuration: VideoEditorConstants.maxDuration,
                       controller: controller,
                       onScrollOffsetChanged: (page) =>
                           _pagePosition.value = page,
@@ -523,7 +477,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                             name: 'VideoFeedPage',
                             category: LogCategory.video,
                           );
-                          prefetchProfiles(state.videos, sourceIndex);
                         }
                       },
                       onNearEnd: (index) {
@@ -594,7 +547,7 @@ class FeedEmptyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNoFollowedUsers =
-        state.mode == FeedMode.home &&
+        state.mode == FeedMode.following &&
         state.error == VideoFeedError.noFollowedUsers;
 
     return Center(
@@ -630,7 +583,7 @@ class FeedEmptyWidget extends StatelessWidget {
   }
 
   String _getEmptyMessage(VideoFeedState state) {
-    if (state.mode == FeedMode.home &&
+    if (state.mode == FeedMode.following &&
         state.error == VideoFeedError.noFollowedUsers) {
       return 'No followed users.\nFollow someone to see their videos here.';
     }
@@ -695,7 +648,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
   }
 }
 
-class _PooledVideoFeedItemContent extends StatelessWidget {
+class _PooledVideoFeedItemContent extends StatefulWidget {
   const _PooledVideoFeedItemContent({
     required this.video,
     required this.index,
@@ -713,7 +666,45 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
   final Set<String>? listSources;
 
   @override
+  State<_PooledVideoFeedItemContent> createState() =>
+      _PooledVideoFeedItemContentState();
+}
+
+class _PooledVideoFeedItemContentState
+    extends State<_PooledVideoFeedItemContent> {
+  final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
+  int _heartTriggerId = 0;
+  bool _contentWarningRevealed = false;
+
+  void _handleDoubleTapLike(TapDownDetails details) {
+    final hasContentWarning = shouldShowContentWarningOverlay(
+      contentWarningLabels: widget.video.contentWarningLabels,
+      warnLabels: widget.video.warnLabels,
+    );
+    if (hasContentWarning && !_contentWarningRevealed) return;
+
+    final bloc = context.read<VideoInteractionsBloc>();
+    final state = bloc.state;
+    if (!state.isLiked && !state.isLikeInProgress) {
+      bloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation at tap position (even if already liked)
+    _heartTrigger.value = (
+      offset: details.localPosition,
+      id: ++_heartTriggerId,
+    );
+  }
+
+  @override
+  void dispose() {
+    _heartTrigger.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final video = widget.video;
     // All videos without dimensions are treated as portrait as its default
     // usecase (e.g. Reels-style vertical videos).
     final isPortrait = !(video.dimensions != null) || video.isPortrait;
@@ -722,9 +713,11 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
     return ColoredBox(
       color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
-        index: index,
+        index: widget.index,
+        isActive: widget.isActive,
         thumbnailUrl: video.thumbnailUrl,
-        enableTapToPause: isActive,
+        enableTapToPause: widget.isActive,
+        onDoubleTap: _handleDoubleTapLike,
         videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
           videoController: videoController,
           isPortrait: isPortrait,
@@ -734,18 +727,30 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
           videoId: video.id,
-          feedMode: contextTitle,
-          index: index,
+          feedMode: widget.contextTitle,
+          index: widget.index,
           alignment: alignment,
         ),
-        overlayBuilder: (context, videoController, player) => FeedVideoOverlay(
-          video: video,
-          isActive: isActive,
-          pagePosition: pagePosition,
-          index: index,
-          player: player,
-          firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
-          listSources: listSources,
+        overlayBuilder: (context, videoController, player) => Stack(
+          children: [
+            FeedVideoOverlay(
+              video: video,
+              isActive: widget.isActive,
+              pagePosition: widget.pagePosition,
+              index: widget.index,
+              player: player,
+              firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
+              listSources: widget.listSources,
+              onContentWarningRevealed: () {
+                _contentWarningRevealed = true;
+              },
+            ),
+            Positioned.fill(
+              child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+            ),
+            if (!video.isFromDivineServer)
+              _SlowExternalVideoOverlay(index: widget.index),
+          ],
         ),
       ),
     );
@@ -776,6 +781,77 @@ class _FittedVideoPlayer extends StatelessWidget {
       fit: boxFit,
       alignment: alignment,
       controls: null,
+    );
+  }
+}
+
+/// Overlay shown when an externally hosted video takes too long to load.
+///
+/// Listens to the controller's index notifier and shows a skip action
+/// when `isSlowLoad` is true and the video is still loading.
+/// Only rendered for non-Divine videos (controlled by the parent).
+class _SlowExternalVideoOverlay extends StatelessWidget {
+  const _SlowExternalVideoOverlay({required this.index});
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final feedController = VideoPoolProvider.feedOf(context);
+
+    return ValueListenableBuilder<VideoIndexState>(
+      valueListenable: feedController.getIndexNotifier(index),
+      builder: (context, state, _) {
+        if (!state.isSlowLoad || !state.isLoading) {
+          return const SizedBox.shrink();
+        }
+
+        final isLastVideo =
+            feedController.currentIndex >= feedController.videoCount - 1;
+
+        return Positioned(
+          bottom: 120,
+          left: 16,
+          right: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: VineTheme.backgroundColor.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const DivineIcon(
+                  icon: DivineIconName.globe,
+                  color: VineTheme.secondaryText,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'External video loading slowly',
+                    style: VineTheme.bodyMediumFont(),
+                  ),
+                ),
+                if (!isLastVideo)
+                  TextButton(
+                    onPressed: () {
+                      final nextIndex = feedController.currentIndex + 1;
+                      context
+                          .findAncestorStateOfType<PooledVideoFeedState>()
+                          ?.animateToPage(nextIndex);
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: VineTheme.vineGreen,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Text('Skip'),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

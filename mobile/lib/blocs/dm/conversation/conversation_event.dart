@@ -27,3 +27,13 @@ class ConversationMessageSent extends ConversationEvent {
   @override
   List<Object?> get props => [recipientPubkeys, content];
 }
+
+/// Delete a sent message for everyone via NIP-09 kind 5.
+class ConversationMessageDeleted extends ConversationEvent {
+  const ConversationMessageDeleted({required this.rumorId});
+
+  final String rumorId;
+
+  @override
+  List<Object?> get props => [rumorId];
+}

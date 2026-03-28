@@ -224,6 +224,74 @@ class DraftStorageService {
   /// Get total count of drafts without loading their data.
   Future<int> getDraftCount() => _draftsDao.getCount(ownerPubkey: ownerPubkey);
 
+  /// Returns drafts matching any of the given [statuses].
+  ///
+  /// Queries the database directly by `publish_status` column instead of
+  /// loading all drafts into memory. Corrupted rows (0 clips) are cleaned
+  /// up automatically.
+  Future<List<DivineVideoDraft>> getDraftsByPublishStatuses(
+    Set<PublishStatus> statuses,
+  ) async {
+    final documentsPath = await getDocumentsPath();
+    final drafts = <DivineVideoDraft>[];
+    final corruptedDraftIds = <String>[];
+
+    for (final status in statuses) {
+      final rows = await _draftsDao.getDraftsByStatus(
+        status.name,
+        ownerPubkey: ownerPubkey,
+      );
+
+      for (final row in rows) {
+        final clipRows = await _clipsDao.getClipsByDraftId(row.id);
+
+        if (clipRows.isEmpty) {
+          corruptedDraftIds.add(row.id);
+          continue;
+        }
+
+        drafts.add(
+          DivineVideoDraft.fromDriftRow(
+            row: row,
+            clipRows: clipRows,
+            documentsPath: documentsPath,
+          ),
+        );
+      }
+    }
+
+    if (corruptedDraftIds.isNotEmpty) {
+      Log.warning(
+        '🧹 Removing ${corruptedDraftIds.length} corrupted '
+        'draft(s) with 0 clips: $corruptedDraftIds',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
+      );
+      for (final id in corruptedDraftIds) {
+        await _draftsDao.deleteDraft(id);
+      }
+    }
+
+    return drafts;
+  }
+
+  /// Updates the publish status of a draft directly in the database.
+  ///
+  /// More efficient than loading the full draft, mutating, and saving.
+  Future<void> updatePublishStatus({
+    required String draftId,
+    required PublishStatus status,
+    String? publishError,
+    int? publishAttempts,
+  }) async {
+    await _draftsDao.updatePublishStatus(
+      id: draftId,
+      publishStatus: status.name,
+      publishError: publishError,
+      publishAttempts: publishAttempts,
+    );
+  }
+
   Future<DivineVideoDraft?> getDraftById(String id) async {
     final row = await _draftsDao.getDraftById(id);
     if (row == null) {

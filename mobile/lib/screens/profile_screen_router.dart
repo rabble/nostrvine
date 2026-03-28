@@ -13,7 +13,6 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -21,10 +20,11 @@ import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
@@ -33,7 +33,6 @@ import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:openvine/widgets/vine_bottom_nav.dart';
-import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
@@ -161,9 +160,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final profileRepository = ref.watch(profileRepositoryProvider);
 
       if (userIdHex == null || profileRepository == null) {
-        return _ProfileScaffold(
-          body: const ProfileLoadingView(),
-        );
+        return const _ProfileScaffold(body: ProfileLoadingView());
       }
 
       return BlocProvider<MyProfileBloc>(
@@ -196,11 +193,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             };
 
             return _ProfileScaffold(
-              onDrawerChanged: (isOpen) {
-                ref
-                    .read(overlayVisibilityProvider.notifier)
-                    .setDrawerOpen(isOpen);
-              },
               onRefreshPressed: () => _refreshProfile(userIdHex),
               onMorePressed: () => _more(userIdHex),
               appBarColor: profileColor,
@@ -296,7 +288,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/content-controls/pencil.svg',
+                  DivineIconName.pencilSimpleLineDuo.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(
@@ -334,7 +326,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/content-controls/share.svg',
+                  DivineIconName.shareFatDuo.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(
@@ -355,7 +347,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/copy.svg',
+                  DivineIconName.copy.assetPath,
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(
@@ -435,11 +427,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 }
 
 class _ProfileScaffold extends ConsumerWidget {
-  _ProfileScaffold({
+  const _ProfileScaffold({
     required this.body,
     this.isRefreshing = false,
     this.appBarColor,
-    this.onDrawerChanged,
     this.onRefreshPressed,
     this.onMorePressed,
   });
@@ -450,51 +441,48 @@ class _ProfileScaffold extends ConsumerWidget {
 
   final Widget body;
 
-  final DrawerCallback? onDrawerChanged;
   final VoidCallback? onRefreshPressed;
   final VoidCallback? onMorePressed;
-
-  /// Key used to open the drawer from the AppBar leading button.
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final environment = ref.watch(currentEnvironmentProvider);
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: VineTheme.backgroundColor,
-      onDrawerChanged: onDrawerChanged,
       appBar: DiVineAppBar(
-        title: 'My Profile',
+        title: '',
         backgroundColor: appBarColor ?? getEnvironmentAppBarColor(environment),
-        showMenuButton: true,
-        onMenuPressed: () {
+        leadingIcon: SvgIconSource(DivineIconName.gear.assetPath),
+        onLeadingPressed: () {
           Log.info(
-            '👆 User tapped menu button',
+            'User tapped settings gear',
             name: 'Navigation',
             category: LogCategory.ui,
           );
-          _scaffoldKey.currentState?.openDrawer();
+          context.pushWithVideoPause(SettingsScreen.path);
         },
         actions: [
           DiVineAppBarAction(
             icon: isRefreshing
                 ? const MaterialIconSource(Icons.refresh)
-                : const SvgIconSource('assets/icon/refresh.svg'),
+                : SvgIconSource(
+                    DivineIconName.arrowsCounterClockwise.assetPath,
+                  ),
             onPressed: isRefreshing ? null : onRefreshPressed,
             tooltip: 'Refresh',
             semanticLabel: 'Refresh profile',
           ),
           DiVineAppBarAction(
-            icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+            icon: SvgIconSource(
+              DivineIconName.dotsThree.assetPath,
+            ),
             onPressed: onMorePressed,
             tooltip: 'More',
             semanticLabel: 'More options',
           ),
         ],
       ),
-      drawer: const VineDrawer(),
       body: body,
       bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );
@@ -747,12 +735,10 @@ class ProfileViewSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundPublishBloc = context.watch<BackgroundPublishBloc>();
-
     // If videoIndex is set, show fullscreen video mode
     // Note: videoIndex maps directly to list index (0 = first video, etc.)
     // When videoIndex is null, show grid mode
-    final child = (videoIndex != null && videos.isNotEmpty)
+    return (videoIndex != null && videos.isNotEmpty)
         ? ProfileVideoFeedView(
             npub: npub,
             userIdHex: userIdHex,
@@ -777,47 +763,5 @@ class ProfileViewSwitcher extends StatelessWidget {
             onOpenAnalytics: onOpenAnalytics,
             refreshNotifier: refreshNotifier,
           );
-
-    // Filter for uploads that explicitly failed (PublishError), not all completed
-    final completedWithErrorUploads = backgroundPublishBloc.state.uploads
-        .where((upload) => upload.result is PublishError)
-        .toList();
-
-    if (completedWithErrorUploads.isNotEmpty) {
-      final faultUpload = completedWithErrorUploads.first;
-
-      return Stack(
-        children: [
-          Positioned.fill(child: child),
-          Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
-            child: Dismissible(
-              key: ValueKey(faultUpload.draft.id),
-              onDismissed: (_) {
-                backgroundPublishBloc.add(
-                  BackgroundPublishVanished(draftId: faultUpload.draft.id),
-                );
-              },
-              child: DivineSnackbarContainer(
-                label: 'Video upload failed.',
-                error: true,
-                actionLabel: 'Retry',
-                onActionPressed: () {
-                  backgroundPublishBloc.add(
-                    BackgroundPublishRetryRequested(
-                      draftId: faultUpload.draft.id,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return child;
-    }
   }
 }

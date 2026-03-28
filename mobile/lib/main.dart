@@ -26,6 +26,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -47,12 +48,14 @@ import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
+import 'package:openvine/widgets/upload_failure_sheet.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -632,6 +635,7 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
   await Future.wait([
     container.read(seenVideosServiceProvider).initialize(),
     bandwidthTracker.initialize(),
+    videoFormatPreference.initialize(),
     container.read(uploadManagerProvider).initialize(),
   ]);
 
@@ -718,6 +722,27 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   /// Initialize non-critical background services.
   /// Critical services are already initialized before runApp in _initializeCoreServices.
   void _initializeBackgroundServices() {
+    Future.microtask(() {
+      unawaited(
+        ref
+            .read(popularNowFeedProvider.future)
+            .then((state) {
+              Log.info(
+                '[INIT] Warmed New feed with ${state.videos.length} videos',
+                name: 'Main',
+                category: LogCategory.system,
+              );
+            })
+            .catchError((Object error, StackTrace stackTrace) {
+              Log.warning(
+                '[INIT] New feed warmup failed (non-critical): $error',
+                name: 'Main',
+                category: LogCategory.system,
+              );
+            }),
+      );
+    });
+
     // Initialize mutual mute list sync in background
     Future.microtask(() async {
       try {
@@ -1033,12 +1058,21 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // If so, navigate back to parent route
       switch (ctx.type) {
         case RouteType.hashtag:
+          // Hashtag is a standalone screen — pop back
+          router.pop();
+          return true; // Handled
+        case RouteType.categoryGallery:
+          if (router.canPop()) {
+            router.pop();
+          } else {
+            router.go(ExploreScreen.path);
+          }
+          return true; // Handled
         case RouteType.search:
           // Go back to explore
           router.go(ExploreScreen.path);
           return true; // Handled
         case RouteType.videoRecorder:
-        case RouteType.videoClipEditor:
         case RouteType.videoEditor:
         case RouteType.videoMetadata:
           // Pop the video editing flow screens
@@ -1171,15 +1205,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     Widget wrapped = MultiRepositoryProvider(
       providers: [
         RepositoryProvider(
-          create: (_) => InviteApiService(
-            authService: ref.read(nip98AuthServiceProvider),
-          ),
+          create: (_) =>
+              InviteApiService(authService: ref.read(nip98AuthServiceProvider)),
           dispose: (service) => service.dispose(),
         ),
         BlocProvider(
-          create: (_) => DmUnreadCountCubit(
-            dmRepository: ref.read(dmRepositoryProvider),
-          ),
+          create: (_) =>
+              DmUnreadCountCubit(dmRepository: ref.read(dmRepositoryProvider)),
         ),
       ],
       child: MultiBlocProvider(
@@ -1187,6 +1219,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           BlocProvider(
             create: (_) => BackgroundPublishBloc(
               videoPublishServiceFactory: createPublishService,
+              draftStorageService: ref.read(draftStorageServiceProvider),
             ),
           ),
           BlocProvider(
@@ -1226,7 +1259,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               );
             }
           },
-          child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+          child: _UploadFailureListener(
+            child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+          ),
         ),
       ),
     );
@@ -1248,6 +1283,74 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     }
 
     return wrapped; // ProviderScope now wraps DivineApp from outside
+  }
+}
+
+/// Listens for background upload failures and shows a bottom sheet.
+///
+/// Uses [NavigatorKeys.root] to obtain a [BuildContext] inside the
+/// [Navigator] tree, which [showModalBottomSheet] requires.
+///
+/// Tracks the set of currently-failed draft IDs so that only **new**
+/// failures trigger a sheet. When a draft is retried or dismissed its ID
+/// leaves the failed set, so a subsequent failure is detected as new again.
+class _UploadFailureListener extends StatefulWidget {
+  const _UploadFailureListener({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_UploadFailureListener> createState() => _UploadFailureListenerState();
+}
+
+class _UploadFailureListenerState extends State<_UploadFailureListener> {
+  var _lastKnownFailedIds = <String>{};
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
+      listener: (context, state) {
+        // Don't show failure sheets while the user is not authenticated
+        // (e.g. still on the login screen after a cold start).
+        // Also don't update _lastKnownFailedIds so these failures are
+        // detected as "new" once the user eventually authenticates.
+        final authService = ProviderScope.containerOf(
+          context,
+        ).read(authServiceProvider);
+        if (!authService.isAuthenticated) return;
+
+        final currentFailedIds = state.uploads
+            .where((u) => u.result is PublishError)
+            .map((u) => u.draft.id)
+            .toSet();
+
+        final newFailedIds = currentFailedIds.difference(_lastKnownFailedIds);
+        _lastKnownFailedIds = currentFailedIds;
+
+        if (newFailedIds.isEmpty) return;
+
+        final navContext = NavigatorKeys.root.currentContext;
+        if (navContext == null) return;
+
+        final newFailures = state.uploads
+            .where((u) => newFailedIds.contains(u.draft.id))
+            .toList();
+
+        _showFailureSheetsSequentially(navContext, newFailures);
+      },
+      child: widget.child,
+    );
+  }
+}
+
+/// Shows failure bottom sheets one after another for each failed upload.
+Future<void> _showFailureSheetsSequentially(
+  BuildContext context,
+  List<BackgroundUpload> failedUploads,
+) async {
+  for (final upload in failedUploads) {
+    if (!context.mounted) return;
+    await showUploadFailureSheet(context, upload);
   }
 }
 

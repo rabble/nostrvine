@@ -60,6 +60,32 @@ void main() {
       expect(find.byType(CachedNetworkImage), findsOneWidget);
     });
 
+    testWidgets(
+      'uses Image.network for Divine-hosted thumbnails to avoid cache-manager stalls',
+      (tester) async {
+        final divineHostedVideo = createTestVideoEvent(
+          id: 'test-divine',
+          thumbnailUrl:
+              'https://media.divine.video/72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995.jpg',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: divineHostedVideo,
+                width: 200,
+                height: 200,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(Image), findsOneWidget);
+        expect(find.byType(CachedNetworkImage), findsNothing);
+      },
+    );
+
     testWidgets('displays flat placeholder when only blurhash is available', (
       tester,
     ) async {

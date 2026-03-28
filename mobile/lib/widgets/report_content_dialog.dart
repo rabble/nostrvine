@@ -9,7 +9,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_moderation_service.dart';
-import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -213,9 +212,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 
           // Send DM to moderation team with report details (TC-025/026)
           final dmRepo = ref.read(dmRepositoryProvider);
+          final labelService = ref.read(moderationLabelServiceProvider);
           try {
             await dmRepo.sendMessage(
-              recipientPubkey: ModerationLabelService.divineModerationPubkeyHex,
+              recipientPubkey: labelService.divineModerationPubkeyHex,
               content: _formatReportDm(
                 reason: _selectedReason!,
                 eventId: widget.video.id,

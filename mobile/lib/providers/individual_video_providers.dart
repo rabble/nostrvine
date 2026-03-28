@@ -727,32 +727,37 @@ VideoPlayerController individualVideoController(
         }
 
         // Check if this was a quality variant URL (720p/480p) that failed.
-        // If so, fall back to the cacheable direct asset URL when available.
+        // If so, fall back to HLS (proven reliable format) instead of retrying
+        // the same URL. This handles both MP4 not-yet-ready after upload and
+        // transient server errors.
         final isQualityVariant =
             videoUrl.contains('/720p') || videoUrl.contains('/480p');
-        if (isQualityVariant && params.cacheUrl != null) {
-          Log.info(
-            '📱 Quality variant failed for ${params.videoId} ($videoUrl) - '
-            'falling back to direct asset: ${params.cacheUrl}',
-            name: 'IndividualVideoController',
-            category: LogCategory.video,
-          );
-          try {
-            final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
-            if (!currentFallbackCache.containsKey(params.videoId)) {
-              final newCache = {...currentFallbackCache};
-              newCache[params.videoId] = params.cacheUrl!;
-              ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
-            }
-          } catch (e) {
-            Log.debug(
-              '⚠️ Could not store quality fallback URL: $e',
+        if (isQualityVariant && params.videoEvent is VideoEvent) {
+          final fallbackUrl = params.videoEvent?.getFallbackUrl();
+          if (fallbackUrl != null) {
+            Log.info(
+              '📱 Quality variant failed for ${params.videoId} ($videoUrl) - '
+              'falling back to HLS: $fallbackUrl',
               name: 'IndividualVideoController',
               category: LogCategory.video,
             );
+            try {
+              final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
+              if (!currentFallbackCache.containsKey(params.videoId)) {
+                final newCache = {...currentFallbackCache};
+                newCache[params.videoId] = fallbackUrl;
+                ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
+              }
+            } catch (e) {
+              Log.debug(
+                '⚠️ Could not store quality fallback URL: $e',
+                name: 'IndividualVideoController',
+                category: LogCategory.video,
+              );
+            }
+            loopEnforcementTimer?.cancel();
+            return;
           }
-          loopEnforcementTimer?.cancel();
-          return;
         }
 
         // Enhanced error logging with full Nostr event details

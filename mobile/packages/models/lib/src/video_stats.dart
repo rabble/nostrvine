@@ -37,6 +37,7 @@ class VideoStats {
     this.loops,
     this.views,
     this.rawTags = const {},
+    this.contentWarningLabels = const [],
     this.textTrackRef,
     this.textTrackContent,
     List<String> moderationLabels = const [],
@@ -172,6 +173,7 @@ class VideoStats {
     String? summaryFromTag;
     int? publishedAt;
     final rawTags = <String, String>{};
+    final contentWarningLabels = <String>[];
 
     if (eventData['tags'] is List) {
       final tags = eventData['tags'] as List<dynamic>;
@@ -210,6 +212,18 @@ class VideoStats {
           }
           if (tagName == 'text-track' && textTrackRef == null) {
             textTrackRef = tagValue;
+          }
+          if (tagName == 'content-warning' &&
+              tagValue.isNotEmpty &&
+              !contentWarningLabels.contains(tagValue)) {
+            contentWarningLabels.add(tagValue);
+          }
+          if (tagName == 'l' &&
+              tag.length >= 3 &&
+              tag[2].toString() == 'content-warning' &&
+              tagValue.isNotEmpty &&
+              !contentWarningLabels.contains(tagValue)) {
+            contentWarningLabels.add(tagValue);
           }
         }
       }
@@ -304,6 +318,7 @@ class VideoStats {
       loops: loops,
       views: views,
       rawTags: rawTags,
+      contentWarningLabels: contentWarningLabels,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
       moderationLabels: moderationLabels,
@@ -383,6 +398,9 @@ class VideoStats {
   /// C2PA, verification) that don't have dedicated fields on this model.
   final Map<String, String> rawTags;
 
+  /// Author-applied content warning labels parsed from NIP-32/NIP-36 tags.
+  final List<String> contentWarningLabels;
+
   /// Addressable coordinates for subtitle event (from `text-track` tag or
   /// API `text_track_ref` field).
   final String? textTrackRef;
@@ -437,6 +455,7 @@ class VideoStats {
       originalLoops: loops,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
+      contentWarningLabels: contentWarningLabels,
       moderationLabels: moderationLabels,
       rawTags: {
         ...rawTags,

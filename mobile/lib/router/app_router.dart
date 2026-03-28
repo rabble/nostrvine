@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
@@ -21,6 +22,7 @@ import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -30,9 +32,12 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
+import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -46,10 +51,13 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
-import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/legal_screen.dart';
+import 'package:openvine/screens/settings/nostr_settings_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -250,9 +258,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 key: NavigatorKeys.inbox,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const InboxPage(),
-                  settings: const RouteSettings(
-                    name: InboxPage.routeName,
-                  ),
+                  settings: const RouteSettings(name: InboxPage.routeName),
                 ),
               ),
             ),
@@ -395,32 +401,31 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
-
-          // HASHTAG route - grid mode (no index)
-          GoRoute(
-            path: HashtagScreenRouter.path,
-            name: HashtagScreenRouter.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.hashtagGrid,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const HashtagScreenRouter(),
-                  settings: const RouteSettings(
-                    name: HashtagScreenRouter.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
+      ),
+
+      // HASHTAG route - standalone screen (no bottom nav)
+      GoRoute(
+        path: HashtagScreenRouter.path,
+        name: HashtagScreenRouter.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) {
+          final tag = st.pathParameters['tag'];
+          if (tag == null || tag.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid hashtag')),
+            );
+          }
+          final decoded = Uri.decodeComponent(tag);
+          return HashtagFeedScreen(hashtag: decoded);
+        },
       ),
 
       // DM conversation detail (pushed from inbox, no bottom nav)
       GoRoute(
         path: ConversationPage.pathPattern,
         name: ConversationPage.routeName,
-        parentNavigatorKey: NavigatorKeys.root,
         builder: (ctx, st) {
           final id = st.pathParameters['id'];
           if (id == null || id.isEmpty) {
@@ -431,6 +436,37 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           }
           final participantPubkeys = st.extra as List<String>? ?? [];
           return ConversationPage(
+            conversationId: id,
+            participantPubkeys: participantPubkeys,
+          );
+        },
+      ),
+
+      // Message requests inbox (pushed from inbox, no bottom nav)
+      GoRoute(
+        path: MessageRequestsPage.path,
+        name: MessageRequestsPage.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) => const MessageRequestsPage(),
+      ),
+
+      // Message request preview (pushed from requests inbox)
+      GoRoute(
+        path: RequestPreviewPage.pathPattern,
+        name: RequestPreviewPage.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) {
+          final id = st.pathParameters['id'];
+          if (id == null || id.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid request ID')),
+            );
+          }
+          // Pubkeys are optional — the page loads them from the DB
+          // when not provided (e.g. deep link).
+          final participantPubkeys = st.extra as List<String>? ?? [];
+          return RequestPreviewPage(
             conversationId: id,
             participantPubkeys: participantPubkeys,
           );
@@ -555,6 +591,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: SettingsScreen.path,
         name: SettingsScreen.routeName,
         builder: (_, _) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: SupportCenterScreen.path,
+        name: SupportCenterScreen.routeName,
+        builder: (_, _) => const SupportCenterScreen(),
+      ),
+      GoRoute(
+        path: LegalScreen.path,
+        name: LegalScreen.routeName,
+        builder: (_, _) => const LegalScreen(),
+      ),
+      GoRoute(
+        path: ContentPreferencesScreen.path,
+        name: ContentPreferencesScreen.routeName,
+        builder: (_, _) => const ContentPreferencesScreen(),
+      ),
+      GoRoute(
+        path: NostrSettingsScreen.path,
+        name: NostrSettingsScreen.routeName,
+        builder: (_, _) => const NostrSettingsScreen(),
       ),
       GoRoute(
         path: RelaySettingsScreen.path,
@@ -758,20 +814,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: VideoEditorScreen.path,
         name: VideoEditorScreen.routeName,
-        builder: (_, st) => const VideoEditorScreen(),
-      ),
-      GoRoute(
-        path: VideoClipEditorScreen.path,
-        name: VideoClipEditorScreen.routeName,
         builder: (_, st) {
           final extra = st.extra as Map<String, dynamic>?;
           final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
-          return VideoClipEditorScreen(fromLibrary: fromLibrary);
+
+          return VideoEditorScreen(fromLibrary: fromLibrary);
         },
       ),
       GoRoute(
-        path: VideoClipEditorScreen.draftPathWithId,
-        name: VideoClipEditorScreen.draftRouteName,
+        path: VideoEditorScreen.draftPathWithId,
+        name: VideoEditorScreen.draftRouteName,
         builder: (_, st) {
           // The draft ID is optional if the user wants to continue editing
           // the draft.
@@ -779,7 +831,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = st.extra as Map<String, dynamic>?;
           final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
 
-          return VideoClipEditorScreen(
+          return VideoEditorScreen(
             draftId: draftId == null || draftId.isEmpty ? null : draftId,
             fromLibrary: fromLibrary,
           );
@@ -789,6 +841,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: VideoMetadataScreen.path,
         name: VideoMetadataScreen.routeName,
         builder: (_, st) => const VideoMetadataScreen(),
+      ),
+      GoRoute(
+        path: CategoryGalleryScreen.path,
+        name: CategoryGalleryScreen.routeName,
+        builder: (_, st) {
+          final categoryName = st.pathParameters['categoryName'];
+          final category =
+              st.extra as VideoCategory? ??
+              VideoCategory(
+                name: categoryName ?? '',
+                videoCount: 0,
+              );
+
+          if (category.name.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid category')),
+            );
+          }
+
+          return CategoryGalleryScreen(category: category);
+        },
       ),
       // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
       GoRoute(
@@ -878,8 +952,6 @@ int tabIndexFromLocation(String loc) {
       return 0;
     case 'explore':
       return 1;
-    case 'hashtag':
-      return 1; // Hashtag keeps explore tab active
     case 'notifications':
     case 'inbox':
       return 2; // Inbox replaces notifications in the same tab position
@@ -895,6 +967,10 @@ int tabIndexFromLocation(String loc) {
     case 'key-management':
     case 'safety-settings':
     case 'content-filters':
+    case 'content-preferences':
+    case 'support-center':
+    case 'legal':
+    case 'nostr-settings':
     case 'developer-options':
     case 'edit-profile':
     case 'setup-profile':
@@ -914,6 +990,8 @@ int tabIndexFromLocation(String loc) {
     case 'list':
     case 'discover-lists':
     case 'creator-analytics':
+    case 'hashtag':
+    case 'categories':
       return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home

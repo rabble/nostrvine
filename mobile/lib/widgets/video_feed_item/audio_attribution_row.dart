@@ -15,7 +15,7 @@ import 'package:openvine/utils/unified_logger.dart';
 /// A tappable row showing audio attribution when a video uses external audio.
 ///
 /// Displays the sound name and creator info in the format:
-/// "♪ Sound name · @creator"
+/// "♪ Sound name · creator"
 ///
 /// Tapping navigates to [SoundDetailScreen] for that audio.
 /// Shows nothing if the video has no audio reference or if audio is unavailable.
@@ -74,15 +74,21 @@ class _AudioAttributionContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the creator's profile reactively via Drift stream
-    final creatorProfile = ref
-        .watch(userProfileReactiveProvider(audio.pubkey))
-        .value;
-
-    final creatorName =
-        creatorProfile?.bestDisplayName ??
-        UserProfile.defaultDisplayNameFor(audio.pubkey);
     final soundName = audio.title ?? 'Original sound';
+    final String creatorName;
+
+    if (audio.isBundled) {
+      // For bundled sounds, use the source field (e.g. "ThePauny via Freesound")
+      creatorName = audio.source ?? 'diVine';
+    } else {
+      // For Nostr sounds, fetch the creator's profile
+      final creatorProfile = ref
+          .watch(userProfileReactiveProvider(audio.pubkey))
+          .value;
+      creatorName =
+          creatorProfile?.bestDisplayName ??
+          UserProfile.defaultDisplayNameFor(audio.pubkey);
+    }
 
     return GestureDetector(
       onTap: () => _navigateToSoundDetail(context, audio),
@@ -107,7 +113,7 @@ class _AudioAttributionContent extends ConsumerWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  '$soundName · @$creatorName',
+                  '$soundName · $creatorName',
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 12,

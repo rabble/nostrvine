@@ -560,7 +560,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         onBackPressed: context.pop,
         actions: [
           DiVineAppBarAction(
-            icon: const SvgIconSource('assets/icon/ArrowClockwise.svg'),
+            icon: SvgIconSource(DivineIconName.arrowClockwise.assetPath),
             onPressed: _refreshDiagnostics,
             tooltip: 'Refresh diagnostics',
           ),

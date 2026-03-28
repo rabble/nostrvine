@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,6 +17,7 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Internal class that represents a video entry in the grid
@@ -64,6 +64,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   List<VideoEvent>? _lastPrefetchedVideos;
   final _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
+  bool _isLoadingTriggered = false;
 
   @override
   void initState() {
@@ -96,6 +97,44 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     if (videos.isEmpty || videos == _lastPrefetchedVideos) return;
     _lastPrefetchedVideos = videos;
     prefetchGridVideos(videos);
+  }
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+    if (_isLoadingTriggered) return false;
+
+    final feedState = ref
+        .read(profileFeedProvider(widget.userIdHex))
+        .asData
+        ?.value;
+    if (feedState == null ||
+        !feedState.hasMoreContent ||
+        feedState.isLoadingMore) {
+      return false;
+    }
+
+    final maxScroll = notification.metrics.maxScrollExtent;
+    final currentScroll = notification.metrics.pixels;
+
+    if (maxScroll > 0 && currentScroll >= maxScroll - 200) {
+      unawaited(_triggerLoadMore());
+    }
+
+    return false;
+  }
+
+  Future<void> _triggerLoadMore() async {
+    if (_isLoadingTriggered) return;
+
+    _isLoadingTriggered = true;
+
+    try {
+      await ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore();
+    } finally {
+      if (mounted) {
+        _isLoadingTriggered = false;
+      }
+    }
   }
 
   void _onVideoTapped(int index, {required VoidCallback onLoadMore}) {
@@ -169,48 +208,51 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         .where((upload) => upload.result == null)
         .length;
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: .fromLTRB(
-            4,
-            4,
-            4,
-            4 + MediaQuery.viewPaddingOf(context).bottom,
-          ),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 4,
-              mainAxisSpacing: 4,
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScrollNotification,
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: .fromLTRB(
+              4,
+              4,
+              4,
+              4 + MediaQuery.viewPaddingOf(context).bottom,
             ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final videoEntry = allVideos[index];
-              return switch (videoEntry) {
-                final _GridUploadingVideoEntry uploadEntry =>
-                  _VideoGridUploadingTile(
-                    backgroundUpload: uploadEntry.backgroundUpload,
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 4,
+              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final videoEntry = allVideos[index];
+                return switch (videoEntry) {
+                  final _GridUploadingVideoEntry uploadEntry =>
+                    _VideoGridUploadingTile(
+                      backgroundUpload: uploadEntry.backgroundUpload,
+                    ),
+                  final _GridVideoEventEntry eventEntry => _VideoGridTile(
+                    videoEvent: eventEntry.videoEvent,
+                    userIdHex: widget.userIdHex,
+                    index: index,
+                    onTap: () {
+                      // Adjust index to account for uploading videos at the top
+                      final publishedIndex = index - uploadingCount;
+                      if (publishedIndex >= 0) {
+                        _onVideoTapped(
+                          publishedIndex,
+                          onLoadMore: loadMoreProfileVideos,
+                        );
+                      }
+                    },
                   ),
-                final _GridVideoEventEntry eventEntry => _VideoGridTile(
-                  videoEvent: eventEntry.videoEvent,
-                  userIdHex: widget.userIdHex,
-                  index: index,
-                  onTap: () {
-                    // Adjust index to account for uploading videos at the top
-                    final publishedIndex = index - uploadingCount;
-                    if (publishedIndex >= 0) {
-                      _onVideoTapped(
-                        publishedIndex,
-                        onLoadMore: loadMoreProfileVideos,
-                      );
-                    }
-                  },
-                ),
-              };
-            }, childCount: allVideos.length),
+                };
+              }, childCount: allVideos.length),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -233,45 +275,50 @@ class _ProfileVideosEmptyState extends StatelessWidget {
       SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.videocam_outlined,
-                color: VineTheme.lightText,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No Videos Yet',
-                style: TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isOwnProfile
-                    ? 'Share your first video to see it here'
-                    : "This user hasn't shared any videos yet",
-                style: const TextStyle(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.videocam_outlined,
                   color: VineTheme.lightText,
-                  fontSize: 14,
+                  size: 64,
                 ),
-              ),
-              const SizedBox(height: 32),
-              IconButton(
-                onPressed: onRefresh,
-                icon: const Icon(
-                  Icons.refresh,
-                  color: VineTheme.vineGreen,
-                  size: 28,
+                const SizedBox(height: 16),
+                const Text(
+                  'No Videos Yet',
+                  textAlign: .center,
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                tooltip: 'Refresh',
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  isOwnProfile
+                      ? 'Share your first video to see it here'
+                      : "This user hasn't shared any videos yet",
+                  textAlign: .center,
+                  style: const TextStyle(
+                    color: VineTheme.lightText,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                IconButton(
+                  onPressed: onRefresh,
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: VineTheme.vineGreen,
+                    size: 28,
+                  ),
+                  tooltip: 'Refresh',
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -327,13 +374,18 @@ class _VideoGridTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(color: VineTheme.cardBackground),
-        child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
+  Widget build(BuildContext context) => Semantics(
+    identifier: 'video_thumbnail_$index',
+    label: 'Video thumbnail ${index + 1}',
+    button: true,
+    child: GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(color: VineTheme.cardBackground),
+          child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
+        ),
       ),
     ),
   );
@@ -348,9 +400,8 @@ class _VideoThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return CachedNetworkImage(
+      return VineCachedImage(
         imageUrl: thumbnailUrl!,
-        fit: BoxFit.cover,
         placeholder: (context, url) => const _ThumbnailPlaceholder(),
         errorWidget: (context, url, error) => const _ThumbnailPlaceholder(),
       );

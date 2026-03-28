@@ -22,7 +22,6 @@ void main() {
     late _MockProfileRepository mockProfileRepository;
     late _MockContentBlocklistService mockBlocklistService;
     late _MockFollowRepository mockFollowRepository;
-    late int blocklistChangedCallCount;
 
     // Test data constants - using full 64-character hex pubkey as required
     const testPubkey =
@@ -55,7 +54,6 @@ void main() {
       mockProfileRepository = _MockProfileRepository();
       mockBlocklistService = _MockContentBlocklistService();
       mockFollowRepository = _MockFollowRepository();
-      blocklistChangedCallCount = 0;
 
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
       when(
@@ -70,7 +68,6 @@ void main() {
           contentBlocklistService: mockBlocklistService,
           currentUserPubkey: testCurrentUserPubkey,
           followRepository: mockFollowRepository,
-          onBlocklistChanged: () => blocklistChangedCallCount++,
         );
 
     test('initial state is OtherProfileInitial', () {
@@ -531,7 +528,7 @@ void main() {
             any(),
             ourPubkey: any(named: 'ourPubkey'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
       });
 
       blocTest<OtherProfileBloc, OtherProfileState>(
@@ -576,15 +573,6 @@ void main() {
       );
 
       blocTest<OtherProfileBloc, OtherProfileState>(
-        'invokes onBlocklistChanged callback',
-        build: createBloc,
-        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
-        verify: (_) {
-          expect(blocklistChangedCallCount, equals(1));
-        },
-      );
-
-      blocTest<OtherProfileBloc, OtherProfileState>(
         'still blocks user when toggleFollow throws',
         setUp: () {
           when(
@@ -603,14 +591,15 @@ void main() {
               ourPubkey: testCurrentUserPubkey,
             ),
           ).called(1);
-          expect(blocklistChangedCallCount, equals(1));
         },
       );
     });
 
     group('OtherProfileUnblockRequested', () {
       setUp(() {
-        when(() => mockBlocklistService.unblockUser(any())).thenReturn(null);
+        when(
+          () => mockBlocklistService.unblockUser(any()),
+        ).thenAnswer((_) async {});
       });
 
       blocTest<OtherProfileBloc, OtherProfileState>(
@@ -621,15 +610,6 @@ void main() {
           verify(
             () => mockBlocklistService.unblockUser(testPubkey),
           ).called(1);
-        },
-      );
-
-      blocTest<OtherProfileBloc, OtherProfileState>(
-        'invokes onBlocklistChanged callback',
-        build: createBloc,
-        act: (bloc) => bloc.add(const OtherProfileUnblockRequested()),
-        verify: (_) {
-          expect(blocklistChangedCallCount, equals(1));
         },
       );
     });

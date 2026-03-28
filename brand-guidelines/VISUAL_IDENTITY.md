@@ -1,13 +1,13 @@
-# diVine Visual Identity
+# Divine Visual Identity
 
 ## Logotype
 
-The diVine logotype is the most recognizable aspect of the brand. It is built on a consistent geometric system that ensures visual balance and clarity.
+The Divine logotype is the most recognizable aspect of the brand. It is built on a consistent geometric system that ensures visual balance and clarity.
 
 ### Versions
 - **Primary**: Green and Dark Green
 - **On images**: Dark Green or White versions are permitted, provided strong contrast is maintained
-- The "V" in diVine is always capitalized in the logotype
+- The name is always written as "Divine" (capital D, lowercase remainder)
 
 ### Safe Space
 Always leave at least the x-height of the typography as free space around the logo on all sides.
@@ -46,7 +46,7 @@ The app icon is based on the avatar to create a unique and ownable presence. Its
 
 Downloaded videos include a subtle watermark:
 - **Position**: Left-aligned, randomly positioned vertically
-- **Content**: diVine logo + creator @username
+- **Content**: Divine logo + creator @username
 - **Username text**: 50px
 - **Left margin**: 64px
 - **Logo width**: 160px

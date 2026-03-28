@@ -77,9 +77,8 @@ class _BugReportDialogState extends State<BugReportDialog> {
         userPubkey: widget.userPubkey,
       );
 
-      // Submit directly to Zendesk REST API with structured fields
-      // Prefix subject with "fix:" for ticket categorization
-      final subject = 'fix: ${_subjectController.text.trim()}';
+      // Submit directly to Zendesk with structured fields
+      final subject = _subjectController.text.trim();
       final success = await ZendeskSupportService.createStructuredBugReport(
         subject: subject,
         description: description,

@@ -25,7 +25,7 @@ class UserNotAvailableScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SvgPicture.asset(
-                'assets/icon/prohibit.svg',
+                DivineIconName.prohibit.assetPath,
                 width: 48,
                 height: 48,
                 colorFilter: const ColorFilter.mode(
@@ -36,12 +36,12 @@ class UserNotAvailableScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'Account not available',
-                style: VineTheme.titleFont(),
+                style: VineTheme.titleLargeFont(),
               ),
               const SizedBox(height: 8),
               Text(
                 "This account isn't available right now.",
-                style: VineTheme.bodyFont(color: VineTheme.secondaryText),
+                style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
                 textAlign: TextAlign.center,
               ),
             ],

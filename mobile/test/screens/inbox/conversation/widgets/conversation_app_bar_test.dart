@@ -67,6 +67,7 @@ void main() {
         expect(onBackCalled, isTrue);
       });
 
+      /* TODO(meylis1998): Uncomment the test below once it has a function.
       testWidgets('calls onOptions when options button is tapped', (
         tester,
       ) async {
@@ -81,7 +82,7 @@ void main() {
         await tester.pump();
 
         expect(onOptionsCalled, isTrue);
-      });
+      });*/
     });
   });
 }

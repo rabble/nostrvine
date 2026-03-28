@@ -87,6 +87,32 @@ class UserProfile {
     eventId: json['event_id'] as String,
   );
 
+  /// Creates a [UserProfile] from a Funnelcake REST API response.
+  ///
+  /// Both single-profile and batch endpoints return the same shape, so this
+  /// factory works for either. Use [eventIdPrefix] to distinguish the source
+  /// (defaults to `'rest'`; batch callers pass `'rest-bulk'`).
+  factory UserProfile.fromFunnelcake(
+    String pubkey,
+    Map<String, dynamic> data, {
+    String? eventIdPrefix,
+  }) {
+    return UserProfile(
+      pubkey: pubkey,
+      name: data['name'] as String?,
+      displayName: data['display_name'] as String?,
+      about: data['about'] as String?,
+      picture: data['picture'] as String?,
+      banner: data['banner'] as String?,
+      website: data['website'] as String?,
+      nip05: data['nip05'] as String?,
+      lud16: data['lud16'] as String?,
+      rawData: data,
+      createdAt: DateTime.now(),
+      eventId: '${eventIdPrefix ?? 'rest'}-$pubkey',
+    );
+  }
+
   /// Create profile from Drift database row
   factory UserProfile.fromDrift(dynamic row) {
     // Parse rawData from JSON string if present
@@ -153,7 +179,10 @@ class UserProfile {
   /// Prefers NIP-05 identifier, falls back to [name]. Returns an empty
   /// string when neither is available.
   String get handle {
-    if (nip05 != null && nip05!.isNotEmpty) return '@$nip05';
+    if (nip05 != null && nip05!.isNotEmpty) {
+      final dn = displayNip05!;
+      return dn.startsWith('@') ? dn : '@$dn';
+    }
     if (name != null && name!.isNotEmpty) return '@$name';
     return '';
   }
@@ -212,6 +241,26 @@ class UserProfile {
     final number = random.nextInt(99) + 1;
     return '${adj[0].toUpperCase()}${adj.substring(1)} '
         '${animal[0].toUpperCase()}${animal.substring(1)} $number';
+  }
+
+  /// Follower count from either Funnelcake REST API or Nostr Kind 0 rawData.
+  ///
+  /// Checks `follower_count` (REST) and `vine_followers` (Kind 0).
+  /// Returns `null` when neither source provides a value.
+  int? get followerCount {
+    final raw = rawData['follower_count'] ?? rawData['vine_followers'];
+    if (raw == null) return null;
+    return raw is int ? raw : int.tryParse('$raw');
+  }
+
+  /// Video count from either Funnelcake REST API or Nostr Kind 0 rawData.
+  ///
+  /// Checks `video_count` (REST) and `vine_loops` (Kind 0).
+  /// Returns `null` when neither source provides a value.
+  int? get videoCount {
+    final raw = rawData['video_count'] ?? rawData['vine_loops'];
+    if (raw == null) return null;
+    return raw is int ? raw : int.tryParse('$raw');
   }
 
   /// Check if profile has basic information

@@ -148,8 +148,16 @@ class _AudioSelectionBottomSheetState
     // Convert bundled VineSounds to AudioEvents
     final bundledSounds =
         bundledSoundsAsync.whenOrNull(
-          data: (service) =>
-              service.sounds.map(AudioEvent.fromBundledSound).toList(),
+          data: (service) {
+            return service.sounds.indexed
+                .map(
+                  (e) => AudioEvent.fromBundledSound(
+                    e.$2,
+                    index: e.$1,
+                  ),
+                )
+                .toList();
+          },
         ) ??
         <AudioEvent>[];
 

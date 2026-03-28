@@ -78,10 +78,8 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                         child: Text(
                           '$totalCount/'
                           '${VideoEditorNotifier.maxCollaborators} Collaborators',
-                          style: VineTheme.titleFont(
-                            fontSize: 16,
+                          style: VineTheme.titleMediumFont(
                             color: VineTheme.onSurface,
-                            letterSpacing: 0.15,
                           ),
                         ),
                       ),
@@ -92,7 +90,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                           height: 18,
                           width: 18,
                           child: SvgPicture.asset(
-                            'assets/icon/caret_right.svg',
+                            DivineIconName.caretRight.assetPath,
                             colorFilter: ColorFilter.mode(
                               canAddCollaborators
                                   ? VineTheme.tabIndicatorGreen

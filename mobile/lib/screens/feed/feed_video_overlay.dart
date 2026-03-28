@@ -49,6 +49,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     this.player,
     this.firstFrameFuture,
     this.listSources,
+    this.onContentWarningRevealed,
     super.key,
   });
 
@@ -66,6 +67,9 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   final Future<void>? firstFrameFuture;
   final Set<String>? listSources;
 
+  /// Called when the user reveals a content-warning overlay.
+  final VoidCallback? onContentWarningRevealed;
+
   @override
   ConsumerState<FeedVideoOverlay> createState() => _FeedVideoOverlayState();
 }
@@ -76,24 +80,43 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
+    final overlayLabels = contentWarningOverlayLabels(
+      contentWarningLabels: video.contentWarningLabels,
+      warnLabels: video.warnLabels,
+    );
+    final showContentWarningOverlay = shouldShowContentWarningOverlay(
+      contentWarningLabels: video.contentWarningLabels,
+      warnLabels: video.warnLabels,
+    );
 
     Log.debug(
       'Feed overlay build: eventId=${video.id}, pubkey=${video.pubkey}, '
       'isActive=${widget.isActive}, hasPlayer=${widget.player != null}, '
       'hasFirstFrameFuture=${widget.firstFrameFuture != null}, '
-      'hasSubtitles=${video.hasSubtitles}, hasWarning=${video.shouldShowWarning}, '
+      'hasSubtitles=${video.hasSubtitles}, '
+      'hasWarning=$showContentWarningOverlay, '
       'videoUrl=${video.videoUrl}, thumbnailUrl=${video.thumbnailUrl}',
       name: 'FeedVideoOverlay',
       category: LogCategory.video,
     );
 
     // Content warning blur overlay takes priority over normal overlay
-    if (video.shouldShowWarning && !_contentWarningRevealed) {
+    if (showContentWarningOverlay && !_contentWarningRevealed) {
       return ContentWarningBlurOverlay(
-        labels: video.warnLabels,
-        onReveal: () => setState(() {
-          _contentWarningRevealed = true;
-        }),
+        labels: overlayLabels,
+        onReveal: () {
+          setState(() {
+            _contentWarningRevealed = true;
+          });
+          widget.onContentWarningRevealed?.call();
+        },
+        onHideSimilar: () {
+          hideContentWarningsLikeThese(
+            context: context,
+            ref: ref,
+            labels: overlayLabels,
+          );
+        },
       );
     }
 
@@ -378,7 +401,7 @@ class _Nip05Badge extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.only(left: 4),
           child: SvgPicture.asset(
-            'assets/icon/seal_check.svg',
+            DivineIconName.sealCheck.assetPath,
             width: 16,
             height: 16,
             colorFilter: const ColorFilter.mode(

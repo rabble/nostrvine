@@ -397,6 +397,244 @@ void main() {
       });
     });
 
+    group('updatePublishStatus', () {
+      test('should update publish status of an existing draft', () async {
+        final draft = DivineVideoDraft.create(
+          clips: [
+            DivineVideoClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Test Vine',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+        );
+
+        await service.saveDraft(draft);
+
+        await service.updatePublishStatus(
+          draftId: draft.id,
+          status: PublishStatus.publishing,
+        );
+
+        // updatePublishStatus updates the column used for filtering
+        final publishing = await service.getDraftsByPublishStatuses(
+          {PublishStatus.publishing},
+        );
+        expect(publishing, hasLength(1));
+        expect(publishing.first.id, equals(draft.id));
+
+        final drafts = await service.getDraftsByPublishStatuses(
+          {PublishStatus.draft},
+        );
+        expect(drafts, isEmpty);
+      });
+
+      test('should update publish status with error message', () async {
+        final draft = DivineVideoDraft.create(
+          clips: [
+            DivineVideoClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Test Vine',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+        );
+
+        await service.saveDraft(draft);
+
+        await service.updatePublishStatus(
+          draftId: draft.id,
+          status: PublishStatus.failed,
+          publishError: 'Network error',
+        );
+
+        final failed = await service.getDraftsByPublishStatuses(
+          {PublishStatus.failed},
+        );
+        expect(failed, hasLength(1));
+
+        // Verify error stored at DB row level
+        final row = await database.draftsDao.getDraftById(draft.id);
+        expect(row, isNotNull);
+        expect(row!.publishError, equals('Network error'));
+      });
+
+      test('should transition through multiple statuses', () async {
+        final draft = DivineVideoDraft.create(
+          clips: [
+            DivineVideoClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Test Vine',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+        );
+
+        await service.saveDraft(draft);
+
+        await service.updatePublishStatus(
+          draftId: draft.id,
+          status: PublishStatus.publishing,
+        );
+        var matches = await service.getDraftsByPublishStatuses(
+          {PublishStatus.publishing},
+        );
+        expect(matches, hasLength(1));
+
+        await service.updatePublishStatus(
+          draftId: draft.id,
+          status: PublishStatus.failed,
+          publishError: 'Timeout',
+        );
+        matches = await service.getDraftsByPublishStatuses(
+          {PublishStatus.failed},
+        );
+        expect(matches, hasLength(1));
+
+        await service.updatePublishStatus(
+          draftId: draft.id,
+          status: PublishStatus.draft,
+        );
+        matches = await service.getDraftsByPublishStatuses(
+          {PublishStatus.draft},
+        );
+        expect(matches, hasLength(1));
+      });
+    });
+
+    group('getDraftsByPublishStatuses', () {
+      DivineVideoDraft createDraftWithStatus(
+        String id,
+        PublishStatus status,
+      ) {
+        final now = DateTime.now();
+        return DivineVideoDraft(
+          id: id,
+          clips: [
+            DivineVideoClip(
+              id: 'clip_$id',
+              video: EditorVideo.file('/path/to/$id.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: now,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Draft $id',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: now,
+          lastModified: now,
+          publishStatus: status,
+          publishAttempts: 0,
+        );
+      }
+
+      test(
+        'should return only drafts matching the requested statuses',
+        () async {
+          await service.saveDraft(
+            createDraftWithStatus('d1', PublishStatus.draft),
+          );
+          await service.saveDraft(
+            createDraftWithStatus('d2', PublishStatus.publishing),
+          );
+          await service.saveDraft(
+            createDraftWithStatus('d3', PublishStatus.failed),
+          );
+
+          final results = await service.getDraftsByPublishStatuses(
+            {PublishStatus.publishing, PublishStatus.failed},
+          );
+
+          expect(results, hasLength(2));
+          final ids = results.map((d) => d.id).toSet();
+          expect(ids, containsAll(['d2', 'd3']));
+        },
+      );
+
+      test('should return empty list when no drafts match', () async {
+        await service.saveDraft(
+          createDraftWithStatus('d1', PublishStatus.draft),
+        );
+
+        final results = await service.getDraftsByPublishStatuses(
+          {PublishStatus.failed},
+        );
+
+        expect(results, isEmpty);
+      });
+
+      test('should remove corrupted drafts with 0 clips', () async {
+        // Insert a draft row directly via DAO (no clips)
+        await database.draftsDao.upsertDraft(
+          id: 'corrupted',
+          title: 'Corrupted',
+          description: '',
+          publishStatus: 'failed',
+          createdAt: DateTime(2025),
+          lastModified: DateTime(2025),
+          renderedFilePath: null,
+          renderedThumbnailPath: null,
+          data: '{"title":"Corrupted","description":""}',
+        );
+
+        final results = await service.getDraftsByPublishStatuses(
+          {PublishStatus.failed},
+        );
+
+        expect(results, isEmpty);
+
+        // Corrupted row should be deleted
+        final row = await database.draftsDao.getDraftById('corrupted');
+        expect(row, isNull);
+      });
+
+      test('should return drafts for a single status', () async {
+        await service.saveDraft(
+          createDraftWithStatus('d1', PublishStatus.failed),
+        );
+        await service.saveDraft(
+          createDraftWithStatus('d2', PublishStatus.failed),
+        );
+        await service.saveDraft(
+          createDraftWithStatus('d3', PublishStatus.draft),
+        );
+
+        final results = await service.getDraftsByPublishStatuses(
+          {PublishStatus.failed},
+        );
+
+        expect(results, hasLength(2));
+        expect(
+          results.every((d) => d.publishStatus == PublishStatus.failed),
+          isTrue,
+        );
+      });
+    });
+
     group('migrateOldDrafts', () {
       const documentsPath = '/tmp/documents';
 

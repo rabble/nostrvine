@@ -1,96 +1,58 @@
-# Settings Screen Structure
+# Settings Information Architecture
 
-The Settings screen is a non-shell screen that manages its own Scaffold and AppBar.
+Status: Current
+Validated against: the current settings hub, support, Nostr settings, and safety/privacy screens on 2026-03-19.
 
-## Widget Tree
+This document describes the current settings structure after the monolithic settings screen was split into focused sub-screens.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Scaffold                                                       │
-│  backgroundColor: VineTheme.backgroundColor (#000A06)           │
-│                                                                 │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  AppBar                                                   │  │
-│  │  backgroundColor: VineTheme.navGreen (#00150D)            │  │
-│  │  toolbarHeight: 72                                        │  │
-│  │  leadingWidth: 80                                         │  │
-│  │                                                           │  │
-│  │  ┌──────────┐                                             │  │
-│  │  │ IconBtn  │  "Settings"                                 │  │
-│  │  │ (back)   │  (titleFont)                                │  │
-│  │  └──────────┘                                             │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  body: Align (topCenter)                                  │  │
-│  │                                                           │  │
-│  │  ┌─────────────────────────────────────────────────────┐  │  │
-│  │  │  ConstrainedBox (maxWidth: 600)                     │  │  │
-│  │  │                                                     │  │  │
-│  │  │  ┌───────────────────────────────────────────────┐  │  │  │
-│  │  │  │  ListView                                     │  │  │  │
-│  │  │  │                                               │  │  │  │
-│  │  │  │  • _buildSectionHeader("Profile")             │  │  │  │
-│  │  │  │  • _buildSettingsTile (Edit Profile)          │  │  │  │
-│  │  │  │  • _buildSettingsTile (Key Management)        │  │  │  │
-│  │  │  │                                               │  │  │  │
-│  │  │  │  • _buildSectionHeader("Account")             │  │  │  │
-│  │  │  │  • _buildSettingsTile (Log Out)               │  │  │  │
-│  │  │  │  • _buildSettingsTile (Remove Keys)           │  │  │  │
-│  │  │  │  • _buildSettingsTile (Delete Account)        │  │  │  │
-│  │  │  │                                               │  │  │  │
-│  │  │  │  • _buildSectionHeader("Network")             │  │  │  │
-│  │  │  │  • ... more tiles                             │  │  │  │
-│  │  │  └───────────────────────────────────────────────┘  │  │  │
-│  │  └─────────────────────────────────────────────────────┘  │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  (No bottom navigation bar)                                     │
-└─────────────────────────────────────────────────────────────────┘
-```
+## Settings Hub
 
-## Key Differences from AppShell Screens
+Route:
 
-| Aspect | AppShell Screens | Settings Screen |
-|--------|------------------|-----------------|
-| Bottom Nav | Yes | No |
-| Drawer | Yes (VineDrawer) | No |
-| Body wrapper | ColoredBox + Padding + ClipRRect | Direct body |
-| Rounded corners | Yes (30px) | No |
-| Side margins | 4px (navGreen visible) | None |
-| AppBar | Shared via AppShell | Own AppBar |
-| Background | Via ColoredBox wrapper | Scaffold backgroundColor |
+- `SettingsScreen.path = /settings`
 
-## AppBar Configuration
+Primary destinations from the hub:
 
-```dart
-AppBar(
-  elevation: 0,
-  scrolledUnderElevation: 0,
-  toolbarHeight: 72,
-  leadingWidth: 80,
-  centerTitle: false,
-  titleSpacing: 0,
-  backgroundColor: VineTheme.navGreen,
-  leading: IconButton(...),  // Back button with styled container
-  title: Text('Settings', style: VineTheme.titleFont()),
-)
-```
+- `Creator Analytics`
+- `Support Center`
+- `Notifications`
+- `Content Preferences`
+- `Moderation Controls`
+- `Nostr Settings`
 
-## Body Structure
+Authenticated users also see an account header and any account-state prompts such as session-expired recovery or secure-account reminders.
 
-```dart
-body: Align(
-  alignment: Alignment.topCenter,
-  child: ConstrainedBox(
-    constraints: const BoxConstraints(maxWidth: 600),
-    child: ListView(
-      children: [
-        // Section headers and setting tiles
-      ],
-    ),
-  ),
-)
-```
+## Sub-Screens
 
-The `ConstrainedBox` with `maxWidth: 600` ensures the settings list doesn't become too wide on tablets/desktop while remaining centered.
+### Support Center
+
+- bug reporting
+- log export
+- support message history
+- links to FAQ, ProofMode, Privacy Policy, and Safety Standards
+
+### Content Preferences
+
+- language preference
+- content filters
+- audio reuse preference
+- macOS-only audio device selection
+
+### Moderation Controls (`Safety & Privacy`)
+
+- age verification gate
+- Divine-hosted-only filter
+- moderation provider toggles
+- blocked-user management
+
+### Nostr Settings
+
+- relays
+- relay diagnostics
+- Blossom media servers
+- developer options when developer mode is enabled
+- key management and danger-zone actions for authenticated users
+
+## What Changed
+
+The old monolithic settings implementation no longer exists. Current docs and implementation should reference the split structure under `mobile/lib/screens/settings/` plus the dedicated `Safety & Privacy` screen.

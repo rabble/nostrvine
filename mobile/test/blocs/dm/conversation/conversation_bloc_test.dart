@@ -748,6 +748,40 @@ void main() {
         );
       });
     });
+
+    group('ConversationMessageDeleted', () {
+      blocTest<ConversationBloc, ConversationState>(
+        'calls deleteMessageForEveryone on the repository',
+        setUp: () {
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenAnswer((_) async {});
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationMessageDeleted(rumorId: messageId),
+        ),
+        verify: (_) {
+          verify(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).called(1);
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'reports error via addError when deleteMessageForEveryone throws',
+        setUp: () {
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenThrow(ArgumentError('message not found'));
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationMessageDeleted(rumorId: messageId),
+        ),
+        errors: () => [isA<ArgumentError>()],
+      );
+    });
   });
 
   group(ConversationState, () {
@@ -911,6 +945,22 @@ void main() {
             [recipientPubkey],
             'Hello',
           ]),
+        );
+      });
+    });
+
+    group(ConversationMessageDeleted, () {
+      test('supports value equality', () {
+        expect(
+          const ConversationMessageDeleted(rumorId: messageId),
+          equals(const ConversationMessageDeleted(rumorId: messageId)),
+        );
+      });
+
+      test('props are correct', () {
+        expect(
+          const ConversationMessageDeleted(rumorId: messageId).props,
+          equals([messageId]),
         );
       });
     });

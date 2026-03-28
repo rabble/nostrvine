@@ -5,10 +5,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -23,11 +25,9 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
-import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
 final videoEditorProvider =
     NotifierProvider<VideoEditorNotifier, VideoEditorProviderState>(
@@ -48,8 +48,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   static const Duration _autosaveDebounce = Duration(milliseconds: 800);
 
   /// Current draft ID for save/load operations.
-  @visibleForTesting
-  String? draftId;
+  String? _draftId;
+  String get draftId => _draftId ?? VideoEditorConstants.autoSaveId;
+  set draftId(String? id) {
+    _draftId = id;
+  }
 
   Timer? _autosaveTimer;
 
@@ -60,9 +63,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Get clips from clip manager.
   List<DivineVideoClip> get _clips => ref.read(clipManagerProvider).clips;
 
-  DraftStorageService get _draftService => ref.read(
-    draftStorageServiceProvider,
-  );
+  DraftStorageService get _draftService =>
+      ref.read(draftStorageServiceProvider);
 
   bool get isAutosavedDraft => draftId == VideoEditorConstants.autoSaveId;
 
@@ -119,15 +121,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   Future<void> initialize({String? draftId}) async {
     // Reset old editing states but keep metadata
     state = state.copyWith(
-      currentClipIndex: 0,
-      isEditing: false,
-      isReordering: false,
       isProcessing: false,
       isSavingDraft: false,
-      isPlaying: false,
-      hasPlayedOnce: false,
-      isOverDeleteZone: false,
-      currentPosition: .zero,
     );
 
     // If the editor screen is opened from a draft, we initialize it here.
@@ -152,13 +147,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         );
       }
     }
-    this.draftId = draftId ?? 'Draft_${DateTime.now().microsecondsSinceEpoch}';
+    this.draftId = draftId ?? VideoEditorConstants.autoSaveId;
   }
 
   /// Reset editor state and metadata to defaults.
   ///
-  /// Also cancels any pending autosave and deletes the autosaved draft.
-  Future<void> reset() async {
+  /// Also cancels any pending autosave and deletes the autosaved draft
+  /// unless [keepAutosavedDraft] is true.
+  Future<void> reset({bool keepAutosavedDraft = false}) async {
     Log.debug(
       '🔄 Resetting editor state',
       name: 'VideoEditorNotifier',
@@ -166,285 +162,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
     state = VideoEditorProviderState();
     _autosaveTimer?.cancel();
-
-    unawaited(removeAutosavedDraft());
-  }
-
-  // === CLIP SELECTION & NAVIGATION ===
-
-  /// Select a clip by index and update the current position.
-  ///
-  /// Calculates the playback offset based on previous clips' durations.
-  void selectClipByIndex(int index) {
-    if (index < 0 || index >= _clips.length) return;
-
-    // Calculate offset from all previous clips
-    final offset = _clips
-        .take(index)
-        .fold(Duration.zero, (sum, clip) => sum + clip.duration);
-
-    Log.debug(
-      '🎯 Selected clip $index (offset: ${offset.inSeconds}s)',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-
-    state = state.copyWith(
-      currentClipIndex: index,
-      isPlaying: false,
-      isPlayerReady: false,
-      hasPlayedOnce: false,
-      currentPosition: offset,
-      splitPosition: .zero,
-    );
-  }
-
-  // === CLIP EDITING MODE ===
-
-  /// Enter editing mode for the currently selected clip.
-  ///
-  /// Resets trim position to zero when entering edit mode.
-  void startClipEditing() {
-    Log.info(
-      '✂️ Started editing clip ${state.currentClipIndex}',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    state = state.copyWith(
-      isEditing: true,
-      isPlaying: false,
-      splitPosition: _clips[state.currentClipIndex].duration ~/ 2,
-    );
-  }
-
-  /// Exit editing mode for the currently selected clip.
-  void stopClipEditing() {
-    Log.info(
-      '✅ Stopped editing clip ${state.currentClipIndex}',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    state = state.copyWith(isEditing: false, isPlaying: false);
-  }
-
-  /// Toggle between editing and viewing mode for the current clip.
-  ///
-  /// Convenience method that calls [startClipEditing] or [stopClipEditing]
-  /// based on current state.
-  void toggleClipEditing() {
-    if (state.isEditing) {
-      stopClipEditing();
-    } else {
-      startClipEditing();
+    draftId = null;
+    if (!keepAutosavedDraft) {
+      unawaited(removeAutosavedDraft());
     }
-  }
-
-  /// Split the currently selected clip at the current split position.
-  ///
-  /// Creates two new clips and renders them in parallel. Both clips must
-  /// meet the minimum duration requirement.
-  Future<void> splitSelectedClip() async {
-    final splitPosition = state.splitPosition;
-    final selectedClip = _clips[state.currentClipIndex];
-
-    // Validate split position
-    if (!VideoEditorSplitService.isValidSplitPosition(
-      selectedClip,
-      splitPosition,
-    )) {
-      Log.warning(
-        '⚠️ Invalid split position ${splitPosition.inSeconds}s - '
-        'clips must be at least '
-        '${VideoEditorSplitService.minClipDuration.inMilliseconds}ms',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-      return;
-    }
-
-    Log.info(
-      '✂️ Splitting clip ${selectedClip.id} at ${splitPosition.inSeconds}s',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-
-    stopClipEditing();
-
-    try {
-      await VideoEditorSplitService.splitClip(
-        sourceClip: selectedClip,
-        splitPosition: splitPosition,
-        onClipsCreated: (startClip, endClip) {
-          // Add clips to UI immediately so processing status is visible
-          _clipManager
-            ..refreshClip(
-              startClip.copyWith(id: selectedClip.id),
-              newId: startClip.id,
-            )
-            ..insertClip(state.currentClipIndex + 1, endClip);
-        },
-        onThumbnailExtracted: (clip, thumbnailPath) {
-          if (ref.mounted) {
-            _clipManager.updateClipThumbnail(clip.id, thumbnailPath);
-          }
-        },
-        onClipRendered: (clip, video) {
-          if (ref.mounted) {
-            _clipManager.updateClipVideo(clip.id, video);
-            Log.debug(
-              '✅ Clip rendered: ${clip.id}',
-              name: 'VideoEditorNotifier',
-              category: .video,
-            );
-          }
-        },
-      );
-
-      Log.info(
-        '✅ Successfully split clip into 2 segments',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-
-      invalidateFinalRenderedClip();
-      await autosaveChanges();
-    } catch (e) {
-      Log.error(
-        '❌ Failed to split clip: $e',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    }
-  }
-
-  // === CLIP REORDERING ===
-
-  /// Start clip reordering mode for drag-and-drop operations.
-  void startClipReordering() {
-    Log.debug(
-      '🔄 Started clip reordering mode',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    state = state.copyWith(isReordering: true, isPlaying: false);
-  }
-
-  /// Stop clip reordering mode and reset delete zone state.
-  void stopClipReordering() {
-    Log.debug(
-      '✅ Stopped clip reordering mode',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    state = state.copyWith(isReordering: false, isOverDeleteZone: false);
-  }
-
-  /// Update whether a clip is being dragged over the delete zone.
-  void setOverDeleteZone(bool isOver) {
-    if (state.isOverDeleteZone != isOver) {
-      Log.debug(
-        isOver ? '🗑️  Clip over delete zone' : '⬅️  Clip left delete zone',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    }
-    state = state.copyWith(isOverDeleteZone: isOver);
-  }
-
-  // === PLAYBACK CONTROL ===
-
-  /// Pause video playback.
-  ///
-  /// Sets isPlaying to false without affecting other state.
-  void pauseVideo() {
-    Log.debug('⏸️ Paused video', name: 'VideoEditorNotifier', category: .video);
-    state = state.copyWith(isPlaying: false);
-  }
-
-  /// Set whether the video player is ready for playback.
-  ///
-  /// Called by the video player widget when initialization completes or
-  /// when the player is disposed.
-  void setPlayerReady(bool isReady) {
-    if (state.isPlayerReady == isReady) return;
-    Log.debug(
-      isReady ? '✅ Player ready' : '⏳ Player not ready',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    state = state.copyWith(isPlayerReady: isReady);
-  }
-
-  /// Mark that video has started playing (hides thumbnail).
-  ///
-  /// Called when video playback begins for the first time on current clip.
-  void setHasPlayedOnce() {
-    if (state.hasPlayedOnce) return;
-    state = state.copyWith(hasPlayedOnce: true);
-  }
-
-  /// Toggle between playing and paused states.
-  ///
-  /// Convenience method to start/stop playback based on current state.
-  /// Ignores play requests if the player is not yet ready.
-  void togglePlayPause() {
-    final newState = !state.isPlaying;
-    Log.debug(
-      newState ? '▶️ Playing video' : '⏸️ Paused video',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    // Prevent playing before player is initialized
-    if (!state.isPlayerReady && newState) return;
-
-    state = state.copyWith(isPlaying: newState);
-  }
-
-  /// Toggle audio mute state.
-  ///
-  /// Mutes or unmutes audio playback for the video editor.
-  void toggleMute() {
-    final newState = !state.isMuted;
-    Log.debug(
-      newState ? '🔇 Muted audio' : '🔊 Unmuted audio',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    state = state.copyWith(isMuted: newState);
-  }
-
-  /// Update the current playback position.
-  ///
-  /// In editing mode, uses absolute position within the clip.
-  /// In viewing mode, adds offset from previous clips.
-  void updatePosition(String clipId, Duration position) {
-    // Ignore stale position updates from previous clip's controller
-    if (clipId != _clips[state.currentClipIndex].id) {
-      return; // Stale position from wrong controller
-    }
-
-    // Calculate offset from all previous clips
-    final offset = state.isEditing
-        ? Duration.zero
-        : _clips
-              .take(state.currentClipIndex)
-              .fold(Duration.zero, (sum, clip) => sum + clip.duration);
-
-    state = state.copyWith(
-      currentPosition: Duration(
-        milliseconds: (offset + position).inMilliseconds.clamp(
-          0,
-          VideoEditorConstants.maxDuration.inMilliseconds,
-        ),
-      ),
-    );
-  }
-
-  /// Seek to a specific position within the trim range.
-  ///
-  /// Pauses playback and updates the split position marker.
-  void seekToTrimPosition(Duration value) {
-    state = state.copyWith(splitPosition: value, isPlaying: false);
   }
 
   // === METADATA ===
@@ -458,9 +179,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Validates and enforces the 64KB size limit. Rejects updates that exceed
   /// the limit and sets metadataLimitReached flag.
   ///
-  /// Automatically extracts completed hashtags from title and description.
-  /// A hashtag is considered complete when followed by a space or at the end
-  /// of the string (e.g., "#hot " or "text #hot").
+  /// Automatically extracts hashtags from title and description.
+  /// A hashtag is detected when followed by a non-alphanumeric character
+  /// or at end of string (e.g., "#hot ", "#hot", "text #hot.").
   void updateMetadata({String? title, String? description, Set<String>? tags}) {
     Log.debug(
       '📝 Updated video metadata',
@@ -488,10 +209,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
           .toSet();
     } else {
       // Text changed - compare old and new hashtags to only update changed ones
-      final hashtagPattern = RegExp(r'#([a-zA-Z0-9]+)\s');
+      final hashtagPattern = RegExp('#([a-zA-Z0-9]+)(?![a-zA-Z0-9])');
 
       // Extract hashtags from OLD text
-      final oldText = '${state.title} ${state.description} ';
+      final oldText = '${state.title} ${state.description}';
       final oldHashtags = hashtagPattern
           .allMatches(oldText)
           .map((m) => m.group(1))
@@ -500,7 +221,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
           .toSet();
 
       // Extract hashtags from NEW text
-      final newText = '$rawTitle $rawDescription ';
+      final newText = '$rawTitle $rawDescription';
       final newHashtags = hashtagPattern
           .allMatches(newText)
           .map((m) => m.group(1))
@@ -585,10 +306,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     if (state.collaboratorPubkeys.contains(pubkey)) return;
     if (state.pendingCollaboratorPubkeys.contains(pubkey)) return;
     state = state.copyWith(
-      pendingCollaboratorPubkeys: {
-        ...state.pendingCollaboratorPubkeys,
-        pubkey,
-      },
+      pendingCollaboratorPubkeys: {...state.pendingCollaboratorPubkeys, pubkey},
     );
   }
 
@@ -667,6 +385,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// This updates the editor's local state. The sound is persisted
   /// in drafts and used for audio playback during editing.
   void selectSound(AudioEvent? sound) {
+    if (sound == state.selectedSound) return;
+
     state = state.copyWith(
       selectedSound: sound,
       clearSelectedSound: sound == null,
@@ -682,9 +402,46 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Update the volume level for the original video audio (0.0 to 1.0).
+  void setOriginalAudioVolume(double volume) {
+    state = state.copyWith(originalAudioVolume: volume.clamp(0.0, 1.0));
+    invalidateFinalRenderedClip();
+    triggerAutosave();
+  }
+
+  /// Update the volume level for the custom/added audio track (0.0 to 1.0).
+  void setCustomAudioVolume(double volume) {
+    state = state.copyWith(customAudioVolume: volume.clamp(0.0, 1.0));
+    invalidateFinalRenderedClip();
+    triggerAutosave();
+  }
+
+  /// Preview original audio volume without invalidating render or autosave.
+  ///
+  /// Used during live slider interaction so the user can hear the change
+  /// immediately. Call [setOriginalAudioVolume] to commit the final value.
+  void previewOriginalAudioVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    if (clamped != state.originalAudioVolume) {
+      state = state.copyWith(originalAudioVolume: clamped);
+    }
+  }
+
+  /// Preview custom audio volume without invalidating render or autosave.
+  ///
+  /// Used during live slider interaction so the user can hear the change
+  /// immediately. Call [setCustomAudioVolume] to commit the final value.
+  void previewCustomAudioVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    if (clamped != state.customAudioVolume) {
+      state = state.copyWith(customAudioVolume: clamped);
+    }
+  }
+
   /// Update the start offset of the currently selected sound.
   void updateSoundStartOffset(Duration offset) {
-    if (state.selectedSound != null) {
+    if (state.selectedSound != null &&
+        offset != state.selectedSound?.startOffset) {
       state = state.copyWith(
         selectedSound: state.selectedSound!.copyWith(startOffset: offset),
       );
@@ -703,6 +460,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   DivineVideoDraft getActiveDraft({
     bool isAutosave = false,
     bool enforceSeparatedClips = false,
+    String? draftId,
   }) {
     // Read selected sound from local state
     final selectedSound = state.selectedSound;
@@ -718,7 +476,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     }
 
     return DivineVideoDraft.create(
-      id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
+      id:
+          draftId ??
+          (isAutosave ? VideoEditorConstants.autoSaveId : this.draftId),
       clips:
           state.finalRenderedClip == null || isAutosave || enforceSeparatedClips
           ? _clips
@@ -738,6 +498,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
       proofManifestJson: state.proofManifestJson,
+      originalAudioVolume: state.originalAudioVolume,
+      customAudioVolume: state.customAudioVolume,
     );
   }
 
@@ -748,6 +510,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// This stores the serialized state history from ProImageEditor,
   /// allowing users to restore their editing progress when reopening a draft.
   void updateEditorStateHistory(Map<String, dynamic> stateHistory) {
+    if (mapEquals(state.editorStateHistory, stateHistory)) return;
+
     Log.debug(
       '📜 Updated editor state history',
       name: 'VideoEditorNotifier',
@@ -763,11 +527,22 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// This stores the serialized editing parameters from ProImageEditor,
   /// enabling restoration of all applied effects when reopening a draft.
   void updateEditorEditingParameters(CompleteParameters editingParameters) {
-    Log.debug(
-      '🎨 Updated editor editing parameters',
-      name: 'VideoEditorNotifier',
-      category: LogCategory.video,
-    );
+    final old = state.editorEditingParameters;
+    if (old != null) {
+      final diffs = old.diff(editingParameters);
+      if (diffs.isEmpty) return;
+      Log.debug(
+        '🎨 Editor editing parameters changed: ${diffs.join(", ")}',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+    } else {
+      Log.debug(
+        '🎨 Editor editing parameters set (was null)',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+    }
     invalidateFinalRenderedClip();
     state = state.copyWith(editorEditingParameters: editingParameters);
     triggerAutosave();
@@ -820,7 +595,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      final draft = getActiveDraft(isAutosave: true);
+      final draft = getActiveDraft(isAutosave: isAutosavedDraft);
       await _draftService.saveDraft(draft);
 
       Log.info(
@@ -847,10 +622,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// Persists clips and metadata to local storage for later editing.
   /// Returns `true` on success, `false` on failure.
-  Future<bool> saveAsDraft() async {
+  Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
     if (state.isSavingDraft) return false;
 
     state = state.copyWith(isSavingDraft: true);
+
+    final draftId = enforceCreateNewDraft
+        ? 'draft_${DateTime.now().microsecondsSinceEpoch}'
+        : this.draftId;
 
     Log.info(
       '💾 Saving draft: $draftId',
@@ -860,7 +639,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     try {
       await _draftService.saveDraft(
-        getActiveDraft(enforceSeparatedClips: true),
+        getActiveDraft(enforceSeparatedClips: true, draftId: draftId),
       );
 
       // Remove the autosaved draft
@@ -988,6 +767,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarnings: draft.contentWarnings,
       finalRenderedClip: validFinalRenderedClip,
       clearFinalRenderedClip: validFinalRenderedClip == null,
+      originalAudioVolume: draft.originalAudioVolume,
+      customAudioVolume: draft.customAudioVolume,
     );
     _clipManager.addMultipleClips(clipsWithThumbnails);
     // We set the aspect ratio in the video recorder to match the clips,
@@ -1039,7 +820,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Combines all clips, applies audio settings, and creates the final
   /// rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    if (state.finalRenderedClip != null) return;
+    if (state.finalRenderedClip != null) {
+      setProcessing(false);
+      return;
+    }
 
     Log.info(
       '🎬 Starting final video render',
@@ -1052,8 +836,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
-      enableAudio: !state.isMuted,
+      aiTrainingOptOut: ref
+          .read(aiTrainingPreferenceServiceProvider)
+          .isOptOutEnabled,
       parameters: renderParameters,
+      originalAudioVolume: state.originalAudioVolume,
+      customAudioVolume: state.customAudioVolume,
     );
 
     if (result == null) {
@@ -1085,26 +873,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Cancel an ongoing video render operation.
   Future<void> cancelRenderVideo() async {
-    try {
-      Log.info(
-        '⏹️ Cancelling video render',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-      await ProVideoEditor.instance.cancel(_clips.first.id);
-      Log.info(
-        '✅ Video render cancelled',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    } catch (e) {
-      // May fail if render already completed or was cancelled - not an error
-      Log.debug(
-        '⏹️ Cancel video render returned: $e',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    }
+    await VideoEditorRenderService.cancelTask(_clips.first.id);
 
     state = state.copyWith(isProcessing: false);
   }
@@ -1169,6 +938,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         audio: soundTrack.isBundled
             ? EditorAudio.asset(soundTrack.assetPath!)
             : EditorAudio.network(soundTrack.url!),
+        startTime: soundTrack.startOffset,
       ),
     );
   }

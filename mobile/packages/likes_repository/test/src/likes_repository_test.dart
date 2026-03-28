@@ -584,6 +584,147 @@ void main() {
         // Should only call once (e-tag only) since addressableId is empty
         verify(() => mockNostrClient.countEvents(any())).called(1);
       });
+
+      test('returns cached count on second call without relay query', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 42));
+
+        repository = createRepository();
+
+        final first = await repository.getLikeCount(testEventId);
+        final second = await repository.getLikeCount(testEventId);
+
+        expect(first, equals(42));
+        expect(second, equals(42));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
+
+      test('cache is adjusted after likeEvent', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 10));
+
+        final reactionEvent = MockEvent();
+        when(() => reactionEvent.id).thenReturn('reaction_1');
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => reactionEvent);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLocalStorage.isLiked(any()),
+        ).thenAnswer((_) async => false);
+
+        repository = createRepository();
+
+        await repository.getLikeCount(testEventId);
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+        final cached = await repository.getLikeCount(testEventId);
+
+        expect(cached, equals(11));
+      });
+
+      test('cache is adjusted after offline likeEvent', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 10));
+
+        var queuedAction = false;
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => false,
+          queueOfflineAction:
+              ({
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
+              }) async {
+                queuedAction = true;
+              },
+        );
+
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLocalStorage.isLiked(any()),
+        ).thenAnswer((_) async => false);
+
+        await repository.getLikeCount(testEventId);
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+        final cached = await repository.getLikeCount(testEventId);
+
+        expect(queuedAction, isTrue);
+        expect(cached, equals(11));
+      });
+
+      test('cache is adjusted after unlikeEvent', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 10));
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer(
+          (_) async => [createLikeRecord()],
+        );
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => MockEvent());
+
+        repository = createRepository();
+        await repository.initialize();
+
+        await repository.getLikeCount(testEventId);
+        await repository.unlikeEvent(testEventId);
+        final cached = await repository.getLikeCount(testEventId);
+
+        expect(cached, equals(9));
+      });
+
+      test('clearCache resets count cache', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 42));
+        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
+
+        repository = createRepository();
+        await repository.getLikeCount(testEventId);
+        await repository.clearCache();
+
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 99));
+
+        final fresh = await repository.getLikeCount(testEventId);
+        expect(fresh, equals(99));
+        verify(() => mockNostrClient.countEvents(any())).called(2);
+      });
     });
 
     group('getLikeCounts', () {
@@ -739,6 +880,37 @@ void main() {
 
         // Should return 3 (max of 3 from e-tag and 2 from a-tag)
         expect(counts[eventId], equals(3));
+      });
+
+      test('skips relay query for already-cached event IDs', () async {
+        const eventId1 = 'event_id_1_1234567890abcdef01234567890abcdef';
+        const eventId2 = 'event_id_2_1234567890abcdef01234567890abcdef';
+
+        // Pre-populate cache via a single-event getLikeCount
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 5));
+
+        repository = createRepository();
+        await repository.getLikeCount(eventId1);
+
+        // Now batch-fetch both; only eventId2 should hit relays
+        final reactionForId2 = MockEvent();
+        when(() => reactionForId2.tags).thenReturn([
+          ['e', eventId2],
+        ]);
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [reactionForId2]);
+
+        final counts = await repository.getLikeCounts([eventId1, eventId2]);
+
+        expect(counts[eventId1], equals(5));
+        expect(counts[eventId2], equals(1));
+        // countEvents called once for getLikeCount; queryEvents once for batch
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+        verify(() => mockNostrClient.queryEvents(any())).called(1);
       });
     });
 
@@ -1708,6 +1880,51 @@ void main() {
         verify(
           () => mockNostrClient.deleteEvent(testReactionEventId),
         ).called(1);
+      });
+
+      test('decrements like count cache', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 10));
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+          ),
+        );
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
+
+        repository = createRepository();
+
+        // Populate count cache
+        await repository.getLikeCount(testEventId);
+        // Like so there's a record to unlike
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+        // Execute unlike via sync path
+        await repository.executeUnlikeAction(testEventId);
+
+        // Cache was 10 → likeEvent +1 → 11 → executeUnlikeAction −1 → 10
+        final cached = await repository.getLikeCount(testEventId);
+        expect(cached, equals(10));
       });
     });
   });

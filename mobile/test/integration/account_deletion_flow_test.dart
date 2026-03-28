@@ -10,7 +10,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 

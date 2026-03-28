@@ -1,5 +1,5 @@
-// ABOUTME: Widget test for unified settings screen
-// ABOUTME: Verifies settings navigation and UI structure
+// ABOUTME: Widget test for settings hub screen
+// ABOUTME: Verifies account header, auth-state tiles, and navigation structure
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,14 +7,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
-  group('SettingsScreen Tests', () {
+  group(SettingsScreen, () {
     late _MockAuthService mockAuthService;
     late SharedPreferences sharedPreferences;
 
@@ -22,10 +24,15 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
       mockAuthService = _MockAuthService();
+
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.isAnonymous).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
-      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(() => mockAuthService.isAnonymous).thenReturn(false);
+      when(
+        () => mockAuthService.currentPublicKeyHex,
+      ).thenReturn('abc123pubkey');
+      when(
+        () => mockAuthService.authState,
+      ).thenReturn(AuthState.authenticated);
       when(
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
@@ -34,168 +41,141 @@ void main() {
       ).thenReturn(false);
     });
 
-    testWidgets('Settings screen displays all sections', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWith(
-              (ref) => AuthState.authenticated,
-            ),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
+    Widget buildSubject({
+      AuthState authState = AuthState.authenticated,
+    }) {
+      return ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          currentAuthStateProvider.overrideWith((ref) => authState),
+          userProfileReactiveProvider.overrideWith(
+            (ref, pubkey) => Stream.value(null),
+          ),
+        ],
+        child: const MaterialApp(home: SettingsScreen()),
       );
+    }
 
-      // Verify section headers (displayed as uppercase)
-      expect(find.text('PROFILE'), findsOneWidget);
-      expect(find.text('NETWORK'), findsOneWidget);
-      expect(find.text('PREFERENCES'), findsOneWidget);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
-
-    testWidgets('Settings tiles display correctly', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWith(
-              (ref) => AuthState.authenticated,
-            ),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
-      );
-
-      // Verify profile settings
-      expect(find.text('Edit Profile'), findsOneWidget);
-      expect(find.text('Key Management'), findsOneWidget);
-
-      // Verify network settings
-      expect(find.text('Relays'), findsOneWidget);
-      expect(find.text('Relay Diagnostics'), findsOneWidget);
-      expect(find.text('Media Servers'), findsOneWidget);
-
-      // CRITICAL: P2P Sync should be hidden for release
-      expect(find.text('P2P Sync'), findsNothing);
-      expect(find.text('Peer-to-peer synchronization settings'), findsNothing);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
-
-    testWidgets('Settings tiles have proper icons', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
-      );
-
-      // Verify icons exist
-      expect(find.byIcon(Icons.person), findsWidgets); // Edit Profile
-      expect(find.byIcon(Icons.key), findsWidgets); // Key Management
-      expect(find.byIcon(Icons.hub), findsWidgets); // Relays
-      expect(
-        find.byIcon(Icons.troubleshoot),
-        findsWidgets,
-      ); // Relay Diagnostics
-      expect(find.byIcon(Icons.cloud_upload), findsWidgets); // Media Servers
-
-      // CRITICAL: P2P Sync icon (Icons.sync) should be hidden for release
-      expect(find.byIcon(Icons.sync), findsNothing);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
-
-    testWidgets('App bar displays correctly', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
-      );
+    testWidgets('renders app bar with title', (tester) async {
+      await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
-      final appBar = tester.widget<AppBar>(find.byType(AppBar));
-      expect(appBar.backgroundColor, isNotNull);
 
-      // Dispose and pump to clear any pending timers from overlay visibility
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
-    testWidgets('Settings screen reorganizes dev and danger items', (
+    testWidgets('renders centered account header when authenticated', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UserAvatar), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('renders Switch account button when authenticated', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Switch account'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('renders navigation tiles', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+
+      expect(find.text('Creator Analytics'), findsOneWidget);
+      expect(find.text('Support Center'), findsOneWidget);
+
+      // Tiles below the centered header may need scrolling
+      for (final title in [
+        'Notifications',
+        'Content Preferences',
+        'Moderation Controls',
+        'Nostr Settings',
+      ]) {
+        await tester.scrollUntilVisible(
+          find.text(title),
+          100,
+          scrollable: scrollable,
+        );
+        expect(find.text(title), findsOneWidget);
+      }
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('renders Secure Your Account tile for anonymous users', (
+      tester,
+    ) async {
+      when(() => mockAuthService.isAnonymous).thenReturn(true);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Secure Your Account'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('renders Session Expired tile when session expired', (
+      tester,
+    ) async {
+      when(
+        () => mockAuthService.hasExpiredOAuthSession,
+      ).thenReturn(true);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Session Expired'), findsOneWidget);
+      // Should NOT show Secure Your Account when session expired
+      expect(find.text('Secure Your Account'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('hides Secure Your Account for non-anonymous users', (
+      tester,
+    ) async {
+      when(() => mockAuthService.isAnonymous).thenReturn(false);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Secure Your Account'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('does not render account section when unauthenticated', (
       tester,
     ) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
+        buildSubject(authState: AuthState.unauthenticated),
       );
       await tester.pumpAndSettle();
 
-      // Preferences should be near the top (after Profile)
-      expect(find.text('PREFERENCES'), findsOneWidget);
+      expect(find.byType(UserAvatar), findsNothing);
+      expect(find.text('Switch account'), findsNothing);
 
-      // Scroll to find Developer Options under Network section
-      await tester.scrollUntilVisible(
-        find.text('Developer Options'),
-        100,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-
-      // Developer Options should always be visible (not hidden behind 7-tap)
-      expect(find.text('Developer Options'), findsOneWidget);
-
-      // Switch Account should be in the Profile section at the top
-      // Scroll back to top to find it
-      await tester.scrollUntilVisible(
-        find.text('PROFILE'),
-        -100,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Switch Account'), findsOneWidget);
-
-      // Scroll to find Advanced Account Options section at the bottom
-      await tester.scrollUntilVisible(
-        find.text('Key Management'),
-        100,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-
-      // Advanced Account Options section should have key/account related items
-      expect(find.text('ADVANCED ACCOUNT OPTIONS'), findsOneWidget);
-      expect(find.text('Key Management'), findsOneWidget);
-      expect(find.text('Remove Keys from Device'), findsOneWidget);
-
-      // Danger Zone section should have delete option
-      await tester.scrollUntilVisible(
-        find.text('DANGER ZONE'),
-        100,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('DANGER ZONE'), findsOneWidget);
-      expect(find.text('Delete Account and Data'), findsOneWidget);
-
-      // Dispose and pump to clear any pending timers from overlay visibility
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });

@@ -9,6 +9,9 @@ class VineSound {
     required this.duration,
     this.artist,
     this.tags = const [],
+    this.license,
+    this.licenseUrl,
+    this.sourceUrl,
   });
 
   final String id;
@@ -17,6 +20,9 @@ class VineSound {
   final Duration duration;
   final String? artist;
   final List<String> tags;
+  final String? license;
+  final String? licenseUrl;
+  final String? sourceUrl;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -48,6 +54,9 @@ class VineSound {
       'durationMs': duration.inMilliseconds,
       'artist': artist,
       'tags': tags,
+      'license': license,
+      'licenseUrl': licenseUrl,
+      'sourceUrl': sourceUrl,
     };
   }
 
@@ -59,6 +68,9 @@ class VineSound {
       duration: Duration(milliseconds: json['durationMs'] as int),
       artist: json['artist'] as String?,
       tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+      license: json['license'] as String?,
+      licenseUrl: json['licenseUrl'] as String?,
+      sourceUrl: json['sourceUrl'] as String?,
     );
   }
 

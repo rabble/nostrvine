@@ -64,6 +64,56 @@ void main() {
       expect(config.supportEmail, 'support@divine.video');
     });
 
+    test('forces onboarding mode open for GH preview builds', () async {
+      final response = _MockResponse();
+      when(() => response.statusCode).thenReturn(200);
+      when(() => response.body).thenReturn(
+        jsonEncode({
+          'onboarding_mode': 'invite_code_required',
+          'support_email': 'support@divine.video',
+        }),
+      );
+      when(
+        () => mockClient.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer((_) async => response);
+
+      final previewInviteApiService = InviteApiService(
+        client: mockClient,
+        forceOpenOnboarding: true,
+      );
+
+      final config = await previewInviteApiService.getClientConfig();
+
+      expect(config.mode, OnboardingMode.open);
+      expect(config.supportEmail, 'support@divine.video');
+    });
+
+    test(
+      'preserves server onboarding mode when preview bypass is disabled',
+      () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(200);
+        when(() => response.body).thenReturn(
+          jsonEncode({
+            'onboarding_mode': 'invite_code_required',
+            'support_email': 'support@divine.video',
+          }),
+        );
+        when(
+          () => mockClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => response);
+
+        final standardInviteApiService = InviteApiService(
+          client: mockClient,
+          forceOpenOnboarding: false,
+        );
+
+        final config = await standardInviteApiService.getClientConfig();
+
+        expect(config.mode, OnboardingMode.inviteCodeRequired);
+      },
+    );
+
     test('validates invite codes', () async {
       final response = _MockResponse();
       when(() => response.statusCode).thenReturn(200);

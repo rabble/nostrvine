@@ -172,6 +172,8 @@ void main() {
       });
 
       test('loads notifications successfully', () async {
+        // Provider requires at least 10 items (_minVisibleItems) before stopping
+        // auto-load when hasMore is true. Return 10 or set hasMore: false.
         final mockNotifications = [
           createMockRelayNotification(
             id: 'notif_1',
@@ -193,7 +195,6 @@ void main() {
             notifications: mockNotifications,
             unreadCount: 5,
             nextCursor: 'cursor_abc',
-            hasMore: true,
           ),
         );
 
@@ -203,7 +204,7 @@ void main() {
 
         expect(result.notifications.length, 2);
         expect(result.unreadCount, 5);
-        expect(result.hasMoreContent, isTrue);
+        expect(result.hasMoreContent, isFalse);
         expect(result.isInitialLoad, isFalse);
         expect(result.error, isNull);
 

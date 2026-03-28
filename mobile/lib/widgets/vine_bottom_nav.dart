@@ -15,9 +15,8 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 
@@ -140,14 +139,14 @@ class VineBottomNav extends ConsumerWidget {
             _buildTabButton(
               context,
               ref,
-              'assets/icon/house.svg',
+              DivineIconName.house.assetPath,
               0,
               'home_tab',
             ),
             _buildTabButton(
               context,
               ref,
-              'assets/icon/compass.svg',
+              DivineIconName.compass.assetPath,
               1,
               'explore_tab',
             ),
@@ -159,7 +158,7 @@ class VineBottomNav extends ConsumerWidget {
                   name: 'Navigation',
                   category: LogCategory.ui,
                 );
-                context.pushWithVideoPause(VideoRecorderScreen.path);
+                context.pushToCameraWithPermission();
               },
             ),
             NotificationBadge(
@@ -167,7 +166,7 @@ class VineBottomNav extends ConsumerWidget {
               child: _buildTabButton(
                 context,
                 ref,
-                'assets/icon/${DivineIconName.chat.fileName}.svg',
+                DivineIconName.chat.assetPath,
                 2,
                 'inbox_tab',
               ),
@@ -175,7 +174,7 @@ class VineBottomNav extends ConsumerWidget {
             _buildTabButton(
               context,
               ref,
-              'assets/icon/userCircle.svg',
+              DivineIconName.userCircle.assetPath,
               3,
               'profile_tab',
             ),
@@ -186,7 +185,7 @@ class VineBottomNav extends ConsumerWidget {
   }
 }
 
-/// Camera button widget that disables when a background upload is in progress.
+/// Camera button in the center of the bottom navigation bar.
 class _CameraButton extends StatelessWidget {
   const _CameraButton({required this.onTap});
 
@@ -200,22 +199,15 @@ class _CameraButton extends StatelessWidget {
       label: 'Open camera',
       child: GestureDetector(
         onTap: onTap,
-        child: Opacity(
-          opacity: 1.0,
-          child: Container(
-            width: 72,
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: VineTheme.cameraButtonGreen,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/retro-camera.svg',
-              width: 32,
-              height: 32,
-            ),
+        child: Container(
+          width: 72,
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          decoration: BoxDecoration(
+            color: VineTheme.cameraButtonGreen,
+            borderRadius: BorderRadius.circular(20),
           ),
+          child: const DivineIcon(icon: .cameraRetro, size: 32),
         ),
       ),
     );

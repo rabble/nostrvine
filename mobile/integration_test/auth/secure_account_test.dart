@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
 import 'package:patrol/patrol.dart';
 
 import '../helpers/db_helpers.dart';
@@ -128,7 +127,7 @@ void main() {
 
         // Tap "Secure account" button
         final submitButton = find.widgetWithText(
-          DivinePrimaryButton,
+          DivineButton,
           'Secure account',
         );
         expect(submitButton, findsOneWidget);

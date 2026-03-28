@@ -1049,6 +1049,7 @@ void main() {
           when(
             () => mockCommentsRepository.deleteComment(
               commentId: any(named: 'commentId'),
+              rootEventId: any(named: 'rootEventId'),
             ),
           ).thenAnswer((_) async {});
 
@@ -1116,6 +1117,7 @@ void main() {
           verify(
             () => mockCommentsRepository.deleteComment(
               commentId: validId('editcomment'),
+              rootEventId: any(named: 'rootEventId'),
             ),
           ).called(1);
           verify(
@@ -1205,6 +1207,7 @@ void main() {
           when(
             () => mockCommentsRepository.deleteComment(
               commentId: any(named: 'commentId'),
+              rootEventId: any(named: 'rootEventId'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -2091,7 +2094,7 @@ void main() {
         setUp: () {
           when(
             () => mockContentBlocklistService.blockUser(any()),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
           when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
         },
         build: createBloc,
@@ -2178,6 +2181,7 @@ void main() {
           when(
             () => mockContentBlocklistService.blockUser(any()),
           ).thenThrow(Exception('Network error'));
+          // Note: thenThrow is correct here — tests the sync exception path.
         },
         build: createBloc,
         seed: () {

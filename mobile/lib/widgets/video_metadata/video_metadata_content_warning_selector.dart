@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
 
 /// Widget for selecting content warning labels on a video.
 ///
@@ -84,10 +83,8 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
                       displayText,
                       maxLines: 2,
                       overflow: .ellipsis,
-                      style: VineTheme.titleFont(
-                        fontSize: 16,
+                      style: VineTheme.titleMediumFont(
                         color: VineTheme.onSurface,
-                        letterSpacing: 0.15,
                       ),
                     ),
                   ),
@@ -180,8 +177,10 @@ class _ContentWarningMultiSelectState
           ),
           Padding(
             padding: const .fromLTRB(16, 8, 16, 16),
-            child: DivineSecondaryButton(
+            child: DivineButton(
               label: 'Done',
+              expanded: true,
+              type: .secondary,
               onPressed: () => Navigator.of(context).pop(_selected),
             ),
           ),

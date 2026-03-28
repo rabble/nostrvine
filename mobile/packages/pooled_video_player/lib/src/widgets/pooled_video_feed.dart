@@ -37,6 +37,7 @@ class PooledVideoFeed extends StatefulWidget {
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.onScrollOffsetChanged,
+    this.maxLoopDuration,
     super.key,
   });
 
@@ -73,6 +74,9 @@ class PooledVideoFeed extends StatefulWidget {
   /// How many videos from the end should trigger [onNearEnd].
   final int nearEndThreshold;
 
+  /// Maximum playback duration before automatically seeking back to zero.
+  final Duration? maxLoopDuration;
+
   /// Called continuously as the feed scrolls with the fractional page position.
   ///
   /// The value is the current page as a double (e.g. 1.7 means 70% scrolled
@@ -96,6 +100,17 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   /// The feed controller.
   VideoFeedController get controller => _controller;
 
+  /// Animate the page view to [index].
+  ///
+  /// Used by overlay widgets (e.g., slow-load skip) that need to scroll
+  /// the feed programmatically. Triggers the page-changed callback as a
+  /// side effect.
+  Future<void> animateToPage(int index) => _pageController.animateToPage(
+    index,
+    duration: const Duration(milliseconds: 300),
+    curve: Curves.easeInOut,
+  );
+
   /// Animate to the next video in the feed.
   ///
   /// Used for auto-advancing past broken/stalled videos.
@@ -103,13 +118,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   bool skipToNext() {
     final nextIndex = _currentIndex + 1;
     if (nextIndex >= _controller.videoCount) return false;
-    unawaited(
-      _pageController.animateToPage(
-        nextIndex,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      ),
-    );
+    unawaited(animateToPage(nextIndex));
     return true;
   }
 
@@ -133,6 +142,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
         initialIndex: _currentIndex,
         preloadAhead: widget.preloadAhead,
         preloadBehind: widget.preloadBehind,
+        maxLoopDuration: widget.maxLoopDuration,
       );
       _ownsController = true;
     }
@@ -220,6 +230,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
         initialIndex: _currentIndex,
         preloadAhead: widget.preloadAhead,
         preloadBehind: widget.preloadBehind,
+        maxLoopDuration: widget.maxLoopDuration,
       );
       _videoCount = _controller.videoCount;
       _controller.addListener(_onControllerChanged);

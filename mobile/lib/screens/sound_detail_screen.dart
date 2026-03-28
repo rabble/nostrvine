@@ -1,7 +1,6 @@
 // ABOUTME: Detail screen for viewing a sound and videos using that sound.
 // ABOUTME: Displays sound info, preview/use buttons, and grid of related videos.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,12 +9,15 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:sound_service/sound_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Screen displaying details of a specific sound and videos using it.
 ///
@@ -122,6 +124,12 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       );
 
       await audioService.loadAudio(widget.sound.url!);
+      if (mounted) {
+        setState(() {
+          _isPlayingPreview = true;
+          _isLoadingPreview = false;
+        });
+      }
       await audioService.play();
 
       if (mounted) {
@@ -288,7 +296,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
 }
 
 /// Header section displaying sound info and action buttons.
-class _SoundHeader extends StatelessWidget {
+class _SoundHeader extends ConsumerStatefulWidget {
   const _SoundHeader({
     required this.sound,
     required this.usageCount,
@@ -305,8 +313,37 @@ class _SoundHeader extends StatelessWidget {
   final VoidCallback onPreviewTap;
   final VoidCallback onUseSoundTap;
 
+  @override
+  ConsumerState<_SoundHeader> createState() => _SoundHeaderState();
+}
+
+class _SoundHeaderState extends ConsumerState<_SoundHeader> {
+  String? _artistName;
+  String? _license;
+  String? _sourceUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _lookUpAttribution();
+  }
+
+  void _lookUpAttribution() {
+    final sound = widget.sound;
+    if (!sound.isBundled) return;
+
+    final soundId = sound.id.replaceFirst('${AudioEvent.bundledMarker}_', '');
+    final service = ref.read(soundLibraryServiceSyncProvider);
+    final vineSound = service.getSoundById(soundId);
+    if (vineSound != null) {
+      _artistName = vineSound.artist;
+      _license = vineSound.license;
+      _sourceUrl = vineSound.sourceUrl;
+    }
+  }
+
   String get _formattedDuration {
-    final seconds = sound.duration;
+    final seconds = widget.sound.duration;
     if (seconds == null || seconds <= 0) return '';
     if (seconds < 60) {
       return '${seconds.toStringAsFixed(1)}s';
@@ -317,9 +354,9 @@ class _SoundHeader extends StatelessWidget {
   }
 
   String get _videoCountText {
-    if (usageCount == 0) return 'No videos yet';
-    if (usageCount == 1) return '1 video';
-    return '$usageCount videos';
+    if (widget.usageCount == 0) return 'No videos yet';
+    if (widget.usageCount == 1) return '1 video';
+    return '${widget.usageCount} videos';
   }
 
   @override
@@ -350,9 +387,10 @@ class _SoundHeader extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
                   children: [
                     Text(
-                      sound.title ?? 'Original sound',
+                      widget.sound.title ?? 'Original sound',
                       style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 18,
@@ -361,8 +399,13 @@ class _SoundHeader extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
                     _buildMetadataRow(),
+                    if (_artistName != null)
+                      _AttributionInfo(
+                        artistName: _artistName!,
+                        license: _license,
+                        sourceUrl: _sourceUrl,
+                      ),
                   ],
                 ),
               ),
@@ -380,8 +423,8 @@ class _SoundHeader extends StatelessWidget {
                   identifier: 'sound_detail_preview_button',
                   button: true,
                   child: OutlinedButton.icon(
-                    onPressed: onPreviewTap,
-                    icon: isLoadingPreview
+                    onPressed: widget.onPreviewTap,
+                    icon: widget.isLoadingPreview
                         ? const SizedBox(
                             width: 18,
                             height: 18,
@@ -391,10 +434,10 @@ class _SoundHeader extends StatelessWidget {
                             ),
                           )
                         : Icon(
-                            isPlaying ? Icons.stop : Icons.play_arrow,
+                            widget.isPlaying ? Icons.stop : Icons.play_arrow,
                             size: 20,
                           ),
-                    label: Text(isPlaying ? 'Stop' : 'Preview'),
+                    label: Text(widget.isPlaying ? 'Stop' : 'Preview'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: VineTheme.vineGreen,
                       side: const BorderSide(color: VineTheme.vineGreen),
@@ -415,7 +458,7 @@ class _SoundHeader extends StatelessWidget {
                   identifier: 'sound_detail_use_button',
                   button: true,
                   child: ElevatedButton.icon(
-                    onPressed: onUseSoundTap,
+                    onPressed: widget.onUseSoundTap,
                     icon: const Icon(Icons.add, size: 20),
                     label: const Text('Use Sound'),
                     style: ElevatedButton.styleFrom(
@@ -449,6 +492,66 @@ class _SoundHeader extends StatelessWidget {
     return Text(
       items.join(' · '),
       style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+    );
+  }
+}
+
+/// Displays artist name, license, and optional "View on Freesound" link.
+class _AttributionInfo extends StatelessWidget {
+  const _AttributionInfo({
+    required this.artistName,
+    this.license,
+    this.sourceUrl,
+  });
+
+  final String artistName;
+  final String? license;
+  final String? sourceUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final attributionText = [
+      'by $artistName',
+      if (license != null) license,
+    ].join(' · ');
+
+    return Text.rich(
+      TextSpan(
+        style: const TextStyle(
+          color: VineTheme.secondaryText,
+          fontSize: 12,
+        ),
+        children: [
+          TextSpan(text: attributionText),
+          if (sourceUrl != null) ...[
+            const TextSpan(text: ' · '),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: GestureDetector(
+                onTap: () async {
+                  final uri = Uri.parse(sourceUrl!);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(
+                      uri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  }
+                },
+                child: const Text(
+                  'View source',
+                  style: TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.vineGreen,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -752,9 +855,8 @@ class _VideoThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return CachedNetworkImage(
+      return VineCachedImage(
         imageUrl: thumbnailUrl!,
-        fit: BoxFit.cover,
         placeholder: (context, url) => const _ThumbnailPlaceholder(),
         errorWidget: (context, url, error) => const _ThumbnailPlaceholder(),
       );

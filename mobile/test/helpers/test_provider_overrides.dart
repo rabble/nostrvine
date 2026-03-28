@@ -9,10 +9,13 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
+import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -35,6 +38,12 @@ class MockMediaCacheManager extends Mock implements MediaCacheManager {}
 class MockNostrClient extends Mock implements NostrClient {}
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
+
+class MockNip05VerificationService extends Mock
+    implements Nip05VerificationService {}
+
+class MockModerationLabelService extends Mock
+    implements ModerationLabelService {}
 
 /// Creates a properly stubbed MockSharedPreferences for testing
 MockSharedPreferences createMockSharedPreferences() {
@@ -205,8 +214,64 @@ MockProfileRepository createMockProfileRepository() {
   when(
     () => mockRepo.fetchFreshProfile(pubkey: any(named: 'pubkey')),
   ).thenAnswer((_) async => null);
+  when(
+    () => mockRepo.watchProfile(pubkey: any(named: 'pubkey')),
+  ).thenAnswer((_) => Stream.value(null));
 
   return mockRepo;
+}
+
+/// Creates a properly stubbed MockNip05VerificationService for testing
+MockNip05VerificationService createMockNip05VerificationService() {
+  final mockService = MockNip05VerificationService();
+
+  when(() => mockService.getCachedStatus(any())).thenReturn(null);
+  when(
+    () => mockService.getVerificationStatus(any(), any()),
+  ).thenAnswer((_) async => Nip05VerificationStatus.none);
+  when(() => mockService.addListener(any())).thenReturn(null);
+  when(() => mockService.removeListener(any())).thenReturn(null);
+
+  return mockService;
+}
+
+/// Creates a properly stubbed MockModerationLabelService for testing
+///
+/// This mock avoids the real NIP-05 HTTP call that
+/// `ModerationLabelService.initialize()` triggers via `Nip05Validor.getPubkey`,
+/// which creates pending Dio timers that break `pumpAndSettle`.
+MockModerationLabelService createMockModerationLabelService() {
+  final mock = MockModerationLabelService();
+
+  when(() => mock.divineModerationPubkeyHex).thenReturn(
+    ModerationLabelService.fallbackModerationPubkeyHex,
+  );
+  when(() => mock.subscribedLabelers).thenReturn({});
+  when(() => mock.isDivineLabelerSubscribed).thenReturn(false);
+  when(() => mock.customLabelers).thenReturn({});
+  when(() => mock.isFollowingModerationEnabled).thenReturn(false);
+  when(mock.initialize).thenAnswer((_) async {});
+  when(() => mock.getContentWarnings(any())).thenReturn([]);
+  when(() => mock.getContentWarningsByAddressableId(any())).thenReturn([]);
+  when(() => mock.getContentWarningsByHash(any())).thenReturn([]);
+  when(() => mock.getLabelsForPubkey(any())).thenReturn([]);
+  when(() => mock.getAIDetectionResult(any())).thenReturn(null);
+  when(() => mock.getAIDetectionByHash(any())).thenReturn(null);
+  when(() => mock.hasContentWarning(any())).thenReturn(false);
+  when(() => mock.subscribeToLabeler(any())).thenAnswer((_) async {});
+  when(() => mock.addLabeler(any())).thenAnswer((_) async {});
+  when(() => mock.removeLabeler(any())).thenAnswer((_) async {});
+  when(mock.addDivineLabeler).thenAnswer((_) async {});
+  when(mock.removeDivineLabeler).thenAnswer((_) async {});
+  when(
+    () => mock.setFollowingModerationEnabled(
+      any(),
+      followedPubkeys: any(named: 'followedPubkeys'),
+    ),
+  ).thenAnswer((_) async {});
+  when(() => mock.syncFollowedLabelers(any())).thenAnswer((_) async {});
+
+  return mock;
 }
 
 /// Standard provider overrides that fix most ProviderException failures
@@ -219,6 +284,8 @@ List<dynamic> getStandardTestOverrides({
   BlossomAuthService? mockBlossomAuthService,
   MediaCacheManager? mockMediaCacheManager,
   ProfileRepository? mockProfileRepository,
+  Nip05VerificationService? mockNip05VerificationService,
+  ModerationLabelService? mockModerationLabelService,
 }) {
   final mockPrefs = mockSharedPreferences ?? createMockSharedPreferences();
   final mockAuth = mockAuthService ?? createMockAuthService();
@@ -228,6 +295,8 @@ List<dynamic> getStandardTestOverrides({
   final mockBlossom = mockBlossomAuthService ?? createMockBlossomAuthService();
   final mockCache = mockMediaCacheManager ?? createMockMediaCacheManager();
   final mockProfile = mockProfileRepository ?? createMockProfileRepository();
+  final mockModeration =
+      mockModerationLabelService ?? createMockModerationLabelService();
 
   return [
     // Override sharedPreferencesProvider which throws in production
@@ -244,6 +313,17 @@ List<dynamic> getStandardTestOverrides({
 
     // Always override MediaCacheManager for PooledFullscreenVideoFeedScreen
     mediaCacheProvider.overrideWithValue(mockCache),
+
+    // Always override ModerationLabelService to avoid NIP-05 HTTP calls
+    // from initialize() → _resolveModerationPubkey() → Nip05Validor.getPubkey
+    moderationLabelServiceProvider.overrideWithValue(mockModeration),
+
+    // Override NIP-05 verification service to avoid opening Drift/SQLite in
+    // widget tests that only care about badge presence, not verification.
+    if (mockNip05VerificationService != null)
+      nip05VerificationServiceProvider.overrideWithValue(
+        mockNip05VerificationService,
+      ),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)
@@ -281,6 +361,8 @@ Widget testProviderScope({
   BlossomAuthService? mockBlossomAuthService,
   MediaCacheManager? mockMediaCacheManager,
   ProfileRepository? mockProfileRepository,
+  Nip05VerificationService? mockNip05VerificationService,
+  ModerationLabelService? mockModerationLabelService,
 }) {
   return ProviderScope(
     overrides: [
@@ -293,6 +375,8 @@ Widget testProviderScope({
         mockBlossomAuthService: mockBlossomAuthService,
         mockMediaCacheManager: mockMediaCacheManager,
         mockProfileRepository: mockProfileRepository,
+        mockNip05VerificationService: mockNip05VerificationService,
+        mockModerationLabelService: mockModerationLabelService,
       ),
       ...?additionalOverrides,
     ],
@@ -327,6 +411,8 @@ Widget testMaterialApp({
   BlossomAuthService? mockBlossomAuthService,
   MediaCacheManager? mockMediaCacheManager,
   ProfileRepository? mockProfileRepository,
+  Nip05VerificationService? mockNip05VerificationService,
+  ModerationLabelService? mockModerationLabelService,
   ThemeData? theme,
 }) {
   return testProviderScope(
@@ -339,6 +425,8 @@ Widget testMaterialApp({
     mockBlossomAuthService: mockBlossomAuthService,
     mockMediaCacheManager: mockMediaCacheManager,
     mockProfileRepository: mockProfileRepository,
+    mockNip05VerificationService: mockNip05VerificationService,
+    mockModerationLabelService: mockModerationLabelService,
     child: MaterialApp(
       home: home,
       routes: routes ?? {},

@@ -15,6 +15,7 @@ class ConversationAppBar extends StatelessWidget
     required this.handle,
     required this.onBack,
     required this.onOptions,
+    this.onTitleTap,
     super.key,
   });
 
@@ -22,6 +23,9 @@ class ConversationAppBar extends StatelessWidget
   final String handle;
   final VoidCallback onBack;
   final VoidCallback onOptions;
+
+  /// Called when the user taps the name/handle in the app bar.
+  final VoidCallback? onTitleTap;
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -31,6 +35,10 @@ class ConversationAppBar extends StatelessWidget
     return DiVineAppBar(
       title: displayName,
       subtitle: handle.isNotEmpty ? handle : null,
+      titleMode: onTitleTap != null
+          ? DiVineAppBarTitleMode.tappable
+          : DiVineAppBarTitleMode.simple,
+      onTitleTap: onTitleTap,
       showBackButton: true,
       onBackPressed: onBack,
       backgroundColor: VineTheme.surfaceBackground,
@@ -39,9 +47,7 @@ class ConversationAppBar extends StatelessWidget
       ),
       actions: [
         DiVineAppBarAction(
-          icon: const SvgIconSource(
-            'assets/icon/dots_three_vertical.svg',
-          ),
+          icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
           onPressed: onOptions,
           semanticLabel: 'Options',
         ),

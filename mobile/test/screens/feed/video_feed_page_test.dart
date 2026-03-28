@@ -10,14 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
+import '../../helpers/test_helpers.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
@@ -25,81 +24,7 @@ class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
 
 class _MockVideoFeedController extends Mock implements VideoFeedController {}
 
-VideoEvent _createVideoEvent(String idSeed, String url) {
-  final id = idSeed.padRight(64, '1').substring(0, 64);
-  final pubkey = idSeed.padRight(64, '2').substring(0, 64);
-
-  return VideoEvent.fromNostrEvent(
-    Event.fromJson({
-      'id': id,
-      'pubkey': pubkey,
-      'created_at': 1234567890,
-      'kind': 34236,
-      'content': '',
-      'tags': [
-        ['url', url],
-      ],
-      'sig': '3'.padRight(128, '3'),
-    }),
-  );
-}
-
 void main() {
-  group('pooled feed reconciliation helpers', () {
-    test('samePooledVideoItems matches identical ids and urls', () {
-      final previous = [
-        const VideoItem(id: 'a', url: 'https://example.com/a.mp4'),
-        const VideoItem(id: 'b', url: 'https://example.com/b.mp4'),
-      ];
-      final current = [
-        const VideoItem(id: 'a', url: 'https://example.com/a.mp4'),
-        const VideoItem(id: 'b', url: 'https://example.com/b.mp4'),
-      ];
-
-      expect(samePooledVideoItems(previous, current), isTrue);
-    });
-
-    test('isAppendOnlyPooledVideoUpdate accepts appended videos', () {
-      final previous = [
-        const VideoItem(id: 'a', url: 'https://example.com/a.mp4'),
-        const VideoItem(id: 'b', url: 'https://example.com/b.mp4'),
-      ];
-      final current = [
-        const VideoItem(id: 'a', url: 'https://example.com/a.mp4'),
-        const VideoItem(id: 'b', url: 'https://example.com/b.mp4'),
-        const VideoItem(id: 'c', url: 'https://example.com/c.mp4'),
-      ];
-
-      expect(isAppendOnlyPooledVideoUpdate(previous, current), isTrue);
-    });
-
-    test('isAppendOnlyPooledVideoUpdate rejects feed replacement', () {
-      final previous = [
-        const VideoItem(id: 'a', url: 'https://example.com/a.mp4'),
-        const VideoItem(id: 'b', url: 'https://example.com/b.mp4'),
-      ];
-      final current = [
-        const VideoItem(id: 'x', url: 'https://example.com/x.mp4'),
-        const VideoItem(id: 'y', url: 'https://example.com/y.mp4'),
-      ];
-
-      expect(isAppendOnlyPooledVideoUpdate(previous, current), isFalse);
-    });
-
-    test('sameVideoEventIds detects feed swaps with equal lengths', () {
-      final previous = [
-        _createVideoEvent('1', 'https://example.com/a.mp4'),
-        _createVideoEvent('2', 'https://example.com/b.mp4'),
-      ];
-      final current = [
-        _createVideoEvent('3', 'https://example.com/c.mp4'),
-        _createVideoEvent('4', 'https://example.com/d.mp4'),
-      ];
-
-      expect(sameVideoEventIds(previous, current), isFalse);
-    });
-  });
-
   group('VideoFeedView overlay integration', () {
     late VideoFeedBloc videoFeedBloc;
     late VideoFeedController videoFeedController;
@@ -152,7 +77,9 @@ void main() {
         final element = tester.element(find.byType(VideoFeedView));
         final container = ProviderScope.containerOf(element);
 
-        container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+        container
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpen(true);
         await tester.pump();
 
         // Drawer overlay retains current player for instant resume
@@ -223,17 +150,57 @@ void main() {
       final element = tester.element(find.byType(VideoFeedView));
       final container = ProviderScope.containerOf(element);
 
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(true);
       await tester.pump();
 
       // Reset the mock to clear previous calls
       clearInteractions(videoFeedController);
 
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(false);
       await tester.pump();
 
       verify(() => videoFeedController.setActive(active: true)).called(1);
     });
+
+    testWidgets(
+      'does not resume when videos load while overlay is open',
+      (tester) async {
+        // Start with loading state
+        whenListen(
+          videoFeedBloc,
+          Stream<VideoFeedState>.fromIterable([
+            const VideoFeedState(
+              status: VideoFeedStatus.success,
+            ),
+          ]),
+          initialState: const VideoFeedState(),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final element = tester.element(find.byType(VideoFeedView));
+        final container = ProviderScope.containerOf(element);
+
+        // Open overlay while BLoC is still loading
+        container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+        await tester.pump();
+
+        clearInteractions(videoFeedController);
+
+        // BLoC transitions to success (videos arrive)
+        await tester.pump();
+
+        // Controller must NOT be re-activated — overlay is still open
+        verifyNever(
+          () => videoFeedController.setActive(active: true),
+        );
+      },
+    );
   });
 
   group('VideoFeedView tab switch integration', () {
@@ -343,9 +310,17 @@ void main() {
       clearInteractions(videoFeedController);
 
       // Open and close overlay while on search tab
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(
+            true,
+          );
       await tester.pump();
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(
+            false,
+          );
       await tester.pump();
 
       // setActive(active: true) should NOT have been called
@@ -463,7 +438,10 @@ void main() {
         final state = VideoFeedState(
           status: VideoFeedStatus.success,
           videos: [
-            _createVideoEvent('native-feed', 'https://example.com/video.mp4'),
+            TestHelpers.createVideoEvent(
+              id: 'native-feed',
+              videoUrl: 'https://example.com/video.mp4',
+            ),
           ],
         );
 

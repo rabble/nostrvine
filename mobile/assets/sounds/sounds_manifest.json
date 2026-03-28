@@ -216,6 +216,248 @@
       "assetPath": "assets/sounds/You_re Not My Dad.mp3",
       "durationMs": 1776,
       "tags": ["meme", "classic", "vine"]
+    },
+    {
+      "id": "freesound_oh_no_crowd",
+      "title": "Oh No No No Crowd",
+      "assetPath": "assets/sounds/oh-no-no-no-crowd.mp3",
+      "durationMs": 5982,
+      "artist": "ThePauny",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/ThePauny/sounds/502915/",
+      "tags": ["crowd", "reaction", "freesound"]
+    },
+    {
+      "id": "freesound_yay",
+      "title": "YAY!",
+      "assetPath": "assets/sounds/yay.mp3",
+      "durationMs": 4762,
+      "artist": "IFartInUrGeneralDirection",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://freesound.org/people/IFartInUrGeneralDirection/sounds/61691/",
+      "tags": ["cheer", "yay", "reaction", "freesound"]
+    },
+    {
+      "id": "freesound_countdown_fire",
+      "title": "4..3..2..1..Fire!",
+      "assetPath": "assets/sounds/countdown-fire.mp3",
+      "durationMs": 5758,
+      "artist": "RandomRecord19",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/RandomRecord19/sounds/741287/",
+      "tags": ["countdown", "military", "retro", "freesound"]
+    },
+    {
+      "id": "freesound_baritone",
+      "title": "Baritone (explicit)",
+      "assetPath": "assets/sounds/baritone-explicit.mp3",
+      "durationMs": 4408,
+      "artist": "unfa",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/unfa/sounds/222593/",
+      "tags": ["opera", "humor", "dramatic", "freesound"]
+    },
+    {
+      "id": "freesound_radio_tuning",
+      "title": "Radio Tuning",
+      "assetPath": "assets/sounds/radio-tuning.mp3",
+      "durationMs": 5904,
+      "artist": "Iamgiorgio",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/Iamgiorgio/sounds/371779/",
+      "tags": ["radio", "tuning", "sfx", "freesound"]
+    },
+    {
+      "id": "freesound_take_your_seats",
+      "title": "Take Your Seats",
+      "assetPath": "assets/sounds/take-your-seats.mp3",
+      "durationMs": 5000,
+      "artist": "Ellis_Fullfrequency",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/Ellis_Fullfrequency/sounds/338835/",
+      "tags": ["announcement", "voice", "presentation", "freesound"]
+    },
+    {
+      "id": "freesound_cops_radio",
+      "title": "Cops On Radio",
+      "assetPath": "assets/sounds/cops-on-radio.mp3",
+      "durationMs": 4668,
+      "artist": "dragonboi50120",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/dragonboi50120/sounds/592684/",
+      "tags": ["police", "radio", "sfx", "freesound"]
+    },
+    {
+      "id": "freesound_hello_acapella",
+      "title": "Hello Acapella",
+      "assetPath": "assets/sounds/hello-acapella.mp3",
+      "durationMs": 4041,
+      "artist": "Dave_Girtsman",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://freesound.org/people/Dave_Girtsman/sounds/560625/",
+      "tags": ["acapella", "hello", "singing", "freesound"]
+    },
+    {
+      "id": "freesound_321_fight",
+      "title": "3..2..1..FIGHT!",
+      "assetPath": "assets/sounds/three-two-one-fight.mp3",
+      "durationMs": 5662,
+      "artist": "Audeption",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/Audeption/sounds/541822/",
+      "tags": ["countdown", "fight", "game", "voice", "freesound"]
+    },
+    {
+      "id": "freesound_group_shush",
+      "title": "Group Shush",
+      "assetPath": "assets/sounds/group-shush.mp3",
+      "durationMs": 4247,
+      "artist": "chapter15studios",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/chapter15studios/sounds/760256/",
+      "tags": ["crowd", "shush", "reaction", "freesound"]
+    },
+    {
+      "id": "freesound_radio_announcement",
+      "title": "Radio Announcement",
+      "assetPath": "assets/sounds/radio-announcement.mp3",
+      "durationMs": 4621,
+      "artist": "TheScarlettWitch89",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "sourceUrl": "https://freesound.org/people/TheScarlettWitch89/sounds/428309/",
+      "tags": ["radio", "voice", "announcement", "freesound"]
+    },
+    {
+      "id": "freesound_stand_clear",
+      "title": "Stand Clear",
+      "assetPath": "assets/sounds/stand-clear.mp3",
+      "durationMs": 4810,
+      "artist": "gadzooks",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/gadzooks/sounds/348850/",
+      "tags": ["elevator", "announcement", "voice", "freesound"]
+    },
+    {
+      "id": "freesound_feminine_hmm",
+      "title": "Feminine Hmm",
+      "assetPath": "assets/sounds/feminine-hmm.mp3",
+      "durationMs": 4570,
+      "artist": "kanyonwyvern",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/kanyonwyvern/sounds/727359/",
+      "tags": ["voice", "reaction", "hmm", "freesound"]
+    },
+    {
+      "id": "freesound_operator_voicemail",
+      "title": "Operator Voicemail",
+      "assetPath": "assets/sounds/operator-voicemail.mp3",
+      "durationMs": 4392,
+      "artist": "mrrap4food",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/mrrap4food/sounds/619083/",
+      "tags": ["phone", "voicemail", "funny", "voice", "freesound"]
+    },
+    {
+      "id": "freesound_drugs",
+      "title": "Drugs",
+      "assetPath": "assets/sounds/drugs.mp3",
+      "durationMs": 4394,
+      "artist": "Bugradio",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/Bugradio/sounds/669582/",
+      "tags": ["voice", "funny", "reaction", "freesound"]
+    },
+    {
+      "id": "freesound_dance_future",
+      "title": "Dance Future",
+      "assetPath": "assets/sounds/dance-future.mp3",
+      "durationMs": 4499,
+      "artist": "mika55",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/mika55/sounds/191726/",
+      "tags": ["music", "dance", "electronic", "freesound"]
+    },
+    {
+      "id": "freesound_sitcom_laughter",
+      "title": "Sitcom Laughter",
+      "assetPath": "assets/sounds/sitcom-laughter.mp3",
+      "durationMs": 5800,
+      "artist": "Kinoton",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/Kinoton/sounds/371562/",
+      "tags": ["laugh", "applause", "sitcom", "crowd", "freesound"]
+    },
+    {
+      "id": "freesound_elevator_music",
+      "title": "Elevator Music",
+      "assetPath": "assets/sounds/elevator-music.mp3",
+      "durationMs": 6021,
+      "artist": "YellowTree",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://freesound.org/people/YellowTree/sounds/686020/",
+      "tags": ["music", "elevator", "lounge", "chill", "freesound"]
+    },
+    {
+      "id": "freesound_bossa_nova_shopping",
+      "title": "Bossa Nova - Thank You for Shopping",
+      "assetPath": "assets/sounds/bossa-nova-shopping.mp3",
+      "durationMs": 6021,
+      "artist": "plasterbrain",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/plasterbrain/sounds/464924/",
+      "tags": ["music", "bossa nova", "lounge", "piano", "freesound"]
+    },
+    {
+      "id": "freesound_bossa_nova_chords",
+      "title": "Bossa Nova Chords",
+      "assetPath": "assets/sounds/bossa-nova-chords.mp3",
+      "durationMs": 6012,
+      "artist": "FullMetalJedi",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://freesound.org/people/FullMetalJedi/sounds/400698/",
+      "tags": ["music", "bossa nova", "jazz", "guitar", "freesound"]
+    },
+    {
+      "id": "freesound_bossa_nova_guitar",
+      "title": "Bossa Nova Guitar",
+      "assetPath": "assets/sounds/bossa-nova-guitar.mp3",
+      "durationMs": 5333,
+      "artist": "GioMilko",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://freesound.org/people/GioMilko/sounds/344212/",
+      "tags": ["music", "bossa nova", "guitar", "jazz", "freesound"]
+    },
+    {
+      "id": "freesound_vibrant_energy",
+      "title": "Vibrant and Uplifting Energy",
+      "assetPath": "assets/sounds/vibrant-energy.mp3",
+      "durationMs": 6012,
+      "artist": "Matio888",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://freesound.org/people/Matio888/sounds/789329/",
+      "tags": ["music", "uplifting", "energy", "positive", "freesound"]
     }
   ]
 }

@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   /// Route name for navigation
@@ -171,7 +170,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               const Spacer(),
 
               // Update password button
-              DivinePrimaryButton(
+              DivineButton(
+                expanded: true,
                 label: 'Update password',
                 isLoading: _isLoading,
                 onPressed: _handleSubmit,

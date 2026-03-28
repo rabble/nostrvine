@@ -201,6 +201,7 @@ class _ActionCircle extends StatelessWidget {
                       : VineTheme.secondaryText,
                   fontSize: 11,
                 ),
+                textScaler: TextScaler.noScaling,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

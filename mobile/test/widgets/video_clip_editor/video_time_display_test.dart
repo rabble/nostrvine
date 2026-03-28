@@ -2,11 +2,10 @@
 // ABOUTME: Validates time formatting and display structure
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/video_time_display.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_time_display.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,24 +16,20 @@ void main() {
       Duration currentPosition = Duration.zero,
       Duration totalDuration = const Duration(seconds: 30),
     }) {
-      return ProviderScope(
-        overrides: [
-          videoEditorProvider.overrideWith(
-            () => TestVideoEditorNotifier(
-              VideoEditorProviderState(
-                isPlaying: isPlaying,
-                currentPosition: currentPosition,
-              ),
-            ),
-          ),
-        ],
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          isPlaying: isPlaying,
+          currentPosition: currentPosition,
+        ),
+      );
+
+      return BlocProvider<ClipEditorBloc>.value(
+        value: bloc,
         child: MaterialApp(
           home: Scaffold(
             body: VideoTimeDisplay(
-              isPlayingSelector: videoEditorProvider.select((s) => s.isPlaying),
-              currentPositionSelector: videoEditorProvider.select(
-                (s) => s.currentPosition,
-              ),
+              isPlayingSelector: (s) => s.isPlaying,
+              currentPositionSelector: (s) => s.currentPosition,
               totalDuration: totalDuration,
             ),
           ),
@@ -66,13 +61,43 @@ void main() {
 
       expect(find.textContaining('75.50s'), findsOneWidget);
     });
+
+    testWidgets('passes maxDuration to SmoothTimeDisplay', (tester) async {
+      final bloc = _TestClipEditorBloc(
+        initialState: const ClipEditorState(
+          currentPosition: Duration(seconds: 10),
+        ),
+      );
+
+      await tester.pumpWidget(
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: MaterialApp(
+            home: Scaffold(
+              body: VideoTimeDisplay(
+                isPlayingSelector: (s) => s.isPlaying,
+                currentPositionSelector: (s) => s.currentPosition,
+                totalDuration: const Duration(seconds: 30),
+                maxDuration: const Duration(seconds: 5),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Current position (10s) should be clamped to maxDuration (5s)
+      expect(find.textContaining('5.00'), findsOneWidget);
+      // Total duration should still show 30s
+      expect(find.textContaining('30.00s'), findsOneWidget);
+    });
   });
 }
 
-class TestVideoEditorNotifier extends VideoEditorNotifier {
-  TestVideoEditorNotifier(this._state);
-  final VideoEditorProviderState _state;
-
-  @override
-  VideoEditorProviderState build() => _state;
+class _TestClipEditorBloc extends ClipEditorBloc {
+  _TestClipEditorBloc({
+    ClipEditorState initialState = const ClipEditorState(),
+  }) {
+    emit(initialState);
+  }
 }

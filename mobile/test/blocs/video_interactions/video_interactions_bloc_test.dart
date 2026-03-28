@@ -909,6 +909,23 @@ void main() {
           ),
         ],
       );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'does not call repository when updating comment count display',
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          commentCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(12)),
+        verify: (_) {
+          // Repository cache coherence is now owned by
+          // CommentsRepository.loadComments(), not the BLoC.
+          verifyNever(
+            () => mockCommentsRepository.updateCachedCommentCount(any(), any()),
+          );
+        },
+      );
     });
 
     group('close', () {

@@ -22,7 +22,7 @@ class VideoClipThumbnailCard extends StatefulWidget {
     required this.onLongPress,
     this.isSelected = false,
     this.disabled = false,
-    this.showDurationBadge = false,
+    this.showDurationBadge = true,
     super.key,
   });
 
@@ -229,7 +229,7 @@ class _SelectionOverlay extends StatelessWidget {
               color: VineTheme.tabIndicatorGreen,
             ),
             child: SvgPicture.asset(
-              'assets/icon/Check.svg',
+              DivineIconName.check.assetPath,
               colorFilter: const .mode(VineTheme.surfaceContainer, .srcIn),
             ),
           ),

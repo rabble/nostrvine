@@ -1,5 +1,5 @@
 // ABOUTME: Feed mode picker overlay widget for video feed
-// ABOUTME: Shows current mode (New/Popular/Following) with bottom sheet selection
+// ABOUTME: Shows current mode (For You/New/Following) with bottom sheet selection
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +22,7 @@ class FeedModeSwitch extends StatelessWidget {
   static const Map<FeedMode, String> feedModeLabels = {
     FeedMode.forYou: 'For You',
     FeedMode.latest: 'New',
-    FeedMode.popular: 'Popular',
-    FeedMode.home: 'Following',
+    FeedMode.following: 'Following',
   };
 
   @override
@@ -54,7 +53,7 @@ class FeedModeSwitch extends StatelessWidget {
               builder: (context, state) {
                 return Row(
                   children: [
-                    _MenuButton(onTap: () => Scaffold.of(context).openDrawer()),
+                    const SizedBox(width: 48),
                     Expanded(
                       child: Center(
                         child: GestureDetector(
@@ -82,7 +81,7 @@ class FeedModeSwitch extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               SvgPicture.asset(
-                                'assets/icon/CaretDown.svg',
+                                DivineIconName.caretDown.assetPath,
                                 width: 24,
                                 height: 24,
                                 colorFilter: const ColorFilter.mode(
@@ -119,8 +118,10 @@ class FeedModeSwitch extends StatelessWidget {
       options: const [
         VineBottomSheetSelectionOptionData(label: 'For You', value: 'forYou'),
         VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),
-        VineBottomSheetSelectionOptionData(label: 'Popular', value: 'popular'),
-        VineBottomSheetSelectionOptionData(label: 'Following', value: 'home'),
+        VineBottomSheetSelectionOptionData(
+          label: 'Following',
+          value: 'following',
+        ),
       ],
     );
 
@@ -128,23 +129,6 @@ class FeedModeSwitch extends StatelessWidget {
       final mode = FeedMode.values.firstWhere((m) => m.name == selected);
       context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
     }
-  }
-}
-
-class _MenuButton extends StatelessWidget {
-  const _MenuButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return DiVineAppBarIconButton(
-      icon: const SvgIconSource('assets/icon/menu.svg'),
-      onPressed: onTap,
-      iconSize: 24,
-      semanticLabel: 'Open menu',
-      backgroundColor: VineTheme.scrim30,
-    );
   }
 }
 
@@ -156,7 +140,7 @@ class _SearchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DiVineAppBarIconButton(
-      icon: const SvgIconSource('assets/icon/search.svg'),
+      icon: SvgIconSource(DivineIconName.search.assetPath),
       onPressed: onTap,
       iconSize: 24,
       semanticLabel: 'Search',

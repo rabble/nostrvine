@@ -3,8 +3,8 @@
 
 import 'dart:math' as math;
 
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 
 /// Provenance source for analytics values.
 enum AnalyticsDataSource { authorVideos, bulkVideoStats, videoViewsEndpoint }
@@ -45,79 +45,57 @@ class CreatorAnalyticsSnapshot {
   final CreatorAnalyticsDiagnostics diagnostics;
 }
 
-/// Minimal API contract required by the repository.
-abstract class CreatorAnalyticsApi {
-  bool get isAvailable;
-
-  Future<List<VideoEvent>> getVideosByAuthor({
-    required String pubkey,
-    int limit,
-    int? before,
-  });
-
-  Future<Map<String, BulkVideoStatsEntry>> getBulkVideoStats(
-    List<String> eventIds,
-  );
-
-  Future<int?> getVideoViews(String eventId);
-
-  Future<SocialCounts?> getSocialCounts(String pubkey);
-}
-
-/// Adapter for existing AnalyticsApiService.
-class AnalyticsApiCreatorAdapter implements CreatorAnalyticsApi {
-  AnalyticsApiCreatorAdapter(this._service);
-
-  final AnalyticsApiService _service;
-
-  @override
-  bool get isAvailable => _service.isAvailable;
-
-  @override
-  Future<List<VideoEvent>> getVideosByAuthor({
-    required String pubkey,
-    int limit = 50,
-    int? before,
-  }) =>
-      _service.getVideosByAuthor(pubkey: pubkey, limit: limit, before: before);
-
-  @override
-  Future<Map<String, BulkVideoStatsEntry>> getBulkVideoStats(
-    List<String> eventIds,
-  ) => _service.getBulkVideoStats(eventIds);
-
-  @override
-  Future<int?> getVideoViews(String eventId) => _service.getVideoViews(eventId);
-
-  @override
-  Future<SocialCounts?> getSocialCounts(String pubkey) =>
-      _service.getSocialCounts(pubkey);
-}
-
 /// Repository used by creator analytics screens.
 abstract class CreatorAnalyticsRepository {
   Future<CreatorAnalyticsSnapshot> fetchCreatorAnalytics(String pubkey);
 }
 
 /// Funnelcake-backed implementation with layered fallbacks.
+///
+/// Social counts are cached per-pubkey for [socialCountsCacheDuration]
+/// (default 5 min) to avoid redundant requests when the analytics screen
+/// is reopened within a short period.
 class FunnelcakeCreatorAnalyticsRepository
     implements CreatorAnalyticsRepository {
-  FunnelcakeCreatorAnalyticsRepository(this._api);
+  FunnelcakeCreatorAnalyticsRepository(
+    this._client, {
+    Duration socialCountsCacheDuration = const Duration(minutes: 5),
+  }) : _socialCountsCacheDuration = socialCountsCacheDuration;
 
-  final CreatorAnalyticsApi _api;
+  final FunnelcakeApiClient _client;
+  final Duration _socialCountsCacheDuration;
+
+  final _socialCountsCache = <String, SocialCounts?>{};
+  final _socialCountsCachedAt = <String, DateTime>{};
+
+  bool _isSocialCountsCacheValid(String pubkey) {
+    final cachedAt = _socialCountsCachedAt[pubkey];
+    return cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _socialCountsCacheDuration;
+  }
+
+  Future<SocialCounts?> _getSocialCounts(String pubkey) async {
+    if (_isSocialCountsCacheValid(pubkey)) {
+      return _socialCountsCache[pubkey];
+    }
+    final result = await _client.getSocialCounts(pubkey);
+    _socialCountsCache[pubkey] = result;
+    _socialCountsCachedAt[pubkey] = DateTime.now();
+    return result;
+  }
 
   @override
   Future<CreatorAnalyticsSnapshot> fetchCreatorAnalytics(String pubkey) async {
-    if (!_api.isAvailable) {
-      throw StateError('Funnelcake analytics is not available right now.');
+    if (!_client.isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
     }
     if (pubkey.isEmpty) {
-      throw StateError('Missing pubkey for creator analytics.');
+      throw const FunnelcakeException('Pubkey cannot be empty');
     }
 
     final sourcesUsed = <AnalyticsDataSource>{};
 
-    final socialFuture = _api.getSocialCounts(pubkey);
+    final socialFuture = _getSocialCounts(pubkey);
     final videos = await _fetchAuthorVideos(pubkey);
     if (videos.isNotEmpty) {
       sourcesUsed.add(AnalyticsDataSource.authorVideos);
@@ -164,13 +142,14 @@ class FunnelcakeCreatorAnalyticsRepository
     int? before;
 
     for (var page = 0; page < maxPages; page++) {
-      final batch = await _api.getVideosByAuthor(
+      final batchStats = await _client.getVideosByAuthor(
         pubkey: pubkey,
         limit: pageSize,
         before: before,
       );
 
-      if (batch.isEmpty) break;
+      if (batchStats.isEmpty) break;
+      final batch = batchStats.map((stats) => stats.toVideoEvent()).toList();
       collected.addAll(batch);
 
       if (batch.length < pageSize) break;
@@ -202,8 +181,8 @@ class FunnelcakeCreatorAnalyticsRepository
     final statsById = <String, BulkVideoStatsEntry>{};
 
     for (final chunk in chunks) {
-      final chunkStats = await _api.getBulkVideoStats(chunk);
-      statsById.addAll(chunkStats);
+      final chunkResponse = await _client.getBulkVideoStats(chunk);
+      statsById.addAll(chunkResponse.stats);
     }
 
     if (statsById.isEmpty) {
@@ -259,13 +238,10 @@ class FunnelcakeCreatorAnalyticsRepository
 
     for (final chunk in chunks) {
       final counts = await Future.wait(
-        chunk.map((video) => _api.getVideoViews(video.id)),
+        chunk.map((video) => _client.getVideoViews(video.id)),
       );
       for (var i = 0; i < chunk.length; i++) {
-        final count = counts[i];
-        if (count != null) {
-          fetchedViews[chunk[i].id] = count;
-        }
+        fetchedViews[chunk[i].id] = counts[i];
       }
     }
 

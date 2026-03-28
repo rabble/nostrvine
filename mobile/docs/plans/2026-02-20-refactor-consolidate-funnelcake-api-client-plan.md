@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This file may reference deleted screens, older branding, or superseded implementation details. Start with docs/README.md and docs/archive/README.md for current guidance.
+
 ---
 title: "refactor: consolidate Funnelcake API operations into funnelcake_api_client"
 type: refactor

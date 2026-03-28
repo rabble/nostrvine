@@ -1,5 +1,5 @@
 // ABOUTME: Widget tests for PooledFullscreenVideoFeedScreen
-// ABOUTME: Tests state rendering, BLoC event dispatching, and SeekCommand handling
+// ABOUTME: Tests state rendering and BLoC event dispatching
 
 import 'dart:async';
 
@@ -79,6 +79,8 @@ void main() {
   group('PooledFullscreenVideoFeedScreen', () {
     late MockFullscreenFeedBloc mockBloc;
     late MockVideoFeedController defaultController;
+    late MockProfileRepository mockProfileRepository;
+    late MockNip05VerificationService mockNip05VerificationService;
     late Map<int, ValueNotifier<VideoIndexState>> defaultIndexNotifiers;
     late StreamController<FullscreenFeedState> stateController;
 
@@ -86,11 +88,7 @@ void main() {
       registerFallbackValue(const FullscreenFeedStarted());
       registerFallbackValue(const FullscreenFeedIndexChanged(0));
       registerFallbackValue(const FullscreenFeedLoadMoreRequested());
-      registerFallbackValue(const FullscreenFeedSeekCommandHandled());
       registerFallbackValue(const FullscreenFeedVideoCacheStarted(index: 0));
-      registerFallbackValue(
-        const FullscreenFeedPositionUpdated(index: 0, position: Duration.zero),
-      );
       registerFallbackValue(Duration.zero);
       registerFallbackValue(LoadState.none);
     });
@@ -99,6 +97,8 @@ void main() {
       await PlayerPool.init();
       mockBloc = MockFullscreenFeedBloc();
       defaultController = MockVideoFeedController();
+      mockProfileRepository = createMockProfileRepository();
+      mockNip05VerificationService = createMockNip05VerificationService();
       defaultIndexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
       stateController = StreamController<FullscreenFeedState>.broadcast();
       stubVideoFeedController(defaultController, defaultIndexNotifiers);
@@ -153,6 +153,8 @@ void main() {
 
       return testMaterialApp(
         additionalOverrides: additionalOverrides,
+        mockProfileRepository: mockProfileRepository,
+        mockNip05VerificationService: mockNip05VerificationService,
         home: BlocProvider<FullscreenFeedBloc>.value(
           value: mockBloc,
           child: FullscreenFeedContent(
@@ -234,26 +236,22 @@ void main() {
         expect(find.byType(PooledVideoFeed), findsOneWidget);
       });
 
-      testWidgets(
-        'shows social overlay actions on web',
-        (tester) async {
-          final videos = createTestVideos();
+      testWidgets('shows social overlay actions on web', (tester) async {
+        final videos = createTestVideos();
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: FullscreenFeedState(
-                status: FullscreenFeedStatus.ready,
-                videos: videos,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          expect(find.byType(WebVideoFeed), findsOneWidget);
-          expect(find.byType(VideoOverlayActions), findsOneWidget);
-        },
-        skip: !kIsWeb,
-      );
+        expect(find.byType(WebVideoFeed), findsOneWidget);
+        expect(find.byType(VideoOverlayActions), findsOneWidget);
+      }, skip: !kIsWeb);
     });
 
     group('BLoC event dispatching', () {
@@ -315,96 +313,6 @@ void main() {
 
         verify(
           () => mockBloc.add(const FullscreenFeedLoadMoreRequested()),
-        ).called(1);
-      });
-    });
-
-    group('SeekCommand handling', () {
-      testWidgets(
-        'dispatches FullscreenFeedSeekCommandHandled when SeekCommand received',
-        (tester) async {
-          final videos = createTestVideos();
-
-          // Start with no seek command
-          final initialState = FullscreenFeedState(
-            status: FullscreenFeedStatus.ready,
-            videos: videos,
-          );
-
-          await tester.pumpWidget(buildSubject(state: initialState));
-          await tester.pump();
-
-          // Emit state with SeekCommand
-          final stateWithSeekCommand = FullscreenFeedState(
-            status: FullscreenFeedStatus.ready,
-            videos: videos,
-            seekCommand: const SeekCommand(index: 0, position: Duration.zero),
-          );
-
-          when(() => mockBloc.state).thenReturn(stateWithSeekCommand);
-          stateController.add(stateWithSeekCommand);
-          await tester.pump();
-
-          // Verify the handled event was dispatched
-          verify(
-            () => mockBloc.add(const FullscreenFeedSeekCommandHandled()),
-          ).called(1);
-        },
-      );
-
-      testWidgets('does not dispatch handled event when seekCommand is null', (
-        tester,
-      ) async {
-        final videos = createTestVideos();
-
-        final state = FullscreenFeedState(
-          status: FullscreenFeedStatus.ready,
-          videos: videos,
-        );
-
-        await tester.pumpWidget(buildSubject(state: state));
-
-        // Emit same state without seek command
-        stateController.add(state);
-        await tester.pump();
-
-        verifyNever(
-          () => mockBloc.add(const FullscreenFeedSeekCommandHandled()),
-        );
-      });
-
-      testWidgets('only handles SeekCommand once when same command emitted', (
-        tester,
-      ) async {
-        final videos = createTestVideos();
-
-        final initialState = FullscreenFeedState(
-          status: FullscreenFeedStatus.ready,
-          videos: videos,
-        );
-
-        await tester.pumpWidget(buildSubject(state: initialState));
-        await tester.pump();
-
-        const seekCommand = SeekCommand(index: 0, position: Duration.zero);
-        final stateWithSeekCommand = FullscreenFeedState(
-          status: FullscreenFeedStatus.ready,
-          videos: videos,
-          seekCommand: seekCommand,
-        );
-
-        // Emit the same state twice
-        when(() => mockBloc.state).thenReturn(stateWithSeekCommand);
-        stateController.add(stateWithSeekCommand);
-        await tester.pump();
-
-        // Emit again (should be ignored by listenWhen)
-        stateController.add(stateWithSeekCommand);
-        await tester.pump();
-
-        // Should only be called once due to listenWhen check
-        verify(
-          () => mockBloc.add(const FullscreenFeedSeekCommandHandled()),
         ).called(1);
       });
     });

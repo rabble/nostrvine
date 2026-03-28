@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -27,6 +28,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -287,17 +289,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _lastPooledVideos = state.pooledVideos;
   }
 
-  /// Handles seek commands from the BLoC.
-  void _handleSeekCommand(SeekCommand command) {
-    final controller = _controller;
-    if (controller == null) return;
-
-    controller.seek(command.position);
-    context.read<FullscreenFeedBloc>().add(
-      const FullscreenFeedSeekCommandHandled(),
-    );
-  }
-
   void _triggerLoadMore() {
     context.read<FullscreenFeedBloc>().add(
       const FullscreenFeedLoadMoreRequested(),
@@ -350,14 +341,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         if (!mounted) return;
         _feedKey.currentState?.skipToNext();
       },
-      // Hook: Dispatch position updates for loop enforcement
-      positionCallback: (index, position) {
-        if (!mounted) return;
-        context.read<FullscreenFeedBloc>().add(
-          FullscreenFeedPositionUpdated(index: index, position: position),
-        );
-      },
-      positionCallbackInterval: const Duration(milliseconds: 100),
+      maxLoopDuration: VideoEditorConstants.maxDuration,
     );
   }
 
@@ -376,17 +360,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
           listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
           listener: (context, state) => _handleVideosChanged(state),
-        ),
-        // Handle seek commands
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) =>
-              curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
-          listener: (context, state) {
-            final command = state.seekCommand;
-            if (command != null) {
-              _handleSeekCommand(command);
-            }
-          },
         ),
       ],
       child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
@@ -440,7 +413,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               isEditorEnabled && isOwnVideo && currentVideo != null
               ? DiVineAppBarAction(
                   icon: SvgIconSource(
-                    'assets/icon/${DivineIconName.pencilSimpleLine.fileName}.svg',
+                    DivineIconName.pencilSimpleLine.assetPath,
                   ),
                   onPressed: () =>
                       showEditDialogForVideo(context, currentVideo),
@@ -507,6 +480,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                     onNearEnd: (index) => _onNearEnd(state, index),
                     nearEndThreshold: 0,
                     onScrollOffsetChanged: (page) => _pagePosition.value = page,
+                    maxLoopDuration: VideoEditorConstants.maxDuration,
                     itemBuilder: (context, video, index, {required isActive}) {
                       if (state.videos.isEmpty) {
                         debugPrint(
@@ -661,7 +635,7 @@ class _WebFullscreenItem extends ConsumerWidget {
   }
 }
 
-class _PooledFullscreenItemContent extends StatefulWidget {
+class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
   const _PooledFullscreenItemContent({
     required this.video,
     required this.index,
@@ -683,26 +657,64 @@ class _PooledFullscreenItemContent extends StatefulWidget {
   final String? sourceDetail;
 
   @override
-  State<_PooledFullscreenItemContent> createState() =>
+  ConsumerState<_PooledFullscreenItemContent> createState() =>
       _PooledFullscreenItemContentState();
 }
 
 class _PooledFullscreenItemContentState
-    extends State<_PooledFullscreenItemContent> {
+    extends ConsumerState<_PooledFullscreenItemContent> {
+  final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
+  int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
+
+  void _handleDoubleTapLike(TapDownDetails details) {
+    final showWarning = shouldShowContentWarningOverlay(
+      contentWarningLabels: widget.video.contentWarningLabels,
+      warnLabels: widget.video.warnLabels,
+    );
+    if (showWarning && !_contentWarningRevealed) return;
+
+    final bloc = context.read<VideoInteractionsBloc>();
+    final state = bloc.state;
+    if (!state.isLiked && !state.isLikeInProgress) {
+      bloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation at tap position (even if already liked)
+    _heartTrigger.value = (
+      offset: details.localPosition,
+      id: ++_heartTriggerId,
+    );
+  }
+
+  @override
+  void dispose() {
+    _heartTrigger.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
     final isPortrait = video.dimensions != null && video.isPortrait;
     final alignment = videoAlignmentForDimensions(video.width, video.height);
+    final overlayLabels = contentWarningOverlayLabels(
+      contentWarningLabels: video.contentWarningLabels,
+      warnLabels: video.warnLabels,
+    );
+    final showContentWarningOverlay = shouldShowContentWarningOverlay(
+      contentWarningLabels: video.contentWarningLabels,
+      warnLabels: video.warnLabels,
+    );
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
         index: widget.index,
+        isActive: widget.isActive,
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
+        onDoubleTap: _handleDoubleTapLike,
         videoBuilder: (context, videoController, player) =>
             PooledVideoMetricsTracker(
               key: ValueKey('metrics-${video.id}'),
@@ -723,12 +735,19 @@ class _PooledFullscreenItemContentState
           alignment: alignment,
         ),
         overlayBuilder: (context, videoController, player) {
-          if (video.shouldShowWarning && !_contentWarningRevealed) {
+          if (showContentWarningOverlay && !_contentWarningRevealed) {
             return ContentWarningBlurOverlay(
-              labels: video.warnLabels,
+              labels: overlayLabels,
               onReveal: () => setState(() {
                 _contentWarningRevealed = true;
               }),
+              onHideSimilar: () {
+                hideContentWarningsLikeThese(
+                  context: context,
+                  ref: ref,
+                  labels: overlayLabels,
+                );
+              },
             );
           }
           return MediaQuery(
@@ -767,6 +786,9 @@ class _PooledFullscreenItemContentState
                       topOffset: widget.isOwnVideo ? 64 : 8,
                     );
                   },
+                ),
+                Positioned.fill(
+                  child: DoubleTapHeartOverlay(trigger: _heartTrigger),
                 ),
               ],
             ),

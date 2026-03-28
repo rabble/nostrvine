@@ -5,6 +5,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -15,7 +16,9 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -29,10 +32,13 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
-import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/legal_screen.dart';
+import 'package:openvine/screens/settings/nostr_settings_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -48,9 +54,9 @@ enum RouteType {
   profile,
   likedVideos, // Current user's liked videos feed
   hashtag, // Still supported as push route within explore
+  categoryGallery, // Category gallery pushed from explore categories
   search,
   videoRecorder, // Video recorder screen
-  videoClipEditor, // Video clip editor screen
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
   importKey,
@@ -76,9 +82,16 @@ enum RouteType {
   discoverLists, // Discover public lists screen
   creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
+  contentPreferences, // Content preferences (language, audio, filters)
+  supportCenter, // Support center (bug reports, logs, FAQ, legal links)
+  legal, // Legal screen (ToS, Privacy, Safety, DMCA, Licenses)
+  nostrSettings, // Nostr settings (relays, media servers, keys, account)
   secureAccount,
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
   videoDetail, // Video detail screen (deep link to specific video)
+  conversation, // DM conversation detail (pushed from inbox)
+  messageRequests, // Message requests inbox (pushed from inbox)
+  requestPreview, // Message request preview (pushed from requests)
 }
 
 /// Structured representation of a route
@@ -88,22 +101,26 @@ class RouteContext {
     this.videoIndex,
     this.npub,
     this.hashtag,
+    this.categoryName,
     this.searchTerm,
     this.listId,
     this.soundId,
     this.videoId,
     this.draftId,
+    this.conversationId,
   });
 
   final RouteType type;
   final int? videoIndex;
   final String? npub;
   final String? hashtag;
+  final String? categoryName;
   final String? searchTerm;
   final String? listId;
   final String? soundId;
   final String? videoId;
   final String? draftId;
+  final String? conversationId;
 }
 
 /// Parse a URL path into a structured RouteContext
@@ -155,6 +172,27 @@ RouteContext parseRoute(String path) {
       return RouteContext(type: RouteType.notifications, videoIndex: index);
 
     case 'inbox':
+      // /inbox - inbox screen
+      // /inbox/conversation/:id - conversation detail
+      // /inbox/message-requests - message requests inbox
+      // /inbox/message-requests/:id - request preview
+      if (segments.length > 2 && segments[1] == 'conversation') {
+        final conversationId = Uri.decodeComponent(segments[2]);
+        return RouteContext(
+          type: RouteType.conversation,
+          conversationId: conversationId,
+        );
+      }
+      if (segments.length > 1 && segments[1] == 'message-requests') {
+        if (segments.length > 2) {
+          final conversationId = Uri.decodeComponent(segments[2]);
+          return RouteContext(
+            type: RouteType.requestPreview,
+            conversationId: conversationId,
+          );
+        }
+        return const RouteContext(type: RouteType.messageRequests);
+      }
       return const RouteContext(type: RouteType.inbox);
 
     case 'liked-videos':
@@ -178,6 +216,16 @@ RouteContext parseRoute(String path) {
         type: RouteType.hashtag,
         hashtag: tag,
         videoIndex: index,
+      );
+
+    case 'categories':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final categoryName = Uri.decodeComponent(segments[1]);
+      return RouteContext(
+        type: RouteType.categoryGallery,
+        categoryName: categoryName,
       );
 
     case 'search':
@@ -214,14 +262,11 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.videoRecorder);
 
     case 'video-editor':
-      return const RouteContext(type: RouteType.videoEditor);
-
-    case 'video-clip-editor':
       if (segments.length > 1) {
         final draftId = Uri.decodeComponent(segments[1]);
-        return RouteContext(type: RouteType.videoClipEditor, draftId: draftId);
+        return RouteContext(type: RouteType.videoEditor, draftId: draftId);
       }
-      return const RouteContext(type: RouteType.videoClipEditor);
+      return const RouteContext(type: RouteType.videoEditor);
 
     case 'video-metadata':
       return const RouteContext(type: RouteType.videoMetadata);
@@ -252,6 +297,18 @@ RouteContext parseRoute(String path) {
 
     case 'content-filters':
       return const RouteContext(type: RouteType.contentFilters);
+
+    case 'content-preferences':
+      return const RouteContext(type: RouteType.contentPreferences);
+
+    case 'support-center':
+      return const RouteContext(type: RouteType.supportCenter);
+
+    case 'legal':
+      return const RouteContext(type: RouteType.legal);
+
+    case 'nostr-settings':
+      return const RouteContext(type: RouteType.nostrSettings);
 
     case 'edit-profile':
     case 'setup-profile':
@@ -355,8 +412,18 @@ String buildRoute(RouteContext context) {
       }
       return NotificationsScreen.path;
 
+    case RouteType.conversation:
+      return ConversationPage.pathForId(context.conversationId ?? '');
+
     case RouteType.inbox:
       return InboxPage.path;
+
+    case RouteType.messageRequests:
+      return MessageRequestsPage.path;
+
+    case RouteType.requestPreview:
+      final id = Uri.encodeComponent(context.conversationId ?? '');
+      return '/inbox/message-requests/$id';
 
     case RouteType.profile:
       final npub = Uri.encodeComponent(context.npub ?? '');
@@ -378,6 +445,13 @@ String buildRoute(RouteContext context) {
     case RouteType.hashtag:
       final hashtag = context.hashtag ?? '';
       return HashtagScreenRouter.pathForTag(hashtag);
+
+    case RouteType.categoryGallery:
+      final categoryName = context.categoryName;
+      if (categoryName == null || categoryName.isEmpty) {
+        return ExploreScreen.path;
+      }
+      return CategoryGalleryScreen.locationFor(categoryName);
 
     case RouteType.search:
       // Grid mode (null videoIndex):
@@ -405,13 +479,10 @@ String buildRoute(RouteContext context) {
       return VideoRecorderScreen.path;
 
     case RouteType.videoEditor:
-      return VideoEditorScreen.path;
-
-    case RouteType.videoClipEditor:
       if (context.draftId != null) {
-        return '${VideoClipEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
+        return '${VideoEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
       }
-      return VideoClipEditorScreen.path;
+      return VideoEditorScreen.path;
 
     case RouteType.videoMetadata:
       return VideoMetadataScreen.path;
@@ -439,6 +510,18 @@ String buildRoute(RouteContext context) {
 
     case RouteType.contentFilters:
       return ContentFiltersScreen.path;
+
+    case RouteType.contentPreferences:
+      return ContentPreferencesScreen.path;
+
+    case RouteType.supportCenter:
+      return SupportCenterScreen.path;
+
+    case RouteType.legal:
+      return LegalScreen.path;
+
+    case RouteType.nostrSettings:
+      return NostrSettingsScreen.path;
 
     case RouteType.editProfile:
       return ProfileSetupScreen.editPath;

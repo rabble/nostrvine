@@ -4,6 +4,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:openvine/services/classic_viner_seed_preload_service.dart';
+import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -16,7 +18,9 @@ class SeedMediaPreloadService {
   ///
   /// Files are written directly to the cache directory with eventId-based names
   /// so VideoCacheManager can discover and use them through its normal flow.
-  static Future<void> loadSeedMediaIfNeeded() async {
+  static Future<void> loadSeedMediaIfNeeded({
+    ClassicVinerSeedPreloadService? classicVinerService,
+  }) async {
     try {
       // Check if cache already populated
       final tempDir = await getTemporaryDirectory();
@@ -30,6 +34,9 @@ class SeedMediaPreloadService {
           '[SEED] Cache already populated, skipping media preload',
           name: 'SeedMediaPreload',
           category: LogCategory.system,
+        );
+        await _preloadClassicVinerAvatars(
+          classicVinerService: classicVinerService,
         );
         return;
       }
@@ -127,6 +134,10 @@ class SeedMediaPreloadService {
         'loaded at ${DateTime.now().toIso8601String()}',
       );
 
+      await _preloadClassicVinerAvatars(
+        classicVinerService: classicVinerService,
+      );
+
       Log.info(
         '[SEED] ✅ Media preload completed: $videoCount videos, $thumbnailCount thumbnails',
         name: 'SeedMediaPreload',
@@ -145,5 +156,25 @@ class SeedMediaPreloadService {
         category: LogCategory.system,
       );
     }
+  }
+
+  static Future<void> _preloadClassicVinerAvatars({
+    ClassicVinerSeedPreloadService? classicVinerService,
+  }) async {
+    final service = classicVinerService ?? ClassicVinerSeedPreloadService();
+    await service.preloadAvatarImagesIfNeeded(
+      cacheWriter:
+          ({
+            required String cacheKey,
+            required Uint8List bytes,
+            required String fileExtension,
+          }) async {
+            await openVineImageCache.putFile(
+              cacheKey,
+              bytes,
+              fileExtension: fileExtension,
+            );
+          },
+    );
   }
 }

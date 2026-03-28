@@ -16,6 +16,8 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
+import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
@@ -33,9 +35,34 @@ class _MockConversationListBloc
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
     implements MyFollowingBloc {}
 
+/// Minimal mock so NotificationsScreen (default tab) renders without crashing.
+class _MockRelayNotifications extends RelayNotifications {
+  @override
+  Future<NotificationFeedState> build() async {
+    return NotificationFeedState(
+      notifications: const [],
+      isInitialLoad: false,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<void> markAsRead(String notificationId) async {}
+
+  @override
+  Future<void> markAllAsRead() async {}
+
+  @override
+  Future<void> loadMore() async {}
+
+  @override
+  Future<void> refresh() async {}
+}
+
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey) {
     when(() => authState).thenReturn(AuthState.authenticated);
+    when(() => isAuthenticated).thenReturn(true);
     when(
       () => authStateStream,
     ).thenAnswer((_) => const Stream<AuthState>.empty());
@@ -93,14 +120,18 @@ void main() {
         mockAuthService: mockAuthService,
         additionalOverrides: [
           relayNotificationUnreadCountProvider.overrideWithValue(0),
+          relayNotificationsProvider.overrideWith(_MockRelayNotifications.new),
           goRouterProvider.overrideWithValue(mockGoRouter),
         ],
-        home: MultiBlocProvider(
-          providers: [
-            BlocProvider<ConversationListBloc>.value(value: mockBloc),
-            BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
-          ],
-          child: const InboxView(),
+        home: MockGoRouterProvider(
+          goRouter: mockGoRouter,
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider<ConversationListBloc>.value(value: mockBloc),
+              BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
+            ],
+            child: const InboxView(),
+          ),
         ),
       );
     }
@@ -117,6 +148,10 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pump();
 
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+
         expect(find.byType(FollowingBar), findsOneWidget);
       });
 
@@ -124,6 +159,10 @@ void main() {
         'renders $CircularProgressIndicator when status is initial',
         (tester) async {
           await tester.pumpWidget(buildSubject());
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
           await tester.pump();
 
           expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -142,6 +181,10 @@ void main() {
           );
           await tester.pump();
 
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+
           expect(find.byType(InboxEmptyState), findsOneWidget);
         },
       );
@@ -156,6 +199,10 @@ void main() {
               ),
             ),
           );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
           await tester.pump();
 
           expect(find.byType(InboxEmptyState), findsOneWidget);
@@ -183,15 +230,92 @@ void main() {
               ),
             ),
           );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
           await tester.pumpAndSettle();
 
+          expect(find.byType(ConversationTile), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'renders $MessageRequestsBanner when request conversations exist',
+        (tester) async {
+          final request = DmConversation(
+            id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hey',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                requestConversations: [request],
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+
+          expect(find.byType(MessageRequestsBanner), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'renders $MessageRequestsBanner above conversations when both exist',
+        (tester) async {
+          final conversation = DmConversation(
+            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          final request = DmConversation(
+            id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hey',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                requestConversations: [request],
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(MessageRequestsBanner), findsOneWidget);
           expect(find.byType(ConversationTile), findsOneWidget);
         },
       );
     });
 
     group('navigation', () {
-      testWidgets('calls pushNamed when a conversation is tapped', (
+      testWidgets('calls push when a conversation is tapped', (
         tester,
       ) async {
         final conversation = DmConversation(
@@ -212,12 +336,15 @@ void main() {
             ),
           ),
         );
+        await tester.pump();
+
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
         await tester.pumpAndSettle();
 
         when(
-          () => mockGoRouter.pushNamed(
+          () => mockGoRouter.push(
             any(),
-            pathParameters: any(named: 'pathParameters'),
             extra: any(named: 'extra'),
           ),
         ).thenAnswer((_) async => null);
@@ -226,11 +353,49 @@ void main() {
         await tester.pump();
 
         verify(
-          () => mockGoRouter.pushNamed(
-            ConversationPage.routeName,
-            pathParameters: {'id': 'conv123'},
+          () => mockGoRouter.push(
+            ConversationPage.pathForId('conv123'),
             extra: [otherPubkey],
           ),
+        ).called(1);
+      });
+
+      testWidgets('calls pushNamed to message requests when banner is tapped', (
+        tester,
+      ) async {
+        final request = DmConversation(
+          id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hey',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              requestConversations: [request],
+              hasMore: false,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+
+        when(
+          () => mockGoRouter.pushNamed(any()),
+        ).thenAnswer((_) async => null);
+
+        await tester.tap(find.byType(MessageRequestsBanner));
+        await tester.pump();
+
+        verify(
+          () => mockGoRouter.pushNamed(MessageRequestsPage.routeName),
         ).called(1);
       });
 
@@ -253,6 +418,10 @@ void main() {
         );
 
         await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 

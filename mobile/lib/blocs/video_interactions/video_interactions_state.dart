@@ -28,6 +28,7 @@ enum VideoInteractionsStatus {
 /// - [commentCount]: Total number of comments on this video
 /// - [isLikeInProgress]: Whether a like/unlike operation is in progress
 /// - [isRepostInProgress]: Whether a repost/unrepost operation is in progress
+/// - [isCommentsInProgress]: Whether a comments operation is in progress
 class VideoInteractionsState extends Equatable {
   const VideoInteractionsState({
     this.status = VideoInteractionsStatus.initial,
@@ -38,6 +39,7 @@ class VideoInteractionsState extends Equatable {
     this.commentCount,
     this.isLikeInProgress = false,
     this.isRepostInProgress = false,
+    this.isCommentsInProgress = false,
     this.error,
   });
 
@@ -68,6 +70,9 @@ class VideoInteractionsState extends Equatable {
   /// Whether a repost/unrepost operation is currently in progress.
   final bool isRepostInProgress;
 
+  /// Whether a comments operation is currently in progress.
+  final bool isCommentsInProgress;
+
   /// Error that occurred, if any.
   final VideoInteractionsError? error;
 
@@ -84,6 +89,7 @@ class VideoInteractionsState extends Equatable {
     int? commentCount,
     bool? isLikeInProgress,
     bool? isRepostInProgress,
+    bool? isCommentsInProgress,
     VideoInteractionsError? error,
     bool clearError = false,
   }) {
@@ -96,6 +102,7 @@ class VideoInteractionsState extends Equatable {
       commentCount: commentCount ?? this.commentCount,
       isLikeInProgress: isLikeInProgress ?? this.isLikeInProgress,
       isRepostInProgress: isRepostInProgress ?? this.isRepostInProgress,
+      isCommentsInProgress: isCommentsInProgress ?? this.isCommentsInProgress,
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -110,6 +117,7 @@ class VideoInteractionsState extends Equatable {
     commentCount,
     isLikeInProgress,
     isRepostInProgress,
+    isCommentsInProgress,
     error,
   ];
 }

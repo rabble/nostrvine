@@ -87,6 +87,13 @@ class LikesRepository {
   /// In-memory cache of like records keyed by target event ID.
   final Map<String, LikeRecord> _likeRecords = {};
 
+  /// In-memory cache of global like counts keyed by event ID.
+  ///
+  /// Prevents redundant relay queries when the same video is scrolled
+  /// back into view. Adjusted +1/−1 on like/unlike so the cached value
+  /// stays consistent with optimistic UI updates.
+  final Map<String, int> _likeCountCache = {};
+
   /// Reactive stream controller for liked event IDs (ordered by recency).
   final _likedIdsController = BehaviorSubject<List<String>>.seeded([]);
 
@@ -216,6 +223,9 @@ class LikesRepository {
       await _localStorage?.saveLikeRecord(record);
       _emitLikedIds();
 
+      final cached = _likeCountCache[eventId];
+      if (cached != null) _likeCountCache[eventId] = cached + 1;
+
       return placeholderId;
     }
 
@@ -242,6 +252,9 @@ class LikesRepository {
     _likeRecords[eventId] = record;
     await _localStorage?.saveLikeRecord(record);
     _emitLikedIds();
+
+    final cached = _likeCountCache[eventId];
+    if (cached != null) _likeCountCache[eventId] = cached + 1;
 
     return reactionEvent.id;
   }
@@ -321,6 +334,7 @@ class LikesRepository {
       _likeRecords.remove(eventId);
       await _localStorage?.deleteLikeRecord(eventId);
       _emitLikedIds();
+      _decrementLikeCountCache(eventId);
 
       return;
     }
@@ -341,6 +355,7 @@ class LikesRepository {
     _likeRecords.remove(eventId);
     await _localStorage?.deleteLikeRecord(eventId);
     _emitLikedIds();
+    _decrementLikeCountCache(eventId);
   }
 
   /// Execute an unlike action directly (for use by sync service).
@@ -365,6 +380,7 @@ class LikesRepository {
       _likeRecords.remove(eventId);
       await _localStorage?.deleteLikeRecord(eventId);
       _emitLikedIds();
+      _decrementLikeCountCache(eventId);
       return;
     }
 
@@ -381,6 +397,7 @@ class LikesRepository {
     _likeRecords.remove(eventId);
     await _localStorage?.deleteLikeRecord(eventId);
     _emitLikedIds();
+    _decrementLikeCountCache(eventId);
   }
 
   /// Toggle like status for an event.
@@ -428,17 +445,24 @@ class LikesRepository {
 
   /// Get the like count for an event.
   ///
-  /// Queries relays for the count of Kind 7 reactions on the event.
+  /// Returns a cached count when available to avoid redundant relay queries
+  /// (e.g. when scrolling back to a previously viewed video). Otherwise
+  /// queries relays for the count of Kind 7 reactions on the event.
   /// When [addressableId] is provided, queries by both 'e' and 'a' tags
   /// and returns the maximum count (since relays may index differently).
   ///
   /// Note: This counts all likes, not just the current user's.
   Future<int> getLikeCount(String eventId, {String? addressableId}) async {
+    final cached = _likeCountCache[eventId];
+    if (cached != null) return cached;
+
     // Query relays for count of Kind 7 reactions on this event
     final filterByE = Filter(
       kinds: const [EventKind.reaction],
       e: [eventId],
     );
+
+    int count;
 
     // If addressable ID provided, query by both e and a tags
     if (addressableId != null && addressableId.isNotEmpty) {
@@ -454,11 +478,14 @@ class LikesRepository {
         _nostrClient.countEvents([filterByA]),
       ]);
 
-      return max(results[0].count, results[1].count);
+      count = max(results[0].count, results[1].count);
+    } else {
+      final result = await _nostrClient.countEvents([filterByE]);
+      count = result.count;
     }
 
-    final result = await _nostrClient.countEvents([filterByE]);
-    return result.count;
+    _likeCountCache[eventId] = count;
+    return count;
   }
 
   /// Get like counts for multiple events in a single batched query.
@@ -483,11 +510,24 @@ class LikesRepository {
   }) async {
     if (eventIds.isEmpty) return {};
 
-    // Query relays for count of Kind 7 reactions on all events at once
-    // Using a single filter with multiple event IDs in the 'e' array
+    // Separate cached vs uncached IDs to skip relay queries for known counts
+    final counts = <String, int>{};
+    final uncachedIds = <String>[];
+    for (final id in eventIds) {
+      final cached = _likeCountCache[id];
+      if (cached != null) {
+        counts[id] = cached;
+      } else {
+        uncachedIds.add(id);
+      }
+    }
+
+    if (uncachedIds.isEmpty) return counts;
+
+    // Query relays for count of Kind 7 reactions on uncached events
     final filterByE = Filter(
       kinds: const [EventKind.reaction],
-      e: eventIds,
+      e: uncachedIds,
     );
 
     // NIP-45 COUNT with multiple event IDs returns total count, not per-event
@@ -495,18 +535,17 @@ class LikesRepository {
     final eventsByE = await _nostrClient.queryEvents([filterByE]);
 
     // Count reactions per target event from e-tag query
-    final counts = <String, int>{};
-    for (final eventId in eventIds) {
-      counts[eventId] = 0;
+    final uncachedIdSet = uncachedIds.toSet();
+    for (final id in uncachedIds) {
+      counts[id] = 0;
     }
 
     for (final event in eventsByE) {
-      // Find the 'e' tag that references the target event
       for (final tag in event.tags) {
         if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
           final targetId = tag[1];
-          if (counts.containsKey(targetId)) {
-            counts[targetId] = counts[targetId]! + 1;
+          if (uncachedIdSet.contains(targetId)) {
+            counts[targetId] = (counts[targetId] ?? 0) + 1;
           }
         }
       }
@@ -514,42 +553,52 @@ class LikesRepository {
 
     // If addressable IDs provided, also query by a-tag and merge results
     if (addressableIds != null && addressableIds.isNotEmpty) {
-      final aTagValues = addressableIds.values.toList();
-      final filterByA = Filter(
-        kinds: const [EventKind.reaction],
-        a: aTagValues,
-      );
-
-      final eventsByA = await _nostrClient.queryEvents([filterByA]);
-
-      // Create reverse lookup: addressableId -> eventId
-      final aTagToEventId = <String, String>{};
-      for (final entry in addressableIds.entries) {
-        aTagToEventId[entry.value] = entry.key;
+      final uncachedAddressableIds = <String, String>{};
+      for (final id in uncachedIds) {
+        final aId = addressableIds[id];
+        if (aId != null) uncachedAddressableIds[id] = aId;
       }
 
-      // Count reactions from a-tag query
-      final countsFromA = <String, int>{};
-      for (final eventId in eventIds) {
-        countsFromA[eventId] = 0;
-      }
+      if (uncachedAddressableIds.isNotEmpty) {
+        final aTagValues = uncachedAddressableIds.values.toList();
+        final filterByA = Filter(
+          kinds: const [EventKind.reaction],
+          a: aTagValues,
+        );
 
-      for (final event in eventsByA) {
-        for (final tag in event.tags) {
-          if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
-            final aTagValue = tag[1];
-            final eventId = aTagToEventId[aTagValue];
-            if (eventId != null && countsFromA.containsKey(eventId)) {
-              countsFromA[eventId] = countsFromA[eventId]! + 1;
+        final eventsByA = await _nostrClient.queryEvents([filterByA]);
+
+        final aTagToEventId = <String, String>{};
+        for (final entry in uncachedAddressableIds.entries) {
+          aTagToEventId[entry.value] = entry.key;
+        }
+
+        final countsFromA = <String, int>{};
+        for (final id in uncachedIds) {
+          countsFromA[id] = 0;
+        }
+
+        for (final event in eventsByA) {
+          for (final tag in event.tags) {
+            if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
+              final aTagValue = tag[1];
+              final eventId = aTagToEventId[aTagValue];
+              if (eventId != null && countsFromA.containsKey(eventId)) {
+                countsFromA[eventId] = countsFromA[eventId]! + 1;
+              }
             }
           }
         }
-      }
 
-      // Merge counts, taking maximum for each event
-      for (final eventId in eventIds) {
-        counts[eventId] = max(counts[eventId]!, countsFromA[eventId] ?? 0);
+        for (final id in uncachedIds) {
+          counts[id] = max(counts[id]!, countsFromA[id] ?? 0);
+        }
       }
+    }
+
+    // Populate cache with fetched counts
+    for (final id in uncachedIds) {
+      _likeCountCache[id] = counts[id]!;
     }
 
     return counts;
@@ -966,6 +1015,11 @@ class LikesRepository {
     _emitLikedIds();
   }
 
+  void _decrementLikeCountCache(String eventId) {
+    final cached = _likeCountCache[eventId];
+    if (cached != null) _likeCountCache[eventId] = max(0, cached - 1);
+  }
+
   /// Clear all local like data.
   ///
   /// Used when logging out or clearing user data.
@@ -975,6 +1029,7 @@ class LikesRepository {
   /// stream emission is attempted.
   Future<void> clearCache() async {
     _likeRecords.clear();
+    _likeCountCache.clear();
     await _localStorage?.clearAll();
     _emitLikedIds();
     _isInitialized = false;

@@ -2,7 +2,6 @@
 // ABOUTME: Shows 3-column grid with thumbnails for videos where user
 // ABOUTME: is tagged as a collaborator
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +12,7 @@ import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Grid widget displaying user's collab videos.
 ///
@@ -174,35 +174,40 @@ class _CollabsEmptyState extends StatelessWidget {
       SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.people_outline,
-                color: VineTheme.onSurfaceMuted,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No Collabs Yet',
-                style: TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isOwnProfile
-                    ? 'Videos you collaborate on will appear here'
-                    : 'Videos they collaborate on will appear here',
-                style: const TextStyle(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.people_outline,
                   color: VineTheme.onSurfaceMuted,
-                  fontSize: 14,
+                  size: 64,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Text(
+                  'No Collabs Yet',
+                  textAlign: .center,
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isOwnProfile
+                      ? 'Videos you collaborate on will appear here'
+                      : 'Videos they collaborate on will appear here',
+                  textAlign: .center,
+                  style: const TextStyle(
+                    color: VineTheme.onSurfaceMuted,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -244,9 +249,8 @@ class _CollabThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return CachedNetworkImage(
+      return VineCachedImage(
         imageUrl: thumbnailUrl!,
-        fit: BoxFit.cover,
         placeholder: (context, url) => const _CollabThumbnailPlaceholder(),
         errorWidget: (context, url, error) =>
             const _CollabThumbnailPlaceholder(),

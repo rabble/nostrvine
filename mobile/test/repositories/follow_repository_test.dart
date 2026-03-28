@@ -118,12 +118,23 @@ void main() {
       test('loads following list from REST API when cache is empty', () async {
         // No cached data in SharedPreferences or PersonalEventCache
         // But REST API (funnelcake) has the following list
+        final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => const PaginatedPubkeys(
+            pubkeys: [testTargetPubkey, testTargetPubkey2],
+          ),
+        );
+
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
-          fetchFollowingFromApi: (pubkey) async {
-            return [testTargetPubkey, testTargetPubkey2];
-          },
+          funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
 
@@ -140,36 +151,46 @@ void main() {
       });
 
       test('skips REST API when local cache already has data', () async {
-        var apiCalled = false;
-
         SharedPreferences.setMockInitialValues({
           'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
         });
 
+        final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
-          fetchFollowingFromApi: (pubkey) async {
-            apiCalled = true;
-            return [testTargetPubkey, testTargetPubkey2];
-          },
+          funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
 
         await repository.initialize();
 
         // Should have loaded from cache, not called API
-        expect(apiCalled, isFalse);
+        verifyNever(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+          ),
+        );
         expect(repository.followingCount, 1);
       });
 
       test('handles REST API failure gracefully', () async {
+        final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(Exception('Network error'));
+
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
-          fetchFollowingFromApi: (pubkey) async {
-            throw Exception('Network error');
-          },
+          funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
 

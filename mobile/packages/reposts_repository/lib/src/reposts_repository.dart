@@ -80,12 +80,13 @@ class RepostsRepository {
   /// In-memory cache of repost records keyed by addressable ID.
   final Map<String, RepostRecord> _repostRecords = {};
 
-  /// Local count cache keyed by addressable ID.
+  /// Local count cache keyed by addressable ID (or event ID for
+  /// non-addressable videos).
   ///
-  /// Stores the last known-correct repost count after toggle operations.
+  /// Populated on relay fetches and adjusted on toggle operations.
   /// This survives BLoC disposal (since the repository is a singleton) and
-  /// prevents stale NIP-45 COUNT from relays that haven't processed Kind 5
-  /// deletions yet.
+  /// prevents both redundant relay queries on scroll-back and stale NIP-45
+  /// COUNT from relays that haven't processed Kind 5 deletions yet.
   final Map<String, int> _localCountCache = {};
 
   /// Reactive stream controller for reposted addressable IDs.
@@ -180,9 +181,9 @@ class RepostsRepository {
   ///
   /// Note: This counts all reposts from all users, not just the current user's.
   Future<int> getRepostCount(String addressableId) async {
-    // Use local cache if available (set by recent toggle operations).
-    // This prevents stale relay counts after unrepost, since relays may not
-    // immediately decrement NIP-45 COUNT for Kind 5 deletions.
+    // Use local cache if available (set by recent toggle operations or a
+    // previous relay fetch). This prevents redundant relay queries when
+    // scrolling back to an already-viewed video.
     if (_localCountCache.containsKey(addressableId)) {
       return _localCountCache[addressableId]!;
     }
@@ -194,6 +195,7 @@ class RepostsRepository {
     );
 
     final result = await _nostrClient.countEvents([filter]);
+    _cacheRepostCount(addressableId, result.count);
     return result.count;
   }
 
@@ -206,6 +208,10 @@ class RepostsRepository {
   ///
   /// Note: This counts all reposts from all users, not just the current user's.
   Future<int> getRepostCountByEventId(String eventId) async {
+    if (_localCountCache.containsKey(eventId)) {
+      return _localCountCache[eventId]!;
+    }
+
     // Query relays for count of Kind 6 and Kind 16 reposts referencing this
     // event ID
     final filter = Filter(
@@ -214,6 +220,7 @@ class RepostsRepository {
     );
 
     final result = await _nostrClient.countEvents([filter]);
+    _cacheRepostCount(eventId, result.count);
     return result.count;
   }
 

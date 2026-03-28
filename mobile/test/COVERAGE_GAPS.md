@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This generated coverage report is not maintained as a current source of truth.
+
 # Test Coverage Gaps
 
 **Generated**: 2025-10-20

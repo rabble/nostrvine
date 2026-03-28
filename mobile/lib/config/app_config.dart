@@ -23,6 +23,9 @@ class AppConfig {
   static bool get isDevelopment => environment == 'development';
   static bool get isStaging => environment == 'staging';
   static bool get isProduction => environment == 'production';
+  static const bool isGhActionsPrPreviewBuild = bool.fromEnvironment(
+    'GH_ACTIONS_PR_PREVIEW',
+  );
 
   // API endpoints
   static String get healthUrl => '$backendBaseUrl/health';
@@ -87,6 +90,7 @@ class AppConfig {
     'inviteServerUrl': inviteServerBaseUrl,
     'isDevelopment': isDevelopment,
     'isProduction': isProduction,
+    'isGhActionsPrPreviewBuild': isGhActionsPrPreviewBuild,
     'enableStreamCDN': enableStreamCDN,
     'enableCloudinaryUpload': enableCloudinaryUpload,
     'enableNIP96Upload': enableNIP96Upload,

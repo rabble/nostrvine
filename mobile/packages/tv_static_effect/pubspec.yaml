@@ -1,0 +1,23 @@
+name: tv_static_effect
+description: Animated TV static noise effect using a GLSL fragment shader.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0
+
+flutter:
+  shaders:
+    - shaders/tv_static.frag

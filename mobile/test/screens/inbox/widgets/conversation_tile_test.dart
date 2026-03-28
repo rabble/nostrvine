@@ -230,6 +230,36 @@ void main() {
 
         expect(tapped, isTrue);
       });
+
+      testWidgets('calls onLongPress when long-pressed', (tester) async {
+        var longPressed = false;
+        final testProfile = createTestProfile(displayName: 'Alice');
+        final testConversation = createTestConversation();
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(otherPubkey).overrideWith(
+                (ref) async => testProfile,
+              ),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                onLongPress: () => longPressed = true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        expect(longPressed, isTrue);
+      });
     });
   });
 }

@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for the conversation list (Messages tab).
 // ABOUTME: Manages loading conversations with pagination, handling real-time
-// ABOUTME: updates, and marking conversations as read.
+// ABOUTME: updates, marking conversations as read, and splitting conversations
+// ABOUTME: into normal inbox vs message requests based on follow state.
 
 import 'dart:async';
 
@@ -9,15 +10,23 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'conversation_list_event.dart';
 part 'conversation_list_state.dart';
 
 class ConversationListBloc
     extends Bloc<ConversationListEvent, ConversationListState> {
-  ConversationListBloc({required DmRepository dmRepository})
-    : _dmRepository = dmRepository,
-      super(const ConversationListState()) {
+  ConversationListBloc({
+    required DmRepository dmRepository,
+    required FollowRepository followRepository,
+    ContentBlocklistService? contentBlocklistService,
+  }) : _dmRepository = dmRepository,
+       _followRepository = followRepository,
+       _blocklistService = contentBlocklistService,
+       super(const ConversationListState()) {
     on<ConversationListStarted>(
       _onStarted,
       transformer: restartable(),
@@ -37,9 +46,14 @@ class ConversationListBloc
     on<ConversationListNavigationConsumed>(
       _onNavigationConsumed,
     );
+    on<ConversationListBlocklistChanged>(
+      _onBlocklistChanged,
+    );
   }
 
   final DmRepository _dmRepository;
+  final FollowRepository _followRepository;
+  final ContentBlocklistService? _blocklistService;
 
   Future<void> _onStarted(
     ConversationListStarted event,
@@ -55,14 +69,53 @@ class ConversationListBloc
       );
     }
 
+    // Stream 1: accepted conversations (paginated, user has sent).
+    // Stream 2: potential requests (unpaginated, user has NOT sent).
+    // Stream 3: following list changes (triggers re-classification).
+    // Combining ensures requests are never truncated by pagination
+    // and follow-list changes are handled automatically.
     await emit.forEach(
-      _dmRepository.watchConversations(limit: state.currentLimit),
-      onData: (conversations) => state.copyWith(
-        status: ConversationListStatus.loaded,
-        conversations: conversations,
-        hasMore: conversations.length >= state.currentLimit,
-        isLoadingMore: false,
+      Rx.combineLatest3(
+        _dmRepository.watchAcceptedConversations(
+          limit: state.currentLimit,
+        ),
+        _dmRepository.watchPotentialRequests(),
+        _followRepository.followingStream.startWith(const []),
+        (accepted, potentialRequests, _) => (
+          accepted: accepted,
+          potentialRequests: potentialRequests,
+        ),
       ),
+      onData: (data) {
+        final split = DmRepository.classifyPotentialRequests(
+          data.potentialRequests,
+          userPubkey: _dmRepository.userPubkey,
+          isFollowing: _followRepository.isFollowing,
+        );
+        final merged = DmRepository.mergeAndSort(
+          data.accepted,
+          split.followed,
+        );
+        final userPubkey = _dmRepository.userPubkey;
+        return state.copyWith(
+          status: ConversationListStatus.loaded,
+          conversations:
+              _blocklistService?.filterBlockedConversations(
+                merged,
+                userPubkey: userPubkey,
+              ) ??
+              merged,
+          requestConversations:
+              _blocklistService?.filterBlockedConversations(
+                split.requests,
+                userPubkey: userPubkey,
+              ) ??
+              split.requests,
+          potentialRequests: data.potentialRequests,
+          hasMore: data.accepted.length >= state.currentLimit,
+          isLoadingMore: false,
+        );
+      },
       onError: (error, stackTrace) {
         addError(error, stackTrace);
         return state.copyWith(
@@ -126,5 +179,13 @@ class ConversationListBloc
     Emitter<ConversationListState> emit,
   ) {
     emit(state.copyWith(clearNavigationTarget: true));
+  }
+
+  /// Re-trigger the watched streams so blocked users are filtered out.
+  void _onBlocklistChanged(
+    ConversationListBlocklistChanged event,
+    Emitter<ConversationListState> emit,
+  ) {
+    add(const ConversationListStarted());
   }
 }

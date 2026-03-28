@@ -103,6 +103,97 @@ void main() {
       });
     });
 
+    group('formatConversationTimestamp', () {
+      test('returns "now" for less than a minute ago', () {
+        final ts = unixSecondsAgo(const Duration(seconds: 30));
+        expect(
+          TimeFormatter.formatConversationTimestamp(ts),
+          equals('now'),
+        );
+      });
+
+      test('returns minutes for less than an hour ago', () {
+        final ts = unixSecondsAgo(const Duration(minutes: 23));
+        expect(
+          TimeFormatter.formatConversationTimestamp(ts),
+          equals('23m'),
+        );
+      });
+
+      test('returns hours for same calendar day', () {
+        final now = DateTime.now();
+        if (now.hour < 1) return; // skip: within first hour of the day
+        // Explicitly stay on today to avoid cross-day edge cases
+        final sameDay = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          now.hour - 1,
+          now.minute,
+        );
+        final ts = sameDay.millisecondsSinceEpoch ~/ 1000;
+        expect(
+          TimeFormatter.formatConversationTimestamp(ts),
+          equals('1h'),
+        );
+      });
+
+      test('returns "Yesterday" for previous calendar day', () {
+        final now = DateTime.now();
+        final yesterday = DateTime(now.year, now.month, now.day - 1, 12);
+        final ts = yesterday.millisecondsSinceEpoch ~/ 1000;
+        expect(
+          TimeFormatter.formatConversationTimestamp(ts),
+          equals('Yesterday'),
+        );
+      });
+
+      test('returns day name for 2-6 days ago', () {
+        final now = DateTime.now();
+        final threeDaysAgo = DateTime(now.year, now.month, now.day - 3, 12);
+        final ts = threeDaysAgo.millisecondsSinceEpoch ~/ 1000;
+        final result = TimeFormatter.formatConversationTimestamp(ts);
+        expect(
+          [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+          ],
+          contains(result),
+        );
+      });
+
+      test('returns abbreviated month and day for same year', () {
+        final now = DateTime.now();
+        final twoMonthsAgo = DateTime(
+          now.year,
+          now.month - 2,
+          now.day.clamp(1, 28),
+          12,
+        );
+        final ts = twoMonthsAgo.millisecondsSinceEpoch ~/ 1000;
+        final result = TimeFormatter.formatConversationTimestamp(ts);
+        // Matches patterns like "Mar 3" or "Jan 15"
+        expect(result, matches(RegExp(r'^[A-Z][a-z]{2} \d{1,2}$')));
+      });
+
+      test('returns month, day, and year for previous year', () {
+        final now = DateTime.now();
+        final lastYear = DateTime(now.year - 1, 6, 15, 12);
+        final ts = lastYear.millisecondsSinceEpoch ~/ 1000;
+        final result = TimeFormatter.formatConversationTimestamp(ts);
+        // Matches patterns like "Jun 15, 2025"
+        expect(
+          result,
+          matches(RegExp(r'^[A-Z][a-z]{2} \d{1,2}, \d{4}$')),
+        );
+      });
+    });
+
     group('formatMessageTime', () {
       test('returns "Now" for less than 60 seconds ago', () {
         final ts = unixSecondsAgo(const Duration(seconds: 30));
@@ -110,7 +201,17 @@ void main() {
       });
 
       test('returns time format for today', () {
-        final ts = unixSecondsAgo(const Duration(hours: 2));
+        final now = DateTime.now();
+        if (now.hour < 1) return; // skip: within first hour of the day
+        // Explicitly stay on today to avoid cross-day edge cases on CI
+        final sameDay = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          now.hour - 1,
+          now.minute,
+        );
+        final ts = sameDay.millisecondsSinceEpoch ~/ 1000;
         final result = TimeFormatter.formatMessageTime(ts);
         // Matches patterns like "9:41 AM" or "2:30 PM"
         // intl uses Unicode narrow no-break space (U+202F) before AM/PM

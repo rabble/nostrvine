@@ -1,6 +1,7 @@
 // ABOUTME: Drafts tab widget for the clip library screen
 // ABOUTME: Displays a list of saved video drafts with options to edit or delete
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -10,9 +11,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 
@@ -98,20 +100,20 @@ class DraftsTab extends ConsumerWidget {
       ),
       options: [
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/${DivineIconName.paperPlaneTilt.fileName}.svg',
+          iconPath: DivineIconName.paperPlaneTilt.assetPath,
           label: 'Post',
           onTap: () => _postDraft(context, ref, draft),
         ),
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/${DivineIconName.pencilSimple.fileName}.svg',
+          iconPath: DivineIconName.pencilSimple.assetPath,
           label: 'Edit',
           onTap: () => _openDraft(context, ref, draft),
         ),
         VineBottomSheetActionData(
-          iconPath: 'assets/icon/${DivineIconName.trash.fileName}.svg',
+          iconPath: DivineIconName.trash.assetPath,
           label: 'Delete draft',
           isDestructive: true,
-          onTap: () => _deleteDraft(context, draft),
+          onTap: () => _deleteDraft(context, ref, draft),
         ),
       ],
     );
@@ -147,16 +149,21 @@ class DraftsTab extends ConsumerWidget {
       name: 'DraftsTab',
       category: LogCategory.video,
     );
-    await ref.read(videoPublishProvider.notifier).clearAll();
+
+    await ref
+        .read(videoPublishProvider.notifier)
+        .clearAll(keepAutosavedDraft: true);
 
     if (!context.mounted) return;
 
     await context.push(
-      '${VideoClipEditorScreen.path}/${draft.id}',
+      '${VideoEditorScreen.path}/${draft.id}',
       extra: {'fromLibrary': true},
     );
 
-    await ref.read(videoPublishProvider.notifier).clearAll();
+    await ref
+        .read(videoPublishProvider.notifier)
+        .clearAll(keepAutosavedDraft: true);
 
     // Reload drafts after returning
     if (context.mounted) {
@@ -166,6 +173,7 @@ class DraftsTab extends ConsumerWidget {
 
   Future<void> _deleteDraft(
     BuildContext context,
+    WidgetRef ref,
     DivineVideoDraft draft,
   ) async {
     final confirmed = await showDialog<bool>(
@@ -210,6 +218,13 @@ class DraftsTab extends ConsumerWidget {
       context.read<DraftsLibraryBloc>().add(
         DraftsLibraryDeleteRequested(draft.id),
       );
+      if (draft.id == VideoEditorConstants.autoSaveId) {
+        unawaited(
+          ref
+              .read(videoPublishProvider.notifier)
+              .clearAll(keepAutosavedDraft: true),
+        );
+      }
     }
   }
 }

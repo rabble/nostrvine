@@ -40,7 +40,7 @@ class AudioListTile extends StatelessWidget {
         title: Text(
           // TODO(l10n): Replace with context.l10n when localization is added.
           audio.title ?? 'Untitled sound',
-          style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
+          style: VineTheme.titleMediumFont(),
           maxLines: 1,
           overflow: .ellipsis,
         ),

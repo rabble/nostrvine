@@ -14,6 +14,7 @@ import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -27,6 +28,8 @@ class _MockCuratedListRepository extends Mock
 class _MockFeedPerformanceTracker extends Mock
     implements FeedPerformanceTracker {}
 
+class _MockProfileRepository extends Mock implements ProfileRepository {}
+
 class _MockHomeFeedCache extends Mock implements HomeFeedCache {}
 
 class _FakeSharedPreferences extends Fake implements SharedPreferences {}
@@ -36,6 +39,7 @@ void main() {
     late _MockVideosRepository mockVideosRepository;
     late _MockFollowRepository mockFollowRepository;
     late _MockCuratedListRepository mockCuratedListRepository;
+    late _MockProfileRepository mockProfileRepository;
     late StreamController<List<String>> followingController;
     late StreamController<List<CuratedList>> curatedListsController;
 
@@ -43,6 +47,7 @@ void main() {
       mockVideosRepository = _MockVideosRepository();
       mockFollowRepository = _MockFollowRepository();
       mockCuratedListRepository = _MockCuratedListRepository();
+      mockProfileRepository = _MockProfileRepository();
       followingController = StreamController<List<String>>.broadcast();
       curatedListsController = StreamController<List<CuratedList>>.broadcast();
 
@@ -58,6 +63,12 @@ void main() {
       when(
         () => mockCuratedListRepository.getSubscribedListVideoRefs(),
       ).thenReturn({});
+
+      when(
+        () => mockProfileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => {});
     });
 
     tearDown(() {
@@ -109,7 +120,7 @@ void main() {
       final bloc = createBloc();
       expect(bloc.state.status, VideoFeedStatus.loading);
       expect(bloc.state.videos, isEmpty);
-      expect(bloc.state.mode, FeedMode.home);
+      expect(bloc.state.mode, FeedMode.following);
       expect(bloc.state.hasMore, isTrue);
       expect(bloc.state.isLoadingMore, isFalse);
       expect(bloc.state.error, isNull);
@@ -157,13 +168,13 @@ void main() {
       test('copyWith preserves values when not specified', () {
         const state = VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.popular,
+          mode: FeedMode.latest,
         );
 
         final updated = state.copyWith();
 
         expect(updated.status, VideoFeedStatus.success);
-        expect(updated.mode, FeedMode.popular);
+        expect(updated.mode, FeedMode.latest);
       });
 
       test('copyWith clearError removes error', () {
@@ -190,17 +201,19 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.mode, 'mode', FeedMode.home)
+              .having((s) => s.mode, 'mode', FeedMode.following)
               .having((s) => s.hasMore, 'hasMore', true),
         ],
       );
@@ -214,6 +227,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => videos);
         },
@@ -241,6 +255,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -260,37 +275,10 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
-          verifyNever(
-            () => mockVideosRepository.getPopularVideos(
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-            ),
-          );
         },
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
-        'emits [loading, success] with popular mode when specified',
-        setUp: () {
-          final videos = createTestVideos(5);
-
-          when(
-            () => mockVideosRepository.getPopularVideos(
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-            ),
-          ).thenAnswer((_) async => videos);
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.popular)),
-        expect: () => [
-          const VideoFeedState(mode: FeedMode.popular),
-          isA<VideoFeedState>()
-              .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.mode, 'mode', FeedMode.popular),
-        ],
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
@@ -304,18 +292,17 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           // _loadVideos emits success with empty videos
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-            hasMore: false,
-          ),
+          const VideoFeedState(status: VideoFeedStatus.success, hasMore: false),
           // _onStarted detects empty follows → noFollowedUsers CTA
           const VideoFeedState(
             status: VideoFeedStatus.success,
@@ -336,11 +323,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           const VideoFeedState(
@@ -363,11 +352,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
@@ -388,11 +379,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
@@ -415,10 +408,9 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer(
-            (_) async => HomeFeedResult(videos: videos),
-          );
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
@@ -426,7 +418,8 @@ void main() {
           curatedListRepository: mockCuratedListRepository,
           userPubkey: 'user-pubkey',
         ),
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           // Repository is called with empty authors (follow list
           // not yet initialized) — the fast path relies on
@@ -438,6 +431,7 @@ void main() {
               userPubkey: 'user-pubkey',
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -454,6 +448,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => latestVideos);
         },
@@ -487,6 +482,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           );
         },
@@ -512,6 +508,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
@@ -540,6 +537,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -605,6 +603,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
@@ -638,6 +637,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
@@ -677,6 +677,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async {
             // Simulate network delay
@@ -706,6 +707,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -733,6 +735,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: overlappingVideos));
         },
@@ -771,6 +774,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -807,6 +811,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: freshVideos));
         },
@@ -832,6 +837,8 @@ void main() {
               videoRefs: any(named: 'videoRefs'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -850,6 +857,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -882,6 +890,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -917,18 +926,6 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'does nothing when mode is popular',
-        build: createBloc,
-        seed: () => VideoFeedState(
-          status: VideoFeedStatus.success,
-          mode: FeedMode.popular,
-          videos: createTestVideos(5),
-        ),
-        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
-        expect: () => <VideoFeedState>[],
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
         'does nothing when mode is forYou',
         build: createBloc,
         seed: () => VideoFeedState(
@@ -954,6 +951,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -970,7 +968,7 @@ void main() {
         ),
         act: (bloc) async {
           // First, trigger a load so _lastRefreshedAt gets set
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(Duration.zero);
 
           // Now the auto-refresh should be skipped (data is fresh)
@@ -993,6 +991,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1008,7 +1007,7 @@ void main() {
         ),
         act: (bloc) async {
           // First load sets _lastRefreshedAt
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(Duration.zero);
 
           // With Duration.zero interval, this should refresh
@@ -1037,6 +1036,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1071,6 +1071,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1086,7 +1087,7 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.mode, 'mode', FeedMode.home),
+              .having((s) => s.mode, 'mode', FeedMode.following),
         ],
       );
 
@@ -1127,6 +1128,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1162,12 +1164,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           // Wait for initial load to complete (Funnelcake loaded content)
           await Future<void>.delayed(Duration.zero);
           // First stream emission is skipped (BehaviorSubject replay)
@@ -1184,6 +1187,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
         },
@@ -1206,6 +1210,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async {
             callCount++;
@@ -1217,7 +1222,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           // Wait for initial load to complete (Funnelcake returned empty)
           await Future<void>.delayed(Duration.zero);
           // First emission is skipped (BehaviorSubject replay)
@@ -1242,6 +1247,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(2);
         },
@@ -1263,12 +1269,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(Duration.zero);
           // First emission is skipped (BehaviorSubject replay)
           followingController.add(['author']);
@@ -1288,6 +1295,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).called(2);
         },
@@ -1310,6 +1318,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1324,7 +1333,7 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.mode, 'mode', FeedMode.home),
+              .having((s) => s.mode, 'mode', FeedMode.following),
         ],
       );
 
@@ -1363,12 +1372,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           // Wait for initial load to complete
           await Future<void>.delayed(Duration.zero);
           // First stream emission is skipped (BehaviorSubject replay)
@@ -1402,6 +1412,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1449,6 +1460,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1527,13 +1539,15 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBlocWithTracker,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
-          verify(() => mockTracker.startFeedLoad('home')).called(1);
+          verify(() => mockTracker.startFeedLoad('following')).called(1);
         },
       );
 
@@ -1549,16 +1563,18 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBlocWithTracker,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verify(
-            () => mockTracker.markFirstVideosReceived('home', 3),
+            () => mockTracker.markFirstVideosReceived('following', 3),
           ).called(1);
-          verify(() => mockTracker.markFeedDisplayed('home', 3)).called(1);
+          verify(() => mockTracker.markFeedDisplayed('following', 3)).called(1);
         },
       );
 
@@ -1573,15 +1589,17 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenThrow(Exception('Network error'));
         },
         build: createBlocWithTracker,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verify(
             () => mockTracker.trackFeedError(
-              'home',
+              'following',
               errorType: 'load_failed',
               errorMessage: any(named: 'errorMessage'),
             ),
@@ -1599,6 +1617,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => videos);
         },
@@ -1610,28 +1629,6 @@ void main() {
             () => mockTracker.markFirstVideosReceived('latest', 3),
           ).called(1);
           verify(() => mockTracker.markFeedDisplayed('latest', 3)).called(1);
-        },
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
-        'uses correct feed type for popular mode',
-        setUp: () {
-          final videos = createTestVideos(3);
-          when(
-            () => mockVideosRepository.getPopularVideos(
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-            ),
-          ).thenAnswer((_) async => videos);
-        },
-        build: createBlocWithTracker,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.popular)),
-        verify: (_) {
-          verify(() => mockTracker.startFeedLoad('popular')).called(1);
-          verify(
-            () => mockTracker.markFirstVideosReceived('popular', 3),
-          ).called(1);
-          verify(() => mockTracker.markFeedDisplayed('popular', 3)).called(1);
         },
       );
     });
@@ -1697,6 +1694,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1706,7 +1704,8 @@ void main() {
           );
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           // 1. Loading state from _onStarted
           const VideoFeedState(),
@@ -1714,20 +1713,12 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'cached count', 2)
-              .having(
-                (s) => s.videos[0].id,
-                'first cached id',
-                'cached-0',
-              ),
+              .having((s) => s.videos[0].id, 'first cached id', 'cached-0'),
           // 3. Fresh videos replace cached
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'fresh count', 3)
-              .having(
-                (s) => s.videos[0].id,
-                'first fresh id',
-                'fresh-0',
-              ),
+              .having((s) => s.videos[0].id, 'first fresh id', 'fresh-0'),
         ],
         verify: (_) {
           verify(() => mockCache.read(sharedPreferences)).called(1);
@@ -1746,6 +1737,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
@@ -1756,7 +1748,8 @@ void main() {
           homeFeedCache: mockCache,
           // No sharedPreferences — cache should be skipped
         ),
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
@@ -1782,6 +1775,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1791,7 +1785,8 @@ void main() {
           );
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           const VideoFeedState(),
           isA<VideoFeedState>()
@@ -1814,6 +1809,7 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer(
             (_) async => HomeFeedResult(
@@ -1823,13 +1819,12 @@ void main() {
           );
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verify(
-            () => mockCache.write(
-              sharedPreferences,
-              '{"videos":[{"id":"v1"}]}',
-            ),
+            () =>
+                mockCache.write(sharedPreferences, '{"videos":[{"id":"v1"}]}'),
           ).called(1);
         },
       );
@@ -1847,11 +1842,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
           verifyNever(() => mockCache.write(any(), any()));
         },
@@ -1866,6 +1863,7 @@ void main() {
             () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => videos);
         },
@@ -1898,11 +1896,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenThrow(Exception('network error'));
         },
         build: createBlocWithCache,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           // 1. Loading state
           const VideoFeedState(),
@@ -1934,12 +1934,13 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
             ),
           ).thenAnswer((_) async => HomeFeedResult(videos: freshVideos));
         },
         build: createBlocWithCache,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
           await Future<void>.delayed(Duration.zero);
           // Trigger a refresh — should NOT serve cache again
           bloc.add(const VideoFeedRefreshRequested());
@@ -1947,6 +1948,245 @@ void main() {
         verify: (_) {
           // Cache read should only be called once (on first load)
           verify(() => mockCache.read(sharedPreferences)).called(1);
+        },
+      );
+    });
+
+    group('creator profile prefetching', () {
+      final pubkeyA = 'a' * 64;
+      final pubkeyB = 'b' * 64;
+      final pubkeyC = 'c' * 64;
+
+      VideoEvent videoWithPubkey(String id, String pubkey, {int? createdAt}) {
+        final timestamp =
+            createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        return VideoEvent(
+          id: id,
+          pubkey: pubkey,
+          createdAt: timestamp,
+          content: '',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
+          title: 'Test Video $id',
+          videoUrl: 'https://example.com/$id.mp4',
+          thumbnailUrl: 'https://example.com/$id.jpg',
+        );
+      }
+
+      UserProfile profileForPubkey(String pubkey) => UserProfile(
+        pubkey: pubkey,
+        eventId: 'event-$pubkey',
+        rawData: const {},
+        createdAt: DateTime(2024),
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'fetches creator profiles when videos load',
+        setUp: () {
+          final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final videos = [
+            videoWithPubkey('v1', pubkeyA, createdAt: baseTime),
+            videoWithPubkey('v2', pubkeyB, createdAt: baseTime - 1),
+          ];
+
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => {
+              pubkeyA: profileForPubkey(pubkeyA),
+              pubkeyB: profileForPubkey(pubkeyB),
+            },
+          );
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          profileRepository: mockProfileRepository,
+        ),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).called(1);
+        },
+        expect: () => [
+          const VideoFeedState(),
+          // Videos loaded (no profiles yet)
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos, 'videos', hasLength(2))
+              .having((s) => s.creatorProfiles, 'profiles', isEmpty),
+          // Profiles fetched
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.creatorProfiles, 'profiles', hasLength(2)),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'fetches only new profiles on pagination',
+        setUp: () {
+          final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final initialVideos = [
+            videoWithPubkey('v1', pubkeyA, createdAt: baseTime),
+          ];
+          final moreVideos = [
+            videoWithPubkey('v2', pubkeyB, createdAt: baseTime - 2),
+            videoWithPubkey('v3', pubkeyC, createdAt: baseTime - 3),
+          ];
+
+          var callCount = 0;
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return HomeFeedResult(videos: initialVideos);
+            }
+            return HomeFeedResult(videos: moreVideos);
+          });
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(pubkeys: [pubkeyA]),
+          ).thenAnswer((_) async => {pubkeyA: profileForPubkey(pubkeyA)});
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys', that: isNot(equals([pubkeyA]))),
+            ),
+          ).thenAnswer(
+            (_) async => {
+              pubkeyB: profileForPubkey(pubkeyB),
+              pubkeyC: profileForPubkey(pubkeyC),
+            },
+          );
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          profileRepository: mockProfileRepository,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          bloc.add(const VideoFeedLoadMoreRequested());
+        },
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).called(2);
+        },
+        expect: () => [
+          // Loading
+          const VideoFeedState(),
+          // Initial videos loaded
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos, 'videos', hasLength(1)),
+          // Profiles for initial videos
+          isA<VideoFeedState>().having(
+            (s) => s.creatorProfiles,
+            'profiles after initial',
+            hasLength(1),
+          ),
+          // Pagination loading
+          isA<VideoFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            isTrue,
+          ),
+          // Pagination complete
+          isA<VideoFeedState>()
+              .having((s) => s.videos, 'videos', hasLength(3))
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse),
+          // Profiles for new creators
+          isA<VideoFeedState>().having(
+            (s) => s.creatorProfiles,
+            'profiles after pagination',
+            hasLength(3),
+          ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does not re-fetch existing profiles on pagination',
+        setUp: () {
+          final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final initialVideos = [
+            videoWithPubkey('v1', pubkeyA, createdAt: baseTime),
+          ];
+          // Pagination returns a video from the same creator
+          final moreVideos = [
+            videoWithPubkey('v2', pubkeyA, createdAt: baseTime - 2),
+          ];
+
+          var callCount = 0;
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return HomeFeedResult(videos: initialVideos);
+            }
+            return HomeFeedResult(videos: moreVideos);
+          });
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(pubkeys: [pubkeyA]),
+          ).thenAnswer((_) async => {pubkeyA: profileForPubkey(pubkeyA)});
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          profileRepository: mockProfileRepository,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          bloc.add(const VideoFeedLoadMoreRequested());
+        },
+        verify: (_) {
+          // fetchBatchProfiles should only be called once (initial load).
+          // Pagination has no new pubkeys, so no second call.
+          verify(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).called(1);
         },
       );
     });

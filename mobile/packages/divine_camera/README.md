@@ -1,15 +1,15 @@
 # divine_camera
 
-A new Flutter plugin project.
+Status: Current
+Validated against: `pubspec.yaml` on 2026-03-19.
 
-## Getting Started
+Purpose: Flutter camera plugin used by Divine for recording video on supported platforms.
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/to/develop-plugins),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+Used by: recording and capture flows in the mobile app.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Test locally:
 
+```bash
+cd mobile/packages/divine_camera
+flutter test
+```

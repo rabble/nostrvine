@@ -16,7 +16,6 @@ import 'package:openvine/widgets/video_metadata/video_metadata_content_warning_s
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_tags_input.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_upload_status.dart';
 
 /// Screen for editing video metadata including title, description, tags, and
 /// expiration settings.
@@ -77,44 +76,39 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       // Dismiss keyboard when tapping outside input fields
       child: GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: Stack(
-          children: [
-            Scaffold(
-              backgroundColor: VineTheme.surfaceContainerHigh,
-              appBar: const VideoMetadataAppBar(),
-              body: Column(
-                spacing: 12,
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: .min,
-                        crossAxisAlignment: .stretch,
-                        children: [
-                          // Video preview at top
-                          const Padding(
-                            padding: EdgeInsets.only(top: 8, bottom: 16),
-                            child: VideoMetadataClipPreview(),
-                          ),
-
-                          // Form fields
-                          _FormData(
-                            titleController: _titleController,
-                            descriptionController: _descriptionController,
-                            titleFocusNode: _titleFocusNode,
-                            descriptionFocusNode: _descriptionFocusNode,
-                          ),
-                        ],
+        child: Scaffold(
+          backgroundColor: VineTheme.surfaceContainerHigh,
+          appBar: const VideoMetadataAppBar(),
+          body: Column(
+            spacing: 12,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: .min,
+                    crossAxisAlignment: .stretch,
+                    children: [
+                      // Video preview at top
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8, bottom: 16),
+                        child: VideoMetadataClipPreview(),
                       ),
-                    ),
+
+                      // Form fields
+                      _FormData(
+                        titleController: _titleController,
+                        descriptionController: _descriptionController,
+                        titleFocusNode: _titleFocusNode,
+                        descriptionFocusNode: _descriptionFocusNode,
+                      ),
+                    ],
                   ),
-                  // Post button at bottom
-                  const SafeArea(top: false, child: VideoMetadataBottomBar()),
-                ],
+                ),
               ),
-            ),
-            const VideoMetadataUploadStatus(),
-          ],
+              // Post button at bottom
+              const SafeArea(top: false, child: VideoMetadataBottomBar()),
+            ],
+          ),
         ),
       ),
     );
@@ -268,11 +262,8 @@ class _MetadataLimitWarning extends ConsumerWidget {
               // TODO(l10n): Replace with context.l10n when localization is
               // added.
               '64KB limit reached. Remove some content to continue.',
-              style: VineTheme.bodyFont(
+              style: VineTheme.labelLargeFont(
                 color: VineTheme.contentWarningAmber,
-                fontSize: 14,
-                fontWeight: .w600,
-                height: 1.43,
               ),
             ),
           ),

@@ -82,7 +82,7 @@ void main() {
       required String id,
       required String pubkey,
       int? createdAt,
-      String? url,
+      String? url = 'https://example.com/audio.mp3',
       String? title,
       double? duration,
     }) {

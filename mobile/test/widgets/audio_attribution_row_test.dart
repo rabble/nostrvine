@@ -291,6 +291,62 @@ void main() {
       });
     });
 
+    group('Bundled sound attribution', () {
+      testWidgets('displays artist via source for bundled sounds', (
+        tester,
+      ) async {
+        final video = createVideoWithAudio();
+        const bundledAudio = AudioEvent(
+          id: 'bundled_freesound_crowd',
+          pubkey: 'bundled',
+          createdAt: 0,
+          title: 'Oh No No No Crowd',
+          duration: 5.9,
+          url: 'asset://assets/sounds/oh-no-no-no-crowd.mp3',
+          mimeType: 'audio/mpeg',
+          source: 'ThePauny via Freesound',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(video: video, audioOverride: bundledAudio),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Oh No No No Crowd'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('ThePauny via Freesound'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('does not try to fetch profile for bundled sounds', (
+        tester,
+      ) async {
+        final video = createVideoWithAudio();
+        const bundledAudio = AudioEvent(
+          id: 'bundled_freesound_crowd',
+          pubkey: 'bundled',
+          createdAt: 0,
+          title: 'Oh No No No Crowd',
+          duration: 5.9,
+          url: 'asset://assets/sounds/oh-no-no-no-crowd.mp3',
+          mimeType: 'audio/mpeg',
+          source: 'ThePauny via Freesound',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(video: video, audioOverride: bundledAudio),
+        );
+        await tester.pumpAndSettle();
+
+        // Should show source, not @npub... or default display name
+        expect(find.textContaining('npub'), findsNothing);
+      });
+    });
+
     group('Dark theme compliance', () {
       testWidgets('uses dark background with opacity', (tester) async {
         final video = createVideoWithAudio();

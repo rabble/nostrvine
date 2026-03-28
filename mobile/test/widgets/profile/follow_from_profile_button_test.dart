@@ -2,6 +2,7 @@
 // ABOUTME: Validates follow/unfollow button state, tap behavior, and visibility logic
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,7 +69,7 @@ void main() {
     }
 
     group('button state', () {
-      testWidgets('shows ElevatedButton with "Follow" when not following', (
+      testWidgets('shows DivineButton with "Follow" when not following', (
         tester,
       ) async {
         when(
@@ -79,11 +80,10 @@ void main() {
         await tester.pump();
 
         expect(find.text('Follow'), findsOneWidget);
-        expect(find.byType(ElevatedButton), findsOneWidget);
-        expect(find.byType(OutlinedButton), findsNothing);
+        expect(find.byType(DivineButton), findsOneWidget);
       });
 
-      testWidgets('shows OutlinedButton with "Following" when following', (
+      testWidgets('shows DivineButton with "Following" when following', (
         tester,
       ) async {
         final otherPubkey = validPubkey('other');
@@ -98,8 +98,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Following'), findsOneWidget);
-        expect(find.byType(OutlinedButton), findsOneWidget);
-        expect(find.byType(ElevatedButton), findsNothing);
+        expect(find.byType(DivineButton), findsOneWidget);
       });
     });
 

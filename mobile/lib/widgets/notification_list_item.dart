@@ -1,22 +1,23 @@
 // ABOUTME: Widget for displaying individual notification items in the notifications list
 // ABOUTME: Shows actor avatar, notification message, timestamp, and action buttons
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/theme/app_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 class NotificationListItem extends StatelessWidget {
   const NotificationListItem({
     required this.notification,
     required this.onTap,
+    this.onProfileTap,
     super.key,
   });
   final NotificationModel notification;
   final VoidCallback onTap;
+  final VoidCallback? onProfileTap;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +42,7 @@ class NotificationListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Main message
-                    _buildMessage(),
+                    _buildMessage(context),
                     const SizedBox(height: 4),
 
                     // Additional content (comment text, etc.)
@@ -93,67 +94,74 @@ class NotificationListItem extends StatelessWidget {
     }
 
     // User avatar with overlay icon
-    return Stack(
-      children: [
-        // Avatar
-        ClipOval(
-          child: notification.actorPictureUrl != null
-              ? CachedNetworkImage(
-                  imageUrl: notification.actorPictureUrl!,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  cacheManager: openVineImageCache,
-                  placeholder: (context, url) => Container(
-                    width: 48,
-                    height: 48,
-                    color: VineTheme.cardBackground,
-                  ),
-                  errorWidget: (context, url, error) {
-                    // Log the failed URL for debugging
-                    if (error.toString().contains('Invalid image data') ||
-                        error.toString().contains('Image codec failed')) {
-                      Log.warning(
-                        'Invalid image data for actor avatar URL: $url - Error: $error',
-                        name: 'NotificationListItem',
-                        category: LogCategory.ui,
-                      );
-                    } else {
-                      Log.debug(
-                        'Actor avatar load failed, URL: $url - Error: $error',
-                        name: 'NotificationListItem',
-                        category: LogCategory.ui,
-                      );
-                    }
-                    return _buildDefaultAvatar();
-                  },
-                )
-              : _buildDefaultAvatar(),
-        ),
+    return Semantics(
+      label: notification.actorName != null
+          ? 'View ${notification.actorName} profile'
+          : 'View profile',
+      button: true,
+      child: GestureDetector(
+        onTap: onProfileTap,
+        child: Stack(
+          children: [
+            // Avatar
+            ClipOval(
+              child: notification.actorPictureUrl != null
+                  ? VineCachedImage(
+                      imageUrl: notification.actorPictureUrl!,
+                      width: 48,
+                      height: 48,
+                      placeholder: (context, url) => Container(
+                        width: 48,
+                        height: 48,
+                        color: VineTheme.cardBackground,
+                      ),
+                      errorWidget: (context, url, error) {
+                        // Log the failed URL for debugging
+                        if (error.toString().contains('Invalid image data') ||
+                            error.toString().contains('Image codec failed')) {
+                          Log.warning(
+                            'Invalid image data for actor avatar URL: $url - Error: $error',
+                            name: 'NotificationListItem',
+                            category: LogCategory.ui,
+                          );
+                        } else {
+                          Log.debug(
+                            'Actor avatar load failed, URL: $url - Error: $error',
+                            name: 'NotificationListItem',
+                            category: LogCategory.ui,
+                          );
+                        }
+                        return _buildDefaultAvatar();
+                      },
+                    )
+                  : _buildDefaultAvatar(),
+            ),
 
-        // Type icon overlay
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: _getIconBackgroundColor(),
-              shape: BoxShape.circle,
-              border: Border.all(
-                width: 2,
+            // Type icon overlay
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: _getIconBackgroundColor(),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    notification.typeIcon,
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                ),
               ),
             ),
-            child: Center(
-              child: Text(
-                notification.typeIcon,
-                style: const TextStyle(fontSize: 10),
-              ),
-            ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -169,16 +177,14 @@ class NotificationListItem extends StatelessWidget {
     ),
   );
 
-  Widget _buildMessage() {
-    const textStyle = TextStyle(
-      fontSize: 14,
-      color: VineTheme.whiteText,
-    );
+  Widget _buildMessage(BuildContext context) {
+    final textStyle = VineTheme.bodyMediumFont();
 
     final actorName = notification.actorName;
     if (_messageStartsWithActorName(actorName)) {
       // Build rich text with bold actor name
       return RichText(
+        textScaler: MediaQuery.textScalerOf(context),
         text: TextSpan(
           style: textStyle,
           children: [
@@ -245,12 +251,10 @@ class NotificationListItem extends StatelessWidget {
     padding: const EdgeInsets.only(left: 8),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: CachedNetworkImage(
+      child: VineCachedImage(
         imageUrl: notification.targetVideoThumbnail!,
         width: 64,
         height: 64,
-        fit: BoxFit.cover,
-        cacheManager: openVineImageCache,
         placeholder: (context, url) => Container(
           width: 64,
           height: 64,

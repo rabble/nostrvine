@@ -611,9 +611,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         key: const Key('lists-tab-content'),
         children: [
           // Discover Lists button - ALWAYS VISIBLE
-          Container(
-            margin: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: DivineButton(
+              leadingIcon: .search,
+              label: 'Discover Lists',
               onPressed: () {
                 Log.info(
                   'Tapped Discover Lists button',
@@ -623,22 +625,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 disposeAllVideoControllers(ref);
                 context.push(DiscoverListsScreen.path);
               },
-              icon: const Icon(Icons.search, color: VineTheme.backgroundColor),
-              label: const Text(
-                'Discover Lists',
-                style: TextStyle(
-                  color: VineTheme.backgroundColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
             ),
           ),
 

@@ -2,17 +2,26 @@
 // ABOUTME: Verifies visibility based on editing and reordering states
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_instruction_text.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_instruction_text.dart';
 
 void main() {
   group('ClipGalleryInstructionText', () {
+    late ClipEditorBloc bloc;
+
+    tearDown(() async {
+      await bloc.close();
+    });
+
     testWidgets('should show instruction text in normal state', (tester) async {
+      bloc = _TestClipEditorBloc();
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: const MaterialApp(
             home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
@@ -25,50 +34,40 @@ void main() {
     });
 
     testWidgets('should hide text when editing', (tester) async {
-      final container = ProviderContainer();
+      bloc = _TestClipEditorBloc(
+        initialState: const ClipEditorState(isEditing: true),
+      );
 
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
           child: const MaterialApp(
             home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
       );
 
-      // Initially visible
+      // When editing, AnimatedSwitcher shows SizedBox.shrink
       expect(
         find.text('Tap to edit. Hold and drag to reorder.'),
-        findsOneWidget,
+        findsNothing,
       );
-
-      // Start editing
-      container.read(videoEditorProvider.notifier).startClipReordering();
-      container
-          .read(videoEditorProvider.notifier)
-          .stopClipReordering(); // Reset
-
-      // Simulate editing state by directly modifying
-      // Note: startClipEditing requires clips, so we test the widget behavior
-      // by checking that AnimatedSwitcher returns SizedBox when isEditing
-
-      container.dispose();
     });
 
     testWidgets('should have zero opacity when reordering', (tester) async {
-      final container = ProviderContainer();
+      bloc = _TestClipEditorBloc(
+        initialState: const ClipEditorState(isReordering: true),
+      );
 
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
           child: const MaterialApp(
             home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
       );
 
-      // Start reordering
-      container.read(videoEditorProvider.notifier).startClipReordering();
       await tester.pump();
 
       // Find AnimatedOpacity and check opacity is 0
@@ -76,16 +75,14 @@ void main() {
         find.byType(AnimatedOpacity),
       );
       expect(animatedOpacity.opacity, 0);
-
-      container.dispose();
     });
 
     testWidgets('should have full opacity when not reordering', (tester) async {
-      final container = ProviderContainer();
+      bloc = _TestClipEditorBloc();
 
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
           child: const MaterialApp(
             home: Scaffold(body: ClipGalleryInstructionText()),
           ),
@@ -97,8 +94,14 @@ void main() {
         find.byType(AnimatedOpacity),
       );
       expect(animatedOpacity.opacity, 1);
-
-      container.dispose();
     });
   });
+}
+
+class _TestClipEditorBloc extends ClipEditorBloc {
+  _TestClipEditorBloc({
+    ClipEditorState initialState = const ClipEditorState(),
+  }) {
+    emit(initialState);
+  }
 }

@@ -23,10 +23,8 @@ class CenterPlaybackControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconAsset = switch (state) {
-      CenterPlaybackControlState.play =>
-        'assets/icon/content-controls/play.svg',
-      CenterPlaybackControlState.pause =>
-        'assets/icon/content-controls/pause.svg',
+      CenterPlaybackControlState.play => DivineIconName.playFill.assetPath,
+      CenterPlaybackControlState.pause => DivineIconName.pauseFill.assetPath,
     };
 
     Widget icon = SvgPicture.asset(

@@ -1,46 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
 
-class _FakeCreatorAnalyticsApi implements CreatorAnalyticsApi {
-  _FakeCreatorAnalyticsApi({
-    required this.videos,
-    required this.bulkStats,
-    required this.viewsById,
-  });
-
-  final List<VideoEvent> videos;
-  final Map<String, BulkVideoStatsEntry> bulkStats;
-  final Map<String, int?> viewsById;
-
-  @override
-  bool get isAvailable => true;
-
-  @override
-  Future<Map<String, BulkVideoStatsEntry>> getBulkVideoStats(
-    List<String> eventIds,
-  ) async {
-    return {
-      for (final id in eventIds)
-        if (bulkStats.containsKey(id)) id: bulkStats[id]!,
-    };
-  }
-
-  @override
-  Future<SocialCounts?> getSocialCounts(String pubkey) async => null;
-
-  @override
-  Future<int?> getVideoViews(String eventId) async => viewsById[eventId];
-
-  @override
-  Future<List<VideoEvent>> getVideosByAuthor({
-    required String pubkey,
-    int limit = 50,
-    int? before,
-  }) async {
-    return videos;
-  }
-}
+class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 VideoEvent _video({
   required String id,
@@ -62,7 +26,36 @@ VideoEvent _video({
   );
 }
 
+VideoStats _videoStats({
+  required String id,
+  required String pubkey,
+  int? loops,
+  int? views,
+}) {
+  return VideoStats(
+    id: id,
+    pubkey: pubkey,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(1739350000 * 1000),
+    kind: 34236,
+    dTag: id,
+    title: id,
+    thumbnail: 'thumb',
+    videoUrl: 'videoUrl',
+    reactions: 2,
+    comments: 1,
+    reposts: 0,
+    engagementScore: 0,
+    loops: loops,
+    views: views,
+  );
+}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue('');
+    registerFallbackValue(<String>[]);
+  });
+
   group('extractViewLikeCount', () {
     test('prefers explicit views tag', () {
       final event = _video(id: 'v1', rawTags: const {'views': '55'}, loops: 9);
@@ -82,20 +75,43 @@ void main() {
 
   group('FunnelcakeCreatorAnalyticsRepository', () {
     test('hydrates views from bulk stats when available', () async {
-      final api = _FakeCreatorAnalyticsApi(
-        videos: [_video(id: 'a')],
-        bulkStats: {
-          'a': const BulkVideoStatsEntry(
-            eventId: 'a',
-            reactions: 4,
-            comments: 2,
-            reposts: 1,
-            loops: 12,
-            views: 15,
-          ),
-        },
-        viewsById: const {},
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(() => api.getVideoViews(any())).thenAnswer((_) async => 0);
+      when(() => api.getBulkVideoStats(any())).thenAnswer((invocation) async {
+        final ids = invocation.positionalArguments[0] as List<String>;
+        if (ids.length == 1 && ids.first == 'a') {
+          return const BulkVideoStatsResponse(
+            stats: {
+              'a': BulkVideoStatsEntry(
+                eventId: 'a',
+                reactions: 4,
+                comments: 2,
+                reposts: 1,
+                loops: 12,
+                views: 15,
+              ),
+            },
+          );
+        }
+        return const BulkVideoStatsResponse(stats: {});
+      });
+
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _videoStats(id: 'a', pubkey: pubkey),
+        ],
       );
+
       final repo = FunnelcakeCreatorAnalyticsRepository(api);
       final snapshot = await repo.fetchCreatorAnalytics('pubkey');
 
@@ -103,17 +119,39 @@ void main() {
       expect(snapshot.diagnostics.videosHydratedByBulkStats, 1);
       expect(snapshot.diagnostics.videosHydratedByViewsEndpoint, 0);
       expect(snapshot.diagnostics.videosWithAnyViews, 1);
+      expect(snapshot.diagnostics.videosMissingViews, 0);
       expect(snapshot.videos.first.rawTags['views'], '15');
     });
 
     test(
       'hydrates views from /views endpoint when bulk stats missing',
       () async {
-        final api = _FakeCreatorAnalyticsApi(
-          videos: [_video(id: 'b')],
-          bulkStats: const {},
-          viewsById: const {'b': 21},
+        const pubkey = 'pubkey';
+        final api = MockFunnelcakeApiClient();
+
+        when(() => api.isAvailable).thenReturn(true);
+        when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+
+        when(() => api.getBulkVideoStats(any())).thenAnswer(
+          (_) async => const BulkVideoStatsResponse(stats: {}),
         );
+        when(() => api.getVideoViews(any())).thenAnswer((invocation) async {
+          final eventId = invocation.positionalArguments[0] as String;
+          return eventId == 'b' ? 21 : 0;
+        });
+
+        when(
+          () => api.getVideosByAuthor(
+            pubkey: pubkey,
+            limit: 100,
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _videoStats(id: 'b', pubkey: pubkey),
+          ],
+        );
+
         final repo = FunnelcakeCreatorAnalyticsRepository(api);
         final snapshot = await repo.fetchCreatorAnalytics('pubkey');
 
@@ -121,25 +159,49 @@ void main() {
         expect(snapshot.diagnostics.videosHydratedByBulkStats, 0);
         expect(snapshot.diagnostics.videosHydratedByViewsEndpoint, 1);
         expect(snapshot.diagnostics.videosWithAnyViews, 1);
+        expect(snapshot.diagnostics.videosMissingViews, 0);
         expect(snapshot.videos.first.rawTags['views'], '21');
       },
     );
 
     test(
-      'keeps missing-view diagnostics when no view source is available',
+      'hydrates views from /views endpoint when endpoint returns 0',
       () async {
-        final api = _FakeCreatorAnalyticsApi(
-          videos: [_video(id: 'c')],
-          bulkStats: const {},
-          viewsById: const {'c': null},
+        const pubkey = 'pubkey';
+        final api = MockFunnelcakeApiClient();
+
+        when(() => api.isAvailable).thenReturn(true);
+        when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+
+        when(() => api.getBulkVideoStats(any())).thenAnswer(
+          (_) async => const BulkVideoStatsResponse(stats: {}),
         );
+        when(() => api.getVideoViews(any())).thenAnswer((invocation) async {
+          final eventId = invocation.positionalArguments[0] as String;
+          return eventId == 'c' ? 0 : 0;
+        });
+
+        when(
+          () => api.getVideosByAuthor(
+            pubkey: pubkey,
+            limit: 100,
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _videoStats(id: 'c', pubkey: pubkey),
+          ],
+        );
+
         final repo = FunnelcakeCreatorAnalyticsRepository(api);
         final snapshot = await repo.fetchCreatorAnalytics('pubkey');
 
         expect(snapshot.diagnostics.totalVideos, 1);
-        expect(snapshot.diagnostics.videosWithAnyViews, 0);
-        expect(snapshot.diagnostics.videosMissingViews, 1);
-        expect(snapshot.diagnostics.hasAnyViewData, isFalse);
+        expect(snapshot.diagnostics.videosHydratedByBulkStats, 0);
+        expect(snapshot.diagnostics.videosHydratedByViewsEndpoint, 1);
+        expect(snapshot.diagnostics.videosWithAnyViews, 1);
+        expect(snapshot.diagnostics.videosMissingViews, 0);
+        expect(snapshot.videos.first.rawTags['views'], '0');
       },
     );
   });

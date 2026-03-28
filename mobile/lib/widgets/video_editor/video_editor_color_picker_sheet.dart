@@ -339,7 +339,7 @@ class _FullColorPickerSheetState extends State<_FullColorPickerSheet> {
                 Flexible(
                   child: Text(
                     'Pick color',
-                    style: VineTheme.titleMediumFont(fontSize: 16),
+                    style: VineTheme.titleMediumFont(),
                   ),
                 ),
                 DivineIconButton(

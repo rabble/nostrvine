@@ -1,6 +1,9 @@
 # Nostr Video Events Schema
 
-This document describes the Nostr event schemas for video-related events as implemented in OpenVine.
+Status: Current
+Validated against: current mobile protocol docs on 2026-03-19.
+
+This document describes the Nostr event schemas for video-related events as implemented in Divine.
 
 ## Event Kinds
 
@@ -14,7 +17,7 @@ This document describes the Nostr event schemas for video-related events as impl
 
 ## Kind 34236 - Addressable Short Video
 
-This is the primary video content kind used by OpenVine for short looping videos per NIP-71.
+This is the primary video content kind used by Divine for short looping videos per NIP-71.
 
 ## Event Structure
 
@@ -69,7 +72,7 @@ Tags: Array of [tagName, tagValue, ...additionalParams]
 | `published_at` | `["published_at", "1234567890"]` | Publication timestamp | Optional |
 | `h` | `["h", "group-id"]` | Group/community identifier | Optional |
 
-## OpenVine-Specific Tags
+## Divine-Specific Tags
 
 ### Original Vine Metrics (for imported vintage vines)
 
@@ -123,7 +126,7 @@ The `imeta` tag provides inline metadata as key-value pairs:
 
 ## Tag Processing Order
 
-OpenVine processes tags with the following priorities:
+Divine processes tags with the following priorities:
 
 1. **Video URL**: Searches in order: `imeta` → `url` → `streaming` → `r` → content fallback
 2. **Thumbnail**: Searches in order: `imeta.thumb` → `imeta.image` → `thumb` → `image` → generated fallback

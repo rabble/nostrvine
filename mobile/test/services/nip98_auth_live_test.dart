@@ -14,7 +14,7 @@ import 'package:nostr_sdk/event.dart';
 /// Runs curl to make an HTTP request (bypasses Flutter's HTTP interception).
 Future<(int, String)> curlGet(String url, String authHeader) async {
   final result = await Process.run('curl', [
-    '-s',
+    '-sk',
     '-w',
     r'\n%{http_code}',
     '-H',
@@ -23,6 +23,12 @@ Future<(int, String)> curlGet(String url, String authHeader) async {
     'Accept: application/json',
     url,
   ]);
+  if (result.exitCode != 0) {
+    fail(
+      'curl failed with exit code ${result.exitCode}: '
+      '${result.stderr}',
+    );
+  }
   final output = (result.stdout as String).trim();
   final lines = output.split('\n');
   final statusCode = int.parse(lines.last);

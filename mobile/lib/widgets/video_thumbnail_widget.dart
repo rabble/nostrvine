@@ -1,15 +1,14 @@
 // ABOUTME: Smart video thumbnail widget that displays thumbnails or blurhash placeholders
 // ABOUTME: Uses existing thumbnail URLs from video events and falls back to blurhash when missing
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/thumbnail_api_service.dart'
     show ThumbnailSize;
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Smart thumbnail widget that displays thumbnails with blurhash fallback
 class VideoThumbnailWidget extends StatefulWidget {
@@ -303,10 +302,21 @@ class _SafeNetworkImage extends StatelessWidget {
   // Set to true to debug if the issue is with flutter_cache_manager
   static const bool _useSimpleImageNetwork = false;
 
+  static bool _shouldBypassCacheManager(String url) {
+    final host = Uri.tryParse(url)?.host.toLowerCase();
+    if (host == null || host.isEmpty) return false;
+
+    // Explore/grid thumbnails are predominantly served from Divine-owned,
+    // immutable blob URLs. These load reliably with Image.network, while the
+    // CachedNetworkImage + custom cache manager path has been less reliable
+    // under concurrent grid loads on desktop.
+    return host == 'divine.video' || host.endsWith('.divine.video');
+  }
+
   @override
   Widget build(BuildContext context) {
     // Debug mode: test with plain Image.network to isolate cache issues
-    if (_useSimpleImageNetwork) {
+    if (_useSimpleImageNetwork || _shouldBypassCacheManager(url)) {
       return Image.network(
         url,
         width: width,
@@ -332,13 +342,12 @@ class _SafeNetworkImage extends StatelessWidget {
       );
     }
 
-    return CachedNetworkImage(
+    return VineCachedImage(
       imageUrl: url,
       width: width,
       height: height,
       fit: fit,
       alignment: Alignment.topCenter,
-      cacheManager: openVineImageCache,
       // Show transparent container so background surfaceContainer color shows through
       placeholder: (context, url) =>
           Container(width: width, height: height, color: VineTheme.transparent),

@@ -1,0 +1,649 @@
+// ABOUTME: Content preferences screen for language, audio sharing, and content filters
+// ABOUTME: Moved from old settings screen with helper methods converted to widget classes
+
+import 'dart:ui';
+
+import 'package:camera_macos_plus/camera_macos.dart';
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/models/content_label.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
+import 'package:openvine/services/language_preference_service.dart';
+
+class ContentPreferencesScreen extends ConsumerWidget {
+  static const routeName = 'content-preferences';
+  static const path = '/content-preferences';
+
+  const ContentPreferencesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: 'Content Preferences',
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      backgroundColor: VineTheme.backgroundColor,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            children: [
+              const _LanguageSetting(),
+              ListTile(
+                leading: const Icon(
+                  Icons.filter_list,
+                  color: VineTheme.vineGreen,
+                ),
+                title: const Text(
+                  'Content Filters',
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Manage content warning filters',
+                  style: TextStyle(color: VineTheme.lightText, fontSize: 14),
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: VineTheme.lightText,
+                ),
+                onTap: () => context.push(ContentFiltersScreen.path),
+              ),
+              const _AccountContentLabelsTile(),
+              const _AudioSharingToggle(),
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS)
+                const _AudioDeviceSelector(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageSetting extends ConsumerStatefulWidget {
+  const _LanguageSetting();
+
+  @override
+  ConsumerState<_LanguageSetting> createState() => _LanguageSettingState();
+}
+
+class _LanguageSettingState extends ConsumerState<_LanguageSetting> {
+  @override
+  Widget build(BuildContext context) {
+    final languageService = ref.watch(languagePreferenceServiceProvider);
+    final currentCode = languageService.contentLanguage;
+    final isCustom = languageService.isCustomLanguageSet;
+    final displayName = LanguagePreferenceService.displayNameFor(currentCode);
+    final subtitle = isCustom ? displayName : '$displayName (device default)';
+
+    return ListTile(
+      leading: const Icon(Icons.language, color: VineTheme.vineGreen),
+      title: const Text(
+        'Content Language',
+        style: TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+      onTap: () => _showLanguagePicker(languageService),
+    );
+  }
+
+  Future<void> _showLanguagePicker(
+    LanguagePreferenceService languageService,
+  ) async {
+    final currentCode = languageService.contentLanguage;
+    final isCustom = languageService.isCustomLanguageSet;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: VineTheme.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.85,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (context, scrollController) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Content Language',
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Tag your videos with a language so viewers can '
+                  'filter content.',
+                  style: TextStyle(color: VineTheme.lightText, fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Divider(color: VineTheme.lightText, height: 1),
+              ListTile(
+                leading: Icon(
+                  !isCustom
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  color: VineTheme.vineGreen,
+                ),
+                title: const Text(
+                  'Use device language (default)',
+                  style: TextStyle(color: VineTheme.whiteText),
+                ),
+                subtitle: Text(
+                  LanguagePreferenceService.displayNameFor(
+                    PlatformDispatcher.instance.locale.languageCode,
+                  ),
+                  style: const TextStyle(
+                    color: VineTheme.lightText,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () async {
+                  await languageService.clearContentLanguage();
+                  if (context.mounted) {
+                    setState(() {});
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              const Divider(color: VineTheme.lightText, height: 1),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount:
+                      LanguagePreferenceService.supportedLanguages.length,
+                  itemBuilder: (context, index) {
+                    final entry = LanguagePreferenceService
+                        .supportedLanguages
+                        .entries
+                        .elementAt(index);
+                    final code = entry.key;
+                    final name = entry.value;
+                    final isSelected = isCustom && currentCode == code;
+
+                    return ListTile(
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_off,
+                        color: VineTheme.vineGreen,
+                      ),
+                      title: Text(
+                        name,
+                        style: const TextStyle(color: VineTheme.whiteText),
+                      ),
+                      subtitle: Text(
+                        code.toUpperCase(),
+                        style: const TextStyle(
+                          color: VineTheme.lightText,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () async {
+                        await languageService.setContentLanguage(code);
+                        if (context.mounted) {
+                          setState(() {});
+                          Navigator.pop(context);
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AudioSharingToggle extends ConsumerStatefulWidget {
+  const _AudioSharingToggle();
+
+  @override
+  ConsumerState<_AudioSharingToggle> createState() =>
+      _AudioSharingToggleState();
+}
+
+class _AudioSharingToggleState extends ConsumerState<_AudioSharingToggle> {
+  @override
+  Widget build(BuildContext context) {
+    final audioSharingService = ref.watch(
+      audioSharingPreferenceServiceProvider,
+    );
+    final isEnabled = audioSharingService.isAudioSharingEnabled;
+
+    return SwitchListTile(
+      value: isEnabled,
+      onChanged: (value) async {
+        await audioSharingService.setAudioSharingEnabled(value);
+        setState(() {});
+      },
+      title: const Text(
+        'Make my audio available for reuse',
+        style: TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: const Text(
+        'When enabled, others can use audio from your videos',
+        style: TextStyle(color: VineTheme.lightText, fontSize: 14),
+      ),
+      activeThumbColor: VineTheme.vineGreen,
+      secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+    );
+  }
+}
+
+class _AccountContentLabelsTile extends ConsumerStatefulWidget {
+  const _AccountContentLabelsTile();
+
+  @override
+  ConsumerState<_AccountContentLabelsTile> createState() =>
+      _AccountContentLabelsTileState();
+}
+
+class _AccountContentLabelsTileState
+    extends ConsumerState<_AccountContentLabelsTile> {
+  Set<ContentLabel> _accountLabels = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLabels();
+  }
+
+  Future<void> _loadLabels() async {
+    final service = ref.read(accountLabelServiceProvider);
+    if (mounted) {
+      setState(() {
+        _accountLabels = service.accountLabels;
+      });
+    }
+  }
+
+  Future<void> _selectLabels() async {
+    final result = await showModalBottomSheet<Set<ContentLabel>>(
+      context: context,
+      backgroundColor: VineTheme.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      isScrollControlled: true,
+      builder: (_) => _AccountLabelMultiSelect(selected: _accountLabels),
+    );
+
+    if (result != null && mounted) {
+      final service = ref.read(accountLabelServiceProvider);
+      await service.setAccountLabels(result);
+      setState(() {
+        _accountLabels = result;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(
+        Icons.warning_amber_rounded,
+        color: VineTheme.vineGreen,
+      ),
+      title: const Text(
+        'Account Labels',
+        style: TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        _accountLabels.isNotEmpty
+            ? _accountLabels.map((l) => l.displayName).join(', ')
+            : 'Self-label your content',
+        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+      onTap: _selectLabels,
+    );
+  }
+}
+
+class _AccountLabelMultiSelect extends StatefulWidget {
+  const _AccountLabelMultiSelect({required this.selected});
+
+  final Set<ContentLabel> selected;
+
+  @override
+  State<_AccountLabelMultiSelect> createState() =>
+      _AccountLabelMultiSelectState();
+}
+
+class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
+  late Set<ContentLabel> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = Set.of(widget.selected);
+  }
+
+  void _toggle(ContentLabel label) {
+    setState(() {
+      if (_selected.contains(label)) {
+        _selected.remove(label);
+      } else {
+        _selected.add(label);
+      }
+    });
+  }
+
+  void _clearAll() {
+    setState(() {
+      _selected.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: VineTheme.onSurfaceMuted,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Account Content Labels',
+                    style: VineTheme.titleLargeFont(),
+                  ),
+                  if (_selected.isNotEmpty)
+                    TextButton(
+                      onPressed: _clearAll,
+                      child: const Text(
+                        'Clear All',
+                        style: TextStyle(color: VineTheme.vineGreen),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Select all that apply to your account',
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: ContentLabel.values.length,
+                itemBuilder: (context, index) {
+                  final label = ContentLabel.values[index];
+                  final isChecked = _selected.contains(label);
+                  return CheckboxListTile(
+                    value: isChecked,
+                    onChanged: (_) => _toggle(label),
+                    title: Text(
+                      label.displayName,
+                      style: const TextStyle(
+                        color: VineTheme.whiteText,
+                        fontSize: 15,
+                      ),
+                    ),
+                    activeColor: VineTheme.vineGreen,
+                    checkColor: VineTheme.whiteText,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                  );
+                },
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(_selected),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: VineTheme.vineGreen,
+                      foregroundColor: VineTheme.whiteText,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      _selected.isEmpty
+                          ? 'Done (No Labels)'
+                          : 'Done (${_selected.length} selected)',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AudioDeviceSelector extends ConsumerStatefulWidget {
+  const _AudioDeviceSelector();
+
+  @override
+  ConsumerState<_AudioDeviceSelector> createState() =>
+      _AudioDeviceSelectorState();
+}
+
+class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
+  @override
+  Widget build(BuildContext context) {
+    final audioDevicePref = ref.watch(audioDevicePreferenceServiceProvider);
+
+    return FutureBuilder<List<CameraMacOSDevice>>(
+      future: CameraMacOS.instance.listDevices(
+        deviceType: CameraMacOSDeviceType.audio,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.length <= 1) {
+          return const SizedBox.shrink();
+        }
+
+        final devices = snapshot.data!;
+        final currentDevice = audioDevicePref.preferredDeviceId;
+
+        String currentDisplayName;
+        if (currentDevice == null) {
+          currentDisplayName = 'Auto (recommended)';
+        } else {
+          final device = devices.where((d) => d.deviceId == currentDevice);
+          currentDisplayName = device.isNotEmpty
+              ? _formatAudioDeviceName(device.first.deviceId)
+              : 'Auto (recommended)';
+        }
+
+        return ListTile(
+          leading: const Icon(Icons.mic, color: VineTheme.vineGreen),
+          title: const Text(
+            'Audio Input Device',
+            style: TextStyle(
+              color: VineTheme.whiteText,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: Text(
+            currentDisplayName,
+            style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+          onTap: () => _showAudioDevicePicker(devices, currentDevice),
+        );
+      },
+    );
+  }
+
+  String _formatAudioDeviceName(String deviceId) {
+    if (deviceId.toLowerCase().contains('builtinmicrophone')) {
+      return 'Built-in Microphone';
+    }
+    if (deviceId.toLowerCase().contains('zoom')) {
+      return 'Zoom Audio Device';
+    }
+    return deviceId
+        .replaceAll('Device', '')
+        .replaceAll('device', '')
+        .replaceAll(RegExp('[0-9a-f]{8}-[0-9a-f]{4}-.*'), '')
+        .trim();
+  }
+
+  Future<void> _showAudioDevicePicker(
+    List<CameraMacOSDevice> devices,
+    String? currentDevice,
+  ) async {
+    final audioDevicePref = ref.read(audioDevicePreferenceServiceProvider);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: VineTheme.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Select Audio Input',
+                style: TextStyle(
+                  color: VineTheme.whiteText,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const Divider(color: VineTheme.lightText, height: 1),
+            ListTile(
+              leading: Icon(
+                currentDevice == null
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_off,
+                color: VineTheme.vineGreen,
+              ),
+              title: const Text(
+                'Auto (recommended)',
+                style: TextStyle(color: VineTheme.whiteText),
+              ),
+              subtitle: const Text(
+                'Automatically selects the best microphone',
+                style: TextStyle(color: VineTheme.lightText, fontSize: 12),
+              ),
+              onTap: () async {
+                await audioDevicePref.setPreferredDeviceId(null);
+                if (context.mounted) {
+                  setState(() {});
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            const Divider(color: VineTheme.lightText, height: 1),
+            ...devices.map(
+              (device) => ListTile(
+                leading: Icon(
+                  currentDevice == device.deviceId
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  color: VineTheme.vineGreen,
+                ),
+                title: Text(
+                  _formatAudioDeviceName(device.deviceId),
+                  style: const TextStyle(color: VineTheme.whiteText),
+                ),
+                subtitle: Text(
+                  device.deviceId,
+                  style: const TextStyle(
+                    color: VineTheme.lightText,
+                    fontSize: 11,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () async {
+                  await audioDevicePref.setPreferredDeviceId(device.deviceId);
+                  if (context.mounted) {
+                    setState(() {});
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}

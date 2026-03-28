@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -77,9 +78,14 @@ class BlossomUploadService {
 
   final AuthService authService;
   final Dio dio;
+  final String _defaultServerUrl;
 
-  BlossomUploadService({required this.authService, Dio? dio})
-    : dio = dio ?? Dio();
+  BlossomUploadService({
+    required this.authService,
+    Dio? dio,
+    String? defaultServerUrl,
+  }) : dio = dio ?? Dio(),
+       _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer;
 
   /// Determine which Blossom server to use for upload
   ///
@@ -104,8 +110,8 @@ class BlossomUploadService {
     }
 
     // 2. Always add default Divine server as fallback
-    if (!servers.contains(defaultBlossomServer)) {
-      servers.add(defaultBlossomServer);
+    if (!servers.contains(_defaultServerUrl)) {
+      servers.add(_defaultServerUrl);
     }
 
     return servers;
@@ -137,7 +143,7 @@ class BlossomUploadService {
   Future<bool> isBlossomEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_useBlossomKey) ??
-        false; // Default to false (use Divine's server)
+        true; // Default to true for new installs (allow custom/non-Divine media servers)
   }
 
   /// Enable or disable Blossom upload
@@ -385,7 +391,7 @@ class BlossomUploadService {
 
       // Handle 409 Conflict - file already exists
       if (response.statusCode == 409) {
-        final existingUrl = '$defaultBlossomServer/$fileHash';
+        final existingUrl = '$_defaultServerUrl/$fileHash';
         onProgress?.call(1.0);
 
         return BlossomUploadResult(
@@ -548,7 +554,7 @@ class BlossomUploadService {
             // Construct the canonical Blossom URL from server + hash
             // Per Blossom spec (BUD-01), blobs are always at {server}/{sha256}
             // This is deterministic and doesn't depend on server response
-            final canonicalUrl = '$defaultBlossomServer/$fileHash';
+            final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
               '✅ Video uploaded to: $serverUrl',
@@ -659,9 +665,16 @@ class BlossomUploadService {
       // Report initial progress
       onProgress?.call(0.1);
 
+      // Strip EXIF metadata (GPS, device info) before uploading.
+      // The stripper may rename the file (e.g. .avif → .jpg) so use the
+      // returned reference for all subsequent operations.
+      final strippedFile = await ImageMetadataStripper.stripMetadataInPlace(
+        imageFile,
+      );
+
       // Calculate file hash for Blossom
       // Note: For images, we need to load into memory for the hash (small files)
-      final fileBytes = await imageFile.readAsBytes();
+      final fileBytes = await strippedFile.readAsBytes();
       final fileHash = HashUtil.sha256Hash(fileBytes);
       final fileSize = fileBytes.length;
 
@@ -695,7 +708,7 @@ class BlossomUploadService {
 
           final result = await _uploadToServer(
             serverUrl: serverUrl,
-            file: imageFile,
+            file: strippedFile,
             fileHash: fileHash,
             fileSize: fileSize,
             contentType: mimeType,
@@ -704,7 +717,7 @@ class BlossomUploadService {
 
           if (result.success) {
             // Construct canonical Blossom URL from server + hash
-            final canonicalUrl = '$defaultBlossomServer/$fileHash';
+            final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
               '✅ Image uploaded to: $serverUrl',
@@ -898,27 +911,24 @@ class BlossomUploadService {
 
       // Extract and encode signature if present
       if (manifestMap['pgpSignature'] != null) {
-        final signature = manifestMap['pgpSignature'] as Map<String, dynamic>;
-        final signatureJson = jsonEncode(signature);
-        headers['X-ProofMode-Signature'] = base64.encode(
-          utf8.encode(signatureJson),
+        headers['X-ProofMode-Signature'] = _encodeHeaderValue(
+          manifestMap['pgpSignature'],
         );
       }
 
       // Extract and encode attestation if present
       if (manifestMap['deviceAttestation'] != null) {
-        final attestation =
-            manifestMap['deviceAttestation'] as Map<String, dynamic>;
-        final attestationJson = jsonEncode(attestation);
-        headers['X-ProofMode-Attestation'] = base64.encode(
-          utf8.encode(attestationJson),
+        headers['X-ProofMode-Attestation'] = _encodeHeaderValue(
+          manifestMap['deviceAttestation'],
         );
       }
 
-      if (manifestMap['c2pa_manifest_id'] != null) {
-        final signature = manifestMap['c2pa_manifest_id'] as String;
-        final signatureJson = jsonEncode(signature);
-        headers['X-ProofMode-C2PA'] = base64.encode(utf8.encode(signatureJson));
+      final c2paManifestId =
+          manifestMap['c2paManifestId'] ?? manifestMap['c2pa_manifest_id'];
+      if (c2paManifestId != null) {
+        headers['X-ProofMode-C2PA'] = _encodeHeaderValue(
+          c2paManifestId,
+        );
       }
 
       Log.info(
@@ -934,6 +944,14 @@ class BlossomUploadService {
       );
       // Don't fail the upload if ProofMode headers can't be added
     }
+  }
+
+  /// Base64-encodes a manifest field value for use as an HTTP header.
+  ///
+  /// Handles both [String] and [Map] values. Maps are JSON-encoded first.
+  String _encodeHeaderValue(dynamic value) {
+    final stringValue = value is String ? value : jsonEncode(value);
+    return base64.encode(utf8.encode(stringValue));
   }
 
   /// Upload an audio file to the configured Blossom server
@@ -1007,7 +1025,7 @@ class BlossomUploadService {
 
           if (result.success) {
             // Construct canonical Blossom URL from server + hash
-            final canonicalUrl = '$defaultBlossomServer/$fileHash';
+            final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
               '✅ Audio uploaded to: $serverUrl',

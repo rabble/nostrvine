@@ -28,6 +28,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     required this.videos,
+    this.profile,
+    this.profileStats,
     this.displayName,
     this.onSetupProfile,
     this.onEditProfile,
@@ -54,6 +56,12 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// List of videos to display in the videos tab.
   final List<VideoEvent> videos;
+
+  /// Optional profile owned by the parent widget.
+  final UserProfile? profile;
+
+  /// Optional cached profile stats owned by the parent widget.
+  final ProfileStats? profileStats;
 
   /// Callback when "Set Up" button is tapped (own profile only).
   final VoidCallback? onSetupProfile;
@@ -287,6 +295,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               userIdHex: widget.userIdHex,
               isOwnProfile: widget.isOwnProfile,
               videoCount: widget.videos.length,
+              profile: widget.profile,
+              profileStats: widget.profileStats,
               onSetupProfile: widget.onSetupProfile,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,
@@ -321,7 +331,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'videos_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/play.svg',
+                        DivineIconName.play.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
@@ -337,7 +347,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'liked_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/heart.svg',
+                        DivineIconName.heart.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
@@ -353,7 +363,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'reposted_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/repost.svg',
+                        DivineIconName.repeat.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
@@ -369,7 +379,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'collabs_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/user.svg',
+                        DivineIconName.user.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
@@ -385,7 +395,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                     icon: Semantics(
                       label: 'comments_tab',
                       child: SvgPicture.asset(
-                        'assets/icon/chat_circle.svg',
+                        DivineIconName.chatCircle.assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(

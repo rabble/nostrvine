@@ -402,9 +402,9 @@ void main() {
         expect(result, isA<PublishError>());
         expect(
           (result as PublishError).userMessage,
-          contains('Blossom media server'),
+          contains('media server'),
         );
-        expect(result.userMessage, contains('not working'));
+        expect(result.userMessage, contains('not available'));
       });
 
       test('returns user-friendly message for network error', () async {
@@ -433,7 +433,353 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, contains('Network error'));
+        expect(
+          (result as PublishError).userMessage,
+          contains('Something went wrong'),
+        );
+      });
+
+      test('returns user-friendly message for timeout error', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('Connection timed out'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('timed out'),
+        );
+      });
+
+      test('returns user-friendly message for TLS/certificate error', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('HandshakeException: certificate verify failed'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('Secure connection failed'),
+        );
+      });
+
+      test('returns user-friendly message for 413 payload too large', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('413 payload too large'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('too large'),
+        );
+      });
+
+      test(
+        'returns user-friendly message for 500 internal server error',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenThrow(Exception('500 internal server error'));
+          when(
+            () => mockBlossomService.getBlossomServer(),
+          ).thenAnswer((_) async => 'https://media.divine.video');
+
+          final draft = _createTestDraft();
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishError>());
+          final msg = (result as PublishError).userMessage;
+          expect(msg, contains('internal error'));
+          expect(msg, contains('media.divine.video'));
+        },
+      );
+
+      test(
+        'returns user-friendly message for 502/503 service unavailable',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenThrow(Exception('502 bad gateway'));
+          when(
+            () => mockBlossomService.getBlossomServer(),
+          ).thenAnswer((_) async => 'https://media.divine.video');
+
+          final draft = _createTestDraft();
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishError>());
+          final msg = (result as PublishError).userMessage;
+          expect(msg, contains('temporarily down'));
+          expect(msg, contains('media.divine.video'));
+        },
+      );
+
+      test('returns user-friendly message for 401 unauthorized', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('401 unauthorized'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('sign in'),
+        );
+      });
+
+      test('returns user-friendly message for 403 forbidden', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('403 forbidden'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('permission'),
+        );
+      });
+
+      test('returns user-friendly message for file not found', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('No such file or directory'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('could not be found'),
+        );
+      });
+
+      test('returns user-friendly message for storage full', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('no space left, disk full'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('storage'),
+        );
+      });
+
+      test('returns user-friendly message for Nostr relay failure', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('Failed to publish nostr event'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        final msg = (result as PublishError).userMessage;
+        expect(msg, contains('relay'));
+      });
+
+      test('returns user-friendly message for SocketException '
+          '(no internet)', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('SocketException: Network is unreachable'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('No internet connection'),
+        );
+      });
+
+      test('returns user-friendly message for connection refused', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(Exception('Connection refused'));
+        when(
+          () => mockBlossomService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://media.divine.video');
+
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).userMessage,
+          contains('Could not reach the server'),
+        );
       });
     });
   });

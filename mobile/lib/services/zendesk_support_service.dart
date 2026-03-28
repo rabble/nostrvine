@@ -1,19 +1,31 @@
 // ABOUTME: Flutter wrapper for Zendesk Support (native SDK + REST API fallback)
 // ABOUTME: Provides ticket creation via native iOS/Android SDKs or REST API for desktop
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:openvine/config/zendesk_config.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+
+typedef JwtIdentityRefresh =
+    Future<bool> Function({
+      required Nip98AuthService nip98Service,
+      required String relayManagerUrl,
+    });
 
 /// Service for interacting with Zendesk Support SDK
 class ZendeskSupportService {
   static const MethodChannel _channel = MethodChannel(
     'com.openvine/zendesk_support',
   );
+  static const Duration _jwtRefreshReuseWindow = Duration(minutes: 4);
+
+  static final CrashReportingService _crashlytics =
+      CrashReportingService.instance;
 
   static bool _initialized = false;
 
@@ -24,6 +36,13 @@ class ZendeskSupportService {
   static String? _userName;
   static String? _userEmail;
   static String? _userNpub;
+
+  /// Stored references for JWT refresh (set at login, used by _ensureFreshJwt)
+  static Nip98AuthService? _nip98Service;
+  static String? _relayManagerUrl;
+  static DateTime? _lastJwtRefreshAt;
+  static DateTime Function() _now = DateTime.now;
+  static JwtIdentityRefresh? _jwtIdentityRefreshOverride;
 
   /// Public accessors for user identity (used by reserved username requests)
   static String? get userName => _userName;
@@ -37,6 +56,26 @@ class ZendeskSupportService {
     _userName = null;
     _userEmail = null;
     _userNpub = null;
+    _clearAuthContext();
+    _now = DateTime.now;
+    _jwtIdentityRefreshOverride = null;
+  }
+
+  @visibleForTesting
+  static void setTestHooks({
+    DateTime Function()? now,
+    JwtIdentityRefresh? jwtIdentityRefresh,
+  }) {
+    if (now != null) {
+      _now = now;
+    }
+    _jwtIdentityRefreshOverride = jwtIdentityRefresh;
+  }
+
+  static void _clearAuthContext() {
+    _nip98Service = null;
+    _relayManagerUrl = null;
+    _lastJwtRefreshAt = null;
   }
 
   /// Initialize Zendesk SDK
@@ -97,13 +136,12 @@ class ZendeskSupportService {
     }
   }
 
-  /// Store user identity for Zendesk tickets (REST API fallback only).
+  /// Store user identity for Zendesk tickets.
   ///
-  /// Call this after user login. Stores name/email/npub locally for REST API
-  /// ticket creation. Does NOT set identity on the native SDK — the SDK uses
-  /// JWT identity exclusively, set when the user accesses support.
-  /// Setting anonymous identity here would lock the SDK into anonymous auth
-  /// mode and prevent JWT from working.
+  /// Call this after user login. Stores name/email/npub locally.
+  /// After calling this, call setAnonymousIdentityWithUserInfo() to set
+  /// the native SDK identity, then setJwtIdentity() to upgrade to
+  /// authenticated identity. See zendeskIdentitySync provider.
   ///
   /// Returns true always (local storage only).
   static bool setUserIdentity({
@@ -138,11 +176,40 @@ class ZendeskSupportService {
     return true;
   }
 
+  /// Set anonymous identity on native SDK with user info.
+  ///
+  /// This provides a baseline identity so createTicket() works immediately
+  /// after login without a network call. JWT identity upgrade happens
+  /// asynchronously afterward and overrides this when successful.
+  static Future<bool> setAnonymousIdentityWithUserInfo() async {
+    if (!_initialized) return false;
+    if (_userName == null || _userEmail == null) return false;
+
+    try {
+      await _channel.invokeMethod('setUserIdentity', {
+        'name': _userName,
+        'email': _userEmail,
+      });
+      Log.info(
+        'Zendesk SDK: anonymous identity set with user info',
+        category: LogCategory.system,
+      );
+      return true;
+    } catch (e) {
+      Log.warning(
+        'Zendesk SDK: failed to set anonymous identity: $e',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
   /// Clear user identity (call on logout)
   static Future<void> clearUserIdentity() async {
     _userName = null;
     _userEmail = null;
     _userNpub = null;
+    _clearAuthContext();
     if (_initialized) {
       try {
         await _channel.invokeMethod('clearUserIdentity');
@@ -180,6 +247,63 @@ class ZendeskSupportService {
   // ==========================================================================
   // JWT Authentication (for native SDK ticket history)
   // ==========================================================================
+
+  /// Store auth context for automatic JWT refresh before SDK actions.
+  /// Call once at login alongside setUserIdentity/setJwtIdentity.
+  /// These references are used by _ensureFreshJwt to refresh the pre-auth
+  /// token transparently before any SDK call, avoiding the 5-minute expiry.
+  static void storeAuthContext({
+    required Nip98AuthService nip98Service,
+    required String relayManagerUrl,
+  }) {
+    _nip98Service = nip98Service;
+    _relayManagerUrl = relayManagerUrl;
+    _lastJwtRefreshAt = null;
+  }
+
+  /// Refresh JWT identity before an SDK action.
+  /// Gets a fresh pre-auth token and sets it as the SDK identity.
+  /// Reuses a recent successful refresh to avoid redundant network work.
+  /// No-op if auth context is not stored or SDK not initialized.
+  /// Returns true if identity is fresh or refreshed, false if skipped/failed.
+  static Future<bool> _ensureFreshJwt() async {
+    if (!_initialized || _nip98Service == null || _relayManagerUrl == null) {
+      return false;
+    }
+
+    final lastJwtRefreshAt = _lastJwtRefreshAt;
+    final now = _now();
+    if (lastJwtRefreshAt != null &&
+        now.difference(lastJwtRefreshAt) < _jwtRefreshReuseWindow) {
+      Log.debug(
+        'Zendesk JWT refresh skipped - recent token still fresh',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
+    try {
+      final refreshJwt = _jwtIdentityRefreshOverride ?? setJwtIdentity;
+      final result = await refreshJwt(
+        nip98Service: _nip98Service!,
+        relayManagerUrl: _relayManagerUrl!,
+      );
+      if (result) {
+        _lastJwtRefreshAt = _now();
+        Log.info(
+          'Zendesk JWT refreshed before SDK action',
+          category: LogCategory.system,
+        );
+      }
+      return result;
+    } catch (e) {
+      Log.warning(
+        'Zendesk JWT refresh failed (will attempt SDK action anyway): $e',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
 
   /// Fetches a pre-auth token from relay-manager by proving identity via NIP-98.
   ///
@@ -296,6 +420,9 @@ class ZendeskSupportService {
   ///
   /// Presents the native Zendesk UI for creating a support ticket.
   /// Returns true if screen shown, false if Zendesk not initialized.
+  ///
+  /// If the native SDK returns a `NO_IDENTITY` error, this method
+  /// automatically falls back to anonymous identity and retries once.
   static Future<bool> showNewTicketScreen({
     String? subject,
     String? description,
@@ -308,6 +435,8 @@ class ZendeskSupportService {
       );
       return false;
     }
+
+    await _ensureFreshJwt();
 
     try {
       await _channel.invokeMethod('showNewTicket', {
@@ -323,6 +452,30 @@ class ZendeskSupportService {
         'Failed to show Zendesk ticket screen: ${e.code} - ${e.message}',
         category: LogCategory.system,
       );
+
+      // NO_IDENTITY: fall back to anonymous identity and retry once.
+      if (e.code == 'NO_IDENTITY') {
+        Log.info(
+          'Retrying ticket screen with anonymous identity fallback',
+          category: LogCategory.system,
+        );
+        final identitySet = await setAnonymousIdentityWithUserInfo();
+        if (identitySet) {
+          try {
+            await _channel.invokeMethod('showNewTicket', {
+              'subject': subject,
+              'description': description,
+              'tags': tags,
+            });
+            return true;
+          } catch (retryError) {
+            Log.error(
+              'Retry with anonymous identity also failed: $retryError',
+              category: LogCategory.system,
+            );
+          }
+        }
+      }
       return false;
     } catch (e) {
       Log.error(
@@ -337,6 +490,9 @@ class ZendeskSupportService {
   ///
   /// Presents the native Zendesk UI showing all tickets from this user.
   /// Returns true if screen shown, false if Zendesk not initialized.
+  ///
+  /// If the native SDK returns a `NO_IDENTITY` error, this method
+  /// automatically falls back to anonymous identity and retries once.
   static Future<bool> showTicketListScreen() async {
     if (!_initialized) {
       Log.warning(
@@ -344,6 +500,11 @@ class ZendeskSupportService {
         category: LogCategory.system,
       );
       return false;
+    }
+
+    final jwtReady = await _ensureFreshJwt();
+    if (!jwtReady) {
+      await setAnonymousIdentityWithUserInfo();
     }
 
     try {
@@ -355,6 +516,27 @@ class ZendeskSupportService {
         'Failed to show Zendesk ticket list: ${e.code} - ${e.message}',
         category: LogCategory.system,
       );
+
+      // NO_IDENTITY means the native SDK has no identity set.
+      // Fall back to anonymous identity and retry once before giving up.
+      if (e.code == 'NO_IDENTITY') {
+        Log.info(
+          'Retrying ticket list with anonymous identity fallback',
+          category: LogCategory.system,
+        );
+        final identitySet = await setAnonymousIdentityWithUserInfo();
+        if (identitySet) {
+          try {
+            await _channel.invokeMethod('showTicketList');
+            return true;
+          } catch (retryError) {
+            Log.error(
+              'Retry with anonymous identity also failed: $retryError',
+              category: LogCategory.system,
+            );
+          }
+        }
+      }
       return false;
     } catch (e) {
       Log.error(
@@ -392,6 +574,11 @@ class ZendeskSupportService {
       return false;
     }
 
+    // Refresh JWT before SDK action. The pre-auth token has a 5-minute TTL,
+    // so any delay between login and ticket creation will cause "unauthorized".
+    // This gets a fresh token every time, regardless of how long the user waited.
+    await _ensureFreshJwt();
+
     try {
       final result = await _channel.invokeMethod('createTicket', {
         'subject': subject,
@@ -412,6 +599,14 @@ class ZendeskSupportService {
         Log.warning(
           'Failed to create Zendesk ticket: $subject',
           category: LogCategory.system,
+        );
+        _crashlytics.log('Zendesk SDK returned false for ticket: $subject');
+        unawaited(
+          _crashlytics.recordError(
+            Exception('Zendesk SDK returned false'),
+            StackTrace.current,
+            reason: 'zendesk_sdk_returned_false',
+          ),
         );
         return false;
       }
@@ -434,6 +629,45 @@ class ZendeskSupportService {
         '❌ Zendesk SDK error: ${e.code} - ${e.message}',
         category: LogCategory.system,
       );
+
+      // JWT pre-auth tokens expire after 5 minutes. If the user reports
+      // content later than that, the SDK's JWT callback will fail with
+      // "unauthorized". Fall back to anonymous identity (already has
+      // name/email from login) and retry before trying the REST API.
+      if (e.code == 'CREATE_FAILED' &&
+          e.message != null &&
+          e.message!.toLowerCase().contains('unauthorized')) {
+        Log.info(
+          '🔄 JWT expired, retrying with anonymous identity',
+          category: LogCategory.system,
+        );
+        try {
+          final anonymousSet = await setAnonymousIdentityWithUserInfo();
+          if (anonymousSet) {
+            final retryResult = await _channel.invokeMethod('createTicket', {
+              'subject': subject,
+              'description': description,
+              'tags': tags ?? [],
+              'ticketFormId': ?ticketFormId,
+              if (customFields != null && customFields.isNotEmpty)
+                'customFields': customFields,
+            });
+            if (retryResult == true) {
+              Log.info(
+                'Zendesk ticket created on retry with anonymous identity',
+                category: LogCategory.system,
+              );
+              return true;
+            }
+          }
+        } catch (retryError) {
+          Log.warning(
+            'Anonymous identity retry also failed: $retryError',
+            category: LogCategory.system,
+          );
+        }
+      }
+
       // Fall back to REST API on SDK error
       Log.info(
         '🔄 Falling back to REST API after SDK error',
@@ -446,10 +680,18 @@ class ZendeskSupportService {
         requesterEmail: _userEmail,
         tags: tags,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Unexpected error creating Zendesk ticket: $e',
         category: LogCategory.system,
+      );
+      _crashlytics.log('Zendesk createTicket failed: $subject');
+      unawaited(
+        _crashlytics.recordError(
+          e,
+          stackTrace,
+          reason: 'zendesk_ticket_unexpected_error',
+        ),
       );
       return false;
     }
@@ -457,6 +699,10 @@ class ZendeskSupportService {
 
   // ========================================================================
   // REST API Methods (for platforms without native SDK: macOS, Windows, Web)
+  //
+  // macOS builds are internal-only. These methods require ZENDESK_API_TOKEN
+  // (basic auth), which is NOT configured in Codemagic production builds.
+  // Internal users report bugs via Slack/GitHub instead.
   // ========================================================================
 
   /// Check if REST API is available (for platforms without native SDK)
@@ -543,6 +789,16 @@ class ZendeskSupportService {
           'Zendesk API error: ${response.statusCode} - ${response.body}',
           category: LogCategory.system,
         );
+        _crashlytics.log(
+          'Zendesk REST API error ${response.statusCode}: $subject',
+        );
+        unawaited(
+          _crashlytics.recordError(
+            Exception('Zendesk REST API HTTP error'),
+            StackTrace.current,
+            reason: 'zendesk_rest_api_http_error',
+          ),
+        );
         return false;
       }
     } catch (e, stackTrace) {
@@ -551,6 +807,14 @@ class ZendeskSupportService {
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
+      );
+      _crashlytics.log('Zendesk REST API exception for ticket: $subject');
+      unawaited(
+        _crashlytics.recordError(
+          e,
+          stackTrace,
+          reason: 'zendesk_rest_api_exception',
+        ),
       );
       return false;
     }
@@ -691,7 +955,7 @@ class ZendeskSupportService {
       );
     }
 
-    // Fall back to REST API for desktop platforms
+    // Fall back to REST API for desktop platforms (macOS internal builds only)
     Log.info(
       '🎫 Native SDK not available, using REST API fallback',
       category: LogCategory.system,
@@ -762,6 +1026,16 @@ class ZendeskSupportService {
           'Zendesk API error: ${response.statusCode} - ${response.body}',
           category: LogCategory.system,
         );
+        _crashlytics.log(
+          'Zendesk form API error ${response.statusCode}: $label',
+        );
+        unawaited(
+          _crashlytics.recordError(
+            Exception('Zendesk form API HTTP error'),
+            StackTrace.current,
+            reason: 'zendesk_form_api_http_error',
+          ),
+        );
         return false;
       }
     } catch (e, stackTrace) {
@@ -770,6 +1044,14 @@ class ZendeskSupportService {
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
+      );
+      _crashlytics.log('Zendesk form API exception for: $label');
+      unawaited(
+        _crashlytics.recordError(
+          e,
+          stackTrace,
+          reason: 'zendesk_form_api_exception',
+        ),
       );
       return false;
     }
@@ -853,7 +1135,7 @@ class ZendeskSupportService {
       );
     }
 
-    // Fall back to REST API for desktop platforms
+    // Fall back to REST API for desktop platforms (macOS internal builds only)
     Log.info(
       '💡 Native SDK not available, using REST API fallback',
       category: LogCategory.system,

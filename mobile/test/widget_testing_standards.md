@@ -1,8 +1,11 @@
-# OpenVine Widget Testing Standards
+# Divine Widget Testing Standards
+
+Status: Current
+Validated against: current test-writing expectations on 2026-03-19.
 
 ## Overview
 
-This document establishes comprehensive widget testing standards for OpenVine that align with the TDD requirements outlined in CLAUDE.md. These standards ensure thorough coverage of widget functionality, not just widget existence.
+This document establishes comprehensive widget testing standards for Divine that align with the TDD requirements outlined in the repository guidance. These standards ensure thorough coverage of widget functionality, not just widget existence.
 
 ## Testing Philosophy
 

@@ -119,15 +119,24 @@ class AudioEvent {
   ///   // Play from assets
   /// }
   /// ```
-  factory AudioEvent.fromBundledSound(VineSound sound) {
+  factory AudioEvent.fromBundledSound(VineSound sound, {int index = 0}) {
+    String? source;
+    if (sound.artist != null) {
+      source =
+          sound.sourceUrl != null && sound.sourceUrl!.contains('freesound.org')
+          ? '${sound.artist} via Freesound'
+          : sound.artist;
+    }
+
     return AudioEvent(
       id: '${bundledMarker}_${sound.id}',
       pubkey: bundledMarker, // Indicates this is not from a Nostr user
-      createdAt: 0, // No timestamp for bundled sounds
+      createdAt: index, // List position as recency proxy
       url: 'asset://${sound.assetPath}',
       mimeType: 'audio/mpeg',
       duration: sound.durationInSeconds,
       title: sound.title,
+      source: source,
     );
   }
 
@@ -312,11 +321,13 @@ class AudioEvent {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AudioEvent && other.id == id;
+    return other is AudioEvent &&
+        other.id == id &&
+        other.startOffset == startOffset;
   }
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, startOffset);
 
   @override
   String toString() {

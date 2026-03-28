@@ -13,6 +13,7 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -146,7 +147,9 @@ class _NotificationTabContentState
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
 
-    if (maxScroll - currentScroll <= 200) {
+    // Only trigger loadMore if scrolling is actually possible and near bottom
+    // Provider handles all state checks (hasMore, isRefreshing, isLoadingMore)
+    if (maxScroll > 0 && maxScroll - currentScroll <= 200) {
       ref.read(relayNotificationsProvider.notifier).loadMore();
     }
   }
@@ -270,7 +273,11 @@ class _NotificationTabContentState
               controller: _scrollController,
               itemCount:
                   notifications.length +
-                  (feedState.hasMoreContent && feedState.isLoadingMore ? 1 : 0),
+                  (feedState.hasMoreContent &&
+                          feedState.isLoadingMore &&
+                          !feedState.isRefreshing
+                      ? 1
+                      : 0),
               itemBuilder: (context, index) {
                 // Loading indicator at bottom
                 if (index >= notifications.length) {
@@ -315,8 +322,14 @@ class _NotificationTabContentState
 
                         // Navigate to appropriate screen based on type
                         if (context.mounted) {
-                          _navigateToTarget(context, notification);
+                          await _navigateToTarget(context, notification);
                         }
+                      },
+                      onProfileTap: () {
+                        _navigateToProfile(
+                          context,
+                          notification.actorPubkey,
+                        );
                       },
                     ),
                     if (index < notifications.length - 1)
@@ -400,7 +413,10 @@ class _NotificationTabContentState
     }
   }
 
-  void _navigateToTarget(BuildContext context, NotificationModel notification) {
+  Future<void> _navigateToTarget(
+    BuildContext context,
+    NotificationModel notification,
+  ) async {
     Log.info(
       '🔔 Notification clicked: ${notification.navigationAction} -> ${notification.navigationTarget}',
       name: 'NotificationsScreen',
@@ -410,9 +426,29 @@ class _NotificationTabContentState
     switch (notification.navigationAction) {
       case 'open_video':
         if (notification.navigationTarget != null) {
-          _navigateToVideo(
+          final resolver = NotificationTargetResolver(
+            videoEventService: ref.read(videoEventServiceProvider),
+            nostrService: ref.read(nostrServiceProvider),
+          );
+          final resolvedVideoEventId = await resolver
+              .resolveVideoEventIdFromNotificationTarget(
+                notification.navigationTarget!,
+              );
+
+          if (!context.mounted) {
+            return;
+          }
+
+          if (resolvedVideoEventId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Video not found')),
+            );
+            return;
+          }
+
+          await _navigateToVideo(
             context,
-            notification.navigationTarget!,
+            resolvedVideoEventId,
             notificationType: notification.type,
           );
         }

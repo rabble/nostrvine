@@ -723,6 +723,18 @@ class DirectMessages extends Table {
   /// URL of an encrypted thumbnail (same key/nonce).
   TextColumn get thumbnailUrl => text().nullable().named('thumbnail_url')();
 
+  /// Whether this message has been soft-deleted via a NIP-09 kind 5 event.
+  ///
+  /// Soft-deleting (rather than hard-deleting) preserves the `giftWrapId` so
+  /// the dedup check (`hasGiftWrap`) continues to reject the relay
+  /// re-delivering the gift-wrapped event on the next poll cycle.
+  BoolColumn get isDeleted =>
+      boolean().withDefault(const Constant(false)).named('is_deleted')();
+
+  /// Hex public key of the account that received/sent this message.
+  /// NULL for legacy messages created before multi-account support.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -746,6 +758,16 @@ class DirectMessages extends Table {
       'idx_dm_sender',
       'CREATE INDEX IF NOT EXISTS idx_dm_sender '
           'ON direct_messages (sender_pubkey)',
+    ),
+    Index(
+      'idx_dm_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_dm_owner_pubkey '
+          'ON direct_messages (owner_pubkey)',
+    ),
+    Index(
+      'idx_dm_owner_conversation',
+      'CREATE INDEX IF NOT EXISTS idx_dm_owner_conversation '
+          'ON direct_messages (owner_pubkey, conversation_id, created_at DESC)',
     ),
   ];
 }
@@ -789,8 +811,22 @@ class Conversations extends Table {
   BoolColumn get isRead =>
       boolean().withDefault(const Constant(true)).named('is_read')();
 
+  /// Whether the current user has sent a message in this conversation.
+  BoolColumn get currentUserHasSent => boolean()
+      .withDefault(const Constant(false))
+      .named('current_user_has_sent')();
+
   /// Unix timestamp when the conversation was first created.
   IntColumn get createdAt => integer().named('created_at')();
+
+  /// Hex public key of the account that owns this conversation view.
+  /// NULL for legacy conversations created before multi-account support.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
+  /// The DM protocol used for this conversation: 'nip04' or 'nip17'.
+  /// NULL when the protocol is unknown (e.g. conversation created before
+  /// protocol tracking was added).
+  TextColumn get dmProtocol => text().nullable().named('dm_protocol')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -805,6 +841,11 @@ class Conversations extends Table {
       'idx_conversation_is_read',
       'CREATE INDEX IF NOT EXISTS idx_conversation_is_read '
           'ON conversations (is_read)',
+    ),
+    Index(
+      'idx_conversation_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey '
+          'ON conversations (owner_pubkey)',
     ),
   ];
 }

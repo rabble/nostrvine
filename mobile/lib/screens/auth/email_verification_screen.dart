@@ -23,7 +23,6 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class EmailVerificationScreen extends ConsumerStatefulWidget {
@@ -620,7 +619,8 @@ class _PollingContent extends StatelessWidget {
               const _StatusButton(label: 'Waiting for verification'),
               if (isPollingMode) ...[
                 const SizedBox(height: 20),
-                DivinePrimaryButton(
+                DivineButton(
+                  expanded: true,
                   label: 'Open email app',
                   onPressed: _openEmailApp,
                 ),
@@ -730,7 +730,8 @@ class _ErrorContent extends StatelessWidget {
         // Start over button
         Padding(
           padding: const EdgeInsets.only(bottom: 32),
-          child: DivinePrimaryButton(
+          child: DivineButton(
+            expanded: true,
             label: onReturnToInviteGate == null
                 ? 'Start over'
                 : 'Back to invite code',

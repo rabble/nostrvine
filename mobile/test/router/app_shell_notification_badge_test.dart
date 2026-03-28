@@ -1,7 +1,10 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -13,27 +16,37 @@ import 'package:openvine/widgets/notification_badge.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
+class _MockDmUnreadCountCubit extends MockCubit<int>
+    implements DmUnreadCountCubit {}
+
 Widget _buildSubject({
   required _MockAuthService mockAuthService,
   required int unreadCount,
+  int dmUnreadCount = 0,
 }) {
-  return ProviderScope(
-    overrides: [
-      pageContextProvider.overrideWith(
-        (ref) => Stream.value(const RouteContext(type: RouteType.home)),
+  final dmCubit = _MockDmUnreadCountCubit();
+  when(() => dmCubit.state).thenReturn(dmUnreadCount);
+
+  return BlocProvider<DmUnreadCountCubit>.value(
+    value: dmCubit,
+    child: ProviderScope(
+      overrides: [
+        pageContextProvider.overrideWith(
+          (ref) => Stream.value(const RouteContext(type: RouteType.home)),
+        ),
+        videoControllerAutoCleanupProvider.overrideWithValue(null),
+        relayStatisticsBridgeProvider.overrideWithValue(null),
+        relaySetChangeBridgeProvider.overrideWithValue(null),
+        zendeskIdentitySyncProvider.overrideWithValue(null),
+        authServiceProvider.overrideWithValue(mockAuthService),
+        currentEnvironmentProvider.overrideWithValue(
+          EnvironmentConfig.production,
+        ),
+        relayNotificationUnreadCountProvider.overrideWithValue(unreadCount),
+      ],
+      child: const MaterialApp(
+        home: AppShell(currentIndex: 0, child: SizedBox.shrink()),
       ),
-      videoControllerAutoCleanupProvider.overrideWithValue(null),
-      relayStatisticsBridgeProvider.overrideWithValue(null),
-      relaySetChangeBridgeProvider.overrideWithValue(null),
-      zendeskIdentitySyncProvider.overrideWithValue(null),
-      authServiceProvider.overrideWithValue(mockAuthService),
-      currentEnvironmentProvider.overrideWithValue(
-        EnvironmentConfig.production,
-      ),
-      relayNotificationUnreadCountProvider.overrideWithValue(unreadCount),
-    ],
-    child: const MaterialApp(
-      home: AppShell(currentIndex: 0, child: SizedBox.shrink()),
     ),
   );
 }

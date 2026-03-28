@@ -44,7 +44,7 @@ enum DivineCameraLens {
   }
 
   /// Creates a lens type from a native string.
-  static DivineCameraLens fromNativeString(String value) {
+  static DivineCameraLens fromNativeString(String? value) {
     switch (value) {
       case 'front':
         return DivineCameraLens.front;
@@ -61,6 +61,14 @@ enum DivineCameraLens {
       default:
         return DivineCameraLens.back;
     }
+  }
+
+  /// Returns whether the given lens type string represents a front-facing
+  /// camera.
+  ///
+  /// This includes both [front] and [frontUltraWide] lenses.
+  static bool isFrontCameraLens(String? value) {
+    return fromNativeString(value).isFrontFacing;
   }
 
   /// Parses a list of native strings to a list of lens types.

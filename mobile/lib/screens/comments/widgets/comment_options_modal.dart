@@ -64,7 +64,9 @@ class CommentOptionsModal {
       expanded: false,
       title: Text(
         'Options',
-        style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(
+          color: VineTheme.onSurface,
+        ),
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
@@ -73,7 +75,7 @@ class CommentOptionsModal {
             identifier: 'edit_comment_option',
             label: 'Edit',
             semanticLabel: 'Edit comment',
-            iconPath: 'assets/icon/pencil_simple.svg',
+            iconPath: DivineIconName.pencilSimple.assetPath,
             onTap: () => modalContext.pop(
               CommentEditResult(commentId: commentId, content: commentContent),
             ),
@@ -82,7 +84,7 @@ class CommentOptionsModal {
             identifier: 'delete_comment_option',
             label: 'Delete',
             semanticLabel: 'Delete comment',
-            iconPath: 'assets/icon/delete.svg',
+            iconPath: DivineIconName.trash.assetPath,
             isDestructive: true,
             onTap: () => modalContext.pop(const CommentDeleteResult()),
           ),
@@ -103,7 +105,7 @@ class CommentOptionsModal {
       expanded: false,
       title: Text(
         'Options',
-        style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
@@ -112,14 +114,14 @@ class CommentOptionsModal {
             identifier: 'flag_content_option',
             label: 'Flag Content',
             semanticLabel: 'Flag this content',
-            iconPath: 'assets/icon/flag.svg',
+            iconPath: DivineIconName.flag.assetPath,
             onTap: () => context.pop('flag'),
           ),
           _OptionTile(
             identifier: 'block_user_option',
             label: 'Block User',
             semanticLabel: 'Block this user',
-            iconPath: 'assets/icon/flag.svg',
+            iconPath: DivineIconName.prohibit.assetPath,
             isDestructive: true,
             onTap: () => context.pop('block'),
           ),
@@ -184,10 +186,7 @@ class _OptionTile extends StatelessWidget {
               const SizedBox(width: 16),
               Text(
                 label,
-                style: VineTheme.bodyFont(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: VineTheme.titleMediumFont(color: color),
               ),
             ],
           ),
@@ -211,7 +210,7 @@ class _FlagContentSheet extends StatefulWidget {
       isScrollControlled: true,
       title: Text(
         'Flag Content',
-        style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: _FlagContentSheet(
         onSubmit: (result) => Navigator.pop(context, result),
@@ -236,8 +235,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: Text(
             'Select a reason for flagging this comment',
-            style: VineTheme.bodyFont(
-              fontSize: 14,
+            style: VineTheme.bodyMediumFont(
               color: VineTheme.onSurfaceMuted,
             ),
           ),
@@ -282,8 +280,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
               ),
               child: Text(
                 'Submit',
-                style: VineTheme.bodyFont(
-                  fontWeight: FontWeight.w700,
+                style: VineTheme.labelLargeFont(
                   color: _selectedReason != null
                       ? VineTheme.backgroundColor
                       : VineTheme.onSurfaceMuted,
@@ -349,7 +346,7 @@ class _ReasonRadioTile extends StatelessWidget {
                 children: [
                   Text(
                     _getReasonDisplayName(reason),
-                    style: VineTheme.bodyFont(
+                    style: VineTheme.bodyLargeFont(
                       color: isSelected
                           ? VineTheme.onSurface
                           : VineTheme.onSurfaceVariant,
@@ -358,8 +355,7 @@ class _ReasonRadioTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _getReasonDescription(reason),
-                    style: VineTheme.bodyFont(
-                      fontSize: 12,
+                    style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
                   ),

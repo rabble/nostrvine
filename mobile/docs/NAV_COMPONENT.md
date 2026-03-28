@@ -1,3 +1,8 @@
+Status: Historical
+
+> Historical note
+> Preserved for context during the P1 documentation refresh. This file may reference deleted screens, older branding, or superseded implementation details. Start with docs/README.md and docs/archive/README.md for current guidance.
+
 # Navigation Component Architecture
 
 This document outlines the recommended approach for creating reusable navigation components (AppBar) that maintain consistent styling across all screens while preserving flexible routing behavior.

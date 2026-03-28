@@ -1,5 +1,5 @@
 // ABOUTME: Events for VideoFeedBloc - unified feed with mode switching
-// ABOUTME: Supports For You, Home (following), New (latest), and Popular feed modes
+// ABOUTME: Supports For You, Following, and New (latest) feed modes
 
 part of 'video_feed_bloc.dart';
 
@@ -64,7 +64,7 @@ final class VideoFeedRefreshRequested extends VideoFeedEvent {
 ///
 /// Dispatched by the UI on app resume (background → foreground).
 /// The bloc will only perform the refresh if:
-/// - The current feed mode is [FeedMode.home]
+/// - The current feed mode is [FeedMode.following]
 /// - Enough time has passed since the last successful load
 final class VideoFeedAutoRefreshRequested extends VideoFeedEvent {
   const VideoFeedAutoRefreshRequested();
@@ -98,4 +98,19 @@ final class VideoFeedCuratedListsChanged extends VideoFeedEvent {
 
   @override
   List<Object?> get props => [];
+}
+
+/// A user was blocked or the blocklist changed.
+///
+/// When [blockedPubkey] is provided, the handler removes that user's videos
+/// from the current state without a network round-trip. When null, the handler
+/// filters current videos against the full blocklist in-memory.
+final class VideoFeedBlocklistChanged extends VideoFeedEvent {
+  const VideoFeedBlocklistChanged({this.blockedPubkey});
+
+  /// The pubkey that was just blocked, or null for a general blocklist change.
+  final String? blockedPubkey;
+
+  @override
+  List<Object?> get props => [blockedPubkey];
 }

@@ -2,7 +2,6 @@
 // ABOUTME: Shows video replies as a 3-column thumbnail grid at top,
 // ABOUTME: followed by text comments as a list below.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Grid widget displaying a user's comments (video replies + text).
 ///
@@ -159,37 +159,42 @@ class _CommentsEmptyState extends StatelessWidget {
       SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.chat_bubble_outline,
-                color: VineTheme.onSurfaceMuted,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                isOwnProfile ? 'No Comments Yet' : 'No Comments',
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isOwnProfile
-                    ? 'Your comments and replies will '
-                          'appear here'
-                    : 'Their comments and replies will '
-                          'appear here',
-                style: const TextStyle(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.chat_bubble_outline,
                   color: VineTheme.onSurfaceMuted,
-                  fontSize: 14,
+                  size: 64,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  isOwnProfile ? 'No Comments Yet' : 'No Comments',
+                  textAlign: .center,
+                  style: const TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isOwnProfile
+                      ? 'Your comments and replies will '
+                            'appear here'
+                      : 'Their comments and replies will '
+                            'appear here',
+                  textAlign: .center,
+                  style: const TextStyle(
+                    color: VineTheme.onSurfaceMuted,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -241,9 +246,8 @@ class _VideoReplyThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return CachedNetworkImage(
+      return VineCachedImage(
         imageUrl: thumbnailUrl!,
-        fit: BoxFit.cover,
         placeholder: (context, url) => const _ThumbnailPlaceholder(),
         errorWidget: (context, url, error) => const _ThumbnailPlaceholder(),
       );

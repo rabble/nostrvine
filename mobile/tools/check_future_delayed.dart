@@ -33,7 +33,7 @@ void main(List<String> args) async {
       debugPrint(violation);
     }
 
-    debugPrint('\n📖 See docs/FUTURE_DELAYED_MIGRATION.md for migration guide');
+    debugPrint('\nReplace Future.delayed with explicit async coordination.');
     exit(1);
   } else {
     debugPrint('✅ No Future.delayed usage found!');

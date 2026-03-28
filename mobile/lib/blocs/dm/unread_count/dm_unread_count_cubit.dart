@@ -9,13 +9,15 @@ import 'package:openvine/repositories/dm_repository.dart';
 
 /// Cubit that tracks the number of unread DM conversations.
 ///
-/// Subscribes to [DmRepository.watchUnreadCount] and emits the latest
-/// count. Used by the bottom nav badge and inbox tab toggle.
+/// Subscribes to [DmRepository.watchUnreadAcceptedCount] and emits the
+/// latest count. Only counts conversations where the user has sent at
+/// least one message, excluding message requests from unknown contacts.
+/// Used by the bottom nav badge and inbox tab toggle.
 class DmUnreadCountCubit extends Cubit<int> {
   DmUnreadCountCubit({required DmRepository dmRepository})
     : _dmRepository = dmRepository,
       super(0) {
-    _subscription = _dmRepository.watchUnreadCount().listen(
+    _subscription = _dmRepository.watchUnreadAcceptedCount().listen(
       emit,
       onError: addError,
     );

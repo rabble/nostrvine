@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -19,9 +20,8 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
-import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -157,6 +157,18 @@ void main() {
           final context = parseRoute(NotificationsScreen.pathForIndex(0));
           expect(context.type, RouteType.notifications);
           expect(context.videoIndex, 0);
+        },
+      );
+
+      test(
+        '${CategoryGalleryScreen.locationFor('animals')} parses to RouteType.categoryGallery',
+        () {
+          final context = parseRoute(
+            CategoryGalleryScreen.locationFor('animals'),
+          );
+          expect(context.type, RouteType.categoryGallery);
+          expect(context.categoryName, 'animals');
+          expect(context.videoIndex, isNull);
         },
       );
     });
@@ -343,6 +355,7 @@ void main() {
       'profile grid': ProfileScreenRouter.pathForNpub('npub1test'),
       'profile feed': ProfileScreenRouter.pathForIndex('npub1test', 2),
       'hashtag': HashtagScreenRouter.pathForTag('nostr'),
+      'category gallery': CategoryGalleryScreen.locationFor('animals'),
       'search with term': SearchScreenPure.pathForTerm(term: 'flutter'),
       'settings': SettingsScreen.path,
       'relay settings': RelaySettingsScreen.path,
@@ -373,9 +386,9 @@ void main() {
         RouteType.notifications: NotificationsScreen.pathForIndex(0),
         RouteType.profile: ProfileScreenRouter.pathForNpub('npub1test'),
         RouteType.hashtag: HashtagScreenRouter.pathForTag('test'),
+        RouteType.categoryGallery: CategoryGalleryScreen.locationFor('animals'),
         RouteType.search: SearchScreenPure.path,
         RouteType.videoRecorder: VideoRecorderScreen.path,
-        RouteType.videoClipEditor: VideoClipEditorScreen.path,
         RouteType.videoEditor: VideoEditorScreen.path,
         RouteType.videoMetadata: VideoMetadataScreen.path,
         RouteType.importKey: KeyImportScreen.path,

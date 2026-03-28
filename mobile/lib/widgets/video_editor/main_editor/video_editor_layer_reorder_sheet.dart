@@ -117,8 +117,7 @@ class _TextLayerPreview extends StatelessWidget {
     return Text(
       layer.text,
       style:
-          layer.textStyle?.copyWith(fontSize: 18) ??
-          VineTheme.bodyFont(fontSize: 18),
+          layer.textStyle?.copyWith(fontSize: 18) ?? VineTheme.bodyLargeFont(),
     );
   }
 }

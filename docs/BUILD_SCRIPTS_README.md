@@ -1,5 +1,8 @@
 # Build Scripts for iOS and macOS
 
+Status: Current
+Validated against: `mobile/build_native.sh`, `mobile/build_ios.sh`, and `mobile/build_macos.sh` on 2026-03-19.
+
 This directory contains build scripts that ensure CocoaPods dependencies are properly synced before building, preventing the common "sandbox is not in sync with Podfile.lock" errors.
 
 ## Automatic Xcode Integration

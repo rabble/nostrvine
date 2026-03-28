@@ -11,7 +11,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -40,7 +39,6 @@ class ProofModeBadgeRow extends ConsumerWidget {
       explicitSha256: video.sha256,
       videoUrl: video.videoUrl,
     );
-    AsyncValue<VideoModerationStatus?>? moderationStatusAsync;
     AIDetectionResult? aiResult = _lookupAIDetection(
       labelService,
       resolvedSha256,
@@ -51,28 +49,15 @@ class ProofModeBadgeRow extends ConsumerWidget {
     // Use select() to only rebuild when the AI score actually changes,
     // avoiding excessive rebuilds during scroll.
     if (aiResult == null && video.isFromDivineServer) {
-      final selectedData = ref.watch(
+      final aiScore = ref.watch(
         videoModerationStatusProvider(resolvedSha256).select(
-          (asyncValue) => (
-            aiScore: asyncValue.whenOrNull(
-              data: (status) => status?.aiScore,
-            ),
-            isLoading: asyncValue.isLoading,
-            hasError: asyncValue.hasError,
-          ),
+          (asyncValue) =>
+              asyncValue.whenOrNull(data: (status) => status?.aiScore),
         ),
       );
-      moderationStatusAsync = selectedData.isLoading
-          ? const AsyncValue<VideoModerationStatus?>.loading()
-          : selectedData.hasError
-          ? const AsyncValue<VideoModerationStatus?>.error(
-              'error',
-              StackTrace.empty,
-            )
-          : null;
-      if (selectedData.aiScore != null) {
+      if (aiScore != null) {
         aiResult = AIDetectionResult(
-          score: selectedData.aiScore!,
+          score: aiScore,
           source: 'moderation-service',
         );
       }
@@ -100,25 +85,21 @@ class ProofModeBadgeRow extends ConsumerWidget {
         aiResult == null;
 
     final badges = <Widget>[];
-    final badgeLabels = <String>[];
 
     // Add ProofMode badge for proof-backed content or a clean AI scan.
     if (video.shouldShowProofModeBadge || hasAIScanBadge) {
       badges.add(ProofModeBadge(level: effectiveLevel, size: size));
-      badgeLabels.add('proofmode:${effectiveLevel.name}');
     }
 
     // Add "Possibly AI-Generated" badge for high AI scores
     if (isPossiblyAI && !video.shouldShowProofModeBadge) {
       badges.add(PossiblyAIBadge(size: size));
-      badgeLabels.add('possibly_ai');
     }
 
     // Divine-hosted videos should surface pending AI status instead of
     // rendering blank while scan results are unavailable.
     if (isCheckingForAI) {
       badges.add(CheckingForAIBadge(size: size));
-      badgeLabels.add('checking_ai');
     }
 
     // Add "Not Divine Hosted" badge for external content (tappable)
@@ -133,29 +114,12 @@ class ProofModeBadgeRow extends ConsumerWidget {
           child: NotDivineBadge(size: size),
         ),
       );
-      badgeLabels.add('not_divine');
     }
 
     // Add Original Vine badge for vintage recovered vines
     if (video.shouldShowVineBadge) {
       badges.add(OriginalVineBadge(size: size));
-      badgeLabels.add('original_vine');
     }
-
-    // Only log badge decisions at verbose level to avoid flooding during scroll
-    Log.verbose(
-      'Badge decision: eventId=${video.id}, resolvedSha256=$resolvedSha256, '
-      'isFromDivine=${video.isFromDivineServer}, hasProofMode=${video.hasProofMode}, '
-      'proofBadge=${video.shouldShowProofModeBadge}, vineBadge=${video.shouldShowVineBadge}, '
-      'notDivine=${video.shouldShowNotDivineBadge}, '
-      'aiScore=${aiResult?.score}, aiSource=${aiResult?.source}, '
-      'checkingForAI=$isCheckingForAI, '
-      'moderationLoading=${moderationStatusAsync?.isLoading ?? false}, '
-      'moderationHasError=${moderationStatusAsync?.hasError ?? false}, '
-      'badgeLabels=${badgeLabels.join(',')}',
-      name: 'ProofModeBadgeRow',
-      category: LogCategory.video,
-    );
 
     if (badges.isEmpty) {
       return const SizedBox.shrink();

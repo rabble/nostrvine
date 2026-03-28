@@ -31,7 +31,12 @@ class AudioPlaybackService {
   AudioPlaybackService({
     AudioPlayer? audioPlayer,
     AudioSessionWrapper? audioSessionWrapper,
-  }) : _audioPlayer = audioPlayer ?? AudioPlayer(),
+    bool handleAudioSessionActivation = true,
+  }) : _audioPlayer =
+           audioPlayer ??
+           AudioPlayer(
+             handleAudioSessionActivation: handleAudioSessionActivation,
+           ),
        _audioSessionWrapper =
            audioSessionWrapper ?? DefaultAudioSessionWrapper() {
     unawaited(_initializeHeadphoneDetection());

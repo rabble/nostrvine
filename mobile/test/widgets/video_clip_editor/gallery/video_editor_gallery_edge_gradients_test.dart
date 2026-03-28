@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_edge_gradients.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_edge_gradients.dart';
 
 void main() {
   group('ClipGalleryEdgeGradients', () {

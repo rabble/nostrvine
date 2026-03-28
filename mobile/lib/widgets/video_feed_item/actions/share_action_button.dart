@@ -25,8 +25,10 @@ import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
 
 part 'share_sheet_header.dart';
@@ -52,56 +54,34 @@ class ShareActionButton extends StatelessWidget {
   /// This is exposed as a static method so share entry points can reuse the
   /// same bottom-sheet wiring without duplicating setup logic.
   static void showShareSheet(BuildContext context, VideoEvent video) {
+    // Read here so the sheet receives a guaranteed non-null repository.
+    // If Nostr client hasn't initialized yet, skip opening the sheet.
+    final container = ProviderScope.containerOf(context);
+    final profileRepository = container.read(profileRepositoryProvider);
+    if (profileRepository == null) return;
+
     context.showVideoPausingVineBottomSheet<void>(
-      builder: (context) => _UnifiedShareSheet(video: video),
+      builder: (context) => _UnifiedShareSheet(
+        video: video,
+        profileRepository: profileRepository,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          identifier: 'share_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: 'Share video',
-          child: IconButton(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            style: IconButton.styleFrom(
-              highlightColor: VineTheme.transparent,
-              splashFactory: NoSplash.splashFactory,
-            ),
-            onPressed: () {
-              Log.info(
-                'Share button tapped for ${video.id}',
-                name: 'ShareActionButton',
-                category: LogCategory.ui,
-              );
-              ShareActionButton.showShareSheet(context, video);
-            },
-            icon: DecoratedBox(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: VineTheme.backgroundColor.withValues(alpha: 0.15),
-                    blurRadius: 15,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: const DivineIcon(
-                icon: DivineIconName.shareFat,
-                size: 32,
-                color: VineTheme.whiteText,
-              ),
-            ),
-          ),
-        ),
-      ],
+    return VideoActionButton(
+      icon: .shareFatDuo,
+      semanticIdentifier: 'share_button',
+      semanticLabel: 'Share video',
+      onPressed: () {
+        Log.info(
+          'Share button tapped for ${video.id}',
+          name: 'ShareActionButton',
+          category: LogCategory.ui,
+        );
+        ShareActionButton.showShareSheet(context, video);
+      },
     );
   }
 }
@@ -111,9 +91,13 @@ class ShareActionButton extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _UnifiedShareSheet extends ConsumerStatefulWidget {
-  const _UnifiedShareSheet({required this.video});
+  const _UnifiedShareSheet({
+    required this.video,
+    required this.profileRepository,
+  });
 
   final VideoEvent video;
+  final ProfileRepository profileRepository;
 
   @override
   ConsumerState<_UnifiedShareSheet> createState() => _UnifiedShareSheetState();
@@ -121,16 +105,16 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
 
 class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   final TextEditingController _messageController = TextEditingController();
-  late final ShareSheetBloc _bloc;
+  late final ShareSheetBloc _shareSheetBloc;
 
   @override
   void initState() {
     super.initState();
-    _bloc = ShareSheetBloc(
+    _shareSheetBloc = ShareSheetBloc(
       video: widget.video,
       relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
       videoSharingService: ref.read(videoSharingServiceProvider),
-      profileRepository: ref.read(profileRepositoryProvider)!,
+      profileRepository: widget.profileRepository,
       followRepository: ref.read(followRepositoryProvider),
       bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
     )..add(const ShareSheetContactsLoadRequested());
@@ -138,8 +122,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   @override
   void dispose() {
+    _shareSheetBloc.close();
     _messageController.dispose();
-    _bloc.close();
     super.dispose();
   }
 
@@ -162,7 +146,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     final isOwnContent = _isUserOwnContent();
 
     return BlocProvider.value(
-      value: _bloc,
+      value: _shareSheetBloc,
       child: BlocListener<ShareSheetBloc, ShareSheetState>(
         listenWhen: (prev, curr) =>
             curr.actionResult != null && prev.actionResult != curr.actionResult,
@@ -221,10 +205,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   Future<void> _handleFindPeople() async {
     final selectedUser = await FindPeopleSheet.show(
       context,
-      contacts: _bloc.state.contacts,
+      contacts: _shareSheetBloc.state.contacts,
     );
     if (selectedUser != null && mounted) {
-      _bloc.add(ShareSheetRecipientSelected(selectedUser));
+      _shareSheetBloc.add(ShareSheetRecipientSelected(selectedUser));
     }
   }
 
@@ -333,66 +317,72 @@ class _UnifiedShareSheetView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: VineTheme.surfaceBackground,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: BlocBuilder<ShareSheetBloc, ShareSheetState>(
-            builder: (context, state) {
-              final bloc = context.read<ShareSheetBloc>();
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.5,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: Material(
+        color: VineTheme.surfaceBackground,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: BlocBuilder<ShareSheetBloc, ShareSheetState>(
+              builder: (context, state) {
+                final bloc = context.read<ShareSheetBloc>();
 
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _DragIndicator(),
-                  _ShareSheetHeader(video: video),
-                  const Divider(color: VineTheme.cardBackground, height: 1),
-                  _ShareWithSection(
-                    contacts: state.contacts,
-                    contactsLoaded: state.contactsLoaded,
-                    selectedRecipient: state.selectedRecipient,
-                    sentPubkeys: state.sentPubkeys,
-                    onFindPeople: onFindPeople,
-                    onContactTapped: (user) =>
-                        bloc.add(ShareSheetQuickSendRequested(user)),
-                  ),
-                  if (state.selectedRecipient != null)
-                    _MessageInput(
-                      controller: messageController,
-                      recipient: state.selectedRecipient!,
-                      isSending: state.isSending,
-                      onSend: () => bloc.add(
-                        ShareSheetSendRequested(
-                          message: messageController.text,
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _DragIndicator(),
+                    _ShareSheetHeader(video: video),
+                    const Divider(color: VineTheme.cardBackground, height: 1),
+                    _ShareWithSection(
+                      contacts: state.contacts,
+                      contactsLoaded: state.contactsLoaded,
+                      selectedRecipient: state.selectedRecipient,
+                      sentPubkeys: state.sentPubkeys,
+                      onFindPeople: onFindPeople,
+                      onContactTapped: (user) =>
+                          bloc.add(ShareSheetQuickSendRequested(user)),
+                    ),
+                    if (state.selectedRecipient != null)
+                      _MessageInput(
+                        controller: messageController,
+                        recipient: state.selectedRecipient!,
+                        isSending: state.isSending,
+                        onSend: () => bloc.add(
+                          ShareSheetSendRequested(
+                            message: messageController.text,
+                          ),
                         ),
                       ),
-                    ),
-                  if (state.selectedRecipient == null) ...[
-                    const Divider(color: VineTheme.cardBackground, height: 1),
-                    _MoreActionsSection(
-                      video: video,
-                      isOwnContent: isOwnContent,
-                      onSave: () => bloc.add(const ShareSheetSaveRequested()),
-                      onSaveOriginal: onSaveOriginal,
-                      onSaveWithWatermark: onSaveWithWatermark,
-                      onAddToList: onAddToList,
-                      onCopyLink: () =>
-                          bloc.add(const ShareSheetCopyLinkRequested()),
-                      onShareVia: () =>
-                          bloc.add(const ShareSheetShareViaRequested()),
-                      onReport: onReport,
-                      onCopyEventJson: () =>
-                          bloc.add(const ShareSheetCopyEventJsonRequested()),
-                      onCopyEventId: () =>
-                          bloc.add(const ShareSheetCopyEventIdRequested()),
-                    ),
+                    if (state.selectedRecipient == null) ...[
+                      const Divider(color: VineTheme.cardBackground, height: 1),
+                      _MoreActionsSection(
+                        video: video,
+                        isOwnContent: isOwnContent,
+                        onSave: () => bloc.add(const ShareSheetSaveRequested()),
+                        onSaveOriginal: onSaveOriginal,
+                        onSaveWithWatermark: onSaveWithWatermark,
+                        onAddToList: onAddToList,
+                        onCopyLink: () =>
+                            bloc.add(const ShareSheetCopyLinkRequested()),
+                        onShareVia: () =>
+                            bloc.add(const ShareSheetShareViaRequested()),
+                        onReport: onReport,
+                        onCopyEventJson: () =>
+                            bloc.add(const ShareSheetCopyEventJsonRequested()),
+                        onCopyEventId: () =>
+                            bloc.add(const ShareSheetCopyEventIdRequested()),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
                   ],
-                  const SizedBox(height: 8),
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

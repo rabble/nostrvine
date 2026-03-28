@@ -11,6 +11,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/gallery_permission_sheet.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///
@@ -21,23 +22,44 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   const VideoMetadataBottomBar({super.key});
 
   /// Saves the final rendered video to the device gallery.
-  Future<GallerySaveResult?> _saveToGallery(WidgetRef ref) async {
+  ///
+  /// When gallery permission is denied and the user has not previously
+  /// opted out, a bottom sheet is shown offering to open Settings or
+  /// dismiss forever. If the user opens Settings and comes back, the
+  /// save is retried once.
+  Future<void> _saveToGallery(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    // User opted out of gallery saves permanently.
+    if (await isGalleryPermissionDismissedForever()) return;
+
     final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
-    if (finalRenderedClip == null) return null;
+    if (finalRenderedClip == null) return;
 
     final gallerySaveService = ref.read(gallerySaveServiceProvider);
-    return gallerySaveService.saveVideoToGallery(finalRenderedClip.video);
-  }
+    final result = await gallerySaveService.saveVideoToGallery(
+      finalRenderedClip.video,
+    );
 
-  String? _gallerySaveFailureMessage(GallerySaveResult? result) {
-    final destination = GallerySaveService.destinationName;
+    if (result is! GallerySavePermissionDenied || !context.mounted) {
+      return;
+    }
 
-    return switch (result) {
-      null || GallerySaveSuccess() => null,
-      GallerySavePermissionDenied() => '$destination permission denied',
-      GallerySaveFailure(:final reason) =>
-        'failed to save to $destination: $reason',
-    };
+    // Permission denied — show an actionable sheet instead of a snackbar.
+    final permissionsService = ref.read(permissionsServiceProvider);
+    final choice = await showGalleryPermissionSheet(
+      context,
+      permissionsService: permissionsService,
+    );
+
+    if (choice == GalleryPermissionChoice.openedSettings ||
+        choice == GalleryPermissionChoice.granted) {
+      // Retry once — the user may have just granted access.
+      await gallerySaveService.saveVideoToGallery(
+        finalRenderedClip.video,
+      );
+    }
   }
 
   void _showStatusSnackBar(
@@ -71,14 +93,14 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   }
 
   Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
-    final galleryResult = await _saveToGallery(ref);
+    await _saveToGallery(context, ref);
     var draftSaved = true;
 
     try {
       // Save the draft to the library.
       final draftSuccess = await ref
           .read(videoEditorProvider.notifier)
-          .saveAsDraft();
+          .saveAsDraft(enforceCreateNewDraft: true);
       if (!draftSuccess) {
         throw StateError('Failed to save draft');
       }
@@ -96,30 +118,16 @@ class VideoMetadataBottomBar extends ConsumerWidget {
     if (!context.mounted) return;
 
     final router = GoRouter.of(context);
-    final galleryFailureMessage = _gallerySaveFailureMessage(galleryResult);
-    final gallerySaveSucceeded =
-        galleryResult == null || galleryResult is GallerySaveSuccess;
-    final saveSuccess = draftSaved && gallerySaveSucceeded;
-    final destination = GallerySaveService.destinationName;
-
-    final label = switch ((draftSaved, galleryFailureMessage, galleryResult)) {
-      (true, null, _) => 'Saved to library',
-      (true, final message?, _) => 'Saved to library, but $message',
-      (false, null, GallerySaveSuccess()) =>
-        'Saved to $destination, but failed to save to library',
-      (false, final message?, _) => 'Failed to save to library, and $message',
-      (false, null, _) => 'Failed to save',
-    };
 
     _showStatusSnackBar(
       context,
-      label: label,
-      error: !saveSuccess,
+      label: draftSaved ? 'Saved to library' : 'Failed to save',
+      error: !draftSaved,
       actionLabel: 'Go to Library',
       onActionPressed: () => router.push(LibraryScreen.draftsPath),
     );
 
-    if (saveSuccess) {
+    if (draftSaved) {
       router.go(VideoFeedPage.pathForIndex(0));
       // Clear editor state after navigation animation completes (~600ms)
       Future.delayed(
@@ -130,36 +138,33 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   }
 
   Future<void> _onPost(BuildContext context, WidgetRef ref) async {
-    final galleryResult = await _saveToGallery(ref);
+    await _saveToGallery(context, ref);
     if (!context.mounted) return;
-
-    final galleryFailureMessage = _gallerySaveFailureMessage(galleryResult);
-    if (galleryFailureMessage != null) {
-      _showStatusSnackBar(
-        context,
-        label: '$galleryFailureMessage. Video will still post.',
-        error: true,
-      );
-    }
 
     await ref.read(videoEditorProvider.notifier).postVideo(context);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const .fromLTRB(16, 0, 16, 4),
-      child: Row(
-        crossAxisAlignment: .end,
-        spacing: 10,
-        children: [
-          Expanded(
-            child: _SaveForLaterButton(
-              onTap: () => _onSaveForLater(context, ref),
+    final textScaler = MediaQuery.textScalerOf(context).clamp(
+      maxScaleFactor: 1.15,
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: Padding(
+        padding: const .fromLTRB(16, 0, 16, 4),
+        child: Row(
+          crossAxisAlignment: .end,
+          spacing: 10,
+          children: [
+            Expanded(
+              child: _SaveForLaterButton(
+                onTap: () => _onSaveForLater(context, ref),
+              ),
             ),
-          ),
-          Expanded(child: _PostButton(onTap: () => _onPost(context, ref))),
-        ],
+            Expanded(child: _PostButton(onTap: () => _onPost(context, ref))),
+          ],
+        ),
       ),
     );
   }
@@ -198,41 +203,10 @@ class _SaveForLaterButton extends ConsumerWidget {
                   '${GallerySaveService.destinationName}',
         button: true,
         enabled: !isSaving && !isProcessing,
-        child: GestureDetector(
-          onTap: isSaving || isProcessing ? null : onTap,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isSaving ? 0.6 : 1.0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: VineTheme.surfaceContainer,
-                border: Border.all(color: VineTheme.containerLow, width: 2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Center(
-                child: isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: VineTheme.primary,
-                        ),
-                      )
-                    // TODO(l10n): Replace with context.l10n when localization
-                    // is added.
-                    : Text(
-                        'Save for Later',
-                        style: VineTheme.titleMediumFont(
-                          fontSize: 16,
-                          color: VineTheme.primary,
-                          height: 1.33,
-                        ),
-                      ),
-              ),
-            ),
-          ),
+        child: DivineButton(
+          onPressed: isSaving || isProcessing ? null : onTap,
+          type: .secondary,
+          label: 'Save for Later',
         ),
       ),
     );
@@ -266,27 +240,10 @@ class _PostButton extends ConsumerWidget {
             : 'Fill out the form to enable',
         button: true,
         enabled: isValidToPost,
-        child: GestureDetector(
-          onTap: isValidToPost ? onTap : null,
-          child: Container(
-            decoration: BoxDecoration(
-              color: VineTheme.primary,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              // TODO(l10n): Replace with context.l10n when localization is
-              // added.
-              child: Text(
-                'Post',
-                style: VineTheme.titleMediumFont(
-                  fontSize: 16,
-                  height: 1.33,
-                  color: VineTheme.onPrimary,
-                ),
-              ),
-            ),
-          ),
+        child: DivineButton(
+          onPressed: isValidToPost ? onTap : null,
+          expanded: true,
+          label: 'Post',
         ),
       ),
     );

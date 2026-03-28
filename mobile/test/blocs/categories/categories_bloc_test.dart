@@ -1,6 +1,8 @@
 // ABOUTME: Tests for the CategoriesBloc
 // ABOUTME: Verifies category loading, selection, pagination, sorting, and deselection
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -8,32 +10,39 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
 import 'package:openvine/models/video_category.dart';
+import 'package:openvine/repositories/categories_repository.dart';
+
+class _MockCategoriesRepository extends Mock implements CategoriesRepository {}
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 void main() {
+  late _MockCategoriesRepository mockRepository;
   late _MockFunnelcakeApiClient mockApiClient;
 
   setUp(() {
     mockApiClient = _MockFunnelcakeApiClient();
+    mockRepository = _MockCategoriesRepository();
+    // CategoriesBloc uses repository.apiClient for video-level calls.
+    when(() => mockRepository.apiClient).thenReturn(mockApiClient);
   });
 
   group(CategoriesBloc, () {
     group('CategoriesLoadRequested', () {
-      final categoriesJson = [
-        {'name': 'music', 'video_count': 1500},
-        {'name': 'comedy', 'video_count': 900},
-        {'name': 'dance', 'video_count': 800},
+      final categories = [
+        const VideoCategory(name: 'music', videoCount: 1500),
+        const VideoCategory(name: 'comedy', videoCount: 900),
+        const VideoCategory(name: 'dance', videoCount: 800),
       ];
 
       blocTest<CategoriesBloc, CategoriesState>(
         'emits [loading, loaded] when categories load successfully',
         setUp: () {
           when(
-            () => mockApiClient.getCategories(limit: 100),
-          ).thenAnswer((_) async => categoriesJson);
+            () => mockRepository.getCategories(),
+          ).thenAnswer((_) async => categories);
         },
-        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
         act: (bloc) => bloc.add(const CategoriesLoadRequested()),
         expect: () => [
           const CategoriesState(categoriesStatus: CategoriesStatus.loading),
@@ -47,18 +56,18 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(() => mockApiClient.getCategories(limit: 100)).called(1);
+          verify(() => mockRepository.getCategories()).called(1);
         },
       );
 
       blocTest<CategoriesBloc, CategoriesState>(
-        'emits [loading, error] when API throws',
+        'emits [loading, error] when repository throws',
         setUp: () {
           when(
-            () => mockApiClient.getCategories(limit: 100),
+            () => mockRepository.getCategories(),
           ).thenThrow(const FunnelcakeException('Network error'));
         },
-        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
         act: (bloc) => bloc.add(const CategoriesLoadRequested()),
         expect: () => [
           const CategoriesState(categoriesStatus: CategoriesStatus.loading),
@@ -72,26 +81,33 @@ void main() {
         ],
       );
 
-      blocTest<CategoriesBloc, CategoriesState>(
-        'filters out categories with empty names or zero videos',
-        setUp: () {
-          when(() => mockApiClient.getCategories(limit: 100)).thenAnswer(
-            (_) async => [
-              {'name': 'music', 'video_count': 100},
-              {'name': '', 'video_count': 50},
-              {'name': 'dance', 'video_count': 0},
-            ],
-          );
+      test(
+        'does not re-fetch while a load is already in progress',
+        () async {
+          // Use a Completer to keep the first request suspended so the second
+          // event arrives while the bloc is still in loading state.
+          final completer = Completer<List<VideoCategory>>();
+          when(
+            () => mockRepository.getCategories(),
+          ).thenAnswer((_) => completer.future);
+
+          final bloc = CategoriesBloc(categoriesRepository: mockRepository);
+
+          // First request — bloc enters loading state.
+          bloc.add(const CategoriesLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+
+          // Second request while first is still suspended.
+          bloc.add(const CategoriesLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+
+          // Only one network call should have been made.
+          verify(() => mockRepository.getCategories()).called(1);
+
+          // Clean up.
+          completer.complete([]);
+          await bloc.close();
         },
-        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
-        act: (bloc) => bloc.add(const CategoriesLoadRequested()),
-        expect: () => [
-          const CategoriesState(categoriesStatus: CategoriesStatus.loading),
-          const CategoriesState(
-            categoriesStatus: CategoriesStatus.loaded,
-            categories: [VideoCategory(name: 'music', videoCount: 100)],
-          ),
-        ],
       );
     });
 
@@ -112,7 +128,7 @@ void main() {
             ),
           ).thenAnswer((_) async => mockVideoStats);
         },
-        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
         act: (bloc) => bloc.add(const CategorySelected(category)),
         expect: () => [
           const CategoriesState(
@@ -140,7 +156,7 @@ void main() {
             ),
           ).thenThrow(const FunnelcakeException('Failed'));
         },
-        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
         act: (bloc) => bloc.add(const CategorySelected(category)),
         expect: () => [
           const CategoriesState(
@@ -175,7 +191,7 @@ void main() {
           selectedCategory: category,
           videosStatus: CategoriesVideosStatus.loaded,
         ),
-        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
         act: (bloc) => bloc.add(const CategoryVideosSortChanged('classic')),
         expect: () => [
           isA<CategoriesState>()
@@ -197,7 +213,7 @@ void main() {
 
       blocTest<CategoriesBloc, CategoriesState>(
         'does nothing when no category selected',
-        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
         act: (bloc) => bloc.add(const CategoryVideosSortChanged('classic')),
         expect: () => <CategoriesState>[],
       );
@@ -210,7 +226,7 @@ void main() {
           selectedCategory: VideoCategory(name: 'music', videoCount: 1500),
           videosStatus: CategoriesVideosStatus.loaded,
         ),
-        build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
         act: (bloc) => bloc.add(const CategoryDeselected()),
         expect: () => [
           isA<CategoriesState>()

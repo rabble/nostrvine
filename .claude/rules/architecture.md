@@ -37,6 +37,35 @@ This compositional layer composes one or more data clients and applies "business
 - Should not import any Flutter dependencies
 - Should not be dependent on other repositories
 - This layer can be considered the "product" layer - the business/product owner determines the rules for how to combine data from one or more data providers
+- **Fallback and composition logic belongs here** — when data can come from multiple sources (e.g., try API first, fall back to local cache or relay), the repository decides the strategy. BLoCs and UI should never implement source-selection or fallback logic
+
+**Good — repository owns the fallback:**
+```dart
+class VideoRepository {
+  Future<List<Video>> getVideos(String query) async {
+    try {
+      return await _funnelcakeClient.search(query);
+    } catch (_) {
+      // Fallback to relay when API is unavailable
+      return _relayClient.queryVideos(query);
+    }
+  }
+}
+```
+
+**Bad — BLoC or UI picks the source:**
+```dart
+// In BLoC — WRONG, this is repository-level logic
+Future<void> _onSearch(SearchEvent event, Emitter emit) async {
+  try {
+    final results = await _funnelcakeClient.search(event.query);
+    emit(state.copyWith(results: results));
+  } catch (_) {
+    final results = await _relayClient.queryVideos(event.query);
+    emit(state.copyWith(results: results));
+  }
+}
+```
 
 ### Business Logic Layer (BLoC)
 
@@ -56,6 +85,34 @@ The presentation layer is the top layer in the stack. It is the UI layer of the 
 **Responsibility**: Building widgets and managing the widget's lifecycle. Requests updates from the business logic layer to provide it with a new state to update the widget with the correct data.
 
 **Key Rule**: No business logic should exist in this layer. The presentation layer should only interact with the business logic layer.
+
+> **Frequent review finding**: Logic such as filtering, sorting, data transformation, conditional fetching, or retry/fallback flows must NOT live in widgets. If the UI is doing more than reading state and dispatching events, extract that logic into a BLoC, Cubit, or repository.
+
+**Common violations:**
+```dart
+// WRONG — business logic in a widget
+class SearchScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final results = state.items
+        .where((i) => i.category == selectedCategory)  // filtering = logic
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));      // sorting = logic
+
+    return ListView(children: results.map(ResultTile.new).toList());
+  }
+}
+
+// WRONG — conditional fetching in a widget callback
+onPressed: () async {
+  final profile = await repository.getProfile(id);  // direct repo call
+  if (profile == null) {
+    await repository.fetchFromRelay(id);             // fallback logic
+  }
+}
+```
+
+**Correct**: Move all of the above into a BLoC/Cubit, expose the final result via state, and let the widget just render it.
 
 ## Project Organization
 
