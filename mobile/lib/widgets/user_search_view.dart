@@ -27,6 +27,14 @@ class UserSearchView extends StatelessWidget {
       builder: (context, state) {
         return switch (state.status) {
           UserSearchStatus.initial => const _UserSearchEmptyState(),
+          // Show intermediate results as they arrive; only show spinner
+          // when no results are available yet.
+          UserSearchStatus.loading when state.results.isNotEmpty =>
+            _UserSearchResultsList(
+              results: state.results,
+              hasMore: state.hasMore,
+              isLoadingMore: true,
+            ),
           UserSearchStatus.loading => const _UserSearchLoadingState(),
           UserSearchStatus.success => _UserSearchResultsList(
             results: state.results,

@@ -1,5 +1,7 @@
 // ABOUTME: BLoC for searching user profiles via ProfileRepository.
 
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -78,12 +80,14 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
     try {
       await emit.forEach<List<UserProfile>>(
-        _profileRepository.searchUsersProgressive(
-          query: query,
-          limit: _pageSize,
-          sortBy: 'followers',
-          hasVideos: hasVideos,
-        ),
+        _profileRepository
+            .searchUsersProgressive(
+              query: query,
+              limit: _pageSize,
+              sortBy: 'followers',
+              hasVideos: hasVideos,
+            )
+            .timeout(const Duration(seconds: 20)),
         onData: (results) {
           if (!trackedFirst && results.isNotEmpty) {
             trackedFirst = true;
@@ -110,6 +114,17 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       );
 
       _feedTracker?.markFeedDisplayed('user_search', state.results.length);
+    } on TimeoutException {
+      // Stream timed out — emit success with whatever results accumulated
+      // so far rather than leaving the UI stuck in loading.
+      emit(
+        state.copyWith(
+          status: UserSearchStatus.success,
+          offset: state.results.length,
+          hasMore: false,
+          isLoadingMore: false,
+        ),
+      );
     } on Exception catch (e) {
       _feedTracker?.trackFeedError(
         'user_search',

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for UserSearchBloc - user search via ProfileRepository
 // ABOUTME: Tests streaming states, error handling, debouncing, and pagination
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -554,6 +556,43 @@ void main() {
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.success)
               .having((s) => s.results.length, 'results.length', 2),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'emits success with partial results when stream times out',
+        setUp: () {
+          final controller = StreamController<List<UserProfile>>();
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'slow',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) {
+            // Emit one batch then stall (never close the stream).
+            controller.add([createTestProfile('a' * 64, 'Slow User')]);
+            return controller.stream;
+          });
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('slow')),
+        // Wait longer than the 20 s stream timeout used in the BLoC.
+        wait: const Duration(seconds: 22),
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'slow',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.results.length, 'results.length', 1),
+          // Timeout fires → success with accumulated results
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results.length, 'results.length', 1)
+              .having((s) => s.hasMore, 'hasMore', false),
         ],
       );
     });

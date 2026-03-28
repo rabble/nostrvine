@@ -786,7 +786,9 @@ class ProfileRepository {
     if (offset == 0) {
       final preWsCount = resultMap.length;
       try {
-        final events = await _nostrClient.queryUsers(trimmed, limit: limit);
+        final events = await _nostrClient
+            .queryUsers(trimmed, limit: limit)
+            .timeout(const Duration(seconds: 5));
         for (final event in events) {
           final profile = UserProfile.fromNostrEvent(event);
           resultMap.putIfAbsent(profile.pubkey, () => profile);
@@ -794,6 +796,7 @@ class ProfileRepository {
       } on Object catch (e) {
         // Intentionally catches Object: WebSocket failures surface as
         // StateError (an Error, not Exception), unlike the REST phase above.
+        // TimeoutException is also caught here when NIP-50 relays are slow.
         developer.log(
           'NIP-50 search failed: $e',
           name: 'ProfileRepository.searchUsersProgressive',
