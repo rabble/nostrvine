@@ -27,6 +27,15 @@ class ShareableUser {
   final bool isFollower;
 }
 
+/// Structured share metadata for the platform share sheet.
+///
+/// Contains all the information needed to build a rich [ShareParams].
+typedef ShareData = ({
+  String shareUrl,
+  String? title,
+  String? thumbnailUrl,
+});
+
 /// Result of sharing operation
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class ShareResult {
@@ -301,6 +310,19 @@ class VideoSharingService {
     return generateShareUrl(video);
   }
 
+  /// Generate structured share metadata for the platform share sheet.
+  ///
+  /// Returns a [ShareData] record containing the share URL, video title,
+  /// and thumbnail URL so callers can build rich [ShareParams] with an
+  /// attached image file.
+  ShareData generateShareData(VideoEvent video) {
+    return (
+      shareUrl: generateShareUrl(video),
+      title: video.title,
+      thumbnailUrl: video.effectiveThumbnailUrl,
+    );
+  }
+
   /// Check if user has been shared with recently
   bool hasSharedWithRecently(String pubkey) {
     final lastShared = _shareHistory[pubkey];
@@ -325,7 +347,11 @@ class VideoSharingService {
     };
   }
 
-  /// Create the message content for sharing a video
+  /// Create the message content for sharing a video.
+  ///
+  /// Uses the stable web link (`divine.video/video/{stableId}`) instead of
+  /// the raw CDN/blossom URL so the recipient sees a clean, shareable link
+  /// that can be opened in a browser or deep-linked back into the app.
   String _createShareMessage(VideoEvent video, String? personalMessage) {
     final buffer = StringBuffer();
 
@@ -335,23 +361,11 @@ class VideoSharingService {
     }
 
     if (video.title != null && video.title!.isNotEmpty) {
-      buffer.writeln('Check out this Divine: ${video.title}');
-    } else {
-      buffer.writeln('Check out this Divine');
-    }
-
-    if (video.videoUrl != null) {
+      buffer.writeln('"${video.title}"');
       buffer.writeln();
-      buffer.writeln(video.videoUrl);
     }
 
-    if (video.hashtags.isNotEmpty) {
-      buffer.writeln();
-      buffer.writeln(video.hashtags.map((tag) => '#$tag').join(' '));
-    }
-
-    buffer.writeln();
-    buffer.writeln('Shared via Divine 🍇');
+    buffer.writeln(generateShareUrl(video));
 
     return buffer.toString();
   }

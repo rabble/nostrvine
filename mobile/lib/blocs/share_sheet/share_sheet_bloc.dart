@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -36,12 +37,14 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     required ProfileRepository profileRepository,
     required FollowRepository followRepository,
     Future<BookmarkService?>? bookmarkServiceFuture,
+    BaseCacheManager? cacheManager,
   }) : _video = video,
        _relayUrl = relayUrl,
        _videoSharingService = videoSharingService,
        _profileRepository = profileRepository,
        _followRepository = followRepository,
        _bookmarkServiceFuture = bookmarkServiceFuture,
+       _cacheManager = cacheManager,
        super(const ShareSheetState()) {
     on<ShareSheetContactsLoadRequested>(_onContactsLoadRequested);
     on<ShareSheetQuickSendRequested>(
@@ -64,6 +67,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final ProfileRepository _profileRepository;
   final FollowRepository _followRepository;
   final Future<BookmarkService?>? _bookmarkServiceFuture;
+  final BaseCacheManager? _cacheManager;
 
   // --------------------------------------------------------------------------
   // Contact loading
@@ -357,18 +361,45 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     }
   }
 
-  void _onShareViaRequested(
+  Future<void> _onShareViaRequested(
     ShareSheetShareViaRequested event,
     Emitter<ShareSheetState> emit,
-  ) {
+  ) async {
     try {
-      final shareText = _videoSharingService.generateShareText(_video);
+      final shareData = _videoSharingService.generateShareData(_video);
+
+      // Download thumbnail if available and a cache manager was provided.
+      String? thumbnailPath;
+      final thumbUrl = shareData.thumbnailUrl;
+      if (thumbUrl != null && _cacheManager != null) {
+        try {
+          final file = await _cacheManager
+              .getSingleFile(thumbUrl)
+              .timeout(const Duration(seconds: 5));
+          thumbnailPath = file.path;
+        } catch (e) {
+          Log.warning(
+            'Thumbnail download failed, sharing without image: $e',
+            name: 'ShareSheetBloc',
+            category: LogCategory.ui,
+          );
+        }
+      }
+
+      final title = shareData.title;
       emit(
-        state.copyWith(actionResult: ShareSheetShareViaTriggered(shareText)),
+        state.copyWith(
+          actionResult: ShareSheetShareViaTriggered(
+            shareUrl: shareData.shareUrl,
+            thumbnailPath: thumbnailPath,
+            title: title,
+            subject: title,
+          ),
+        ),
       );
     } catch (e) {
       Log.error(
-        'Failed to generate share text: $e',
+        'Failed to generate share data: $e',
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );

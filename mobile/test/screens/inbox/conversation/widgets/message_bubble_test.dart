@@ -6,7 +6,16 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_bubble.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
+
+import '../../../../helpers/test_provider_overrides.dart';
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
   group(MessageBubble, () {
@@ -125,7 +134,7 @@ void main() {
           const MaterialApp(
             home: Scaffold(
               body: MessageBubble(
-                message: 'Check https://divine.video/video/abc123',
+                message: 'Check https://divine.video/terms',
                 timestamp: '2:30 PM',
                 isSent: true,
               ),
@@ -323,7 +332,7 @@ void main() {
           const MaterialApp(
             home: Scaffold(
               body: MessageBubble(
-                message: 'https://divine.video/video/abc123',
+                message: 'https://example.com/some-page',
                 timestamp: '2:30 PM',
                 isSent: true,
               ),
@@ -334,10 +343,106 @@ void main() {
         final richTextFinder = find.byWidgetPredicate(
           (widget) =>
               widget is RichText &&
-              widget.text.toPlainText().contains('https://divine.video'),
+              widget.text.toPlainText().contains('https://example.com'),
         );
         expect(richTextFinder, findsOneWidget);
       });
+    });
+
+    group('video preview card', () {
+      late _MockVideoEventService mockVideoEventService;
+      late MockNostrClient mockNostrClient;
+
+      setUp(() {
+        mockVideoEventService = _MockVideoEventService();
+        mockNostrClient = createMockNostrService();
+        // Stub fetchEventById for video link preview lookups.
+        when(
+          () => mockNostrClient.fetchEventById(any()),
+        ).thenAnswer((_) async => null);
+      });
+
+      testWidgets(
+        'renders $VideoThumbnailWidget when video is in cache',
+        (tester) async {
+          final testVideo = VideoEvent(
+            id:
+                '0123456789abcdef0123456789abcdef'
+                '0123456789abcdef0123456789abcdef',
+            pubkey:
+                'abcdef0123456789abcdef0123456789'
+                'abcdef0123456789abcdef0123456789',
+            createdAt: 1757385263,
+            content: 'Test',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+            title: 'My Cool Video',
+          );
+
+          when(
+            () => mockVideoEventService.getVideoById('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: const Scaffold(
+                body: MessageBubble(
+                  message: 'https://divine.video/video/abc123',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          expect(find.text('My Cool Video'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'falls back to link text when video not found',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoById('unknown-id'),
+          ).thenReturn(null);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: const Scaffold(
+                body: MessageBubble(
+                  message: 'https://divine.video/video/unknown-id',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final richTextFinder = find.byWidgetPredicate(
+            (widget) =>
+                widget is RichText &&
+                widget.text.toPlainText().contains(
+                  'https://divine.video/video/unknown-id',
+                ),
+          );
+          expect(richTextFinder, findsOneWidget);
+          expect(find.byType(VideoThumbnailWidget), findsNothing);
+        },
+      );
     });
 
     group('long-press', () {

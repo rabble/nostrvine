@@ -1,10 +1,19 @@
 // ABOUTME: Chat message bubble widget for sent and received messages.
 // ABOUTME: Supports message grouping with variable border radius,
-// ABOUTME: conditional timestamp display, clickable URLs, and long-press actions.
+// ABOUTME: conditional timestamp display, clickable URLs, long-press actions,
+// ABOUTME: and inline video preview cards for divine.video links.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Regex to detect linkifiable text in messages.
@@ -25,6 +34,17 @@ final _linkRegex = RegExp(
 
 final _emailRegex = RegExp(
   r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+);
+
+/// Matches `divine.video/video/{stableId}` URLs in message text.
+///
+/// The stableId capture group accepts hex event IDs (64 chars) and d-tags
+/// (UUIDs, alphanumeric strings). Only word characters and hyphens are
+/// matched so trailing punctuation (`.`, `,`, `)`) and query strings
+/// (`?q=1`) are excluded.
+final _divineVideoUrlRegex = RegExp(
+  r'https?://(?:www\.)?divine\.video/video/([\w-]+)',
+  caseSensitive: false,
 );
 
 /// A single chat message bubble.
@@ -69,6 +89,9 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final videoMatch = _divineVideoUrlRegex.firstMatch(message);
+    final videoStableId = videoMatch?.group(1);
+
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
@@ -112,7 +135,10 @@ class MessageBubble extends StatelessWidget {
                         ),
                       ),
                     ),
-                  _MessageText(message: message),
+                  if (videoStableId != null)
+                    _VideoLinkPreview(videoStableId: videoStableId)
+                  else
+                    _MessageText(message: message),
                 ],
               ),
             ),
@@ -326,5 +352,138 @@ class _MessageTextState extends State<_MessageText> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+}
+
+/// Inline video preview card for `divine.video/video/{stableId}` links.
+///
+/// Looks up the video by [videoStableId] in the [VideoEventService] cache.
+/// If not cached, fetches the event from the Nostr relay via [NostrClient].
+/// Renders a tappable card with thumbnail and title when resolved, or falls
+/// back to the video URL as a tappable link on failure.
+class _VideoLinkPreview extends ConsumerStatefulWidget {
+  const _VideoLinkPreview({required this.videoStableId});
+
+  final String videoStableId;
+
+  @override
+  ConsumerState<_VideoLinkPreview> createState() => _VideoLinkPreviewState();
+}
+
+class _VideoLinkPreviewState extends ConsumerState<_VideoLinkPreview> {
+  VideoEvent? _video;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveVideo();
+  }
+
+  Future<void> _resolveVideo() async {
+    final videoEventService = ref.read(videoEventServiceProvider);
+    final stableId = widget.videoStableId;
+
+    // Try cache: first by event ID, then by vine ID (d-tag).
+    final cached =
+        videoEventService.getVideoById(stableId) ??
+        videoEventService.getVideoEventByVineId(stableId);
+    if (cached != null) {
+      if (mounted) {
+        setState(() {
+          _video = cached;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    // Fetch from relay when not in cache.
+    try {
+      final nostrClient = ref.read(nostrServiceProvider);
+
+      // Try by event ID first.
+      var event = await nostrClient.fetchEventById(stableId);
+
+      // If not found, query by d-tag for addressable video events.
+      if (event == null) {
+        final results = await nostrClient.queryEvents([
+          Filter(kinds: [34236], d: [stableId], limit: 1),
+        ]);
+        if (results.isNotEmpty) {
+          event = results.first;
+        }
+      }
+
+      if (event != null && mounted) {
+        setState(() {
+          _video = VideoEvent.fromNostrEvent(event!);
+          _isLoading = false;
+        });
+        return;
+      }
+    } catch (_) {
+      // Fall through to link fallback.
+    }
+
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          height: 180,
+          width: double.infinity,
+          color: VineTheme.cardBackground,
+          child: const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: VineTheme.vineGreen,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_video == null) {
+      return _MessageText(
+        message: 'https://divine.video/video/${widget.videoStableId}',
+      );
+    }
+
+    final video = _video!;
+    return GestureDetector(
+      onTap: () => context.push(VideoDetailScreen.pathForId(video.id)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: VideoThumbnailWidget(video: video),
+            ),
+          ),
+          if (video.title != null && video.title!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                video.title!,
+                style: VineTheme.labelLargeFont(),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

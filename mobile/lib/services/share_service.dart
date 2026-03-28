@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -81,12 +82,38 @@ class ShareService {
     }
   }
 
-  /// Share via native platform share sheet
+  /// Share via native platform share sheet with rich preview.
+  ///
+  /// Downloads the video thumbnail (if available) and attaches it as a file
+  /// so receiving apps display an image preview alongside the share URL.
   Future<void> shareViaSheet(VideoEvent video, BuildContext context) async {
     try {
       final shareText = generateShareText(video);
+      final title = video.title;
+
+      // Download thumbnail for rich preview
+      String? thumbnailPath;
+      final thumbUrl = video.effectiveThumbnailUrl;
+      if (thumbUrl != null) {
+        try {
+          final file = await openVineImageCache
+              .getSingleFile(thumbUrl)
+              .timeout(const Duration(seconds: 5));
+          thumbnailPath = file.path;
+        } catch (_) {
+          // Share without thumbnail on failure
+        }
+      }
+
+      final files = thumbnailPath != null ? [XFile(thumbnailPath)] : null;
+
       await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: 'Check out this video on Divine'),
+        ShareParams(
+          text: shareText,
+          files: files,
+          title: title,
+          subject: title ?? 'Check out this video on Divine',
+        ),
       );
     } catch (e) {
       Log.error(
