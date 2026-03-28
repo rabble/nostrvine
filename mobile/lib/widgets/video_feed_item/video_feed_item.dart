@@ -50,6 +50,7 @@ import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -162,11 +163,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   double _pauseButtonOpacity = 1.0;
 
   // State for double-tap heart animation
-  bool _showDoubleTapHeart = false;
+  final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
+  int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
-  double _heartScale = 0.0;
-  double _heartOpacity = 1.0;
-  Offset _heartPosition = Offset.zero;
 
   /// Triggers the fading pause button animation.
   /// Shows pause icon that fades from 100% to 0% opacity over 500ms.
@@ -194,41 +193,15 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     });
   }
 
-  /// Triggers the double-tap heart animation.
-  /// Shows heart that scales up and fades out over ~1 second.
-  void _triggerDoubleTapHeartAnimation() {
-    setState(() {
-      _showDoubleTapHeart = true;
-      _heartScale = 0.0;
-      _heartOpacity = 1.0;
-    });
-
-    // Scale up quickly
-    Future.delayed(const Duration(milliseconds: 50), () {
-      if (!mounted) return;
-      setState(() => _heartScale = 1.0);
-    });
-
-    // Hold, then fade out
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (!mounted) return;
-      setState(() => _heartOpacity = 0.0);
-    });
-
-    // Hide completely after animation
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (!mounted) return;
-      setState(() {
-        _showDoubleTapHeart = false;
-        _heartScale = 0.0;
-        _heartOpacity = 1.0;
-      });
-    });
-  }
-
   /// Handles double-tap to like. Only likes (never unlikes) per Instagram
   /// behavior. Stores the tap position for the heart animation.
   void _handleDoubleTapLike(TapDownDetails details) {
+    final showWarning = shouldShowContentWarningOverlay(
+      contentWarningLabels: widget.video.contentWarningLabels,
+      warnLabels: widget.video.warnLabels,
+    );
+    if (showWarning && !_contentWarningRevealed) return;
+
     final state = _interactionsBloc.state;
 
     // Only trigger like if not already liked and not in progress
@@ -237,8 +210,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     }
 
     // Always show heart animation at tap position (even if already liked)
-    _heartPosition = details.localPosition;
-    _triggerDoubleTapHeartAnimation();
+    _heartTrigger.value = (
+      offset: details.localPosition,
+      id: ++_heartTriggerId,
+    );
   }
 
   /// Installs (or re-installs) a listener on [controller] that auto-resumes
@@ -569,6 +544,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         }
       }
     }
+    _heartTrigger.dispose();
     super.dispose();
   }
 
@@ -1187,27 +1163,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   ),
                                 ),
                               ),
-                            // Double-tap heart animation
-                            if (_showDoubleTapHeart)
-                              Positioned(
-                                left: _heartPosition.dx - 60,
-                                top: _heartPosition.dy - 60,
-                                child: AnimatedOpacity(
-                                  opacity: _heartOpacity,
-                                  duration: const Duration(milliseconds: 400),
-                                  curve: Curves.easeOut,
-                                  child: AnimatedScale(
-                                    scale: _heartScale,
-                                    duration: const Duration(milliseconds: 200),
-                                    curve: Curves.elasticOut,
-                                    child: const DivineIcon(
-                                      icon: DivineIconName.heartDuo,
-                                      size: 120,
-                                      color: VineTheme.likeRed,
-                                    ),
-                                  ),
-                                ),
-                              ),
                             // Subtitle overlay
                             if (isActive && video.hasSubtitles)
                               Consumer(
@@ -1287,6 +1242,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 showListAttribution: widget.showListAttribution,
                 hideFollowButtonIfFollowing: widget.hideFollowButtonIfFollowing,
               ),
+            ),
+
+            Positioned.fill(
+              child: DoubleTapHeartOverlay(trigger: _heartTrigger),
             ),
           ],
         ),
