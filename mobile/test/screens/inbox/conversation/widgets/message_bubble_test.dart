@@ -3,6 +3,8 @@
 // ABOUTME: alignment for sent vs received messages, URL linkification,
 // ABOUTME: and long-press callback.
 
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -353,50 +355,87 @@ void main() {
       late _MockVideoEventService mockVideoEventService;
       late MockNostrClient mockNostrClient;
 
+      final testVideo = VideoEvent(
+        id:
+            '0123456789abcdef0123456789abcdef'
+            '0123456789abcdef0123456789abcdef',
+        pubkey:
+            'abcdef0123456789abcdef0123456789'
+            'abcdef0123456789abcdef0123456789',
+        createdAt: 1757385263,
+        content: 'Test',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+        title: 'My Cool Video',
+      );
+
       setUp(() {
         mockVideoEventService = _MockVideoEventService();
         mockNostrClient = createMockNostrService();
+
+        // Default stubs: nothing in cache.
+        when(
+          () => mockVideoEventService.getVideoById(any()),
+        ).thenReturn(null);
+        when(
+          () => mockVideoEventService.getVideoEventByVineId(any()),
+        ).thenReturn(null);
         // Stub fetchEventById for video link preview lookups.
         when(
           () => mockNostrClient.fetchEventById(any()),
         ).thenAnswer((_) async => null);
       });
 
+      Widget buildWithVideoMessage({
+        required String message,
+      }) => testMaterialApp(
+        home: Scaffold(
+          body: MessageBubble(
+            message: message,
+            timestamp: '2:30 PM',
+            isSent: true,
+          ),
+        ),
+        mockNostrService: mockNostrClient,
+        additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(
+            mockVideoEventService,
+          ),
+        ],
+      );
+
+      testWidgets(
+        'shows loading spinner before video resolves',
+        (tester) async {
+          // Use a Completer that never completes so the cubit stays in
+          // the loading state without leaving a pending Timer.
+          final neverCompletes = Completer<Never>();
+          when(
+            () => mockNostrClient.fetchEventById(any()),
+          ).thenAnswer((_) => neverCompletes.future);
+
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message: 'https://divine.video/video/abc123',
+            ),
+          );
+          // Single pump to build the widget tree (don't settle).
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.byType(VideoThumbnailWidget), findsNothing);
+        },
+      );
+
       testWidgets(
         'renders $VideoThumbnailWidget when video is in cache',
         (tester) async {
-          final testVideo = VideoEvent(
-            id:
-                '0123456789abcdef0123456789abcdef'
-                '0123456789abcdef0123456789abcdef',
-            pubkey:
-                'abcdef0123456789abcdef0123456789'
-                'abcdef0123456789abcdef0123456789',
-            createdAt: 1757385263,
-            content: 'Test',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
-            title: 'My Cool Video',
-          );
-
           when(
             () => mockVideoEventService.getVideoById('abc123'),
           ).thenReturn(testVideo);
 
           await tester.pumpWidget(
-            testMaterialApp(
-              home: const Scaffold(
-                body: MessageBubble(
-                  message: 'https://divine.video/video/abc123',
-                  timestamp: '2:30 PM',
-                  isSent: true,
-                ),
-              ),
-              mockNostrService: mockNostrClient,
-              additionalOverrides: [
-                videoEventServiceProvider.overrideWithValue(
-                  mockVideoEventService,
-                ),
-              ],
+            buildWithVideoMessage(
+              message: 'https://divine.video/video/abc123',
             ),
           );
           await tester.pumpAndSettle();
@@ -409,25 +448,9 @@ void main() {
       testWidgets(
         'falls back to link text when video not found',
         (tester) async {
-          when(
-            () => mockVideoEventService.getVideoById('unknown-id'),
-          ).thenReturn(null);
-
           await tester.pumpWidget(
-            testMaterialApp(
-              home: const Scaffold(
-                body: MessageBubble(
-                  message: 'https://divine.video/video/unknown-id',
-                  timestamp: '2:30 PM',
-                  isSent: true,
-                ),
-              ),
-              mockNostrService: mockNostrClient,
-              additionalOverrides: [
-                videoEventServiceProvider.overrideWithValue(
-                  mockVideoEventService,
-                ),
-              ],
+            buildWithVideoMessage(
+              message: 'https://divine.video/video/unknown-id',
             ),
           );
           await tester.pumpAndSettle();
@@ -441,6 +464,50 @@ void main() {
           );
           expect(richTextFinder, findsOneWidget);
           expect(find.byType(VideoThumbnailWidget), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'preserves surrounding text alongside video preview',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoById('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message:
+                  'hey check this out '
+                  'https://divine.video/video/abc123 what do you think?',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Preview card is rendered.
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+
+          // Surrounding text is preserved.
+          expect(find.text('hey check this out'), findsOneWidget);
+          expect(find.text('what do you think?'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'preserves text before video URL only',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoById('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message: 'check this https://divine.video/video/abc123',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          expect(find.text('check this'), findsOneWidget);
         },
       );
     });

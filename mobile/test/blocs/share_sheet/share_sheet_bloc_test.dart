@@ -777,7 +777,14 @@ void main() {
             thumbnailUrl: 'https://example.com/thumb.jpg',
           ));
           final mockFile = _MockFile();
-          when(() => mockFile.path).thenReturn('/tmp/thumb.jpg');
+          when(() => mockFile.path).thenReturn('/tmp/cached_thumb');
+          // Stub copy to return a file at the destination path.
+          when(() => mockFile.copy(any())).thenAnswer((inv) async {
+            final dest = inv.positionalArguments[0] as String;
+            final copied = _MockFile();
+            when(() => copied.path).thenReturn(dest);
+            return copied;
+          });
           when(
             () => mockCacheManager.getSingleFile(any()),
           ).thenAnswer((_) async => mockFile);
@@ -797,7 +804,7 @@ void main() {
                 .having(
                   (r) => r.thumbnailPath,
                   'thumbnailPath',
-                  '/tmp/thumb.jpg',
+                  endsWith('divine_share_thumb.jpg'),
                 )
                 .having((r) => r.title, 'title', 'Test Video')
                 .having((r) => r.subject, 'subject', 'Test Video'),

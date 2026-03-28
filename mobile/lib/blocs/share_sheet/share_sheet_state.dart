@@ -18,15 +18,17 @@ enum ShareSheetStatus {
 /// One-shot action result communicated via [ShareSheetState.actionResult].
 ///
 /// Consumed by BlocListener to show snackbars or dismiss the sheet.
-/// Does **not** extend [Equatable] — identity equality ensures that
-/// consecutive identical results are always treated as distinct by
-/// [BlocListener.listenWhen].
+/// Constructors are intentionally **non-const** so that each instance has
+/// a unique identity.  Since this hierarchy does not extend [Equatable],
+/// identity equality ensures that consecutive identical-looking results
+/// are always treated as distinct by [BlocListener.listenWhen] and by
+/// [Bloc.emit]'s state-deduplication check inside [ShareSheetState].
 sealed class ShareSheetActionResult {
-  const ShareSheetActionResult();
+  ShareSheetActionResult();
 }
 
 class ShareSheetSendSuccess extends ShareSheetActionResult {
-  const ShareSheetSendSuccess(
+  ShareSheetSendSuccess(
     this.recipientName, {
     this.shouldDismiss = false,
   });
@@ -39,13 +41,13 @@ class ShareSheetSendSuccess extends ShareSheetActionResult {
 }
 
 class ShareSheetSendFailure extends ShareSheetActionResult {
-  const ShareSheetSendFailure();
+  ShareSheetSendFailure();
 }
 
 /// Consolidates the former ShareSheetSaveSuccess and ShareSheetSaveFailure
 /// into a single class, using [succeeded] to distinguish the outcome.
 class ShareSheetSaveResult extends ShareSheetActionResult {
-  const ShareSheetSaveResult({required this.succeeded});
+  ShareSheetSaveResult({required this.succeeded});
 
   final bool succeeded;
 }
@@ -53,11 +55,11 @@ class ShareSheetSaveResult extends ShareSheetActionResult {
 /// Generic failure for utility actions (copy link, share via, etc.).
 /// Error details are logged by the BLoC; the UI shows a generic message.
 class ShareSheetActionFailure extends ShareSheetActionResult {
-  const ShareSheetActionFailure();
+  ShareSheetActionFailure();
 }
 
 class ShareSheetCopiedToClipboard extends ShareSheetActionResult {
-  const ShareSheetCopiedToClipboard({
+  ShareSheetCopiedToClipboard({
     required this.label,
     required this.text,
   });
@@ -70,7 +72,7 @@ class ShareSheetCopiedToClipboard extends ShareSheetActionResult {
 }
 
 class ShareSheetShareViaTriggered extends ShareSheetActionResult {
-  const ShareSheetShareViaTriggered({
+  ShareSheetShareViaTriggered({
     required this.shareUrl,
     this.thumbnailPath,
     this.title,
