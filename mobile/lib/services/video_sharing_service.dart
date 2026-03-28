@@ -334,10 +334,10 @@ class VideoSharingService {
       buffer.writeln();
     }
 
-    buffer.writeln('🎬 Check out this vine:');
-
     if (video.title != null && video.title!.isNotEmpty) {
-      buffer.writeln('"${video.title}"');
+      buffer.writeln('Check out this Divine: ${video.title}');
+    } else {
+      buffer.writeln('Check out this Divine');
     }
 
     if (video.videoUrl != null) {
