@@ -1301,12 +1301,21 @@ class FollowRepository {
       // Guard: detect catastrophic list reduction from buggy external clients.
       // A common Nostr footgun is publishing a Kind 3 event without first
       // fetching the existing contact list, which overwrites the full list
-      // with only the newly followed user. When the reduction exceeds the
-      // threshold, union-merge instead of replacing and re-broadcast the
-      // merged list to fix the relay state.
-      if (_followingPubkeys.length >= _mergeMinFollows &&
+      // with only the newly followed user. We detect this by checking for
+      // two conditions simultaneously:
+      //   1. The remote list is drastically smaller than the local list.
+      //   2. The remote list contains pubkeys NOT already in the local list
+      //      (the "only-new-follow" fingerprint of buggy clients).
+      // A legitimate mass-unfollow produces a strict subset of the local
+      // list, so condition 2 filters it out.
+      final localSet = _followingPubkeys.toSet();
+      final isDrasticReduction =
+          _followingPubkeys.length >= _mergeMinFollows &&
           followedPubkeys.length <
-              (_followingPubkeys.length * _mergeMaxLossFraction).ceil()) {
+              (_followingPubkeys.length * _mergeMaxLossFraction).ceil();
+      final hasNewPubkeys = followedPubkeys.any((pk) => !localSet.contains(pk));
+
+      if (isDrasticReduction && hasNewPubkeys) {
         final merged = <String>{..._followingPubkeys, ...followedPubkeys};
 
         Log.warning(

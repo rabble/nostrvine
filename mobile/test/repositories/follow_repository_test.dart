@@ -1210,6 +1210,48 @@ void main() {
       );
 
       test(
+        'accepts drastic reduction when remote is a subset (legitimate mass '
+        'unfollow)',
+        () async {
+          // Seed with 12 follows
+          final seededPubkeys = List.generate(
+            12,
+            (i) => i.toRadixString(16).padLeft(64, '0'),
+          );
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey':
+                '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
+          });
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+          expect(repository.followingCount, 12);
+
+          // Remote event keeps only 3 of the original 12 — drastic but all
+          // entries are a subset of the local list (no new pubkeys), so this
+          // is a legitimate mass unfollow on another client.
+          final remoteEvent = Event(
+            testCurrentUserPubkey,
+            3,
+            seededPubkeys.take(3).map((p) => ['p', p]).toList(),
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+          );
+
+          realTimeStreamController.add(remoteEvent);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Should accept as-is (not merge) because no new pubkeys
+          expect(repository.followingCount, 3);
+        },
+      );
+
+      test(
         'accepts remote event with slightly fewer follows (legitimate unfollow)',
         () async {
           // Seed with 10 follows
