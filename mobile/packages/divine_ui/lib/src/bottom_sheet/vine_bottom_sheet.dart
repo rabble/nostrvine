@@ -22,6 +22,7 @@ class VineBottomSheet extends StatelessWidget {
   /// Set [expanded] to false for content that should wrap (not fill space).
   const VineBottomSheet({
     this.scrollable = true,
+    this.showHeader = true,
     this.title,
     this.contentTitle,
     this.scrollController,
@@ -47,6 +48,13 @@ class VineBottomSheet extends StatelessWidget {
   /// When true (default), the sheet uses DraggableScrollableSheet and content
   /// is scrollable. When false, the sheet has fixed height based on content.
   final bool scrollable;
+
+  /// Whether to show the full header (drag handle + title + divider).
+  ///
+  /// When false, only the drag handle is shown and content starts immediately
+  /// below it. Useful for sheets where the title is part of the scrollable
+  /// content rather than pinned in a header bar.
+  final bool showHeader;
 
   /// Optional title widget displayed in the header (above divider)
   final Widget? title;
@@ -94,6 +102,7 @@ class VineBottomSheet extends StatelessWidget {
     required BuildContext context,
     List<Widget>? children,
     bool scrollable = true,
+    bool showHeader = true,
     Widget? title,
     String? contentTitle,
     Widget? body,
@@ -138,6 +147,7 @@ class VineBottomSheet extends StatelessWidget {
           minChildSize: minChildSize,
           maxChildSize: maxChildSize,
           builder: (context, scrollController) => VineBottomSheet(
+            showHeader: showHeader,
             title: title,
             contentTitle: contentTitle,
             scrollController: scrollController,
@@ -163,6 +173,7 @@ class VineBottomSheet extends StatelessWidget {
         elevation: 0,
         builder: (_) => VineBottomSheet(
           scrollable: false,
+          showHeader: showHeader,
           title: title,
           contentTitle: contentTitle,
           trailing: trailing,
@@ -186,6 +197,7 @@ class VineBottomSheet extends StatelessWidget {
         color: VineTheme.surfaceBackground,
         child: scrollable
             ? _ScrollableContent(
+                showHeader: showHeader,
                 title: title,
                 trailing: trailing,
                 body: body,
@@ -197,6 +209,7 @@ class VineBottomSheet extends StatelessWidget {
                 children: children,
               )
             : _FixedContent(
+                showHeader: showHeader,
                 title: title,
                 trailing: trailing,
                 body: body,
@@ -212,6 +225,7 @@ class VineBottomSheet extends StatelessWidget {
 
 class _ScrollableContent extends StatelessWidget {
   const _ScrollableContent({
+    required this.showHeader,
     required this.title,
     required this.trailing,
     required this.body,
@@ -223,6 +237,7 @@ class _ScrollableContent extends StatelessWidget {
     required this.showHeaderDivider,
   });
 
+  final bool showHeader;
   final Widget? title;
   final Widget? trailing;
   final Widget? body;
@@ -237,12 +252,19 @@ class _ScrollableContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header with drag handle, title, trailing actions, and divider
-        VineBottomSheetHeader(
-          title: title,
-          trailing: trailing,
-          showDivider: showHeaderDivider,
-        ),
+        if (showHeader)
+          // Header with drag handle, title, trailing actions, and divider
+          VineBottomSheetHeader(
+            title: title,
+            trailing: trailing,
+            showDivider: showHeaderDivider,
+          )
+        else
+          // Drag handle only — content manages its own layout below
+          const Padding(
+            padding: EdgeInsets.only(top: 8, bottom: 20),
+            child: Center(child: VineBottomSheetDragHandle()),
+          ),
 
         // Scrollable content area (contentTitle is first element inside)
         Expanded(
@@ -286,6 +308,7 @@ class _ScrollableContent extends StatelessWidget {
 
 class _FixedContent extends StatelessWidget {
   const _FixedContent({
+    required this.showHeader,
     required this.title,
     required this.trailing,
     required this.body,
@@ -295,6 +318,7 @@ class _FixedContent extends StatelessWidget {
     required this.showHeaderDivider,
   });
 
+  final bool showHeader;
   final Widget? title;
   final Widget? trailing;
   final Widget? body;
@@ -310,12 +334,19 @@ class _FixedContent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header with drag handle and divider
-          VineBottomSheetHeader(
-            title: title,
-            trailing: trailing,
-            showDivider: showHeaderDivider,
-          ),
+          if (showHeader)
+            // Header with drag handle and divider
+            VineBottomSheetHeader(
+              title: title,
+              trailing: trailing,
+              showDivider: showHeaderDivider,
+            )
+          else
+            // Drag handle only
+            const Padding(
+              padding: EdgeInsets.only(top: 8, bottom: 20),
+              child: Center(child: VineBottomSheetDragHandle()),
+            ),
 
           // Fixed content area with minimum height for menu entries (2 × 56px)
           Flexible(
