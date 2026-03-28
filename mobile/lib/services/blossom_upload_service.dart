@@ -320,7 +320,11 @@ class BlossomUploadService {
     try {
       final response = await dio.head(
         '$serverUrl/upload',
-        options: Options(validateStatus: _validateHttpStatus),
+        options: Options(
+          validateStatus: _validateHttpStatus,
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+        ),
       );
       final extensionsHeader =
           response.headers.value('X-Divine-Upload-Extensions') ??
@@ -916,7 +920,18 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
           final capability = await _fetchDivineUploadCapability(serverUrl);
-          if (capability.supportsResumable) {
+          final hasProofModeData =
+              proofManifestJson != null && proofManifestJson.isNotEmpty;
+          final useResumable =
+              capability.supportsResumable && !hasProofModeData;
+
+          if (capability.supportsResumable && hasProofModeData) {
+            Log.info(
+              'Skipping Divine resumable upload flow for $serverUrl because ProofMode headers require the legacy upload path',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+          } else if (useResumable) {
             Log.info(
               'Using Divine resumable upload flow for $serverUrl',
               name: 'BlossomUploadService',
@@ -924,7 +939,7 @@ class BlossomUploadService {
             );
           }
 
-          final result = capability.supportsResumable
+          final result = useResumable
               ? await _uploadToServerResumable(
                   serverUrl: serverUrl,
                   file: videoFile,
@@ -1318,9 +1333,7 @@ class BlossomUploadService {
       final c2paManifestId =
           manifestMap['c2paManifestId'] ?? manifestMap['c2pa_manifest_id'];
       if (c2paManifestId != null) {
-        headers['X-ProofMode-C2PA'] = _encodeHeaderValue(
-          c2paManifestId,
-        );
+        headers['X-ProofMode-C2PA'] = _encodeHeaderValue(c2paManifestId);
       }
 
       Log.info(
