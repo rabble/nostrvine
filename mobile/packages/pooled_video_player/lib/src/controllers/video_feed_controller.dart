@@ -151,6 +151,7 @@ class VideoFeedController extends ChangeNotifier {
   /// can't actually play (e.g., corrupt stream, incompatible codec).
   static const _maxStallRetries = 1;
   final Map<int, int> _stallRetryCount = {};
+  final Set<int> _readyVideosAwaitingRecovery = {};
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -677,6 +678,7 @@ class VideoFeedController extends ChangeNotifier {
     _loadStopwatches.remove(index)?.stop();
     _openedSources.remove(index);
     _stallRetryCount.remove(index);
+    _readyVideosAwaitingRecovery.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);
@@ -741,15 +743,23 @@ class VideoFeedController extends ChangeNotifier {
         'positionMs='
         '${pooledPlayer.player.state.position.inMilliseconds}',
       );
-      if (!isBuffering) {
-        if (_loadStates[index] == LoadState.loading) {
-          _onBufferReady(index);
-        } else if (_loadStates[index] == LoadState.ready &&
-            index == _currentIndex &&
-            _isActive &&
-            !_isPaused) {
-          final player = _loadedPlayers[index]?.player;
-          if (player != null) {
+      if (isBuffering) {
+        if (_loadStates[index] == LoadState.ready) {
+          _readyVideosAwaitingRecovery.add(index);
+        }
+        return;
+      }
+
+      if (_loadStates[index] == LoadState.loading) {
+        _onBufferReady(index);
+      } else if (_loadStates[index] == LoadState.ready &&
+          index == _currentIndex &&
+          _isActive &&
+          !_isPaused) {
+        final player = _loadedPlayers[index]?.player;
+        if (player != null) {
+          final wasRecovering = _readyVideosAwaitingRecovery.remove(index);
+          if (wasRecovering) {
             final positionMs =
                 pooledPlayer.player.state.position.inMilliseconds;
             final durationMs =
@@ -773,8 +783,8 @@ class VideoFeedController extends ChangeNotifier {
               // Video has loaded media — reset stall counter.
               _stallRetryCount.remove(index);
             }
-            unawaited(player.play());
           }
+          unawaited(player.play());
         }
       }
     });
@@ -800,6 +810,7 @@ class VideoFeedController extends ChangeNotifier {
 
     // Reset stall counter when starting fresh playback (e.g. swipe to video).
     _stallRetryCount.remove(index);
+    _readyVideosAwaitingRecovery.remove(index);
 
     // The player is paused (from _onBufferReady or _pauseVideo).
     // Unmute and play, seeking to zero only if the video reached the end
@@ -897,6 +908,7 @@ class VideoFeedController extends ChangeNotifier {
     _loadStopwatches.remove(index)?.stop();
     _openedSources.remove(index);
     _stallRetryCount.remove(index);
+    _readyVideosAwaitingRecovery.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);
@@ -955,6 +967,8 @@ class VideoFeedController extends ChangeNotifier {
     }
     _loadStopwatches.clear();
     _openedSources.clear();
+    _stallRetryCount.clear();
+    _readyVideosAwaitingRecovery.clear();
 
     // Notify all index listeners that their video is gone.  This causes
     // ValueListenableBuilder to rebuild with videoController == null,

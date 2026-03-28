@@ -755,140 +755,118 @@ void main() {
           addTearDown(controller.dispose);
         });
 
-        test(
-          'retainCurrentPlayer: true releases non-current players '
-          'but keeps current',
-          () async {
-            final controller = VideoFeedController(
-              videos: createTestVideos(),
-              pool: pool,
-              preloadBehind: 0,
-            );
+        test('retainCurrentPlayer: true releases non-current players '
+            'but keeps current', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+            preloadBehind: 0,
+          );
 
-            // Wait for videos to load (indices 0, 1, 2)
-            await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Wait for videos to load (indices 0, 1, 2)
+          await Future<void>.delayed(const Duration(milliseconds: 100));
 
-            // Verify players are loaded before deactivation
-            expect(controller.getPlayer(0), isNotNull);
-            expect(controller.getPlayer(1), isNotNull);
-            expect(controller.getPlayer(2), isNotNull);
+          // Verify players are loaded before deactivation
+          expect(controller.getPlayer(0), isNotNull);
+          expect(controller.getPlayer(1), isNotNull);
+          expect(controller.getPlayer(2), isNotNull);
 
-            controller.setActive(active: false, retainCurrentPlayer: true);
+          controller.setActive(active: false, retainCurrentPlayer: true);
 
-            // Non-current players (1, 2) should be released
-            expect(controller.getPlayer(1), isNull);
-            expect(controller.getPlayer(2), isNull);
+          // Non-current players (1, 2) should be released
+          expect(controller.getPlayer(1), isNull);
+          expect(controller.getPlayer(2), isNull);
 
-            // Current player (index 0) should be retained
-            expect(controller.getPlayer(0), isNotNull);
+          // Current player (index 0) should be retained
+          expect(controller.getPlayer(0), isNotNull);
 
-            addTearDown(controller.dispose);
-          },
-        );
+          addTearDown(controller.dispose);
+        });
 
-        test(
-          'retainCurrentPlayer: false releases all players',
-          () async {
-            final controller = VideoFeedController(
-              videos: createTestVideos(),
-              pool: pool,
-              preloadBehind: 0,
-            );
+        test('retainCurrentPlayer: false releases all players', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+            preloadBehind: 0,
+          );
 
-            // Wait for videos to load (indices 0, 1, 2)
-            await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Wait for videos to load (indices 0, 1, 2)
+          await Future<void>.delayed(const Duration(milliseconds: 100));
 
-            // Verify players are loaded before deactivation
-            expect(controller.getPlayer(0), isNotNull);
-            expect(controller.getPlayer(1), isNotNull);
-            expect(controller.getPlayer(2), isNotNull);
+          // Verify players are loaded before deactivation
+          expect(controller.getPlayer(0), isNotNull);
+          expect(controller.getPlayer(1), isNotNull);
+          expect(controller.getPlayer(2), isNotNull);
 
-            controller.setActive(
-              active: false,
-            );
+          controller.setActive(active: false);
 
-            // ALL players should be released
-            expect(controller.getPlayer(0), isNull);
-            expect(controller.getPlayer(1), isNull);
-            expect(controller.getPlayer(2), isNull);
+          // ALL players should be released
+          expect(controller.getPlayer(0), isNull);
+          expect(controller.getPlayer(1), isNull);
+          expect(controller.getPlayer(2), isNull);
 
-            addTearDown(controller.dispose);
-          },
-        );
+          addTearDown(controller.dispose);
+        });
 
-        test(
-          'retainCurrentPlayer defaults to false (releases all)',
-          () async {
-            final controller = VideoFeedController(
-              videos: createTestVideos(),
-              pool: pool,
-              preloadBehind: 0,
-            );
+        test('retainCurrentPlayer defaults to false (releases all)', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+            preloadBehind: 0,
+          );
 
-            // Wait for videos to load (indices 0, 1, 2)
-            await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Wait for videos to load (indices 0, 1, 2)
+          await Future<void>.delayed(const Duration(milliseconds: 100));
 
-            // Verify players are loaded before deactivation
-            expect(controller.getPlayer(0), isNotNull);
-            expect(controller.getPlayer(1), isNotNull);
-            expect(controller.getPlayer(2), isNotNull);
+          // Verify players are loaded before deactivation
+          expect(controller.getPlayer(0), isNotNull);
+          expect(controller.getPlayer(1), isNotNull);
+          expect(controller.getPlayer(2), isNotNull);
 
-            // Call without the parameter to test default behavior
-            controller.setActive(active: false);
+          // Call without the parameter to test default behavior
+          controller.setActive(active: false);
 
-            // ALL players should be released (same as explicit false)
-            expect(controller.getPlayer(0), isNull);
-            expect(controller.getPlayer(1), isNull);
-            expect(controller.getPlayer(2), isNull);
+          // ALL players should be released (same as explicit false)
+          expect(controller.getPlayer(0), isNull);
+          expect(controller.getPlayer(1), isNull);
+          expect(controller.getPlayer(2), isNull);
 
-            addTearDown(controller.dispose);
-          },
-        );
+          addTearDown(controller.dispose);
+        });
 
-        test(
-          'reactivating with retained player plays immediately',
-          () async {
-            final videos = createTestVideos();
-            final controller = VideoFeedController(
-              videos: videos,
-              pool: pool,
-            );
+        test('reactivating with retained player plays immediately', () async {
+          final videos = createTestVideos();
+          final controller = VideoFeedController(videos: videos, pool: pool);
 
-            // Wait for initial load
-            await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Wait for initial load
+          await Future<void>.delayed(const Duration(milliseconds: 100));
 
-            final url = videos[0].url;
-            final currentPlayerSetup = playerSetups[url]!;
+          final url = videos[0].url;
+          final currentPlayerSetup = playerSetups[url]!;
 
-            // Deactivate with retainCurrentPlayer: true
-            controller.setActive(active: false, retainCurrentPlayer: true);
-            await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Deactivate with retainCurrentPlayer: true
+          controller.setActive(active: false, retainCurrentPlayer: true);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-            // Clear interaction history so we can verify new calls
-            clearInteractions(currentPlayerSetup.player);
+          // Clear interaction history so we can verify new calls
+          clearInteractions(currentPlayerSetup.player);
 
-            // Reactivate
-            controller.setActive(active: true);
-            await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Reactivate
+          controller.setActive(active: true);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-            // The current player should have play() and setVolume(100) called
-            verify(currentPlayerSetup.player.play).called(1);
-            verify(
-              () => currentPlayerSetup.player.setVolume(100),
-            ).called(1);
+          // The current player should have play() and setVolume(100) called
+          verify(currentPlayerSetup.player.play).called(1);
+          verify(() => currentPlayerSetup.player.setVolume(100)).called(1);
 
-            addTearDown(controller.dispose);
-          },
-        );
+          addTearDown(controller.dispose);
+        });
 
         test(
           'reactivating after full release reloads preload window',
           () async {
             final videos = createTestVideos();
-            final controller = VideoFeedController(
-              videos: videos,
-              pool: pool,
-            );
+            final controller = VideoFeedController(videos: videos, pool: pool);
 
             // Wait for initial load
             await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -2267,9 +2245,7 @@ void main() {
 
           verify(
             () => setup.player.open(
-              any(
-                that: isA<Media>().having((m) => m.uri, 'uri', hlsVideo.url),
-              ),
+              any(that: isA<Media>().having((m) => m.uri, 'uri', hlsVideo.url)),
               play: false,
             ),
           ).called(1);
@@ -2466,21 +2442,18 @@ void main() {
           // preloadBehind=1 (default) keeps video 0 in the pool while at
           // index 1, so swipe-back goes through _resume (not a full reload).
           final videos = createTestVideos(count: 3);
-          final controller = VideoFeedController(
-            videos: videos,
-            pool: pool,
-          );
+          final controller = VideoFeedController(videos: videos, pool: pool);
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
           final setup0 = playerSetups[videos[0].url]!;
           // Simulate mid-playback state: 5s into a 30s video.
-          when(() => setup0.state.position).thenReturn(
-            const Duration(seconds: 5),
-          );
-          when(() => setup0.state.duration).thenReturn(
-            const Duration(seconds: 30),
-          );
+          when(
+            () => setup0.state.position,
+          ).thenReturn(const Duration(seconds: 5));
+          when(
+            () => setup0.state.duration,
+          ).thenReturn(const Duration(seconds: 30));
 
           clearInteractions(setup0.player);
 
@@ -2506,10 +2479,7 @@ void main() {
           // preloadBehind=1 keeps video 0 in the pool while at index 1,
           // so swipe-back goes through _resume (not a full reload).
           final videos = createTestVideos(count: 3);
-          final controller = VideoFeedController(
-            videos: videos,
-            pool: pool,
-          );
+          final controller = VideoFeedController(videos: videos, pool: pool);
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
@@ -2555,9 +2525,9 @@ void main() {
           final setup1 = playerSetups[videos[1].url]!;
           // Preloaded video is at position zero and duration is non-zero.
           when(() => setup1.state.position).thenReturn(Duration.zero);
-          when(() => setup1.state.duration).thenReturn(
-            const Duration(seconds: 30),
-          );
+          when(
+            () => setup1.state.duration,
+          ).thenReturn(const Duration(seconds: 30));
 
           clearInteractions(setup1.player);
 
@@ -2606,6 +2576,43 @@ void main() {
         verify(setup.player.play).called(greaterThanOrEqualTo(1));
       });
 
+      test('allows the first real zero-duration rebuffer recovery before '
+          'stopping retries on the second', () async {
+        final videos = createTestVideos(count: 1);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final setup = playerSetups[videos[0].url]!;
+
+        // Initial buffer-ready transition should not consume retry budget.
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+
+        clearInteractions(setup.player);
+
+        // First real rebuffer cycle should still attempt recovery.
+        setup.bufferingController.add(true);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(setup.player.play).called(greaterThanOrEqualTo(1));
+
+        clearInteractions(setup.player);
+
+        // Second real zero-duration rebuffer exceeds retry budget.
+        setup.bufferingController.add(true);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verifyNever(setup.player.play);
+      });
+
       test('rebuffer after seek calls player.play() '
           'for current active video', () async {
         final videos = createTestVideos(count: 3);
@@ -2626,9 +2633,7 @@ void main() {
         // Set duration > 0 to indicate media was successfully loaded
         // (prevents stall circuit breaker from firing).
         when(() => setup.state.playing).thenReturn(false);
-        when(() => setup.state.duration).thenReturn(
-          const Duration(seconds: 6),
-        );
+        when(() => setup.state.duration).thenReturn(const Duration(seconds: 6));
         setup.bufferingController.add(true);
         await Future<void>.delayed(const Duration(milliseconds: 10));
         setup.bufferingController.add(false);
@@ -2661,9 +2666,7 @@ void main() {
         // because mpv doesn't always toggle it on transient stalls.
         // Set duration > 0 to indicate media was successfully loaded.
         when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.duration).thenReturn(
-          const Duration(seconds: 6),
-        );
+        when(() => setup.state.duration).thenReturn(const Duration(seconds: 6));
         setup.bufferingController.add(true);
         await Future<void>.delayed(const Duration(milliseconds: 10));
         setup.bufferingController.add(false);
@@ -2728,49 +2731,36 @@ void main() {
         verifyNever(setup.player.play);
       });
 
-      test(
-        'rebuffer recovery calls play() even when '
-        'player reports playing',
-        () async {
-          final videos = createTestVideos(count: 1);
-          final controller = VideoFeedController(videos: videos, pool: pool);
-          addTearDown(controller.dispose);
+      test('rebuffer recovery calls play() even when '
+          'player reports playing', () async {
+        final videos = createTestVideos(count: 1);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        addTearDown(controller.dispose);
 
-          await Future<void>.delayed(
-            const Duration(milliseconds: 50),
-          );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          final setup = playerSetups[videos[0].url]!;
+        final setup = playerSetups[videos[0].url]!;
 
-          // Initial buffer ready
-          setup.bufferingController.add(false);
-          await Future<void>.delayed(
-            const Duration(milliseconds: 50),
-          );
+        // Initial buffer ready
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          clearInteractions(setup.player);
+        clearInteractions(setup.player);
 
-          // Simulate rebuffer completes while player reports
-          // playing=true. mpv can stall (no frame output) even
-          // when playing=true after a seek, so we always call
-          // play() to nudge the decoder.
-          // Set duration > 0 to indicate media was successfully loaded.
-          when(() => setup.state.playing).thenReturn(true);
-          when(() => setup.state.duration).thenReturn(
-            const Duration(seconds: 6),
-          );
-          setup.bufferingController.add(true);
-          await Future<void>.delayed(
-            const Duration(milliseconds: 10),
-          );
-          setup.bufferingController.add(false);
-          await Future<void>.delayed(
-            const Duration(milliseconds: 50),
-          );
+        // Simulate rebuffer completes while player reports
+        // playing=true. mpv can stall (no frame output) even
+        // when playing=true after a seek, so we always call
+        // play() to nudge the decoder.
+        // Set duration > 0 to indicate media was successfully loaded.
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.duration).thenReturn(const Duration(seconds: 6));
+        setup.bufferingController.add(true);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          verify(setup.player.play).called(greaterThanOrEqualTo(1));
-        },
-      );
+        verify(setup.player.play).called(greaterThanOrEqualTo(1));
+      });
     });
 
     group('stall circuit breaker', () {
@@ -2785,10 +2775,7 @@ void main() {
 
           final setup = playerSetups[videos[0].url]!;
 
-          // The sync buffering check in _loadPlayer already triggers
-          // _onBufferReady (mock state.buffering defaults to false).
-          // The explicit add(false) below also hits the ready-state
-          // stall-counting path (stall count = 1).
+          // Initial ready transition should not count as a stall retry.
           setup.bufferingController.add(false);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
@@ -2796,8 +2783,18 @@ void main() {
 
           clearInteractions(setup.player);
 
-          // Next rebuffer cycle — stall count exceeds max, circuit breaker
-          // fires, play() should NOT be called.
+          // First real rebuffer cycle is still allowed.
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(setup.player.play).called(greaterThanOrEqualTo(1));
+
+          clearInteractions(setup.player);
+
+          // Second real rebuffer cycle — circuit breaker fires and play()
+          // should NOT be called.
           setup.bufferingController.add(true);
           await Future<void>.delayed(const Duration(milliseconds: 10));
           setup.bufferingController.add(false);
@@ -2821,14 +2818,22 @@ void main() {
 
         final setup = playerSetups[videos[0].url]!;
 
-        // Initial add(false) triggers _onBufferReady via the sync check
-        // AND counts as stall #1 via the subscription.
+        // Initial buffer-ready transition should not count as a stall retry.
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(stalledIndex, isNull);
 
-        // Next rebuffer — stall count exceeds max, circuit breaker fires.
+        // First real rebuffer is still allowed.
+        setup.bufferingController.add(true);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(stalledIndex, isNull);
+
+        // Second real rebuffer — stall count exceeds max, circuit breaker
+        // fires.
         setup.bufferingController.add(true);
         await Future<void>.delayed(const Duration(milliseconds: 10));
         setup.bufferingController.add(false);
@@ -2858,9 +2863,7 @@ void main() {
         clearInteractions(setup.player);
 
         // Set duration > 0 (video loaded, legitimate rebuffer at position 0)
-        when(() => setup.state.duration).thenReturn(
-          const Duration(seconds: 6),
-        );
+        when(() => setup.state.duration).thenReturn(const Duration(seconds: 6));
 
         // Multiple rebuffer cycles — all should call play()
         for (var i = 0; i < 5; i++) {
@@ -2959,9 +2962,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(controller.getLoadState(0), equals(LoadState.ready));
-        verifyNever(
-          () => setup0.player.open(any(), play: any(named: 'play')),
-        );
+        verifyNever(() => setup0.player.open(any(), play: any(named: 'play')));
       });
 
       test('plays reused player immediately when it is current', () async {
@@ -3050,9 +3051,7 @@ void main() {
           () => setup1.player.seek(Duration.zero),
         ).called(greaterThanOrEqualTo(1));
         // open() should NOT be called.
-        verifyNever(
-          () => setup1.player.open(any(), play: any(named: 'play')),
-        );
+        verifyNever(() => setup1.player.open(any(), play: any(named: 'play')));
       });
 
       test(

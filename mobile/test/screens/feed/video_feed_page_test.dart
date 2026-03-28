@@ -269,9 +269,7 @@ void main() {
     });
 
     Widget buildSubject() {
-      when(
-        () => videoFeedBloc.state,
-      ).thenReturn(const VideoFeedState());
+      when(() => videoFeedBloc.state).thenReturn(const VideoFeedState());
 
       return testMaterialApp(
         additionalOverrides: [
@@ -302,65 +300,57 @@ void main() {
         locationController.add('/search');
         await tester.pump();
 
-        verify(
-          () => videoFeedController.setActive(active: false),
-        ).called(1);
+        verify(() => videoFeedController.setActive(active: false)).called(1);
       },
     );
 
-    testWidgets(
-      'calls setActive(active: true) when returning to home',
-      (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+    testWidgets('calls setActive(active: true) when returning to home', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
 
-        // Start on home, navigate away
-        locationController.add('/home/0');
-        await tester.pump();
-        locationController.add('/search');
-        await tester.pump();
+      // Start on home, navigate away
+      locationController.add('/home/0');
+      await tester.pump();
+      locationController.add('/search');
+      await tester.pump();
 
-        clearInteractions(videoFeedController);
+      clearInteractions(videoFeedController);
 
-        // Return to home
-        locationController.add('/home/0');
-        await tester.pump();
+      // Return to home
+      locationController.add('/home/0');
+      await tester.pump();
 
-        verify(
-          () => videoFeedController.setActive(active: true),
-        ).called(1);
-      },
-    );
+      verify(() => videoFeedController.setActive(active: true)).called(1);
+    });
 
-    testWidgets(
-      'does not resume when overlay closes while on non-home tab',
-      (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+    testWidgets('does not resume when overlay closes while on non-home tab', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
 
-        final element = tester.element(find.byType(VideoFeedView));
-        final container = ProviderScope.containerOf(element);
+      final element = tester.element(find.byType(VideoFeedView));
+      final container = ProviderScope.containerOf(element);
 
-        // Start on home, navigate away
-        locationController.add('/home/0');
-        await tester.pump();
-        locationController.add('/search');
-        await tester.pump();
+      // Start on home, navigate away
+      locationController.add('/home/0');
+      await tester.pump();
+      locationController.add('/search');
+      await tester.pump();
 
-        clearInteractions(videoFeedController);
+      clearInteractions(videoFeedController);
 
-        // Open and close overlay while on search tab
-        container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
-        await tester.pump();
-        container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
-        await tester.pump();
+      // Open and close overlay while on search tab
+      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+      await tester.pump();
+      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
+      await tester.pump();
 
-        // setActive(active: true) should NOT have been called
-        verifyNever(
-          () => videoFeedController.setActive(active: true),
-        );
-      },
-    );
+      // setActive(active: true) should NOT have been called
+      verifyNever(() => videoFeedController.setActive(active: true));
+    });
 
     testWidgets(
       'does not resume when router reports home while page overlay is open',
@@ -390,9 +380,7 @@ void main() {
 
         // setActive(active: true) must NOT be called — the overlay is
         // still open, so the overlay listener handles resume later.
-        verifyNever(
-          () => videoFeedController.setActive(active: true),
-        );
+        verifyNever(() => videoFeedController.setActive(active: true));
       },
     );
 
@@ -425,9 +413,68 @@ void main() {
         await tester.pump();
 
         // Now the overlay listener should resume playback
-        verify(
-          () => videoFeedController.setActive(active: true),
-        ).called(1);
+        verify(() => videoFeedController.setActive(active: true)).called(1);
+      },
+    );
+  });
+
+  group('VideoFeedView native feed wiring', () {
+    late VideoFeedBloc videoFeedBloc;
+    late VideoFeedController videoFeedController;
+
+    setUp(() async {
+      await PlayerPool.init();
+      videoFeedBloc = _MockVideoFeedBloc();
+      videoFeedController = _MockVideoFeedController();
+
+      when(() => videoFeedController.videoCount).thenReturn(1);
+      when(() => videoFeedController.videos).thenReturn([
+        const VideoItem(id: 'video-1', url: 'https://example.com/video.mp4'),
+      ]);
+      when(() => videoFeedController.addListener(any())).thenReturn(null);
+      when(() => videoFeedController.removeListener(any())).thenReturn(null);
+      when(() => videoFeedController.dispose()).thenReturn(null);
+      when(
+        () => videoFeedController.setActive(
+          active: any(named: 'active'),
+          retainCurrentPlayer: any(named: 'retainCurrentPlayer'),
+        ),
+      ).thenReturn(null);
+    });
+
+    tearDown(() async {
+      await PlayerPool.reset();
+    });
+
+    Widget buildSubject(VideoFeedState state) {
+      when(() => videoFeedBloc.state).thenReturn(state);
+
+      return testMaterialApp(
+        home: BlocProvider<VideoFeedBloc>.value(
+          value: videoFeedBloc,
+          child: VideoFeedView(controller: videoFeedController),
+        ),
+      );
+    }
+
+    testWidgets(
+      'renders native pooled feed with a state key for programmatic control',
+      (tester) async {
+        final state = VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: [
+            _createVideoEvent('native-feed', 'https://example.com/video.mp4'),
+          ],
+        );
+
+        await tester.pumpWidget(buildSubject(state));
+        await tester.pump();
+
+        final pooledVideoFeed = tester.widget<PooledVideoFeed>(
+          find.byType(PooledVideoFeed),
+        );
+
+        expect(pooledVideoFeed.key, isA<GlobalKey<PooledVideoFeedState>>());
       },
     );
   });
