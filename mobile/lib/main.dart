@@ -438,6 +438,9 @@ Future<void> _startOpenVineApp() async {
       details,
       logWarning: (message) => Log.warning(message, name: 'Main'),
       clearKeyboardState: () {
+        // Flutter does not currently expose a stable public recovery API for
+        // this duplicate-key assertion path. Keep this workaround tightly
+        // scoped to the known framework failure above.
         // ignore: invalid_use_of_visible_for_testing_member
         HardwareKeyboard.instance.clearState();
       },
