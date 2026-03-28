@@ -147,7 +147,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         routeContext: value,
         scrollController: _scrollController,
         onFetchProfile: _fetchProfileIfNeeded,
-        onSetupProfile: _setupProfile,
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
         onOpenAnalytics: _openAnalytics,
@@ -208,11 +207,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   // Action methods
-
-  Future<void> _setupProfile() async {
-    // Navigate to setup-profile route (defined outside ShellRoute)
-    await context.push(ProfileSetupScreen.setupPath);
-  }
 
   Future<void> _editProfile() async {
     // Navigate directly to edit-profile route (defined outside ShellRoute)
@@ -495,7 +489,6 @@ class _ProfileContentView extends ConsumerWidget {
     required this.routeContext,
     required this.scrollController,
     required this.onFetchProfile,
-    required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
     required this.onOpenAnalytics,
@@ -505,7 +498,6 @@ class _ProfileContentView extends ConsumerWidget {
   final RouteContext routeContext;
   final ScrollController scrollController;
   final void Function(String userIdHex, bool isOwnProfile) onFetchProfile;
-  final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final VoidCallback onOpenAnalytics;
@@ -568,7 +560,6 @@ class _ProfileContentView extends ConsumerWidget {
       displayName: displayName,
       videoIndex: routeContext.videoIndex,
       scrollController: scrollController,
-      onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
       onOpenAnalytics: onOpenAnalytics,
@@ -626,7 +617,6 @@ class _ProfileDataView extends ConsumerWidget {
     required this.isOwnProfile,
     required this.videoIndex,
     required this.scrollController,
-    required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
     required this.onOpenAnalytics,
@@ -640,7 +630,6 @@ class _ProfileDataView extends ConsumerWidget {
   final String? displayName;
   final int? videoIndex;
   final ScrollController scrollController;
-  final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final VoidCallback onOpenAnalytics;
@@ -687,7 +676,6 @@ class _ProfileDataView extends ConsumerWidget {
           videos: value.videos,
           videoIndex: videoIndex,
           scrollController: scrollController,
-          onSetupProfile: onSetupProfile,
           onEditProfile: onEditProfile,
           onOpenClips: onOpenClips,
           onOpenAnalytics: onOpenAnalytics,
@@ -709,7 +697,6 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.videos,
     required this.videoIndex,
     required this.scrollController,
-    required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
     required this.onOpenAnalytics,
@@ -725,7 +712,6 @@ class ProfileViewSwitcher extends StatelessWidget {
   final List<VideoEvent> videos;
   final int? videoIndex;
   final ScrollController scrollController;
-  final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final VoidCallback onOpenAnalytics;
@@ -757,7 +743,6 @@ class ProfileViewSwitcher extends StatelessWidget {
             displayName: displayName,
             videos: videos,
             scrollController: scrollController,
-            onSetupProfile: onSetupProfile,
             onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
             onOpenAnalytics: onOpenAnalytics,

@@ -31,7 +31,6 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.profile,
     this.profileStats,
     this.displayName,
-    this.onSetupProfile,
     this.onEditProfile,
     this.onOpenClips,
     this.onOpenAnalytics,
@@ -62,9 +61,6 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// Optional cached profile stats owned by the parent widget.
   final ProfileStats? profileStats;
-
-  /// Callback when "Set Up" button is tapped (own profile only).
-  final VoidCallback? onSetupProfile;
 
   /// Callback when "Edit Profile" is tapped (own profile only).
   final VoidCallback? onEditProfile;
@@ -297,7 +293,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               videoCount: widget.videos.length,
               profile: widget.profile,
               profileStats: widget.profileStats,
-              onSetupProfile: widget.onSetupProfile,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,
             ),

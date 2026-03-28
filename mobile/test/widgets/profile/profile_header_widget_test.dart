@@ -8,17 +8,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/widgets/notification_badge.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,9 +30,6 @@ class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
 class _MockOthersFollowersBloc
     extends MockBloc<OthersFollowersEvent, OthersFollowersState>
     implements OthersFollowersBloc {}
-
-// Mock for KeycastOAuth used by EmailVerificationCubit
-class MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
@@ -150,7 +146,6 @@ void main() {
       UserProfile? suppliedProfile,
       ProfileStats? profileStats,
       bool profileIsLoading = false,
-      VoidCallback? onSetupProfile,
       bool isAnonymous = false,
       String? displayNameHint,
       String? avatarUrlHint,
@@ -163,7 +158,6 @@ void main() {
         videoCount: videoCount,
         profile: suppliedProfile,
         profileStats: profileStats,
-        onSetupProfile: onSetupProfile,
         displayNameHint: displayNameHint,
         avatarUrlHint: avatarUrlHint,
       );
@@ -208,14 +202,8 @@ void main() {
             (ref) => AuthState.authenticated,
           ),
         ],
-        child: BlocProvider<EmailVerificationCubit>(
-          create: (_) => EmailVerificationCubit(
-            oauthClient: MockKeycastOAuth(),
-            authService: authService,
-          ),
-          child: MaterialApp(
-            home: Scaffold(body: SingleChildScrollView(child: header)),
-          ),
+        child: MaterialApp(
+          home: Scaffold(body: SingleChildScrollView(child: header)),
         ),
       );
     }
@@ -345,83 +333,70 @@ void main() {
       expect(find.text('test@example.com'), findsOneWidget);
     });
 
-    testWidgets('shows setup banner for own profile without custom name', (
-      tester,
-    ) async {
-      var setupCalled = false;
-      final profileWithDefaultName = createTestProfile();
+    testWidgets(
+      'shows badge with count 1 for own profile without custom name',
+      (tester) async {
+        final profileWithDefaultName = createTestProfile();
 
-      await tester.pumpWidget(
-        buildTestWidget(
-          userIdHex: testUserHex,
-          isOwnProfile: true,
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: profileWithDefaultName,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          profile: profileWithDefaultName,
-          onSetupProfile: () => setupCalled = true,
-        ),
-      );
-      await tester.pumpAndSettle();
+        expect(find.byType(NotificationBadge), findsOneWidget);
+        final badge = tester.widget<NotificationBadge>(
+          find.byType(NotificationBadge),
+        );
+        expect(badge.count, equals(1));
+      },
+    );
 
-      expect(find.text('Complete Your Profile'), findsOneWidget);
-      expect(find.text('Set Up'), findsOneWidget);
-
-      await tester.tap(find.text('Set Up'));
-      await tester.pump();
-
-      expect(setupCalled, isTrue);
-    });
-
-    testWidgets('hides setup banner while profile is still loading', (
-      tester,
-    ) async {
+    testWidgets('hides badge while profile is still loading', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
           profileIsLoading: true,
-          onSetupProfile: () {},
         ),
       );
       // Do not pumpAndSettle — provider never resolves
       await tester.pump();
 
-      expect(find.text('Complete Your Profile'), findsNothing);
+      expect(find.byType(NotificationBadge), findsNothing);
     });
 
-    testWidgets('hides setup banner when profile has custom name', (
-      tester,
-    ) async {
+    testWidgets('hides badge when profile has custom name', (tester) async {
       final testProfile = createTestProfile(displayName: 'Test User');
 
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-
           profile: testProfile,
-          onSetupProfile: () {},
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete Your Profile'), findsNothing);
+      expect(find.byType(NotificationBadge), findsNothing);
     });
 
-    testWidgets('hides setup banner for other profiles', (tester) async {
+    testWidgets('hides badge for other profiles', (tester) async {
       final profileWithDefaultName = createTestProfile();
 
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: false,
-
           profile: profileWithDefaultName,
-          onSetupProfile: () {},
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete Your Profile'), findsNothing);
+      expect(find.byType(NotificationBadge), findsNothing);
     });
 
     testWidgets(
@@ -571,9 +546,9 @@ void main() {
       });
     });
 
-    group('Secure Account Banner', () {
+    group('Action Badge', () {
       testWidgets(
-        'shows secure account banner for own profile when anonymous',
+        'shows badge with count 1 for own profile when anonymous with name',
         (tester) async {
           final testProfile = createTestProfile(displayName: 'Test User');
 
@@ -581,64 +556,44 @@ void main() {
             buildTestWidget(
               userIdHex: testUserHex,
               isOwnProfile: true,
-
               profile: testProfile,
               isAnonymous: true,
             ),
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Secure Your Account'), findsOneWidget);
-          expect(find.text('Register'), findsOneWidget);
-          expect(
-            find.text(
-              'Add email & password to recover your account on any device',
-            ),
-            findsOneWidget,
+          expect(find.byType(NotificationBadge), findsOneWidget);
+          final badge = tester.widget<NotificationBadge>(
+            find.byType(NotificationBadge),
           );
+          expect(badge.count, equals(1));
         },
       );
 
       testWidgets(
-        'hides secure account banner for own profile when not anonymous',
+        'shows badge with count 2 when anonymous and no custom name',
         (tester) async {
-          final testProfile = createTestProfile(displayName: 'Test User');
+          final profileWithDefaultName = createTestProfile();
 
           await tester.pumpWidget(
             buildTestWidget(
               userIdHex: testUserHex,
               isOwnProfile: true,
-
-              profile: testProfile,
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.text('Secure Your Account'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'hides secure account banner for other profiles even when anonymous',
-        (tester) async {
-          final testProfile = createTestProfile(displayName: 'Test User');
-
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: false,
-
-              profile: testProfile,
+              profile: profileWithDefaultName,
               isAnonymous: true,
             ),
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Secure Your Account'), findsNothing);
+          expect(find.byType(NotificationBadge), findsOneWidget);
+          final badge = tester.widget<NotificationBadge>(
+            find.byType(NotificationBadge),
+          );
+          expect(badge.count, equals(2));
         },
       );
 
-      testWidgets('secure account banner Register button is tappable', (
+      testWidgets('hides badge when not anonymous and has custom name', (
         tester,
       ) async {
         final testProfile = createTestProfile(displayName: 'Test User');
@@ -647,22 +602,53 @@ void main() {
           buildTestWidget(
             userIdHex: testUserHex,
             isOwnProfile: true,
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
 
+        expect(find.byType(NotificationBadge), findsNothing);
+      });
+
+      testWidgets('hides badge for other profiles even when anonymous', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Test User');
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
             profile: testProfile,
             isAnonymous: true,
           ),
         );
         await tester.pumpAndSettle();
 
+        expect(find.byType(NotificationBadge), findsNothing);
+      });
+
+      testWidgets('tapping badge opens actions bottom sheet', (tester) async {
+        final profileWithDefaultName = createTestProfile();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: profileWithDefaultName,
+            isAnonymous: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap on the badge area (avatar with badge)
+        await tester.tap(find.byType(NotificationBadge));
+        await tester.pumpAndSettle();
+
+        // The bottom sheet should show the first action
         expect(find.text('Secure Your Account'), findsOneWidget);
-
-        // Verify Register button exists and is an ElevatedButton
-        final registerButton = find.widgetWithText(ElevatedButton, 'Register');
-        expect(registerButton, findsOneWidget);
-
-        // Verify the button has correct styling
-        final button = tester.widget<ElevatedButton>(registerButton);
-        expect(button.onPressed, isNotNull);
+        expect(find.text('Add Email & Password'), findsOneWidget);
+        expect(find.text('Maybe Later'), findsOneWidget);
       });
     });
   });

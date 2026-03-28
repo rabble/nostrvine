@@ -8,17 +8,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
-import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
+import 'package:openvine/widgets/notification_badge.dart';
+import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_following_stat.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -33,7 +33,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
     required this.videoCount,
     this.profile,
     this.profileStats,
-    this.onSetupProfile,
     this.displayNameHint,
     this.avatarUrlHint,
     super.key,
@@ -54,10 +53,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   /// Optional cached stats owned by the parent widget.
   final ProfileStats? profileStats;
-
-  /// Callback when "Set Up" button is tapped on the setup banner.
-  /// Only shown for own profile with default name.
-  final VoidCallback? onSetupProfile;
 
   /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
   final String? displayNameHint;
@@ -101,6 +96,15 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final isAnonymous = authService.isAnonymous;
     final hasExpiredSession = authService.hasExpiredOAuthSession;
 
+    // Compute pending profile actions for the avatar badge
+    final pendingActions = ProfileActionType.pending(
+      isOwnProfile: isOwnProfile,
+      isAnonymous: isAnonymous,
+      hasExpiredSession: hasExpiredSession,
+      hasProfile: effectiveProfile != null,
+      hasCustomName: hasCustomName,
+    );
+
     // Use profile color as header background (like original Vine)
     // Color covers avatar/stats, then fades to dark for name/bio readability
     final hasProfileColor = profileColor != null;
@@ -129,31 +133,26 @@ class ProfileHeaderWidget extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(24, 20, 0, 16),
             child: Column(
               children: [
-                // Setup profile banner for new users with default names
-                // (only on own profile)
-                if (isOwnProfile &&
-                    effectiveProfile != null &&
-                    !hasCustomName &&
-                    onSetupProfile != null)
-                  _SetupProfileBanner(onSetup: onSetupProfile!),
-
                 // Session expired banner for divineOAuth users (only on own
                 // profile) — prompts re-login instead of "Secure Your Account"
                 if (isOwnProfile && hasExpiredSession)
-                  const _SessionExpiredBanner()
-                // Secure account banner for anonymous users (only on own
-                // profile)
-                else if (isOwnProfile && isAnonymous)
-                  const _IdentityNotRecoverableBanner(),
+                  const _SessionExpiredBanner(),
 
                 // Profile picture and stats row
                 Row(
                   spacing: 20,
                   children: [
-                    // Profile picture
+                    // Profile picture with optional action badge
                     _ProfileAvatarWithColor(
                       imageUrl: profilePictureUrl,
                       profileColor: profileColor,
+                      actionCount: pendingActions.length,
+                      onBadgeTap: pendingActions.isNotEmpty
+                          ? () => _showActionsSheet(
+                              context,
+                              pendingActions,
+                            )
+                          : null,
                     ),
 
                     // Stats
@@ -225,213 +224,17 @@ class ProfileHeaderWidget extends ConsumerWidget {
   static Color? getProfileColor(UserProfile? profile) {
     return profile?.profileBackgroundColor;
   }
-}
 
-/// Setup profile banner shown for own profile with default name.
-class _SetupProfileBanner extends StatelessWidget {
-  const _SetupProfileBanner({required this.onSetup});
-
-  final VoidCallback onSetup;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [VineTheme.accentPurple, VineTheme.info],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.person_add, color: VineTheme.whiteText, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Complete Your Profile',
-                  style: VineTheme.titleSmallFont(),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Add your name, bio, and picture to get started',
-                  style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: onSetup,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.whiteText,
-              foregroundColor: VineTheme.accentPurple,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Set Up',
-              style: VineTheme.labelMediumFont(color: VineTheme.accentPurple),
-            ),
-          ),
-        ],
-      ),
+  static void _showActionsSheet(
+    BuildContext context,
+    List<ProfileActionType> actions,
+  ) {
+    VineBottomSheet.show<void>(
+      context: context,
+      scrollable: false,
+      showHeaderDivider: false,
+      body: ProfileActionsSheetContent(actions: actions),
     );
-  }
-}
-
-class _IdentityNotRecoverableBanner extends StatelessWidget {
-  const _IdentityNotRecoverableBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
-      builder: (context, state) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: state.status == EmailVerificationStatus.failure
-                  ? const [Color(0xFFD32F2F), Color(0xFFB71C1C)]
-                  : const [VineTheme.vineGreen, Color(0xFF2D8B6F)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              _buildIcon(state),
-              const SizedBox(width: 12),
-              Expanded(child: _buildContent(state)),
-              _buildAction(context, state),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildIcon(EmailVerificationState state) {
-    switch (state.status) {
-      case EmailVerificationStatus.polling:
-        return const SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: VineTheme.whiteText,
-          ),
-        );
-      case EmailVerificationStatus.failure:
-        return const Icon(
-          Icons.error_outline,
-          color: VineTheme.whiteText,
-          size: 24,
-        );
-      case EmailVerificationStatus.initial:
-      case EmailVerificationStatus.success:
-        return const Icon(Icons.security, color: VineTheme.whiteText, size: 24);
-    }
-  }
-
-  Widget _buildContent(EmailVerificationState state) {
-    switch (state.status) {
-      case EmailVerificationStatus.polling:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Verifying Email...', style: VineTheme.titleSmallFont()),
-            const SizedBox(height: 4),
-            Text(
-              state.pendingEmail?.isNotEmpty == true
-                  ? 'Check ${state.pendingEmail} for verification link'
-                  : 'Waiting for email verification',
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
-            ),
-          ],
-        );
-      case EmailVerificationStatus.failure:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Verification Failed', style: VineTheme.titleSmallFont()),
-            const SizedBox(height: 4),
-            Text(
-              state.error ?? 'Please try again',
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        );
-      case EmailVerificationStatus.initial:
-      case EmailVerificationStatus.success:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Secure Your Account', style: VineTheme.titleSmallFont()),
-            const SizedBox(height: 4),
-            Text(
-              'Add email & password to recover your account on any device',
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
-            ),
-          ],
-        );
-    }
-  }
-
-  Widget _buildAction(BuildContext context, EmailVerificationState state) {
-    switch (state.status) {
-      case EmailVerificationStatus.polling:
-        // No action needed — polling auto-expires after 15 minutes
-        // (matching the server's token lifetime), then transitions to
-        // failure state with a Retry button.
-        return const SizedBox.shrink();
-      case EmailVerificationStatus.failure:
-        return ElevatedButton(
-          onPressed: () => context.push(SecureAccountScreen.path),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: VineTheme.whiteText,
-            foregroundColor: VineTheme.error,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            'Retry',
-            style: VineTheme.labelMediumFont(color: VineTheme.error),
-          ),
-        );
-      case EmailVerificationStatus.initial:
-      case EmailVerificationStatus.success:
-        return ElevatedButton(
-          onPressed: () => context.push(SecureAccountScreen.path),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: VineTheme.whiteText,
-            foregroundColor: VineTheme.vineGreen,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            'Register',
-            style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
-          ),
-        );
-    }
   }
 }
 
@@ -759,18 +562,41 @@ class _AboutTextState extends State<_AboutText> {
   }
 }
 
-/// Profile avatar with optional light ring (when profile color is set).
+/// Profile avatar with optional action-count badge overlay.
 ///
-/// Profile avatar widget for the header.
+/// When [actionCount] is > 0, a [NotificationBadge] is shown on top of the
+/// avatar and the whole area becomes tappable via [onBadgeTap].
 class _ProfileAvatarWithColor extends StatelessWidget {
-  const _ProfileAvatarWithColor({required this.imageUrl, this.profileColor});
+  const _ProfileAvatarWithColor({
+    required this.imageUrl,
+    this.profileColor,
+    this.actionCount = 0,
+    this.onBadgeTap,
+  });
 
   final String? imageUrl;
   final Color? profileColor;
 
+  /// Number of pending profile actions to display in the badge.
+  final int actionCount;
+
+  /// Called when the badge (or avatar area) is tapped.
+  final VoidCallback? onBadgeTap;
+
   @override
   Widget build(BuildContext context) {
     const avatarSize = 88.0;
-    return UserAvatar(imageUrl: imageUrl, size: avatarSize);
+    final avatar = UserAvatar(imageUrl: imageUrl, size: avatarSize);
+
+    if (actionCount <= 0) return avatar;
+
+    return GestureDetector(
+      onTap: onBadgeTap,
+      child: NotificationBadge(
+        count: actionCount,
+        badgeColor: VineTheme.vineGreen,
+        child: avatar,
+      ),
+    );
   }
 }
