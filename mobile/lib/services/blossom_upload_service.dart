@@ -1044,6 +1044,13 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
+          final statusCode =
+              e is DioException ? e.response?.statusCode : null;
+          lastError = BlossomUploadResult(
+            success: false,
+            statusCode: statusCode,
+            errorMessage: 'Upload to $serverUrl failed: $e',
+          );
           Log.warning(
             'Upload to $serverUrl failed: $e, trying next server...',
             name: 'BlossomUploadService',
@@ -1190,6 +1197,13 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
+          final statusCode =
+              e is DioException ? e.response?.statusCode : null;
+          lastError = BlossomUploadResult(
+            success: false,
+            statusCode: statusCode,
+            errorMessage: 'Upload to $serverUrl failed: $e',
+          );
           Log.warning(
             'Upload to $serverUrl failed: $e, trying next server...',
             name: 'BlossomUploadService',
@@ -1496,6 +1510,13 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
+          final statusCode =
+              e is DioException ? e.response?.statusCode : null;
+          lastError = BlossomUploadResult(
+            success: false,
+            statusCode: statusCode,
+            errorMessage: 'Upload to $serverUrl failed: $e',
+          );
           Log.warning(
             'Upload to $serverUrl failed: $e, trying next server...',
             name: 'BlossomUploadService',
