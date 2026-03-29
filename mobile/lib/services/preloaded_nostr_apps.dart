@@ -100,6 +100,16 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     allowedSignEventKinds: [..._sharedSignEventKinds, 10312, 30312, 30313],
     sortOrder: 7,
   ),
+  _buildPreloadedApp(
+    id: 'bundled-ditto',
+    slug: 'ditto',
+    name: 'ditto.pub',
+    tagline: 'Posting and conversations on Nostr.',
+    description:
+        'A curated third-party Nostr client for browsing, posting, and conversations.',
+    launchUrl: 'https://ditto.pub/',
+    sortOrder: 8,
+  ),
 ]);
 
 NostrAppDirectoryEntry _buildPreloadedApp({

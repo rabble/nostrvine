@@ -86,6 +86,18 @@ void main() {
     );
 
     test(
+      'fetchApprovedApps with useCacheOnly includes the bundled Ditto app',
+      () async {
+        final apps = await service.fetchApprovedApps(useCacheOnly: true);
+        final ditto = apps.where((app) => app.slug == 'ditto').single;
+
+        expect(ditto.name, 'ditto.pub');
+        expect(ditto.launchUrl, 'https://ditto.pub/');
+        expect(ditto.allowedOrigins, ['https://ditto.pub']);
+      },
+    );
+
+    test(
       'fetchApprovedApps with useCacheOnly reads cached apps only',
       () async {
         await sharedPreferences.setString(
@@ -252,6 +264,7 @@ const List<String> _starterSlugs = [
   'yakihonne',
   'shopstr',
   'nostrnests',
+  'ditto',
 ];
 
 Map<String, dynamic> _appJson({
@@ -289,6 +302,7 @@ String _launchUrlForSlug(String slug) => switch (slug) {
   'yakihonne' => 'https://yakihonne.com/',
   'shopstr' => 'https://shopstr.store/',
   'nostrnests' => 'https://nostrnests.com/',
+  'ditto' => 'https://ditto.pub/',
   _ => 'https://$slug.example.com',
 };
 
@@ -300,4 +314,5 @@ const Map<String, int> _sortOrderBySlug = {
   'yakihonne': 5,
   'shopstr': 6,
   'nostrnests': 7,
+  'ditto': 8,
 };
