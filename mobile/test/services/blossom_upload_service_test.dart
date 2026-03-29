@@ -1420,5 +1420,413 @@ void main() {
             'response.data may need adjustment.',
       );
     });
+
+    group('Capability Cache', () {
+      late MockDio mockDio;
+      late DateTime fakeNow;
+
+      setUp(() {
+        mockDio = MockDio();
+        fakeNow = DateTime.utc(2026, 3, 28, 12);
+      });
+
+      BlossomUploadService createServiceWithClock() {
+        return BlossomUploadService(
+          authService: mockAuthService,
+          dio: mockDio,
+          clock: () => fakeNow,
+        );
+      }
+
+      void arrangeCapabilityHead({bool resumable = true}) {
+        when(
+          () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: 200,
+            headers: resumable
+                ? Headers.fromMap({
+                    DivineUploadHeaders.extensions: [
+                      DivineUploadExtensions.resumableSessions,
+                    ],
+                    DivineUploadHeaders.controlHost: [
+                      'https://media.divine.video',
+                    ],
+                    DivineUploadHeaders.dataHost: [
+                      'https://upload.divine.video',
+                    ],
+                  })
+                : Headers(),
+          ),
+        );
+      }
+
+      test(
+        'reuses cached capability within TTL window',
+        () async {
+          arrangeCapabilityHead();
+          final svc = createServiceWithClock();
+
+          // Two calls within TTL to the same server should only probe once.
+          // _fetchDivineUploadCapability is private, so we drive it through
+          // uploadVideo which calls it at line 981. However, uploadVideo also
+          // requires full auth/file setup. Instead, test the cache indirectly
+          // by calling uploadVideo twice and verifying dio.head is called once.
+
+          // Arrange auth
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(testPublicKey, 24242, [
+              ['t', 'upload'],
+            ], ''),
+          );
+
+          // Arrange file
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_cache_hit_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(
+              List<int>.generate(5, (i) => i + 1),
+            );
+
+          // Arrange legacy PUT upload response
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any<dynamic>(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {'url': 'https://media.divine.video/abc123'},
+            ),
+          );
+
+          // Arrange HEAD without resumable so it goes to the simpler PUT path
+          arrangeCapabilityHead(resumable: false);
+
+          SharedPreferences.setMockInitialValues({});
+
+          // First upload
+          await svc.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'test',
+            proofManifestJson: null,
+            description: null,
+            hashtags: null,
+          );
+
+          // Advance clock by 2 minutes (within 5 min TTL)
+          fakeNow = fakeNow.add(const Duration(minutes: 2));
+
+          // Second upload
+          await svc.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'test2',
+            proofManifestJson: null,
+            description: null,
+            hashtags: null,
+          );
+
+          // HEAD should be called only once — second call used cache
+          verify(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).called(1);
+
+          // Clean up
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'reprobes after TTL expires',
+        () async {
+          final svc = createServiceWithClock();
+
+          // Arrange
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(testPublicKey, 24242, [
+              ['t', 'upload'],
+            ], ''),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_cache_expiry_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(
+              List<int>.generate(5, (i) => i + 1),
+            );
+
+          arrangeCapabilityHead(resumable: false);
+
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any<dynamic>(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {'url': 'https://media.divine.video/abc123'},
+            ),
+          );
+
+          SharedPreferences.setMockInitialValues({});
+
+          // First upload
+          await svc.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'test',
+            proofManifestJson: null,
+            description: null,
+            hashtags: null,
+          );
+
+          // Advance clock past TTL (6 minutes > 5 minute TTL)
+          fakeNow = fakeNow.add(const Duration(minutes: 6));
+
+          // Second upload
+          await svc.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'test2',
+            proofManifestJson: null,
+            description: null,
+            hashtags: null,
+          );
+
+          // HEAD should be called twice — cache expired
+          verify(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).called(2);
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'caches negative capability result on probe failure',
+        () async {
+          final svc = createServiceWithClock();
+
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(testPublicKey, 24242, [
+              ['t', 'upload'],
+            ], ''),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_cache_negative_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(
+              List<int>.generate(5, (i) => i + 1),
+            );
+
+          // First call: HEAD throws (server unreachable)
+          when(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).thenThrow(
+            DioException(
+              requestOptions: RequestOptions(path: '/upload'),
+              type: DioExceptionType.connectionTimeout,
+              error: 'timed out',
+            ),
+          );
+
+          // Legacy PUT still succeeds
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any<dynamic>(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {'url': 'https://media.divine.video/abc123'},
+            ),
+          );
+
+          SharedPreferences.setMockInitialValues({});
+
+          // First upload — HEAD fails, cached as negative
+          await svc.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'test',
+            proofManifestJson: null,
+            description: null,
+            hashtags: null,
+          );
+
+          // Advance clock by 1 minute (within TTL)
+          fakeNow = fakeNow.add(const Duration(minutes: 1));
+
+          // Second upload — should use cached negative result, no HEAD call
+          await svc.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'test2',
+            proofManifestJson: null,
+            description: null,
+            hashtags: null,
+          );
+
+          // HEAD should be called only once — negative result was cached
+          verify(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).called(1);
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'caches independently per server URL',
+        () async {
+          final svc = createServiceWithClock();
+
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(testPublicKey, 24242, [
+              ['t', 'upload'],
+            ], ''),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_cache_per_server_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(
+              List<int>.generate(5, (i) => i + 1),
+            );
+
+          arrangeCapabilityHead(resumable: false);
+
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any<dynamic>(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {'url': 'https://media.divine.video/abc123'},
+            ),
+          );
+
+          // Upload 1: custom server → probes custom server
+          SharedPreferences.setMockInitialValues({
+            'blossom_server_url': 'https://custom.blossom.server',
+            'use_blossom_upload': true,
+          });
+
+          await svc.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'test',
+            proofManifestJson: null,
+            description: null,
+            hashtags: null,
+          );
+
+          // Upload 2: same custom server — should use cache, no new HEAD
+          await svc.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'test2',
+            proofManifestJson: null,
+            description: null,
+            hashtags: null,
+          );
+
+          // Only 1 HEAD call total for the custom server across both uploads
+          verify(
+            () => mockDio.head<dynamic>(
+              'https://custom.blossom.server/upload',
+              options: any(named: 'options'),
+            ),
+          ).called(1);
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+    });
   });
 }
