@@ -46,6 +46,7 @@ import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
@@ -813,6 +814,24 @@ final nostrCreatorBindingServiceProvider = Provider<NostrCreatorBindingService>(
     return NostrCreatorBindingService(signer: signer);
   },
 );
+
+/// Provider for the CAWG verifier base URI.
+final cawgVerifierBaseUriProvider = Provider<Uri>((ref) {
+  return Uri.parse(
+    const String.fromEnvironment(
+      'CAWG_VERIFIER_BASE_URL',
+      defaultValue: 'https://verifier.divine.video',
+    ),
+  );
+});
+
+/// Provider for the optional CAWG identity verifier client.
+final cawgVerifierClientProvider = Provider<CawgVerifierClient>((ref) {
+  final baseUri = ref.watch(cawgVerifierBaseUriProvider);
+  final client = CawgVerifierClient(baseUri: baseUri);
+  ref.onDispose(client.dispose);
+  return client;
+});
 
 /// Provider that returns true only when NostrClient is fully ready for operations.
 /// Combines auth state check AND nostrClient.hasKeys verification.

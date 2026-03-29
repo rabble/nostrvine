@@ -19,6 +19,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
@@ -36,10 +37,48 @@ final videoPublishProvider =
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   DraftStorageService get _draftService =>
       ref.read(draftStorageServiceProvider);
+  CawgVerifierClient get _cawgVerifierClient =>
+      ref.read(cawgVerifierClientProvider);
 
   @override
   VideoPublishProviderState build() {
     return const VideoPublishProviderState();
+  }
+
+  /// Social verification remains optional. Prefer OAuth when supported, then
+  /// fall back to public proof so publish never depends on a single method.
+  @visibleForTesting
+  List<VerifierRequiredMethod> preferredSocialVerificationMethods({
+    required bool supportsOAuth,
+  }) {
+    if (supportsOAuth) {
+      return const <VerifierRequiredMethod>[
+        VerifierRequiredMethod.oauth,
+        VerifierRequiredMethod.publicProof,
+      ];
+    }
+
+    return const <VerifierRequiredMethod>[
+      VerifierRequiredMethod.publicProof,
+    ];
+  }
+
+  /// Fetches optional verifier-issued identity metadata without blocking
+  /// creator-binding-only publish.
+  Future<VerifierClaimBundle?> fetchOptionalVerifiedIdentity(
+    VerifierClaimRequest request,
+  ) async {
+    final bundle = await _cawgVerifierClient.verifyClaims(request);
+    if (bundle != null) {
+      return bundle;
+    }
+
+    Log.info(
+      'Identity verifier unavailable, continuing without CAWG overlay',
+      name: 'VideoPublishNotifier',
+      category: LogCategory.video,
+    );
+    return null;
   }
 
   /// Creates the publish service with callbacks wired to this notifier.
