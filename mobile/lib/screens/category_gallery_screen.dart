@@ -254,62 +254,56 @@ class _CategoryGalleryHeader extends StatelessWidget {
         minimum: const EdgeInsets.only(top: 24),
         child: SizedBox(
           height: 108,
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 390),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: _CategoryHeaderActionButton(
-                        decorationKey: const Key('category-header-back-button'),
-                        icon: DivineIconName.caretLeft,
-                        onPressed: onBack,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 18),
-                        child: Text(
-                          category.displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: VineTheme.titleMediumFont().copyWith(
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    _CategoryHeaderMascotSlot(visuals: visuals),
-                    const SizedBox(width: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: _CategoryHeaderActionButton(
-                        decorationKey: const Key(
-                          'category-header-filter-button',
-                        ),
-                        icon: DivineIconName.funnelSimple,
-                        semanticLabel: 'Category sort options',
-                        onPressed: () async {
-                          final selected = await _showCategorySortSheet(
-                            context: context,
-                            selectedValue: selectedSort,
-                          );
-                          if (selected != null && selected != selectedSort) {
-                            onSortChanged(selected);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _CategoryHeaderActionButton(
+                    decorationKey: const Key('category-header-back-button'),
+                    icon: DivineIconName.caretLeft,
+                    onPressed: onBack,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 18),
+                    child: Text(
+                      category.displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.titleMediumFont().copyWith(
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _CategoryHeaderMascotSlot(visuals: visuals),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _CategoryHeaderActionButton(
+                    decorationKey: const Key(
+                      'category-header-filter-button',
+                    ),
+                    icon: DivineIconName.funnelSimple,
+                    semanticLabel: 'Category sort options',
+                    onPressed: () async {
+                      final selected = await _showCategorySortSheet(
+                        context: context,
+                        selectedValue: selectedSort,
+                      );
+                      if (selected != null && selected != selectedSort) {
+                        onSortChanged(selected);
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),

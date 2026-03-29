@@ -96,7 +96,7 @@ void main() {
         final filterLeft = tester
             .getTopLeft(find.byKey(const Key('category-header-filter-button')))
             .dx;
-        expect(filterLeft, greaterThan(260));
+        expect(filterLeft, greaterThan(900));
 
         final backTop = tester
             .getTopLeft(find.byKey(const Key('category-header-back-button')))
