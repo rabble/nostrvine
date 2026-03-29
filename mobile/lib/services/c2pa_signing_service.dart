@@ -5,6 +5,8 @@ import 'dart:io';
 
 import 'package:c2pa_flutter/c2pa.dart';
 import 'package:flutter/foundation.dart';
+import 'package:openvine/services/c2pa_identity_manifest_service.dart';
+import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -32,10 +34,14 @@ class C2paSigningResult {
 /// cryptographic provenance information directly into media files,
 /// establishing the origin and history of digital content.
 class C2paSigningService {
-  C2paSigningService();
+  C2paSigningService({
+    C2pa? c2pa,
+    C2paIdentityManifestService? manifestService,
+  }) : _c2pa = c2pa ?? C2pa(),
+       _manifestService = manifestService ?? C2paIdentityManifestService();
 
-  final C2pa _c2pa = C2pa();
-  static const String CLAIM_GENERATOR = 'DiVine/1.0';
+  final C2pa _c2pa;
+  final C2paIdentityManifestService _manifestService;
 
   /// Signs a video file with C2PA content credentials.
   ///
@@ -48,6 +54,9 @@ class C2paSigningService {
   Future<C2paSigningResult> signVideo({
     required String videoPath,
     bool aiTrainingOptOut = true,
+    NostrCreatorBindingAssertion? creatorBindingAssertion,
+    Map<String, dynamic>? cawgIdentityAssertion,
+    bool enableAdvancedCawgEmbedding = false,
   }) async {
     try {
       Log.info(
@@ -76,14 +85,24 @@ class C2paSigningService {
       final signedPath = '$directory/c2pa_signed_$timestamp.mp4';
 
       final filename = inputFile.path.split('/').last;
-      // Build manifest JSON for digital capture
-      final manifestJsonSource = _buildManifestJson(
-        claimGenerator,
-        filename,
-        DigitalSourceType.digitalCapture.url,
+      final manifestResult = _manifestService.buildCreatedVideoManifest(
+        claimGenerator: claimGenerator,
+        title: filename,
+        sourceType: DigitalSourceType.digitalCapture,
         aiTrainingOptOut: aiTrainingOptOut,
+        creatorBindingAssertion: creatorBindingAssertion,
+        cawgIdentityAssertion: cawgIdentityAssertion,
+        enableAdvancedCawgEmbedding: enableAdvancedCawgEmbedding,
       );
-      Log.info('prepared C2PA manifest json: $manifestJsonSource');
+      if (manifestResult.requiresAdvancedEmbedding) {
+        Log.warning(
+          'Full CAWG identity embedding requires advanced placeholder support; '
+          'signing without embedded cawg.identity for now',
+          name: 'C2paSigningService',
+          category: LogCategory.video,
+        );
+      }
+      Log.info('prepared C2PA manifest json: ${manifestResult.manifestJson}');
 
       // Create signer for RemoteSigning against proofsign
       final signer = _createSigner();
@@ -92,7 +111,7 @@ class C2paSigningService {
       await _c2pa.signFile(
         sourcePath: videoPath,
         destPath: signedPath,
-        manifestJson: manifestJsonSource,
+        manifestJson: manifestResult.manifestJson,
         signer: await signer,
       );
 
@@ -176,65 +195,16 @@ class C2paSigningService {
     String title,
     String digitalSourceUrl, {
     bool aiTrainingOptOut = true,
-  }) => _buildManifestJson(
-    claimGenerator,
-    title,
-    digitalSourceUrl,
-    aiTrainingOptOut: aiTrainingOptOut,
-  );
-
-  /// Builds the manifest JSON for a freshly captured video.
-  ///
-  /// When [aiTrainingOptOut] is true, includes a `cawg.training-mining`
-  /// assertion per the CAWG Training and Data Mining spec v1.1, marking
-  /// all AI training, inference, generative training, and data mining
-  /// uses as "notAllowed".
-  String _buildManifestJson(
-    String claimGenerator,
-    String title,
-    String digitalSourceUrl, {
-    bool aiTrainingOptOut = true,
-  }) {
-    final trainingMiningAssertion = aiTrainingOptOut
-        ? ','
-              ' {"label": "cawg.training-mining",'
-              ' "data": {"entries": {'
-              ' "cawg.ai_training": {"use": "notAllowed"},'
-              ' "cawg.ai_inference": {"use": "notAllowed"},'
-              ' "cawg.ai_generative_training": {"use": "notAllowed"},'
-              ' "cawg.data_mining": {"use": "notAllowed"}}}}'
-        : '';
-
-    return '''
-{
-  "claim_generator": "$claimGenerator",
-  "title": "$title",
-  "format": "video/mp4",
-  "ingredients": [
-        {
-          "title": "$title",
-          "format": "video/mp4",
-          "relationship": "parentOf",
-          "label": "c2pa.ingredient.v2"
-        }
-      ],
-  "assertions": [
-    {
-      "label": "c2pa.actions.v2",
-      "data": {
-        "actions": [
-          {
-            "action": "c2pa.created",
-            "digitalSourceType": "$digitalSourceUrl",
-            "softwareAgent": "$claimGenerator"
-          }
-        ]
-      }
-    }$trainingMiningAssertion
-  ]
-}
-''';
-  }
+  }) => _manifestService
+      .buildCreatedVideoManifest(
+        claimGenerator: claimGenerator,
+        title: title,
+        sourceType:
+            DigitalSourceType.fromUrl(digitalSourceUrl) ??
+            DigitalSourceType.digitalCapture,
+        aiTrainingOptOut: aiTrainingOptOut,
+      )
+      .manifestJson;
 
   /// Creates a signer for C2PA operations.
   ///
