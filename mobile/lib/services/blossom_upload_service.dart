@@ -29,6 +29,7 @@ class BlossomUploadResult {
   final String? gifUrl; // Deprecated - keeping for backwards compatibility
   final String? blurhash; // Deprecated - keeping for backwards compatibility
   final String? errorMessage;
+  final int? statusCode; // HTTP status code on failure
 
   // Convenience getter for backwards compatibility
   String? get cdnUrl => fallbackUrl ?? url;
@@ -45,6 +46,7 @@ class BlossomUploadResult {
     this.gifUrl,
     this.blurhash,
     this.errorMessage,
+    this.statusCode,
   });
 }
 
@@ -706,6 +708,7 @@ class BlossomUploadService {
 
     return BlossomUploadResult(
       success: false,
+      statusCode: response.statusCode,
       errorMessage:
           'Upload failed: ${response.statusCode} - ${xReason ?? response.data}',
     );
@@ -806,34 +809,48 @@ class BlossomUploadService {
         errorDetail = '$errorDetail (${e.error})';
       }
 
+      final statusCode = e.response?.statusCode;
+
       if (e.type == DioExceptionType.connectionTimeout) {
-        return const BlossomUploadResult(
+        return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Connection timeout - check server URL',
         );
       } else if (e.type == DioExceptionType.sendTimeout) {
-        return const BlossomUploadResult(
+        return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Send timeout - upload too slow or connection dropped',
         );
       } else if (e.type == DioExceptionType.receiveTimeout) {
-        return const BlossomUploadResult(
+        return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Receive timeout - server not responding',
         );
       } else if (e.type == DioExceptionType.connectionError) {
         return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Cannot connect to Blossom server: $errorDetail',
         );
       } else if (e.type == DioExceptionType.cancel) {
-        return const BlossomUploadResult(
+        return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Upload cancelled',
+        );
+      } else if (e.type == DioExceptionType.badResponse) {
+        return BlossomUploadResult(
+          success: false,
+          statusCode: statusCode,
+          errorMessage: 'Server error ($statusCode): $errorDetail',
         );
       } else {
         return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Network error: $errorDetail',
         );
       }

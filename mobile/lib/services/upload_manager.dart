@@ -36,6 +36,21 @@ String _getPlatformName() {
   }
 }
 
+/// Exception thrown when a [BlossomUploadResult] indicates failure.
+///
+/// Carries the HTTP [statusCode] so that [categorizeError] and
+/// [isRetriableError] can branch on it directly instead of parsing
+/// error-message strings.
+class BlossomUploadFailureException implements Exception {
+  const BlossomUploadFailureException(this.message, {this.statusCode});
+
+  final String message;
+  final int? statusCode;
+
+  @override
+  String toString() => message;
+}
+
 /// Upload retry configuration
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class UploadRetryConfig {
@@ -784,7 +799,7 @@ class UploadManager {
         baseDelay: _retryConfig.initialDelay,
         maxDelay: _retryConfig.maxDelay,
         backoffMultiplier: _retryConfig.backoffMultiplier,
-        retryWhen: _isRetriableError,
+        retryWhen: isRetriableError,
         debugName: 'Upload-${upload.id}',
       );
     } catch (e) {
@@ -1002,8 +1017,9 @@ class UploadManager {
         _startProcessingPoll(updatedUpload);
       }
     } else {
-      throw Exception(
-        result.errorMessage ?? 'Upload failed with unknown error',
+      throw BlossomUploadFailureException(
+        (result.errorMessage as String?) ?? 'Upload failed with unknown error',
+        statusCode: result.statusCode as int?,
       );
     }
   }
@@ -1016,8 +1032,8 @@ class UploadManager {
 
     // Check network connectivity and categorize error
     final connectivity = await _checkNetworkConnectivity();
-    final errorCategory = await _categorizeError(error);
-    final userMessage = _getUserFriendlyErrorMessage(
+    final errorCategory = await categorizeError(error);
+    final userMessage = getUserFriendlyErrorMessage(
       errorCategory,
       connectivity,
     );
@@ -1033,7 +1049,7 @@ class UploadManager {
       category: LogCategory.video,
     );
     Log.error(
-      'Network: ${_getNetworkTypeString(connectivity)}',
+      'Network: ${getNetworkTypeString(connectivity)}',
       name: 'UploadManager',
       category: LogCategory.video,
     );
@@ -1133,40 +1149,53 @@ class UploadManager {
   }
 
   /// Check if error is retriable
-  bool _isRetriableError(dynamic error) {
+  @visibleForTesting
+  bool isRetriableError(dynamic error) {
     if (_isExpiredResumableSessionError(error)) {
       return false;
     }
 
+    // Use structured status code when available
+    if (error is BlossomUploadFailureException) {
+      final code = error.statusCode;
+      if (code != null) {
+        // 408 request timeout — retriable
+        if (code == 408) return true;
+        // 429 rate limited — retriable after backoff
+        if (code == 429) return true;
+        // Transient server errors — retriable
+        if (code == 500 || code == 502 || code == 503 || code == 504) {
+          return true;
+        }
+        // Other 5xx (501, 505, etc.) are permanent — not retriable
+        if (code >= 500) return false;
+        // 4xx client errors are not retriable
+        if (code >= 400) return false;
+      }
+    }
+
+    // Fall back to string matching for non-HTTP errors
     final errorStr = error.toString().toLowerCase();
 
     // Network and timeout errors are retriable
     if (errorStr.contains('timeout') ||
+        errorStr.contains('cannot connect') ||
+        errorStr.contains('network error') ||
         errorStr.contains('connection') ||
-        errorStr.contains('network') ||
         errorStr.contains('socket')) {
       return true;
-    }
-
-    // Server errors (5xx) are retriable
-    if (errorStr.contains('500') ||
-        errorStr.contains('502') ||
-        errorStr.contains('503') ||
-        errorStr.contains('504')) {
-      return true;
-    }
-
-    // Client errors (4xx) are generally not retriable
-    if (errorStr.contains('400') ||
-        errorStr.contains('401') ||
-        errorStr.contains('403') ||
-        errorStr.contains('404')) {
-      return false;
     }
 
     // File not found errors are not retriable
     if (errorStr.contains('file not found') ||
         errorStr.contains('does not exist')) {
+      return false;
+    }
+
+    // Authentication / permission errors are not retriable
+    if (errorStr.contains('auth') ||
+        errorStr.contains('permission') ||
+        errorStr.contains('cancelled')) {
       return false;
     }
 
@@ -1208,7 +1237,8 @@ class UploadManager {
   }
 
   /// Get human-readable network type
-  String _getNetworkTypeString(ConnectivityResult connectivity) {
+  @visibleForTesting
+  String getNetworkTypeString(ConnectivityResult connectivity) {
     switch (connectivity) {
       case ConnectivityResult.wifi:
         return 'WiFi';
@@ -1226,12 +1256,11 @@ class UploadManager {
   }
 
   /// Categorize error for monitoring with network-aware detection
-  Future<String> _categorizeError(dynamic error) async {
+  @visibleForTesting
+  Future<String> categorizeError(dynamic error) async {
     if (_isExpiredResumableSessionError(error)) {
       return 'UPLOAD_SESSION_EXPIRED';
     }
-
-    final errorStr = error.toString().toLowerCase();
 
     // Check network connectivity for better categorization
     final connectivity = await _checkNetworkConnectivity();
@@ -1241,21 +1270,43 @@ class UploadManager {
       return 'NO_INTERNET';
     }
 
-    // Network-related errors
+    // Use structured status code when available
+    if (error is BlossomUploadFailureException) {
+      final code = error.statusCode;
+      if (code != null) {
+        if (code == 408) return 'TIMEOUT';
+        if (code == 413) return 'FILE_TOO_LARGE';
+        if (code == 429) return 'RATE_LIMITED';
+        if (code == 401 || code == 403) return 'AUTHENTICATION';
+        if (code == 502 || code == 503 || code == 504) {
+          return 'SERVER_UNAVAILABLE';
+        }
+        if (code >= 500) return 'SERVER_ERROR';
+        if (code >= 400) return 'CLIENT_ERROR';
+      }
+    }
+
+    // Fall back to string matching for non-HTTP errors
+    // (timeouts, connection errors, DNS, etc.)
+    final errorStr = error.toString().toLowerCase();
+
+    // Timeout variants from BlossomUploadService
     if (errorStr.contains('timeout')) {
-      // On cellular, timeout likely means slow connection
       if (connectivity == ConnectivityResult.mobile) {
         return 'SLOW_CONNECTION';
       }
       return 'TIMEOUT';
     }
 
-    if (errorStr.contains('network') || errorStr.contains('connection')) {
-      return 'NETWORK_ERROR';
-    }
-
     if (errorStr.contains('host') || errorStr.contains('dns')) {
       return 'DNS_ERROR';
+    }
+
+    // "Cannot connect to Blossom server" or generic "Network error:"
+    if (errorStr.contains('cannot connect') ||
+        errorStr.contains('network error') ||
+        errorStr.contains('connection')) {
+      return 'NETWORK_ERROR';
     }
 
     // File errors
@@ -1263,25 +1314,12 @@ class UploadManager {
     if (errorStr.contains('memory')) return 'OUT_OF_MEMORY';
     if (errorStr.contains('permission')) return 'PERMISSION_DENIED';
 
-    // Authentication errors
-    if (errorStr.contains('auth') || errorStr.contains('unauthorized')) {
-      return 'AUTHENTICATION';
-    }
-
-    // Server errors
-    if (errorStr.contains('5') || errorStr.contains('server error')) {
-      return 'SERVER_ERROR';
-    }
-
-    // Client errors
-    if (errorStr.contains('413')) return 'FILE_TOO_LARGE';
-    if (errorStr.contains('4')) return 'CLIENT_ERROR';
-
     return 'UNKNOWN';
   }
 
   /// Get user-friendly error message based on category
-  String _getUserFriendlyErrorMessage(
+  @visibleForTesting
+  String getUserFriendlyErrorMessage(
     String category,
     ConnectivityResult connectivity,
   ) {
@@ -1296,9 +1334,11 @@ class UploadManager {
         return 'Upload timed out. Your connection might be slow. Try again or connect to WiFi.';
 
       case 'NETWORK_ERROR':
-      case 'DNS_ERROR':
-        final networkType = _getNetworkTypeString(connectivity);
+        final networkType = getNetworkTypeString(connectivity);
         return 'Network error on $networkType. Check your connection and try again.';
+
+      case 'DNS_ERROR':
+        return 'Could not reach the upload server. Check your connection or try a different network.';
 
       case 'FILE_NOT_FOUND':
         return 'Video file not found. Please record the video again.';
@@ -1318,8 +1358,15 @@ class UploadManager {
       case 'UPLOAD_SESSION_EXPIRED':
         return 'Upload session expired. Please retry the upload.';
 
+      case 'RATE_LIMITED':
+        return 'Too many uploads. Please wait a moment and try again.';
+
+      case 'SERVER_UNAVAILABLE':
+        return 'Upload server is temporarily unavailable. '
+            'It will retry automatically.';
+
       case 'SERVER_ERROR':
-        return 'Upload server is having issues. Please try again later.';
+        return 'Upload server encountered an error. Please try again later.';
 
       case 'CLIENT_ERROR':
         return 'Upload request failed. Please try again.';
@@ -2137,7 +2184,7 @@ class UploadManager {
         'created_at': upload.createdAt.toIso8601String(),
         'file_exists': !kIsWeb && File(upload.localVideoPath).existsSync(),
         // Network connectivity information
-        'network_type': _getNetworkTypeString(connectivity),
+        'network_type': getNetworkTypeString(connectivity),
         'network_status': connectivity.toString(),
         'is_offline': connectivity == ConnectivityResult.none,
         'is_cellular': connectivity == ConnectivityResult.mobile,
@@ -2186,7 +2233,7 @@ Upload Failure Report:
 - Upload ID: ${upload.id}
 - Error Category: $errorCategory
 - Error: $error
-- Network: ${_getNetworkTypeString(connectivity)} (${connectivity == ConnectivityResult.none ? 'OFFLINE' : 'ONLINE'})
+- Network: ${getNetworkTypeString(connectivity)} (${connectivity == ConnectivityResult.none ? 'OFFLINE' : 'ONLINE'})
 - File: ${upload.localVideoPath}
 - File Exists: $fileExists
 - Upload Status: ${upload.status}
