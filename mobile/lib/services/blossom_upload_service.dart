@@ -1044,8 +1044,7 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
-          final statusCode =
-              e is DioException ? e.response?.statusCode : null;
+          final statusCode = e is DioException ? e.response?.statusCode : null;
           lastError = BlossomUploadResult(
             success: false,
             statusCode: statusCode,
@@ -1197,8 +1196,7 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
-          final statusCode =
-              e is DioException ? e.response?.statusCode : null;
+          final statusCode = e is DioException ? e.response?.statusCode : null;
           lastError = BlossomUploadResult(
             success: false,
             statusCode: statusCode,
@@ -1510,8 +1508,7 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
-          final statusCode =
-              e is DioException ? e.response?.statusCode : null;
+          final statusCode = e is DioException ? e.response?.statusCode : null;
           lastError = BlossomUploadResult(
             success: false,
             statusCode: statusCode,
