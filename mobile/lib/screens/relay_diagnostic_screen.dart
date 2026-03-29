@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart' show RelayState;
 import 'package:nostr_sdk/filter.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
@@ -116,7 +117,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         // Query for video events specifically to see if any exist
         try {
           final videoEvents = await nostrService.queryEvents([
-            nostr.Filter(kinds: [34236], limit: 10),
+            nostr.Filter(
+              kinds: [NIP71VideoKinds.addressableShortVideo],
+              limit: 10,
+            ),
           ]);
           Log.info(
             'Found ${videoEvents.length} video events in relay cache',
@@ -428,7 +432,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
     try {
       // Query for video events directly from relay
       final videoEvents = await nostrService.queryEvents([
-        nostr.Filter(kinds: [34236], limit: 100),
+        nostr.Filter(
+          kinds: [NIP71VideoKinds.addressableShortVideo],
+          limit: 100,
+        ),
       ]);
 
       Log.info(

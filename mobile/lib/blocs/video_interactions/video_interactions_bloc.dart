@@ -7,6 +7,7 @@ import 'package:comments_repository/comments_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
+import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 
@@ -180,12 +181,13 @@ class VideoInteractionsBloc
 
     try {
       // Pass addressable ID and target kind for proper a-tag tagging
-      // Kind 34236 is the video kind (NIP-71 addressable short videos)
       final isNowLiked = await _likesRepository.toggleLike(
         eventId: _eventId,
         authorPubkey: _authorPubkey,
         addressableId: _addressableId,
-        targetKind: _addressableId != null ? 34236 : null,
+        targetKind: _addressableId != null
+            ? NIP71VideoKinds.addressableShortVideo
+            : null,
       );
 
       // Update local state with new like status and adjusted count

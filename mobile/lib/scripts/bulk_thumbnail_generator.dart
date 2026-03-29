@@ -165,7 +165,7 @@ Examples:
 
       // Create filter for video events
       final filter = Filter(
-        kinds: [34236], // Kind 34236 addressable short video events
+        kinds: [NIP71VideoKinds.addressableShortVideo],
         limit: limit,
       );
 

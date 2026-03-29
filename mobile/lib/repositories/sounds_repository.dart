@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/audio_event.dart';
@@ -288,7 +289,7 @@ class SoundsRepository {
       // Query for Kind 34236 video events that reference this audio event
       final result = await _nostrClient.countEvents([
         Filter(
-          kinds: const [34236], // Video event kind
+          kinds: [NIP71VideoKinds.addressableShortVideo],
           e: [audioEventId], // Events referencing this audio
         ),
       ]);
@@ -331,7 +332,7 @@ class SoundsRepository {
     try {
       final events = await _nostrClient.queryEvents([
         Filter(
-          kinds: const [34236], // Video event kind
+          kinds: [NIP71VideoKinds.addressableShortVideo],
           e: [audioEventId],
           limit: limit,
         ),
