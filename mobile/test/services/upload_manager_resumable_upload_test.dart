@@ -211,5 +211,111 @@ void main() {
         expect(failedUpload.errorMessage, contains('session expired'));
       },
     );
+
+    test(
+      'serializes rapid session-progress writes so the latest offset wins',
+      () async {
+        const chunkSize = 8;
+        const fileSize = 80;
+
+        // Create a file of the expected size so lengthSync() is consistent.
+        videoFile = File('${tempDir.path}/video_serial.mp4')
+          ..writeAsBytesSync(List<int>.generate(fileSize, (i) => i));
+
+        final uploadCompleter = Completer<BlossomUploadResult>();
+
+        // Capture the onResumableSessionUpdated callback so we can call it
+        // rapidly ourselves.
+        void Function(BlossomResumableUploadSession)? capturedCallback;
+
+        when(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(
+              named: 'onResumableSessionUpdated',
+            ),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedCallback =
+              invocation.namedArguments[#onResumableSessionUpdated]
+                  as void Function(BlossomResumableUploadSession)?;
+
+          return uploadCompleter.future;
+        });
+
+        // Start the upload without awaiting — startUpload blocks until the
+        // upload completes, but we need to interact with the callback
+        // mid-upload.
+        unawaited(
+          uploadManager.startUpload(
+            videoFile: videoFile,
+            nostrPubkey: 'test-pubkey',
+            title: 'Serialization test',
+          ),
+        );
+
+        // Wait for the mock to capture the callback.
+        await TestHelpers.waitForCondition(
+          () => capturedCallback != null,
+          timeout: const Duration(seconds: 2),
+        );
+
+        // Grab the upload ID from the box since startUpload hasn't returned.
+        final uploads = uploadManager.pendingUploads;
+        expect(uploads, isNotEmpty);
+        final uploadId = uploads.first.id;
+
+        // Fire 5 rapid session updates without awaiting (simulates real
+        // chunk-completion callbacks arriving in quick succession).
+        for (var i = 1; i <= 5; i++) {
+          capturedCallback!(
+            BlossomResumableUploadSession(
+              uploadId: 'up_serial',
+              uploadUrl: 'https://upload.divine.video/sessions/up_serial',
+              chunkSize: chunkSize,
+              nextOffset: chunkSize * i,
+            ),
+          );
+        }
+
+        // Allow the serialized futures to drain.
+        await TestHelpers.waitForCondition(
+          () {
+            final u = uploadManager.getUpload(uploadId);
+            if (u == null) return false;
+            const expectedOffset = chunkSize * 5;
+            return u.resumableSession?.nextOffset == expectedOffset;
+          },
+          timeout: const Duration(seconds: 2),
+          checkInterval: const Duration(milliseconds: 20),
+        );
+
+        final persisted = uploadManager.getUpload(uploadId)!;
+        expect(persisted.resumableSession?.nextOffset, equals(chunkSize * 5));
+
+        final expectedProgress = ((chunkSize * 5) / fileSize * 0.8).clamp(
+          0.0,
+          0.8,
+        );
+        expect(persisted.uploadProgress, closeTo(expectedProgress, 0.001));
+
+        // Complete the upload future to let tearDown dispose cleanly.
+        uploadCompleter.complete(
+          const BlossomUploadResult(
+            success: true,
+            videoId: 'video-serial',
+            url: 'https://media.divine.video/video-serial',
+            fallbackUrl: 'https://media.divine.video/video-serial',
+          ),
+        );
+      },
+    );
   });
 }

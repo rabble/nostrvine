@@ -108,6 +108,7 @@ class UploadManager {
   final Map<String, StreamSubscription<double>> _progressSubscriptions = {};
   final Map<String, UploadMetrics> _uploadMetrics = {};
   final Map<String, Timer> _retryTimers = {};
+  final Map<String, Future<void>> _sessionPersistFutures = {};
 
   bool _isInitialized = false;
 
@@ -878,12 +879,10 @@ class UploadManager {
             proofManifestJson: upload.proofManifestJson,
             resumableSession: upload.resumableSession,
             onResumableSessionUpdated: (session) {
-              unawaited(
-                _storeResumableSessionProgress(
-                  upload.id,
-                  session,
-                  videoFile.lengthSync(),
-                ),
+              _enqueueSessionPersist(
+                upload.id,
+                session,
+                videoFile.lengthSync(),
               );
             },
             onProgress: (value) {
@@ -1125,6 +1124,29 @@ class UploadManager {
         uploadProgress: persistedProgress,
       ),
     );
+  }
+
+  /// Enqueues a session persistence write so that rapid chunk callbacks
+  /// are serialized per upload, preventing interleaved Hive writes.
+  void _enqueueSessionPersist(
+    String uploadId,
+    BlossomResumableUploadSession session,
+    int fileSizeBytes,
+  ) {
+    final previous = _sessionPersistFutures[uploadId] ?? Future<void>.value();
+    _sessionPersistFutures[uploadId] = previous.then((_) async {
+      try {
+        await _storeResumableSessionProgress(uploadId, session, fileSizeBytes);
+      } catch (e, s) {
+        Log.error(
+          'Failed to persist resumable session progress for $uploadId: $e',
+          name: 'UploadManager',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: s,
+        );
+      }
+    });
   }
 
   bool _isExpiredResumableSessionError(dynamic error) {
@@ -1532,6 +1554,7 @@ class UploadManager {
     // Cancel progress subscription
     _progressSubscriptions[uploadId]?.cancel();
     _progressSubscriptions.remove(uploadId);
+    _sessionPersistFutures.remove(uploadId);
 
     // Remove from storage
     await _uploadsBox?.delete(uploadId);
@@ -2456,6 +2479,9 @@ Upload Timeout Failure:
       timer.cancel();
     }
     _retryTimers.clear();
+
+    // Discard pending session persistence futures
+    _sessionPersistFutures.clear();
 
     // Cancel save queue timer
     _saveQueueTimer?.cancel();
