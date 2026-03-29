@@ -47,11 +47,15 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
   @override
   Widget build(BuildContext context) {
     final categoriesRepository = ref.watch(categoriesRepositoryProvider);
+    final currentUserPubkey = ref
+        .watch(authServiceProvider)
+        .currentPublicKeyHex;
 
     return BlocProvider(
-      create: (_) =>
-          CategoriesBloc(categoriesRepository: categoriesRepository)
-            ..add(CategorySelected(widget.category)),
+      create: (_) => CategoriesBloc(
+        categoriesRepository: categoriesRepository,
+        currentUserPubkey: currentUserPubkey,
+      )..add(CategorySelected(widget.category)),
       child: BlocListener<CategoriesBloc, CategoriesState>(
         listenWhen: (previous, current) => previous.videos != current.videos,
         listener: (_, state) {
@@ -143,14 +147,9 @@ class CategoryGalleryView extends StatelessWidget {
           _CategoryGalleryHeader(
             category: category,
             visuals: visuals,
+            selectedSort: state.sortOrder,
             onBack: onBack,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: _CategorySortSegmentedControl(
-              selectedSort: state.sortOrder,
-              onChanged: onSortChanged,
-            ),
+            onSortChanged: onSortChanged,
           ),
           Expanded(
             child: _CategoryGalleryBody(
@@ -234,12 +233,16 @@ class _CategoryGalleryHeader extends StatelessWidget {
   const _CategoryGalleryHeader({
     required this.category,
     required this.visuals,
+    required this.selectedSort,
     required this.onBack,
+    required this.onSortChanged,
   });
 
   final VideoCategory category;
   final CategoryVisuals visuals;
+  final String selectedSort;
   final VoidCallback onBack;
+  final ValueChanged<String> onSortChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +258,7 @@ class _CategoryGalleryHeader extends StatelessWidget {
               if (visuals.assetPath != null)
                 Positioned(
                   top: -18,
-                  right: 28,
+                  right: 56,
                   child: Image.asset(
                     visuals.assetPath!,
                     height: 104,
@@ -284,6 +287,24 @@ class _CategoryGalleryHeader extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      DivineIconButton(
+                        icon: DivineIconName.slidersHorizontal,
+                        type: DivineIconButtonType.secondary,
+                        size: DivineIconButtonSize.small,
+                        semanticLabel: 'Category sort options',
+                        onPressed: () async {
+                          final selected =
+                              await VineBottomSheetSelectionMenu.show(
+                                context: context,
+                                selectedValue: selectedSort,
+                                options: _categorySortOptions,
+                              );
+                          if (selected != null && selected != selectedSort) {
+                            onSortChanged(selected);
+                          }
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -296,123 +317,9 @@ class _CategoryGalleryHeader extends StatelessWidget {
   }
 }
 
-class _CategorySortSegmentedControl extends StatelessWidget {
-  const _CategorySortSegmentedControl({
-    required this.selectedSort,
-    required this.onChanged,
-  });
-
-  final String selectedSort;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return _CategorySortController(
-      selectedSort: selectedSort,
-      onChanged: onChanged,
-      child: Container(
-        decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: VineTheme.outlineMuted, width: 2),
-        ),
-        child: const Row(
-          children: [
-            Expanded(
-              child: _CategorySortSegment(
-                value: 'trending',
-                label: 'Hot',
-              ),
-            ),
-            Expanded(
-              child: _CategorySortSegment(
-                value: 'timestamp',
-                label: 'New',
-              ),
-            ),
-            Expanded(
-              child: _CategorySortSegment(
-                value: 'classic',
-                label: 'Classic',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CategorySortSegment extends StatelessWidget {
-  const _CategorySortSegment({required this.value, required this.label});
-
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final parent = context
-        .dependOnInheritedWidgetOfExactType<_CategorySortController>()!;
-    final isSelected = parent.selectedSort == value;
-
-    return GestureDetector(
-      onTap: isSelected ? null : () => parent.onChanged(value),
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isSelected ? VineTheme.primary : VineTheme.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isSelected
-                ? const [
-                    BoxShadow(
-                      color: Color(0x1A000000),
-                      offset: Offset(0.4, 0.4),
-                      blurRadius: 0.6,
-                    ),
-                    BoxShadow(
-                      color: Color(0x1A000000),
-                      offset: Offset(1, 1),
-                      blurRadius: 1,
-                    ),
-                  ]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style:
-                VineTheme.titleMediumFont(
-                  color: isSelected
-                      ? VineTheme.onPrimaryButton
-                      : VineTheme.onSurfaceMuted,
-                ).copyWith(
-                  decoration: TextDecoration.none,
-                ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategorySortController extends InheritedWidget {
-  const _CategorySortController({
-    required super.child,
-    required this.selectedSort,
-    required this.onChanged,
-  });
-
-  final String selectedSort;
-  final ValueChanged<String> onChanged;
-
-  @override
-  bool updateShouldNotify(_CategorySortController oldWidget) {
-    return selectedSort != oldWidget.selectedSort ||
-        onChanged != oldWidget.onChanged;
-  }
-}
+const _categorySortOptions = <VineBottomSheetSelectionOptionData>[
+  VineBottomSheetSelectionOptionData(label: 'Hot', value: 'trending'),
+  VineBottomSheetSelectionOptionData(label: 'New', value: 'timestamp'),
+  VineBottomSheetSelectionOptionData(label: 'Classic', value: 'classic'),
+  VineBottomSheetSelectionOptionData(label: 'For You', value: 'forYou'),
+];

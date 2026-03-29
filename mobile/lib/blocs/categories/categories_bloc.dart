@@ -17,10 +17,12 @@ part 'categories_state.dart';
 /// in-memory TTL cache) and manages loading videos for a selected category
 /// with pagination.
 class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
-  CategoriesBloc({required CategoriesRepository categoriesRepository})
-    : _categoriesRepository = categoriesRepository,
-      _apiClient = categoriesRepository.apiClient,
-      super(const CategoriesState()) {
+  CategoriesBloc({
+    required CategoriesRepository categoriesRepository,
+    this.currentUserPubkey,
+  }) : _categoriesRepository = categoriesRepository,
+       _apiClient = categoriesRepository.apiClient,
+       super(const CategoriesState()) {
     on<CategoriesLoadRequested>(_onLoadRequested);
     on<CategorySelected>(_onCategorySelected);
     on<CategoryVideosLoadMore>(_onLoadMore);
@@ -30,6 +32,7 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
 
   final CategoriesRepository _categoriesRepository;
   final FunnelcakeApiClient _apiClient;
+  final String? currentUserPubkey;
 
   Future<void> _onLoadRequested(
     CategoriesLoadRequested event,
@@ -79,21 +82,10 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     );
 
     try {
-      final isClassic = state.sortOrder == 'classic';
-      final videoStats = await _apiClient.getVideosByCategory(
-        category: event.category.name,
-        sort: isClassic ? 'loops' : state.sortOrder,
-        platform: isClassic ? 'vine' : null,
-      );
-
-      final videos = videoStats.map((s) => s.toVideoEvent()).toList();
-
-      emit(
-        state.copyWith(
-          videosStatus: CategoriesVideosStatus.loaded,
-          videos: videos,
-          hasMoreVideos: videoStats.length >= 50,
-        ),
+      await _loadVideosForSelection(
+        emit: emit,
+        category: event.category,
+        sortOrder: state.sortOrder,
       );
     } on FunnelcakeException catch (e) {
       emit(
@@ -118,7 +110,8 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
   ) async {
     if (state.selectedCategory == null ||
         !state.hasMoreVideos ||
-        state.isLoadingMore) {
+        state.isLoadingMore ||
+        state.sortOrder == 'forYou') {
       return;
     }
 
@@ -128,12 +121,11 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
       final lastVideo = state.videos.lastOrNull;
       final before = lastVideo?.createdAt;
 
-      final isClassic = state.sortOrder == 'classic';
       final videoStats = await _apiClient.getVideosByCategory(
         category: state.selectedCategory!.name,
         before: before,
-        sort: isClassic ? 'loops' : state.sortOrder,
-        platform: isClassic ? 'vine' : null,
+        sort: _apiSortFor(state.sortOrder),
+        platform: _platformFor(state.sortOrder),
       );
 
       final newVideos = videoStats.map((s) => s.toVideoEvent()).toList();
@@ -173,21 +165,10 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     );
 
     try {
-      final isClassic = event.sort == 'classic';
-      final videoStats = await _apiClient.getVideosByCategory(
-        category: state.selectedCategory!.name,
-        sort: isClassic ? 'loops' : event.sort,
-        platform: isClassic ? 'vine' : null,
-      );
-
-      final videos = videoStats.map((s) => s.toVideoEvent()).toList();
-
-      emit(
-        state.copyWith(
-          videosStatus: CategoriesVideosStatus.loaded,
-          videos: videos,
-          hasMoreVideos: videoStats.length >= 50,
-        ),
+      await _loadVideosForSelection(
+        emit: emit,
+        category: state.selectedCategory!,
+        sortOrder: event.sort,
       );
     } catch (e) {
       emit(
@@ -207,5 +188,75 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
         videos: const [],
       ),
     );
+  }
+
+  Future<void> _loadVideosForSelection({
+    required Emitter<CategoriesState> emit,
+    required VideoCategory category,
+    required String sortOrder,
+  }) async {
+    if (sortOrder == 'forYou') {
+      final recommendedVideos = await _loadRecommendedVideos(category);
+      if (recommendedVideos.isNotEmpty) {
+        emit(
+          state.copyWith(
+            videosStatus: CategoriesVideosStatus.loaded,
+            videos: recommendedVideos,
+            hasMoreVideos: false,
+          ),
+        );
+        return;
+      }
+
+      final hotVideoStats = await _apiClient.getVideosByCategory(
+        category: category.name,
+      );
+      emit(
+        state.copyWith(
+          videosStatus: CategoriesVideosStatus.loaded,
+          videos: hotVideoStats.map((s) => s.toVideoEvent()).toList(),
+          hasMoreVideos: false,
+        ),
+      );
+      return;
+    }
+
+    final videoStats = await _apiClient.getVideosByCategory(
+      category: category.name,
+      sort: _apiSortFor(sortOrder),
+      platform: _platformFor(sortOrder),
+    );
+
+    emit(
+      state.copyWith(
+        videosStatus: CategoriesVideosStatus.loaded,
+        videos: videoStats.map((s) => s.toVideoEvent()).toList(),
+        hasMoreVideos: videoStats.length >= 50,
+      ),
+    );
+  }
+
+  Future<List<VideoEvent>> _loadRecommendedVideos(
+    VideoCategory category,
+  ) async {
+    final pubkey = currentUserPubkey;
+    if (pubkey == null || pubkey.isEmpty) {
+      return const [];
+    }
+
+    final response = await _apiClient.getRecommendations(
+      pubkey: pubkey,
+      category: category.name,
+      limit: 50,
+    );
+    return response.videos.map((video) => video.toVideoEvent()).toList();
+  }
+
+  String _apiSortFor(String sortOrder) {
+    return sortOrder == 'classic' ? 'loops' : sortOrder;
+  }
+
+  String? _platformFor(String sortOrder) {
+    return sortOrder == 'classic' ? 'vine' : null;
   }
 }

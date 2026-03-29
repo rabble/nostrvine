@@ -138,6 +138,7 @@ void main() {
       FullscreenFeedState? state,
       List<dynamic>? additionalOverrides,
       VideoFeedControllerFactory? controllerFactory,
+      String? contextTitle,
     }) {
       final effectiveState = state ?? const FullscreenFeedState();
       when(() => mockBloc.state).thenReturn(effectiveState);
@@ -158,6 +159,7 @@ void main() {
         home: BlocProvider<FullscreenFeedBloc>.value(
           value: mockBloc,
           child: FullscreenFeedContent(
+            contextTitle: contextTitle,
             controllerFactory:
                 controllerFactory ??
                 ((videos, initialIndex) => defaultController),
@@ -235,6 +237,27 @@ void main() {
         // Note: Individual video items may still show their own loading states
         expect(find.byType(PooledVideoFeed), findsOneWidget);
       });
+
+      testWidgets(
+        'shows the category title in the fullscreen app bar when provided',
+        (
+          tester,
+        ) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              contextTitle: 'Animals',
+            ),
+          );
+
+          expect(find.text('Animals'), findsOneWidget);
+        },
+      );
 
       testWidgets('shows social overlay actions on web', (tester) async {
         final videos = createTestVideos();

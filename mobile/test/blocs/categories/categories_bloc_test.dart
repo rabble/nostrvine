@@ -16,6 +16,9 @@ class _MockCategoriesRepository extends Mock implements CategoriesRepository {}
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
+const _viewerPubkey =
+    '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+
 void main() {
   late _MockCategoriesRepository mockRepository;
   late _MockFunnelcakeApiClient mockApiClient;
@@ -42,7 +45,10 @@ void main() {
             () => mockRepository.getCategories(),
           ).thenAnswer((_) async => categories);
         },
-        build: () => CategoriesBloc(categoriesRepository: mockRepository),
+        build: () => CategoriesBloc(
+          categoriesRepository: mockRepository,
+          currentUserPubkey: _viewerPubkey,
+        ),
         act: (bloc) => bloc.add(const CategoriesLoadRequested()),
         expect: () => [
           const CategoriesState(categoriesStatus: CategoriesStatus.loading),
@@ -67,7 +73,10 @@ void main() {
             () => mockRepository.getCategories(),
           ).thenThrow(const FunnelcakeException('Network error'));
         },
-        build: () => CategoriesBloc(categoriesRepository: mockRepository),
+        build: () => CategoriesBloc(
+          categoriesRepository: mockRepository,
+          currentUserPubkey: _viewerPubkey,
+        ),
         act: (bloc) => bloc.add(const CategoriesLoadRequested()),
         expect: () => [
           const CategoriesState(categoriesStatus: CategoriesStatus.loading),
@@ -175,6 +184,142 @@ void main() {
 
     group('CategoryVideosSortChanged', () {
       const category = VideoCategory(name: 'music', videoCount: 1500);
+
+      blocTest<CategoriesBloc, CategoriesState>(
+        'loads category-scoped recommendations when sort changes to forYou',
+        setUp: () {
+          when(
+            () => mockApiClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: 50,
+              category: 'music',
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [_createVideoStats('recommended-id')],
+              source: 'personalized',
+            ),
+          );
+          when(
+            () => mockApiClient.getVideosByCategory(
+              category: 'music',
+              sort: 'forYou',
+            ),
+          ).thenAnswer((_) async => const []);
+        },
+        seed: () => const CategoriesState(
+          selectedCategory: category,
+          videosStatus: CategoriesVideosStatus.loaded,
+        ),
+        build: () => CategoriesBloc(
+          categoriesRepository: mockRepository,
+          currentUserPubkey: _viewerPubkey,
+        ),
+        act: (bloc) => bloc.add(const CategoryVideosSortChanged('forYou')),
+        expect: () => [
+          isA<CategoriesState>()
+              .having((s) => s.sortOrder, 'sortOrder', 'forYou')
+              .having(
+                (s) => s.videosStatus,
+                'videosStatus',
+                CategoriesVideosStatus.loading,
+              ),
+          isA<CategoriesState>()
+              .having(
+                (s) => s.videosStatus,
+                'videosStatus',
+                CategoriesVideosStatus.loaded,
+              )
+              .having((s) => s.videos.length, 'videos.length', 1),
+        ],
+        verify: (_) {
+          verify(
+            () => mockApiClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: 50,
+              category: 'music',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockApiClient.getVideosByCategory(
+              category: 'music',
+              sort: 'forYou',
+            ),
+          );
+        },
+      );
+
+      blocTest<CategoriesBloc, CategoriesState>(
+        'falls back to Hot when forYou recommendations return no videos',
+        setUp: () {
+          when(
+            () => mockApiClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: 50,
+              category: 'music',
+            ),
+          ).thenAnswer(
+            (_) async => const RecommendationsResponse(
+              videos: [],
+              source: 'popular',
+            ),
+          );
+          when(
+            () => mockApiClient.getVideosByCategory(
+              category: 'music',
+            ),
+          ).thenAnswer((_) async => [_createVideoStats('hot-fallback-id')]);
+          when(
+            () => mockApiClient.getVideosByCategory(
+              category: 'music',
+              sort: 'forYou',
+            ),
+          ).thenAnswer((_) async => const []);
+        },
+        seed: () => const CategoriesState(
+          selectedCategory: category,
+          videosStatus: CategoriesVideosStatus.loaded,
+        ),
+        build: () => CategoriesBloc(
+          categoriesRepository: mockRepository,
+          currentUserPubkey: _viewerPubkey,
+        ),
+        act: (bloc) => bloc.add(const CategoryVideosSortChanged('forYou')),
+        expect: () => [
+          isA<CategoriesState>()
+              .having((s) => s.sortOrder, 'sortOrder', 'forYou')
+              .having(
+                (s) => s.videosStatus,
+                'videosStatus',
+                CategoriesVideosStatus.loading,
+              ),
+          isA<CategoriesState>()
+              .having(
+                (s) => s.videosStatus,
+                'videosStatus',
+                CategoriesVideosStatus.loaded,
+              )
+              .having((s) => s.videos.length, 'videos.length', 1),
+        ],
+        verify: (_) {
+          verify(
+            () => mockApiClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: 50,
+              category: 'music',
+            ),
+          ).called(1);
+          verify(
+            () => mockApiClient.getVideosByCategory(category: 'music'),
+          ).called(1);
+          verifyNever(
+            () => mockApiClient.getVideosByCategory(
+              category: 'music',
+              sort: 'forYou',
+            ),
+          );
+        },
+      );
 
       blocTest<CategoriesBloc, CategoriesState>(
         'reloads videos with new sort order',
