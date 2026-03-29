@@ -215,6 +215,13 @@ class VideoPublishService {
 
   /// Resolves the video file path from a draft, mirroring the logic
   /// in [UploadManager.startUploadFromDraft].
+  ///
+  /// Note: when `finalRenderedClip` is absent and the draft has multiple
+  /// clips, this returns the first source clip path. However,
+  /// [UploadManager.startUploadFromDraft] merges multiple clips into a
+  /// temp file at a different path, so [findReusableUpload] will not
+  /// match in that case. The caller falls through to a new upload, which
+  /// is the correct behavior since the merged file is ephemeral.
   Future<String?> _resolveVideoPath(DivineVideoDraft draft) async {
     try {
       final rendered = draft.finalRenderedClip;
@@ -255,9 +262,12 @@ class VideoPublishService {
         final ok = await _pollUploadProgress(draft.id, upload.id);
         return ok ? uploadManager.getUpload(upload.id) : null;
       case UploadStatus.failed:
-        // findReusableUpload guarantees a resumable session exists
-        await uploadManager.retryUpload(upload.id);
-        return uploadManager.getUpload(upload.id);
+        // findReusableUpload guarantees a resumable session exists.
+        // Don't await — let the retry run in the background so
+        // _pollUploadProgress can report progress to the UI.
+        unawaited(uploadManager.retryUpload(upload.id));
+        final ok = await _pollUploadProgress(draft.id, upload.id);
+        return ok ? uploadManager.getUpload(upload.id) : null;
       case UploadStatus.pending:
       case UploadStatus.paused:
       case UploadStatus.published:

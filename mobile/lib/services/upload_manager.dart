@@ -251,8 +251,11 @@ class UploadManager {
   /// resumable state (uploading, retrying, processing, readyToPublish,
   /// or failed with a resumable session). Skips published, pending, and
   /// paused uploads.
+  ///
+  /// Relies on [pendingUploads] being sorted newest-first (by
+  /// [PendingUpload.createdAt] descending) so the first match is the
+  /// most recent candidate.
   PendingUpload? findReusableUpload(String filePath) {
-    // pendingUploads is already sorted newest-first
     for (final upload in pendingUploads) {
       if (upload.localVideoPath != filePath) continue;
       if (upload.status == UploadStatus.published) continue;
