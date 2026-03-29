@@ -15,19 +15,29 @@ class NativeProofData {
     this.deviceAttestation,
     this.timestamp,
     this.c2paManifestId,
+    this.creatorBindingAssertionLabel,
+    this.cawgIdentityAssertionLabel,
+    this.creatorBindingPayloadJson,
+    this.verifiedIdentityBundleJson,
   });
 
   /// Create from JSON
-  factory NativeProofData.fromJson(Map<String, dynamic> json) =>
-      NativeProofData(
-        videoHash: json['videoHash'] as String,
-        sensorDataCsv: json['sensorDataCsv'] as String?,
-        pgpSignature: json['pgpSignature'] as String?,
-        publicKey: json['publicKey'] as String?,
-        deviceAttestation: json['deviceAttestation'] as String?,
-        timestamp: json['timestamp'] as String?,
-        c2paManifestId: json['c2paManifestId'] as String?,
-      );
+  factory NativeProofData.fromJson(
+    Map<String, dynamic> json,
+  ) => NativeProofData(
+    videoHash: json['videoHash'] as String,
+    sensorDataCsv: json['sensorDataCsv'] as String?,
+    pgpSignature: json['pgpSignature'] as String?,
+    publicKey: json['publicKey'] as String?,
+    deviceAttestation: json['deviceAttestation'] as String?,
+    timestamp: json['timestamp'] as String?,
+    c2paManifestId: json['c2paManifestId'] as String?,
+    creatorBindingAssertionLabel:
+        json['creatorBindingAssertionLabel'] as String?,
+    cawgIdentityAssertionLabel: json['cawgIdentityAssertionLabel'] as String?,
+    creatorBindingPayloadJson: json['creatorBindingPayloadJson'] as String?,
+    verifiedIdentityBundleJson: json['verifiedIdentityBundleJson'] as String?,
+  );
 
   /// Create from raw proof metadata map (from NativeProofModeService)
   factory NativeProofData.fromMetadata(Map<String, String> metadata) =>
@@ -38,6 +48,11 @@ class NativeProofData {
         publicKey: metadata['publicKey'],
         c2paManifestId: metadata['c2pa_manifest_id'],
         deviceAttestation: metadata['deviceAttestation'],
+        creatorBindingAssertionLabel:
+            metadata['creator_binding_assertion_label'],
+        cawgIdentityAssertionLabel: metadata['cawg_identity_assertion_label'],
+        creatorBindingPayloadJson: metadata['creator_binding_payload_json'],
+        verifiedIdentityBundleJson: metadata['verified_identity_bundle_json'],
       );
 
   /// SHA256 hash of the video file (used as proof identifier)
@@ -61,6 +76,18 @@ class NativeProofData {
   /// C2PA manifest data
   final String? c2paManifestId;
 
+  /// Assertion label for the user-signed Nostr creator binding
+  final String? creatorBindingAssertionLabel;
+
+  /// Assertion label for the optional CAWG identity overlay
+  final String? cawgIdentityAssertionLabel;
+
+  /// Canonical JSON payload signed by the creator's Nostr key
+  final String? creatorBindingPayloadJson;
+
+  /// Verifier response JSON for portable identity claims
+  final String? verifiedIdentityBundleJson;
+
   /// Convert to JSON for storage
   Map<String, dynamic> toJson() => {
     'videoHash': videoHash,
@@ -70,7 +97,22 @@ class NativeProofData {
     if (deviceAttestation != null) 'deviceAttestation': deviceAttestation,
     if (timestamp != null) 'timestamp': timestamp,
     if (c2paManifestId != null) 'c2paManifestId': c2paManifestId,
+    if (creatorBindingAssertionLabel != null)
+      'creatorBindingAssertionLabel': creatorBindingAssertionLabel,
+    if (cawgIdentityAssertionLabel != null)
+      'cawgIdentityAssertionLabel': cawgIdentityAssertionLabel,
+    if (creatorBindingPayloadJson != null)
+      'creatorBindingPayloadJson': creatorBindingPayloadJson,
+    if (verifiedIdentityBundleJson != null)
+      'verifiedIdentityBundleJson': verifiedIdentityBundleJson,
   };
+
+  /// Check if creator identity metadata was attached to the proof payload
+  bool get hasCreatorIdentityMetadata =>
+      creatorBindingAssertionLabel != null ||
+      cawgIdentityAssertionLabel != null ||
+      creatorBindingPayloadJson != null ||
+      verifiedIdentityBundleJson != null;
 
   /// Check if proof data is complete
   bool get isComplete =>
