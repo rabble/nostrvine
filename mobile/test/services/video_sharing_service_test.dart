@@ -475,7 +475,7 @@ void main() {
       expect(captured.first as String, contains('Check this out!'));
     });
 
-    test('share message says "Check out this Divine: <title>"', () async {
+    test('share message contains quoted title and share URL', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
         () => mockDmRepository.sendMessage(
@@ -515,11 +515,11 @@ void main() {
       ).captured;
 
       final message = captured.first as String;
-      expect(message, contains('Check out this Divine: Indigenous cultures'));
-      expect(message, isNot(matches(RegExp(r'\bvine\b'))));
+      expect(message, contains('"Indigenous cultures"'));
+      expect(message, contains('divine.video/video/'));
     });
 
-    test('share message without title says "Check out this Divine"', () async {
+    test('share message without title contains only share URL', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
         () => mockDmRepository.sendMessage(
@@ -558,8 +558,8 @@ void main() {
       ).captured;
 
       final message = captured.first as String;
-      expect(message, contains('Check out this Divine'));
-      expect(message, isNot(contains('vine:')));
+      expect(message, contains('divine.video/video/'));
+      expect(message, isNot(contains('"')));
     });
 
     test('computes correct conversationId', () async {

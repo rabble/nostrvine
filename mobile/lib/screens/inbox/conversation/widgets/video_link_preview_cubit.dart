@@ -78,7 +78,11 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
       // If not found, query by d-tag for addressable video events.
       if (event == null) {
         final results = await _nostrClient.queryEvents([
-          Filter(kinds: [34236], d: [_videoStableId], limit: 1),
+          Filter(
+            kinds: [NIP71VideoKinds.addressableShortVideo],
+            d: [_videoStableId],
+            limit: 1,
+          ),
         ]);
         if (results.isNotEmpty) {
           event = results.first;
