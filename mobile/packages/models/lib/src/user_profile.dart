@@ -187,10 +187,19 @@ class UserProfile {
     return '';
   }
 
-  /// NIP-05 formatted for display (strips leading underscore).
+  /// NIP-05 formatted for display.
+  ///
+  /// Normalises all divine.video / openvine.co identifiers to the canonical
+  /// `@username.divine.video` form. External identifiers (e.g.
+  /// `alice@example.com`) are returned unchanged.
   String? get displayNip05 {
     if (nip05 == null || nip05!.isEmpty) return null;
+    // New subdomain format: _@username.divine.video → @username.divine.video
     if (nip05!.startsWith('_@')) return nip05!.substring(1);
+    // Legacy divine.video/openvine.co → @username.divine.video
+    final username = divineUsername;
+    if (username != null) return '@$username.divine.video';
+    // External domain: keep as-is
     return nip05;
   }
 
