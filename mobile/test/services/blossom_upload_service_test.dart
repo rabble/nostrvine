@@ -274,6 +274,10 @@ void main() {
       test(
         'uses resumable init flow for Divine servers that advertise support',
         () async {
+          final expectedExpiresAt = DateTime.fromMillisecondsSinceEpoch(
+            1774827544000,
+            isUtc: true,
+          );
           const testPublicKey =
               '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -334,6 +338,7 @@ void main() {
                 data: {
                   'uploadId': 'up_123',
                   'uploadUrl': 'https://upload.divine.video/sessions/up_123',
+                  'expiresAt': '1774827544',
                   'chunkSize': 4,
                   'nextOffset': 0,
                   'requiredHeaders': {'Authorization': 'Bearer session-token'},
@@ -435,6 +440,7 @@ void main() {
             8,
             10,
           ]);
+          expect(sessionUpdates.first.expiresAt, equals(expectedExpiresAt));
 
           verifyInOrder([
             () => mockDio.head(
@@ -460,6 +466,41 @@ void main() {
           ]);
 
           await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'resumeUploadSession parses upload-expires unix seconds from session HEAD',
+        () async {
+          final expectedExpiresAt = DateTime.fromMillisecondsSinceEpoch(
+            1774827600000,
+            isUtc: true,
+          );
+
+          when(
+            () => mockDio.head(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/sessions/up_123'),
+              statusCode: 204,
+              headers: Headers.fromMap({
+                'upload-offset': ['262144'],
+                'upload-expires': ['1774827600'],
+              }),
+            ),
+          );
+
+          final session = await service.resumeUploadSession(
+            session: const BlossomResumableUploadSession(
+              uploadId: 'up_123',
+              uploadUrl: 'https://upload.divine.video/sessions/up_123',
+              chunkSize: 8388608,
+              nextOffset: 0,
+            ),
+          );
+
+          expect(session.nextOffset, equals(262144));
+          expect(session.expiresAt, equals(expectedExpiresAt));
         },
       );
 

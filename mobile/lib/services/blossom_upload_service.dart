@@ -303,6 +303,17 @@ class BlossomUploadService {
       return null;
     }
 
+    final numericMatch = RegExp(r'^-?\d+$').firstMatch(value);
+    if (numericMatch != null) {
+      final epochValue = int.tryParse(value);
+      if (epochValue == null) {
+        return null;
+      }
+
+      final epochMillis = value.length <= 10 ? epochValue * 1000 : epochValue;
+      return DateTime.fromMillisecondsSinceEpoch(epochMillis, isUtc: true);
+    }
+
     return DateTime.tryParse(value);
   }
 
@@ -312,7 +323,8 @@ class BlossomUploadService {
   }
 
   DateTime? _parseUploadExpiresAt(Headers headers) => _parseDateTimeValue(
-    headers.value(DivineUploadHeaders.uploadExpiresAt),
+    headers.value(DivineUploadHeaders.uploadExpiresAt) ??
+        headers.value('Upload-Expires'),
   );
 
   Future<_DivineUploadCapability> _fetchDivineUploadCapability(
