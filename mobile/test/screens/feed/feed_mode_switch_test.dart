@@ -57,13 +57,15 @@ void main() {
         expect(find.text('New'), findsOneWidget);
       });
 
-      testWidgets('displays "Following" label for home mode', (tester) async {
+      testWidgets('displays "For You" label for the default home mode', (
+        tester,
+      ) async {
         when(
           () => mockBloc.state,
         ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
         await tester.pumpWidget(createTestWidget());
 
-        expect(find.text('Following'), findsOneWidget);
+        expect(find.text('For You'), findsOneWidget);
       });
     });
 
@@ -165,7 +167,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
 
-      expect(find.text('Following'), findsOneWidget);
+      expect(find.text('For You'), findsOneWidget);
     });
   });
 }

@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
@@ -25,8 +26,11 @@ class _VideoRecorderTopBarState extends ConsumerState<VideoRecorderTopBar> {
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(videoRecorderProvider.notifier);
-    final (isRecording, selectedSound) = ref.watch(
-      videoRecorderProvider.select((s) => (s.isRecording, s.selectedSound)),
+    final isRecording = ref.watch(
+      videoRecorderProvider.select((s) => s.isRecording),
+    );
+    final selectedSound = ref.watch(
+      videoEditorProvider.select((s) => s.selectedSound),
     );
     final clipCount = ref.watch(clipManagerProvider.select((s) => s.clipCount));
     final hasClips = clipCount > 0;
@@ -52,7 +56,14 @@ class _VideoRecorderTopBarState extends ConsumerState<VideoRecorderTopBar> {
                   center: Flexible(
                     child: VideoEditorAudioChip(
                       selectedSound: selectedSound,
-                      onSoundChanged: notifier.selectSound,
+                      onSoundChanged: (sound) {
+                        ref.read(videoEditorProvider.notifier)
+                          ..selectSound(sound)
+                          // Lip-sync recording: mute original audio by default
+                          // since the selected sound replaces it. The user can
+                          // re-enable original audio later in the editor.
+                          ..setOriginalAudioVolume(0);
+                      },
                       onSelectionStarted: () {
                         setState(() => _isSelectingSound = true);
                         notifier.pauseRemoteRecordControl();

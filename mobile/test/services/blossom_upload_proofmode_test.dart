@@ -71,6 +71,8 @@ void main() {
     /// Sets up mocks for a video upload and captures the [Options] passed
     /// to `dio.put` so tests can inspect the headers.
     void arrangeUploadMocks() {
+      capturedOptions = null;
+
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
         () => mockAuthService.currentPublicKeyHex,
@@ -103,6 +105,19 @@ void main() {
         'size': 3,
         'type': 'video/mp4',
       });
+
+      when(
+        () => mockDio.head<dynamic>(
+          any(),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/upload'),
+          statusCode: 200,
+          headers: Headers(),
+        ),
+      );
 
       when(
         () => mockDio.put<dynamic>(

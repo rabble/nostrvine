@@ -110,6 +110,42 @@ void main() {
         );
       });
 
+      testWidgets('wraps login fields in Form and AutofillGroup', (
+        tester,
+      ) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final emailField = find.widgetWithText(DivineAuthTextField, 'Email');
+        final passwordField = find.widgetWithText(
+          DivineAuthTextField,
+          'Password',
+        );
+
+        expect(
+          find.ancestor(of: emailField, matching: find.byType(Form)),
+          findsOneWidget,
+        );
+        expect(
+          find.ancestor(
+            of: emailField,
+            matching: find.byType(AutofillGroup),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.ancestor(of: passwordField, matching: find.byType(Form)),
+          findsOneWidget,
+        );
+        expect(
+          find.ancestor(
+            of: passwordField,
+            matching: find.byType(AutofillGroup),
+          ),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('displays sign in button', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();

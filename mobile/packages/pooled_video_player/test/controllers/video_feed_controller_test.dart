@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoFeedController
 // ABOUTME: Validates state management, page navigation, and playback control
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -59,6 +61,8 @@ void main() {
             () => mockPooledPlayer.videoController,
           ).thenReturn(createMockVideoController());
           when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+          when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+          when(mockPooledPlayer.clearRecycled).thenReturn(null);
           when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 
           createdPlayers.add(mockPooledPlayer);
@@ -426,6 +430,8 @@ void main() {
                 () => mockPooledPlayer.videoController,
               ).thenReturn(createMockVideoController());
               when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
               when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 
               createdPlayers.add(mockPooledPlayer);
@@ -1005,6 +1011,8 @@ void main() {
               () => mockPooledPlayer.videoController,
             ).thenReturn(createMockVideoController());
             when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+            when(mockPooledPlayer.clearRecycled).thenReturn(null);
             when(mockPooledPlayer.dispose).thenAnswer((_) async {});
             return mockPooledPlayer;
           },
@@ -1044,6 +1052,8 @@ void main() {
               () => mockPooledPlayer.videoController,
             ).thenReturn(createMockVideoController());
             when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+            when(mockPooledPlayer.clearRecycled).thenReturn(null);
             when(mockPooledPlayer.dispose).thenAnswer((_) async {});
             return mockPooledPlayer;
           },
@@ -1238,6 +1248,8 @@ void main() {
               () => mockPooledPlayer.videoController,
             ).thenReturn(createMockVideoController());
             when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+            when(mockPooledPlayer.clearRecycled).thenReturn(null);
             when(mockPooledPlayer.dispose).thenAnswer((_) async {});
             return mockPooledPlayer;
           },
@@ -1813,6 +1825,7 @@ void main() {
 
             final mockPooledPlayer = _MockPooledPlayer();
             final callbacks = <VoidCallback>[];
+            var recycled = false;
             when(() => mockPooledPlayer.player).thenReturn(setup.player);
             when(
               () => mockPooledPlayer.videoController,
@@ -1821,23 +1834,39 @@ void main() {
             when(
               () => mockPooledPlayer.isDisposed,
             ).thenAnswer((_) => disposedState[url]!);
+            when(
+              () => mockPooledPlayer.wasRecycled,
+            ).thenAnswer((_) => recycled);
+            when(
+              mockPooledPlayer.clearRecycled,
+            ).thenAnswer((_) => recycled = false);
             // Track onDisposed callbacks so dispose() fires them (like the
             // real PooledPlayer). Required because current-video
             // prioritization means eviction happens after _loadPlayer
             // completes, so the callback is the only eviction signal.
             when(
-              () => mockPooledPlayer.addOnDisposedCallback(any()),
+              () => mockPooledPlayer.addOnEvictedCallback(any()),
             ).thenAnswer((inv) {
               callbacks.add(
                 inv.positionalArguments.first as VoidCallback,
               );
             });
             when(
-              () => mockPooledPlayer.removeOnDisposedCallback(any()),
+              () => mockPooledPlayer.removeOnEvictedCallback(any()),
             ).thenAnswer((inv) {
               callbacks.remove(
                 inv.positionalArguments.first as VoidCallback,
               );
+            });
+            // recycle() fires callbacks synchronously without disposing
+            // native resources (mirrors real PooledPlayer.recycle()).
+            when(mockPooledPlayer.recycle).thenAnswer((_) {
+              recycled = true;
+              disposedState[url] = true;
+              for (final cb in List<VoidCallback>.of(callbacks)) {
+                cb();
+              }
+              callbacks.clear();
             });
             when(mockPooledPlayer.dispose).thenAnswer((_) async {
               disposedState[url] = true;
@@ -2045,6 +2074,7 @@ void main() {
             playerCallbacks[url] = <VoidCallback>[];
 
             final mockPooledPlayer = _MockPooledPlayer();
+            var recycled = false;
             when(() => mockPooledPlayer.player).thenReturn(setup.player);
             when(
               () => mockPooledPlayer.videoController,
@@ -2052,23 +2082,39 @@ void main() {
             when(
               () => mockPooledPlayer.isDisposed,
             ).thenAnswer((_) => callbackDisposedState[url]!);
+            when(
+              () => mockPooledPlayer.wasRecycled,
+            ).thenAnswer((_) => recycled);
+            when(
+              mockPooledPlayer.clearRecycled,
+            ).thenAnswer((_) => recycled = false);
 
             // Track disposal callbacks (mirrors real PooledPlayer behavior).
             when(
-              () => mockPooledPlayer.addOnDisposedCallback(any()),
+              () => mockPooledPlayer.addOnEvictedCallback(any()),
             ).thenAnswer((invocation) {
               final callback =
                   invocation.positionalArguments[0] as VoidCallback;
               playerCallbacks[url]!.add(callback);
             });
             when(
-              () => mockPooledPlayer.removeOnDisposedCallback(any()),
+              () => mockPooledPlayer.removeOnEvictedCallback(any()),
             ).thenAnswer((invocation) {
               final callback =
                   invocation.positionalArguments[0] as VoidCallback;
               playerCallbacks[url]!.remove(callback);
             });
 
+            // recycle() fires callbacks synchronously without disposing
+            // native resources (mirrors real PooledPlayer.recycle()).
+            when(mockPooledPlayer.recycle).thenAnswer((_) {
+              recycled = true;
+              callbackDisposedState[url] = true;
+              for (final cb in List<VoidCallback>.of(playerCallbacks[url]!)) {
+                cb();
+              }
+              playerCallbacks[url]!.clear();
+            });
             // Dispose fires callbacks synchronously (mirrors real behavior).
             when(mockPooledPlayer.dispose).thenAnswer((_) async {
               callbackDisposedState[url] = true;
@@ -2383,6 +2429,8 @@ void main() {
             () => pooledPlayer.videoController,
           ).thenReturn(createMockVideoController());
           when(() => pooledPlayer.isDisposed).thenReturn(false);
+          when(() => pooledPlayer.wasRecycled).thenReturn(false);
+          when(pooledPlayer.clearRecycled).thenReturn(null);
           when(pooledPlayer.dispose).thenAnswer((_) async {});
 
           final localPool = TestablePlayerPool(
@@ -2455,6 +2503,8 @@ void main() {
           () => pooledPlayer.videoController,
         ).thenReturn(createMockVideoController());
         when(() => pooledPlayer.isDisposed).thenReturn(false);
+        when(() => pooledPlayer.wasRecycled).thenReturn(false);
+        when(pooledPlayer.clearRecycled).thenReturn(null);
         when(pooledPlayer.dispose).thenAnswer((_) async {});
 
         final localPool = TestablePlayerPool(
@@ -3076,6 +3126,80 @@ void main() {
         },
       );
     });
+    group('recycled player UI deferral', () {
+      test(
+        'recycled player controller is not published to UI until after open()',
+        () async {
+          // Pool has capacity 1. When the second video is requested, the
+          // first player is recycled (wasRecycled=true). _loadPlayer must
+          // NOT store it in _loadedPlayers or notify the UI until after
+          // open() completes.
+          final openCompleter = Completer<void>();
+          final setup = createMockPlayerSetup(isBuffering: true);
+
+          // Block open() so we can observe the pre-open state.
+          when(
+            () => setup.player.open(any(), play: any(named: 'play')),
+          ).thenAnswer((_) => openCompleter.future);
+
+          // Use createMockPooledPlayerFromSetup so wasRecycled/clearRecycled
+          // are wired up correctly (recycle() sets wasRecycled=true,
+          // clearRecycled() resets it).
+          final mockPlayer = createMockPooledPlayerFromSetup(setup);
+
+          final deferralPool = TestablePlayerPool(
+            maxPlayers: 1,
+            mockPlayerFactory: (_) => mockPlayer,
+          );
+          addTearDown(() async {
+            await setup.dispose();
+            await deferralPool.dispose();
+          });
+
+          final videos = createTestVideos(count: 2);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: deferralPool,
+            preloadAhead: 0,
+            preloadBehind: 0,
+          );
+          addTearDown(controller.dispose);
+
+          // Wait for video 0 to load (open() is blocked — video 0 stays
+          // at LoadState.loading, but that's fine for this test).
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final notifier1 = controller.getIndexNotifier(1);
+
+          // Swipe to video 1 — pool recycles video 0's player.
+          // wasRecycled is now true; open() for video 1 is blocked.
+          controller.onPageChanged(1);
+
+          // Yield but don't complete open() — the recycled controller must
+          // not be exposed to the UI yet.
+          await Future<void>.delayed(Duration.zero);
+          expect(
+            controller.getVideoController(1),
+            isNull,
+            reason:
+                'Recycled VideoController must not be published before open()',
+          );
+          expect(
+            notifier1.value.videoController,
+            isNull,
+            reason:
+                'Notifier must not expose recycled controller before open()',
+          );
+
+          // Unblock open() — controller should now be published.
+          openCompleter.complete();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getVideoController(1), isNotNull);
+        },
+      );
+    });
+
     group('current-video prioritization', () {
       test(
         'current video open() completes before any preload open() starts',
@@ -3102,12 +3226,14 @@ void main() {
                 () => mockPooledPlayer.videoController,
               ).thenReturn(createMockVideoController());
               when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
               when(mockPooledPlayer.dispose).thenAnswer((_) async {});
               when(
-                () => mockPooledPlayer.addOnDisposedCallback(any()),
+                () => mockPooledPlayer.addOnEvictedCallback(any()),
               ).thenAnswer((_) {});
               when(
-                () => mockPooledPlayer.removeOnDisposedCallback(any()),
+                () => mockPooledPlayer.removeOnEvictedCallback(any()),
               ).thenAnswer((_) {});
               return mockPooledPlayer;
             },
@@ -3155,12 +3281,14 @@ void main() {
                 () => mockPooledPlayer.videoController,
               ).thenReturn(createMockVideoController());
               when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
               when(mockPooledPlayer.dispose).thenAnswer((_) async {});
               when(
-                () => mockPooledPlayer.addOnDisposedCallback(any()),
+                () => mockPooledPlayer.addOnEvictedCallback(any()),
               ).thenAnswer((_) {});
               when(
-                () => mockPooledPlayer.removeOnDisposedCallback(any()),
+                () => mockPooledPlayer.removeOnEvictedCallback(any()),
               ).thenAnswer((_) {});
               return mockPooledPlayer;
             },
@@ -3413,6 +3541,8 @@ void main() {
               () => mockPooledPlayer.videoController,
             ).thenReturn(createMockVideoController());
             when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+            when(mockPooledPlayer.clearRecycled).thenReturn(null);
             when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 
             return mockPooledPlayer;
@@ -3735,6 +3865,8 @@ void main() {
               () => mockPooledPlayer.videoController,
             ).thenReturn(createMockVideoController());
             when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+            when(mockPooledPlayer.clearRecycled).thenReturn(null);
             when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 
             return mockPooledPlayer;

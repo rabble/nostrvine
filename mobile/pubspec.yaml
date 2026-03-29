@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.7+497
+version: 1.0.8+497
 
 environment:
   sdk: ^3.11.0
@@ -24,12 +24,14 @@ environment:
 
 workspace:
   - packages/comments_repository
+  - packages/count_formatter
   - packages/curated_list_repository
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
   - packages/funnelcake_api_client
   - packages/hashtag_repository
+  - packages/image_metadata_stripper
   - packages/keycast_flutter
   - packages/likes_repository
   - packages/media_cache
@@ -98,6 +100,8 @@ dependencies:
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
   image: ^4.1.7 # Image processing for GIF generation
   image_picker: ^1.2.0 # For selecting images from gallery or camera
+  image_metadata_stripper:
+    path: packages/image_metadata_stripper
   gal: ^2.3.2 # Save videos to device photo gallery
   file_selector: ^1.0.4 # For desktop file selection (macOS, Windows, Linux)
 
@@ -148,6 +152,9 @@ dependencies:
   # TV static noise effect
   tv_static_effect:
 
+  # Count Formatter - Compact number formatting
+  count_formatter:
+
   # Divine UI - Shared UI components
   divine_ui:
 
@@ -177,7 +184,7 @@ dependencies:
   firebase_performance: ^0.11.1+4
   convert: ^3.1.2
   audio_session: ^0.2.2
-  pro_video_editor: ^1.8.0
+  pro_video_editor: ^1.9.1
   pro_image_editor: ^12.0.10
   linked_scroll_controller: ^0.2.0
   flutter_colorpicker: ^1.1.0

@@ -252,6 +252,79 @@ void main() {
       );
     }
 
+    Widget buildSubjectWithInitialLocation(String location) {
+      when(
+        () => videoFeedBloc.state,
+      ).thenReturn(const VideoFeedState());
+
+      return testMaterialApp(
+        additionalOverrides: [
+          routerLocationStreamProvider.overrideWith(
+            (ref) => Stream.value(location),
+          ),
+        ],
+        home: BlocProvider<VideoFeedBloc>.value(
+          value: videoFeedBloc,
+          child: VideoFeedView(controller: videoFeedController),
+        ),
+      );
+    }
+
+    testWidgets(
+      'syncs controller to a non-home route on initial mount',
+      (tester) async {
+        await tester.pumpWidget(buildSubjectWithInitialLocation('/search'));
+        await tester.pump();
+
+        verify(
+          () => videoFeedController.setActive(active: false),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'syncs controller to an already-open page overlay on initial mount',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(),
+            routerLocationStreamProvider.overrideWith(
+              (ref) => Stream.value('/home/0'),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+
+        when(
+          () => videoFeedBloc.state,
+        ).thenReturn(const VideoFeedState());
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: BlocProvider<VideoFeedBloc>.value(
+                value: videoFeedBloc,
+                child: VideoFeedView(controller: videoFeedController),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        verify(
+          () => videoFeedController.setActive(
+            active: false,
+            // Verify that initial overlay sync uses the full-release path.
+            // ignore: avoid_redundant_argument_values
+            retainCurrentPlayer: false,
+          ),
+        ).called(1);
+      },
+    );
+
     testWidgets(
       'calls setActive(active: false) when navigating away from home',
       (tester) async {

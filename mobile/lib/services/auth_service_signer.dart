@@ -1,9 +1,17 @@
 // ABOUTME: NostrSigner implementation that bridges AuthService's SecureKeyContainer
 // ABOUTME: Provides secure event signing and encryption using the auth service's keys
 
+import 'dart:typed_data';
+
+import 'package:bip340/bip340.dart' as schnorr;
+import 'package:crypto/crypto.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/utils/unified_logger.dart';
+
+const _canonicalPayloadAux =
+    '00000000000000000000000000000000'
+    '00000000000000000000000000000000';
 
 /// NostrSigner implementation that uses SecureKeyContainer from AuthService
 ///
@@ -16,9 +24,35 @@ class AuthServiceSigner implements NostrSigner {
 
   final SecureKeyContainer? _keyContainer;
 
+  /// Returns the current public key for creator-bound signing flows.
+  Future<String> currentPubkey() async {
+    return _keyContainer?.publicKeyHex ?? '';
+  }
+
   @override
   Future<String?> getPublicKey() async {
     return _keyContainer?.publicKeyHex ?? '';
+  }
+
+  /// Signs an arbitrary canonical payload by first hashing it with SHA-256.
+  ///
+  /// Uses deterministic auxiliary data so repeated signing of the same payload
+  /// produces the same signature, which keeps creator-binding assertions stable.
+  Future<String?> signCanonicalPayload(Uint8List payload) async {
+    if (_keyContainer == null) return null;
+    try {
+      final digest = sha256.convert(payload).toString();
+      return _keyContainer.withPrivateKey<String>((privateKeyHex) {
+        return schnorr.sign(privateKeyHex, digest, _canonicalPayloadAux);
+      });
+    } on Exception catch (e) {
+      Log.error(
+        'Failed to sign canonical payload: $e',
+        name: 'AuthServiceSigner',
+        category: LogCategory.relay,
+      );
+      return null;
+    }
   }
 
   @override

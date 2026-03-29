@@ -3,6 +3,7 @@
 
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/upload_constants.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 
 void main() {
@@ -92,6 +93,27 @@ void main() {
       // ACT/ASSERT: Will be tested with duplicate upload
       expect(true, isTrue, reason: 'Will test with duplicate upload');
     });
+
+    test(
+      'Divine resumable capability is advertised separately from legacy PUT upload',
+      () {
+        expect(
+          DivineUploadExtensions.resumableSessions,
+          equals('resumable-sessions'),
+          reason: 'Mobile client expects this token on HEAD /upload',
+        );
+        expect(
+          BlossomUploadService.defaultBlossomServer,
+          equals('https://media.divine.video'),
+          reason: 'Canonical blob URLs stay on the media control-plane host',
+        );
+        expect(
+          DivineUploadHeaders.dataHost,
+          equals('X-Divine-Upload-Data-Host'),
+          reason: 'Data-host header name matches the protocol spec',
+        );
+      },
+    );
 
     // LIVE SERVER TEST (skipped by default, run manually with --dart-define=LIVE_TEST=true)
     test(

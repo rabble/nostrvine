@@ -122,6 +122,10 @@ class PendingUpload {
   /// Check if this upload has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
 
+  /// Check if this upload includes creator-binding or verifier identity data.
+  bool get hasCreatorIdentityMetadata =>
+      nativeProof?.hasCreatorIdentityMetadata ?? false;
+
   /// Get deserialized NativeProofData (null if not present or invalid JSON)
   /// This is the new ProofMode format using native libraries
   NativeProofData? get nativeProof {

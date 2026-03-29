@@ -1,6 +1,7 @@
 // ABOUTME: Flutter platform channel for native ProofMode library integration
 // ABOUTME: Bridges Dart to native Android/iOS libProofMode implementations
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:app_device_integrity/app_device_integrity.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/services/c2pa_signing_service.dart';
+import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for generating cryptographic proof using native ProofMode libraries
@@ -27,6 +29,10 @@ class NativeProofModeService {
   static Future<NativeProofData?> proofFile(
     File videoFile, {
     bool aiTrainingOptOut = true,
+    NostrCreatorBindingAssertion? creatorBindingAssertion,
+    Map<String, dynamic>? cawgIdentityAssertion,
+    Map<String, dynamic>? verifiedIdentityBundle,
+    bool enableAdvancedCawgEmbedding = false,
   }) async {
     try {
       // Check if native ProofMode/C2PA is available on this platform
@@ -86,7 +92,12 @@ class NativeProofModeService {
               category: .video,
             );
 
-            return proofData;
+            return _attachCreatorIdentityMetadata(
+              proofData,
+              creatorBindingAssertion: creatorBindingAssertion,
+              cawgIdentityAssertion: cawgIdentityAssertion,
+              verifiedIdentityBundle: verifiedIdentityBundle,
+            );
           }
         }
       } catch (e) {
@@ -104,6 +115,9 @@ class NativeProofModeService {
       final c2paResult = await c2paSigningService.signVideo(
         videoPath: videoFile.path,
         aiTrainingOptOut: aiTrainingOptOut,
+        creatorBindingAssertion: creatorBindingAssertion,
+        cawgIdentityAssertion: cawgIdentityAssertion,
+        enableAdvancedCawgEmbedding: enableAdvancedCawgEmbedding,
       );
 
       if (c2paResult.success) {
@@ -200,7 +214,12 @@ class NativeProofModeService {
         category: .video,
       );
 
-      return proofData;
+      return _attachCreatorIdentityMetadata(
+        proofData,
+        creatorBindingAssertion: creatorBindingAssertion,
+        cawgIdentityAssertion: cawgIdentityAssertion,
+        verifiedIdentityBundle: verifiedIdentityBundle,
+      );
     } catch (e) {
       Log.error(
         '🔐 Native proof generation failed: $e',
@@ -452,5 +471,40 @@ class NativeProofModeService {
       print('Error generating hash: $e');
       rethrow;
     }
+  }
+
+  static NativeProofData _attachCreatorIdentityMetadata(
+    NativeProofData proofData, {
+    NostrCreatorBindingAssertion? creatorBindingAssertion,
+    Map<String, dynamic>? cawgIdentityAssertion,
+    Map<String, dynamic>? verifiedIdentityBundle,
+  }) {
+    if (creatorBindingAssertion == null &&
+        cawgIdentityAssertion == null &&
+        verifiedIdentityBundle == null) {
+      return proofData;
+    }
+
+    return NativeProofData(
+      videoHash: proofData.videoHash,
+      sensorDataCsv: proofData.sensorDataCsv,
+      pgpSignature: proofData.pgpSignature,
+      publicKey: proofData.publicKey,
+      deviceAttestation: proofData.deviceAttestation,
+      timestamp: proofData.timestamp,
+      c2paManifestId: proofData.c2paManifestId,
+      creatorBindingAssertionLabel:
+          creatorBindingAssertion?.assertionLabel ??
+          proofData.creatorBindingAssertionLabel,
+      cawgIdentityAssertionLabel: cawgIdentityAssertion != null
+          ? 'cawg.identity'
+          : proofData.cawgIdentityAssertionLabel,
+      creatorBindingPayloadJson:
+          creatorBindingAssertion?.payloadJson ??
+          proofData.creatorBindingPayloadJson,
+      verifiedIdentityBundleJson: verifiedIdentityBundle != null
+          ? jsonEncode(verifiedIdentityBundle)
+          : proofData.verifiedIdentityBundleJson,
+    );
   }
 }

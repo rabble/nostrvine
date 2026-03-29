@@ -3,10 +3,12 @@
 // Check in to version control
 
 import 'package:hive_ce/hive.dart';
+import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/pending_upload.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(BlossomResumableUploadSessionAdapter());
     registerAdapter(PendingUploadAdapter());
     registerAdapter(UploadStatusAdapter());
   }
@@ -14,6 +16,7 @@ extension HiveRegistrar on HiveInterface {
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(BlossomResumableUploadSessionAdapter());
     registerAdapter(PendingUploadAdapter());
     registerAdapter(UploadStatusAdapter());
   }

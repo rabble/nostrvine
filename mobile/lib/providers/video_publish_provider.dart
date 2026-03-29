@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -19,8 +20,10 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -36,10 +39,67 @@ final videoPublishProvider =
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   DraftStorageService get _draftService =>
       ref.read(draftStorageServiceProvider);
+  CawgVerifierClient get _cawgVerifierClient =>
+      ref.read(cawgVerifierClientProvider);
 
   @override
   VideoPublishProviderState build() {
     return const VideoPublishProviderState();
+  }
+
+  /// Social verification remains optional. Prefer OAuth when supported, then
+  /// fall back to public proof so publish never depends on a single method.
+  @visibleForTesting
+  List<VerifierRequiredMethod> preferredSocialVerificationMethods({
+    required bool supportsOAuth,
+  }) {
+    if (supportsOAuth) {
+      return const <VerifierRequiredMethod>[
+        VerifierRequiredMethod.oauth,
+        VerifierRequiredMethod.publicProof,
+      ];
+    }
+
+    return const <VerifierRequiredMethod>[
+      VerifierRequiredMethod.publicProof,
+    ];
+  }
+
+  /// Fetches optional verifier-issued identity metadata without blocking
+  /// creator-binding-only publish.
+  Future<VerifierClaimBundle?> fetchOptionalVerifiedIdentity(
+    VerifierClaimRequest request,
+  ) async {
+    final bundle = await _cawgVerifierClient.verifyClaims(request);
+    if (bundle != null) {
+      return bundle;
+    }
+
+    Log.info(
+      'Identity verifier unavailable, continuing without CAWG overlay',
+      name: 'VideoPublishNotifier',
+      category: LogCategory.video,
+    );
+    return null;
+  }
+
+  @visibleForTesting
+  bool shouldAttachCreatorIdentityProof(String? proofManifestJson) {
+    if (proofManifestJson == null || proofManifestJson.isEmpty) {
+      return true;
+    }
+
+    try {
+      final decoded = jsonDecode(proofManifestJson);
+      if (decoded is! Map<String, dynamic>) {
+        return true;
+      }
+
+      final proofData = NativeProofData.fromJson(decoded);
+      return !proofData.hasCreatorIdentityMetadata;
+    } catch (_) {
+      return true;
+    }
   }
 
   /// Creates the publish service with callbacks wired to this notifier.
@@ -272,37 +332,15 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         }
       }
 
-      // Generate proof if not already available
-      if (proofManifestJson == null) {
-        Log.info(
-          '🔐 Generating proof manifest for video',
-          name: 'VideoPublishNotifier',
-          category: .video,
-        );
-
-        final filePath = await finalRenderedClip.video.safeFilePath();
-        final aiTrainingOptOut = ref
-            .read(aiTrainingPreferenceServiceProvider)
-            .isOptOutEnabled;
-        final result = await NativeProofModeService.proofFile(
-          File(filePath),
+      final aiTrainingOptOut = ref
+          .read(aiTrainingPreferenceServiceProvider)
+          .isOptOutEnabled;
+      if (shouldAttachCreatorIdentityProof(proofManifestJson)) {
+        proofManifestJson = await _refreshProofWithCreatorIdentity(
+          clip: finalRenderedClip,
           aiTrainingOptOut: aiTrainingOptOut,
+          existingProofManifestJson: proofManifestJson,
         );
-        proofManifestJson = result != null ? jsonEncode(result) : null;
-
-        if (proofManifestJson != null) {
-          Log.info(
-            '✅ Proof manifest generated successfully',
-            name: 'VideoPublishNotifier',
-            category: .video,
-          );
-        } else {
-          Log.warning(
-            '⚠️ Proof manifest generation returned null',
-            name: 'VideoPublishNotifier',
-            category: .video,
-          );
-        }
       }
 
       final publishDraft = draft.copyWith(
@@ -407,6 +445,140 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
     }
+  }
+
+  Future<String?> _refreshProofWithCreatorIdentity({
+    required DivineVideoClip clip,
+    required bool aiTrainingOptOut,
+    String? existingProofManifestJson,
+  }) async {
+    final filePath = await clip.video.safeFilePath();
+
+    Log.info(
+      '🔐 Generating proof manifest for video',
+      name: 'VideoPublishNotifier',
+      category: LogCategory.video,
+    );
+
+    try {
+      final creatorBindingAssertion = await _createCreatorBindingAssertion(
+        filePath: filePath,
+        aiTrainingOptOut: aiTrainingOptOut,
+      );
+      if (creatorBindingAssertion == null) {
+        return existingProofManifestJson;
+      }
+
+      final profile = ref.read(authServiceProvider).currentProfile;
+      final claimedNip05 = profile?.nip05;
+      VerifierClaimBundle? verifierBundle;
+      final verifierRequest = _buildVerifierClaimRequest(
+        creatorBindingAssertion: creatorBindingAssertion,
+        nip05: claimedNip05,
+      );
+      if (_hasOptionalVerifierClaims(verifierRequest)) {
+        verifierBundle = await fetchOptionalVerifiedIdentity(verifierRequest);
+      }
+
+      final proofData = await NativeProofModeService.proofFile(
+        File(filePath),
+        aiTrainingOptOut: aiTrainingOptOut,
+        creatorBindingAssertion: creatorBindingAssertion,
+        cawgIdentityAssertion: verifierBundle?.identityAssertionPayload,
+        verifiedIdentityBundle: verifierBundle?.toJson(),
+      );
+
+      final proofManifestJson = proofData != null
+          ? jsonEncode(proofData)
+          : null;
+      if (proofManifestJson != null) {
+        Log.info(
+          '✅ Proof manifest generated successfully',
+          name: 'VideoPublishNotifier',
+          category: LogCategory.video,
+        );
+        return proofManifestJson;
+      }
+
+      Log.warning(
+        '⚠️ Proof manifest generation returned null',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+      );
+      return existingProofManifestJson;
+    } catch (error, stackTrace) {
+      Log.warning(
+        'Failed to attach creator identity proof metadata: '
+        '$error\n$stackTrace',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+      );
+      return existingProofManifestJson;
+    }
+  }
+
+  Future<NostrCreatorBindingAssertion?> _createCreatorBindingAssertion({
+    required String filePath,
+    required bool aiTrainingOptOut,
+  }) async {
+    try {
+      final hardBindingValue =
+          await NativeProofModeService.generateSha256FileHash(
+            filePath,
+          );
+      return await ref
+          .read(nostrCreatorBindingServiceProvider)
+          .createAssertion(
+            claims: _buildCreatorBindingClaims(
+              nip05: ref.read(authServiceProvider).currentProfile?.nip05,
+            ),
+            hardBinding: CreatorBindingHardBinding(
+              alg: 'sha256',
+              value: hardBindingValue,
+            ),
+            referencedAssertions: <String>[
+              'c2pa.actions.v2',
+              if (aiTrainingOptOut) 'cawg.training-mining',
+            ],
+          );
+    } catch (error, stackTrace) {
+      Log.warning(
+        'Failed to create creator-binding assertion: $error\n$stackTrace',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+  }
+
+  CreatorBindingClaims _buildCreatorBindingClaims({
+    String? nip05,
+    String? website,
+  }) {
+    return CreatorBindingClaims(
+      nip05: nip05,
+      website: website,
+    );
+  }
+
+  VerifierClaimRequest _buildVerifierClaimRequest({
+    required NostrCreatorBindingAssertion creatorBindingAssertion,
+    String? nip05,
+    String? website,
+  }) {
+    return VerifierClaimRequest(
+      pubkey: creatorBindingAssertion.pubkey,
+      nip05: nip05,
+      website: website,
+      creatorBindingAssertionLabel: creatorBindingAssertion.assertionLabel,
+      creatorBindingPayloadJson: creatorBindingAssertion.payloadJson,
+    );
+  }
+
+  bool _hasOptionalVerifierClaims(VerifierClaimRequest request) {
+    return request.nip05 != null ||
+        request.website != null ||
+        request.socialHandles.isNotEmpty;
   }
 
   /// Resets state to initial values.

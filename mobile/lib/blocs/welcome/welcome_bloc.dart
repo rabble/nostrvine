@@ -175,7 +175,8 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       );
     } on SessionExpiredException {
       Log.warning(
-        'WelcomeBloc: session expired for ${account.pubkeyHex}',
+        'WelcomeBloc: session expired for ${account.pubkeyHex} '
+        '— redirecting to login options',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
@@ -186,6 +187,10 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
           clearSigningIn: true,
         ),
       );
+      // Session cannot be restored silently — redirect to full login flow.
+      await _authService.acceptTerms();
+      emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
+      emit(state.copyWith(status: WelcomeStatus.loaded, clearError: true));
     } catch (e) {
       Log.error(
         'WelcomeBloc: failed to log back in as ${account.pubkeyHex}: $e',

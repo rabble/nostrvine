@@ -1,3 +1,4 @@
+import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +16,7 @@ class VideoEditorConstants {
   /// Prefix key used to identify drafts being published in storage.
   static String publishPrefixId = 'draft_publish';
 
-  /// Task ID used to identify the FFmpeg merge operation when rendering
+  /// Task ID used to identify the merge operation when rendering
   /// multiple clips into a single video.
   static String renderMergeTaskId = 'Divine_Editor_Merger';
 
@@ -117,8 +118,8 @@ class VideoEditorConstants {
   /// Height of the bottom action bar in the video editor.
   static const double bottomBarHeight = 90;
 
-  /// Target render width for the video editor output.
-  static const double renderWidth = 1080;
+  /// Video quality for recording and editing
+  static const DivineVideoQuality quality = DivineVideoQuality.fhd;
 
   /// Hero animation tag for the back button in the video editor.
   static const heroBackButtonId = 'Video-Editor-Back-Button';

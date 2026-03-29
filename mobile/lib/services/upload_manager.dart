@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
@@ -173,6 +174,9 @@ class UploadManager {
 
       // Clean up old completed/published uploads to prevent accumulation
       await cleanupCompletedUploads();
+
+      // Resume interrupted resumable uploads after the persisted queue is ready.
+      unawaited(_resumeInterruptedResumableUploads());
     } catch (e, stackTrace) {
       _isInitialized = false;
       _uploadsBox = null;
@@ -738,20 +742,22 @@ class UploadManager {
     try {
       await AsyncUtils.retryWithBackoff(
         operation: () async {
+          final currentUpload = getUpload(upload.id) ?? upload;
+
           // NOTE: Circuit breaker removed from upload flow - it was blocking legitimate retries
           // Uploads already have proper retry logic with exponential backoff
           // Users should be able to retry uploads even if previous attempts failed
 
           // Update status based on current retry count
-          final currentRetry = upload.retryCount ?? 0;
+          final currentRetry = currentUpload.retryCount ?? 0;
           Log.warning(
-            'Upload attempt ${currentRetry + 1}/${_retryConfig.maxRetries + 1} for ${upload.id}',
+            'Upload attempt ${currentRetry + 1}/${_retryConfig.maxRetries + 1} for ${currentUpload.id}',
             name: 'UploadManager',
             category: LogCategory.video,
           );
 
           await _updateUpload(
-            upload.copyWith(
+            currentUpload.copyWith(
               status: currentRetry == 0
                   ? UploadStatus.uploading
                   : UploadStatus.retrying,
@@ -766,13 +772,13 @@ class UploadManager {
 
           // Execute upload with timeout
           final result = await _executeUploadWithTimeout(
-            upload,
+            currentUpload,
             videoFile,
             onProgress,
           );
 
           // Success - record metrics and complete
-          await _handleUploadSuccess(upload, result);
+          await _handleUploadSuccess(currentUpload, result);
         },
         maxRetries: _retryConfig.maxRetries,
         baseDelay: _retryConfig.initialDelay,
@@ -865,6 +871,16 @@ class UploadManager {
             description: upload.description,
             hashtags: upload.hashtags,
             proofManifestJson: upload.proofManifestJson,
+            resumableSession: upload.resumableSession,
+            onResumableSessionUpdated: (session) {
+              unawaited(
+                _storeResumableSessionProgress(
+                  upload.id,
+                  session,
+                  videoFile.lengthSync(),
+                ),
+              );
+            },
             onProgress: (value) {
               final progress = value * 0.8; // Reserve 20% for thumbnail
 
@@ -996,6 +1012,7 @@ class UploadManager {
   Future<void> _handleUploadFailure(PendingUpload upload, dynamic error) async {
     final endTime = DateTime.now();
     final metrics = _uploadMetrics[upload.id];
+    final latestUpload = getUpload(upload.id) ?? upload;
 
     // Check network connectivity and categorize error
     final connectivity = await _checkNetworkConnectivity();
@@ -1037,10 +1054,13 @@ class UploadManager {
 
     // Store user-friendly error message instead of raw exception
     await _updateUpload(
-      upload.copyWith(
+      latestUpload.copyWith(
         status: UploadStatus.failed,
         errorMessage: userMessage,
-        retryCount: upload.retryCount ?? 0,
+        retryCount: latestUpload.retryCount ?? 0,
+        resumableSession: _isExpiredResumableSessionError(error)
+            ? null
+            : latestUpload.resumableSession,
       ),
     );
 
@@ -1051,7 +1071,7 @@ class UploadManager {
         startTime: metrics.startTime,
         endTime: endTime,
         uploadDuration: endTime.difference(metrics.startTime),
-        retryCount: upload.retryCount ?? 0,
+        retryCount: latestUpload.retryCount ?? 0,
         fileSizeMB: metrics.fileSizeMB,
         errorCategory: errorCategory,
         wasSuccessful: false,
@@ -1059,8 +1079,65 @@ class UploadManager {
     }
   }
 
+  Future<void> _resumeInterruptedResumableUploads() async {
+    if (_uploadsBox == null || !_uploadsBox!.isOpen) {
+      return;
+    }
+
+    final uploadsToResume = pendingUploads.where((upload) {
+      if (upload.resumableSession == null) {
+        return false;
+      }
+
+      return upload.status == UploadStatus.uploading ||
+          upload.status == UploadStatus.retrying;
+    }).toList();
+
+    for (final upload in uploadsToResume) {
+      final resumedUpload = upload.copyWith(status: UploadStatus.uploading);
+      await _updateUpload(resumedUpload);
+      unawaited(_performUpload(resumedUpload));
+    }
+  }
+
+  Future<void> _storeResumableSessionProgress(
+    String uploadId,
+    BlossomResumableUploadSession session,
+    int fileSizeBytes,
+  ) async {
+    final upload = getUpload(uploadId);
+    if (upload == null) {
+      return;
+    }
+
+    final persistedProgress = fileSizeBytes <= 0
+        ? upload.uploadProgress
+        : ((session.nextOffset / fileSizeBytes) * 0.8).clamp(0.0, 0.8);
+
+    await _updateUpload(
+      upload.copyWith(
+        resumableSession: session,
+        uploadProgress: persistedProgress,
+      ),
+    );
+  }
+
+  bool _isExpiredResumableSessionError(dynamic error) {
+    if (error is BlossomResumableUploadException) {
+      return error.statusCode == 404 || error.statusCode == 410;
+    }
+
+    final errorMessage = error.toString().toLowerCase();
+    return errorMessage.contains('session expired') ||
+        errorMessage.contains('session is no longer available');
+  }
+
   /// Check if error is retriable
   bool _isRetriableError(dynamic error) {
+    if (_isExpiredResumableSessionError(error)) {
+      return false;
+    }
+
     final errorStr = error.toString().toLowerCase();
 
     // Network and timeout errors are retriable
@@ -1150,6 +1227,10 @@ class UploadManager {
 
   /// Categorize error for monitoring with network-aware detection
   Future<String> _categorizeError(dynamic error) async {
+    if (_isExpiredResumableSessionError(error)) {
+      return 'UPLOAD_SESSION_EXPIRED';
+    }
+
     final errorStr = error.toString().toLowerCase();
 
     // Check network connectivity for better categorization
@@ -1234,6 +1315,9 @@ class UploadManager {
       case 'AUTHENTICATION':
         return 'Authentication failed. Please sign in again.';
 
+      case 'UPLOAD_SESSION_EXPIRED':
+        return 'Upload session expired. Please retry the upload.';
+
       case 'SERVER_ERROR':
         return 'Upload server is having issues. Please try again later.';
 
@@ -1248,7 +1332,9 @@ class UploadManager {
   /// Update upload progress
   void _updateUploadProgress(String uploadId, double progress) {
     final upload = getUpload(uploadId);
-    if (upload != null && upload.status == UploadStatus.uploading) {
+    if (upload != null &&
+        (upload.status == UploadStatus.uploading ||
+            upload.status == UploadStatus.retrying)) {
       _updateUpload(upload.copyWith(uploadProgress: progress));
     }
   }
@@ -1332,7 +1418,9 @@ class UploadManager {
     // Reset to pending to restart upload from beginning
     final resumedUpload = upload.copyWith(
       status: UploadStatus.pending,
-      uploadProgress: 0, // Reset progress since we're starting over
+      uploadProgress: upload.resumableSession == null
+          ? 0
+          : upload.uploadProgress,
     );
 
     await _updateUpload(resumedUpload);
@@ -1955,6 +2043,7 @@ class UploadManager {
       completedAt: (isProcessing && !skipProcessing)
           ? null
           : DateTime.now(), // Mark as completed if skipping processing
+      resumableSession: null,
     );
   }
 

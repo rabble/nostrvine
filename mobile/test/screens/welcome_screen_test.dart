@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/known_account.dart';
@@ -329,6 +330,26 @@ void main() {
           ),
         ).called(1);
       });
+
+      testWidgets(
+        'navigates to login options when session is expired',
+        (tester) async {
+          when(
+            () => mockAuthService.signInForAccount(any(), any()),
+          ).thenThrow(SessionExpiredException());
+
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Sign back in'));
+          await tester.pumpAndSettle();
+
+          verify(() => mockAuthService.acceptTerms()).called(1);
+          expect(find.text('Sign in'), findsOneWidget);
+        },
+      );
 
       testWidgets(
         'tapping "Create a new Divine account" calls acceptTerms and navigates',

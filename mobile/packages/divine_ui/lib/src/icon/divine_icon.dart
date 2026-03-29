@@ -114,6 +114,7 @@ enum DivineIconName {
   listNumbers('list_numbers'),
   listPlus('list_plus'),
   lockSimple('lock_simple'),
+  logo('logo'),
   menu('menu'),
   minus('minus'),
   moreHoriz('more_horiz'),
