@@ -191,11 +191,11 @@ class VerifierClaimBundle {
       status: json['status']?.toString() ?? '',
       verifiedClaims: _decodeList(
         json['verified_claims'],
-        (json) => VerifiedClaim.fromJson(json),
+        VerifiedClaim.fromJson,
       ),
       requiredActions: _decodeList(
         json['required_actions'],
-        (json) => VerifierRequiredAction.fromJson(json),
+        VerifierRequiredAction.fromJson,
       ),
       identityAssertionLabel: json['identity_assertion_label']?.toString(),
       identityAssertionPayload: _decodeIdentityAssertionPayload(

@@ -55,7 +55,7 @@ void main() {
         ),
       );
 
-      final request = VerifierClaimRequest(
+      const request = VerifierClaimRequest(
         pubkey:
             '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
         nip05: 'alice@example.com',
@@ -118,10 +118,10 @@ void main() {
         );
 
         final bundle = await client.verifyClaims(
-          VerifierClaimRequest(
+          const VerifierClaimRequest(
             pubkey:
                 '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
-            socialHandles: const <VerifierSocialHandleClaim>[
+            socialHandles: <VerifierSocialHandleClaim>[
               VerifierSocialHandleClaim(
                 platform: 'github',
                 handle: 'alice',
@@ -165,7 +165,7 @@ void main() {
       ).thenThrow(TimeoutException('request timed out'));
 
       final bundle = await client.verifyClaims(
-        VerifierClaimRequest(
+        const VerifierClaimRequest(
           pubkey:
               '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
         ),

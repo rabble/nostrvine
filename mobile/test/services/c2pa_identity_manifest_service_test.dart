@@ -20,7 +20,6 @@ void main() {
         claimGenerator: 'DiVine/1.0',
         title: 'test.mp4',
         sourceType: DigitalSourceType.digitalCapture,
-        aiTrainingOptOut: true,
       );
 
       final json = jsonDecode(result.manifestJson) as Map<String, dynamic>;
@@ -31,7 +30,7 @@ void main() {
       expect(result.requiresAdvancedEmbedding, isFalse);
       expect(json['claim_generator'], equals('DiVine/1.0'));
       expect(json['format'], equals('video/mp4'));
-      expect((json['ingredients'] as List<dynamic>), hasLength(1));
+      expect(json['ingredients'] as List<dynamic>, hasLength(1));
       expect(actionsAssertion['label'], equals('c2pa.actions.v2'));
       expect(trainingAssertion['label'], equals('cawg.training-mining'));
     });

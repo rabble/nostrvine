@@ -97,7 +97,7 @@ class C2paIdentityManifestService {
   }
 
   CustomAssertion _buildTrainingMiningAssertion() {
-    return CustomAssertion(
+    return const CustomAssertion(
       label: 'cawg.training-mining',
       data: <String, dynamic>{
         'entries': <String, dynamic>{
