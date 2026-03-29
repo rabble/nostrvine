@@ -101,6 +101,10 @@ class BlossomUploadService {
   static const String _useBlossomKey = 'use_blossom_upload';
   static const String defaultBlossomServer = 'https://media.divine.video';
 
+  /// Maximum retries for a single chunk PUT before bubbling to the caller.
+  static const int _maxChunkRetries = 2;
+  static const Duration _chunkRetryDelay = Duration(seconds: 1);
+
   final AuthService authService;
   final Dio dio;
   final String _defaultServerUrl;
@@ -286,6 +290,21 @@ class BlossomUploadService {
 
   bool _validateHttpStatus(int? statusCode) =>
       statusCode != null && statusCode < 500;
+
+  /// Whether a [DioException] from a chunk PUT is safe to retry.
+  /// Returns `true` for 5xx server errors and transient network issues.
+  bool _isTransientChunkError(DioException e) {
+    final statusCode = e.response?.statusCode;
+    if (statusCode != null && statusCode >= 500) return true;
+
+    return switch (e.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError => true,
+      _ => false,
+    };
+  }
 
   Map<String, String>? _parseRequiredHeaders(dynamic headersData) {
     if (headersData is! Map) {
@@ -488,26 +507,48 @@ class BlossomUploadService {
         await fileReader.setPosition(start);
         final chunkBytes = await fileReader.read(chunkLength);
 
-        final response = await dio.put(
-          currentSession.uploadUrl,
-          data: chunkBytes,
-          options: Options(
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'Content-Length': chunkLength.toString(),
-              'Content-Range': 'bytes $start-${endExclusive - 1}/$fileSize',
-              ...?currentSession.requiredHeaders,
-            },
-            validateStatus: _validateHttpStatus,
-          ),
-          onSendProgress: (sent, total) {
-            if (fileSize <= 0) {
-              return;
+        // Per-chunk retry for transient 5xx / network errors.
+        // Chunk bytes are already in memory so retries are cheap.
+        late Response<dynamic> response;
+        var chunkAttempt = 0;
+        while (true) {
+          try {
+            response = await dio.put(
+              currentSession.uploadUrl,
+              data: chunkBytes,
+              options: Options(
+                headers: {
+                  'Content-Type': 'application/octet-stream',
+                  'Content-Length': chunkLength.toString(),
+                  'Content-Range': 'bytes $start-${endExclusive - 1}/$fileSize',
+                  ...?currentSession.requiredHeaders,
+                },
+                validateStatus: _validateHttpStatus,
+              ),
+              onSendProgress: (sent, total) {
+                if (fileSize <= 0) {
+                  return;
+                }
+                final progress = 0.2 + ((start + sent) / fileSize) * 0.7;
+                onProgress?.call(progress.clamp(0.2, 0.9));
+              },
+            );
+            break;
+          } on DioException catch (e) {
+            chunkAttempt++;
+            if (chunkAttempt > _maxChunkRetries || !_isTransientChunkError(e)) {
+              rethrow;
             }
-            final progress = 0.2 + ((start + sent) / fileSize) * 0.7;
-            onProgress?.call(progress.clamp(0.2, 0.9));
-          },
-        );
+            Log.warning(
+              'Chunk PUT failed at offset $start '
+              '(attempt $chunkAttempt/$_maxChunkRetries): '
+              '${e.response?.statusCode ?? e.type}',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+            await Future.delayed(_chunkRetryDelay);
+          }
+        }
 
         if (response.statusCode == 404 || response.statusCode == 410) {
           throw BlossomResumableUploadException(
