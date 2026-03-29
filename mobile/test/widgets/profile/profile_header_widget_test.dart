@@ -78,13 +78,9 @@ class MockNostrClient extends Mock implements NostrClient {
 }
 
 class MockAuthService extends Mock implements AuthService {
-  MockAuthService({
-    this.isAnonymousValue = false,
-    this.hasExpiredOAuthSessionValue = false,
-  });
+  MockAuthService({this.isAnonymousValue = false});
 
   final bool isAnonymousValue;
-  final bool hasExpiredOAuthSessionValue;
 
   @override
   bool get isAnonymous => isAnonymousValue;
@@ -100,7 +96,7 @@ class MockAuthService extends Mock implements AuthService {
       Stream.value(AuthState.authenticated);
 
   @override
-  bool get hasExpiredOAuthSession => hasExpiredOAuthSessionValue;
+  bool get hasExpiredOAuthSession => false;
 }
 
 const testUserHex =
@@ -158,12 +154,8 @@ void main() {
       bool isAnonymous = false,
       String? displayNameHint,
       String? avatarUrlHint,
-      bool hasExpiredSession = false,
     }) {
-      final authService = MockAuthService(
-        isAnonymousValue: isAnonymous,
-        hasExpiredOAuthSessionValue: hasExpiredSession,
-      );
+      final authService = MockAuthService(isAnonymousValue: isAnonymous);
 
       Widget header = ProfileHeaderWidget(
         userIdHex: userIdHex,
@@ -671,44 +663,6 @@ void main() {
         // Verify the button has correct styling
         final button = tester.widget<ElevatedButton>(registerButton);
         expect(button.onPressed, isNotNull);
-      });
-
-      testWidgets('session expired banner can be dismissed and stays hidden', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-
-        SharedPreferences.setMockInitialValues({});
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsOneWidget);
-
-        await tester.tap(find.byIcon(Icons.close));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsNothing);
-
-        // Rebuild and ensure persisted dismissal hides the banner
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsNothing);
       });
     });
   });

@@ -12,7 +12,6 @@ import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
-import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -28,9 +27,6 @@ import 'package:openvine/widgets/user_name.dart';
 
 /// Profile header widget displaying avatar, stats, name, and bio.
 class ProfileHeaderWidget extends ConsumerWidget {
-  static const _dismissedDivineLoginBannerPrefix =
-      'dismissed_divine_login_banner_';
-
   const ProfileHeaderWidget({
     required this.userIdHex,
     required this.isOwnProfile,
@@ -104,11 +100,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
     ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
     final hasExpiredSession = authService.hasExpiredOAuthSession;
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final dismissedDivineLoginBannerKey =
-        '$_dismissedDivineLoginBannerPrefix$userIdHex';
-    final isDivineLoginBannerDismissed =
-        prefs.getBool(dismissedDivineLoginBannerKey) ?? false;
 
     // Use profile color as header background (like original Vine)
     // Color covers avatar/stats, then fades to dark for name/bio readability
@@ -148,12 +139,8 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
                 // Session expired banner for divineOAuth users (only on own
                 // profile) — prompts re-login instead of "Secure Your Account"
-                if (isOwnProfile &&
-                    hasExpiredSession &&
-                    !isDivineLoginBannerDismissed)
-                  _SessionExpiredBanner(
-                    dismissedPreferenceKey: dismissedDivineLoginBannerKey,
-                  )
+                if (isOwnProfile && hasExpiredSession)
+                  const _SessionExpiredBanner()
                 // Secure account banner for anonymous users (only on own
                 // profile)
                 else if (isOwnProfile && isAnonymous)
@@ -452,9 +439,7 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
 /// Prompts the user to sign in again instead of showing "Secure Your Account".
 /// Attempts a silent token refresh first; navigates to login only if that fails.
 class _SessionExpiredBanner extends ConsumerStatefulWidget {
-  const _SessionExpiredBanner({required this.dismissedPreferenceKey});
-
-  final String dismissedPreferenceKey;
+  const _SessionExpiredBanner();
 
   @override
   ConsumerState<_SessionExpiredBanner> createState() =>
@@ -463,7 +448,6 @@ class _SessionExpiredBanner extends ConsumerStatefulWidget {
 
 class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
   bool _isRefreshing = false;
-  bool _isDismissed = false;
 
   Future<void> _onSignIn() async {
     setState(() => _isRefreshing = true);
@@ -479,16 +463,8 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
     }
   }
 
-  Future<void> _dismissBanner() async {
-    setState(() => _isDismissed = true);
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setBool(widget.dismissedPreferenceKey, true);
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isDismissed) return const SizedBox.shrink();
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -541,11 +517,6 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
                       color: VineTheme.accentOrange,
                     ),
                   ),
-          ),
-          IconButton(
-            onPressed: _dismissBanner,
-            icon: const Icon(Icons.close, color: VineTheme.whiteText, size: 20),
-            tooltip: 'Dismiss',
           ),
         ],
       ),
