@@ -4,6 +4,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
@@ -54,6 +56,71 @@ void main() {
 
       expect(platform.controller.goBackCallCount, 1);
     });
+
+    testWidgets(
+      'bootstraps the initial Android page through injected HTML',
+      (tester) async {
+        final platform = _BootstrapAwareWebViewPlatform();
+        WebViewPlatform.instance = platform;
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        final bootstrapClient = MockClient(
+          (_) async => http.Response(
+            '<!doctype html><html><head><script src="/app.js"></script></head><body></body></html>',
+            200,
+            request: http.Request('GET', Uri.parse(_fixtureApp().launchUrl)),
+            headers: const {'content-type': 'text/html'},
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: NostrAppSandboxScreen(
+              app: _fixtureApp(),
+              bootstrapHttpClientOverride: bootstrapClient,
+            ),
+          ),
+        );
+        await tester.pump();
+        debugDefaultTargetPlatformOverride = null;
+
+        expect(platform.controller.loadRequestCallCount, 0);
+        expect(platform.controller.loadedHtml, hasLength(1));
+      },
+    );
+
+    testWidgets(
+      'includes the Divine bridge script in the initial Android bootstrap HTML',
+      (tester) async {
+        final platform = _BootstrapAwareWebViewPlatform();
+        WebViewPlatform.instance = platform;
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        final bootstrapClient = MockClient(
+          (_) async => http.Response(
+            '<!doctype html><html><head><script src="/app.js"></script></head><body></body></html>',
+            200,
+            request: http.Request('GET', Uri.parse(_fixtureApp().launchUrl)),
+            headers: const {'content-type': 'text/html'},
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: NostrAppSandboxScreen(
+              app: _fixtureApp(),
+              bootstrapHttpClientOverride: bootstrapClient,
+            ),
+          ),
+        );
+        await tester.pump();
+        debugDefaultTargetPlatformOverride = null;
+
+        expect(platform.controller.loadedHtml, hasLength(1));
+        expect(
+          platform.controller.loadedHtml.single,
+          contains('window.__divineNostrBridgeInstalled'),
+        );
+      },
+    );
 
     testWidgets(
       'shows a loading state before the integration finishes booting',
@@ -244,6 +311,39 @@ class _HistoryAwareWebViewPlatform extends WebViewPlatform {
   }
 }
 
+class _BootstrapAwareWebViewPlatform extends WebViewPlatform {
+  late final _BootstrapAwareWebViewController controller;
+
+  @override
+  PlatformWebViewController createPlatformWebViewController(
+    PlatformWebViewControllerCreationParams params,
+  ) {
+    controller = _BootstrapAwareWebViewController(params);
+    return controller;
+  }
+
+  @override
+  PlatformWebViewWidget createPlatformWebViewWidget(
+    PlatformWebViewWidgetCreationParams params,
+  ) {
+    return _FakeWebViewWidget(params);
+  }
+
+  @override
+  PlatformWebViewCookieManager createPlatformCookieManager(
+    PlatformWebViewCookieManagerCreationParams params,
+  ) {
+    return _FakeCookieManager(params);
+  }
+
+  @override
+  PlatformNavigationDelegate createPlatformNavigationDelegate(
+    PlatformNavigationDelegateCreationParams params,
+  ) {
+    return _FakeNavigationDelegate(params);
+  }
+}
+
 class _ThrowOnBackgroundColorWebViewController
     extends PlatformWebViewController {
   _ThrowOnBackgroundColorWebViewController(super.params)
@@ -312,6 +412,42 @@ class _HistoryAwareWebViewController extends PlatformWebViewController {
   Future<void> goBack() async {
     goBackCallCount += 1;
   }
+}
+
+class _BootstrapAwareWebViewController extends PlatformWebViewController {
+  _BootstrapAwareWebViewController(super.params) : super.implementation();
+
+  int loadRequestCallCount = 0;
+  final loadedHtml = <String>[];
+
+  @override
+  Future<void> setJavaScriptMode(JavaScriptMode javaScriptMode) async {}
+
+  @override
+  Future<void> setBackgroundColor(Color color) async {}
+
+  @override
+  Future<void> setPlatformNavigationDelegate(
+    PlatformNavigationDelegate handler,
+  ) async {}
+
+  @override
+  Future<void> addJavaScriptChannel(
+    JavaScriptChannelParams javaScriptChannelParams,
+  ) async {}
+
+  @override
+  Future<void> loadRequest(LoadRequestParams params) async {
+    loadRequestCallCount += 1;
+  }
+
+  @override
+  Future<void> loadHtmlString(String html, {String? baseUrl}) async {
+    loadedHtml.add(html);
+  }
+
+  @override
+  Future<String?> currentUrl() async => 'https://primal.net/app';
 }
 
 class _FakeCookieManager extends PlatformWebViewCookieManager {
