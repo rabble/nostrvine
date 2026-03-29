@@ -373,6 +373,154 @@ void main() {
       );
     });
 
+    group('upload reuse', () {
+      test(
+        'reuses readyToPublish upload matching video path',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDraftService.deleteDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+
+          final readyUpload = _createPendingUpload(
+            status: UploadStatus.readyToPublish,
+          );
+          when(
+            () => mockUploadManager.findReusableUpload(any()),
+          ).thenReturn(readyUpload);
+          when(
+            () => mockUploadManager.getUpload(any()),
+          ).thenReturn(readyUpload);
+          when(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final draft = _createTestDraft();
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          // Should NOT have started a new upload.
+          verifyNever(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'falls through to new upload when no reusable upload exists',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+
+          // Explicitly return null for path lookup.
+          when(
+            () => mockUploadManager.findReusableUpload(any()),
+          ).thenReturn(null);
+
+          final draft = _createTestDraft();
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'resumes interrupted upload when reusable upload is in '
+        'uploading status',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDraftService.deleteDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+
+          final uploadingUpload = _createPendingUpload(
+            status: UploadStatus.uploading,
+          );
+          final readyUpload = _createPendingUpload(
+            status: UploadStatus.readyToPublish,
+          );
+
+          when(
+            () => mockUploadManager.findReusableUpload(any()),
+          ).thenReturn(uploadingUpload);
+
+          // First call returns uploading (triggers resume),
+          // subsequent calls return readyToPublish (poll succeeds).
+          var getUploadCalls = 0;
+          when(() => mockUploadManager.getUpload(any())).thenAnswer((_) {
+            getUploadCalls++;
+            return getUploadCalls <= 1 ? uploadingUpload : readyUpload;
+          });
+          when(
+            () => mockUploadManager.resumeInterruptedUpload(any()),
+          ).thenReturn(null);
+          when(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final draft = _createTestDraft();
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockUploadManager.resumeInterruptedUpload(
+              uploadingUpload.id,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+        },
+      );
+    });
+
     group('error messages', () {
       test('returns user-friendly message for 404 error', () async {
         // Arrange

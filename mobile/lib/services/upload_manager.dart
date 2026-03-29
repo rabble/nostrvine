@@ -191,8 +191,11 @@ class UploadManager {
       // Clean up old completed/published uploads to prevent accumulation
       await cleanupCompletedUploads();
 
-      // Resume interrupted resumable uploads after the persisted queue is ready.
-      unawaited(_resumeInterruptedResumableUploads());
+      // Interrupted resumable uploads are NOT auto-resumed here.
+      // The bottom sheet flow (resumePendingPublishes → BackgroundPublishBloc)
+      // lets the user decide whether to retry or save to drafts.
+      // VideoPublishService._getOrCreateUpload reuses existing PendingUpload
+      // records (and their resumable sessions) when the user taps "Try Again".
     } catch (e, stackTrace) {
       _isInitialized = false;
       _uploadsBox = null;
@@ -240,6 +243,28 @@ class UploadManager {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Finds a reusable upload for the given video file path.
+  ///
+  /// Returns the most recent upload matching [filePath] that is in a
+  /// resumable state (uploading, retrying, processing, readyToPublish,
+  /// or failed with a resumable session). Skips published, pending, and
+  /// paused uploads.
+  PendingUpload? findReusableUpload(String filePath) {
+    // pendingUploads is already sorted newest-first
+    for (final upload in pendingUploads) {
+      if (upload.localVideoPath != filePath) continue;
+      if (upload.status == UploadStatus.published) continue;
+      if (upload.status == UploadStatus.pending) continue;
+      if (upload.status == UploadStatus.paused) continue;
+      if (upload.status == UploadStatus.failed &&
+          upload.resumableSession == null) {
+        continue;
+      }
+      return upload;
+    }
+    return null;
   }
 
   /// Update an upload's status to published with Nostr event ID
@@ -1099,27 +1124,6 @@ class UploadManager {
     }
   }
 
-  Future<void> _resumeInterruptedResumableUploads() async {
-    if (_uploadsBox == null || !_uploadsBox!.isOpen) {
-      return;
-    }
-
-    final uploadsToResume = pendingUploads.where((upload) {
-      if (upload.resumableSession == null) {
-        return false;
-      }
-
-      return upload.status == UploadStatus.uploading ||
-          upload.status == UploadStatus.retrying;
-    }).toList();
-
-    for (final upload in uploadsToResume) {
-      final resumedUpload = upload.copyWith(status: UploadStatus.uploading);
-      await _updateUpload(resumedUpload);
-      unawaited(_performUpload(resumedUpload));
-    }
-  }
-
   Future<void> _storeResumableSessionProgress(
     String uploadId,
     BlossomResumableUploadSession session,
@@ -1543,6 +1547,31 @@ class UploadManager {
 
     // Start upload again and wait for completion
     await _performUpload(resetUpload);
+  }
+
+  /// Resumes a single interrupted upload.
+  ///
+  /// For uploads left in [UploadStatus.uploading] or
+  /// [UploadStatus.retrying] after an app restart. The upload's
+  /// [BlossomResumableUploadSession] (if present) is passed through to
+  /// [BlossomUploadService.uploadVideo] automatically by [_performUpload].
+  void resumeInterruptedUpload(String uploadId) {
+    final upload = getUpload(uploadId);
+    if (upload == null) return;
+    if (upload.status != UploadStatus.uploading &&
+        upload.status != UploadStatus.retrying) {
+      return;
+    }
+
+    Log.info(
+      'Resuming interrupted upload: $uploadId',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    final resumed = upload.copyWith(status: UploadStatus.uploading);
+    unawaited(_updateUpload(resumed));
+    unawaited(_performUpload(resumed));
   }
 
   /// Cancel an upload (stops the upload but keeps it for retry)
