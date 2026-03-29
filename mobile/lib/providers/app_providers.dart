@@ -38,6 +38,7 @@ import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
@@ -67,6 +68,7 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
@@ -796,6 +798,21 @@ AuthState currentAuthState(Ref ref) {
   // Return current state
   return authService.authState;
 }
+
+/// Provider for the local auth-backed signer used by creator-binding flows.
+final authServiceSignerProvider = Provider<AuthServiceSigner>((ref) {
+  ref.watch(currentAuthStateProvider);
+  final authService = ref.watch(authServiceProvider);
+  return AuthServiceSigner(authService.currentKeyContainer);
+});
+
+/// Provider for user-signed creator-binding assertions.
+final nostrCreatorBindingServiceProvider = Provider<NostrCreatorBindingService>(
+  (ref) {
+    final signer = ref.watch(authServiceSignerProvider);
+    return NostrCreatorBindingService(signer: signer);
+  },
+);
 
 /// Provider that returns true only when NostrClient is fully ready for operations.
 /// Combines auth state check AND nostrClient.hasKeys verification.
