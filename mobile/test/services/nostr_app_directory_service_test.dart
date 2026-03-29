@@ -98,6 +98,49 @@ void main() {
     );
 
     test(
+      'fetchApprovedApps with useCacheOnly includes the new bundled starter apps',
+      () async {
+        final apps = await service.fetchApprovedApps(useCacheOnly: true);
+
+        _expectBundledApp(
+          apps: apps,
+          slug: 'agora',
+          name: 'Agora',
+          launchUrl: 'https://agora.spot/',
+          allowedOrigin: 'https://agora.spot',
+        );
+        _expectBundledApp(
+          apps: apps,
+          slug: 'treasures',
+          name: 'Treasures',
+          launchUrl: 'https://treasures.to/',
+          allowedOrigin: 'https://treasures.to',
+        );
+        _expectBundledApp(
+          apps: apps,
+          slug: 'blobbi',
+          name: 'Blobbi',
+          launchUrl: 'https://www.blobbi.pet/',
+          allowedOrigin: 'https://www.blobbi.pet',
+        );
+        _expectBundledApp(
+          apps: apps,
+          slug: 'espy',
+          name: 'Espy',
+          launchUrl: 'https://espy.you/',
+          allowedOrigin: 'https://espy.you',
+        );
+        _expectBundledApp(
+          apps: apps,
+          slug: 'jumble',
+          name: 'Jumble',
+          launchUrl: 'https://jumble.social/',
+          allowedOrigin: 'https://jumble.social',
+        );
+      },
+    );
+
+    test(
       'fetchApprovedApps with useCacheOnly reads cached apps only',
       () async {
         await sharedPreferences.setString(
@@ -265,7 +308,25 @@ const List<String> _starterSlugs = [
   'shopstr',
   'nostrnests',
   'ditto',
+  'agora',
+  'treasures',
+  'blobbi',
+  'espy',
+  'jumble',
 ];
+
+void _expectBundledApp({
+  required Iterable<dynamic> apps,
+  required String slug,
+  required String name,
+  required String launchUrl,
+  required String allowedOrigin,
+}) {
+  final app = apps.where((entry) => entry.slug == slug).single;
+  expect(app.name, name);
+  expect(app.launchUrl, launchUrl);
+  expect(app.allowedOrigins, [allowedOrigin]);
+}
 
 Map<String, dynamic> _appJson({
   required String slug,

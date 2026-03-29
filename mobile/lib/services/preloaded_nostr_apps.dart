@@ -110,6 +110,56 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     launchUrl: 'https://ditto.pub/',
     sortOrder: 8,
   ),
+  _buildPreloadedApp(
+    id: 'bundled-agora',
+    slug: 'agora',
+    name: 'Agora',
+    tagline: 'Connect with activists worldwide.',
+    description:
+        'A curated third-party Nostr app for supporting activists and taking part in local actions.',
+    launchUrl: 'https://agora.spot/',
+    sortOrder: 9,
+  ),
+  _buildPreloadedApp(
+    id: 'bundled-treasures',
+    slug: 'treasures',
+    name: 'Treasures',
+    tagline: 'Decentralized geocaching on Nostr.',
+    description:
+        'A curated third-party Nostr app for discovering, hiding, and sharing geocaches.',
+    launchUrl: 'https://treasures.to/',
+    sortOrder: 10,
+  ),
+  _buildPreloadedApp(
+    id: 'bundled-blobbi',
+    slug: 'blobbi',
+    name: 'Blobbi',
+    tagline: 'A playful pet-themed social space on Nostr.',
+    description:
+        'A curated third-party Nostr client with a playful pet-forward social experience.',
+    launchUrl: 'https://www.blobbi.pet/',
+    sortOrder: 11,
+  ),
+  _buildPreloadedApp(
+    id: 'bundled-espy',
+    slug: 'espy',
+    name: 'Espy',
+    tagline: 'See beauty, share color.',
+    description:
+        'A curated third-party Nostr app for sharing colors and beautiful moments.',
+    launchUrl: 'https://espy.you/',
+    sortOrder: 12,
+  ),
+  _buildPreloadedApp(
+    id: 'bundled-jumble',
+    slug: 'jumble',
+    name: 'Jumble',
+    tagline: 'A user-friendly Nostr client for exploring relay feeds.',
+    description:
+        'A curated third-party Nostr client for browsing relay feeds in a simpler interface.',
+    launchUrl: 'https://jumble.social/',
+    sortOrder: 13,
+  ),
 ]);
 
 NostrAppDirectoryEntry _buildPreloadedApp({
