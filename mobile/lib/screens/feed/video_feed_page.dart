@@ -137,6 +137,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     super.didChangeDependencies();
     // Initialize controller eagerly if BLoC already has videos on first build
     handleVideoController();
+    _syncControllerPlaybackState();
   }
 
   @override
@@ -199,7 +200,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
         active: false,
         retainCurrentPlayer: overlayState.shouldRetainPlayer,
       );
+      return;
     }
+
+    _syncControllerPlaybackState(resumeIfHome: true);
   }
 
   /// Handles new videos from pagination by adding them to the controller.
@@ -262,6 +266,29 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     }
 
     return true;
+  }
+
+  void _syncControllerPlaybackState({bool resumeIfHome = false}) {
+    final activeController = controller;
+    if (activeController == null) return;
+
+    final routeType = ref.read(pageContextProvider).asData?.value.type;
+    if (routeType != null) {
+      _isOnHomeTab = routeType == RouteType.home;
+    }
+
+    final overlayState = ref.read(overlayVisibilityProvider);
+    if (!_isOnHomeTab || overlayState.hasVisibleOverlay) {
+      activeController.setActive(
+        active: false,
+        retainCurrentPlayer: overlayState.shouldRetainPlayer,
+      );
+      return;
+    }
+
+    if (resumeIfHome) {
+      activeController.setActive(active: true);
+    }
   }
 
   @override
