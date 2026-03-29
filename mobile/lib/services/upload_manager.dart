@@ -629,6 +629,11 @@ class UploadManager {
       if (completedUpload == null) {
         throw Exception('Upload not found after completion: ${upload.id}');
       }
+      if (completedUpload.status == UploadStatus.failed) {
+        throw Exception(
+          completedUpload.errorMessage ?? 'Upload failed: ${upload.id}',
+        );
+      }
 
       Log.info(
         '✅ Upload completed with ID: ${upload.id}',
