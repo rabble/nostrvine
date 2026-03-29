@@ -193,4 +193,179 @@ void main() {
       await tempDir.delete(recursive: true);
     },
   );
+
+  test(
+    'Divine resumable uploads keep ProofMode metadata on the completion request',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final mockAuthService = _MockAuthService();
+      final mockDio = _MockDio();
+      final service = BlossomUploadService(
+        authService: mockAuthService,
+        dio: mockDio,
+      );
+
+      const testPublicKey =
+          '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const proofManifest = '{"videoHash":"abc123","pgpSignature":"sig"}';
+
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.currentPublicKeyHex,
+      ).thenReturn(testPublicKey);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (_) async => Event(
+          testPublicKey,
+          24242,
+          const [],
+          'Upload video to Blossom server',
+        ),
+      );
+
+      final tempDir = await Directory.systemTemp.createTemp(
+        'blossom_resumable_proofmode_integration_',
+      );
+      final videoFile = File('${tempDir.path}/video.mp4')
+        ..writeAsBytesSync(List<int>.generate(10, (index) => index));
+      final sessionUpdates = <BlossomResumableUploadSession>[];
+
+      when(
+        () => mockDio.head(
+          any(),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments.first as String;
+        if (url == 'https://media.divine.video/upload') {
+          return Response(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: 200,
+            headers: Headers.fromMap({
+              DivineUploadHeaders.extensions: [
+                DivineUploadExtensions.resumableSessions,
+              ],
+              DivineUploadHeaders.controlHost: [
+                'https://media.divine.video',
+              ],
+              DivineUploadHeaders.dataHost: [
+                'https://upload.divine.video',
+              ],
+            }),
+          );
+        }
+
+        throw StateError('Unexpected HEAD url: $url');
+      });
+
+      when(
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments.first as String;
+        final options = invocation.namedArguments[#options] as Options;
+
+        if (url.endsWith('/upload/init')) {
+          return Response(
+            requestOptions: RequestOptions(path: '/upload/init'),
+            statusCode: 200,
+            data: {
+              'uploadId': 'up_123',
+              'uploadUrl': 'https://upload.divine.video/sessions/up_123',
+              'chunkSize': 4,
+              'nextOffset': 0,
+              'requiredHeaders': {'Authorization': 'Bearer session-token'},
+            },
+          );
+        }
+
+        if (url.endsWith('/upload/up_123/complete')) {
+          expect(options.headers?['X-ProofMode-Manifest'], isNotNull);
+          return Response(
+            requestOptions: RequestOptions(path: '/upload/up_123/complete'),
+            statusCode: 200,
+            data: {
+              'url': 'https://media.divine.video/final',
+              'fallbackUrl': 'https://media.divine.video/final',
+            },
+          );
+        }
+
+        throw StateError('Unexpected POST url: $url');
+      });
+
+      when(
+        () => mockDio.put(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        final options = invocation.namedArguments[#options] as Options;
+        expect(
+          options.headers?['Authorization'],
+          equals('Bearer session-token'),
+        );
+        expect(
+          options.headers?['X-ProofMode-Manifest'],
+          isNull,
+        );
+        expect(
+          invocation.positionalArguments.first,
+          equals('https://upload.divine.video/sessions/up_123'),
+        );
+
+        final contentRange = options.headers?['Content-Range'] as String;
+        final nextOffset = switch (contentRange) {
+          'bytes 0-3/10' => '4',
+          'bytes 4-7/10' => '8',
+          'bytes 8-9/10' => '10',
+          _ => throw StateError('Unexpected content range: $contentRange'),
+        };
+
+        return Response(
+          requestOptions: RequestOptions(path: '/sessions/up_123'),
+          statusCode: 204,
+          headers: Headers.fromMap({
+            DivineUploadHeaders.uploadOffset: [nextOffset],
+          }),
+        );
+      });
+
+      final result = await service.uploadVideo(
+        videoFile: videoFile,
+        nostrPubkey: testPublicKey,
+        title: 'Integration test ProofMode upload',
+        description: null,
+        hashtags: null,
+        proofManifestJson: proofManifest,
+        onResumableSessionUpdated: sessionUpdates.add,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.videoId, isNotNull);
+      expect(
+        result.cdnUrl,
+        equals('https://media.divine.video/${result.videoId}'),
+      );
+      expect(sessionUpdates.map((session) => session.nextOffset), [
+        0,
+        4,
+        8,
+        10,
+      ]);
+
+      await tempDir.delete(recursive: true);
+    },
+  );
 }
