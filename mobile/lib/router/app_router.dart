@@ -18,6 +18,7 @@ import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/resolved_sandbox_route_screen.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
@@ -624,7 +625,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ? state.extra! as NostrAppDirectoryEntry
               : null;
           final appId = state.pathParameters['appId'] ?? '';
-          return _ResolvedSandboxRouteScreen(
+          return ResolvedSandboxRouteScreen(
             appId: appId,
             initialApp: app,
           );
@@ -1064,108 +1065,5 @@ class _StreamListenable extends ChangeNotifier {
   void dispose() {
     _subscription.cancel();
     super.dispose();
-  }
-}
-
-class _MissingSandboxAppScreen extends StatelessWidget {
-  const _MissingSandboxAppScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: DiVineAppBar(
-        title: 'Integration unavailable',
-        showBackButton: true,
-        onBackPressed: context.pop,
-      ),
-      backgroundColor: VineTheme.backgroundColor,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Open approved integrations from the Integrated Apps tab so Divine can apply the right access policy.',
-            textAlign: TextAlign.center,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ResolvedSandboxRouteScreen extends ConsumerStatefulWidget {
-  const _ResolvedSandboxRouteScreen({
-    required this.appId,
-    this.initialApp,
-  });
-
-  final String appId;
-  final NostrAppDirectoryEntry? initialApp;
-
-  @override
-  ConsumerState<_ResolvedSandboxRouteScreen> createState() =>
-      _ResolvedSandboxRouteScreenState();
-}
-
-class _ResolvedSandboxRouteScreenState
-    extends ConsumerState<_ResolvedSandboxRouteScreen> {
-  late Future<NostrAppDirectoryEntry?> _appFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _appFuture = _loadApp();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ResolvedSandboxRouteScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.appId != widget.appId ||
-        oldWidget.initialApp?.id != widget.initialApp?.id) {
-      _appFuture = _loadApp();
-    }
-  }
-
-  Future<NostrAppDirectoryEntry?> _loadApp() async {
-    final initialApp = widget.initialApp;
-    if (initialApp != null) {
-      return initialApp;
-    }
-
-    final apps = await ref
-        .read(nostrAppDirectoryServiceProvider)
-        .fetchApprovedApps();
-    for (final app in apps) {
-      if (app.id == widget.appId) {
-        return app;
-      }
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<NostrAppDirectoryEntry?>(
-      future: _appFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return Scaffold(
-            appBar: DiVineAppBar(
-              title: 'Loading integration',
-              showBackButton: true,
-              onBackPressed: context.pop,
-            ),
-            backgroundColor: VineTheme.backgroundColor,
-            body: const Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final app = snapshot.data;
-        if (app == null) {
-          return const _MissingSandboxAppScreen();
-        }
-        return NostrAppSandboxScreen(app: app);
-      },
-    );
   }
 }

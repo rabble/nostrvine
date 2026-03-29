@@ -3,14 +3,16 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/apps/apps_directory_cubit.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 
-class AppsDirectoryScreen extends ConsumerStatefulWidget {
+class AppsDirectoryScreen extends ConsumerWidget {
   static const routeName = 'apps-directory';
   static const path = '/apps';
 
@@ -22,107 +24,39 @@ class AppsDirectoryScreen extends ConsumerStatefulWidget {
   final bool embedded;
 
   @override
-  ConsumerState<AppsDirectoryScreen> createState() =>
-      _AppsDirectoryScreenState();
-}
-
-class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
-  late Future<List<NostrAppDirectoryEntry>> _appsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _appsFuture = nostrAppsSandboxSupported
-        ? _loadApps()
-        : Future.value(const <NostrAppDirectoryEntry>[]);
-  }
-
-  Future<List<NostrAppDirectoryEntry>> _loadApps() {
-    return ref.read(nostrAppDirectoryServiceProvider).fetchApprovedApps();
-  }
-
-  Future<void> _refreshApps() async {
-    final future = _loadApps();
-    setState(() {
-      _appsFuture = future;
-    });
-    await future;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (!nostrAppsSandboxSupported) {
-      return _buildFrame(
-        context,
-        const _AppsDirectoryUnsupportedMessage(),
+      return _AppsDirectoryFrame(
+        embedded: embedded,
+        child: const _AppsDirectoryUnsupportedMessage(),
       );
     }
 
-    final content = Material(
-      color: VineTheme.backgroundColor,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: FutureBuilder<List<NostrAppDirectoryEntry>>(
-            future: _appsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (snapshot.hasError) {
-                return _AppsDirectoryMessage(
-                  title: 'Could not load integrated apps',
-                  subtitle: 'Pull to try the approved integrations again.',
-                  actionLabel: 'Retry',
-                  onAction: _refreshApps,
-                );
-              }
-
-              final apps = snapshot.data ?? const <NostrAppDirectoryEntry>[];
-              if (apps.isEmpty) {
-                return _AppsDirectoryMessage(
-                  title: 'No approved integrations yet',
-                  subtitle:
-                      'Approved third-party apps will appear here as Divine adds them.',
-                  actionLabel: 'Refresh',
-                  onAction: _refreshApps,
-                );
-              }
-
-              return RefreshIndicator(
-                onRefresh: _refreshApps,
-                child: ListView.builder(
-                  itemCount: apps.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return const _AppsDirectoryIntro();
-                    }
-
-                    final app = apps[index - 1];
-                    return _AppsDirectoryRow(
-                      app: app,
-                      onTap: () => context.push(
-                        NostrAppSandboxScreen.pathForAppId(app.id),
-                        extra: app,
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        ),
+    return BlocProvider(
+      create: (_) => AppsDirectoryCubit(
+        directoryService: ref.read(nostrAppDirectoryServiceProvider),
+      )..load(),
+      child: _AppsDirectoryFrame(
+        embedded: embedded,
+        child: const _AppsDirectoryView(),
       ),
     );
-
-    return _buildFrame(context, content);
   }
+}
 
-  Widget _buildFrame(BuildContext context, Widget body) {
-    if (widget.embedded) {
-      return body;
+class _AppsDirectoryFrame extends StatelessWidget {
+  const _AppsDirectoryFrame({
+    required this.embedded,
+    required this.child,
+  });
+
+  final bool embedded;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (embedded) {
+      return child;
     }
 
     return Scaffold(
@@ -132,7 +66,81 @@ class _AppsDirectoryScreenState extends ConsumerState<AppsDirectoryScreen> {
         onBackPressed: context.pop,
       ),
       backgroundColor: VineTheme.backgroundColor,
-      body: body,
+      body: child,
+    );
+  }
+}
+
+class _AppsDirectoryView extends StatelessWidget {
+  const _AppsDirectoryView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: VineTheme.backgroundColor,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: BlocBuilder<AppsDirectoryCubit, AppsDirectoryState>(
+            builder: (context, state) {
+              return switch (state.status) {
+                AppsDirectoryStatus.initial || AppsDirectoryStatus.loading =>
+                  const Center(child: CircularProgressIndicator()),
+                AppsDirectoryStatus.failure => _AppsDirectoryMessage(
+                  title: 'Could not load integrated apps',
+                  subtitle: 'Pull to try the approved integrations again.',
+                  actionLabel: 'Retry',
+                  onAction: context.read<AppsDirectoryCubit>().refresh,
+                ),
+                AppsDirectoryStatus.loaded => _AppsDirectoryLoadedView(
+                  apps: state.apps,
+                ),
+              };
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppsDirectoryLoadedView extends StatelessWidget {
+  const _AppsDirectoryLoadedView({required this.apps});
+
+  final List<NostrAppDirectoryEntry> apps;
+
+  @override
+  Widget build(BuildContext context) {
+    if (apps.isEmpty) {
+      return _AppsDirectoryMessage(
+        title: 'No approved integrations yet',
+        subtitle:
+            'Approved third-party apps will appear here as Divine adds them.',
+        actionLabel: 'Refresh',
+        onAction: context.read<AppsDirectoryCubit>().refresh,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: context.read<AppsDirectoryCubit>().refresh,
+      child: ListView.builder(
+        itemCount: apps.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return const _AppsDirectoryIntro();
+          }
+
+          final app = apps[index - 1];
+          return _AppsDirectoryRow(
+            app: app,
+            onTap: () => context.push(
+              NostrAppSandboxScreen.pathForAppId(app.id),
+              extra: app,
+            ),
+          );
+        },
+      ),
     );
   }
 }

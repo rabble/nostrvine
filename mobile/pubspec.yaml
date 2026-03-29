@@ -37,6 +37,7 @@ workspace:
   - packages/nostr_sdk
   - packages/nostr_client
   - packages/nostr_key_manager
+  - packages/nostr_apps
   - packages/permissions_service
   - packages/pooled_video_player
   - packages/profile_repository
@@ -132,6 +133,8 @@ dependencies:
 
   # Nostr Key Manager - Secure key management with hardware-backed storage
   nostr_key_manager:
+
+  nostr_apps:
 
   keycast_flutter:
 

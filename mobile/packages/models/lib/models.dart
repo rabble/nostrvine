@@ -22,6 +22,8 @@ export 'src/native_proof_data.dart';
 export 'src/nip17_send_result.dart';
 export 'src/nip71_video_kinds.dart';
 export 'src/nip94_metadata.dart';
+export 'src/nostr_app_audit_event.dart';
+export 'src/nostr_app_directory_entry.dart';
 export 'src/notification_model.dart';
 export 'src/paginated_pubkeys.dart';
 export 'src/pending_upload.dart';

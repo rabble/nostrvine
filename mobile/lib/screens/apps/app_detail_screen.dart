@@ -3,13 +3,15 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/apps/app_detail_cubit.dart';
 import 'package:openvine/models/nostr_app_directory_entry.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 
-class AppDetailScreen extends ConsumerStatefulWidget {
+class AppDetailScreen extends ConsumerWidget {
   static const routeName = 'app-detail';
   static const path = '/apps/:slug';
 
@@ -25,57 +27,29 @@ class AppDetailScreen extends ConsumerStatefulWidget {
   static String pathForSlug(String slug) => '/apps/$slug';
 
   @override
-  ConsumerState<AppDetailScreen> createState() => _AppDetailScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return BlocProvider(
+      key: ValueKey('$slug:${initialEntry?.id ?? ''}'),
+      create: (_) => AppDetailCubit(
+        directoryService: initialEntry == null
+            ? ref.read(nostrAppDirectoryServiceProvider)
+            : null,
+        slug: slug,
+        initialEntry: initialEntry,
+      )..load(),
+      child: const _AppDetailView(),
+    );
+  }
 }
 
-class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
-  late Future<NostrAppDirectoryEntry?> _entryFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _entryFuture = _loadEntry();
-  }
-
-  @override
-  void didUpdateWidget(covariant AppDetailScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.slug != widget.slug ||
-        oldWidget.initialEntry?.id != widget.initialEntry?.id) {
-      _entryFuture = _loadEntry();
-    }
-  }
-
-  Future<NostrAppDirectoryEntry?> _loadEntry() async {
-    if (widget.initialEntry != null) {
-      return widget.initialEntry;
-    }
-
-    final apps = await ref
-        .read(nostrAppDirectoryServiceProvider)
-        .fetchApprovedApps();
-    for (final app in apps) {
-      if (app.slug == widget.slug) {
-        return app;
-      }
-    }
-    return null;
-  }
-
-  String _displayPrimaryOrigin(String launchUrl) {
-    final uri = Uri.tryParse(launchUrl);
-    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-      return launchUrl;
-    }
-    return uri.origin;
-  }
+class _AppDetailView extends StatelessWidget {
+  const _AppDetailView();
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<NostrAppDirectoryEntry?>(
-      future: _entryFuture,
-      builder: (context, snapshot) {
-        final app = snapshot.data;
+    return BlocBuilder<AppDetailCubit, AppDetailState>(
+      builder: (context, state) {
+        final app = state.app;
         return Scaffold(
           appBar: DiVineAppBar(
             title: app?.name ?? 'Integrated App',
@@ -87,102 +61,122 @@ class _AppDetailScreenState extends ConsumerState<AppDetailScreen> {
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
-              child: snapshot.connectionState != ConnectionState.done
-                  ? const Center(child: CircularProgressIndicator())
-                  : app == null
-                  ? const _AppDetailMessage(
-                      title: 'Integration not found',
-                      subtitle:
-                          'This approved integration is no longer available in Divine.',
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        const CircleAvatar(
-                          radius: 28,
-                          backgroundColor: VineTheme.cardBackground,
-                          child: Icon(Icons.apps, color: VineTheme.vineGreen),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          app.name,
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          app.tagline,
-                          style: const TextStyle(
-                            color: VineTheme.lightText,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        const _AppDetailSection(
-                          title: 'How it works',
-                          child: Text(
-                            'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.',
-                            style: TextStyle(
-                              color: VineTheme.whiteText,
-                              fontSize: 15,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                        _AppDetailSection(
-                          title: 'About',
-                          child: Text(
-                            app.description,
-                            style: const TextStyle(
-                              color: VineTheme.whiteText,
-                              fontSize: 15,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                        _AppDetailSection(
-                          title: 'Primary origin',
-                          child: Text(
-                            _displayPrimaryOrigin(app.launchUrl),
-                            style: const TextStyle(
-                              color: VineTheme.vineGreen,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                        _AppDetailSection(
-                          title: 'Approved origins',
-                          child: _PillList(items: app.allowedOrigins),
-                        ),
-                        _AppDetailSection(
-                          title: 'Available capabilities',
-                          child: _PillList(items: app.allowedMethods),
-                        ),
-                        _AppDetailSection(
-                          title: 'Ask before',
-                          child: _PillList(items: app.promptRequiredFor),
-                        ),
-                        const SizedBox(height: 8),
-                        DivineButton(
-                          label: 'Open Integration',
-                          onPressed: () {
-                            context.push(
-                              NostrAppSandboxScreen.pathForAppId(app.id),
-                              extra: app,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+              child: switch (state.status) {
+                AppDetailStatus.initial || AppDetailStatus.loading =>
+                  const Center(child: CircularProgressIndicator()),
+                AppDetailStatus.notFound => const _AppDetailMessage(
+                  title: 'Integration not found',
+                  subtitle:
+                      'This approved integration is no longer available in Divine.',
+                ),
+                AppDetailStatus.loaded => _AppDetailContent(app: app!),
+              },
             ),
           ),
         );
       },
     );
   }
+}
+
+class _AppDetailContent extends StatelessWidget {
+  const _AppDetailContent({required this.app});
+
+  final NostrAppDirectoryEntry app;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const CircleAvatar(
+          radius: 28,
+          backgroundColor: VineTheme.cardBackground,
+          child: Icon(Icons.apps, color: VineTheme.vineGreen),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          app.name,
+          style: const TextStyle(
+            color: VineTheme.whiteText,
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          app.tagline,
+          style: const TextStyle(
+            color: VineTheme.lightText,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 16),
+        const _AppDetailSection(
+          title: 'How it works',
+          child: Text(
+            'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.',
+            style: TextStyle(
+              color: VineTheme.whiteText,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+        ),
+        _AppDetailSection(
+          title: 'About',
+          child: Text(
+            app.description,
+            style: const TextStyle(
+              color: VineTheme.whiteText,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+        ),
+        _AppDetailSection(
+          title: 'Primary origin',
+          child: Text(
+            _displayPrimaryOrigin(app.launchUrl),
+            style: const TextStyle(
+              color: VineTheme.vineGreen,
+              fontSize: 15,
+            ),
+          ),
+        ),
+        _AppDetailSection(
+          title: 'Approved origins',
+          child: _PillList(items: app.allowedOrigins),
+        ),
+        _AppDetailSection(
+          title: 'Available capabilities',
+          child: _PillList(items: app.allowedMethods),
+        ),
+        _AppDetailSection(
+          title: 'Ask before',
+          child: _PillList(items: app.promptRequiredFor),
+        ),
+        const SizedBox(height: 8),
+        DivineButton(
+          label: 'Open Integration',
+          onPressed: () {
+            context.push(
+              NostrAppSandboxScreen.pathForAppId(app.id),
+              extra: app,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+String _displayPrimaryOrigin(String launchUrl) {
+  final uri = Uri.tryParse(launchUrl);
+  if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+    return launchUrl;
+  }
+  return uri.origin;
 }
 
 class _AppDetailSection extends StatelessWidget {

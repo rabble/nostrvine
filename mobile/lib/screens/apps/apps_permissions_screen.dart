@@ -3,9 +3,11 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/apps/apps_permissions_cubit.dart';
 import 'package:openvine/services/nostr_app_grant_store.dart';
 
-class AppsPermissionsScreen extends StatefulWidget {
+class AppsPermissionsScreen extends StatelessWidget {
   static const routeName = 'apps-permissions';
   static const path = '/apps/permissions';
 
@@ -19,49 +21,20 @@ class AppsPermissionsScreen extends StatefulWidget {
   final String? currentUserPubkey;
 
   @override
-  State<AppsPermissionsScreen> createState() => _AppsPermissionsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      key: ValueKey(currentUserPubkey ?? ''),
+      create: (_) => AppsPermissionsCubit(
+        grantStore: grantStore,
+        currentUserPubkey: currentUserPubkey,
+      )..load(),
+      child: const _AppsPermissionsView(),
+    );
+  }
 }
 
-class _AppsPermissionsScreenState extends State<AppsPermissionsScreen> {
-  late Future<List<NostrAppGrant>> _grantsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _grantsFuture = _loadGrants();
-  }
-
-  Future<List<NostrAppGrant>> _loadGrants() async {
-    final userPubkey = widget.currentUserPubkey;
-    if (userPubkey == null || userPubkey.isEmpty) {
-      return const [];
-    }
-
-    return widget.grantStore.listGrants(userPubkey: userPubkey);
-  }
-
-  Future<void> _refreshGrants() async {
-    final future = _loadGrants();
-    setState(() {
-      _grantsFuture = future;
-    });
-    await future;
-  }
-
-  Future<void> _revokeGrant(NostrAppGrant grant) async {
-    final userPubkey = widget.currentUserPubkey;
-    if (userPubkey == null || userPubkey.isEmpty) {
-      return;
-    }
-
-    await widget.grantStore.revokeGrant(
-      userPubkey: userPubkey,
-      appId: grant.appId,
-      origin: grant.origin,
-      capability: grant.capability,
-    );
-    await _refreshGrants();
-  }
+class _AppsPermissionsView extends StatelessWidget {
+  const _AppsPermissionsView();
 
   @override
   Widget build(BuildContext context) {
@@ -76,30 +49,30 @@ class _AppsPermissionsScreenState extends State<AppsPermissionsScreen> {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
-          child: FutureBuilder<List<NostrAppGrant>>(
-            future: _grantsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
+          child: BlocBuilder<AppsPermissionsCubit, AppsPermissionsState>(
+            builder: (context, state) {
+              if (state.status != AppsPermissionsStatus.loaded) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final grants = snapshot.data ?? const <NostrAppGrant>[];
-              if (grants.isEmpty) {
+              if (state.grants.isEmpty) {
                 return const _AppsPermissionsEmptyState();
               }
 
               return RefreshIndicator(
-                onRefresh: _refreshGrants,
+                onRefresh: context.read<AppsPermissionsCubit>().load,
                 child: ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  itemCount: grants.length,
+                  itemCount: state.grants.length,
                   separatorBuilder: (BuildContext context, int index) =>
                       const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final grant = grants[index];
+                    final grant = state.grants[index];
                     return _GrantCard(
                       grant: grant,
-                      onRevoke: () => _revokeGrant(grant),
+                      onRevoke: () => context
+                          .read<AppsPermissionsCubit>()
+                          .revokeGrant(grant),
                     );
                   },
                 ),

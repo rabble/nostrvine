@@ -1,7 +1,7 @@
 import 'dart:collection';
-import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:nostr_apps/nostr_apps.dart' as integrated_apps;
 import 'package:openvine/models/nostr_app_audit_event.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 
@@ -10,73 +10,43 @@ class NostrAppAuditService {
     required Uri workerBaseUri,
     required Nip98AuthService nip98AuthService,
     required http.Client httpClient,
-  }) : _workerBaseUri = workerBaseUri,
-       _nip98AuthService = nip98AuthService,
-       _httpClient = httpClient;
+  }) : _delegate = integrated_apps.NostrAppAuditService(
+         workerBaseUri: workerBaseUri,
+         authorizationProvider:
+             ({
+               required String url,
+               required integrated_apps.NostrAppHttpMethod method,
+               String? payload,
+             }) async {
+               final token = await nip98AuthService.createAuthToken(
+                 url: url,
+                 method: switch (method) {
+                   integrated_apps.NostrAppHttpMethod.get => HttpMethod.get,
+                   integrated_apps.NostrAppHttpMethod.post => HttpMethod.post,
+                   integrated_apps.NostrAppHttpMethod.put => HttpMethod.put,
+                   integrated_apps.NostrAppHttpMethod.delete =>
+                     HttpMethod.delete,
+                   integrated_apps.NostrAppHttpMethod.patch => HttpMethod.patch,
+                 },
+                 payload: payload,
+               );
+               return token?.authorizationHeader;
+             },
+         httpClient: httpClient,
+       );
 
-  final Uri _workerBaseUri;
-  final Nip98AuthService _nip98AuthService;
-  final http.Client _httpClient;
-  final List<NostrAppAuditEvent> _queuedEvents = [];
-  Future<int>? _activeUpload;
+  final integrated_apps.NostrAppAuditService _delegate;
 
   UnmodifiableListView<NostrAppAuditEvent> get queuedEvents =>
-      UnmodifiableListView(_queuedEvents);
+      _delegate.queuedEvents;
 
   void record(NostrAppAuditEvent event) {
-    _queuedEvents.add(event);
+    _delegate.record(event);
   }
 
   Future<int> uploadQueuedEvents() {
-    final activeUpload = _activeUpload;
-    if (activeUpload != null) {
-      return activeUpload;
-    }
-
-    final upload = _uploadQueuedEvents();
-    _activeUpload = upload;
-    upload.whenComplete(() {
-      if (identical(_activeUpload, upload)) {
-        _activeUpload = null;
-      }
-    });
-    return upload;
+    return _delegate.uploadQueuedEvents();
   }
 
-  Future<int> _uploadQueuedEvents() async {
-    var uploadedCount = 0;
-
-    while (_queuedEvents.isNotEmpty) {
-      final event = _queuedEvents.first;
-      final url = _workerBaseUri.resolve('/v1/audit-events').toString();
-      final payload = jsonEncode(event.toUploadJson());
-
-      final token = await _nip98AuthService.createAuthToken(
-        url: url,
-        method: HttpMethod.post,
-        payload: payload,
-      );
-      if (token == null) {
-        break;
-      }
-
-      final response = await _httpClient.post(
-        Uri.parse(url),
-        headers: {
-          'authorization': token.authorizationHeader,
-          'content-type': 'application/json; charset=utf-8',
-        },
-        body: payload,
-      );
-
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        break;
-      }
-
-      _queuedEvents.removeAt(0);
-      uploadedCount += 1;
-    }
-
-    return uploadedCount;
-  }
+  integrated_apps.NostrAppAuditService get implementation => _delegate;
 }
