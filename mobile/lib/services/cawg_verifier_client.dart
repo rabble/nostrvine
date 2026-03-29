@@ -123,6 +123,15 @@ class VerifiedClaim {
       verifiedAt: _parseTimestamp(json['verified_at']),
     );
   }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'type': type,
+    'value': value,
+    'method': method,
+    if (platform != null) 'platform': platform,
+    if (verifiedAt != null)
+      'verified_at': verifiedAt!.toUtc().toIso8601String(),
+  };
 }
 
 @immutable
@@ -149,6 +158,13 @@ class VerifierRequiredAction {
       ),
     );
   }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'type': type,
+    'value': value,
+    if (platform != null) 'platform': platform,
+    if (requiredMethod != null) 'required_method': requiredMethod!.wireValue,
+  };
 }
 
 @immutable
@@ -187,6 +203,23 @@ class VerifierClaimBundle {
       ),
     );
   }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'issuer': issuer,
+    'status': status,
+    if (verifiedClaims.isNotEmpty)
+      'verified_claims': verifiedClaims
+          .map((claim) => claim.toJson())
+          .toList(growable: false),
+    if (requiredActions.isNotEmpty)
+      'required_actions': requiredActions
+          .map((action) => action.toJson())
+          .toList(growable: false),
+    if (identityAssertionLabel != null)
+      'identity_assertion_label': identityAssertionLabel,
+    if (identityAssertionPayload != null)
+      'identity_assertion_payload': identityAssertionPayload,
+  };
 }
 
 class CawgVerifierClient {
