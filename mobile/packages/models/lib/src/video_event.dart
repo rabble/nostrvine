@@ -840,6 +840,21 @@ class VideoEvent {
     return rawTags['c2pa_manifest_id'];
   }
 
+  /// User-signed creator binding hint emitted alongside ProofMode metadata.
+  bool get hasCreatorIdentityBinding {
+    return rawTags['identity_binding'] == 'nostr_creator';
+  }
+
+  /// Optional verifier that issued a portable CAWG identity overlay.
+  String? get identityVerifier {
+    return rawTags['identity_verifier'];
+  }
+
+  /// Whether this video advertises a portable CAWG identity overlay.
+  bool get hasPortableIdentity {
+    return rawTags['identity_portable'] == 'cawg';
+  }
+
   String? get addressableId => vineId != null
       ? AId(
           kind: EventKind.videoVertical,
