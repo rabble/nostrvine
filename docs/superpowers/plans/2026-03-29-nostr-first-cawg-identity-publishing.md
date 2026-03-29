@@ -6,6 +6,31 @@
 
 **Architecture:** Keep Nostr authorship primary by signing an asset-specific payload with the creator's existing Nostr key, then attach CAWG portability metadata only for external claims that Divine verified. Extend the current C2PA publishing path so CAWG issuance is additive and non-blocking, with publish success preserved when verifier calls fail.
 
+## Status On 2026-03-29
+
+Implemented in this repo:
+
+- creator-binding payload generation
+- non-blocking verifier client wiring
+- proof payload transport for creator binding and verifier bundle data
+- Nostr discovery tags for binding and CAWG portability hints
+- creator-binding-only publish as the current intermediate milestone
+
+Still blocked for strict full CAWG embedding:
+
+- `c2pa_flutter` placeholder assertions
+- assertion-reference enumeration with hashes
+- assertion replacement after signature collection
+- final builder insertion path for CAWG assertions
+
+Still external to this repo:
+
+- `verifier.divine.video` OAuth adapters
+- public-proof challenge flow
+- NIP-05 and domain verification endpoints
+- CAWG issuance endpoint
+- verifier issuer metadata
+
 **Tech Stack:** Flutter, Dart, existing `c2pa_flutter` integration, `AuthServiceSigner` / Nostr key container, existing ProofMode/C2PA publish flow, REST client code, repo docs under `mobile/docs/`
 
 ---
@@ -447,4 +472,3 @@ git commit -m "docs: capture external blockers for nostr-first cawg publishing"
 - Keep Nostr event ownership unchanged.
 - Treat `verifier.divine.video` as issuer-scoped metadata, not universal truth.
 - Preserve existing ProofMode and training-mining behavior while identity work is added incrementally.
-

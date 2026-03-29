@@ -187,6 +187,22 @@ The current `c2pa_flutter` usage in Divine relies on a simple JSON manifest path
 
 That means Phase 1 depends on extending the `c2pa_flutter` fork or upstream API before full CAWG embedding can ship.
 
+## Shipping Gate
+
+As of 2026-03-29, this repo can ship the intermediate milestone:
+
+- creator-signed Nostr binding data carried in media proof payloads
+- optional verifier metadata transport
+- Nostr discovery tags for binding and portable identity hints
+
+This repo does not yet ship strict full CAWG embedding because that still
+depends on `c2pa_flutter` support for placeholder assertions, referenced
+assertion hashes, placeholder replacement, and final insertion before signing.
+
+Separately, `verifier.divine.video` still needs production OAuth adapters,
+public-proof challenge flow, NIP-05/domain endpoints, CAWG issuance, and
+issuer metadata. Those are external deliverables, not mobile-only changes.
+
 ## Rollout Plan
 
 ### Phase 1
@@ -215,4 +231,3 @@ Divine should ship a Nostr-first model with a CAWG overlay:
 - authorship is always creator signed
 - external identity is optionally verifier attested
 - CAWG exists for portability, not control
-

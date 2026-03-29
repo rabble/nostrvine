@@ -180,6 +180,37 @@ Fallback method:
 
 ## Current Shipping Boundary
 
-This protocol defines the mobile-side shapes now. Full CAWG embedding still
-depends on `c2pa_flutter` support for placeholder assertions, referenced
-assertion hashing, and final assertion replacement.
+This protocol defines the mobile-side shapes now.
+
+### Shipped In This Repo
+
+- user-signed creator-binding payload transport in `NativeProofData`
+- optional verifier claim fetch through `verifier.divine.video`
+- Nostr discovery tags:
+  - `["identity_binding", "nostr_creator"]`
+  - `["identity_verifier", "<issuer>"]`
+  - `["identity_portable", "cawg"]`
+- creator-binding-only publish as a valid intermediate milestone
+
+### Blocked For Strict Full CAWG Embedding
+
+`c2pa_flutter` still needs API support for:
+
+- placeholder assertions
+- assertion-reference enumeration with hashes
+- assertion replacement after signature collection
+- a builder path for final CAWG insertion before signing completes
+
+Until that lands, Divine can ship creator binding plus verifier metadata
+transport, but not claim strict end-to-end CAWG 1.2 final-assertion support.
+
+### External Verifier Workstream
+
+`verifier.divine.video` still needs to expose:
+
+- OAuth and federated verification adapters for supported social platforms
+- public-proof challenge issuance and verification
+- NIP-05 verification endpoint
+- domain-control verification endpoint
+- CAWG issuance endpoint
+- verifier issuer metadata for portable display and trust decisions
