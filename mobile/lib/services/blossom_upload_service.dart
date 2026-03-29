@@ -97,13 +97,10 @@ class _DivineUploadCapability {
 }
 
 class _CachedCapability {
-  const _CachedCapability({
-    required this.capability,
-    required this.fetchedAt,
-  });
+  _CachedCapability(this.capability, this.expiresAt);
 
   final _DivineUploadCapability capability;
-  final DateTime fetchedAt;
+  final DateTime expiresAt;
 }
 
 class BlossomUploadService {
@@ -369,11 +366,9 @@ class BlossomUploadService {
     String serverUrl,
   ) async {
     final cached = _capabilityCache[serverUrl];
-    if (cached != null &&
-        _clock().difference(cached.fetchedAt) < _capabilityCacheTtl) {
-      Log.info(
-        'Using cached capability for $serverUrl '
-        '(age: ${_clock().difference(cached.fetchedAt).inSeconds}s)',
+    if (cached != null && _clock().isBefore(cached.expiresAt)) {
+      Log.debug(
+        'Using cached capability for $serverUrl',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
@@ -406,8 +401,8 @@ class BlossomUploadService {
       );
 
       _capabilityCache[serverUrl] = _CachedCapability(
-        capability: result,
-        fetchedAt: _clock(),
+        result,
+        _clock().add(_capabilityCacheTtl),
       );
 
       return result;
@@ -421,8 +416,8 @@ class BlossomUploadService {
       const fallback = _DivineUploadCapability(supportsResumable: false);
 
       _capabilityCache[serverUrl] = _CachedCapability(
-        capability: fallback,
-        fetchedAt: _clock(),
+        fallback,
+        _clock().add(_capabilityCacheTtl),
       );
 
       return fallback;
