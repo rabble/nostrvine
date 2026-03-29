@@ -155,6 +155,30 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     super.dispose();
   }
 
+  /// Clamps the vertical offset of [layer] to stay within the feed-safe zone.
+  ///
+  /// Text and sticker layers placed outside this zone overlap with fixed feed
+  /// UI overlays (header, badges, author info, action buttons) during playback.
+  /// Layer offsets are relative to the editor center, so the valid vertical
+  /// range is from `-(halfHeight - topInset)` to `(halfHeight - bottomInset)`.
+  void _clampLayerToFeedSafeZone(Layer layer) {
+    if (layer is! TextLayer && layer is! WidgetLayer) return;
+
+    final height = widget.renderSize.height;
+    final halfHeight = height / 2;
+    final topInset = height * VideoEditorConstants.feedSafeZoneTopFraction;
+    final bottomInset =
+        height * VideoEditorConstants.feedSafeZoneBottomFraction;
+
+    final clampedDy = layer.offset.dy.clamp(
+      -(halfHeight - topInset),
+      halfHeight - bottomInset,
+    );
+    if (clampedDy != layer.offset.dy) {
+      layer.offset = Offset(layer.offset.dx, clampedDy);
+    }
+  }
+
   /// Handles playback restart requests from BLoC.
   void _onPlaybackRestartRequested() {
     if (!_isPlayerReadyNotifier.value) return;
@@ -743,6 +767,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                       category: LogCategory.video,
                     );
                     scope.editor?.activeLayers.remove(_selectedLayer);
+                  } else {
+                    _clampLayerToFeedSafeZone(_selectedLayer!);
                   }
 
                   _onStateHistoryChange(scope, bloc);
@@ -752,6 +778,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 _wasOverRemoveArea = false;
                 bloc.add(const VideoEditorLayerInteractionEnded());
               },
+              onUpdateLayer: _clampLayerToFeedSafeZone,
               onAddLayer: (layer) {
                 Log.debug(
                   '🎬 Layer added: ${layer.runtimeType}',

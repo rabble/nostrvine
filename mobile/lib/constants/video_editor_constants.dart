@@ -104,6 +104,18 @@ class VideoEditorConstants {
   /// Maximum font scale multiplier for text overlays.
   static const double maxFontScale = 4.0;
 
+  /// Fraction of the canvas height reserved at the top as a feed-safe zone.
+  ///
+  /// Prevents text/sticker layers from overlapping feed UI overlays
+  /// (status bar, header, badges) during playback.
+  static const double feedSafeZoneTopFraction = 0.12;
+
+  /// Fraction of the canvas height reserved at the bottom as a feed-safe zone.
+  ///
+  /// Prevents text/sticker layers from overlapping feed UI overlays
+  /// (author info, action buttons, home indicator) during playback.
+  static const double feedSafeZoneBottomFraction = 0.10;
+
   /// Background color for the text editor overlay.
   static const Color textEditorBackground = Color(0x9B000000);
 
