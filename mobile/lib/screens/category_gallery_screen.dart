@@ -2,6 +2,7 @@
 // ABOUTME: Preserves category context and opens the pooled fullscreen feed.
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -252,64 +253,70 @@ class _CategoryGalleryHeader extends StatelessWidget {
         bottom: false,
         child: SizedBox(
           height: 108,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              if (visuals.assetPath != null)
-                Positioned(
-                  top: -18,
-                  right: 56,
-                  child: Image.asset(
-                    visuals.assetPath!,
-                    height: 104,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox.shrink(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _CategoryHeaderActionButton(
+                    decorationKey: const Key('category-header-back-button'),
+                    icon: DivineIconName.caretLeft,
+                    onPressed: onBack,
                   ),
                 ),
-              Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    children: [
-                      DivineIconButton(
-                        icon: DivineIconName.caretLeft,
-                        type: DivineIconButtonType.secondary,
-                        size: DivineIconButtonSize.small,
-                        onPressed: onBack,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 18),
+                    child: Text(
+                      category.displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.titleMediumFont().copyWith(
+                        decoration: TextDecoration.none,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          category.displayName,
-                          style: VineTheme.titleMediumFont().copyWith(
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      DivineIconButton(
-                        icon: DivineIconName.slidersHorizontal,
-                        type: DivineIconButtonType.secondary,
-                        size: DivineIconButtonSize.small,
-                        semanticLabel: 'Category sort options',
-                        onPressed: () async {
-                          final selected =
-                              await VineBottomSheetSelectionMenu.show(
-                                context: context,
-                                selectedValue: selectedSort,
-                                options: _categorySortOptions,
-                              );
-                          if (selected != null && selected != selectedSort) {
-                            onSortChanged(selected);
-                          }
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+                if (visuals.assetPath != null) ...[
+                  const SizedBox(width: 12),
+                  Transform.translate(
+                    offset: const Offset(0, -18),
+                    child: Transform.rotate(
+                      angle: 8 * math.pi / 180,
+                      child: Image.asset(
+                        visuals.assetPath!,
+                        height: 104,
+                        width: 132,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _CategoryHeaderActionButton(
+                    decorationKey: const Key('category-header-filter-button'),
+                    icon: DivineIconName.funnelSimple,
+                    semanticLabel: 'Category sort options',
+                    onPressed: () async {
+                      final selected = await _showCategorySortSheet(
+                        context: context,
+                        selectedValue: selectedSort,
+                      );
+                      if (selected != null && selected != selectedSort) {
+                        onSortChanged(selected);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -323,3 +330,186 @@ const _categorySortOptions = <VineBottomSheetSelectionOptionData>[
   VineBottomSheetSelectionOptionData(label: 'Classic', value: 'classic'),
   VineBottomSheetSelectionOptionData(label: 'For You', value: 'forYou'),
 ];
+
+const _categoryHeaderActionFill = Color(0xFF3E0C1F);
+const _categoryHeaderActionBorder = Color(0x40FFFFFF);
+const _categorySortDivider = Color(0xFF001A12);
+const _categoryActionShadows = <BoxShadow>[
+  BoxShadow(
+    color: Color(0x1A000000),
+    offset: Offset(0.4, 0.4),
+    blurRadius: 0.6,
+  ),
+  BoxShadow(
+    color: Color(0x1A000000),
+    offset: Offset(1, 1),
+    blurRadius: 1,
+  ),
+];
+
+Future<String?> _showCategorySortSheet({
+  required BuildContext context,
+  required String selectedValue,
+}) {
+  return showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: VineTheme.transparent,
+    barrierColor: VineTheme.scrim65,
+    isScrollControlled: true,
+    builder: (sheetContext) {
+      return _CategorySortSheet(selectedValue: selectedValue);
+    },
+  );
+}
+
+class _CategoryHeaderActionButton extends StatelessWidget {
+  const _CategoryHeaderActionButton({
+    required this.decorationKey,
+    required this.icon,
+    required this.onPressed,
+    this.semanticLabel,
+  });
+
+  final Key decorationKey;
+  final DivineIconName icon;
+  final VoidCallback onPressed;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: Material(
+        color: VineTheme.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: DecoratedBox(
+            key: decorationKey,
+            decoration: BoxDecoration(
+              color: _categoryHeaderActionFill,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _categoryHeaderActionBorder, width: 2),
+              boxShadow: _categoryActionShadows,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: DivineIcon(
+                icon: icon,
+                color: VineTheme.onSurface,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategorySortSheet extends StatelessWidget {
+  const _CategorySortSheet({required this.selectedValue});
+
+  final String selectedValue;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        key: const Key('category-sort-sheet'),
+        decoration: const BoxDecoration(
+          color: VineTheme.navGreen,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 32,
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: _categorySortDivider)),
+              ),
+              child: Center(
+                child: Container(
+                  key: const Key('category-sort-sheet-handle'),
+                  width: 64,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final option in _categorySortOptions)
+                    _CategorySortSheetOption(
+                      option: option,
+                      isSelected: option.value == selectedValue,
+                      onTap: () => Navigator.of(context).pop(option.value),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategorySortSheetOption extends StatelessWidget {
+  const _CategorySortSheetOption({
+    required this.option,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final VineBottomSheetSelectionOptionData option;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: VineTheme.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: DecoratedBox(
+          key: Key('category-sort-option-${option.value}'),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? VineTheme.iconButtonBackground
+                : VineTheme.navGreen,
+            border: const Border(
+              bottom: BorderSide(color: _categorySortDivider),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    option.label,
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                ),
+                if (isSelected)
+                  const DivineIcon(
+                    icon: DivineIconName.check,
+                    color: VineTheme.vineGreen,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

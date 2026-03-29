@@ -53,10 +53,33 @@ void main() {
 
         expect(find.text('Animals'), findsOneWidget);
         expect(find.bySemanticsLabel('Category sort options'), findsOneWidget);
+        expect(
+          find.byKey(const Key('category-header-back-button')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('category-header-filter-button')),
+          findsOneWidget,
+        );
         expect(find.text('Hot'), findsNothing);
         expect(find.text('New'), findsNothing);
         expect(find.text('Classic'), findsNothing);
         expect(find.text('For You'), findsNothing);
+
+        final backButtonDecoration = tester.widget<DecoratedBox>(
+          find.byKey(const Key('category-header-back-button')),
+        );
+        final backDecoration = backButtonDecoration.decoration as BoxDecoration;
+        expect(backDecoration.color, const Color(0xFF3E0C1F));
+        expect(backDecoration.border, isNotNull);
+
+        final filterButtonDecoration = tester.widget<DecoratedBox>(
+          find.byKey(const Key('category-header-filter-button')),
+        );
+        final filterDecoration =
+            filterButtonDecoration.decoration as BoxDecoration;
+        expect(filterDecoration.color, const Color(0xFF3E0C1F));
+        expect(filterDecoration.border, isNotNull);
       },
     );
 
@@ -81,10 +104,21 @@ void main() {
         await tester.tap(find.bySemanticsLabel('Category sort options'));
         await tester.pumpAndSettle();
 
+        expect(find.byKey(const Key('category-sort-sheet')), findsOneWidget);
+        expect(
+          find.byKey(const Key('category-sort-sheet-handle')),
+          findsOneWidget,
+        );
         expect(find.text('Hot'), findsOneWidget);
         expect(find.text('New'), findsOneWidget);
         expect(find.text('Classic'), findsOneWidget);
         expect(find.text('For You'), findsOneWidget);
+
+        final selectedRow = tester.widget<DecoratedBox>(
+          find.byKey(const Key('category-sort-option-trending')),
+        );
+        final selectedRowDecoration = selectedRow.decoration as BoxDecoration;
+        expect(selectedRowDecoration.color, const Color(0xFF032017));
 
         await tester.tap(find.text('For You'));
         await tester.pumpAndSettle();
