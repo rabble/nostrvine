@@ -331,6 +331,7 @@ void main() {
             ),
           ).thenAnswer((invocation) async {
             final url = invocation.positionalArguments.first as String;
+            final data = invocation.namedArguments[#data];
             if (url.endsWith('/upload/init')) {
               return Response(
                 requestOptions: RequestOptions(path: '/upload/init'),
@@ -347,6 +348,8 @@ void main() {
             }
 
             if (url.endsWith('/upload/up_123/complete')) {
+              expect(data, isA<Map>());
+              expect((data as Map)['sha256'], isNotEmpty);
               return Response(
                 requestOptions: RequestOptions(path: '/upload/up_123/complete'),
                 statusCode: 200,
@@ -654,6 +657,7 @@ void main() {
           ).thenAnswer((invocation) async {
             final url = invocation.positionalArguments.first as String;
             final options = invocation.namedArguments[#options] as Options;
+            final data = invocation.namedArguments[#data];
 
             if (url == 'https://media.divine.video/upload/init') {
               expect(
@@ -678,6 +682,8 @@ void main() {
                 options.headers?['X-ProofMode-Manifest'],
                 isNotNull,
               );
+              expect(data, isA<Map>());
+              expect((data as Map)['sha256'], isNotEmpty);
               return Response(
                 requestOptions: RequestOptions(
                   path: '/upload/up_proof/complete',

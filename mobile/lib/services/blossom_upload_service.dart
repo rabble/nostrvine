@@ -574,7 +574,7 @@ class BlossomUploadService {
 
     final response = await dio.post(
       '$serverUrl/upload/${session.uploadId}/complete',
-      data: const {},
+      data: {'sha256': fileHash},
       options: Options(
         headers: headers,
         validateStatus: _validateHttpStatus,
