@@ -41,6 +41,9 @@ void main() {
       (
         tester,
       ) async {
+        await tester.binding.setSurfaceSize(const Size(1000, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
         await tester.pumpWidget(
           buildSubject(
             category: category,
@@ -59,6 +62,10 @@ void main() {
         );
         expect(
           find.byKey(const Key('category-header-filter-button')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('category-header-mascot-slot')),
           findsOneWidget,
         );
         expect(find.text('Hot'), findsNothing);
@@ -80,6 +87,21 @@ void main() {
             filterButtonDecoration.decoration as BoxDecoration;
         expect(filterDecoration.color, const Color(0xFF3E0C1F));
         expect(filterDecoration.border, isNotNull);
+
+        expect(
+          tester.getSize(find.byKey(const Key('category-header-mascot-slot'))),
+          const Size(149, 90),
+        );
+
+        final filterLeft = tester
+            .getTopLeft(find.byKey(const Key('category-header-filter-button')))
+            .dx;
+        expect(filterLeft, greaterThan(260));
+
+        final backTop = tester
+            .getTopLeft(find.byKey(const Key('category-header-back-button')))
+            .dy;
+        expect(backTop, greaterThan(24));
       },
     );
 
