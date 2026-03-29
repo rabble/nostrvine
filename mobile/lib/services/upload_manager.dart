@@ -111,6 +111,11 @@ class UploadManager {
   // Removed unused _uploadsBoxName constant
   static const String _uploadTargetKey = 'upload_target';
 
+  /// Maximum number of interrupted resumable uploads resumed simultaneously
+  /// on startup. Prevents bandwidth saturation when multiple uploads were
+  /// interrupted.
+  static const int _maxConcurrentResumes = 2;
+
   // Core services
   Box<PendingUpload>? _uploadsBox;
   final BlossomUploadService _blossomService;
@@ -1113,10 +1118,28 @@ class UploadManager {
           upload.status == UploadStatus.retrying;
     }).toList();
 
-    for (final upload in uploadsToResume) {
-      final resumedUpload = upload.copyWith(status: UploadStatus.uploading);
-      await _updateUpload(resumedUpload);
-      unawaited(_performUpload(resumedUpload));
+    if (uploadsToResume.isEmpty) return;
+
+    Log.info(
+      'Resuming ${uploadsToResume.length} interrupted uploads '
+      '(max concurrent: $_maxConcurrentResumes)',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    final end = uploadsToResume.length;
+    for (var i = 0; i < end; i += _maxConcurrentResumes) {
+      final batch = uploadsToResume.sublist(
+        i,
+        (i + _maxConcurrentResumes).clamp(0, end),
+      );
+      await Future.wait(
+        batch.map((upload) async {
+          final resumed = upload.copyWith(status: UploadStatus.uploading);
+          await _updateUpload(resumed);
+          await _performUpload(resumed);
+        }),
+      );
     }
   }
 
