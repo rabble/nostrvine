@@ -547,6 +547,7 @@ class BlossomUploadService {
     required BlossomResumableUploadSession session,
     required String fileHash,
     required int fileSize,
+    String? proofManifestJson,
     void Function(double)? onProgress,
   }) async {
     final authHeader = await _createBlossomAuthHeader(
@@ -562,14 +563,20 @@ class BlossomUploadService {
       );
     }
 
+    final headers = <String, dynamic>{
+      'Authorization': authHeader,
+      'Content-Type': 'application/json',
+    };
+
+    if (proofManifestJson != null && proofManifestJson.isNotEmpty) {
+      _addProofModeHeaders(headers, proofManifestJson);
+    }
+
     final response = await dio.post(
       '$serverUrl/upload/${session.uploadId}/complete',
       data: const {},
       options: Options(
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         validateStatus: _validateHttpStatus,
       ),
     );
@@ -587,6 +594,7 @@ class BlossomUploadService {
     required String fileHash,
     required int fileSize,
     required String contentType,
+    String? proofManifestJson,
     BlossomResumableUploadSession? resumableSession,
     void Function(double)? onProgress,
     void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
@@ -617,6 +625,7 @@ class BlossomUploadService {
       session: uploadedSession,
       fileHash: fileHash,
       fileSize: fileSize,
+      proofManifestJson: proofManifestJson,
       onProgress: onProgress,
     );
   }
@@ -931,18 +940,13 @@ class BlossomUploadService {
           final capability = await _fetchDivineUploadCapability(serverUrl);
           final hasProofModeData =
               proofManifestJson != null && proofManifestJson.isNotEmpty;
-          final useResumable =
-              capability.supportsResumable && !hasProofModeData;
+          final useResumable = capability.supportsResumable;
 
-          if (capability.supportsResumable && hasProofModeData) {
+          if (useResumable) {
             Log.info(
-              'Skipping Divine resumable upload flow for $serverUrl because ProofMode headers require the legacy upload path',
-              name: 'BlossomUploadService',
-              category: LogCategory.video,
-            );
-          } else if (useResumable) {
-            Log.info(
-              'Using Divine resumable upload flow for $serverUrl',
+              hasProofModeData
+                  ? 'Using Divine resumable upload flow for $serverUrl with ProofMode metadata on completion'
+                  : 'Using Divine resumable upload flow for $serverUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
@@ -955,6 +959,7 @@ class BlossomUploadService {
                   fileHash: fileHash,
                   fileSize: fileSize,
                   contentType: 'video/mp4',
+                  proofManifestJson: proofManifestJson,
                   resumableSession: resumableSession,
                   onProgress: onProgress,
                   onResumableSessionUpdated: onResumableSessionUpdated,

@@ -595,7 +595,7 @@ void main() {
       );
 
       test(
-        'falls back to legacy PUT upload when ProofMode data is present',
+        'uses resumable upload when ProofMode data is present and sends ProofMode headers on complete',
         () async {
           const testPublicKey =
               '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -621,24 +621,77 @@ void main() {
           );
 
           final tempDir = await Directory.systemTemp.createTemp(
-            'blossom_proofmode_legacy_test_',
+            'blossom_proofmode_resumable_test_',
           );
           final videoFile = File('${tempDir.path}/video.mp4')
             ..writeAsBytesSync(List<int>.generate(5, (index) => index + 1));
 
           when(
             () => mockDio.head(any(), options: any(named: 'options')),
-          ).thenAnswer(
-            (_) async => Response(
-              requestOptions: RequestOptions(path: '/upload'),
-              statusCode: 200,
-              headers: Headers.fromMap({
-                DivineUploadHeaders.extensions: [
-                  DivineUploadExtensions.resumableSessions,
-                ],
-              }),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            if (url == 'https://media.divine.video/upload') {
+              return Response(
+                requestOptions: RequestOptions(path: '/upload'),
+                statusCode: 200,
+                headers: Headers.fromMap({
+                  DivineUploadHeaders.extensions: [
+                    DivineUploadExtensions.resumableSessions,
+                  ],
+                }),
+              );
+            }
+
+            throw StateError('Unexpected HEAD url: $url');
+          });
+
+          when(
+            () => mockDio.post(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
             ),
-          );
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            final options = invocation.namedArguments[#options] as Options;
+
+            if (url == 'https://media.divine.video/upload/init') {
+              expect(
+                options.headers?['Authorization'],
+                isNotNull,
+              );
+              return Response(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                statusCode: 200,
+                data: {
+                  'uploadId': 'up_proof',
+                  'uploadUrl': 'https://upload.divine.video/sessions/up_proof',
+                  'chunkSize': 5,
+                  'nextOffset': 0,
+                  'requiredHeaders': {'Authorization': 'Bearer session-token'},
+                },
+              );
+            }
+
+            if (url == 'https://media.divine.video/upload/up_proof/complete') {
+              expect(
+                options.headers?['X-ProofMode-Manifest'],
+                isNotNull,
+              );
+              return Response(
+                requestOptions: RequestOptions(
+                  path: '/upload/up_proof/complete',
+                ),
+                statusCode: 200,
+                data: {
+                  'url': 'https://media.divine.video/final',
+                  'fallbackUrl': 'https://media.divine.video/final',
+                },
+              );
+            }
+
+            throw StateError('Unexpected POST url: $url');
+          });
 
           when(
             () => mockDio.put(
@@ -647,16 +700,31 @@ void main() {
               options: any(named: 'options'),
               onSendProgress: any(named: 'onSendProgress'),
             ),
-          ).thenAnswer(
-            (_) async => Response(
-              requestOptions: RequestOptions(path: '/upload'),
-              statusCode: 200,
-              data: {
-                'url': 'https://media.divine.video/final',
-                'fallbackUrl': 'https://media.divine.video/final',
-              },
-            ),
-          );
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            final options = invocation.namedArguments[#options] as Options;
+
+            expect(
+              url,
+              equals('https://upload.divine.video/sessions/up_proof'),
+            );
+            expect(
+              options.headers?['Authorization'],
+              equals('Bearer session-token'),
+            );
+            expect(
+              options.headers?['X-ProofMode-Manifest'],
+              isNull,
+            );
+
+            return Response(
+              requestOptions: RequestOptions(path: '/sessions/up_proof'),
+              statusCode: 204,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.uploadOffset: ['5'],
+              }),
+            );
+          });
 
           final result = await service.uploadVideo(
             videoFile: videoFile,
@@ -670,8 +738,23 @@ void main() {
           expect(result.success, isTrue);
 
           verify(
+            () => mockDio.post(
+              'https://media.divine.video/upload/init',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).called(1);
+          verify(
             () => mockDio.put(
-              'https://media.divine.video/upload',
+              'https://upload.divine.video/sessions/up_proof',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).called(1);
+          verify(
+            () => mockDio.post(
+              'https://media.divine.video/upload/up_proof/complete',
               data: any(named: 'data'),
               options: any(
                 named: 'options',
@@ -681,14 +764,14 @@ void main() {
                   isNotNull,
                 ),
               ),
-              onSendProgress: any(named: 'onSendProgress'),
             ),
           ).called(1);
           verifyNever(
-            () => mockDio.post(
-              'https://media.divine.video/upload/init',
+            () => mockDio.put(
+              'https://media.divine.video/upload',
               data: any(named: 'data'),
               options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
             ),
           );
 

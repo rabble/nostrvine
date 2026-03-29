@@ -132,7 +132,7 @@ Data plane on `upload.divine.video`:
 - `PendingUpload` persists a `BlossomResumableUploadSession` value with `uploadId`, `uploadUrl`, `chunkSize`, `nextOffset`, `expiresAt`, and `requiredHeaders`.
 - `UploadManager.initialize()` now auto-resumes persisted `uploading` and `retrying` records that still have resumable session state.
 - `404` and `410` session failures are treated as terminal expired-session errors. The upload record moves to `failed` and clears the persisted session so the next user retry starts clean.
-- ProofMode headers remain wired to the legacy single-shot upload path. The Divine resumable protocol contract in this repo does not yet define ProofMode metadata on `init` or `complete`.
+- ProofMode metadata rides on the resumable `complete` request so ProofMode-backed videos can still use resumable chunk uploads without falling back to legacy `PUT /upload`.
 
 **File Boundaries**
 
