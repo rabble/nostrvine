@@ -40,6 +40,7 @@ class VideoStats {
     this.contentWarningLabels = const [],
     this.textTrackRef,
     this.textTrackContent,
+    this.categories = const [],
     List<String> moderationLabels = const [],
     @Deprecated('Use moderationLabels') List<String>? contentLabels,
   }) : moderationLabels = contentLabels ?? moderationLabels;
@@ -290,6 +291,12 @@ class VideoStats {
       rawTags['platform'] = platform;
     }
 
+    // Parse categories from Funnelcake VLM classification.
+    final categoriesRaw = json['categories'] ?? eventData['categories'];
+    final categories = categoriesRaw is List
+        ? categoriesRaw.map((e) => e.toString()).toList()
+        : <String>[];
+
     return VideoStats(
       id: id,
       pubkey: pubkey,
@@ -318,6 +325,7 @@ class VideoStats {
       loops: loops,
       views: views,
       rawTags: rawTags,
+      categories: categories,
       contentWarningLabels: contentWarningLabels,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
@@ -394,6 +402,11 @@ class VideoStats {
   /// Live/new view count from Funnelcake analytics.
   final int? views;
 
+  /// VLM-classified category names from Funnelcake (e.g., "animals", "music").
+  ///
+  /// Empty until the API includes a `categories` field in video responses.
+  final List<String> categories;
+
   /// All Nostr event tags as a flat map, preserving tags (like ProofMode,
   /// C2PA, verification) that don't have dedicated fields on this model.
   final Map<String, String> rawTags;
@@ -455,6 +468,7 @@ class VideoStats {
       originalLoops: loops,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
+      categories: categories,
       contentWarningLabels: contentWarningLabels,
       moderationLabels: moderationLabels,
       rawTags: {

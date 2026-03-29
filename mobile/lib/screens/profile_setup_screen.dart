@@ -1177,6 +1177,7 @@ class _ProfileSetupScreenViewState
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
+        requestFullMetadata: false,
       );
 
       if (image != null) {

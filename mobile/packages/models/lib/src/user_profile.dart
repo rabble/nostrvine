@@ -179,7 +179,10 @@ class UserProfile {
   /// Prefers NIP-05 identifier, falls back to [name]. Returns an empty
   /// string when neither is available.
   String get handle {
-    if (nip05 != null && nip05!.isNotEmpty) return '@$nip05';
+    if (nip05 != null && nip05!.isNotEmpty) {
+      final dn = displayNip05!;
+      return dn.startsWith('@') ? dn : '@$dn';
+    }
     if (name != null && name!.isNotEmpty) return '@$name';
     return '';
   }

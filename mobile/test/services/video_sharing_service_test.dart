@@ -475,6 +475,93 @@ void main() {
       expect(captured.first as String, contains('Check this out!'));
     });
 
+    test('share message says "Check out this Divine: <title>"', () async {
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          messageEventId: 'nip17-msg-id',
+          recipientPubkey: _recipientPubkey,
+        ),
+      );
+      when(
+        () => mockProfileRepository.fetchFreshProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final now = DateTime.now();
+      await nip17Service.shareVideoWithUser(
+        video: VideoEvent(
+          id: 'video1',
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+          title: 'Indigenous cultures',
+        ),
+        recipientPubkey: _recipientPubkey,
+      );
+
+      final captured = verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: captureAny(named: 'content'),
+        ),
+      ).captured;
+
+      final message = captured.first as String;
+      expect(message, contains('Check out this Divine: Indigenous cultures'));
+      expect(message, isNot(matches(RegExp(r'\bvine\b'))));
+    });
+
+    test('share message without title says "Check out this Divine"', () async {
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          messageEventId: 'nip17-msg-id',
+          recipientPubkey: _recipientPubkey,
+        ),
+      );
+      when(
+        () => mockProfileRepository.fetchFreshProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final now = DateTime.now();
+      await nip17Service.shareVideoWithUser(
+        video: VideoEvent(
+          id: 'video1',
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+        ),
+        recipientPubkey: _recipientPubkey,
+      );
+
+      final captured = verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: captureAny(named: 'content'),
+        ),
+      ).captured;
+
+      final message = captured.first as String;
+      expect(message, contains('Check out this Divine'));
+      expect(message, isNot(contains('vine:')));
+    });
+
     test('computes correct conversationId', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(

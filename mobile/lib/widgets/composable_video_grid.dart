@@ -566,6 +566,7 @@ class _VideoInfoSection extends StatelessWidget {
               embeddedName: video.authorName,
               maxLines: 1,
               style: VineTheme.titleTinyFont().copyWith(
+                decoration: TextDecoration.none,
                 shadows: const [
                   Shadow(
                     offset: Offset(0, 1),
@@ -584,13 +585,9 @@ class _VideoInfoSection extends StatelessWidget {
               label: 'Video description: ${video.title ?? video.content}',
               child: Text(
                 video.title ?? video.content,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  color: VineTheme.whiteText,
-                  fontSize: 14,
-                  height: 20 / 14,
-                  letterSpacing: 0.25,
-                  shadows: [
+                style: VineTheme.bodyMediumFont().copyWith(
+                  decoration: TextDecoration.none,
+                  shadows: const [
                     Shadow(
                       offset: Offset(0, 1),
                       blurRadius: 2,

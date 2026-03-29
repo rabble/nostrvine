@@ -23,11 +23,11 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/video_presentation.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -650,13 +650,40 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
 
 class _PooledFullscreenItemContentState
     extends ConsumerState<_PooledFullscreenItemContent> {
+  final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
+  int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
+
+  void _handleDoubleTapLike(TapDownDetails details) {
+    final showWarning = shouldShowContentWarningOverlay(
+      contentWarningLabels: widget.video.contentWarningLabels,
+      warnLabels: widget.video.warnLabels,
+    );
+    if (showWarning && !_contentWarningRevealed) return;
+
+    final bloc = context.read<VideoInteractionsBloc>();
+    final state = bloc.state;
+    if (!state.isLiked && !state.isLikeInProgress) {
+      bloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation at tap position (even if already liked)
+    _heartTrigger.value = (
+      offset: details.localPosition,
+      id: ++_heartTriggerId,
+    );
+  }
+
+  @override
+  void dispose() {
+    _heartTrigger.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
     final isPortrait = video.dimensions != null && video.isPortrait;
-    final alignment = videoAlignmentForDimensions(video.width, video.height);
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
       warnLabels: video.warnLabels,
@@ -673,6 +700,7 @@ class _PooledFullscreenItemContentState
         isActive: widget.isActive,
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
+        onDoubleTap: _handleDoubleTapLike,
         videoBuilder: (context, videoController, player) =>
             PooledVideoMetricsTracker(
               key: ValueKey('metrics-${video.id}'),
@@ -684,13 +712,11 @@ class _PooledFullscreenItemContentState
               child: _FittedVideoPlayer(
                 videoController: videoController,
                 isPortrait: isPortrait,
-                alignment: alignment,
               ),
             ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
-          alignment: alignment,
         ),
         overlayBuilder: (context, videoController, player) {
           if (showContentWarningOverlay && !_contentWarningRevealed) {
@@ -745,6 +771,9 @@ class _PooledFullscreenItemContentState
                     );
                   },
                 ),
+                Positioned.fill(
+                  child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                ),
               ],
             ),
           );
@@ -758,12 +787,10 @@ class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
     required this.videoController,
     this.isPortrait = true,
-    this.alignment = Alignment.center,
   });
 
   final VideoController videoController;
   final bool isPortrait;
-  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -775,7 +802,6 @@ class _FittedVideoPlayer extends StatelessWidget {
     return Video(
       controller: videoController,
       fit: boxFit,
-      alignment: alignment,
       controls: null,
     );
   }
@@ -785,12 +811,10 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
   const _VideoLoadingPlaceholder({
     this.thumbnailUrl,
     this.isPortrait = true,
-    this.alignment = Alignment.center,
   });
 
   final String? thumbnailUrl;
   final bool isPortrait;
-  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -805,7 +829,6 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
           Image.network(
             url,
             fit: boxFit,
-            alignment: alignment,
             errorBuilder: (_, _, _) =>
                 const ColoredBox(color: VineTheme.backgroundColor),
           )

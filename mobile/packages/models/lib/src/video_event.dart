@@ -34,6 +34,7 @@ class VideoEvent {
     this.sha256,
     this.fileSize,
     this.hashtags = const [],
+    this.categories = const [],
     this.publishedAt,
     this.rawTags = const {},
     this.vineId,
@@ -656,6 +657,13 @@ class VideoEvent {
   final String? sha256;
   final int? fileSize;
   final List<String> hashtags;
+
+  /// VLM-classified category names from Funnelcake (e.g., "animals", "music").
+  ///
+  // TODO(api): Populate from Funnelcake once the API returns per-video
+  // categories. Currently always empty for relay-sourced events.
+  final List<String> categories;
+
   final DateTime timestamp;
   final String? publishedAt;
   final Map<String, String> rawTags;
@@ -770,6 +778,20 @@ class VideoEvent {
   /// Whether this video has any Inspired By attribution.
   bool get hasInspiredBy => inspiredByVideo != null || inspiredByNpub != null;
 
+  /// Hex pubkey of the inspiring creator, resolved from either the
+  /// [inspiredByVideo] a-tag or the [inspiredByNpub] NIP-27 mention.
+  ///
+  /// Returns `null` when there is no inspired-by attribution or the npub
+  /// cannot be decoded.
+  String? get inspiredByCreatorPubkey {
+    if (inspiredByVideo != null) return inspiredByVideo!.creatorPubkey;
+    if (inspiredByNpub != null) {
+      final hex = Nip19.decode(inspiredByNpub!);
+      return hex.isNotEmpty ? hex : null;
+    }
+    return null;
+  }
+
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
   bool get isExpired {
@@ -785,6 +807,10 @@ class VideoEvent {
 
   /// Total likes combining original Vine likes and live Nostr reactions.
   int get totalLikes => (originalLikes ?? 0) + (nostrLikeCount ?? 0);
+
+  /// Total loops combining archived Vine loops and live diVine views.
+  int get totalLoops =>
+      (originalLoops ?? 0) + (int.tryParse(rawTags['views'] ?? '') ?? 0);
 
   /// Returns true if this video has an audio reference (Kind 1063).
   bool get hasAudioReference => audioEventId != null;
@@ -854,6 +880,12 @@ class VideoEvent {
   bool get isOriginalVine {
     return rawTags['platform'] == 'vine';
   }
+
+  /// All hashtags including the synthetic "classic" tag for original Vines.
+  List<String> get allHashtags => [
+    if (isOriginalVine) 'classic',
+    ...hashtags,
+  ];
 
   /// Vintage recovered Vine: original Vine metrics plus a pre-shutdown date.
   ///
@@ -1117,6 +1149,7 @@ class VideoEvent {
     String? sha256,
     int? fileSize,
     List<String>? hashtags,
+    List<String>? categories,
     DateTime? timestamp,
     String? publishedAt,
     Map<String, String>? rawTags,
@@ -1168,6 +1201,7 @@ class VideoEvent {
     sha256: sha256 ?? this.sha256,
     fileSize: fileSize ?? this.fileSize,
     hashtags: hashtags ?? this.hashtags,
+    categories: categories ?? this.categories,
     timestamp: timestamp ?? this.timestamp,
     publishedAt: publishedAt ?? this.publishedAt,
     rawTags: rawTags ?? this.rawTags,
