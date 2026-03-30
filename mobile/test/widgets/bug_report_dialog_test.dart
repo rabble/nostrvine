@@ -130,10 +130,6 @@ void main() {
         ),
       ).thenAnswer((_) async => testReportData);
 
-      when(
-        () => mockBugReportService.uploadFullLogs(any()),
-      ).thenAnswer((_) async => null);
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -188,10 +184,6 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 100));
         return testReportData;
       });
-
-      when(
-        () => mockBugReportService.uploadFullLogs(any()),
-      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         MaterialApp(
