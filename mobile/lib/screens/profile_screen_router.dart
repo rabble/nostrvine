@@ -12,7 +12,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -27,7 +26,6 @@ import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
-import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
@@ -440,13 +438,12 @@ class _ProfileScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final environment = ref.watch(currentEnvironmentProvider);
-
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
+      extendBodyBehindAppBar: true,
       appBar: DiVineAppBar(
         title: '',
-        backgroundColor: appBarColor ?? getEnvironmentAppBarColor(environment),
+        backgroundMode: DiVineAppBarBackgroundMode.transparent,
         leadingIcon: SvgIconSource(DivineIconName.gear.assetPath),
         onLeadingPressed: () {
           Log.info(

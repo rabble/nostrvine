@@ -107,19 +107,21 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final hasBannerImage = effectiveProfile?.hasBannerImage ?? false;
     final bannerUrl = hasBannerImage ? effectiveProfile!.banner : null;
 
-    // The avatar protrudes below the 334px banner area. We need enough
-    // bottom padding in the Stack to avoid clipping the avatar + label.
     const bannerHeight = 334.0;
     const avatarSize = 144.0;
-    // Avatar center sits at the bottom of the banner, so half protrudes.
-    const avatarOverhang = avatarSize / 2 + 16; // +16 for action label
+    const actionLabelHeight = 16.0;
+
+    // The avatar's top edge aligns with the top of the app bar area
+    // (just below the status bar safe area).
+    final appBarBottom = MediaQuery.paddingOf(context).top;
+    final totalHeight = appBarBottom + avatarSize + actionLabelHeight;
 
     return Column(
       children: [
-        // Banner area with centered avatar overlapping the bottom edge
+        // Banner + avatar area
         SizedBox(
           width: double.infinity,
-          height: bannerHeight + avatarOverhang,
+          height: totalHeight,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -139,9 +141,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
                   child: _SessionExpiredBanner(),
                 ),
 
-              // Centered avatar + action label at the bottom of the banner
+              // Centered avatar — top edge aligns with app bar bottom
               Positioned(
-                bottom: 0,
+                top: appBarBottom,
                 left: 0,
                 right: 0,
                 child: Center(
