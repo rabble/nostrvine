@@ -473,10 +473,18 @@ class ContentBlocklistService {
     }
   }
 
-  /// Start background sync of block lists from other users (kind 30000, d=block)
+  /// Start background sync of block lists (kind 30000, d=block).
   ///
-  /// Subscribes to kind 30000 events WHERE our pubkey appears in 'p' tags
-  /// AND the 'd' tag is 'block'. This detects when other users block us.
+  /// Subscribes to two filter sets in a single subscription:
+  /// 1. Kind 30000 events where our pubkey is in 'p' tags — detects when
+  ///    other users block us.
+  /// 2. Our own kind 30000 (d=block) event — restores our block list from
+  ///    the relay so blocks survive app reinstalls (SharedPreferences is
+  ///    wiped on uninstall, but the relay keeps the event).
+  ///
+  /// Using `subscribe` (persistent stream) instead of `queryEvents`
+  /// (one-shot) ensures events arrive even if relays connect after this
+  /// method is called.
   Future<void> syncBlockListsInBackground(
     NostrClient nostrService,
     AuthService authService,
@@ -503,16 +511,25 @@ class ContentBlocklistService {
     );
 
     try {
-      // Subscribe to kind 30000 events WHERE our pubkey is in 'p' tags
-      final filter = Filter(kinds: const [30000]);
-      filter.p = [ourPubkey];
+      // Filter 1: Others' block lists that include our pubkey
+      final othersFilter = Filter(kinds: const [30000]);
+      othersFilter.p = [ourPubkey];
 
-      final subscription = nostrService.subscribe([filter]);
+      // Filter 2: Our own block list (for relay-based restoration)
+      final ownFilter = Filter(
+        authors: [ourPubkey],
+        kinds: const [30000],
+        d: const ['block'],
+      );
+
+      final subscription = nostrService.subscribe(
+        [othersFilter, ownFilter],
+      );
 
       subscription.listen(_handleBlockListEvent);
 
       Log.info(
-        'Block list subscription created',
+        'Block list subscription created (includes own block list restore)',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
@@ -573,10 +590,10 @@ class ContentBlocklistService {
     }
   }
 
-  /// Handle incoming kind 30000 block list events (d=block)
+  /// Handle incoming kind 30000 block list events (d=block).
   ///
-  /// Checks if the event has d=block tag and our pubkey in 'p' tags,
-  /// then adds/removes the blocker from [_blockedByOthers].
+  /// Routes to the appropriate handler based on whether the event is
+  /// authored by us (relay restoration) or by another user (blocked-by).
   void _handleBlockListEvent(Event event) {
     if (event.kind != 30000) return;
 
@@ -590,6 +607,49 @@ class ContentBlocklistService {
     );
     if (!hasBlockDTag) return;
 
+    if (event.pubkey == _ourPubkey) {
+      _handleOwnBlockListEvent(event);
+    } else {
+      _handleOthersBlockListEvent(event);
+    }
+  }
+
+  /// Restore our block list from a relay-stored event we authored.
+  ///
+  /// Extracts blocked pubkeys from 'p' tags and merges them into the
+  /// runtime blocklist. This ensures blocks survive app reinstalls where
+  /// SharedPreferences data is lost but the relay still holds our event.
+  void _handleOwnBlockListEvent(Event event) {
+    final relayPubkeys = <String>{};
+    for (final tag in event.tags) {
+      if (tag.isNotEmpty &&
+          tag[0] == 'p' &&
+          tag.length >= 2 &&
+          tag[1] != _ourPubkey) {
+        relayPubkeys.add(tag[1]);
+      }
+    }
+
+    final added = relayPubkeys.difference(_runtimeBlocklist);
+    if (added.isEmpty) return;
+
+    _runtimeBlocklist.addAll(added);
+    _saveBlockedUsers();
+    _notifyChanged();
+
+    Log.info(
+      'Restored ${added.length} blocks from relay '
+      '(total: ${_runtimeBlocklist.length})',
+      name: 'ContentBlocklistService',
+      category: LogCategory.system,
+    );
+  }
+
+  /// Handle another user's block list event.
+  ///
+  /// Checks if our pubkey is in their 'p' tags, then adds/removes
+  /// the blocker from [_blockedByOthers].
+  void _handleOthersBlockListEvent(Event event) {
     final blockerPubkey = event.pubkey;
 
     // Check if our pubkey is in this user's block list
