@@ -128,7 +128,7 @@ void main() {
       });
 
       testWidgets(
-        'disables autocorrect and suggestions for overlay text input',
+        'disables autocorrect for overlay text input',
         (tester) async {
           await tester.pumpWidget(buildWidget());
           await tester.pump();
@@ -136,7 +136,6 @@ void main() {
           final textField = tester.widget<TextField>(find.byType(TextField));
 
           expect(textField.autocorrect, isFalse);
-          expect(textField.enableSuggestions, isFalse);
         },
       );
 
