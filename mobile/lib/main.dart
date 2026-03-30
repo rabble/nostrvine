@@ -27,7 +27,6 @@ import 'package:openvine/network/vine_cdn_http_overrides.dart'
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -909,45 +908,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       );
     });
 
-    // Initialize mutual mute list sync in background
-    Future.microtask(() async {
-      try {
-        final keyManager = ref.read(nostrKeyManagerProvider);
-        final nostrService = ref.read(nostrServiceProvider);
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-
-        // Only sync if user is logged in
-        if (keyManager.publicKey != null) {
-          await blocklistService.syncMuteListsInBackground(
-            nostrService,
-            keyManager.publicKey!,
-          );
-          Log.info(
-            '[INIT] Mutual mute list sync started (background)',
-            name: 'Main',
-            category: LogCategory.system,
-          );
-
-          final authService = ref.read(authServiceProvider);
-          await blocklistService.syncBlockListsInBackground(
-            nostrService,
-            authService,
-            keyManager.publicKey!,
-          );
-          Log.info(
-            '[INIT] Block list sync started (background)',
-            name: 'Main',
-            category: LogCategory.system,
-          );
-        }
-      } catch (e) {
-        Log.warning(
-          '[INIT] Mutual mute sync failed (non-critical): $e',
-          name: 'Main',
-          category: LogCategory.system,
-        );
-      }
-    });
+    // Block/mute list sync is handled by blocklistSyncBridgeProvider
+    // (watched in AppShell) which reacts to auth state changes and
+    // covers both already-authenticated startup and post-login scenarios.
   }
 
   @override
