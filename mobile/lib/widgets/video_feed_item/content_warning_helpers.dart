@@ -13,12 +13,13 @@ import 'package:openvine/services/content_filter_service.dart';
 
 /// Whether a video should be gated behind the full-screen content warning UI.
 ///
-/// `warnLabels` are still honored when present, but creator-applied content
-/// warnings should also gate playback instead of falling back to a small badge.
+/// Only `warnLabels` should gate playback because they already reflect the
+/// user's effective content-filter preference. Creator-applied
+/// `contentWarningLabels` may still render a smaller badge when visible.
 bool shouldShowContentWarningOverlay({
   required List<String> contentWarningLabels,
   required List<String> warnLabels,
-}) => warnLabels.isNotEmpty || contentWarningLabels.isNotEmpty;
+}) => warnLabels.isNotEmpty;
 
 /// Returns the labels that should be shown in the content warning overlay.
 ///
