@@ -67,9 +67,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   /// Notifier to trigger refresh of profile BLoCs (likes, reposts).
   final _refreshNotifier = ValueNotifier<int>(0);
 
-  /// Whether a refresh is currently in progress.
-  bool _isRefreshing = false;
-
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
 
@@ -82,42 +79,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     _scrollController.dispose();
     _refreshNotifier.dispose();
     super.dispose();
-  }
-
-  Future<void> _refreshProfile(String userIdHex) async {
-    if (_isRefreshing) return;
-
-    setState(() => _isRefreshing = true);
-
-    try {
-      // Run refresh operations and minimum duration in parallel
-      // This ensures the spinner shows for at least 500ms for visual feedback
-      await Future.wait([
-        _doRefresh(userIdHex),
-        Future<void>.delayed(const Duration(milliseconds: 500)),
-      ]);
-
-      Log.info(
-        '🔄 Profile refreshed for $userIdHex',
-        name: 'ProfileScreenRouter',
-        category: LogCategory.ui,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isRefreshing = false);
-      }
-    }
-  }
-
-  Future<void> _doRefresh(String userIdHex) async {
-    // Refresh videos from provider
-    await ref.read(profileFeedProvider(userIdHex).notifier).refresh();
-
-    // Refresh user profile info
-    ref.read(profileRepositoryProvider)?.fetchFreshProfile(pubkey: userIdHex);
-
-    // Trigger BLoC refresh for likes/reposts via notifier
-    _refreshNotifier.value++;
   }
 
   @override
@@ -145,9 +106,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         routeContext: value,
         scrollController: _scrollController,
         onFetchProfile: _fetchProfileIfNeeded,
-        onEditProfile: _editProfile,
         onOpenClips: _openClips,
-        onOpenAnalytics: _openAnalytics,
+        onMore: _more,
         refreshNotifier: _refreshNotifier,
       ),
     };
@@ -190,10 +150,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             };
 
             return _ProfileScaffold(
-              onRefreshPressed: () => _refreshProfile(userIdHex),
-              onMorePressed: () => _more(userIdHex),
+              onEditPressed: _editProfile,
               appBarColor: profileColor,
-              isRefreshing: _isRefreshing,
               body: content,
             );
           },
@@ -418,26 +376,21 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 }
 
-class _ProfileScaffold extends ConsumerWidget {
+class _ProfileScaffold extends StatelessWidget {
   const _ProfileScaffold({
     required this.body,
-    this.isRefreshing = false,
     this.appBarColor,
-    this.onRefreshPressed,
-    this.onMorePressed,
+    this.onEditPressed,
   });
-
-  final bool isRefreshing;
 
   final Color? appBarColor;
 
   final Widget body;
 
-  final VoidCallback? onRefreshPressed;
-  final VoidCallback? onMorePressed;
+  final VoidCallback? onEditPressed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       extendBodyBehindAppBar: true,
@@ -454,24 +407,15 @@ class _ProfileScaffold extends ConsumerWidget {
           context.pushWithVideoPause(SettingsScreen.path);
         },
         actions: [
-          DiVineAppBarAction(
-            icon: isRefreshing
-                ? const MaterialIconSource(Icons.refresh)
-                : SvgIconSource(
-                    DivineIconName.arrowsCounterClockwise.assetPath,
-                  ),
-            onPressed: isRefreshing ? null : onRefreshPressed,
-            tooltip: 'Refresh',
-            semanticLabel: 'Refresh profile',
-          ),
-          DiVineAppBarAction(
-            icon: SvgIconSource(
-              DivineIconName.dotsThree.assetPath,
+          if (onEditPressed != null)
+            DiVineAppBarAction(
+              icon: SvgIconSource(
+                DivineIconName.pencilSimpleLine.assetPath,
+              ),
+              onPressed: onEditPressed,
+              tooltip: 'Edit profile',
+              semanticLabel: 'Edit profile',
             ),
-            onPressed: onMorePressed,
-            tooltip: 'More',
-            semanticLabel: 'More options',
-          ),
         ],
       ),
       body: body,
@@ -486,18 +430,16 @@ class _ProfileContentView extends ConsumerWidget {
     required this.routeContext,
     required this.scrollController,
     required this.onFetchProfile,
-    required this.onEditProfile,
     required this.onOpenClips,
-    required this.onOpenAnalytics,
+    required this.onMore,
     required this.refreshNotifier,
   });
 
   final RouteContext routeContext;
   final ScrollController scrollController;
   final void Function(String userIdHex, bool isOwnProfile) onFetchProfile;
-  final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onOpenAnalytics;
+  final void Function(String userIdHex) onMore;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -557,9 +499,8 @@ class _ProfileContentView extends ConsumerWidget {
       displayName: displayName,
       videoIndex: routeContext.videoIndex,
       scrollController: scrollController,
-      onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
-      onOpenAnalytics: onOpenAnalytics,
+      onMore: onMore,
       refreshNotifier: refreshNotifier,
     );
   }
@@ -614,9 +555,8 @@ class _ProfileDataView extends ConsumerWidget {
     required this.isOwnProfile,
     required this.videoIndex,
     required this.scrollController,
-    required this.onEditProfile,
     required this.onOpenClips,
-    required this.onOpenAnalytics,
+    required this.onMore,
     required this.refreshNotifier,
     this.displayName,
   });
@@ -627,9 +567,8 @@ class _ProfileDataView extends ConsumerWidget {
   final String? displayName;
   final int? videoIndex;
   final ScrollController scrollController;
-  final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onOpenAnalytics;
+  final void Function(String userIdHex) onMore;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -673,9 +612,8 @@ class _ProfileDataView extends ConsumerWidget {
           videos: value.videos,
           videoIndex: videoIndex,
           scrollController: scrollController,
-          onEditProfile: onEditProfile,
           onOpenClips: onOpenClips,
-          onOpenAnalytics: onOpenAnalytics,
+          onMore: onMore,
           refreshNotifier: refreshNotifier,
         ),
       },
@@ -694,9 +632,8 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.videos,
     required this.videoIndex,
     required this.scrollController,
-    required this.onEditProfile,
     required this.onOpenClips,
-    required this.onOpenAnalytics,
+    required this.onMore,
     this.refreshNotifier,
     this.displayName,
     super.key,
@@ -709,9 +646,8 @@ class ProfileViewSwitcher extends StatelessWidget {
   final List<VideoEvent> videos;
   final int? videoIndex;
   final ScrollController scrollController;
-  final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onOpenAnalytics;
+  final void Function(String userIdHex) onMore;
 
   /// Optional notifier to trigger BLoC refresh when its value changes.
   final ValueNotifier<int>? refreshNotifier;
@@ -740,9 +676,8 @@ class ProfileViewSwitcher extends StatelessWidget {
             displayName: displayName,
             videos: videos,
             scrollController: scrollController,
-            onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
-            onOpenAnalytics: onOpenAnalytics,
+            onShareProfile: () => onMore(userIdHex),
             refreshNotifier: refreshNotifier,
           );
   }

@@ -31,9 +31,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.profile,
     this.profileStats,
     this.displayName,
-    this.onEditProfile,
     this.onOpenClips,
-    this.onOpenAnalytics,
+    this.onShareProfile,
     this.onBlockedTap,
     this.scrollController,
     this.displayNameHint,
@@ -62,14 +61,11 @@ class ProfileGridView extends ConsumerStatefulWidget {
   /// Optional cached profile stats owned by the parent widget.
   final ProfileStats? profileStats;
 
-  /// Callback when "Edit Profile" is tapped (own profile only).
-  final VoidCallback? onEditProfile;
-
   /// Callback when "Clips" button is tapped (own profile only).
   final VoidCallback? onOpenClips;
 
-  /// Callback when "Analytics" button is tapped (own profile only).
-  final VoidCallback? onOpenAnalytics;
+  /// Callback when share button is tapped.
+  final VoidCallback? onShareProfile;
 
   /// Callback when the Blocked button is tapped (other profiles only).
   final VoidCallback? onBlockedTap;
@@ -304,9 +300,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               userIdHex: widget.userIdHex,
               isOwnProfile: widget.isOwnProfile,
               displayName: widget.displayName,
-              onEditProfile: widget.onEditProfile,
               onOpenClips: widget.onOpenClips,
-              onOpenAnalytics: widget.onOpenAnalytics,
+              onShareProfile: widget.onShareProfile,
               onBlockedTap: widget.onBlockedTap,
             ),
           ),

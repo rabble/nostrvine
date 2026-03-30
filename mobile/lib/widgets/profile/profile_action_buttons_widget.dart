@@ -1,4 +1,4 @@
-// ABOUTME: Action buttons widget for profile page (edit, library, follow)
+// ABOUTME: Action buttons widget for profile page (library, share, follow)
 // ABOUTME: Shows different buttons for own profile vs other user profiles
 
 import 'dart:math';
@@ -14,9 +14,8 @@ class ProfileActionButtons extends StatelessWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     this.displayName,
-    this.onEditProfile,
     this.onOpenClips,
-    this.onOpenAnalytics,
+    this.onShareProfile,
     this.onBlockedTap,
     super.key,
   });
@@ -26,9 +25,8 @@ class ProfileActionButtons extends StatelessWidget {
 
   /// Display name for unfollow confirmation (required when not own profile).
   final String? displayName;
-  final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
-  final VoidCallback? onOpenAnalytics;
+  final VoidCallback? onShareProfile;
 
   /// Callback when the Blocked button is tapped.
   final VoidCallback? onBlockedTap;
@@ -59,39 +57,19 @@ class ProfileActionButtons extends StatelessWidget {
       return [
         Expanded(
           child: DivineButton(
-            expanded: true,
-            leadingIcon: .pencilSimpleLineDuo,
-            label: 'Edit',
-            onPressed: onEditProfile,
-          ),
-        ),
-        Expanded(
-          child: DivineButton(
             key: const Key('library-button'),
             expanded: true,
-            type: .secondary,
             leadingIcon: .filmSlate,
-            label: 'Library',
+            label: 'My Library',
             onPressed: onOpenClips,
           ),
         ),
         SizedBox.square(
           dimension: max(48, MediaQuery.textScalerOf(context).scale(48)),
-          child: OutlinedButton(
-            onPressed: onOpenAnalytics,
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.zero,
-              backgroundColor: VineTheme.surfaceContainer,
-              foregroundColor: VineTheme.whiteText,
-              side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: Icon(
-              Icons.analytics_outlined,
-              size: max(20, MediaQuery.textScalerOf(context).scale(20)),
-            ),
+          child: DivineIconButton(
+            icon: .shareFat,
+            type: .secondary,
+            onPressed: onShareProfile,
           ),
         ),
       ];
