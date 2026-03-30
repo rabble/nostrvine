@@ -223,6 +223,19 @@ class VineBottomSheet extends StatelessWidget {
   }
 }
 
+/// Standalone drag handle shown when [VineBottomSheet.showHeader] is false.
+class _HeaderlessDragHandle extends StatelessWidget {
+  const _HeaderlessDragHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.only(top: 8, bottom: 20),
+      child: Center(child: VineBottomSheetDragHandle()),
+    );
+  }
+}
+
 class _ScrollableContent extends StatelessWidget {
   const _ScrollableContent({
     required this.showHeader,
@@ -261,10 +274,7 @@ class _ScrollableContent extends StatelessWidget {
           )
         else
           // Drag handle only — content manages its own layout below
-          const Padding(
-            padding: EdgeInsets.only(top: 8, bottom: 20),
-            child: Center(child: VineBottomSheetDragHandle()),
-          ),
+          const _HeaderlessDragHandle(),
 
         // Scrollable content area (contentTitle is first element inside)
         Expanded(
@@ -343,10 +353,7 @@ class _FixedContent extends StatelessWidget {
             )
           else
             // Drag handle only
-            const Padding(
-              padding: EdgeInsets.only(top: 8, bottom: 20),
-              child: Center(child: VineBottomSheetDragHandle()),
-            ),
+            const _HeaderlessDragHandle(),
 
           // Fixed content area with minimum height for menu entries (2 × 56px)
           Flexible(
