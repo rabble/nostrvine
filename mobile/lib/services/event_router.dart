@@ -99,7 +99,7 @@ class EventRouter {
         break;
 
       case 6: // Reposts
-      case 34236: // Videos
+      case NIP71VideoKinds.addressableShortVideo: // Videos
         // Already in events table, queryable via DAO
         break;
 

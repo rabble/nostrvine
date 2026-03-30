@@ -79,7 +79,7 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
       if (event == null) {
         final results = await _nostrClient.queryEvents([
           Filter(
-            kinds: [NIP71VideoKinds.addressableShortVideo],
+            kinds: const [NIP71VideoKinds.addressableShortVideo],
             d: [_videoStableId],
             limit: 1,
           ),
