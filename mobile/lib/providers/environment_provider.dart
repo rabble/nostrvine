@@ -2,6 +2,7 @@
 // ABOUTME: Exposes environment config and developer mode state to widgets
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -67,8 +68,10 @@ Future<void> switchEnvironment(
   // Cancel all active relay subscriptions before switching
   await subscriptionManager.cancelAllSubscriptions();
 
-  // Clear cached video events (kind 34236) and metrics from database
-  await db.nostrEventsDao.deleteEventsByKind(34236);
+  // Clear cached video events and metrics from database
+  await db.nostrEventsDao.deleteEventsByKind(
+    NIP71VideoKinds.addressableShortVideo,
+  );
   await db.videoMetricsDao.deleteAllVideoMetrics();
 
   // Switch the environment (this also clears persisted relay list)

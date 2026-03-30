@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
@@ -319,6 +320,7 @@ class VideoEditorRenderService {
         taskId: taskId ?? clips.first.id,
         outputDir: outputDir,
         globalTransform: result.globalTransform,
+        aspectRatio: aspectRatio ?? clips.first.targetAspectRatio,
         originalAudioVolume: originalAudioVolume,
         customAudioVolume: customAudioVolume,
         imageBytes: imageBytes,
@@ -627,6 +629,7 @@ class VideoEditorRenderService {
     required String taskId,
     required Directory outputDir,
     required CompleteParameters? parameters,
+    required model.AspectRatio aspectRatio,
     _CropParameters? globalTransform,
     double originalAudioVolume = 1.0,
     double customAudioVolume = 1.0,
@@ -659,6 +662,12 @@ class VideoEditorRenderService {
       blur: parameters?.blur,
       colorMatrixList: parameters?.colorFilters ?? [],
       imageBytesWithCropping: true,
+      qualityConfig: VideoQualityConfig.custom(
+        bitrate: VideoEditorConstants.quality.bitrate,
+        resolution: VideoEditorConstants.quality.resolutionForAspectRatio(
+          aspectRatio,
+        ),
+      ),
       transform: globalTransform != null
           ? ExportTransform(
               x: globalTransform.x,

@@ -1,7 +1,7 @@
 # Nostr Video Events Schema
 
 Status: Current
-Validated against: current mobile protocol docs on 2026-03-19.
+Validated against: current mobile protocol docs on 2026-03-29.
 
 This document describes the Nostr event schemas for video-related events as implemented in Divine.
 
@@ -90,15 +90,36 @@ Tags: Array of [tagName, tagValue, ...additionalParams]
 
 | Tag | Format | Description |
 |-----|--------|-------------|
-| `proof-verification-level` | `["proof-verification-level", "verified_mobile"]` | Verification tier: `verified_mobile`, `verified_web`, `basic_proof`, or `unverified` |
+| `verification` | `["verification", "verified_mobile"]` | Verification tier: `verified_mobile`, `verified_web`, `basic_proof`, or `unverified` |
 
 ### ProofMode Metadata
 
 | Tag | Format | Description |
 |-----|--------|-------------|
-| `proof-manifest` | `["proof-manifest", "{\"sessionId\":\"...\"}"]` | JSON manifest with frame hashes and session data |
-| `proof-device-attestation` | `["proof-device-attestation", "ATTESTATION_TOKEN"]` | Device attestation token from secure hardware |
-| `proof-pgp-fingerprint` | `["proof-pgp-fingerprint", "ABCD1234EFGH5678"]` | PGP public key fingerprint for signature verification |
+| `proofmode` | `["proofmode", "{\"videoHash\":\"...\"}"]` | JSON-serialized `NativeProofData`, including optional creator-binding and verifier identity payloads |
+| `device_attestation` | `["device_attestation", "ATTESTATION_TOKEN"]` | Device attestation token from secure hardware |
+| `pgp_fingerprint` | `["pgp_fingerprint", "ABCD1234EFGH5678"]` | PGP public key fingerprint for signature verification |
+| `c2pa_manifest_id` | `["c2pa_manifest_id", "<manifest-id>"]` | Active C2PA manifest identifier when available |
+
+### Creator Identity Hints
+
+These tags are discovery hints only. They do not replace the event pubkey as the
+source of truth for authorship.
+
+| Tag | Format | Description |
+|-----|--------|-------------|
+| `identity_binding` | `["identity_binding", "nostr_creator"]` | Signals that the media carries a user-signed Nostr creator-binding payload |
+| `identity_verifier` | `["identity_verifier", "verifier.divine.video"]` | Signals which verifier issued the optional portable identity overlay |
+| `identity_portable` | `["identity_portable", "cawg"]` | Signals that a CAWG-compatible identity overlay is present |
+
+### Nostr-First Identity Layer
+
+- Authorship remains anchored to the event pubkey and the user-signed creator
+  binding embedded in the media proof payload.
+- `verifier.divine.video` may attest only to external claims such as `nip05`,
+  domain control, and later social-handle proofs.
+- Portable CAWG identity is optional and additive. Publish remains valid when
+  only the creator binding is present.
 
 ### Verification Levels Explained
 
@@ -177,10 +198,13 @@ All tags are stored in `VideoEvent.rawTags` as a `Map<String, String>` for:
     ],
     ["t", "nature"],
     ["t", "beautiful"],
-    ["proof-verification-level", "verified_mobile"],
-    ["proof-manifest", "{\"sessionId\":\"abc123\",\"frameHashes\":[...]}"],
-    ["proof-device-attestation", "ATTESTATION_TOKEN_HERE"],
-    ["proof-pgp-fingerprint", "ABCD1234EFGH5678"]
+    ["verification", "verified_mobile"],
+    ["proofmode", "{\"videoHash\":\"abc123\",\"creatorBindingAssertionLabel\":\"video.divine.nostr.creator_binding\"}"],
+    ["device_attestation", "ATTESTATION_TOKEN_HERE"],
+    ["pgp_fingerprint", "ABCD1234EFGH5678"],
+    ["identity_binding", "nostr_creator"],
+    ["identity_verifier", "verifier.divine.video"],
+    ["identity_portable", "cawg"]
   ]
 }
 ```

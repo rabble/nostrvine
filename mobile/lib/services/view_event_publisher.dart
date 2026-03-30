@@ -118,10 +118,11 @@ class ViewEventPublisher {
 
     try {
       // Build the addressable coordinate (a tag)
-      // Format: "34236:author_pubkey:d_tag"
+      // Format: "<kind>:author_pubkey:d_tag"
       // Use event ID as fallback if vineId (d-tag) is null
       final dTag = video.vineId ?? video.id;
-      final aTag = '34236:${video.pubkey}:$dTag';
+      final aTag =
+          '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag';
 
       // Get relay hint
       String relayHint = _defaultRelayHint;
@@ -248,7 +249,8 @@ class ViewEventPublisher {
 
     try {
       final dTag = video.vineId ?? video.id;
-      final aTag = '34236:${video.pubkey}:$dTag';
+      final aTag =
+          '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag';
 
       String relayHint = _defaultRelayHint;
       if (_nostrService.connectedRelays.isNotEmpty) {

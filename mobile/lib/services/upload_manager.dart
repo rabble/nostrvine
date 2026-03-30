@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
@@ -33,6 +34,21 @@ String _getPlatformName() {
   } catch (_) {
     return 'unknown';
   }
+}
+
+/// Exception thrown when a [BlossomUploadResult] indicates failure.
+///
+/// Carries the HTTP [statusCode] so that [categorizeError] and
+/// [isRetriableError] can branch on it directly instead of parsing
+/// error-message strings.
+class BlossomUploadFailureException implements Exception {
+  const BlossomUploadFailureException(this.message, {this.statusCode});
+
+  final String message;
+  final int? statusCode;
+
+  @override
+  String toString() => message;
 }
 
 /// Upload retry configuration
@@ -107,6 +123,7 @@ class UploadManager {
   final Map<String, StreamSubscription<double>> _progressSubscriptions = {};
   final Map<String, UploadMetrics> _uploadMetrics = {};
   final Map<String, Timer> _retryTimers = {};
+  final Map<String, Future<void>> _sessionPersistFutures = {};
 
   bool _isInitialized = false;
 
@@ -173,6 +190,12 @@ class UploadManager {
 
       // Clean up old completed/published uploads to prevent accumulation
       await cleanupCompletedUploads();
+
+      // Interrupted resumable uploads are NOT auto-resumed here.
+      // The bottom sheet flow (resumePendingPublishes → BackgroundPublishBloc)
+      // lets the user decide whether to retry or save to drafts.
+      // VideoPublishService._getOrCreateUpload reuses existing PendingUpload
+      // records (and their resumable sessions) when the user taps "Try Again".
     } catch (e, stackTrace) {
       _isInitialized = false;
       _uploadsBox = null;
@@ -220,6 +243,31 @@ class UploadManager {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Finds a reusable upload for the given video file path.
+  ///
+  /// Returns the most recent upload matching [filePath] that is in a
+  /// resumable state (uploading, retrying, processing, readyToPublish,
+  /// or failed with a resumable session). Skips published, pending, and
+  /// paused uploads.
+  ///
+  /// Relies on [pendingUploads] being sorted newest-first (by
+  /// [PendingUpload.createdAt] descending) so the first match is the
+  /// most recent candidate.
+  PendingUpload? findReusableUpload(String filePath) {
+    for (final upload in pendingUploads) {
+      if (upload.localVideoPath != filePath) continue;
+      if (upload.status == UploadStatus.published) continue;
+      if (upload.status == UploadStatus.pending) continue;
+      if (upload.status == UploadStatus.paused) continue;
+      if (upload.status == UploadStatus.failed &&
+          upload.resumableSession == null) {
+        continue;
+      }
+      return upload;
+    }
+    return null;
   }
 
   /// Update an upload's status to published with Nostr event ID
@@ -625,6 +673,11 @@ class UploadManager {
       if (completedUpload == null) {
         throw Exception('Upload not found after completion: ${upload.id}');
       }
+      if (completedUpload.status == UploadStatus.failed) {
+        throw Exception(
+          completedUpload.errorMessage ?? 'Upload failed: ${upload.id}',
+        );
+      }
 
       Log.info(
         '✅ Upload completed with ID: ${upload.id}',
@@ -738,20 +791,22 @@ class UploadManager {
     try {
       await AsyncUtils.retryWithBackoff(
         operation: () async {
+          final currentUpload = getUpload(upload.id) ?? upload;
+
           // NOTE: Circuit breaker removed from upload flow - it was blocking legitimate retries
           // Uploads already have proper retry logic with exponential backoff
           // Users should be able to retry uploads even if previous attempts failed
 
           // Update status based on current retry count
-          final currentRetry = upload.retryCount ?? 0;
+          final currentRetry = currentUpload.retryCount ?? 0;
           Log.warning(
-            'Upload attempt ${currentRetry + 1}/${_retryConfig.maxRetries + 1} for ${upload.id}',
+            'Upload attempt ${currentRetry + 1}/${_retryConfig.maxRetries + 1} for ${currentUpload.id}',
             name: 'UploadManager',
             category: LogCategory.video,
           );
 
           await _updateUpload(
-            upload.copyWith(
+            currentUpload.copyWith(
               status: currentRetry == 0
                   ? UploadStatus.uploading
                   : UploadStatus.retrying,
@@ -766,19 +821,19 @@ class UploadManager {
 
           // Execute upload with timeout
           final result = await _executeUploadWithTimeout(
-            upload,
+            currentUpload,
             videoFile,
             onProgress,
           );
 
           // Success - record metrics and complete
-          await _handleUploadSuccess(upload, result);
+          await _handleUploadSuccess(currentUpload, result);
         },
         maxRetries: _retryConfig.maxRetries,
         baseDelay: _retryConfig.initialDelay,
         maxDelay: _retryConfig.maxDelay,
         backoffMultiplier: _retryConfig.backoffMultiplier,
-        retryWhen: _isRetriableError,
+        retryWhen: isRetriableError,
         debugName: 'Upload-${upload.id}',
       );
     } catch (e) {
@@ -865,6 +920,14 @@ class UploadManager {
             description: upload.description,
             hashtags: upload.hashtags,
             proofManifestJson: upload.proofManifestJson,
+            resumableSession: upload.resumableSession,
+            onResumableSessionUpdated: (session) {
+              _enqueueSessionPersist(
+                upload.id,
+                session,
+                videoFile.lengthSync(),
+              );
+            },
             onProgress: (value) {
               final progress = value * 0.8; // Reserve 20% for thumbnail
 
@@ -986,8 +1049,9 @@ class UploadManager {
         _startProcessingPoll(updatedUpload);
       }
     } else {
-      throw Exception(
-        result.errorMessage ?? 'Upload failed with unknown error',
+      throw BlossomUploadFailureException(
+        (result.errorMessage as String?) ?? 'Upload failed with unknown error',
+        statusCode: result.statusCode as int?,
       );
     }
   }
@@ -996,11 +1060,12 @@ class UploadManager {
   Future<void> _handleUploadFailure(PendingUpload upload, dynamic error) async {
     final endTime = DateTime.now();
     final metrics = _uploadMetrics[upload.id];
+    final latestUpload = getUpload(upload.id) ?? upload;
 
     // Check network connectivity and categorize error
     final connectivity = await _checkNetworkConnectivity();
-    final errorCategory = await _categorizeError(error);
-    final userMessage = _getUserFriendlyErrorMessage(
+    final errorCategory = await categorizeError(error);
+    final userMessage = getUserFriendlyErrorMessage(
       errorCategory,
       connectivity,
     );
@@ -1016,7 +1081,7 @@ class UploadManager {
       category: LogCategory.video,
     );
     Log.error(
-      'Network: ${_getNetworkTypeString(connectivity)}',
+      'Network: ${getNetworkTypeString(connectivity)}',
       name: 'UploadManager',
       category: LogCategory.video,
     );
@@ -1037,10 +1102,13 @@ class UploadManager {
 
     // Store user-friendly error message instead of raw exception
     await _updateUpload(
-      upload.copyWith(
+      latestUpload.copyWith(
         status: UploadStatus.failed,
         errorMessage: userMessage,
-        retryCount: upload.retryCount ?? 0,
+        retryCount: latestUpload.retryCount ?? 0,
+        resumableSession: _isExpiredResumableSessionError(error)
+            ? null
+            : latestUpload.resumableSession,
       ),
     );
 
@@ -1051,7 +1119,7 @@ class UploadManager {
         startTime: metrics.startTime,
         endTime: endTime,
         uploadDuration: endTime.difference(metrics.startTime),
-        retryCount: upload.retryCount ?? 0,
+        retryCount: latestUpload.retryCount ?? 0,
         fileSizeMB: metrics.fileSizeMB,
         errorCategory: errorCategory,
         wasSuccessful: false,
@@ -1059,37 +1127,109 @@ class UploadManager {
     }
   }
 
+  Future<void> _storeResumableSessionProgress(
+    String uploadId,
+    BlossomResumableUploadSession session,
+    int fileSizeBytes,
+  ) async {
+    final upload = getUpload(uploadId);
+    if (upload == null) {
+      return;
+    }
+
+    final persistedProgress = fileSizeBytes <= 0
+        ? upload.uploadProgress
+        : ((session.nextOffset / fileSizeBytes) * 0.8).clamp(0.0, 0.8);
+
+    await _updateUpload(
+      upload.copyWith(
+        resumableSession: session,
+        uploadProgress: persistedProgress,
+      ),
+    );
+  }
+
+  /// Enqueues a session persistence write so that rapid chunk callbacks
+  /// are serialized per upload, preventing interleaved Hive writes.
+  void _enqueueSessionPersist(
+    String uploadId,
+    BlossomResumableUploadSession session,
+    int fileSizeBytes,
+  ) {
+    final previous = _sessionPersistFutures[uploadId] ?? Future<void>.value();
+    _sessionPersistFutures[uploadId] = previous.then((_) async {
+      try {
+        await _storeResumableSessionProgress(uploadId, session, fileSizeBytes);
+      } catch (e, s) {
+        Log.error(
+          'Failed to persist resumable session progress for $uploadId: $e',
+          name: 'UploadManager',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: s,
+        );
+      }
+    });
+  }
+
+  bool _isExpiredResumableSessionError(dynamic error) {
+    if (error is BlossomResumableUploadException) {
+      return error.statusCode == 404 || error.statusCode == 410;
+    }
+
+    final errorMessage = error.toString().toLowerCase();
+    return errorMessage.contains('session expired') ||
+        errorMessage.contains('session is no longer available');
+  }
+
   /// Check if error is retriable
-  bool _isRetriableError(dynamic error) {
+  @visibleForTesting
+  bool isRetriableError(dynamic error) {
+    if (_isExpiredResumableSessionError(error)) {
+      return false;
+    }
+
+    // Use structured status code when available
+    if (error is BlossomUploadFailureException) {
+      final code = error.statusCode;
+      if (code != null) {
+        // 408 request timeout — retriable
+        if (code == 408) return true;
+        // 429 rate limited — retriable after backoff
+        if (code == 429) return true;
+        // Transient server errors — retriable
+        if (code == 500 || code == 502 || code == 503 || code == 504) {
+          return true;
+        }
+        // Other 5xx (501, 505, etc.) are permanent — not retriable
+        if (code >= 500) return false;
+        // 4xx client errors are not retriable
+        if (code >= 400) return false;
+      }
+    }
+
+    // Fall back to string matching for non-HTTP errors
     final errorStr = error.toString().toLowerCase();
 
     // Network and timeout errors are retriable
     if (errorStr.contains('timeout') ||
+        errorStr.contains('cannot connect') ||
+        errorStr.contains('network error') ||
         errorStr.contains('connection') ||
-        errorStr.contains('network') ||
         errorStr.contains('socket')) {
       return true;
-    }
-
-    // Server errors (5xx) are retriable
-    if (errorStr.contains('500') ||
-        errorStr.contains('502') ||
-        errorStr.contains('503') ||
-        errorStr.contains('504')) {
-      return true;
-    }
-
-    // Client errors (4xx) are generally not retriable
-    if (errorStr.contains('400') ||
-        errorStr.contains('401') ||
-        errorStr.contains('403') ||
-        errorStr.contains('404')) {
-      return false;
     }
 
     // File not found errors are not retriable
     if (errorStr.contains('file not found') ||
         errorStr.contains('does not exist')) {
+      return false;
+    }
+
+    // Authentication / permission errors are not retriable
+    if (errorStr.contains('auth') ||
+        errorStr.contains('permission') ||
+        errorStr.contains('cancelled')) {
       return false;
     }
 
@@ -1131,7 +1271,8 @@ class UploadManager {
   }
 
   /// Get human-readable network type
-  String _getNetworkTypeString(ConnectivityResult connectivity) {
+  @visibleForTesting
+  String getNetworkTypeString(ConnectivityResult connectivity) {
     switch (connectivity) {
       case ConnectivityResult.wifi:
         return 'WiFi';
@@ -1149,8 +1290,11 @@ class UploadManager {
   }
 
   /// Categorize error for monitoring with network-aware detection
-  Future<String> _categorizeError(dynamic error) async {
-    final errorStr = error.toString().toLowerCase();
+  @visibleForTesting
+  Future<String> categorizeError(dynamic error) async {
+    if (_isExpiredResumableSessionError(error)) {
+      return 'UPLOAD_SESSION_EXPIRED';
+    }
 
     // Check network connectivity for better categorization
     final connectivity = await _checkNetworkConnectivity();
@@ -1160,21 +1304,43 @@ class UploadManager {
       return 'NO_INTERNET';
     }
 
-    // Network-related errors
+    // Use structured status code when available
+    if (error is BlossomUploadFailureException) {
+      final code = error.statusCode;
+      if (code != null) {
+        if (code == 408) return 'TIMEOUT';
+        if (code == 413) return 'FILE_TOO_LARGE';
+        if (code == 429) return 'RATE_LIMITED';
+        if (code == 401 || code == 403) return 'AUTHENTICATION';
+        if (code == 502 || code == 503 || code == 504) {
+          return 'SERVER_UNAVAILABLE';
+        }
+        if (code >= 500) return 'SERVER_ERROR';
+        if (code >= 400) return 'CLIENT_ERROR';
+      }
+    }
+
+    // Fall back to string matching for non-HTTP errors
+    // (timeouts, connection errors, DNS, etc.)
+    final errorStr = error.toString().toLowerCase();
+
+    // Timeout variants from BlossomUploadService
     if (errorStr.contains('timeout')) {
-      // On cellular, timeout likely means slow connection
       if (connectivity == ConnectivityResult.mobile) {
         return 'SLOW_CONNECTION';
       }
       return 'TIMEOUT';
     }
 
-    if (errorStr.contains('network') || errorStr.contains('connection')) {
-      return 'NETWORK_ERROR';
-    }
-
     if (errorStr.contains('host') || errorStr.contains('dns')) {
       return 'DNS_ERROR';
+    }
+
+    // "Cannot connect to Blossom server" or generic "Network error:"
+    if (errorStr.contains('cannot connect') ||
+        errorStr.contains('network error') ||
+        errorStr.contains('connection')) {
+      return 'NETWORK_ERROR';
     }
 
     // File errors
@@ -1182,25 +1348,12 @@ class UploadManager {
     if (errorStr.contains('memory')) return 'OUT_OF_MEMORY';
     if (errorStr.contains('permission')) return 'PERMISSION_DENIED';
 
-    // Authentication errors
-    if (errorStr.contains('auth') || errorStr.contains('unauthorized')) {
-      return 'AUTHENTICATION';
-    }
-
-    // Server errors
-    if (errorStr.contains('5') || errorStr.contains('server error')) {
-      return 'SERVER_ERROR';
-    }
-
-    // Client errors
-    if (errorStr.contains('413')) return 'FILE_TOO_LARGE';
-    if (errorStr.contains('4')) return 'CLIENT_ERROR';
-
     return 'UNKNOWN';
   }
 
   /// Get user-friendly error message based on category
-  String _getUserFriendlyErrorMessage(
+  @visibleForTesting
+  String getUserFriendlyErrorMessage(
     String category,
     ConnectivityResult connectivity,
   ) {
@@ -1215,9 +1368,11 @@ class UploadManager {
         return 'Upload timed out. Your connection might be slow. Try again or connect to WiFi.';
 
       case 'NETWORK_ERROR':
-      case 'DNS_ERROR':
-        final networkType = _getNetworkTypeString(connectivity);
+        final networkType = getNetworkTypeString(connectivity);
         return 'Network error on $networkType. Check your connection and try again.';
+
+      case 'DNS_ERROR':
+        return 'Could not reach the upload server. Check your connection or try a different network.';
 
       case 'FILE_NOT_FOUND':
         return 'Video file not found. Please record the video again.';
@@ -1234,8 +1389,18 @@ class UploadManager {
       case 'AUTHENTICATION':
         return 'Authentication failed. Please sign in again.';
 
+      case 'UPLOAD_SESSION_EXPIRED':
+        return 'Upload session expired. Please retry the upload.';
+
+      case 'RATE_LIMITED':
+        return 'Too many uploads. Please wait a moment and try again.';
+
+      case 'SERVER_UNAVAILABLE':
+        return 'Upload server is temporarily unavailable. '
+            'It will retry automatically.';
+
       case 'SERVER_ERROR':
-        return 'Upload server is having issues. Please try again later.';
+        return 'Upload server encountered an error. Please try again later.';
 
       case 'CLIENT_ERROR':
         return 'Upload request failed. Please try again.';
@@ -1248,7 +1413,9 @@ class UploadManager {
   /// Update upload progress
   void _updateUploadProgress(String uploadId, double progress) {
     final upload = getUpload(uploadId);
-    if (upload != null && upload.status == UploadStatus.uploading) {
+    if (upload != null &&
+        (upload.status == UploadStatus.uploading ||
+            upload.status == UploadStatus.retrying)) {
       _updateUpload(upload.copyWith(uploadProgress: progress));
     }
   }
@@ -1332,7 +1499,9 @@ class UploadManager {
     // Reset to pending to restart upload from beginning
     final resumedUpload = upload.copyWith(
       status: UploadStatus.pending,
-      uploadProgress: 0, // Reset progress since we're starting over
+      uploadProgress: upload.resumableSession == null
+          ? 0
+          : upload.uploadProgress,
     );
 
     await _updateUpload(resumedUpload);
@@ -1381,6 +1550,31 @@ class UploadManager {
 
     // Start upload again and wait for completion
     await _performUpload(resetUpload);
+  }
+
+  /// Resumes a single interrupted upload.
+  ///
+  /// For uploads left in [UploadStatus.uploading] or
+  /// [UploadStatus.retrying] after an app restart. The upload's
+  /// [BlossomResumableUploadSession] (if present) is passed through to
+  /// [BlossomUploadService.uploadVideo] automatically by [_performUpload].
+  void resumeInterruptedUpload(String uploadId) {
+    final upload = getUpload(uploadId);
+    if (upload == null) return;
+    if (upload.status != UploadStatus.uploading &&
+        upload.status != UploadStatus.retrying) {
+      return;
+    }
+
+    Log.info(
+      'Resuming interrupted upload: $uploadId',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    final resumed = upload.copyWith(status: UploadStatus.uploading);
+    unawaited(_updateUpload(resumed));
+    unawaited(_performUpload(resumed));
   }
 
   /// Cancel an upload (stops the upload but keeps it for retry)
@@ -1439,6 +1633,7 @@ class UploadManager {
     // Cancel progress subscription
     _progressSubscriptions[uploadId]?.cancel();
     _progressSubscriptions.remove(uploadId);
+    _sessionPersistFutures.remove(uploadId);
 
     // Remove from storage
     await _uploadsBox?.delete(uploadId);
@@ -1955,6 +2150,7 @@ class UploadManager {
       completedAt: (isProcessing && !skipProcessing)
           ? null
           : DateTime.now(), // Mark as completed if skipping processing
+      resumableSession: null,
     );
   }
 
@@ -2048,7 +2244,7 @@ class UploadManager {
         'created_at': upload.createdAt.toIso8601String(),
         'file_exists': !kIsWeb && File(upload.localVideoPath).existsSync(),
         // Network connectivity information
-        'network_type': _getNetworkTypeString(connectivity),
+        'network_type': getNetworkTypeString(connectivity),
         'network_status': connectivity.toString(),
         'is_offline': connectivity == ConnectivityResult.none,
         'is_cellular': connectivity == ConnectivityResult.mobile,
@@ -2097,7 +2293,7 @@ Upload Failure Report:
 - Upload ID: ${upload.id}
 - Error Category: $errorCategory
 - Error: $error
-- Network: ${_getNetworkTypeString(connectivity)} (${connectivity == ConnectivityResult.none ? 'OFFLINE' : 'ONLINE'})
+- Network: ${getNetworkTypeString(connectivity)} (${connectivity == ConnectivityResult.none ? 'OFFLINE' : 'ONLINE'})
 - File: ${upload.localVideoPath}
 - File Exists: $fileExists
 - Upload Status: ${upload.status}
@@ -2362,6 +2558,9 @@ Upload Timeout Failure:
       timer.cancel();
     }
     _retryTimers.clear();
+
+    // Discard pending session persistence futures
+    _sessionPersistFutures.clear();
 
     // Cancel save queue timer
     _saveQueueTimer?.cancel();

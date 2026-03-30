@@ -41,13 +41,14 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       streamingMp4Url: fields[21] as String?,
       streamingHlsUrl: fields[22] as String?,
       fallbackUrl: fields[23] as String?,
+      resumableSession: fields[24] as BlossomResumableUploadSession?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PendingUpload obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -95,7 +96,9 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       ..writeByte(22)
       ..write(obj.streamingHlsUrl)
       ..writeByte(23)
-      ..write(obj.fallbackUrl);
+      ..write(obj.fallbackUrl)
+      ..writeByte(24)
+      ..write(obj.resumableSession);
   }
 
   @override

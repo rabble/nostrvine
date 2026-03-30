@@ -129,6 +129,7 @@ void main() {
       bool enableTapToPause = false,
       bool isActive = true,
       VoidCallback? onTap,
+      ValueChanged<TapDownDetails>? onDoubleTap,
     }) {
       return MaterialApp(
         home: Scaffold(
@@ -144,6 +145,7 @@ void main() {
               overlayBuilder: overlayBuilder,
               enableTapToPause: enableTapToPause,
               onTap: onTap,
+              onDoubleTap: onDoubleTap,
               videoBuilder: (context, videoController, player) {
                 return Container(
                   key: const Key('video_widget'),
@@ -627,6 +629,72 @@ void main() {
         expect(tapped, isTrue);
         verifyNever(() => mockController.togglePlayPause());
       });
+
+      testWidgets(
+        'gesture detector added when onDoubleTap provided',
+        (tester) async {
+          await tester.pumpWidget(buildWidget(onDoubleTap: (_) {}));
+
+          expect(find.byType(GestureDetector), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'no gesture detector when only onDoubleTap with no '
+        'videoController',
+        (tester) async {
+          // Default state has no videoController (loading)
+          indexNotifiers[0] = ValueNotifier(const VideoIndexState());
+          await tester.pumpWidget(buildWidget(onDoubleTap: (_) {}));
+
+          expect(find.byType(GestureDetector), findsNothing);
+        },
+      );
+
+      testWidgets('double tap calls onDoubleTap when provided', (
+        tester,
+      ) async {
+        TapDownDetails? receivedDetails;
+
+        await tester.pumpWidget(
+          buildWidget(onDoubleTap: (details) => receivedDetails = details),
+        );
+
+        final gesture = find.byType(GestureDetector);
+        await tester.tap(gesture);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(gesture);
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(receivedDetails, isNotNull);
+      });
+
+      testWidgets(
+        'onDoubleTap and onTap coexist on same gesture detector',
+        (tester) async {
+          var tapped = false;
+          TapDownDetails? receivedDetails;
+
+          await tester.pumpWidget(
+            buildWidget(
+              onTap: () => tapped = true,
+              onDoubleTap: (details) => receivedDetails = details,
+            ),
+          );
+
+          expect(find.byType(GestureDetector), findsOneWidget);
+
+          // Double tap should fire onDoubleTap, not onTap
+          final gesture = find.byType(GestureDetector);
+          await tester.tap(gesture);
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.tap(gesture);
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(receivedDetails, isNotNull);
+          expect(tapped, isFalse);
+        },
+      );
     });
 
     group('ValueListenableBuilder', () {

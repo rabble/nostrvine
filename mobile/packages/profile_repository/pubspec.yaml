@@ -15,10 +15,10 @@ dev_dependencies:
   very_good_analysis: ^10.0.0
 
 dependencies:
-  flutter:
-    sdk: flutter
   db_client:
   equatable: ^2.0.8
+  flutter:
+    sdk: flutter
   funnelcake_api_client:
   http: ^1.2.2
   models:

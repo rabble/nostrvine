@@ -1,16 +1,16 @@
 // ABOUTME: Three-dots more action button for video feed overlay.
-// ABOUTME: Opens unified share sheet with more actions (report, copy, etc.).
+// ABOUTME: Opens the expanded metadata bottom sheet showing video details.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 
 /// Three-dots more action button for the video overlay.
 ///
-/// Opens the unified share sheet which contains moderation and developer
-/// actions: Report, Copy Link, Share via, Event JSON, Event ID.
+/// Opens the expanded metadata sheet showing title, stats, creator, tags,
+/// collaborators, inspired-by, reposted-by, and sounds.
 class MoreActionButton extends StatelessWidget {
   const MoreActionButton({required this.video, super.key});
 
@@ -31,7 +31,7 @@ class MoreActionButton extends StatelessWidget {
             name: 'MoreActionButton',
             category: LogCategory.ui,
           );
-          ShareActionButton.showShareSheet(context, video);
+          MetadataExpandedSheet.show(context, video);
         },
         child: Container(
           width: 40,

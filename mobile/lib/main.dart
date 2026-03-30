@@ -61,6 +61,25 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
+@visibleForTesting
+bool handleKnownFrameworkError(
+  FlutterErrorDetails details, {
+  required void Function(String message) logWarning,
+  VoidCallback? clearKeyboardState,
+}) {
+  final exception = details.exception.toString();
+  if (exception.contains('KeyDownEvent') ||
+      exception.contains('HardwareKeyboard')) {
+    logWarning(
+      'Known Flutter framework keyboard issue (recovering): '
+      '${details.exception}',
+    );
+    clearKeyboardState?.call();
+    return true;
+  }
+  return false;
+}
+
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
   final startTime = DateTime.now();
@@ -413,13 +432,19 @@ Future<void> _startOpenVineApp() async {
       category: LogCategory.system,
     );
 
-    // Log the error but don't crash the app for known framework issues
-    if (details.exception.toString().contains('KeyDownEvent') ||
-        details.exception.toString().contains('HardwareKeyboard')) {
-      Log.warning(
-        'Known Flutter framework keyboard issue (ignoring): ${details.exception}',
-        name: 'Main',
-      );
+    // Recover from Flutter's known duplicate key state assertion so desktop
+    // text input continues working after logout/resume flows.
+    if (handleKnownFrameworkError(
+      details,
+      logWarning: (message) => Log.warning(message, name: 'Main'),
+      clearKeyboardState: () {
+        // Flutter does not currently expose a stable public recovery API for
+        // this duplicate-key assertion path. Keep this workaround tightly
+        // scoped to the known framework failure above.
+        // ignore: invalid_use_of_visible_for_testing_member
+        HardwareKeyboard.instance.clearState();
+      },
+    )) {
       return;
     }
 

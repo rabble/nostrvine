@@ -1896,9 +1896,10 @@ class VideoEventService extends ChangeNotifier {
     SubscriptionType subscriptionType,
     Event originalEvent,
   ) {
-    // Check if this is a replaceable event (kinds 34235, 34236 are parameterized replaceable)
+    // Check if this is a replaceable event (parameterized replaceable kinds)
     final isReplaceable =
-        originalEvent.kind == 34235 || originalEvent.kind == 34236;
+        originalEvent.kind == NIP71VideoKinds.addressableNormalVideo ||
+        originalEvent.kind == NIP71VideoKinds.addressableShortVideo;
 
     if (!isReplaceable) {
       return true; // Not replaceable, allow normal processing
@@ -5506,7 +5507,10 @@ class VideoEventService extends ChangeNotifier {
       );
 
       final directQueryEvents = await _nostrService.queryEvents([
-        Filter(kinds: [34236], limit: 100),
+        Filter(
+          kinds: const [NIP71VideoKinds.addressableShortVideo],
+          limit: 100,
+        ),
       ]);
 
       Log.warning(

@@ -49,6 +49,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     this.player,
     this.firstFrameFuture,
     this.listSources,
+    this.onContentWarningRevealed,
     super.key,
   });
 
@@ -65,6 +66,9 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   final Player? player;
   final Future<void>? firstFrameFuture;
   final Set<String>? listSources;
+
+  /// Called when the user reveals a content-warning overlay.
+  final VoidCallback? onContentWarningRevealed;
 
   @override
   ConsumerState<FeedVideoOverlay> createState() => _FeedVideoOverlayState();
@@ -100,9 +104,12 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
     if (showContentWarningOverlay && !_contentWarningRevealed) {
       return ContentWarningBlurOverlay(
         labels: overlayLabels,
-        onReveal: () => setState(() {
-          _contentWarningRevealed = true;
-        }),
+        onReveal: () {
+          setState(() {
+            _contentWarningRevealed = true;
+          });
+          widget.onContentWarningRevealed?.call();
+        },
         onHideSimilar: () {
           hideContentWarningsLikeThese(
             context: context,

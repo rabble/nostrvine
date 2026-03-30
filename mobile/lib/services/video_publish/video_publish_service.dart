@@ -2,6 +2,7 @@
 // ABOUTME: Handles video upload to Blossom servers, retry logic, and Nostr event creation
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:openvine/models/divine_video_draft.dart';
@@ -174,12 +175,14 @@ class VideoPublishService {
     }
   }
 
-  /// Gets existing upload from background ID or creates a new one.
+  /// Gets existing upload from background ID, reuses a matching upload
+  /// found by video path, or creates a new one.
   /// Returns null if upload creation fails.
   Future<PendingUpload?> _getOrCreateUpload(
     String pubkey,
     DivineVideoDraft draft,
   ) async {
+    // 1. Check in-memory ID (covers same-session retry)
     if (_backgroundUploadId != null) {
       final existingUpload = uploadManager.getUpload(_backgroundUploadId!);
       if (existingUpload != null && existingUpload.status == .readyToPublish) {
@@ -191,7 +194,85 @@ class VideoPublishService {
       }
     }
 
+    // 2. Search for reusable upload by video path (covers app restart)
+    final videoPath = await _resolveVideoPath(draft);
+    if (videoPath != null) {
+      final reusable = uploadManager.findReusableUpload(videoPath);
+      if (reusable != null) {
+        Log.info(
+          '📝 Reusing existing upload ${reusable.id} '
+          '(status: ${reusable.status})',
+          category: .video,
+        );
+        _backgroundUploadId = reusable.id;
+        return _handleReusableUpload(reusable, draft);
+      }
+    }
+
+    // 3. Nothing reusable — start fresh
     return _startNewUpload(pubkey, draft);
+  }
+
+  /// Resolves the video file path from a draft, mirroring the logic
+  /// in [UploadManager.startUploadFromDraft].
+  ///
+  /// Note: when `finalRenderedClip` is absent and the draft has multiple
+  /// clips, this returns the first source clip path. However,
+  /// [UploadManager.startUploadFromDraft] merges multiple clips into a
+  /// temp file at a different path, so [findReusableUpload] will not
+  /// match in that case. The caller falls through to a new upload, which
+  /// is the correct behavior since the merged file is ephemeral.
+  Future<String?> _resolveVideoPath(DivineVideoDraft draft) async {
+    try {
+      final rendered = draft.finalRenderedClip;
+      if (rendered != null) {
+        final path = await rendered.video.safeFilePath();
+        if (File(path).existsSync()) return path;
+      }
+      if (draft.clips.isNotEmpty) {
+        return draft.clips.first.video.safeFilePath();
+      }
+    } catch (e) {
+      Log.warning(
+        '⚠️ Could not resolve video path: $e',
+        category: .video,
+      );
+    }
+    return null;
+  }
+
+  /// Handles a reusable upload found by video path.
+  ///
+  /// Depending on the upload's current status, either returns it directly
+  /// (readyToPublish), kicks it off and polls (uploading/retrying), or
+  /// retries it (failed with resumable session).
+  Future<PendingUpload?> _handleReusableUpload(
+    PendingUpload upload,
+    DivineVideoDraft draft,
+  ) async {
+    switch (upload.status) {
+      case UploadStatus.readyToPublish:
+        return upload;
+      case UploadStatus.uploading:
+      case UploadStatus.retrying:
+        uploadManager.resumeInterruptedUpload(upload.id);
+        final ok = await _pollUploadProgress(draft.id, upload.id);
+        return ok ? uploadManager.getUpload(upload.id) : null;
+      case UploadStatus.processing:
+        final ok = await _pollUploadProgress(draft.id, upload.id);
+        return ok ? uploadManager.getUpload(upload.id) : null;
+      case UploadStatus.failed:
+        // findReusableUpload guarantees a resumable session exists.
+        // Don't await — let the retry run in the background so
+        // _pollUploadProgress can report progress to the UI.
+        unawaited(uploadManager.retryUpload(upload.id));
+        final ok = await _pollUploadProgress(draft.id, upload.id);
+        return ok ? uploadManager.getUpload(upload.id) : null;
+      case UploadStatus.pending:
+      case UploadStatus.paused:
+      case UploadStatus.published:
+        return null;
+    }
   }
 
   /// Handles an active background upload.
