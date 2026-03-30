@@ -118,7 +118,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         try {
           final videoEvents = await nostrService.queryEvents([
             nostr.Filter(
-              kinds: [NIP71VideoKinds.addressableShortVideo],
+              kinds: const [NIP71VideoKinds.addressableShortVideo],
               limit: 10,
             ),
           ]);
@@ -433,7 +433,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       // Query for video events directly from relay
       final videoEvents = await nostrService.queryEvents([
         nostr.Filter(
-          kinds: [NIP71VideoKinds.addressableShortVideo],
+          kinds: const [NIP71VideoKinds.addressableShortVideo],
           limit: 100,
         ),
       ]);

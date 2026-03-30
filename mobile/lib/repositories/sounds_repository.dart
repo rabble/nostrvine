@@ -289,7 +289,7 @@ class SoundsRepository {
       // Query for Kind 34236 video events that reference this audio event
       final result = await _nostrClient.countEvents([
         Filter(
-          kinds: [NIP71VideoKinds.addressableShortVideo],
+          kinds: const [NIP71VideoKinds.addressableShortVideo],
           e: [audioEventId], // Events referencing this audio
         ),
       ]);
@@ -332,7 +332,7 @@ class SoundsRepository {
     try {
       final events = await _nostrClient.queryEvents([
         Filter(
-          kinds: [NIP71VideoKinds.addressableShortVideo],
+          kinds: const [NIP71VideoKinds.addressableShortVideo],
           e: [audioEventId],
           limit: limit,
         ),

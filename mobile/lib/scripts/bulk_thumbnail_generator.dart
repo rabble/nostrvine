@@ -165,7 +165,7 @@ Examples:
 
       // Create filter for video events
       final filter = Filter(
-        kinds: [NIP71VideoKinds.addressableShortVideo],
+        kinds: const [NIP71VideoKinds.addressableShortVideo],
         limit: limit,
       );
 
