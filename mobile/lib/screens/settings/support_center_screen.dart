@@ -9,6 +9,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SupportCenterScreen extends ConsumerWidget {
@@ -51,6 +52,12 @@ class SupportCenterScreen extends ConsumerWidget {
                   bugReportService,
                   userPubkey,
                 ),
+              ),
+              _SupportTile(
+                icon: Icons.lightbulb,
+                title: 'Request a Feature',
+                subtitle: 'Suggest an improvement or new feature',
+                onTap: () => _showFeatureRequest(context, userPubkey),
               ),
               _SupportTile(
                 icon: Icons.save,
@@ -111,6 +118,13 @@ class SupportCenterScreen extends ConsumerWidget {
         currentScreen: 'SupportCenterScreen',
         userPubkey: userPubkey,
       ),
+    );
+  }
+
+  void _showFeatureRequest(BuildContext context, String? userPubkey) {
+    showDialog(
+      context: context,
+      builder: (context) => FeatureRequestDialog(userPubkey: userPubkey),
     );
   }
 
