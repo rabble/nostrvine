@@ -59,7 +59,6 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
 
     try {
       // Submit feature request to Zendesk
-      // Prefix subject with "feat:" for ticket categorization
       final subject = _subjectController.text.trim();
       final success = await ZendeskSupportService.createFeatureRequest(
         subject: subject,
