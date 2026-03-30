@@ -193,7 +193,7 @@ class BugReportService {
       }
 
       return url;
-    } catch (e, stackTrace) {
+    } catch (e) {
       Log.warning(
         'Failed to upload full logs to Blossom: $e',
         category: LogCategory.system,
