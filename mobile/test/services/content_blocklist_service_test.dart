@@ -438,6 +438,11 @@ void main() {
     setUp(() {
       mockNostrService = _MockNostrClient();
       mockAuthService = _MockAuthService();
+
+      // Default: relay restore returns no events (most tests don't need it)
+      when(
+        () => mockNostrService.queryEvents(any()),
+      ).thenAnswer((_) async => <Event>[]);
     });
 
     test(
@@ -570,6 +575,280 @@ void main() {
         expect(changeCount, equals(2));
 
         await controller.close();
+      },
+    );
+  });
+
+  group('ContentBlocklistService - Relay Block List Restoration', () {
+    late ContentBlocklistService service;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
+
+    const ourPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+    const blockedPubkey1 =
+        '0000000000000000000000000000000000000000000000000000000000000002';
+    const blockedPubkey2 =
+        '0000000000000000000000000000000000000000000000000000000000000003';
+
+    setUp(() {
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
+
+      when(
+        () => mockNostrService.subscribe(any()),
+      ).thenAnswer((_) => const Stream.empty());
+    });
+
+    Event makeBlockListEvent({
+      required String author,
+      required List<String> blockedPubkeys,
+      int? createdAt,
+    }) {
+      final event = Event(
+        author,
+        30000,
+        [
+          const ['d', 'block'],
+          const ['title', 'Block List'],
+          for (final pk in blockedPubkeys) ['p', pk],
+        ],
+        'Block list',
+        createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      event.id = 'relay-block-event-${blockedPubkeys.length}';
+      event.sig = 'signature';
+      return event;
+    }
+
+    test(
+      'restores blocks from relay when local blocklist is empty',
+      () async {
+        var changeCount = 0;
+        service = ContentBlocklistService(onChanged: () => changeCount++);
+
+        final relayEvent = makeBlockListEvent(
+          author: ourPubkey,
+          blockedPubkeys: [blockedPubkey1, blockedPubkey2],
+        );
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [relayEvent]);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        expect(service.isBlocked(blockedPubkey1), isTrue);
+        expect(service.isBlocked(blockedPubkey2), isTrue);
+        expect(service.totalBlockedCount, equals(2));
+        expect(changeCount, equals(1));
+      },
+    );
+
+    test(
+      'merges relay blocks with existing local blocks without duplicates',
+      () async {
+        var changeCount = 0;
+        service = ContentBlocklistService(onChanged: () => changeCount++);
+
+        // Pre-block one user locally
+        await service.blockUser(blockedPubkey1, ourPubkey: ourPubkey);
+        expect(service.totalBlockedCount, equals(1));
+        changeCount = 0; // Reset after local block
+
+        // Relay has both: the already-local one and a new one
+        final relayEvent = makeBlockListEvent(
+          author: ourPubkey,
+          blockedPubkeys: [blockedPubkey1, blockedPubkey2],
+        );
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [relayEvent]);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        expect(service.isBlocked(blockedPubkey1), isTrue);
+        expect(service.isBlocked(blockedPubkey2), isTrue);
+        expect(service.totalBlockedCount, equals(2));
+        // Only notified once for the new block, not for the duplicate
+        expect(changeCount, equals(1));
+      },
+    );
+
+    test(
+      'does not notify when relay blocks are already present locally',
+      () async {
+        var changeCount = 0;
+        service = ContentBlocklistService(onChanged: () => changeCount++);
+
+        // Pre-block both users locally
+        await service.blockUser(blockedPubkey1, ourPubkey: ourPubkey);
+        await service.blockUser(blockedPubkey2, ourPubkey: ourPubkey);
+        changeCount = 0;
+
+        // Relay has the same blocks
+        final relayEvent = makeBlockListEvent(
+          author: ourPubkey,
+          blockedPubkeys: [blockedPubkey1, blockedPubkey2],
+        );
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [relayEvent]);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        // No notification — nothing new was added
+        expect(changeCount, equals(0));
+        expect(service.totalBlockedCount, equals(2));
+      },
+    );
+
+    test(
+      'handles empty relay response gracefully',
+      () async {
+        service = ContentBlocklistService();
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        expect(service.totalBlockedCount, equals(0));
+      },
+    );
+
+    test(
+      'handles queryEvents error gracefully without breaking sync',
+      () async {
+        service = ContentBlocklistService();
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenThrow(Exception('Network error'));
+
+        // Should not throw — relay restore is best-effort
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        // Subscription should still be set up despite restore failure
+        verify(() => mockNostrService.subscribe(any())).called(1);
+        expect(service.totalBlockedCount, equals(0));
+      },
+    );
+
+    test(
+      'skips own pubkey in relay event p-tags',
+      () async {
+        service = ContentBlocklistService();
+
+        // Relay event includes our own pubkey (should be impossible but guard)
+        final relayEvent = makeBlockListEvent(
+          author: ourPubkey,
+          blockedPubkeys: [ourPubkey, blockedPubkey1],
+        );
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [relayEvent]);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        expect(service.isBlocked(blockedPubkey1), isTrue);
+        expect(service.isBlocked(ourPubkey), isFalse);
+        expect(service.totalBlockedCount, equals(1));
+      },
+    );
+
+    test(
+      'uses latest event when relay returns multiple events',
+      () async {
+        service = ContentBlocklistService();
+
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        // Older event has both users blocked
+        final olderEvent = makeBlockListEvent(
+          author: ourPubkey,
+          blockedPubkeys: [blockedPubkey1, blockedPubkey2],
+          createdAt: now - 60,
+        );
+
+        // Newer event has only one user blocked (user unblocked pubkey2)
+        final newerEvent = makeBlockListEvent(
+          author: ourPubkey,
+          blockedPubkeys: [blockedPubkey1],
+          createdAt: now,
+        );
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [olderEvent, newerEvent]);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        // Should use the newer event: only blockedPubkey1
+        expect(service.isBlocked(blockedPubkey1), isTrue);
+        expect(service.isBlocked(blockedPubkey2), isFalse);
+        expect(service.totalBlockedCount, equals(1));
+      },
+    );
+
+    test(
+      'queries relay with correct filter parameters',
+      () async {
+        service = ContentBlocklistService();
+
+        List<dynamic>? capturedFilters;
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((invocation) async {
+          capturedFilters = invocation.positionalArguments[0] as List;
+          return <Event>[];
+        });
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        expect(capturedFilters, isNotNull);
+        expect(capturedFilters!.length, equals(1));
+
+        final filter = capturedFilters![0] as Filter;
+        expect(filter.authors, equals([ourPubkey]));
+        expect(filter.kinds, equals(const [30000]));
+        expect(filter.d, equals(const ['block']));
       },
     );
   });

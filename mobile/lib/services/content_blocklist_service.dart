@@ -475,7 +475,8 @@ class ContentBlocklistService {
 
   /// Start background sync of block lists from other users (kind 30000, d=block)
   ///
-  /// Subscribes to kind 30000 events WHERE our pubkey appears in 'p' tags
+  /// First restores our own block list from relays (survives reinstalls),
+  /// then subscribes to kind 30000 events WHERE our pubkey appears in 'p' tags
   /// AND the 'd' tag is 'block'. This detects when other users block us.
   Future<void> syncBlockListsInBackground(
     NostrClient nostrService,
@@ -502,6 +503,10 @@ class ContentBlocklistService {
       category: LogCategory.system,
     );
 
+    // Restore our own block list from relays before subscribing to others.
+    // This ensures blocks survive app reinstalls (SharedPreferences wiped).
+    await _restoreOwnBlockListFromRelay(nostrService, ourPubkey);
+
     try {
       // Subscribe to kind 30000 events WHERE our pubkey is in 'p' tags
       final filter = Filter(kinds: const [30000]);
@@ -519,6 +524,92 @@ class ContentBlocklistService {
     } catch (e) {
       Log.error(
         'Failed to start block list sync: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Restore our own block list from relays.
+  ///
+  /// Fetches the user's own kind 30000 (d=block) event from relays,
+  /// extracts blocked pubkeys from 'p' tags, and merges them with
+  /// any existing local blocks. This ensures blocks survive app
+  /// reinstalls where SharedPreferences data is lost.
+  Future<void> _restoreOwnBlockListFromRelay(
+    NostrClient nostrService,
+    String ourPubkey,
+  ) async {
+    try {
+      final filter = Filter(
+        authors: [ourPubkey],
+        kinds: const [30000],
+        d: const ['block'],
+      );
+
+      final events = await nostrService.queryEvents([filter]);
+
+      if (events.isEmpty) {
+        Log.debug(
+          'No block list event found on relay for restoration',
+          name: 'ContentBlocklistService',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      // Kind 30000 is addressable — relay returns only the latest per
+      // (kind, pubkey, d-tag), but sort defensively in case of duplicates.
+      events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final latestEvent = events.first;
+
+      // Extract blocked pubkeys from 'p' tags (skip our own pubkey
+      // which should never be there, but guard anyway).
+      final relayPubkeys = <String>{};
+      for (final tag in latestEvent.tags) {
+        if (tag.isNotEmpty &&
+            tag[0] == 'p' &&
+            tag.length >= 2 &&
+            tag[1] != ourPubkey) {
+          relayPubkeys.add(tag[1]);
+        }
+      }
+
+      if (relayPubkeys.isEmpty) {
+        Log.debug(
+          'Relay block list event has no blocked pubkeys',
+          name: 'ContentBlocklistService',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      // Merge: add relay pubkeys that are not already in local blocklist.
+      final added = relayPubkeys.difference(_runtimeBlocklist);
+      if (added.isEmpty) {
+        Log.debug(
+          'Local blocklist already contains all ${relayPubkeys.length} '
+          'relay-stored blocks',
+          name: 'ContentBlocklistService',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      _runtimeBlocklist.addAll(added);
+      await _saveBlockedUsers();
+      _notifyChanged();
+
+      Log.info(
+        'Restored ${added.length} blocks from relay '
+        '(total: ${_runtimeBlocklist.length})',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      // Non-fatal: local blocks still work, relay restore is best-effort.
+      Log.warning(
+        'Failed to restore block list from relay: $e',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
