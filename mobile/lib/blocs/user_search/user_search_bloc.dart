@@ -21,6 +21,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
     required ProfileRepository profileRepository,
     this.hasVideos = true,
+    this.searchTimeout = const Duration(seconds: 20),
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
        _feedTracker = feedTracker,
@@ -38,6 +39,12 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
   /// Whether to filter results to users who have uploaded videos.
   final bool hasVideos;
+
+  /// Optional timeout for the progressive search stream.
+  ///
+  /// Set to `null` to disable the timeout entirely, which is useful in widget
+  /// tests that rely on `pumpAndSettle()` with internally created blocs.
+  final Duration? searchTimeout;
 
   Future<void> _onQueryChanged(
     UserSearchQueryChanged event,
@@ -79,15 +86,17 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     var trackedFirst = false;
 
     try {
+      final searchStream = _profileRepository.searchUsersProgressive(
+        query: query,
+        limit: _pageSize,
+        sortBy: 'followers',
+        hasVideos: hasVideos,
+      );
+
       await emit.forEach<List<UserProfile>>(
-        _profileRepository
-            .searchUsersProgressive(
-              query: query,
-              limit: _pageSize,
-              sortBy: 'followers',
-              hasVideos: hasVideos,
-            )
-            .timeout(const Duration(seconds: 20)),
+        searchTimeout == null
+            ? searchStream
+            : searchStream.timeout(searchTimeout!),
         onData: (results) {
           if (!trackedFirst && results.isNotEmpty) {
             trackedFirst = true;

@@ -17,10 +17,17 @@ import 'package:openvine/widgets/user_avatar.dart';
 /// functionality to find any Nostr user by name or npub.
 /// Returns a [ShareableUser] when a user is selected.
 class FindPeopleSheet extends ConsumerStatefulWidget {
-  const FindPeopleSheet({required this.contacts, super.key});
+  const FindPeopleSheet({
+    required this.contacts,
+    this.searchTimeout = const Duration(seconds: 20),
+    super.key,
+  });
 
   /// Pre-loaded contacts from the parent share sheet BLoC.
   final List<ShareableUser> contacts;
+
+  /// Optional timeout forwarded to the internally created [UserSearchBloc].
+  final Duration? searchTimeout;
 
   @override
   ConsumerState<FindPeopleSheet> createState() => _FindPeopleSheetState();
@@ -56,6 +63,7 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
       _searchBloc = UserSearchBloc(
         profileRepository: profileRepo,
         hasVideos: false,
+        searchTimeout: widget.searchTimeout,
       );
     }
   }
@@ -174,6 +182,23 @@ class _ResultsList extends StatelessWidget {
         bloc: searchBloc,
         builder: (context, state) {
           return switch (state.status) {
+            UserSearchStatus.loading when state.results.isNotEmpty =>
+              ListView.builder(
+                itemCount: state.results.length,
+                itemBuilder: (context, index) {
+                  final profile = state.results[index];
+                  final user = ShareableUser(
+                    pubkey: profile.pubkey,
+                    displayName: profile.bestDisplayName,
+                    picture: profile.picture,
+                  );
+                  return _UserResultTile(
+                    user: user,
+                    nip05: profile.nip05,
+                    onTap: () => onSelectUser(user),
+                  );
+                },
+              ),
             UserSearchStatus.loading => const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),

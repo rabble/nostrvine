@@ -28,8 +28,12 @@ void main() {
       ).thenAnswer((_) async => 0);
     });
 
-    UserSearchBloc createBloc() =>
-        UserSearchBloc(profileRepository: mockProfileRepository);
+    UserSearchBloc createBloc({
+      Duration? searchTimeout = const Duration(seconds: 20),
+    }) => UserSearchBloc(
+      profileRepository: mockProfileRepository,
+      searchTimeout: searchTimeout,
+    );
 
     UserProfile createTestProfile(String pubkey, String displayName) {
       return UserProfile(
@@ -383,10 +387,7 @@ void main() {
         act: (bloc) => bloc.add(const UserSearchQueryChanged('  bob  ')),
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(
-            status: UserSearchStatus.loading,
-            query: 'bob',
-          ),
+          const UserSearchState(status: UserSearchStatus.loading, query: 'bob'),
           // Stream yields empty list → searching with resultCount: 0
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
@@ -424,10 +425,7 @@ void main() {
         act: (bloc) => bloc.add(const UserSearchQueryChanged('xyz')),
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(
-            status: UserSearchStatus.loading,
-            query: 'xyz',
-          ),
+          const UserSearchState(status: UserSearchStatus.loading, query: 'xyz'),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.resultCount, 'resultCount', 0),
@@ -576,10 +574,10 @@ void main() {
             return controller.stream;
           });
         },
-        build: createBloc,
+        build: () =>
+            createBloc(searchTimeout: const Duration(milliseconds: 10)),
         act: (bloc) => bloc.add(const UserSearchQueryChanged('slow')),
-        // Wait longer than the 20 s stream timeout used in the BLoC.
-        wait: const Duration(seconds: 22),
+        wait: const Duration(milliseconds: 500),
         expect: () => [
           const UserSearchState(
             status: UserSearchStatus.loading,
@@ -645,9 +643,7 @@ void main() {
               sortBy: 'followers',
               hasVideos: true,
             ),
-          ).thenAnswer(
-            (_) => Stream.fromIterable([partial, full]),
-          );
+          ).thenAnswer((_) => Stream.fromIterable([partial, full]));
         },
         build: createBloc,
         seed: () => UserSearchState(
