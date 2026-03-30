@@ -15,7 +15,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -217,58 +216,11 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     context.push(LibraryScreen.draftsPath);
   }
 
-  void _openAnalytics() {
-    final rootContext = NavigatorKeys.root.currentContext;
-    if (rootContext != null) {
-      GoRouter.of(rootContext).pushNamed(CreatorAnalyticsScreen.routeName);
-      return;
-    }
-    context.pushNamed(CreatorAnalyticsScreen.routeName);
-  }
-
   Future<void> _more(String userIdHex) async {
     final result = await VineBottomSheet.show<String>(
       context: context,
       scrollable: false,
       children: [
-        InkWell(
-          onTap: () => Navigator.of(context).pop('edit'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  DivineIconName.pencilSimpleLineDuo.assetPath,
-                  width: 24,
-                  height: 24,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text('Edit profile', style: VineTheme.titleMediumFont()),
-              ],
-            ),
-          ),
-        ),
-        InkWell(
-          onTap: () => Navigator.of(context).pop('analytics'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.analytics_outlined,
-                  size: 24,
-                  color: VineTheme.whiteText,
-                ),
-                const SizedBox(width: 16),
-                Text('Creator analytics', style: VineTheme.titleMediumFont()),
-              ],
-            ),
-          ),
-        ),
         InkWell(
           onTap: () => Navigator.of(context).pop('share'),
           child: Padding(
@@ -332,11 +284,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (!mounted) return;
 
-    if (result == 'edit') {
-      _editProfile();
-    } else if (result == 'analytics') {
-      _openAnalytics();
-    } else if (result == 'share') {
+    if (result == 'share') {
       await _shareProfile(userIdHex);
     } else if (result == 'copy_npub') {
       await _copyNpub(userIdHex);
