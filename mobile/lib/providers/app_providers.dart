@@ -1744,7 +1744,12 @@ BugReportService bugReportService(Ref ref) {
     nostrService: nostrService,
   );
 
-  return BugReportService(nip17MessageService: nip17Service);
+  final blossomService = ref.watch(blossomUploadServiceProvider);
+
+  return BugReportService(
+    nip17MessageService: nip17Service,
+    blossomUploadService: blossomService,
+  );
 }
 
 // =============================================================================
