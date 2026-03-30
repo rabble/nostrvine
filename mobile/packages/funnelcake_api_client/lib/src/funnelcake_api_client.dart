@@ -107,9 +107,7 @@ class FunnelcakeApiClient {
   /// [pubkey] is the author's public key (hex format).
   /// [limit] is the maximum number of videos to return (defaults to 50).
   /// [offset] is an optional pagination offset.
-  ///
-  /// [before] is retained for legacy compatibility, but the live
-  /// `/api/users/{pubkey}/videos` endpoint paginates with [offset].
+  /// [before] is an optional Unix timestamp cursor for pagination.
   ///
   /// Returns a list of [VideoStats] objects.
   ///
