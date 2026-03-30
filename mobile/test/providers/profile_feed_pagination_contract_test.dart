@@ -207,7 +207,7 @@ void main() {
         });
 
         when(
-          () => mockVideoEventService.subscribeToUserVideos(userId, limit: 50),
+          () => mockVideoEventService.subscribeToUserVideos(userId),
         ).thenAnswer((_) => subscribeCompleter.future);
         when(() => mockVideoEventService.authorVideos(userId)).thenReturn([]);
 
@@ -220,7 +220,7 @@ void main() {
         expect(state.videos, isEmpty);
         expect(state.hasMoreContent, isFalse);
         verify(
-          () => mockVideoEventService.subscribeToUserVideos(userId, limit: 50),
+          () => mockVideoEventService.subscribeToUserVideos(userId),
         ).called(1);
       },
     );

@@ -1098,6 +1098,7 @@ class VideoEventService extends ChangeNotifier {
           error: error,
           stackTrace: stackTrace,
         );
+        return <String, UserProfile>{};
       }),
     );
   }
