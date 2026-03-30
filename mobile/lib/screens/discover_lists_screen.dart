@@ -14,6 +14,7 @@ import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 class DiscoverListsScreen extends ConsumerStatefulWidget {
@@ -46,11 +47,16 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
   int _autoPaginationAttempts = 0;
   static const int _maxAutoPaginationAttempts = 5;
   static const int _minListsBeforeAutoPaginate = 10;
+  late final ScrollPaginationController _paginationController;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _paginationController = ScrollPaginationController(
+      scrollController: _scrollController,
+      canLoadMore: () => !_hasReachedEnd && !_isLoadingMore,
+      onLoadMore: _loadMoreLists,
+    );
 
     // Check if we already have cached lists from provider
     // Only stream if cache is empty
@@ -66,17 +72,9 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
   void dispose() {
     _updateDebounceTimer?.cancel();
     _subscription?.cancel();
+    _paginationController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    // Load more when near bottom, but not if we already exhausted results
-    if (!_hasReachedEnd &&
-        _scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200) {
-      _loadMoreLists();
-    }
   }
 
   Future<void> _streamPublicLists({bool isRefresh = false}) async {

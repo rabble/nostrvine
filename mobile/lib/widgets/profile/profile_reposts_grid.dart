@@ -10,16 +10,49 @@ import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_b
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Grid widget displaying user's reposted videos
 ///
 /// Requires [ProfileRepostedVideosBloc] to be provided in the widget tree.
-class ProfileRepostsGrid extends StatelessWidget {
+class ProfileRepostsGrid extends StatefulWidget {
   const ProfileRepostsGrid({required this.isOwnProfile, super.key});
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  @override
+  State<ProfileRepostsGrid> createState() => _ProfileRepostsGridState();
+}
+
+class _ProfileRepostsGridState extends State<ProfileRepostsGrid> {
+  final ScrollController _scrollController = ScrollController();
+  late final ScrollPaginationController _paginationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _paginationController = ScrollPaginationController(
+      scrollController: _scrollController,
+      canLoadMore: () {
+        final bloc = context.read<ProfileRepostedVideosBloc>();
+        return bloc.state.hasMoreContent && !bloc.state.isLoadingMore;
+      },
+      onLoadMore: () {
+        context.read<ProfileRepostedVideosBloc>().add(
+          const ProfileRepostedVideosLoadMoreRequested(),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _paginationController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,64 +92,46 @@ class ProfileRepostsGrid extends StatelessWidget {
         final repostedVideos = state.videos;
 
         if (repostedVideos.isEmpty) {
-          return _RepostsEmptyState(isOwnProfile: isOwnProfile);
+          return _RepostsEmptyState(isOwnProfile: widget.isOwnProfile);
         }
 
-        return NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            // Trigger load more when near the bottom
-            if (notification is ScrollUpdateNotification) {
-              final pixels = notification.metrics.pixels;
-              final maxExtent = notification.metrics.maxScrollExtent;
-              // Load more when within 200 pixels of the bottom
-              if (pixels >= maxExtent - 200 &&
-                  state.hasMoreContent &&
-                  !state.isLoadingMore) {
-                context.read<ProfileRepostedVideosBloc>().add(
-                  const ProfileRepostedVideosLoadMoreRequested(),
-                );
-              }
-            }
-            return false;
-          },
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(2),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 2,
-                    mainAxisSpacing: 2,
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    if (index >= repostedVideos.length) {
-                      return const SizedBox.shrink();
-                    }
-
-                    final videoEvent = repostedVideos[index];
-                    return _RepostGridTile(
-                      videoEvent: videoEvent,
-                      index: index,
-                      allVideos: repostedVideos,
-                    );
-                  }, childCount: repostedVideos.length),
+        return CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(2),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 2,
+                  mainAxisSpacing: 2,
                 ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index >= repostedVideos.length) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final videoEvent = repostedVideos[index];
+                  return _RepostGridTile(
+                    videoEvent: videoEvent,
+                    index: index,
+                    allVideos: repostedVideos,
+                  );
+                }, childCount: repostedVideos.length),
               ),
-              // Loading indicator at the bottom
-              if (state.isLoadingMore)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                      ),
+            ),
+            if (state.isLoadingMore)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: VineTheme.vineGreen,
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         );
       },
     );

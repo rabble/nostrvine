@@ -18,6 +18,7 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
+import 'package:openvine/widgets/scroll_pagination_controller.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -126,37 +127,36 @@ class _NotificationTabContent extends ConsumerStatefulWidget {
 class _NotificationTabContentState
     extends ConsumerState<_NotificationTabContent> {
   final ScrollController _scrollController = ScrollController();
+  late final ScrollPaginationController _paginationController;
+  bool _canLoadMore = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _paginationController = ScrollPaginationController(
+      scrollController: _scrollController,
+      canLoadMore: () => _canLoadMore,
+      onLoadMore: () =>
+          ref.read(relayNotificationsProvider.notifier).loadMore(),
+    );
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    _paginationController.dispose();
+    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-
-    // Only trigger loadMore if scrolling is actually possible and near bottom
-    // Provider handles all state checks (hasMore, isRefreshing, isLoadingMore)
-    if (maxScroll > 0 && maxScroll - currentScroll <= 200) {
-      ref.read(relayNotificationsProvider.notifier).loadMore();
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final asyncState = ref.watch(relayNotificationsProvider);
+    final feedState = asyncState.asData?.value;
+    _canLoadMore =
+        feedState != null &&
+        feedState.hasMoreContent &&
+        !feedState.isLoadingMore &&
+        !feedState.isRefreshing;
 
     return asyncState.when(
       loading: () => const ColoredBox(
