@@ -345,6 +345,11 @@ class _ProfileScaffold extends StatelessWidget {
       appBar: DiVineAppBar(
         title: '',
         backgroundMode: DiVineAppBarBackgroundMode.transparent,
+        style: DiVineAppBarStyle.transparentStyle.copyWith(
+          iconSize: 24,
+          iconButtonSize: 40,
+          iconButtonBorderRadius: 16,
+        ),
         leadingIcon: SvgIconSource(DivineIconName.gear.assetPath),
         onLeadingPressed: () {
           Log.info(
