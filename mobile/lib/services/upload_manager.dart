@@ -111,6 +111,11 @@ class UploadManager {
   // Removed unused _uploadsBoxName constant
   static const String _uploadTargetKey = 'upload_target';
 
+  /// Maximum number of interrupted resumable uploads resumed simultaneously.
+  /// Prevents bandwidth saturation when multiple uploads were interrupted
+  /// before an app restart.
+  static const int maxConcurrentResumes = 2;
+
   // Core services
   Box<PendingUpload>? _uploadsBox;
   final BlossomUploadService _blossomService;
@@ -1575,6 +1580,44 @@ class UploadManager {
     final resumed = upload.copyWith(status: UploadStatus.uploading);
     unawaited(_updateUpload(resumed));
     unawaited(_performUpload(resumed));
+  }
+
+  /// Resumes all interrupted uploads with bounded concurrency.
+  ///
+  /// Collects every upload in [UploadStatus.uploading] or
+  /// [UploadStatus.retrying] and processes them in batches of
+  /// [maxConcurrentResumes]. Each batch runs concurrently via
+  /// [Future.wait]; the next batch starts only after the current one
+  /// completes.
+  Future<void> resumeInterruptedUploads() async {
+    final uploadsToResume = pendingUploads.where((upload) {
+      return upload.status == UploadStatus.uploading ||
+          upload.status == UploadStatus.retrying;
+    }).toList();
+
+    if (uploadsToResume.isEmpty) return;
+
+    Log.info(
+      'Resuming ${uploadsToResume.length} interrupted upload(s) '
+      '(max concurrent: $maxConcurrentResumes)',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    final total = uploadsToResume.length;
+    for (var i = 0; i < total; i += maxConcurrentResumes) {
+      final batch = uploadsToResume.sublist(
+        i,
+        (i + maxConcurrentResumes).clamp(0, total),
+      );
+      await Future.wait(
+        batch.map((upload) async {
+          final resumed = upload.copyWith(status: UploadStatus.uploading);
+          await _updateUpload(resumed);
+          await _performUpload(resumed);
+        }),
+      );
+    }
   }
 
   /// Cancel an upload (stops the upload but keeps it for retry)

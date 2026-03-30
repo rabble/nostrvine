@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -248,12 +249,14 @@ void main() {
           return uploadCompleter.future;
         });
 
-        unawaited(
-          uploadManager.startUpload(
-            videoFile: videoFile,
-            nostrPubkey: 'test-pubkey',
-            title: 'Serialization test',
-          ),
+        // Start the upload — startUpload blocks until the upload completes,
+        // but we need to interact with the callback mid-upload so we don't
+        // await yet. We await uploadFuture at the end so the full
+        // post-upload logic finishes before tearDown disposes the manager.
+        final uploadFuture = uploadManager.startUpload(
+          videoFile: videoFile,
+          nostrPubkey: 'test-pubkey',
+          title: 'Serialization test',
         );
 
         await TestHelpers.waitForCondition(
@@ -296,6 +299,8 @@ void main() {
         );
         expect(persisted.uploadProgress, closeTo(expectedProgress, 0.001));
 
+        // Complete the upload future and await the full startUpload so
+        // post-upload logic finishes before tearDown disposes the manager.
         uploadCompleter.complete(
           const BlossomUploadResult(
             success: true,
@@ -304,6 +309,7 @@ void main() {
             fallbackUrl: 'https://media.divine.video/video-serial',
           ),
         );
+        await uploadFuture;
       },
     );
 
@@ -400,6 +406,274 @@ void main() {
             onProgress: any(named: 'onProgress'),
           ),
         );
+      },
+    );
+  });
+
+  group('UploadManager resumeInterruptedUploads (bounded)', () {
+    late _MockBlossomUploadService mockBlossomService;
+    late UploadManager uploadManager;
+    late Directory tempDir;
+
+    setUp(() async {
+      await TestHelpers.cleanupHiveBox('pending_uploads');
+      SharedPreferences.setMockInitialValues({});
+
+      tempDir = await Directory.systemTemp.createTemp(
+        'upload_manager_bounded_resume_',
+      );
+
+      mockBlossomService = _MockBlossomUploadService();
+      when(() => mockBlossomService.isBlossomEnabled()).thenAnswer(
+        (_) async => false,
+      );
+
+      uploadManager = UploadManager(blossomService: mockBlossomService);
+      await uploadManager.initialize();
+      await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
+    });
+
+    tearDown(() async {
+      uploadManager.dispose();
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    test(
+      'resumes at most ${UploadManager.maxConcurrentResumes} uploads '
+      'concurrently',
+      () async {
+        const uploadCount = 4;
+
+        // Seed interrupted resumable uploads.
+        final box = Hive.box<PendingUpload>('pending_uploads');
+        for (var i = 0; i < uploadCount; i++) {
+          final file = File('${tempDir.path}/video_$i.mp4')
+            ..writeAsBytesSync(
+              List<int>.generate(32, (index) => index),
+            );
+          final upload =
+              PendingUpload.create(
+                localVideoPath: file.path,
+                nostrPubkey: 'test-pubkey',
+                title: 'Video $i',
+              ).copyWith(
+                status: UploadStatus.uploading,
+                uploadProgress: 0.1 * i,
+                resumableSession: BlossomResumableUploadSession(
+                  uploadId: 'up_$i',
+                  uploadUrl: 'https://upload.divine.video/sessions/up_$i',
+                  chunkSize: 8,
+                  nextOffset: 8,
+                ),
+              );
+          await box.put(upload.id, upload);
+        }
+
+        // Track concurrent calls.
+        var concurrent = 0;
+        var maxConcurrent = 0;
+        final allStarted = List.generate(
+          uploadCount,
+          (_) => Completer<void>(),
+        );
+        final gates = List.generate(
+          uploadCount,
+          (_) => Completer<void>(),
+        );
+
+        var callIndex = 0;
+        when(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(
+              named: 'onResumableSessionUpdated',
+            ),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((_) async {
+          final idx = callIndex++;
+          concurrent++;
+          maxConcurrent = math.max(maxConcurrent, concurrent);
+          allStarted[idx].complete();
+
+          // Wait until the test releases this upload.
+          await gates[idx].future;
+          concurrent--;
+
+          return const BlossomUploadResult(
+            success: true,
+            videoId: 'vid',
+            url: 'https://media.divine.video/vid',
+            fallbackUrl: 'https://media.divine.video/vid',
+          );
+        });
+
+        // Fire the bounded resume without awaiting yet.
+        final resumeFuture = uploadManager.resumeInterruptedUploads();
+
+        // Wait for the first batch to enter uploadVideo.
+        await TestHelpers.waitForCondition(
+          () => allStarted[0].isCompleted && allStarted[1].isCompleted,
+          timeout: const Duration(seconds: 2),
+          checkInterval: const Duration(milliseconds: 20),
+        );
+
+        // Give a short window — the 3rd upload must NOT have started.
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(concurrent, equals(2));
+        expect(callIndex, equals(2));
+
+        // Release the first batch.
+        gates[0].complete();
+        gates[1].complete();
+
+        // The second batch should now start.
+        await TestHelpers.waitForCondition(
+          () => allStarted[2].isCompleted && allStarted[3].isCompleted,
+          timeout: const Duration(seconds: 2),
+          checkInterval: const Duration(milliseconds: 20),
+        );
+
+        // Release the second batch.
+        gates[2].complete();
+        gates[3].complete();
+
+        await resumeFuture;
+
+        expect(maxConcurrent, equals(UploadManager.maxConcurrentResumes));
+        verify(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(
+              named: 'onResumableSessionUpdated',
+            ),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).called(uploadCount);
+      },
+    );
+
+    test(
+      'does not error when there are no interrupted uploads',
+      () async {
+        // Box is empty from setUp — should be a no-op.
+        await uploadManager.resumeInterruptedUploads();
+
+        verifyNever(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(
+              named: 'onResumableSessionUpdated',
+            ),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'skips uploads that are not in uploading or retrying status',
+      () async {
+        final box = Hive.box<PendingUpload>('pending_uploads');
+
+        // Seed one interrupted + one pending + one failed.
+        final interruptedFile = File('${tempDir.path}/interrupted.mp4')
+          ..writeAsBytesSync(List<int>.generate(32, (i) => i));
+        final interrupted =
+            PendingUpload.create(
+              localVideoPath: interruptedFile.path,
+              nostrPubkey: 'test-pubkey',
+              title: 'Interrupted',
+            ).copyWith(
+              status: UploadStatus.uploading,
+              resumableSession: const BlossomResumableUploadSession(
+                uploadId: 'up_int',
+                uploadUrl: 'https://upload.divine.video/sessions/up_int',
+                chunkSize: 8,
+                nextOffset: 8,
+              ),
+            );
+        await box.put(interrupted.id, interrupted);
+
+        final pendingFile = File('${tempDir.path}/pending.mp4')
+          ..writeAsBytesSync(List<int>.generate(32, (i) => i));
+        final pending = PendingUpload.create(
+          localVideoPath: pendingFile.path,
+          nostrPubkey: 'test-pubkey',
+          title: 'Pending',
+        ).copyWith(status: UploadStatus.pending);
+        await box.put(pending.id, pending);
+
+        final failedFile = File('${tempDir.path}/failed.mp4')
+          ..writeAsBytesSync(List<int>.generate(32, (i) => i));
+        final failed = PendingUpload.create(
+          localVideoPath: failedFile.path,
+          nostrPubkey: 'test-pubkey',
+          title: 'Failed',
+        ).copyWith(status: UploadStatus.failed);
+        await box.put(failed.id, failed);
+
+        when(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(
+              named: 'onResumableSessionUpdated',
+            ),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (_) async => const BlossomUploadResult(
+            success: true,
+            videoId: 'vid',
+            url: 'https://media.divine.video/vid',
+            fallbackUrl: 'https://media.divine.video/vid',
+          ),
+        );
+
+        await uploadManager.resumeInterruptedUploads();
+
+        // Only the interrupted upload should have been resumed.
+        verify(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(
+              named: 'onResumableSessionUpdated',
+            ),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).called(1);
       },
     );
   });
