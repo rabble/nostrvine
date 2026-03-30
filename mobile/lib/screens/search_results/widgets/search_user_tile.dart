@@ -44,12 +44,13 @@ class SearchUserTile extends ConsumerWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
+            spacing: 12,
             children: [
               UserAvatar(imageUrl: profile.picture, size: 48),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 2,
                   children: [
                     Text(
                       profile.bestDisplayName,
@@ -60,38 +61,29 @@ class SearchUserTile extends ConsumerWidget {
                       ),
                     ),
                     if (showVerifiedNip05 && claimedNip05 != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          claimedNip05,
-                          style: const TextStyle(
-                            color: VineTheme.vineGreen,
-                            fontSize: 13,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        claimedNip05,
+                        style: const TextStyle(
+                          color: VineTheme.vineGreen,
+                          fontSize: 13,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     if (followerCount != null || videoCount != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: _ProfileStats(
-                          followerCount: followerCount,
-                          videoCount: videoCount,
-                        ),
+                      _ProfileStats(
+                        followerCount: followerCount,
+                        videoCount: videoCount,
                       ),
                     if (profile.about != null && profile.about!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          profile.about!,
-                          style: const TextStyle(
-                            color: VineTheme.secondaryText,
-                            fontSize: 14,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        profile.about!,
+                        style: const TextStyle(
+                          color: VineTheme.secondaryText,
+                          fontSize: 14,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                   ],
                 ),

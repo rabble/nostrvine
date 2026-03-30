@@ -72,7 +72,13 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
         child: Row(
           spacing: 8,
           children: [
-            _BackButton(onTap: () => Navigator.of(context).maybePop()),
+            DivineIconButton(
+              icon: DivineIconName.caretLeft,
+              type: DivineIconButtonType.secondary,
+              size: DivineIconButtonSize.small,
+              onPressed: () => Navigator.of(context).maybePop(),
+              semanticLabel: 'Back',
+            ),
             Expanded(
               child: DivineSearchBar(
                 controller: _controller,
@@ -81,31 +87,6 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: VineTheme.outlineMuted, width: 2),
-        ),
-        child: const DivineIcon(
-          icon: DivineIconName.caretLeft,
-          color: VineTheme.whiteText,
         ),
       ),
     );
