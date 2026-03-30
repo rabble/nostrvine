@@ -1040,6 +1040,122 @@ void main() {
       );
 
       test(
+        'falls back to legacy PUT when Divine resumable init fails after transient probe failure',
+        () async {
+          const testPublicKey =
+              '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => Event(
+              testPublicKey,
+              24242,
+              const [],
+              'Upload video to Blossom server',
+            ),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'blossom_divine_resumable_init_fallback_test_',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4')
+            ..writeAsBytesSync(List<int>.generate(5, (index) => index + 1));
+
+          when(
+            () => mockDio.head(any(), options: any(named: 'options')),
+          ).thenThrow(
+            DioException(
+              requestOptions: RequestOptions(path: '/upload'),
+              type: DioExceptionType.connectionTimeout,
+              error: 'timed out',
+            ),
+          );
+
+          when(
+            () => mockDio.post(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+
+            if (url == 'https://media.divine.video/upload/init') {
+              throw DioException(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                type: DioExceptionType.connectionError,
+                error: 'upstream offline',
+              );
+            }
+
+            throw StateError('Unexpected POST url: $url');
+          });
+
+          when(
+            () => mockDio.put(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+
+            if (url == 'https://media.divine.video/upload') {
+              return Response(
+                requestOptions: RequestOptions(path: '/upload'),
+                statusCode: 200,
+                data: {
+                  'url': 'https://media.divine.video/final',
+                  'fallbackUrl': 'https://media.divine.video/final',
+                },
+              );
+            }
+
+            throw StateError('Unexpected PUT url: $url');
+          });
+
+          final result = await service.uploadVideo(
+            videoFile: videoFile,
+            nostrPubkey: testPublicKey,
+            title: 'Divine Resumable Fallback Video',
+            description: null,
+            hashtags: null,
+            proofManifestJson: null,
+          );
+
+          expect(result.success, isTrue);
+
+          verify(
+            () => mockDio.post(
+              'https://media.divine.video/upload/init',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).called(1);
+          verify(
+            () => mockDio.put(
+              'https://media.divine.video/upload',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).called(1);
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
         'should send PUT request with raw bytes and NIP-98 auth header',
         () async {
           // Arrange

@@ -346,6 +346,33 @@ class BlossomUploadService {
     return host == 'divine.video' || host.endsWith('.divine.video');
   }
 
+  Future<BlossomUploadResult> _uploadToServerLegacyFallback({
+    required String serverUrl,
+    required File file,
+    required String fileHash,
+    required int fileSize,
+    required String contentType,
+    required String fallbackReason,
+    String? proofManifestJson,
+    void Function(double)? onProgress,
+  }) async {
+    Log.warning(
+      'Falling back to legacy upload for $serverUrl after resumable failure: $fallbackReason',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
+    );
+
+    return _uploadToServer(
+      serverUrl: serverUrl,
+      file: file,
+      fileHash: fileHash,
+      fileSize: fileSize,
+      contentType: contentType,
+      proofManifestJson: proofManifestJson,
+      onProgress: onProgress,
+    );
+  }
+
   Map<String, String>? _parseRequiredHeaders(dynamic headersData) {
     if (headersData is! Map) {
       return null;
@@ -1093,27 +1120,61 @@ class BlossomUploadService {
             );
           }
 
-          final result = useResumable
-              ? await _uploadToServerResumable(
-                  serverUrl: serverUrl,
-                  file: videoFile,
-                  fileHash: fileHash,
-                  fileSize: fileSize,
-                  contentType: 'video/mp4',
-                  proofManifestJson: proofManifestJson,
-                  resumableSession: resumableSession,
-                  onProgress: onProgress,
-                  onResumableSessionUpdated: onResumableSessionUpdated,
-                )
-              : await _uploadToServer(
-                  serverUrl: serverUrl,
-                  file: videoFile,
-                  fileHash: fileHash,
-                  fileSize: fileSize,
-                  contentType: 'video/mp4',
-                  proofManifestJson: proofManifestJson,
-                  onProgress: onProgress,
-                );
+          late BlossomUploadResult result;
+          if (useResumable) {
+            try {
+              result = await _uploadToServerResumable(
+                serverUrl: serverUrl,
+                file: videoFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: 'video/mp4',
+                proofManifestJson: proofManifestJson,
+                resumableSession: resumableSession,
+                onProgress: onProgress,
+                onResumableSessionUpdated: onResumableSessionUpdated,
+              );
+            } catch (error) {
+              if (!_isDivineOwnedUploadHost(serverUrl)) {
+                rethrow;
+              }
+
+              result = await _uploadToServerLegacyFallback(
+                serverUrl: serverUrl,
+                file: videoFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: 'video/mp4',
+                proofManifestJson: proofManifestJson,
+                onProgress: onProgress,
+                fallbackReason: error.toString(),
+              );
+            }
+
+            if (!result.success && _isDivineOwnedUploadHost(serverUrl)) {
+              result = await _uploadToServerLegacyFallback(
+                serverUrl: serverUrl,
+                file: videoFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: 'video/mp4',
+                proofManifestJson: proofManifestJson,
+                onProgress: onProgress,
+                fallbackReason:
+                    result.errorMessage ?? 'unknown resumable failure',
+              );
+            }
+          } else {
+            result = await _uploadToServer(
+              serverUrl: serverUrl,
+              file: videoFile,
+              fileHash: fileHash,
+              fileSize: fileSize,
+              contentType: 'video/mp4',
+              proofManifestJson: proofManifestJson,
+              onProgress: onProgress,
+            );
+          }
 
           if (result.success) {
             // Construct the canonical Blossom URL from server + hash
