@@ -311,7 +311,8 @@ void main() {
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
-        'emits user-friendly error on $SessionExpiredException',
+        'emits error then navigates to login options on '
+        '$SessionExpiredException',
         setUp: () {
           when(
             () => mockAuthService.signInForAccount(any(), any()),
@@ -334,7 +335,19 @@ void main() {
             previousAccounts: [_testPreviousAccount],
             error: 'Your session has expired. Please sign in again.',
           ),
+          const WelcomeState(
+            status: WelcomeStatus.navigatingToLoginOptions,
+            previousAccounts: [_testPreviousAccount],
+            error: 'Your session has expired. Please sign in again.',
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [_testPreviousAccount],
+          ),
         ],
+        verify: (_) {
+          verify(() => mockAuthService.acceptTerms()).called(1);
+        },
       );
     });
 

@@ -1,5 +1,7 @@
 // ABOUTME: BLoC for searching user profiles via ProfileRepository.
 
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +21,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
     required ProfileRepository profileRepository,
     this.hasVideos = true,
+    this.searchTimeout = const Duration(seconds: 20),
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
        _feedTracker = feedTracker,
@@ -36,6 +39,12 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
   /// Whether to filter results to users who have uploaded videos.
   final bool hasVideos;
+
+  /// Optional timeout for the progressive search stream.
+  ///
+  /// Set to `null` to disable the timeout entirely, which is useful in widget
+  /// tests that rely on `pumpAndSettle()` with internally created blocs.
+  final Duration? searchTimeout;
 
   Future<void> _onQueryChanged(
     UserSearchQueryChanged event,
@@ -77,13 +86,17 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     var trackedFirst = false;
 
     try {
+      final searchStream = _profileRepository.searchUsersProgressive(
+        query: query,
+        limit: _pageSize,
+        sortBy: 'followers',
+        hasVideos: hasVideos,
+      );
+
       await emit.forEach<List<UserProfile>>(
-        _profileRepository.searchUsersProgressive(
-          query: query,
-          limit: _pageSize,
-          sortBy: 'followers',
-          hasVideos: hasVideos,
-        ),
+        searchTimeout == null
+            ? searchStream
+            : searchStream.timeout(searchTimeout!),
         onData: (results) {
           if (!trackedFirst && results.isNotEmpty) {
             trackedFirst = true;
@@ -110,6 +123,17 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       );
 
       _feedTracker?.markFeedDisplayed('user_search', state.results.length);
+    } on TimeoutException {
+      // Stream timed out — emit success with whatever results accumulated
+      // so far rather than leaving the UI stuck in loading.
+      emit(
+        state.copyWith(
+          status: UserSearchStatus.success,
+          offset: state.results.length,
+          hasMore: false,
+          isLoadingMore: false,
+        ),
+      );
     } on Exception catch (e) {
       _feedTracker?.trackFeedError(
         'user_search',

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for UserSearchBloc - user search via ProfileRepository
 // ABOUTME: Tests streaming states, error handling, debouncing, and pagination
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -26,8 +28,12 @@ void main() {
       ).thenAnswer((_) async => 0);
     });
 
-    UserSearchBloc createBloc() =>
-        UserSearchBloc(profileRepository: mockProfileRepository);
+    UserSearchBloc createBloc({
+      Duration? searchTimeout = const Duration(seconds: 20),
+    }) => UserSearchBloc(
+      profileRepository: mockProfileRepository,
+      searchTimeout: searchTimeout,
+    );
 
     UserProfile createTestProfile(String pubkey, String displayName) {
       return UserProfile(
@@ -381,10 +387,7 @@ void main() {
         act: (bloc) => bloc.add(const UserSearchQueryChanged('  bob  ')),
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(
-            status: UserSearchStatus.loading,
-            query: 'bob',
-          ),
+          const UserSearchState(status: UserSearchStatus.loading, query: 'bob'),
           // Stream yields empty list → searching with resultCount: 0
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
@@ -422,10 +425,7 @@ void main() {
         act: (bloc) => bloc.add(const UserSearchQueryChanged('xyz')),
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(
-            status: UserSearchStatus.loading,
-            query: 'xyz',
-          ),
+          const UserSearchState(status: UserSearchStatus.loading, query: 'xyz'),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.resultCount, 'resultCount', 0),
@@ -556,6 +556,43 @@ void main() {
               .having((s) => s.results.length, 'results.length', 2),
         ],
       );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'emits success with partial results when stream times out',
+        setUp: () {
+          final controller = StreamController<List<UserProfile>>();
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'slow',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) {
+            // Emit one batch then stall (never close the stream).
+            controller.add([createTestProfile('a' * 64, 'Slow User')]);
+            return controller.stream;
+          });
+        },
+        build: () =>
+            createBloc(searchTimeout: const Duration(milliseconds: 10)),
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('slow')),
+        wait: const Duration(milliseconds: 500),
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'slow',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.results.length, 'results.length', 1),
+          // Timeout fires → success with accumulated results
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results.length, 'results.length', 1)
+              .having((s) => s.hasMore, 'hasMore', false),
+        ],
+      );
     });
 
     group('UserSearchLoadMore', () {
@@ -606,9 +643,7 @@ void main() {
               sortBy: 'followers',
               hasVideos: true,
             ),
-          ).thenAnswer(
-            (_) => Stream.fromIterable([partial, full]),
-          );
+          ).thenAnswer((_) => Stream.fromIterable([partial, full]));
         },
         build: createBloc,
         seed: () => UserSearchState(

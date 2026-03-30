@@ -21,13 +21,15 @@ import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.
 /// Expanded metadata bottom sheet for a video.
 ///
 /// Opened by the three-dot "more" button on the video overlay action column.
-/// Uses [showVideoPausingVineBottomSheet] so video playback pauses while open.
+/// Uses [showVideoPausingVineBottomSheet] with `showHeader: false` so the
+/// title scrolls with the content rather than being pinned in a header bar.
 ///
 /// All data is read-only from [VideoEvent] and the existing
 /// [VideoInteractionsBloc] in the widget tree — no new BLoC is created.
 ///
 /// Matches Figma node `12345:71362` ("metadata-expanded").
 class MetadataExpandedSheet extends StatelessWidget {
+  @visibleForTesting
   const MetadataExpandedSheet({required this.video, super.key});
 
   final VideoEvent video;
@@ -46,7 +48,9 @@ class MetadataExpandedSheet extends StatelessWidget {
     final videoEventService = container.read(videoEventServiceProvider);
 
     context.showVideoPausingVineBottomSheet<void>(
-      builder: (context) => MultiBlocProvider(
+      showHeader: false,
+      initialChildSize: 0.7,
+      buildScrollBody: (scrollController) => MultiBlocProvider(
         providers: [
           BlocProvider<VideoInteractionsBloc>.value(
             value: interactionsBloc,
@@ -58,68 +62,52 @@ class MetadataExpandedSheet extends StatelessWidget {
             ),
           ),
         ],
-        child: MetadataExpandedSheet(video: video),
+        child: _MetadataContent(
+          video: video,
+          scrollController: scrollController,
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: VineTheme.surfaceBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          child: Column(
-            children: [
-              const _DragHandle(),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.paddingOf(context).bottom + 16,
-                  ),
-                  children: [
-                    _TitleSection(video: video),
-                    MetadataBadgesRow(video: video),
-                    MetadataStatsRow(video: video),
-                    MetadataVerificationSection(video: video),
-                    MetadataCreatorSection(pubkey: video.pubkey),
-                    MetadataTagsSection(video: video),
-                    MetadataCollaboratorsSection(
-                      collaboratorPubkeys: video.collaboratorPubkeys,
-                    ),
-                    MetadataInspiredBySection(video: video),
-                    MetadataRepostedBySection(video: video),
-                    MetadataSoundsSection(video: video),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    return _MetadataContent(video: video);
   }
 }
 
-/// Drag handle indicator at the top of the sheet.
+/// Scrollable content for the metadata sheet.
 ///
-/// Wraps the shared [VineBottomSheetDragHandle] with the padding specified
-/// in the Figma spec (8px top, 20px bottom).
-class _DragHandle extends StatelessWidget {
-  const _DragHandle();
+/// When used inside [MetadataExpandedSheet.show], receives a
+/// [scrollController] from [VineBottomSheet]'s [DraggableScrollableSheet].
+/// When used directly in tests, scrolls freely without a controller.
+class _MetadataContent extends StatelessWidget {
+  const _MetadataContent({required this.video, this.scrollController});
+
+  final VideoEvent video;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 8, bottom: 20),
-      child: Center(child: VineBottomSheetDragHandle()),
+    return ListView(
+      controller: scrollController,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.paddingOf(context).bottom + 16,
+      ),
+      children: [
+        _TitleSection(video: video),
+        MetadataBadgesRow(video: video),
+        MetadataStatsRow(video: video),
+        MetadataVerificationSection(video: video),
+        MetadataCreatorSection(pubkey: video.pubkey),
+        MetadataTagsSection(video: video),
+        MetadataCollaboratorsSection(
+          collaboratorPubkeys: video.collaboratorPubkeys,
+        ),
+        MetadataInspiredBySection(video: video),
+        MetadataRepostedBySection(video: video),
+        MetadataSoundsSection(video: video),
+      ],
     );
   }
 }

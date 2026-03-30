@@ -25,7 +25,10 @@ void main() {
       mockProfileRepo = _MockProfileRepository();
     });
 
-    Widget createTestWidget({List<ShareableUser> contacts = const []}) {
+    Widget createTestWidget({
+      List<ShareableUser> contacts = const [],
+      Duration? searchTimeout = const Duration(seconds: 20),
+    }) {
       return testMaterialApp(
         home: Builder(
           builder: (context) {
@@ -37,7 +40,10 @@ void main() {
                     isScrollControlled: true,
                     useSafeArea: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => FindPeopleSheet(contacts: contacts),
+                    builder: (context) => FindPeopleSheet(
+                      contacts: contacts,
+                      searchTimeout: searchTimeout,
+                    ),
                   );
                 },
                 child: const Text('Open Sheet'),
@@ -52,7 +58,7 @@ void main() {
     }
 
     Future<void> openSheet(WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget());
+      await tester.pumpWidget(createTestWidget(searchTimeout: null));
       await tester.tap(find.text('Open Sheet'));
       await tester.pumpAndSettle();
     }
@@ -86,7 +92,9 @@ void main() {
         final pubkey = 'a' * 64;
         final contacts = [ShareableUser(pubkey: pubkey, displayName: 'Alice')];
 
-        await tester.pumpWidget(createTestWidget(contacts: contacts));
+        await tester.pumpWidget(
+          createTestWidget(contacts: contacts, searchTimeout: null),
+        );
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 

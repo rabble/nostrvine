@@ -258,44 +258,47 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
 
                 // Email + Password wrapped for password manager autofill.
                 AutofillGroup(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 16,
-                    children: [
-                      // Email field
-                      DivineAuthTextField(
-                        controller: _emailController,
-                        focusNode: _emailFocusNode,
-                        label: 'Email',
-                        keyboardType: TextInputType.emailAddress,
-                        autofillHints: const [AutofillHints.email],
-                        textInputAction: .next,
-                        errorText: widget.state.emailError,
-                        enabled: !isDisabled,
-                        autocorrect: false,
-                        onChanged: (value) =>
-                            context.read<DivineAuthCubit>().updateEmail(value),
-                        onSubmitted: (_) => _passwordFocusNode.requestFocus(),
-                      ),
+                  child: Form(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 16,
+                      children: [
+                        // Email field
+                        DivineAuthTextField(
+                          controller: _emailController,
+                          focusNode: _emailFocusNode,
+                          label: 'Email',
+                          keyboardType: TextInputType.emailAddress,
+                          autofillHints: const [AutofillHints.email],
+                          textInputAction: .next,
+                          errorText: widget.state.emailError,
+                          enabled: !isDisabled,
+                          autocorrect: false,
+                          onChanged: (value) => context
+                              .read<DivineAuthCubit>()
+                              .updateEmail(value),
+                          onSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                        ),
 
-                      // Password field
-                      DivineAuthTextField(
-                        controller: _passwordController,
-                        focusNode: _passwordFocusNode,
-                        label: 'Password',
-                        obscureText: true,
-                        autofillHints: const [AutofillHints.password],
-                        textInputAction: .done,
-                        errorText: widget.state.passwordError,
-                        enabled: !isDisabled,
-                        onChanged: (value) => context
-                            .read<DivineAuthCubit>()
-                            .updatePassword(value),
-                        onSubmitted: isDisabled
-                            ? null
-                            : (_) => context.read<DivineAuthCubit>().submit(),
-                      ),
-                    ],
+                        // Password field
+                        DivineAuthTextField(
+                          controller: _passwordController,
+                          focusNode: _passwordFocusNode,
+                          label: 'Password',
+                          obscureText: true,
+                          autofillHints: const [AutofillHints.password],
+                          textInputAction: .done,
+                          errorText: widget.state.passwordError,
+                          enabled: !isDisabled,
+                          onChanged: (value) => context
+                              .read<DivineAuthCubit>()
+                              .updatePassword(value),
+                          onSubmitted: isDisabled
+                              ? null
+                              : (_) => context.read<DivineAuthCubit>().submit(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 

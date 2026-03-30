@@ -761,6 +761,8 @@ class VideoEventPublisher {
               );
             }
 
+            _addIdentityDiscoveryTags(tags, nativeProof);
+
             Log.info(
               '✅ ProofMode verification tags added successfully',
               name: 'VideoEventPublisher',
@@ -1305,6 +1307,58 @@ class VideoEventPublisher {
   static bool _isHttpUrl(String? url) {
     if (url == null || url.isEmpty) return false;
     return url.startsWith('http://') || url.startsWith('https://');
+  }
+
+  void _addIdentityDiscoveryTags(
+    List<List<String>> tags,
+    NativeProofData nativeProof,
+  ) {
+    if (_hasCreatorBinding(nativeProof)) {
+      tags.add(['identity_binding', 'nostr_creator']);
+    }
+
+    if (_hasPortableIdentity(nativeProof)) {
+      tags.add(['identity_portable', 'cawg']);
+    }
+
+    final verifier = _extractIdentityVerifier(
+      nativeProof.verifiedIdentityBundleJson,
+    );
+    if (verifier != null && verifier.isNotEmpty) {
+      tags.add(['identity_verifier', verifier]);
+    }
+  }
+
+  bool _hasCreatorBinding(NativeProofData nativeProof) {
+    return (nativeProof.creatorBindingAssertionLabel?.isNotEmpty ?? false) ||
+        (nativeProof.creatorBindingPayloadJson?.isNotEmpty ?? false);
+  }
+
+  bool _hasPortableIdentity(NativeProofData nativeProof) {
+    return nativeProof.cawgIdentityAssertionLabel == 'cawg.identity' ||
+        (nativeProof.verifiedIdentityBundleJson?.isNotEmpty ?? false);
+  }
+
+  String? _extractIdentityVerifier(String? verifiedIdentityBundleJson) {
+    if (verifiedIdentityBundleJson == null ||
+        verifiedIdentityBundleJson.isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(verifiedIdentityBundleJson);
+      if (decoded is Map) {
+        return decoded['issuer']?.toString();
+      }
+    } catch (error) {
+      Log.warning(
+        'Failed to parse verifier identity bundle: $error',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+    }
+
+    return null;
   }
 
   void dispose() {

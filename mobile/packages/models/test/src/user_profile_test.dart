@@ -839,6 +839,79 @@ void main() {
       });
     });
 
+    group('displayNip05', () {
+      test('returns @user.divine.video for subdomain format', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@alice.divine.video',
+        );
+
+        expect(profile.displayNip05, equals('@alice.divine.video'));
+      });
+
+      test('normalises legacy user@divine.video to @user.divine.video', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'heybob@divine.video',
+        );
+
+        expect(profile.displayNip05, equals('@heybob.divine.video'));
+      });
+
+      test('normalises legacy user@openvine.co to @user.divine.video', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'charlie@openvine.co',
+        );
+
+        expect(profile.displayNip05, equals('@charlie.divine.video'));
+      });
+
+      test('preserves external NIP-05 unchanged', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'alice@example.com',
+        );
+
+        expect(profile.displayNip05, equals('alice@example.com'));
+      });
+
+      test('returns null when nip05 is null', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+
+        expect(profile.displayNip05, isNull);
+      });
+
+      test('returns null when nip05 is empty', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '',
+        );
+
+        expect(profile.displayNip05, isNull);
+      });
+    });
+
     group('divineUsername', () {
       test('extracts username from subdomain format _@user.divine.video', () {
         final profile = UserProfile(

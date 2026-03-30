@@ -357,7 +357,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
               appBar: DiVineAppBar(
-                title: '',
+                title: widget.contextTitle ?? '',
                 showBackButton: true,
                 onBackPressed: context.pop,
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
@@ -371,7 +371,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
               appBar: DiVineAppBar(
-                title: '',
+                title: widget.contextTitle ?? '',
                 showBackButton: true,
                 onBackPressed: context.pop,
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
@@ -413,7 +413,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             backgroundColor: VineTheme.backgroundColor,
             extendBodyBehindAppBar: true,
             appBar: DiVineAppBar(
-              title: '',
+              title: widget.contextTitle ?? '',
               showBackButton: true,
               onBackPressed: context.pop,
               backgroundMode: DiVineAppBarBackgroundMode.transparent,

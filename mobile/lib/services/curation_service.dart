@@ -166,7 +166,7 @@ class CurationService {
 
       // Subscribe to fetch videos from Divine Team authors
       final filter = Filter(
-        kinds: [34236], // NIP-71 video events
+        kinds: const [NIP71VideoKinds.addressableShortVideo],
         authors: AppConstants.divineTeamPubkeys,
         limit: 500, // Get all their videos
       );

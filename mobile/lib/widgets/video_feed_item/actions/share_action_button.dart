@@ -15,6 +15,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -117,6 +118,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       profileRepository: widget.profileRepository,
       followRepository: ref.read(followRepositoryProvider),
       bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
+      cacheManager: openVineImageCache,
     )..add(const ShareSheetContactsLoadRequested());
   }
 
@@ -193,8 +195,21 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         Clipboard.setData(ClipboardData(text: text));
         _safePop(context);
         messenger.showSnackBar(DivineSnackbarContainer.snackBar(label));
-      case ShareSheetShareViaTriggered(:final shareText):
-        SharePlus.instance.share(ShareParams(text: shareText));
+      case ShareSheetShareViaTriggered(
+        :final shareUrl,
+        :final thumbnailPath,
+        :final title,
+        :final subject,
+      ):
+        final files = thumbnailPath != null ? [XFile(thumbnailPath)] : null;
+        SharePlus.instance.share(
+          ShareParams(
+            text: shareUrl,
+            files: files,
+            title: title,
+            subject: subject,
+          ),
+        );
       case ShareSheetActionFailure():
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar('Action failed', error: true),

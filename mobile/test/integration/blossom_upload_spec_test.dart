@@ -3,6 +3,7 @@
 
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/upload_constants.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 
 void main() {
@@ -96,24 +97,20 @@ void main() {
     test(
       'Divine resumable capability is advertised separately from legacy PUT upload',
       () {
-        const capabilityHeader = 'resumable-sessions';
-        const controlHost = 'https://media.divine.video';
-        const dataHost = 'https://upload.divine.video';
-
         expect(
-          capabilityHeader,
+          DivineUploadExtensions.resumableSessions,
           equals('resumable-sessions'),
           reason: 'Mobile client expects this token on HEAD /upload',
         );
         expect(
-          controlHost,
-          equals(BlossomUploadService.defaultBlossomServer),
+          BlossomUploadService.defaultBlossomServer,
+          equals('https://media.divine.video'),
           reason: 'Canonical blob URLs stay on the media control-plane host',
         );
         expect(
-          dataHost,
-          equals('https://upload.divine.video'),
-          reason: 'Chunk uploads use the opaque upload-session data host',
+          DivineUploadHeaders.dataHost,
+          equals('X-Divine-Upload-Data-Host'),
+          reason: 'Data-host header name matches the protocol spec',
         );
       },
     );

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -141,57 +142,40 @@ class _ClassicVinesContent extends ConsumerStatefulWidget {
       _ClassicVinesContentState();
 }
 
-class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
+class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
   late final StreamController<List<VideoEvent>> _videosStreamController;
-  bool _isLoadingTriggered = false;
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() => widget.hasMoreContent && !widget.isLoadingMore;
+
+  @override
+  Future<void> onLoadMore() async {
+    Log.info(
+      '📜 ClassicVinesTab: Loading more classics',
+      name: 'ClassicVinesTab',
+      category: LogCategory.video,
+    );
+    await ref.read(classicVinesFeedProvider.notifier).loadMore();
+  }
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    initPagination();
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
+    disposePagination();
     _scrollController.dispose();
     _videosStreamController.close();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (!widget.hasMoreContent) return;
-    if (widget.isLoadingMore) return;
-    if (_isLoadingTriggered) return;
-
-    final position = _scrollController.position;
-    final maxScroll = position.maxScrollExtent;
-    final currentScroll = position.pixels;
-
-    // Trigger load more when within 200 pixels of the bottom
-    if (currentScroll >= maxScroll - 200) {
-      _triggerLoadMore();
-    }
-  }
-
-  Future<void> _triggerLoadMore() async {
-    if (_isLoadingTriggered) return;
-    _isLoadingTriggered = true;
-
-    try {
-      Log.info(
-        '📜 ClassicVinesTab: Loading more classics',
-        name: 'ClassicVinesTab',
-        category: LogCategory.video,
-      );
-      await ref.read(classicVinesFeedProvider.notifier).loadMore();
-    } finally {
-      if (mounted) {
-        _isLoadingTriggered = false;
-      }
-    }
   }
 
   @override

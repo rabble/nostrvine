@@ -1,3 +1,4 @@
+import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -24,7 +25,9 @@ class NotificationTargetResolver {
       return null;
     }
 
-    if (event.kind == 22 || event.kind == 34235 || event.kind == 34236) {
+    if (event.kind == NIP71VideoKinds.shortVideo ||
+        event.kind == NIP71VideoKinds.addressableNormalVideo ||
+        event.kind == NIP71VideoKinds.addressableShortVideo) {
       return targetId;
     }
 

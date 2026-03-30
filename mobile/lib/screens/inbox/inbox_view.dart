@@ -2,6 +2,8 @@
 // ABOUTME: Shows conversation list (with following bar) or notifications
 // ABOUTME: depending on the selected tab.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +13,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -233,17 +236,52 @@ class _ConversationListContent extends StatelessWidget {
   }
 }
 
-class _ConversationList extends ConsumerWidget {
+class _ConversationList extends ConsumerStatefulWidget {
   const _ConversationList({
     required this.currentUserPubkey,
   });
 
-  static const double _paginationThreshold = 200;
-
   final String currentUserPubkey;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ConversationList> createState() => _ConversationListState();
+}
+
+class _ConversationListState extends ConsumerState<_ConversationList>
+    with ScrollPaginationMixin {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final bloc = context.read<ConversationListBloc>();
+    return bloc.state.hasMore && !bloc.state.isLoadingMore;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<ConversationListBloc>().add(
+      const ConversationListLoadMore(),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPagination();
+  }
+
+  @override
+  void dispose() {
+    disposePagination();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final conversations = context
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
@@ -274,60 +312,47 @@ class _ConversationList extends ConsumerWidget {
       );
     }
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (hasMore &&
-            notification.metrics.extentAfter < _paginationThreshold &&
-            notification is ScrollUpdateNotification) {
-          context.read<ConversationListBloc>().add(
-            const ConversationListLoadMore(),
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (hasRequests && index == 0) {
+          return MessageRequestsBanner(
+            requestCount: requestConversations.length,
+            onTap: () => _openMessageRequests(context),
           );
         }
-        return false;
-      },
-      child: ListView.builder(
-        itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          // Banner at position 0 when requests exist
-          if (hasRequests && index == 0) {
-            return MessageRequestsBanner(
-              requestCount: requestConversations.length,
-              onTap: () => _openMessageRequests(context),
-            );
-          }
 
-          final conversationIndex = index - bannerOffset;
+        final conversationIndex = index - bannerOffset;
 
-          // Loading indicator at the end
-          if (conversationIndex == conversations.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    color: VineTheme.primary,
-                    strokeWidth: 2,
-                  ),
+        if (conversationIndex == conversations.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: VineTheme.primary,
+                  strokeWidth: 2,
                 ),
               ),
-            );
-          }
-
-          final conversation = conversations[conversationIndex];
-          return ConversationTile(
-            conversation: conversation,
-            currentUserPubkey: currentUserPubkey,
-            onTap: () => _onConversationTapped(context, conversation),
-            onLongPress: () => _onConversationLongPressed(
-              context,
-              ref,
-              conversation,
             ),
           );
-        },
-      ),
+        }
+
+        final conversation = conversations[conversationIndex];
+        return ConversationTile(
+          conversation: conversation,
+          currentUserPubkey: widget.currentUserPubkey,
+          onTap: () => _onConversationTapped(context, conversation),
+          onLongPress: () => _onConversationLongPressed(
+            context,
+            ref,
+            conversation,
+          ),
+        );
+      },
     );
   }
 
@@ -345,7 +370,7 @@ class _ConversationList extends ConsumerWidget {
       category: LogCategory.ui,
     );
     final otherPubkeys = conversation.participantPubkeys
-        .where((pk) => pk != currentUserPubkey)
+        .where((pk) => pk != widget.currentUserPubkey)
         .toList();
 
     _pushConversation(context, conversation.id, otherPubkeys);
@@ -357,7 +382,7 @@ class _ConversationList extends ConsumerWidget {
     DmConversation conversation,
   ) async {
     final otherPubkey = conversation.participantPubkeys.firstWhere(
-      (pk) => pk != currentUserPubkey,
+      (pk) => pk != widget.currentUserPubkey,
       orElse: () => conversation.participantPubkeys.first,
     );
 

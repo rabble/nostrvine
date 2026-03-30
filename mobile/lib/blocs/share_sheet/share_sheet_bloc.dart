@@ -3,10 +3,12 @@
 // ABOUTME: and one-shot actions (save, copy, share via)
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -36,12 +38,14 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     required ProfileRepository profileRepository,
     required FollowRepository followRepository,
     Future<BookmarkService?>? bookmarkServiceFuture,
+    BaseCacheManager? cacheManager,
   }) : _video = video,
        _relayUrl = relayUrl,
        _videoSharingService = videoSharingService,
        _profileRepository = profileRepository,
        _followRepository = followRepository,
        _bookmarkServiceFuture = bookmarkServiceFuture,
+       _cacheManager = cacheManager,
        super(const ShareSheetState()) {
     on<ShareSheetContactsLoadRequested>(_onContactsLoadRequested);
     on<ShareSheetQuickSendRequested>(
@@ -64,6 +68,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final ProfileRepository _profileRepository;
   final FollowRepository _followRepository;
   final Future<BookmarkService?>? _bookmarkServiceFuture;
+  final BaseCacheManager? _cacheManager;
 
   // --------------------------------------------------------------------------
   // Contact loading
@@ -208,7 +213,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         emit(
           state.copyWith(
             isSending: false,
-            actionResult: const ShareSheetSendFailure(),
+            actionResult: ShareSheetSendFailure(),
           ),
         );
       }
@@ -221,7 +226,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           isSending: false,
-          actionResult: const ShareSheetSendFailure(),
+          actionResult: ShareSheetSendFailure(),
         ),
       );
     }
@@ -264,7 +269,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         emit(
           state.copyWith(
             isSending: false,
-            actionResult: const ShareSheetSendFailure(),
+            actionResult: ShareSheetSendFailure(),
           ),
         );
       }
@@ -277,7 +282,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           isSending: false,
-          actionResult: const ShareSheetSendFailure(),
+          actionResult: ShareSheetSendFailure(),
         ),
       );
     }
@@ -300,7 +305,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: const ShareSheetSaveResult(succeeded: false),
+          actionResult: ShareSheetSaveResult(succeeded: false),
         ),
       );
       return;
@@ -323,7 +328,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: const ShareSheetSaveResult(succeeded: false),
+          actionResult: ShareSheetSaveResult(succeeded: false),
         ),
       );
     }
@@ -353,26 +358,60 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      emit(state.copyWith(actionResult: const ShareSheetActionFailure()));
+      emit(state.copyWith(actionResult: ShareSheetActionFailure()));
     }
   }
 
-  void _onShareViaRequested(
+  Future<void> _onShareViaRequested(
     ShareSheetShareViaRequested event,
     Emitter<ShareSheetState> emit,
-  ) {
+  ) async {
     try {
-      final shareText = _videoSharingService.generateShareText(_video);
+      final shareData = _videoSharingService.generateShareData(_video);
+
+      // Download thumbnail if available and a cache manager was provided.
+      // Copy to a temp file with a .jpg extension so iOS recognises it as
+      // an image rather than a generic document.
+      String? thumbnailPath;
+      final thumbUrl = shareData.thumbnailUrl;
+      if (thumbUrl != null && _cacheManager != null) {
+        try {
+          final file = await _cacheManager
+              .getSingleFile(thumbUrl)
+              .timeout(const Duration(seconds: 5));
+          final tmpDir = Directory.systemTemp;
+          final tmpFile = File(
+            '${tmpDir.path}/divine_share_thumb.jpg',
+          );
+          await file.copy(tmpFile.path);
+          thumbnailPath = tmpFile.path;
+        } catch (e) {
+          Log.warning(
+            'Thumbnail download failed, sharing without image: $e',
+            name: 'ShareSheetBloc',
+            category: LogCategory.ui,
+          );
+        }
+      }
+
+      final title = shareData.title;
       emit(
-        state.copyWith(actionResult: ShareSheetShareViaTriggered(shareText)),
+        state.copyWith(
+          actionResult: ShareSheetShareViaTriggered(
+            shareUrl: shareData.shareUrl,
+            thumbnailPath: thumbnailPath,
+            title: title,
+            subject: title,
+          ),
+        ),
       );
     } catch (e) {
       Log.error(
-        'Failed to generate share text: $e',
+        'Failed to generate share data: $e',
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      emit(state.copyWith(actionResult: const ShareSheetActionFailure()));
+      emit(state.copyWith(actionResult: ShareSheetActionFailure()));
     }
   }
 
@@ -396,7 +435,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      emit(state.copyWith(actionResult: const ShareSheetActionFailure()));
+      emit(state.copyWith(actionResult: ShareSheetActionFailure()));
     }
   }
 
@@ -422,7 +461,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      emit(state.copyWith(actionResult: const ShareSheetActionFailure()));
+      emit(state.copyWith(actionResult: ShareSheetActionFailure()));
     }
   }
 }

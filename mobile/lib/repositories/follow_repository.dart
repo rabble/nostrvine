@@ -1272,6 +1272,17 @@ class FollowRepository {
     );
   }
 
+  /// Minimum number of follows the local list must have before the
+  /// catastrophic-reduction heuristic kicks in. Below this threshold every
+  /// remote event is accepted as-is, because small lists change drastically
+  /// during normal use.
+  static const _mergeMinFollows = 10;
+
+  /// Maximum fraction of the local list that a remote event may remove
+  /// before we treat the reduction as suspicious and merge instead of replace.
+  /// 0.5 means "if more than half the list would be lost, merge."
+  static const _mergeMaxLossFraction = 0.5;
+
   /// Process a NIP-02 contact list event (Kind 3)
   void _processContactListEvent(Event event) {
     // Only update if this is newer than our current contact list event
@@ -1285,6 +1296,49 @@ class FollowRepository {
         if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
           followedPubkeys.add(tag[1]);
         }
+      }
+
+      // Guard: detect catastrophic list reduction from buggy external clients.
+      // A common Nostr footgun is publishing a Kind 3 event without first
+      // fetching the existing contact list, which overwrites the full list
+      // with only the newly followed user. We detect this by checking for
+      // two conditions simultaneously:
+      //   1. The remote list is drastically smaller than the local list.
+      //   2. The remote list contains pubkeys NOT already in the local list
+      //      (the "only-new-follow" fingerprint of buggy clients).
+      // A legitimate mass-unfollow produces a strict subset of the local
+      // list, so condition 2 filters it out.
+      final localSet = _followingPubkeys.toSet();
+      final isDrasticReduction =
+          _followingPubkeys.length >= _mergeMinFollows &&
+          followedPubkeys.length <
+              (_followingPubkeys.length * _mergeMaxLossFraction).ceil();
+      final hasNewPubkeys = followedPubkeys.any((pk) => !localSet.contains(pk));
+
+      if (isDrasticReduction && hasNewPubkeys) {
+        final merged = <String>{..._followingPubkeys, ...followedPubkeys};
+
+        Log.warning(
+          'Catastrophic contact list reduction detected '
+          '(${_followingPubkeys.length} → ${followedPubkeys.length}). '
+          'Merging to ${merged.length} follows instead of replacing.',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+
+        _followingPubkeys = merged.toList();
+        _emitFollowingList();
+        _saveToLocalStorage();
+
+        // Re-broadcast the merged list so relays have the correct state.
+        _broadcastContactList().catchError((e) {
+          Log.error(
+            'Failed to broadcast merged contact list: $e',
+            name: 'FollowRepository',
+            category: LogCategory.system,
+          );
+        });
+        return;
       }
 
       _followingPubkeys = followedPubkeys;

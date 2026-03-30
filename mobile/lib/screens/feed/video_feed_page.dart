@@ -38,9 +38,9 @@ class VideoFeedPage extends ConsumerWidget {
   /// Build path for a specific index.
   static String pathForIndex(int index) => '/home/$index';
 
-  const VideoFeedPage({this.initialMode = FeedMode.following, super.key});
+  const VideoFeedPage({this.initialMode = FeedMode.forYou, super.key});
 
-  /// The feed mode to start with. Defaults to [FeedMode.following].
+  /// The feed mode to start with. Defaults to [FeedMode.forYou].
   final FeedMode initialMode;
 
   @override
@@ -136,6 +136,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     super.didChangeDependencies();
     // Initialize controller eagerly if BLoC already has videos on first build
     handleVideoController();
+    _syncControllerPlaybackState();
   }
 
   @override
@@ -198,7 +199,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
         active: false,
         retainCurrentPlayer: overlayState.shouldRetainPlayer,
       );
+      return;
     }
+
+    _syncControllerPlaybackState(resumeIfHome: true);
   }
 
   /// Handles new videos from pagination by adding them to the controller.
@@ -261,6 +265,29 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     }
 
     return true;
+  }
+
+  void _syncControllerPlaybackState({bool resumeIfHome = false}) {
+    final activeController = controller;
+    if (activeController == null) return;
+
+    final routeType = ref.read(pageContextProvider).asData?.value.type;
+    if (routeType != null) {
+      _isOnHomeTab = routeType == RouteType.home;
+    }
+
+    final overlayState = ref.read(overlayVisibilityProvider);
+    if (!_isOnHomeTab || overlayState.hasVisibleOverlay) {
+      activeController.setActive(
+        active: false,
+        retainCurrentPlayer: overlayState.shouldRetainPlayer,
+      );
+      return;
+    }
+
+    if (resumeIfHome) {
+      activeController.setActive(active: true);
+    }
   }
 
   @override

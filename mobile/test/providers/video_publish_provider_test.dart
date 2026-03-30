@@ -1,10 +1,14 @@
 // ABOUTME: Unit tests for VideoPublishNotifier
 // ABOUTME: Tests state management for video publishing
 
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/services/cawg_verifier_client.dart';
 
 void main() {
   group('VideoPublishNotifier', () {
@@ -90,5 +94,54 @@ void main() {
       expect(state.publishState, VideoPublishState.error);
       expect(state.errorMessage, 'Test error');
     });
+
+    test(
+      'preferredSocialVerificationMethods prefers oauth then public proof',
+      () {
+        expect(
+          notifier.preferredSocialVerificationMethods(supportsOAuth: true),
+          equals(const [
+            VerifierRequiredMethod.oauth,
+            VerifierRequiredMethod.publicProof,
+          ]),
+        );
+      },
+    );
+
+    test(
+      'preferredSocialVerificationMethods falls back to public proof only',
+      () {
+        expect(
+          notifier.preferredSocialVerificationMethods(supportsOAuth: false),
+          equals(const [VerifierRequiredMethod.publicProof]),
+        );
+      },
+    );
+
+    test(
+      'shouldAttachCreatorIdentityProof returns true when proof is missing',
+      () {
+        expect(notifier.shouldAttachCreatorIdentityProof(null), isTrue);
+        expect(notifier.shouldAttachCreatorIdentityProof(''), isTrue);
+      },
+    );
+
+    test(
+      'shouldAttachCreatorIdentityProof returns false when proof already has creator identity metadata',
+      () {
+        final proofManifestJson = jsonEncode(
+          const NativeProofData(
+            videoHash: 'abc123',
+            creatorBindingAssertionLabel: 'video.divine.nostr.creator_binding',
+            creatorBindingPayloadJson: '{"version":1}',
+          ).toJson(),
+        );
+
+        expect(
+          notifier.shouldAttachCreatorIdentityProof(proofManifestJson),
+          isFalse,
+        );
+      },
+    );
   });
 }

@@ -58,20 +58,44 @@ void main() {
     });
 
     group('loading state', () {
-      testWidgets('shows CircularProgressIndicator when loading', (
+      testWidgets(
+        'shows $CircularProgressIndicator when loading with no results',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            const UserSearchState(
+              status: UserSearchStatus.loading,
+              query: 'test',
+            ),
+          );
+
+          await tester.pumpWidget(createTestWidget());
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets('shows results list when loading with non-empty results', (
         tester,
       ) async {
+        final testProfiles = [
+          createTestProfile('a' * 64, 'Alice'),
+          createTestProfile('b' * 64, 'Bob'),
+        ];
+
         when(() => mockBloc.state).thenReturn(
-          const UserSearchState(
+          UserSearchState(
             status: UserSearchStatus.loading,
             query: 'test',
+            results: testProfiles,
           ),
         );
 
         await tester.pumpWidget(createTestWidget());
         await tester.pump();
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        // Results list is shown instead of the full-screen spinner
+        expect(find.byType(ListView), findsOneWidget);
       });
     });
 

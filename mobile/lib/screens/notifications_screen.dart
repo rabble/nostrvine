@@ -1,12 +1,15 @@
 // ABOUTME: Notifications screen displaying user's social interactions and system updates
 // ABOUTME: Shows likes, comments, follows, mentions, reposts with filtering and read state
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
@@ -124,34 +127,37 @@ class _NotificationTabContent extends ConsumerStatefulWidget {
 }
 
 class _NotificationTabContentState
-    extends ConsumerState<_NotificationTabContent> {
+    extends ConsumerState<_NotificationTabContent>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final feedState = ref.read(relayNotificationsProvider).asData?.value;
+    return feedState != null &&
+        feedState.hasMoreContent &&
+        !feedState.isLoadingMore &&
+        !feedState.isRefreshing;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() =>
+      ref.read(relayNotificationsProvider.notifier).loadMore();
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    initPagination();
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    disposePagination();
+    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-
-    // Only trigger loadMore if scrolling is actually possible and near bottom
-    // Provider handles all state checks (hasMore, isRefreshing, isLoadingMore)
-    if (maxScroll > 0 && maxScroll - currentScroll <= 200) {
-      ref.read(relayNotificationsProvider.notifier).loadMore();
-    }
   }
 
   @override

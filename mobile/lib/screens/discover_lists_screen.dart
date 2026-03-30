@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -28,7 +29,8 @@ class DiscoverListsScreen extends ConsumerStatefulWidget {
       _DiscoverListsScreenState();
 }
 
-class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
+class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
+    with ScrollPaginationMixin {
   bool _isLoadingMore = false;
   bool _hasReachedEnd = false;
   String? _errorMessage;
@@ -48,9 +50,18 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
   static const int _minListsBeforeAutoPaginate = 10;
 
   @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() => !_hasReachedEnd && !_isLoadingMore;
+
+  @override
+  FutureOr<void> onLoadMore() => _loadMoreLists();
+
+  @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    initPagination();
 
     // Check if we already have cached lists from provider
     // Only stream if cache is empty
@@ -66,17 +77,9 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
   void dispose() {
     _updateDebounceTimer?.cancel();
     _subscription?.cancel();
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    // Load more when near bottom, but not if we already exhausted results
-    if (!_hasReachedEnd &&
-        _scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200) {
-      _loadMoreLists();
-    }
   }
 
   Future<void> _streamPublicLists({bool isRefresh = false}) async {

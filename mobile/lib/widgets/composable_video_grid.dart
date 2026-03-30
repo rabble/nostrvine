@@ -1,12 +1,15 @@
 // ABOUTME: Composable video grid widget with automatic broken video filtering
 // ABOUTME: Reusable component for Explore, Hashtag, and Search screens
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
@@ -64,51 +67,33 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
       _ComposableVideoGridState();
 }
 
-class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
+class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
-  bool _isLoadingTriggered = false;
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() =>
+      widget.onLoadMore != null &&
+      widget.hasMoreContent &&
+      !widget.isLoadingMore;
+
+  @override
+  FutureOr<void> onLoadMore() => widget.onLoadMore?.call();
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    initPagination();
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (widget.onLoadMore == null) return;
-    if (!widget.hasMoreContent) return;
-    if (widget.isLoadingMore) return;
-    if (_isLoadingTriggered) return;
-
-    final position = _scrollController.position;
-    final maxScroll = position.maxScrollExtent;
-    final currentScroll = position.pixels;
-
-    // Trigger load more when within 200 pixels of the bottom
-    if (currentScroll >= maxScroll - 200) {
-      _triggerLoadMore();
-    }
-  }
-
-  Future<void> _triggerLoadMore() async {
-    if (_isLoadingTriggered) return;
-
-    _isLoadingTriggered = true;
-
-    try {
-      await widget.onLoadMore?.call();
-    } finally {
-      if (mounted) {
-        _isLoadingTriggered = false;
-      }
-    }
   }
 
   @override

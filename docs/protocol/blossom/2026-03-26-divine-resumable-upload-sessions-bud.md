@@ -104,6 +104,18 @@ Behavior:
 - promotes the final object into canonical Blossom storage
 - returns the normal completed blob descriptor and any Divine streaming fields
 
+Optional request headers:
+
+- `X-ProofMode-Manifest`
+- `X-ProofMode-Signature`
+- `X-ProofMode-Attestation`
+- `X-ProofMode-C2PA`
+
+When present, these headers carry the same ProofMode metadata that legacy
+`PUT /upload` accepts. Clients should send them on `complete` so resumable
+uploads preserve the same server-side ProofMode handling without forcing the
+video bytes back onto the legacy single-request upload path.
+
 Example successful response:
 
 ```json

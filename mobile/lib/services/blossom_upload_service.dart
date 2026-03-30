@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/constants/upload_constants.dart';
 import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -28,6 +29,7 @@ class BlossomUploadResult {
   final String? gifUrl; // Deprecated - keeping for backwards compatibility
   final String? blurhash; // Deprecated - keeping for backwards compatibility
   final String? errorMessage;
+  final int? statusCode; // HTTP status code on failure
 
   // Convenience getter for backwards compatibility
   String? get cdnUrl => fallbackUrl ?? url;
@@ -44,6 +46,7 @@ class BlossomUploadResult {
     this.gifUrl,
     this.blurhash,
     this.errorMessage,
+    this.statusCode,
   });
 }
 
@@ -95,21 +98,41 @@ class _DivineUploadCapability {
   final String? dataHost;
 }
 
+class _CachedCapability {
+  _CachedCapability(this.capability, this.expiresAt);
+
+  final _DivineUploadCapability capability;
+  final DateTime expiresAt;
+}
+
 class BlossomUploadService {
   static const String _blossomServerKey = 'blossom_server_url';
   static const String _useBlossomKey = 'use_blossom_upload';
   static const String defaultBlossomServer = 'https://media.divine.video';
 
+  /// Maximum retries for a single chunk PUT before bubbling to the caller.
+  static const int _maxChunkRetries = 2;
+  static const Duration _chunkRetryDelay = Duration(seconds: 1);
+
+  /// How long a cached capability discovery result stays valid.
+  static const Duration _capabilityCacheTtl = Duration(minutes: 5);
+
   final AuthService authService;
   final Dio dio;
   final String _defaultServerUrl;
+  final DateTime Function() _clock;
+
+  /// In-memory cache of capability discovery results keyed by server URL.
+  final Map<String, _CachedCapability> _capabilityCache = {};
 
   BlossomUploadService({
     required this.authService,
     Dio? dio,
     String? defaultServerUrl,
+    DateTime Function()? clock,
   }) : dio = dio ?? Dio(),
-       _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer;
+       _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer,
+       _clock = clock ?? DateTime.now;
 
   /// Determine which Blossom server to use for upload
   ///
@@ -286,6 +309,21 @@ class BlossomUploadService {
   bool _validateHttpStatus(int? statusCode) =>
       statusCode != null && statusCode < 500;
 
+  /// Whether a [DioException] from a chunk PUT is safe to retry.
+  /// Returns `true` for 5xx server errors and transient network issues.
+  bool _isTransientChunkError(DioException e) {
+    final statusCode = e.response?.statusCode;
+    if (statusCode != null && statusCode >= 500) return true;
+
+    return switch (e.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError => true,
+      _ => false,
+    };
+  }
+
   Map<String, String>? _parseRequiredHeaders(dynamic headersData) {
     if (headersData is! Map) {
       return null;
@@ -302,22 +340,43 @@ class BlossomUploadService {
       return null;
     }
 
+    final numericMatch = RegExp(r'^-?\d+$').firstMatch(value);
+    if (numericMatch != null) {
+      final epochValue = int.tryParse(value);
+      if (epochValue == null) {
+        return null;
+      }
+
+      final epochMillis = value.length <= 10 ? epochValue * 1000 : epochValue;
+      return DateTime.fromMillisecondsSinceEpoch(epochMillis, isUtc: true);
+    }
+
     return DateTime.tryParse(value);
   }
 
   int? _parseUploadOffset(Headers headers) {
-    final rawOffset =
-        headers.value('Upload-Offset') ?? headers.value('upload-offset');
+    final rawOffset = headers.value(DivineUploadHeaders.uploadOffset);
     return rawOffset == null ? null : int.tryParse(rawOffset);
   }
 
   DateTime? _parseUploadExpiresAt(Headers headers) => _parseDateTimeValue(
-    headers.value('Upload-Expires-At') ?? headers.value('upload-expires-at'),
+    headers.value(DivineUploadHeaders.uploadExpiresAt) ??
+        headers.value('Upload-Expires'),
   );
 
   Future<_DivineUploadCapability> _fetchDivineUploadCapability(
     String serverUrl,
   ) async {
+    final cached = _capabilityCache[serverUrl];
+    if (cached != null && _clock().isBefore(cached.expiresAt)) {
+      Log.debug(
+        'Using cached capability for $serverUrl',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      return cached.capability;
+    }
+
     try {
       final response = await dio.head(
         '$serverUrl/upload',
@@ -327,32 +386,43 @@ class BlossomUploadService {
           receiveTimeout: const Duration(seconds: 5),
         ),
       );
-      final extensionsHeader =
-          response.headers.value('X-Divine-Upload-Extensions') ??
-          response.headers.value('x-divine-upload-extensions');
+      final extensionsHeader = response.headers.value(
+        DivineUploadHeaders.extensions,
+      );
       final supportsResumable =
           extensionsHeader
               ?.split(',')
               .map((value) => value.trim().toLowerCase())
-              .contains('resumable-sessions') ??
+              .contains(DivineUploadExtensions.resumableSessions) ??
           false;
 
-      return _DivineUploadCapability(
+      final result = _DivineUploadCapability(
         supportsResumable: supportsResumable,
-        controlHost:
-            response.headers.value('X-Divine-Upload-Control-Host') ??
-            response.headers.value('x-divine-upload-control-host'),
-        dataHost:
-            response.headers.value('X-Divine-Upload-Data-Host') ??
-            response.headers.value('x-divine-upload-data-host'),
+        controlHost: response.headers.value(DivineUploadHeaders.controlHost),
+        dataHost: response.headers.value(DivineUploadHeaders.dataHost),
       );
+
+      _capabilityCache[serverUrl] = _CachedCapability(
+        result,
+        _clock().add(_capabilityCacheTtl),
+      );
+
+      return result;
     } on DioException catch (error) {
       Log.warning(
         'Capability discovery failed for $serverUrl: ${error.message}',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
-      return const _DivineUploadCapability(supportsResumable: false);
+
+      const fallback = _DivineUploadCapability(supportsResumable: false);
+
+      _capabilityCache[serverUrl] = _CachedCapability(
+        fallback,
+        _clock().add(_capabilityCacheTtl),
+      );
+
+      return fallback;
     }
   }
 
@@ -480,26 +550,48 @@ class BlossomUploadService {
         await fileReader.setPosition(start);
         final chunkBytes = await fileReader.read(chunkLength);
 
-        final response = await dio.put(
-          currentSession.uploadUrl,
-          data: chunkBytes,
-          options: Options(
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'Content-Length': chunkLength.toString(),
-              'Content-Range': 'bytes $start-${endExclusive - 1}/$fileSize',
-              ...?currentSession.requiredHeaders,
-            },
-            validateStatus: _validateHttpStatus,
-          ),
-          onSendProgress: (sent, total) {
-            if (fileSize <= 0) {
-              return;
+        // Per-chunk retry for transient 5xx / network errors.
+        // Chunk bytes are already in memory so retries are cheap.
+        late Response<dynamic> response;
+        var chunkAttempt = 0;
+        while (true) {
+          try {
+            response = await dio.put(
+              currentSession.uploadUrl,
+              data: chunkBytes,
+              options: Options(
+                headers: {
+                  'Content-Type': 'application/octet-stream',
+                  'Content-Length': chunkLength.toString(),
+                  'Content-Range': 'bytes $start-${endExclusive - 1}/$fileSize',
+                  ...?currentSession.requiredHeaders,
+                },
+                validateStatus: _validateHttpStatus,
+              ),
+              onSendProgress: (sent, total) {
+                if (fileSize <= 0) {
+                  return;
+                }
+                final progress = 0.2 + ((start + sent) / fileSize) * 0.7;
+                onProgress?.call(progress.clamp(0.2, 0.9));
+              },
+            );
+            break;
+          } on DioException catch (e) {
+            chunkAttempt++;
+            if (chunkAttempt > _maxChunkRetries || !_isTransientChunkError(e)) {
+              rethrow;
             }
-            final progress = 0.2 + ((start + sent) / fileSize) * 0.7;
-            onProgress?.call(progress.clamp(0.2, 0.9));
-          },
-        );
+            Log.warning(
+              'Chunk PUT failed at offset $start '
+              '(attempt $chunkAttempt/$_maxChunkRetries): '
+              '${e.response?.statusCode ?? e.type}',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+            await Future.delayed(_chunkRetryDelay);
+          }
+        }
 
         if (response.statusCode == 404 || response.statusCode == 410) {
           throw BlossomResumableUploadException(
@@ -539,6 +631,7 @@ class BlossomUploadService {
     required BlossomResumableUploadSession session,
     required String fileHash,
     required int fileSize,
+    String? proofManifestJson,
     void Function(double)? onProgress,
   }) async {
     final authHeader = await _createBlossomAuthHeader(
@@ -554,14 +647,20 @@ class BlossomUploadService {
       );
     }
 
+    final headers = <String, dynamic>{
+      'Authorization': authHeader,
+      'Content-Type': 'application/json',
+    };
+
+    if (proofManifestJson != null && proofManifestJson.isNotEmpty) {
+      _addProofModeHeaders(headers, proofManifestJson);
+    }
+
     final response = await dio.post(
       '$serverUrl/upload/${session.uploadId}/complete',
-      data: const {},
+      data: {'sha256': fileHash},
       options: Options(
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         validateStatus: _validateHttpStatus,
       ),
     );
@@ -579,6 +678,7 @@ class BlossomUploadService {
     required String fileHash,
     required int fileSize,
     required String contentType,
+    String? proofManifestJson,
     BlossomResumableUploadSession? resumableSession,
     void Function(double)? onProgress,
     void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
@@ -609,6 +709,7 @@ class BlossomUploadService {
       session: uploadedSession,
       fileHash: fileHash,
       fileSize: fileSize,
+      proofManifestJson: proofManifestJson,
       onProgress: onProgress,
     );
   }
@@ -698,6 +799,7 @@ class BlossomUploadService {
 
     return BlossomUploadResult(
       success: false,
+      statusCode: response.statusCode,
       errorMessage:
           'Upload failed: ${response.statusCode} - ${xReason ?? response.data}',
     );
@@ -798,34 +900,48 @@ class BlossomUploadService {
         errorDetail = '$errorDetail (${e.error})';
       }
 
+      final statusCode = e.response?.statusCode;
+
       if (e.type == DioExceptionType.connectionTimeout) {
-        return const BlossomUploadResult(
+        return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Connection timeout - check server URL',
         );
       } else if (e.type == DioExceptionType.sendTimeout) {
-        return const BlossomUploadResult(
+        return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Send timeout - upload too slow or connection dropped',
         );
       } else if (e.type == DioExceptionType.receiveTimeout) {
-        return const BlossomUploadResult(
+        return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Receive timeout - server not responding',
         );
       } else if (e.type == DioExceptionType.connectionError) {
         return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Cannot connect to Blossom server: $errorDetail',
         );
       } else if (e.type == DioExceptionType.cancel) {
-        return const BlossomUploadResult(
+        return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Upload cancelled',
+        );
+      } else if (e.type == DioExceptionType.badResponse) {
+        return BlossomUploadResult(
+          success: false,
+          statusCode: statusCode,
+          errorMessage: 'Server error ($statusCode): $errorDetail',
         );
       } else {
         return BlossomUploadResult(
           success: false,
+          statusCode: statusCode,
           errorMessage: 'Network error: $errorDetail',
         );
       }
@@ -923,18 +1039,13 @@ class BlossomUploadService {
           final capability = await _fetchDivineUploadCapability(serverUrl);
           final hasProofModeData =
               proofManifestJson != null && proofManifestJson.isNotEmpty;
-          final useResumable =
-              capability.supportsResumable && !hasProofModeData;
+          final useResumable = capability.supportsResumable;
 
-          if (capability.supportsResumable && hasProofModeData) {
+          if (useResumable) {
             Log.info(
-              'Skipping Divine resumable upload flow for $serverUrl because ProofMode headers require the legacy upload path',
-              name: 'BlossomUploadService',
-              category: LogCategory.video,
-            );
-          } else if (useResumable) {
-            Log.info(
-              'Using Divine resumable upload flow for $serverUrl',
+              hasProofModeData
+                  ? 'Using Divine resumable upload flow for $serverUrl with ProofMode metadata on completion'
+                  : 'Using Divine resumable upload flow for $serverUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
@@ -947,6 +1058,7 @@ class BlossomUploadService {
                   fileHash: fileHash,
                   fileSize: fileSize,
                   contentType: 'video/mp4',
+                  proofManifestJson: proofManifestJson,
                   resumableSession: resumableSession,
                   onProgress: onProgress,
                   onResumableSessionUpdated: onResumableSessionUpdated,
@@ -1014,6 +1126,12 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
+          final statusCode = e is DioException ? e.response?.statusCode : null;
+          lastError = BlossomUploadResult(
+            success: false,
+            statusCode: statusCode,
+            errorMessage: 'Upload to $serverUrl failed: $e',
+          );
           Log.warning(
             'Upload to $serverUrl failed: $e, trying next server...',
             name: 'BlossomUploadService',
@@ -1160,6 +1278,12 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
+          final statusCode = e is DioException ? e.response?.statusCode : null;
+          lastError = BlossomUploadResult(
+            success: false,
+            statusCode: statusCode,
+            errorMessage: 'Upload to $serverUrl failed: $e',
+          );
           Log.warning(
             'Upload to $serverUrl failed: $e, trying next server...',
             name: 'BlossomUploadService',
@@ -1466,6 +1590,12 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
         } catch (e) {
+          final statusCode = e is DioException ? e.response?.statusCode : null;
+          lastError = BlossomUploadResult(
+            success: false,
+            statusCode: statusCode,
+            errorMessage: 'Upload to $serverUrl failed: $e',
+          );
           Log.warning(
             'Upload to $serverUrl failed: $e, trying next server...',
             name: 'BlossomUploadService',
