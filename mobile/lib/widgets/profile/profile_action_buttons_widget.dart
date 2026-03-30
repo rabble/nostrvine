@@ -32,25 +32,15 @@ class ProfileActionButtons extends StatelessWidget {
   final VoidCallback? onBlockedTap;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final buttons = _buildButtons(context);
-      // Use Row with Expanded when content fits, scroll when it overflows
-      return SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: constraints.maxWidth - 48),
-          child: IntrinsicWidth(
-            child: Row(
-              spacing: 12,
-              children: buttons,
-            ),
-          ),
-        ),
-      );
-    },
-  );
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      child: Row(
+        spacing: 8,
+        children: _buildButtons(context),
+      ),
+    );
+  }
 
   List<Widget> _buildButtons(BuildContext context) {
     if (isOwnProfile) {

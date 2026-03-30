@@ -213,6 +213,7 @@ class _FollowingButton extends StatelessWidget {
     return DivineButton(
       expanded: true,
       type: .secondary,
+      size: .small,
       onPressed: onPressed,
       label: 'Following',
       leadingIcon: .userCheck,
@@ -231,6 +232,7 @@ class _FollowButton extends StatelessWidget {
     return DivineButton(
       onPressed: onPressed,
       expanded: true,
+      size: .small,
       leadingIcon: DivineIconName.userPlus,
       label: 'Follow',
     );
