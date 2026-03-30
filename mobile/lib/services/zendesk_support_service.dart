@@ -846,6 +846,7 @@ class ZendeskSupportService {
     String? userPubkey,
     Map<String, int>? errorCounts,
     String? logsSummary,
+    String? fullLogsUrl,
   }) async {
     Log.info(
       'Creating structured Zendesk bug report: $reportId',
@@ -908,9 +909,14 @@ class ZendeskSupportService {
         buffer.writeln('- ${entry.key}: ${entry.value} occurrences');
       }
     }
+    if (fullLogsUrl != null) {
+      buffer.writeln();
+      buffer.writeln('### Full Diagnostic Logs');
+      buffer.writeln('View full logs: $fullLogsUrl');
+    }
     if (logsSummary != null && logsSummary.isNotEmpty) {
       buffer.writeln();
-      buffer.writeln('### Recent Logs (Summary)');
+      buffer.writeln('### Recent Logs (errors/warnings + recent context)');
       buffer.writeln('```');
       buffer.writeln(logsSummary);
       buffer.writeln('```');
