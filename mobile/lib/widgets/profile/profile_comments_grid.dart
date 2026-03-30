@@ -2,14 +2,16 @@
 // ABOUTME: Shows video replies as a 3-column thumbnail grid at top,
 // ABOUTME: followed by text comments as a list below.
 
+import 'dart:async';
+
 import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Grid widget displaying a user's comments (video replies + text).
@@ -25,30 +27,35 @@ class ProfileCommentsGrid extends StatefulWidget {
   State<ProfileCommentsGrid> createState() => _ProfileCommentsGridState();
 }
 
-class _ProfileCommentsGridState extends State<ProfileCommentsGrid> {
+class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
-  late final ScrollPaginationController _paginationController;
 
   @override
-  void initState() {
-    super.initState();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () {
-        final bloc = context.read<ProfileCommentsBloc>();
-        return bloc.state.hasMoreContent && !bloc.state.isLoadingMore;
-      },
-      onLoadMore: () {
-        context.read<ProfileCommentsBloc>().add(
-          const ProfileCommentsLoadMoreRequested(),
-        );
-      },
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final bloc = context.read<ProfileCommentsBloc>();
+    return bloc.state.hasMoreContent && !bloc.state.isLoadingMore;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<ProfileCommentsBloc>().add(
+      const ProfileCommentsLoadMoreRequested(),
     );
   }
 
   @override
+  void initState() {
+    super.initState();
+    initPagination();
+  }
+
+  @override
   void dispose() {
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
   }

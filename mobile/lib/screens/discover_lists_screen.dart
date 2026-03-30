@@ -8,13 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 class DiscoverListsScreen extends ConsumerStatefulWidget {
@@ -29,7 +29,8 @@ class DiscoverListsScreen extends ConsumerStatefulWidget {
       _DiscoverListsScreenState();
 }
 
-class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
+class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
+    with ScrollPaginationMixin {
   bool _isLoadingMore = false;
   bool _hasReachedEnd = false;
   String? _errorMessage;
@@ -47,16 +48,20 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
   int _autoPaginationAttempts = 0;
   static const int _maxAutoPaginationAttempts = 5;
   static const int _minListsBeforeAutoPaginate = 10;
-  late final ScrollPaginationController _paginationController;
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() => !_hasReachedEnd && !_isLoadingMore;
+
+  @override
+  FutureOr<void> onLoadMore() => _loadMoreLists();
 
   @override
   void initState() {
     super.initState();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () => !_hasReachedEnd && !_isLoadingMore,
-      onLoadMore: _loadMoreLists,
-    );
+    initPagination();
 
     // Check if we already have cached lists from provider
     // Only stream if cache is empty
@@ -72,7 +77,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
   void dispose() {
     _updateDebounceTimer?.cancel();
     _subscription?.cancel();
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
   }

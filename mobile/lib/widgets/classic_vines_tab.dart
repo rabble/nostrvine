@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -18,7 +19,6 @@ import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_viners_slider.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:rxdart/rxdart.dart';
@@ -142,32 +142,37 @@ class _ClassicVinesContent extends ConsumerStatefulWidget {
       _ClassicVinesContentState();
 }
 
-class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
+class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
   late final StreamController<List<VideoEvent>> _videosStreamController;
-  late final ScrollPaginationController _paginationController;
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() => widget.hasMoreContent && !widget.isLoadingMore;
+
+  @override
+  Future<void> onLoadMore() async {
+    Log.info(
+      '📜 ClassicVinesTab: Loading more classics',
+      name: 'ClassicVinesTab',
+      category: LogCategory.video,
+    );
+    await ref.read(classicVinesFeedProvider.notifier).loadMore();
+  }
 
   @override
   void initState() {
     super.initState();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () => widget.hasMoreContent && !widget.isLoadingMore,
-      onLoadMore: () async {
-        Log.info(
-          '📜 ClassicVinesTab: Loading more classics',
-          name: 'ClassicVinesTab',
-          category: LogCategory.video,
-        );
-        await ref.read(classicVinesFeedProvider.notifier).loadMore();
-      },
-    );
+    initPagination();
   }
 
   @override
   void dispose() {
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     _videosStreamController.close();
     super.dispose();

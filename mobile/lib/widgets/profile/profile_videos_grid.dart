@@ -12,12 +12,12 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -61,29 +61,33 @@ class ProfileVideosGrid extends ConsumerStatefulWidget {
 }
 
 class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
-    with GridPrefetchMixin {
+    with GridPrefetchMixin, ScrollPaginationMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
   final _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
   final _scrollController = ScrollController();
-  late final ScrollPaginationController _paginationController;
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final feedState = ref
+        .read(profileFeedProvider(widget.userIdHex))
+        .asData
+        ?.value;
+    return feedState != null &&
+        feedState.hasMoreContent &&
+        !feedState.isLoadingMore;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() => _triggerLoadMore();
 
   @override
   void initState() {
     super.initState();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () {
-        final feedState = ref
-            .read(profileFeedProvider(widget.userIdHex))
-            .asData
-            ?.value;
-        return feedState != null &&
-            feedState.hasMoreContent &&
-            !feedState.isLoadingMore;
-      },
-      onLoadMore: _triggerLoadMore,
-    );
+    initPagination();
     // Prefetch visible grid videos after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -94,7 +98,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   @override
   void dispose() {
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     _videosStreamController.close();
     super.dispose();

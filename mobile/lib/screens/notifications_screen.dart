@@ -1,12 +1,15 @@
 // ABOUTME: Notifications screen displaying user's social interactions and system updates
 // ABOUTME: Shows likes, comments, follows, mentions, reposts with filtering and read state
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
@@ -18,7 +21,6 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -125,25 +127,35 @@ class _NotificationTabContent extends ConsumerStatefulWidget {
 }
 
 class _NotificationTabContentState
-    extends ConsumerState<_NotificationTabContent> {
+    extends ConsumerState<_NotificationTabContent>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
-  late final ScrollPaginationController _paginationController;
-  bool _canLoadMore = false;
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final feedState = ref.read(relayNotificationsProvider).asData?.value;
+    return feedState != null &&
+        feedState.hasMoreContent &&
+        !feedState.isLoadingMore &&
+        !feedState.isRefreshing;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() =>
+      ref.read(relayNotificationsProvider.notifier).loadMore();
 
   @override
   void initState() {
     super.initState();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () => _canLoadMore,
-      onLoadMore: () =>
-          ref.read(relayNotificationsProvider.notifier).loadMore(),
-    );
+    initPagination();
   }
 
   @override
   void dispose() {
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
   }
@@ -151,12 +163,6 @@ class _NotificationTabContentState
   @override
   Widget build(BuildContext context) {
     final asyncState = ref.watch(relayNotificationsProvider);
-    final feedState = asyncState.asData?.value;
-    _canLoadMore =
-        feedState != null &&
-        feedState.hasMoreContent &&
-        !feedState.isLoadingMore &&
-        !feedState.isRefreshing;
 
     return asyncState.when(
       loading: () => const ColoredBox(

@@ -1,16 +1,18 @@
 // ABOUTME: Widget for displaying user search results
 // ABOUTME: Consumes UserSearchBloc from parent BlocProvider
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 
 /// Displays user search results from UserSearchBloc.
 ///
@@ -92,25 +94,30 @@ class _UserSearchResultsList extends StatefulWidget {
   State<_UserSearchResultsList> createState() => _UserSearchResultsListState();
 }
 
-class _UserSearchResultsListState extends State<_UserSearchResultsList> {
+class _UserSearchResultsListState extends State<_UserSearchResultsList>
+    with ScrollPaginationMixin {
   final _scrollController = ScrollController();
-  late final ScrollPaginationController _paginationController;
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() => widget.hasMore && !widget.isLoadingMore;
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<UserSearchBloc>().add(const UserSearchLoadMore());
+  }
 
   @override
   void initState() {
     super.initState();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () => widget.hasMore && !widget.isLoadingMore,
-      onLoadMore: () {
-        context.read<UserSearchBloc>().add(const UserSearchLoadMore());
-      },
-    );
+    initPagination();
   }
 
   @override
   void dispose() {
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
   }

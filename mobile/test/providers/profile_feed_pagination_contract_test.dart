@@ -30,6 +30,89 @@ void main() {
   const userId =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+  group('estimateNextRestOffset', () {
+    test('returns visibleCount when hasMoreContent is false', () {
+      final state = VideoFeedState(
+        videos: List.generate(
+          37,
+          (i) => VideoEvent(
+            id: 'v$i',
+            pubkey: userId,
+            createdAt: 1000 - i,
+            content: '',
+            timestamp: DateTime(2026),
+            title: 'V$i',
+            videoUrl: 'https://example.com/v$i.mp4',
+          ),
+        ),
+        hasMoreContent: false,
+      );
+      expect(ProfileFeed.estimateNextRestOffset(state), 37);
+    });
+
+    test('returns batchSize when visibleCount is less than one batch', () {
+      final state = VideoFeedState(
+        videos: List.generate(
+          9,
+          (i) => VideoEvent(
+            id: 'v$i',
+            pubkey: userId,
+            createdAt: 1000 - i,
+            content: '',
+            timestamp: DateTime(2026),
+            title: 'V$i',
+            videoUrl: 'https://example.com/v$i.mp4',
+          ),
+        ),
+        hasMoreContent: true,
+      );
+      // batchSize is 50 (from AppConstants.paginationBatchSize)
+      expect(ProfileFeed.estimateNextRestOffset(state), 50);
+    });
+
+    test(
+      'rounds up to next batch boundary when visibleCount exceeds one batch',
+      () {
+        final state = VideoFeedState(
+          videos: List.generate(
+            85,
+            (i) => VideoEvent(
+              id: 'v$i',
+              pubkey: userId,
+              createdAt: 1000 - i,
+              content: '',
+              timestamp: DateTime(2026),
+              title: 'V$i',
+              videoUrl: 'https://example.com/v$i.mp4',
+            ),
+          ),
+          hasMoreContent: true,
+        );
+        // ceil(85/50)*50 = 100
+        expect(ProfileFeed.estimateNextRestOffset(state), 100);
+      },
+    );
+
+    test('returns exact batch boundary when visibleCount is a multiple', () {
+      final state = VideoFeedState(
+        videos: List.generate(
+          100,
+          (i) => VideoEvent(
+            id: 'v$i',
+            pubkey: userId,
+            createdAt: 1000 - i,
+            content: '',
+            timestamp: DateTime(2026),
+            title: 'V$i',
+            videoUrl: 'https://example.com/v$i.mp4',
+          ),
+        ),
+        hasMoreContent: true,
+      );
+      expect(ProfileFeed.estimateNextRestOffset(state), 100);
+    });
+  });
+
   group('ProfileFeed REST pagination contract', () {
     late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late _MockVideoEventService mockVideoEventService;

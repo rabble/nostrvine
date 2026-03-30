@@ -2,6 +2,8 @@
 // ABOUTME: Shows conversation list (with following bar) or notifications
 // ABOUTME: depending on the selected tab.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +13,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -27,7 +30,6 @@ import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
 /// and the corresponding content for each tab.
@@ -245,28 +247,35 @@ class _ConversationList extends ConsumerStatefulWidget {
   ConsumerState<_ConversationList> createState() => _ConversationListState();
 }
 
-class _ConversationListState extends ConsumerState<_ConversationList> {
+class _ConversationListState extends ConsumerState<_ConversationList>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
-  late final ScrollPaginationController _paginationController;
-  bool _canLoadMore = false;
 
   @override
-  void initState() {
-    super.initState();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () => _canLoadMore,
-      onLoadMore: () {
-        context.read<ConversationListBloc>().add(
-          const ConversationListLoadMore(),
-        );
-      },
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final bloc = context.read<ConversationListBloc>();
+    return bloc.state.hasMore && !bloc.state.isLoadingMore;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<ConversationListBloc>().add(
+      const ConversationListLoadMore(),
     );
   }
 
   @override
+  void initState() {
+    super.initState();
+    initPagination();
+  }
+
+  @override
   void dispose() {
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
   }
@@ -284,13 +293,9 @@ class _ConversationListState extends ConsumerState<_ConversationList> {
     final hasMore = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.hasMore,
     );
-    final isLoadingMore = context.select<ConversationListBloc, bool>(
-      (bloc) => bloc.state.isLoadingMore,
-    );
 
     final hasRequests = requestConversations.isNotEmpty;
     final bannerOffset = hasRequests ? 1 : 0;
-    _canLoadMore = hasMore && !isLoadingMore;
 
     if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
 

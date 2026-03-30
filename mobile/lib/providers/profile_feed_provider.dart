@@ -81,7 +81,7 @@ class ProfileFeed extends _$ProfileFeed {
 
     if (retainedState != null && retainedState.videos.isNotEmpty) {
       _usingRestApi = funnelcakeAvailable;
-      _nextOffset = _estimateNextRestOffset(retainedState);
+      _nextOffset = estimateNextRestOffset(retainedState);
       _registerRetainedRealtimeListeners(videoEventService);
       Future.microtask(() => refresh(retainedState: retainedState));
       return retainedState.copyWith(
@@ -271,7 +271,8 @@ class ProfileFeed extends _$ProfileFeed {
     refresh();
   }
 
-  int _estimateNextRestOffset(VideoFeedState currentState) {
+  @visibleForTesting
+  static int estimateNextRestOffset(VideoFeedState currentState) {
     final visibleCount = currentState.videos.length;
     if (!currentState.hasMoreContent) {
       return visibleCount;
@@ -547,7 +548,7 @@ class ProfileFeed extends _$ProfileFeed {
       // If using REST API, load more using offset-based pagination.
       if (_usingRestApi) {
         final client = ref.read(funnelcakeApiClientProvider);
-        final offset = _nextOffset ?? _estimateNextRestOffset(currentState);
+        final offset = _nextOffset ?? estimateNextRestOffset(currentState);
         Log.info(
           'ProfileFeed: Loading more from REST API with offset: $offset for user=$userId',
           name: 'ProfileFeedProvider',

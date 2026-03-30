@@ -1,16 +1,18 @@
 // ABOUTME: Grid widget displaying user's reposted videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails and repost badge indicator
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Grid widget displaying user's reposted videos
@@ -26,30 +28,35 @@ class ProfileRepostsGrid extends StatefulWidget {
   State<ProfileRepostsGrid> createState() => _ProfileRepostsGridState();
 }
 
-class _ProfileRepostsGridState extends State<ProfileRepostsGrid> {
+class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
-  late final ScrollPaginationController _paginationController;
 
   @override
-  void initState() {
-    super.initState();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () {
-        final bloc = context.read<ProfileRepostedVideosBloc>();
-        return bloc.state.hasMoreContent && !bloc.state.isLoadingMore;
-      },
-      onLoadMore: () {
-        context.read<ProfileRepostedVideosBloc>().add(
-          const ProfileRepostedVideosLoadMoreRequested(),
-        );
-      },
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final bloc = context.read<ProfileRepostedVideosBloc>();
+    return bloc.state.hasMoreContent && !bloc.state.isLoadingMore;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<ProfileRepostedVideosBloc>().add(
+      const ProfileRepostedVideosLoadMoreRequested(),
     );
   }
 
   @override
+  void initState() {
+    super.initState();
+    initPagination();
+  }
+
+  @override
   void dispose() {
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
   }

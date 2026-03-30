@@ -1,16 +1,18 @@
 // ABOUTME: Composable video grid widget with automatic broken video filtering
 // ABOUTME: Reusable component for Explore, Hashtag, and Search screens
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
-import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -65,26 +67,31 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
       _ComposableVideoGridState();
 }
 
-class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
+class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
+    with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
-  late final ScrollPaginationController _paginationController;
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() =>
+      widget.onLoadMore != null &&
+      widget.hasMoreContent &&
+      !widget.isLoadingMore;
+
+  @override
+  FutureOr<void> onLoadMore() => widget.onLoadMore?.call();
 
   @override
   void initState() {
     super.initState();
-    _paginationController = ScrollPaginationController(
-      scrollController: _scrollController,
-      canLoadMore: () =>
-          widget.onLoadMore != null &&
-          widget.hasMoreContent &&
-          !widget.isLoadingMore,
-      onLoadMore: () => widget.onLoadMore?.call(),
-    );
+    initPagination();
   }
 
   @override
   void dispose() {
-    _paginationController.dispose();
+    disposePagination();
     _scrollController.dispose();
     super.dispose();
   }
