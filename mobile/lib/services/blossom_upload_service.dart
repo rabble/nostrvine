@@ -324,6 +324,28 @@ class BlossomUploadService {
     };
   }
 
+  bool _isTransientCapabilityDiscoveryError(DioException error) {
+    final statusCode = error.response?.statusCode;
+    if (statusCode != null && statusCode >= 500) return true;
+
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError => true,
+      _ => false,
+    };
+  }
+
+  bool _isDivineOwnedUploadHost(String serverUrl) {
+    final host = Uri.tryParse(serverUrl)?.host.toLowerCase();
+    if (host == null || host.isEmpty) {
+      return false;
+    }
+
+    return host == 'divine.video' || host.endsWith('.divine.video');
+  }
+
   Map<String, String>? _parseRequiredHeaders(dynamic headersData) {
     if (headersData is! Map) {
       return null;
@@ -414,6 +436,26 @@ class BlossomUploadService {
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
+
+      if (_isDivineOwnedUploadHost(serverUrl) &&
+          _isTransientCapabilityDiscoveryError(error)) {
+        final fallback = cached?.capability.supportsResumable == true
+            ? cached!.capability
+            : const _DivineUploadCapability(supportsResumable: true);
+
+        Log.warning(
+          'Assuming resumable upload support for Divine host $serverUrl after transient capability probe failure',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+
+        _capabilityCache[serverUrl] = _CachedCapability(
+          fallback,
+          _clock().add(_capabilityCacheTtl),
+        );
+
+        return fallback;
+      }
 
       const fallback = _DivineUploadCapability(supportsResumable: false);
 
