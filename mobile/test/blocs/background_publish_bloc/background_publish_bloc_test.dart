@@ -134,12 +134,17 @@ void main() {
             ),
             const BackgroundPublishState(),
           ],
+          verify: (_) {
+            verify(
+              () => mockDraftStorageService.deleteDraft(draftId),
+            ).called(1);
+          },
         );
       });
 
       group('when the upload is a failure', () {
         blocTest(
-          'is kept on the uploads list',
+          'is kept on the uploads list and persists failed status',
           build: () => BackgroundPublishBloc(
             videoPublishServiceFactory: defaultVieoPublishServiceFactory,
             draftStorageService: mockDraftStorageService,
@@ -166,6 +171,15 @@ void main() {
               ],
             ),
           ],
+          verify: (_) {
+            verify(
+              () => mockDraftStorageService.updatePublishStatus(
+                draftId: draftId,
+                status: PublishStatus.failed,
+                publishError: 'ops',
+              ),
+            ).called(1);
+          },
         );
       });
 
@@ -364,6 +378,65 @@ void main() {
             ),
           ).called(1);
         },
+      );
+    });
+
+    group('BackgroundPublishFailed', () {
+      final draft = _MockVineDraft();
+
+      const draftId = '1';
+
+      setUp(() {
+        when(() => draft.id).thenReturn(draftId);
+      });
+
+      blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+        'adds interrupted upload to state with error result',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        act: (bloc) => bloc.add(
+          BackgroundPublishFailed(
+            draft: draft,
+            userMessage: 'This upload was interrupted.',
+          ),
+        ),
+        expect: () => [
+          BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(
+                draft: draft,
+                result: const PublishError('This upload was interrupted.'),
+                progress: 0,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+        'does not duplicate when the same draft is already tracked',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draft,
+              result: const PublishError('Previous error'),
+              progress: 1.0,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          BackgroundPublishFailed(
+            draft: draft,
+            userMessage: 'This upload was interrupted.',
+          ),
+        ),
+        expect: () => <BackgroundPublishState>[],
       );
     });
 
