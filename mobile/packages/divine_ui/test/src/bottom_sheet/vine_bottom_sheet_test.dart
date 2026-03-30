@@ -13,9 +13,7 @@ void main() {
           home: Scaffold(
             body: VineBottomSheet(
               title: Text('Test Sheet'),
-              body: Column(
-                children: [Text('Content 1'), Text('Content 2')],
-              ),
+              body: Column(children: [Text('Content 1'), Text('Content 2')]),
             ),
           ),
         ),
@@ -189,6 +187,43 @@ void main() {
       );
 
       expect(find.byKey(const Key('fixed-input')), findsOneWidget);
+    });
+
+    testWidgets(
+      'hides header and shows only drag handle when showHeader is false',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: VineBottomSheet(showHeader: false, body: Text('Content')),
+            ),
+          ),
+        );
+
+        expect(find.byType(VineBottomSheetHeader), findsNothing);
+        expect(find.byType(VineBottomSheetDragHandle), findsOneWidget);
+        expect(find.text('Content'), findsOneWidget);
+      },
+    );
+
+    testWidgets('hides header in fixed mode when showHeader is false', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              scrollable: false,
+              showHeader: false,
+              children: [Text('Fixed Content')],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(VineBottomSheetHeader), findsNothing);
+      expect(find.byType(VineBottomSheetDragHandle), findsOneWidget);
+      expect(find.text('Fixed Content'), findsOneWidget);
     });
 
     group('VineBottomSheet.show', () {
