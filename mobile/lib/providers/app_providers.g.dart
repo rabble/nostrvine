@@ -4138,7 +4138,7 @@ final class BugReportServiceProvider
   }
 }
 
-String _$bugReportServiceHash() => r'abb60eedfb073bfc9c441bd7aca78bfe82114fb1';
+String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 
 /// Provider for NIP-17 DM repository.
 ///
