@@ -679,8 +679,7 @@ class _ProfileActionLabel extends StatelessWidget {
             ],
           ),
         ),
-        // Red count badge — only shown when multiple actions are pending.
-        if (badgeCount > 1)
+        if (badgeCount > 0)
           Positioned(
             right: -4,
             top: -8,

@@ -563,8 +563,8 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text('Secure your account'), findsOneWidget);
-          // Only 1 action — no red count badge
-          expect(find.text('2'), findsNothing);
+          // 1 action — badge shows "1"
+          expect(find.text('1'), findsOneWidget);
         },
       );
 
