@@ -40,24 +40,30 @@ void main() {
     }
 
     test('returns Blossom URL on successful upload', () async {
-      when(() => mockBlossom.uploadBugReport(
-            bugReportFile: any(named: 'bugReportFile'),
-          )).thenAnswer((_) async => 'https://media.divine.video/abc123.txt');
+      when(
+        () => mockBlossom.uploadBugReport(
+          bugReportFile: any(named: 'bugReportFile'),
+        ),
+      ).thenAnswer((_) async => 'https://media.divine.video/abc123.txt');
 
       final service = BugReportService(blossomUploadService: mockBlossom);
       final data = makeReportData();
       final url = await service.uploadFullLogs(data);
 
       expect(url, 'https://media.divine.video/abc123.txt');
-      verify(() => mockBlossom.uploadBugReport(
-            bugReportFile: any(named: 'bugReportFile'),
-          )).called(1);
+      verify(
+        () => mockBlossom.uploadBugReport(
+          bugReportFile: any(named: 'bugReportFile'),
+        ),
+      ).called(1);
     });
 
     test('returns null when Blossom upload fails', () async {
-      when(() => mockBlossom.uploadBugReport(
-            bugReportFile: any(named: 'bugReportFile'),
-          )).thenAnswer((_) async => null);
+      when(
+        () => mockBlossom.uploadBugReport(
+          bugReportFile: any(named: 'bugReportFile'),
+        ),
+      ).thenAnswer((_) async => null);
 
       final service = BugReportService(blossomUploadService: mockBlossom);
       final data = makeReportData();
@@ -67,9 +73,11 @@ void main() {
     });
 
     test('returns null when Blossom upload throws', () async {
-      when(() => mockBlossom.uploadBugReport(
-            bugReportFile: any(named: 'bugReportFile'),
-          )).thenThrow(Exception('network error'));
+      when(
+        () => mockBlossom.uploadBugReport(
+          bugReportFile: any(named: 'bugReportFile'),
+        ),
+      ).thenThrow(Exception('network error'));
 
       final service = BugReportService(blossomUploadService: mockBlossom);
       final data = makeReportData();

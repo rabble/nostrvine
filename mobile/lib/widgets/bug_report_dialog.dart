@@ -29,8 +29,9 @@ String? buildLogsSummary(List<LogEntry> logs) {
       : errorWarnings;
 
   // Last 50 entries of any level
-  final recentContext =
-      logs.length > 50 ? logs.sublist(logs.length - 50) : logs;
+  final recentContext = logs.length > 50
+      ? logs.sublist(logs.length - 50)
+      : logs;
 
   // Merge, deduplicate, sort chronologically
   final merged = <LogEntry>{...recentErrors, ...recentContext}.toList()
@@ -104,8 +105,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
       );
 
       // Best-effort: upload full logs to Blossom
-      final fullLogsUrl =
-          await widget.bugReportService.uploadFullLogs(reportData);
+      final fullLogsUrl = await widget.bugReportService.uploadFullLogs(
+        reportData,
+      );
 
       // Submit directly to Zendesk with structured fields
       final subject = _subjectController.text.trim();

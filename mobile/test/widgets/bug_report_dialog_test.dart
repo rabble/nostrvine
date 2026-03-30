@@ -130,8 +130,9 @@ void main() {
         ),
       ).thenAnswer((_) async => testReportData);
 
-      when(() => mockBugReportService.uploadFullLogs(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockBugReportService.uploadFullLogs(any()),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -188,8 +189,9 @@ void main() {
         return testReportData;
       });
 
-      when(() => mockBugReportService.uploadFullLogs(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockBugReportService.uploadFullLogs(any()),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         MaterialApp(

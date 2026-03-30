@@ -6,10 +6,10 @@ import 'package:models/models.dart' show LogEntry, LogLevel;
 import 'package:openvine/widgets/bug_report_dialog.dart';
 
 LogEntry _log(int minute, LogLevel level, String msg) => LogEntry(
-      timestamp: DateTime(2026, 3, 30, 10, minute),
-      level: level,
-      message: msg,
-    );
+  timestamp: DateTime(2026, 3, 30, 10, minute),
+  level: level,
+  message: msg,
+);
 
 void main() {
   group('buildLogsSummary', () {
