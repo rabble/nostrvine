@@ -10,6 +10,7 @@ import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:openvine/widgets/scroll_pagination_controller.dart';
 
 /// Displays user search results from UserSearchBloc.
 ///
@@ -93,31 +94,25 @@ class _UserSearchResultsList extends StatefulWidget {
 
 class _UserSearchResultsListState extends State<_UserSearchResultsList> {
   final _scrollController = ScrollController();
+  late final ScrollPaginationController _paginationController;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _paginationController = ScrollPaginationController(
+      scrollController: _scrollController,
+      canLoadMore: () => widget.hasMore && !widget.isLoadingMore,
+      onLoadMore: () {
+        context.read<UserSearchBloc>().add(const UserSearchLoadMore());
+      },
+    );
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    _paginationController.dispose();
+    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-    // Trigger load more at 80% scroll
-    if (currentScroll >= maxScroll * 0.8 &&
-        widget.hasMore &&
-        !widget.isLoadingMore) {
-      context.read<UserSearchBloc>().add(const UserSearchLoadMore());
-    }
   }
 
   @override

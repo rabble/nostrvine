@@ -10,6 +10,7 @@ import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/widgets/scroll_pagination_controller.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -66,49 +67,26 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
 
 class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
   final ScrollController _scrollController = ScrollController();
-  bool _isLoadingTriggered = false;
+  late final ScrollPaginationController _paginationController;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _paginationController = ScrollPaginationController(
+      scrollController: _scrollController,
+      canLoadMore: () =>
+          widget.onLoadMore != null &&
+          widget.hasMoreContent &&
+          !widget.isLoadingMore,
+      onLoadMore: () => widget.onLoadMore?.call(),
+    );
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
+    _paginationController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (widget.onLoadMore == null) return;
-    if (!widget.hasMoreContent) return;
-    if (widget.isLoadingMore) return;
-    if (_isLoadingTriggered) return;
-
-    final position = _scrollController.position;
-    final maxScroll = position.maxScrollExtent;
-    final currentScroll = position.pixels;
-
-    // Trigger load more when within 200 pixels of the bottom
-    if (currentScroll >= maxScroll - 200) {
-      _triggerLoadMore();
-    }
-  }
-
-  Future<void> _triggerLoadMore() async {
-    if (_isLoadingTriggered) return;
-
-    _isLoadingTriggered = true;
-
-    try {
-      await widget.onLoadMore?.call();
-    } finally {
-      if (mounted) {
-        _isLoadingTriggered = false;
-      }
-    }
   }
 
   @override

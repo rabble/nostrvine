@@ -109,7 +109,11 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
       return const _ForYouEmptyState();
     }
 
-    return _ForYouContent(videos: videos);
+    return _ForYouContent(
+      videos: videos,
+      isLoadingMore: feedState.isLoadingMore,
+      hasMoreContent: feedState.hasMoreContent,
+    );
   }
 }
 
@@ -118,9 +122,15 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
 /// Header pushes up as user scrolls down (1:1 with scroll distance).
 /// When scrolling up, header slides back in as an overlay with animation.
 class _ForYouContent extends ConsumerStatefulWidget {
-  const _ForYouContent({required this.videos});
+  const _ForYouContent({
+    required this.videos,
+    required this.isLoadingMore,
+    required this.hasMoreContent,
+  });
 
   final List<VideoEvent> videos;
+  final bool isLoadingMore;
+  final bool hasMoreContent;
 
   @override
   ConsumerState<_ForYouContent> createState() => _ForYouContentState();
@@ -208,6 +218,16 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                 );
                 await forYouFeedNotifier.refresh();
               },
+              onLoadMore: () async {
+                Log.info(
+                  '📜 ForYouTab: Loading more recommendations',
+                  name: 'ForYouTab',
+                  category: LogCategory.video,
+                );
+                await forYouFeedNotifier.loadMore();
+              },
+              isLoadingMore: widget.isLoadingMore,
+              hasMoreContent: widget.hasMoreContent,
               emptyBuilder: () => const _ForYouEmptyState(),
             ),
           ),

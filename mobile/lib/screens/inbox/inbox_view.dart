@@ -27,6 +27,7 @@ import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/scroll_pagination_controller.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
 /// and the corresponding content for each tab.
@@ -233,17 +234,45 @@ class _ConversationListContent extends StatelessWidget {
   }
 }
 
-class _ConversationList extends ConsumerWidget {
+class _ConversationList extends ConsumerStatefulWidget {
   const _ConversationList({
     required this.currentUserPubkey,
   });
 
-  static const double _paginationThreshold = 200;
-
   final String currentUserPubkey;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ConversationList> createState() => _ConversationListState();
+}
+
+class _ConversationListState extends ConsumerState<_ConversationList> {
+  final ScrollController _scrollController = ScrollController();
+  late final ScrollPaginationController _paginationController;
+  bool _canLoadMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _paginationController = ScrollPaginationController(
+      scrollController: _scrollController,
+      canLoadMore: () => _canLoadMore,
+      onLoadMore: () {
+        context.read<ConversationListBloc>().add(
+          const ConversationListLoadMore(),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _paginationController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final conversations = context
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
@@ -255,9 +284,13 @@ class _ConversationList extends ConsumerWidget {
     final hasMore = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.hasMore,
     );
+    final isLoadingMore = context.select<ConversationListBloc, bool>(
+      (bloc) => bloc.state.isLoadingMore,
+    );
 
     final hasRequests = requestConversations.isNotEmpty;
     final bannerOffset = hasRequests ? 1 : 0;
+    _canLoadMore = hasMore && !isLoadingMore;
 
     if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
 
@@ -274,60 +307,47 @@ class _ConversationList extends ConsumerWidget {
       );
     }
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (hasMore &&
-            notification.metrics.extentAfter < _paginationThreshold &&
-            notification is ScrollUpdateNotification) {
-          context.read<ConversationListBloc>().add(
-            const ConversationListLoadMore(),
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (hasRequests && index == 0) {
+          return MessageRequestsBanner(
+            requestCount: requestConversations.length,
+            onTap: () => _openMessageRequests(context),
           );
         }
-        return false;
-      },
-      child: ListView.builder(
-        itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          // Banner at position 0 when requests exist
-          if (hasRequests && index == 0) {
-            return MessageRequestsBanner(
-              requestCount: requestConversations.length,
-              onTap: () => _openMessageRequests(context),
-            );
-          }
 
-          final conversationIndex = index - bannerOffset;
+        final conversationIndex = index - bannerOffset;
 
-          // Loading indicator at the end
-          if (conversationIndex == conversations.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    color: VineTheme.primary,
-                    strokeWidth: 2,
-                  ),
+        if (conversationIndex == conversations.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: VineTheme.primary,
+                  strokeWidth: 2,
                 ),
               ),
-            );
-          }
-
-          final conversation = conversations[conversationIndex];
-          return ConversationTile(
-            conversation: conversation,
-            currentUserPubkey: currentUserPubkey,
-            onTap: () => _onConversationTapped(context, conversation),
-            onLongPress: () => _onConversationLongPressed(
-              context,
-              ref,
-              conversation,
             ),
           );
-        },
-      ),
+        }
+
+        final conversation = conversations[conversationIndex];
+        return ConversationTile(
+          conversation: conversation,
+          currentUserPubkey: widget.currentUserPubkey,
+          onTap: () => _onConversationTapped(context, conversation),
+          onLongPress: () => _onConversationLongPressed(
+            context,
+            ref,
+            conversation,
+          ),
+        );
+      },
     );
   }
 
@@ -345,7 +365,7 @@ class _ConversationList extends ConsumerWidget {
       category: LogCategory.ui,
     );
     final otherPubkeys = conversation.participantPubkeys
-        .where((pk) => pk != currentUserPubkey)
+        .where((pk) => pk != widget.currentUserPubkey)
         .toList();
 
     _pushConversation(context, conversation.id, otherPubkeys);
@@ -357,7 +377,7 @@ class _ConversationList extends ConsumerWidget {
     DmConversation conversation,
   ) async {
     final otherPubkey = conversation.participantPubkeys.firstWhere(
-      (pk) => pk != currentUserPubkey,
+      (pk) => pk != widget.currentUserPubkey,
       orElse: () => conversation.participantPubkeys.first,
     );
 
