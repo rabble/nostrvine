@@ -51,15 +51,17 @@ void main() {
     });
 
     test('deduplicates entries that appear in both sets', () {
-      // Error at minute 99 is in both error set and last-50 set
+      // 60 info logs, then an error at minute 60.
+      // The error falls into both the "all errors" set AND the "last 50" set
+      // (last 50 = indices 11-60, which includes the error at index 60).
       final logs = <LogEntry>[
-        for (var i = 0; i < 100; i++) _log(i, LogLevel.info, 'info-$i'),
-        _log(99, LogLevel.error, 'recent-error'),
+        for (var i = 0; i < 60; i++) _log(i, LogLevel.info, 'info-$i'),
+        _log(60, LogLevel.error, 'shared-error'),
       ];
 
       final result = buildLogsSummary(logs)!;
-      // Should appear exactly once
-      final count = 'recent-error'.allMatches(result).length;
+      // The error appears in both windows but should only be in output once
+      final count = 'shared-error'.allMatches(result).length;
       expect(count, 1);
     });
 
