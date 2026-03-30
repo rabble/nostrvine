@@ -1039,13 +1039,18 @@ class BlossomUploadService {
           final capability = await _fetchDivineUploadCapability(serverUrl);
           final hasProofModeData =
               proofManifestJson != null && proofManifestJson.isNotEmpty;
-          final useResumable = capability.supportsResumable;
+          final useResumable =
+              capability.supportsResumable && !hasProofModeData;
 
           if (useResumable) {
             Log.info(
-              hasProofModeData
-                  ? 'Using Divine resumable upload flow for $serverUrl with ProofMode metadata on completion'
-                  : 'Using Divine resumable upload flow for $serverUrl',
+              'Using Divine resumable upload flow for $serverUrl',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+          } else if (hasProofModeData) {
+            Log.info(
+              'Using legacy Blossom PUT upload for $serverUrl with ProofMode metadata',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );

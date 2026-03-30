@@ -1,6 +1,7 @@
 // ABOUTME: Tests for BlossomUploadService verifying NIP-98 auth and multi-server support
 // ABOUTME: Tests configuration persistence, server selection, and upload flow
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -598,7 +599,7 @@ void main() {
       );
 
       test(
-        'uses resumable upload when ProofMode data is present and sends ProofMode headers on complete',
+        'uses legacy PUT upload when ProofMode data is present even if resumable is supported',
         () async {
           const testPublicKey =
               '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -654,50 +655,9 @@ void main() {
               data: any(named: 'data'),
               options: any(named: 'options'),
             ),
-          ).thenAnswer((invocation) async {
-            final url = invocation.positionalArguments.first as String;
-            final options = invocation.namedArguments[#options] as Options;
-            final data = invocation.namedArguments[#data];
-
-            if (url == 'https://media.divine.video/upload/init') {
-              expect(
-                options.headers?['Authorization'],
-                isNotNull,
-              );
-              return Response(
-                requestOptions: RequestOptions(path: '/upload/init'),
-                statusCode: 200,
-                data: {
-                  'uploadId': 'up_proof',
-                  'uploadUrl': 'https://upload.divine.video/sessions/up_proof',
-                  'chunkSize': 5,
-                  'nextOffset': 0,
-                  'requiredHeaders': {'Authorization': 'Bearer session-token'},
-                },
-              );
-            }
-
-            if (url == 'https://media.divine.video/upload/up_proof/complete') {
-              expect(
-                options.headers?['X-ProofMode-Manifest'],
-                isNotNull,
-              );
-              expect(data, isA<Map>());
-              expect((data as Map)['sha256'], isNotEmpty);
-              return Response(
-                requestOptions: RequestOptions(
-                  path: '/upload/up_proof/complete',
-                ),
-                statusCode: 200,
-                data: {
-                  'url': 'https://media.divine.video/final',
-                  'fallbackUrl': 'https://media.divine.video/final',
-                },
-              );
-            }
-
-            throw StateError('Unexpected POST url: $url');
-          });
+          ).thenThrow(
+            StateError('Unexpected POST request for ProofMode PUT flow'),
+          );
 
           when(
             () => mockDio.put(
@@ -710,25 +670,23 @@ void main() {
             final url = invocation.positionalArguments.first as String;
             final options = invocation.namedArguments[#options] as Options;
 
-            expect(
-              url,
-              equals('https://upload.divine.video/sessions/up_proof'),
-            );
+            expect(url, equals('https://media.divine.video/upload'));
             expect(
               options.headers?['Authorization'],
-              equals('Bearer session-token'),
+              isNotNull,
             );
             expect(
               options.headers?['X-ProofMode-Manifest'],
-              isNull,
+              equals(base64.encode(utf8.encode(proofManifest))),
             );
 
             return Response(
-              requestOptions: RequestOptions(path: '/sessions/up_proof'),
-              statusCode: 204,
-              headers: Headers.fromMap({
-                DivineUploadHeaders.uploadOffset: ['5'],
-              }),
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/final',
+                'fallbackUrl': 'https://media.divine.video/final',
+              },
             );
           });
 
@@ -744,37 +702,30 @@ void main() {
           expect(result.success, isTrue);
 
           verify(
-            () => mockDio.post(
-              'https://media.divine.video/upload/init',
-              data: any(named: 'data'),
-              options: any(named: 'options'),
-            ),
-          ).called(1);
-          verify(
             () => mockDio.put(
-              'https://upload.divine.video/sessions/up_proof',
+              'https://media.divine.video/upload',
               data: any(named: 'data'),
               options: any(named: 'options'),
               onSendProgress: any(named: 'onSendProgress'),
             ),
           ).called(1);
-          verify(
+          verifyNever(
+            () => mockDio.post(
+              'https://media.divine.video/upload/init',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          );
+          verifyNever(
             () => mockDio.post(
               'https://media.divine.video/upload/up_proof/complete',
               data: any(named: 'data'),
-              options: any(
-                named: 'options',
-                that: isA<Options>().having(
-                  (opts) => opts.headers?['X-ProofMode-Manifest'],
-                  'X-ProofMode-Manifest',
-                  isNotNull,
-                ),
-              ),
+              options: any(named: 'options'),
             ),
-          ).called(1);
+          );
           verifyNever(
             () => mockDio.put(
-              'https://media.divine.video/upload',
+              'https://upload.divine.video/sessions/up_proof',
               data: any(named: 'data'),
               options: any(named: 'options'),
               onSendProgress: any(named: 'onSendProgress'),

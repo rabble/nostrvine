@@ -1,6 +1,7 @@
 // ABOUTME: Integration-style coverage for the Divine resumable Blossom upload flow
 // ABOUTME: Verifies capability discovery, opaque uploadUrl handling, and canonical completion URLs
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -198,7 +199,7 @@ void main() {
   );
 
   test(
-    'Divine resumable uploads keep ProofMode metadata on the completion request',
+    'Divine ProofMode uploads stay on the legacy PUT path even when resumable is advertised',
     () async {
       SharedPreferences.setMockInitialValues({});
 
@@ -273,41 +274,7 @@ void main() {
           data: any(named: 'data'),
           options: any(named: 'options'),
         ),
-      ).thenAnswer((invocation) async {
-        final url = invocation.positionalArguments.first as String;
-        final options = invocation.namedArguments[#options] as Options;
-        final data = invocation.namedArguments[#data];
-
-        if (url.endsWith('/upload/init')) {
-          return Response(
-            requestOptions: RequestOptions(path: '/upload/init'),
-            statusCode: 200,
-            data: {
-              'uploadId': 'up_123',
-              'uploadUrl': 'https://upload.divine.video/sessions/up_123',
-              'chunkSize': 4,
-              'nextOffset': 0,
-              'requiredHeaders': {'Authorization': 'Bearer session-token'},
-            },
-          );
-        }
-
-        if (url.endsWith('/upload/up_123/complete')) {
-          expect(options.headers?['X-ProofMode-Manifest'], isNotNull);
-          expect(data, isA<Map>());
-          expect((data as Map)['sha256'], isNotEmpty);
-          return Response(
-            requestOptions: RequestOptions(path: '/upload/up_123/complete'),
-            statusCode: 200,
-            data: {
-              'url': 'https://media.divine.video/final',
-              'fallbackUrl': 'https://media.divine.video/final',
-            },
-          );
-        }
-
-        throw StateError('Unexpected POST url: $url');
-      });
+      ).thenThrow(StateError('Unexpected POST request for ProofMode PUT flow'));
 
       when(
         () => mockDio.put(
@@ -317,34 +284,26 @@ void main() {
           onSendProgress: any(named: 'onSendProgress'),
         ),
       ).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments.first as String;
         final options = invocation.namedArguments[#options] as Options;
+
+        expect(url, equals('https://media.divine.video/upload'));
         expect(
           options.headers?['Authorization'],
-          equals('Bearer session-token'),
+          isNotNull,
         );
         expect(
           options.headers?['X-ProofMode-Manifest'],
-          isNull,
+          equals(base64.encode(utf8.encode(proofManifest))),
         );
-        expect(
-          invocation.positionalArguments.first,
-          equals('https://upload.divine.video/sessions/up_123'),
-        );
-
-        final contentRange = options.headers?['Content-Range'] as String;
-        final nextOffset = switch (contentRange) {
-          'bytes 0-3/10' => '4',
-          'bytes 4-7/10' => '8',
-          'bytes 8-9/10' => '10',
-          _ => throw StateError('Unexpected content range: $contentRange'),
-        };
 
         return Response(
-          requestOptions: RequestOptions(path: '/sessions/up_123'),
-          statusCode: 204,
-          headers: Headers.fromMap({
-            DivineUploadHeaders.uploadOffset: [nextOffset],
-          }),
+          requestOptions: RequestOptions(path: '/upload'),
+          statusCode: 200,
+          data: {
+            'url': 'https://media.divine.video/final',
+            'fallbackUrl': 'https://media.divine.video/final',
+          },
         );
       });
 
@@ -364,12 +323,7 @@ void main() {
         result.cdnUrl,
         equals('https://media.divine.video/${result.videoId}'),
       );
-      expect(sessionUpdates.map((session) => session.nextOffset), [
-        0,
-        4,
-        8,
-        10,
-      ]);
+      expect(sessionUpdates, isEmpty);
 
       await tempDir.delete(recursive: true);
     },
