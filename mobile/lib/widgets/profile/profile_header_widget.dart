@@ -104,106 +104,67 @@ class ProfileHeaderWidget extends ConsumerWidget {
       hasCustomName: hasCustomName,
     );
 
-    // Use profile color as header background (like original Vine)
-    // Color covers avatar/stats, then fades to dark for name/bio readability
-    final hasProfileColor = profileColor != null;
+    final hasBannerImage = effectiveProfile?.hasBannerImage ?? false;
+    final bannerUrl = hasBannerImage ? effectiveProfile!.banner : null;
+
+    // The avatar protrudes below the 334px banner area. We need enough
+    // bottom padding in the Stack to avoid clipping the avatar + label.
+    const bannerHeight = 334.0;
+    const avatarSize = 144.0;
+    // Avatar center sits at the bottom of the banner, so half protrudes.
+    const avatarOverhang = avatarSize / 2 + 16; // +16 for action label
 
     return Column(
       children: [
-        // Colored section: avatar + stats with gradient fade at bottom
-        Container(
+        // Banner area with centered avatar overlapping the bottom edge
+        SizedBox(
           width: double.infinity,
-          decoration: BoxDecoration(
-            // Gradient from profile color to dark at the bottom
-            gradient: hasProfileColor
-                ? LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      profileColor,
-                      profileColor,
-                      VineTheme.backgroundColor,
-                    ],
-                    stops: const [0.0, 0.8, 1.0],
-                  )
-                : null,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 0, 16),
-            child: Column(
-              children: [
-                // Session expired banner for divineOAuth users (only on own
-                // profile) — prompts re-login instead of "Secure Your Account"
-                if (isOwnProfile && hasExpiredSession)
-                  const _SessionExpiredBanner(),
+          height: bannerHeight + avatarOverhang,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Background: banner image, color gradient, or plain dark
+              _ProfileBanner(
+                bannerUrl: bannerUrl,
+                profileColor: profileColor,
+                height: bannerHeight,
+              ),
 
-                // Profile picture and stats row
-                Row(
-                  spacing: 20,
-                  children: [
-                    // Profile picture with optional action label
-                    _ProfileAvatarWithColor(
-                      imageUrl: profilePictureUrl,
-                      profileColor: profileColor,
-                      pendingActions: pendingActions,
-                      onActionTap: pendingActions.isNotEmpty
-                          ? () => _showActionsSheet(
-                              context,
-                              pendingActions,
-                            )
-                          : null,
-                    ),
-
-                    // Stats
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SingleChildScrollView(
-                            scrollDirection: .horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                spacing: 12,
-                                children: [
-                                  ProfileStatColumn(
-                                    count:
-                                        profileStats?.videoCount ?? videoCount,
-                                    label: 'Videos',
-                                    isLoading: false,
-                                  ),
-                                  ProfileFollowersStat(
-                                    pubkey: userIdHex,
-                                    displayName: displayName,
-                                    isOwnProfile: isOwnProfile,
-                                  ),
-                                  ProfileFollowingStat(
-                                    pubkey: userIdHex,
-                                    displayName: displayName,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+              // Session expired banner (floats at top of banner area)
+              if (isOwnProfile && hasExpiredSession)
+                const Positioned(
+                  top: 8,
+                  left: 16,
+                  right: 16,
+                  child: _SessionExpiredBanner(),
                 ),
-              ],
-            ),
+
+              // Centered avatar + action label at the bottom of the banner
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: _ProfileAvatarWithColor(
+                    imageUrl: profilePictureUrl,
+                    profileColor: profileColor,
+                    pendingActions: pendingActions,
+                    onActionTap: pendingActions.isNotEmpty
+                        ? () => _showActionsSheet(context, pendingActions)
+                        : null,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
 
-        // Dark section: name, link, and bio (always readable)
+        // Name, NIP-05, and bio (centered text)
         Container(
           width: double.infinity,
           color: VineTheme.backgroundColor,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
             child: _ProfileNameAndBio(
               profile: effectiveProfile,
               userIdHex: userIdHex,
@@ -213,6 +174,20 @@ class ProfileHeaderWidget extends ConsumerWidget {
               accentColor: profileColor,
               isOwnProfile: isOwnProfile,
             ),
+          ),
+        ),
+
+        // Stats row: Followers | Following | Likes | Loops
+        Container(
+          width: double.infinity,
+          color: VineTheme.backgroundColor,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: _ProfileStatsRow(
+            userIdHex: userIdHex,
+            displayName: displayName,
+            isOwnProfile: isOwnProfile,
+            profileStats: profileStats,
+            videoCount: videoCount,
           ),
         ),
       ],
@@ -350,34 +325,30 @@ class _ProfileNameAndBio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (profile != null)
-            UserName.fromUserProfile(
-              profile!,
-              style: VineTheme.titleLargeFont(),
-            )
-          else
-            UserName.fromPubKey(
-              userIdHex,
-              style: VineTheme.titleLargeFont(),
-              anonymousName: displayNameHint,
-            ),
-          _UniqueIdentifier(
-            userIdHex: userIdHex,
-            nip05: nip05,
-            isOwnProfile: isOwnProfile,
-            accentColor: accentColor,
+    return Column(
+      children: [
+        if (profile != null)
+          UserName.fromUserProfile(
+            profile!,
+            style: VineTheme.titleLargeFont(),
+          )
+        else
+          UserName.fromPubKey(
+            userIdHex,
+            style: VineTheme.titleLargeFont(),
+            anonymousName: displayNameHint,
           ),
-          if (about != null && about!.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            _AboutText(about: about!),
-          ],
+        _UniqueIdentifier(
+          userIdHex: userIdHex,
+          nip05: nip05,
+          isOwnProfile: isOwnProfile,
+          accentColor: accentColor,
+        ),
+        if (about != null && about!.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _AboutText(about: about!),
         ],
-      ),
+      ],
     );
   }
 }
@@ -561,6 +532,132 @@ class _AboutTextState extends State<_AboutText> {
   }
 }
 
+/// The 334px background banner area. Shows a banner image, a color gradient,
+/// or a plain dark background depending on what the profile provides.
+class _ProfileBanner extends StatelessWidget {
+  const _ProfileBanner({
+    required this.height,
+    this.bannerUrl,
+    this.profileColor,
+  });
+
+  final double height;
+  final String? bannerUrl;
+  final Color? profileColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Layer 1: background (image or color gradient)
+          if (bannerUrl != null)
+            Image.network(
+              bannerUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  const ColoredBox(color: VineTheme.backgroundColor),
+            )
+          else if (profileColor != null)
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [profileColor!, profileColor!],
+                ),
+              ),
+            )
+          else
+            const ColoredBox(color: VineTheme.backgroundColor),
+
+          // Layer 2: gradient scrim fading to background at the bottom
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x00000000),
+                  VineTheme.backgroundColor,
+                ],
+                stops: [0.32, 1.0],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Stats row displaying Followers, Following, Likes, and Loops with dividers.
+class _ProfileStatsRow extends StatelessWidget {
+  const _ProfileStatsRow({
+    required this.userIdHex,
+    required this.isOwnProfile,
+    this.displayName,
+    this.profileStats,
+    this.videoCount = 0,
+  });
+
+  final String userIdHex;
+  final bool isOwnProfile;
+  final String? displayName;
+  final ProfileStats? profileStats;
+  final int videoCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ProfileFollowersStat(
+            pubkey: userIdHex,
+            displayName: displayName,
+            isOwnProfile: isOwnProfile,
+          ),
+          const _StatDivider(),
+          ProfileFollowingStat(
+            pubkey: userIdHex,
+            displayName: displayName,
+          ),
+          const _StatDivider(),
+          ProfileStatColumn(
+            count: profileStats?.totalLikes,
+            label: 'Likes',
+            isLoading: false,
+          ),
+          const _StatDivider(),
+          ProfileStatColumn(
+            count: profileStats?.totalViews,
+            label: 'Loops',
+            isLoading: false,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Vertical divider between stat columns.
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 2,
+      height: 44,
+      child: ColoredBox(color: VineTheme.outlineMuted),
+    );
+  }
+}
+
 /// Profile avatar with optional action label overlapping the bottom edge.
 ///
 /// When [pendingActions] is non-empty, a pill-shaped label (e.g. "Secure
@@ -587,7 +684,7 @@ class _ProfileAvatarWithColor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const avatarSize = 88.0;
+    const avatarSize = 144.0;
     final avatar = UserAvatar(imageUrl: imageUrl, size: avatarSize);
 
     if (pendingActions.isEmpty) return avatar;

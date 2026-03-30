@@ -252,13 +252,15 @@ void main() {
       },
     );
 
-    testWidgets('prefers archived video count when stats are provided', (
+    testWidgets('displays stats from ProfileStats when provided', (
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Counted User');
       const profileStats = ProfileStats(
         pubkey: testUserHex,
         videoCount: 42,
+        totalLikes: 100,
+        totalViews: 5000,
       );
 
       await tester.pumpWidget(
@@ -272,26 +274,26 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('42'), findsWidgets);
-      expect(find.text('Videos'), findsOneWidget);
+      expect(find.text('Likes'), findsOneWidget);
+      expect(find.text('Loops'), findsOneWidget);
     });
 
-    testWidgets('displays all three stat columns', (tester) async {
+    testWidgets('displays all four stat columns', (tester) async {
       final testProfile = createTestProfile(displayName: 'Test User');
 
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-
           profile: testProfile,
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Videos'), findsOneWidget);
       expect(find.text('Followers'), findsOneWidget);
       expect(find.text('Following'), findsOneWidget);
+      expect(find.text('Likes'), findsOneWidget);
+      expect(find.text('Loops'), findsOneWidget);
     });
 
     testWidgets('displays user bio when present', (tester) async {
