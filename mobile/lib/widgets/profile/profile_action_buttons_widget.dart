@@ -1,8 +1,6 @@
 // ABOUTME: Action buttons widget for profile page (library, share, follow)
 // ABOUTME: Shows different buttons for own profile vs other user profiles
 
-import 'dart:math';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
@@ -60,17 +58,17 @@ class ProfileActionButtons extends StatelessWidget {
             key: const Key('library-button'),
             expanded: true,
             leadingIcon: .filmSlate,
+            type: .secondary,
+            size: .small,
             label: 'My Library',
             onPressed: onOpenClips,
           ),
         ),
-        SizedBox.square(
-          dimension: max(48, MediaQuery.textScalerOf(context).scale(48)),
-          child: DivineIconButton(
-            icon: .shareFat,
-            type: .secondary,
-            onPressed: onShareProfile,
-          ),
+        DivineIconButton(
+          icon: .shareFat,
+          type: .secondary,
+          size: .small,
+          onPressed: onShareProfile,
         ),
       ];
     }
