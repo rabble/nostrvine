@@ -17,7 +17,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/widgets/notification_badge.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -334,7 +333,7 @@ void main() {
     });
 
     testWidgets(
-      'shows badge with count 1 for own profile without custom name',
+      'shows Complete your profile label for own profile without custom name',
       (tester) async {
         final profileWithDefaultName = createTestProfile();
 
@@ -347,15 +346,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(NotificationBadge), findsOneWidget);
-        final badge = tester.widget<NotificationBadge>(
-          find.byType(NotificationBadge),
-        );
-        expect(badge.count, equals(1));
+        expect(find.text('Complete your profile'), findsOneWidget);
       },
     );
 
-    testWidgets('hides badge while profile is still loading', (tester) async {
+    testWidgets('hides action label while profile is still loading', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
@@ -366,10 +363,13 @@ void main() {
       // Do not pumpAndSettle — provider never resolves
       await tester.pump();
 
-      expect(find.byType(NotificationBadge), findsNothing);
+      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text('Secure your account'), findsNothing);
     });
 
-    testWidgets('hides badge when profile has custom name', (tester) async {
+    testWidgets('hides action label when profile has custom name', (
+      tester,
+    ) async {
       final testProfile = createTestProfile(displayName: 'Test User');
 
       await tester.pumpWidget(
@@ -381,10 +381,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(NotificationBadge), findsNothing);
+      expect(find.text('Complete your profile'), findsNothing);
     });
 
-    testWidgets('hides badge for other profiles', (tester) async {
+    testWidgets('hides action label for other profiles', (tester) async {
       final profileWithDefaultName = createTestProfile();
 
       await tester.pumpWidget(
@@ -396,7 +396,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(NotificationBadge), findsNothing);
+      expect(find.text('Complete your profile'), findsNothing);
     });
 
     testWidgets(
@@ -546,9 +546,9 @@ void main() {
       });
     });
 
-    group('Action Badge', () {
+    group('Action Label', () {
       testWidgets(
-        'shows badge with count 1 for own profile when anonymous with name',
+        'shows Secure label when anonymous with custom name',
         (tester) async {
           final testProfile = createTestProfile(displayName: 'Test User');
 
@@ -562,16 +562,14 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.byType(NotificationBadge), findsOneWidget);
-          final badge = tester.widget<NotificationBadge>(
-            find.byType(NotificationBadge),
-          );
-          expect(badge.count, equals(1));
+          expect(find.text('Secure your account'), findsOneWidget);
+          // Only 1 action — no red count badge
+          expect(find.text('2'), findsNothing);
         },
       );
 
       testWidgets(
-        'shows badge with count 2 when anonymous and no custom name',
+        'shows Secure label with count badge when anonymous and no name',
         (tester) async {
           final profileWithDefaultName = createTestProfile();
 
@@ -585,15 +583,14 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.byType(NotificationBadge), findsOneWidget);
-          final badge = tester.widget<NotificationBadge>(
-            find.byType(NotificationBadge),
-          );
-          expect(badge.count, equals(2));
+          // Secure takes precedence
+          expect(find.text('Secure your account'), findsOneWidget);
+          // 2 actions — red badge with "2"
+          expect(find.text('2'), findsOneWidget);
         },
       );
 
-      testWidgets('hides badge when not anonymous and has custom name', (
+      testWidgets('hides label when not anonymous and has custom name', (
         tester,
       ) async {
         final testProfile = createTestProfile(displayName: 'Test User');
@@ -607,10 +604,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(NotificationBadge), findsNothing);
+        expect(find.text('Secure your account'), findsNothing);
+        expect(find.text('Complete your profile'), findsNothing);
       });
 
-      testWidgets('hides badge for other profiles even when anonymous', (
+      testWidgets('hides label for other profiles even when anonymous', (
         tester,
       ) async {
         final testProfile = createTestProfile(displayName: 'Test User');
@@ -625,10 +623,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(NotificationBadge), findsNothing);
+        expect(find.text('Secure your account'), findsNothing);
       });
 
-      testWidgets('tapping badge opens actions bottom sheet', (tester) async {
+      testWidgets('tapping label opens actions bottom sheet', (tester) async {
         final profileWithDefaultName = createTestProfile();
 
         await tester.pumpWidget(
@@ -641,8 +639,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Tap on the badge area (avatar with badge)
-        await tester.tap(find.byType(NotificationBadge));
+        // Tap on the action label
+        await tester.tap(find.text('Secure your account'));
         await tester.pumpAndSettle();
 
         // The bottom sheet should show the first action

@@ -17,7 +17,6 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
-import 'package:openvine/widgets/notification_badge.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_following_stat.dart';
@@ -142,12 +141,12 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 Row(
                   spacing: 20,
                   children: [
-                    // Profile picture with optional action badge
+                    // Profile picture with optional action label
                     _ProfileAvatarWithColor(
                       imageUrl: profilePictureUrl,
                       profileColor: profileColor,
-                      actionCount: pendingActions.length,
-                      onBadgeTap: pendingActions.isNotEmpty
+                      pendingActions: pendingActions,
+                      onActionTap: pendingActions.isNotEmpty
                           ? () => _showActionsSheet(
                               context,
                               pendingActions,
@@ -562,41 +561,153 @@ class _AboutTextState extends State<_AboutText> {
   }
 }
 
-/// Profile avatar with optional action-count badge overlay.
+/// Profile avatar with optional action label overlapping the bottom edge.
 ///
-/// When [actionCount] is > 0, a [NotificationBadge] is shown on top of the
-/// avatar and the whole area becomes tappable via [onBadgeTap].
+/// When [pendingActions] is non-empty, a pill-shaped label (e.g. "Secure
+/// your account") is centred below the avatar. A red count badge appears
+/// on the label when more than one action is pending. Tapping either the
+/// avatar or the label triggers [onActionTap].
 class _ProfileAvatarWithColor extends StatelessWidget {
   const _ProfileAvatarWithColor({
     required this.imageUrl,
     this.profileColor,
-    this.actionCount = 0,
-    this.onBadgeTap,
+    this.pendingActions = const [],
+    this.onActionTap,
   });
 
   final String? imageUrl;
   final Color? profileColor;
 
-  /// Number of pending profile actions to display in the badge.
-  final int actionCount;
+  /// Ordered list of pending profile actions. The first action determines
+  /// the label text and icon.
+  final List<ProfileActionType> pendingActions;
 
-  /// Called when the badge (or avatar area) is tapped.
-  final VoidCallback? onBadgeTap;
+  /// Called when the label or avatar is tapped.
+  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
     const avatarSize = 88.0;
     final avatar = UserAvatar(imageUrl: imageUrl, size: avatarSize);
 
-    if (actionCount <= 0) return avatar;
+    if (pendingActions.isEmpty) return avatar;
 
+    // The label overlaps the avatar bottom, so we need extra space below.
     return GestureDetector(
-      onTap: onBadgeTap,
-      child: NotificationBadge(
-        count: actionCount,
-        badgeColor: VineTheme.vineGreen,
-        child: avatar,
+      onTap: onActionTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          // Reserve space for label overflow below the avatar.
+          const SizedBox(width: avatarSize, height: avatarSize + 16),
+          avatar,
+          Positioned(
+            bottom: 0,
+            child: _ProfileActionLabel(
+              action: pendingActions.first,
+              badgeCount: pendingActions.length,
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+/// Pill-shaped label shown below the profile avatar for the highest-priority
+/// pending action. Displays an icon and text matching the action type, with
+/// an optional red badge when multiple actions are pending.
+class _ProfileActionLabel extends StatelessWidget {
+  const _ProfileActionLabel({
+    required this.action,
+    required this.badgeCount,
+  });
+
+  final ProfileActionType action;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, label) = switch (action) {
+      ProfileActionType.secureAccount => (
+        DivineIconName.lockSimple,
+        'Secure your account',
+      ),
+      ProfileActionType.completeProfile => (
+        DivineIconName.pencilSimple,
+        'Complete your profile',
+      ),
+    };
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 16, 8),
+          decoration: BoxDecoration(
+            color: VineTheme.accentYellowBackground,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A000000),
+                offset: Offset(0.4, 0.4),
+                blurRadius: 0.6,
+              ),
+              BoxShadow(
+                color: Color(0x1A000000),
+                offset: Offset(1, 1),
+                blurRadius: 1,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 8,
+            children: [
+              DivineIcon(
+                icon: icon,
+                size: 16,
+                color: VineTheme.accentYellow,
+              ),
+              Text(
+                label,
+                style: VineTheme.titleSmallFont(
+                  color: VineTheme.accentYellow,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Red count badge — only shown when multiple actions are pending.
+        if (badgeCount > 1)
+          Positioned(
+            right: -4,
+            top: -8,
+            child: Container(
+              constraints: const BoxConstraints(
+                minWidth: 20,
+                minHeight: 20,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: VineTheme.error,
+                borderRadius: BorderRadius.circular(1000),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                badgeCount.toString(),
+                style: const TextStyle(
+                  color: VineTheme.whiteText,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  height: 16 / 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
