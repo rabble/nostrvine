@@ -13,6 +13,7 @@ class ProfileActionButtons extends StatelessWidget {
     required this.isOwnProfile,
     this.displayName,
     this.onOpenClips,
+    this.onMessageUser,
     this.onShareProfile,
     this.onBlockedTap,
     super.key,
@@ -24,6 +25,7 @@ class ProfileActionButtons extends StatelessWidget {
   /// Display name for unfollow confirmation (required when not own profile).
   final String? displayName;
   final VoidCallback? onOpenClips;
+  final VoidCallback? onMessageUser;
   final VoidCallback? onShareProfile;
 
   /// Callback when the Blocked button is tapped.
@@ -79,6 +81,22 @@ class ProfileActionButtons extends StatelessWidget {
           displayName: displayName ?? 'user',
           onBlockedTap: onBlockedTap,
         ),
+      ),
+      Expanded(
+        child: DivineButton(
+          expanded: true,
+          leadingIcon: .envelopeSimple,
+          type: .secondary,
+          size: .small,
+          label: 'Message',
+          onPressed: onMessageUser,
+        ),
+      ),
+      DivineIconButton(
+        icon: .shareFat,
+        type: .secondary,
+        size: .small,
+        onPressed: onShareProfile,
       ),
     ];
   }

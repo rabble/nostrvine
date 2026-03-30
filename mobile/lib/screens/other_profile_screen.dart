@@ -11,6 +11,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
@@ -143,6 +145,20 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     _scrollController.dispose();
     _refreshNotifier.dispose();
     super.dispose();
+  }
+
+  void _messageUser(WidgetRef ref) {
+    final authService = ref.read(authServiceProvider);
+    final currentPubkey = authService.currentPublicKeyHex;
+    if (currentPubkey == null) return;
+
+    final conversationId = DmRepository.computeConversationId(
+      [currentPubkey, widget.pubkey],
+    );
+    context.push(
+      ConversationPage.pathForId(conversationId),
+      extra: [widget.pubkey],
+    );
   }
 
   Future<void> _more() async {
@@ -342,6 +358,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               displayName: displayName,
               videos: value.videos,
               scrollController: _scrollController,
+              onMessageUser: () => _messageUser(ref),
+              onShareProfile: _more,
               onBlockedTap: _showUnblockConfirmation,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,
