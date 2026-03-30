@@ -37,8 +37,14 @@ class SupportCenterScreen extends ConsumerWidget {
           child: ListView(
             children: [
               _SupportTile(
+                icon: Icons.chat,
+                title: 'Contact Support',
+                subtitle: 'Start a conversation or view past messages',
+                onTap: () => _viewSupportMessages(context),
+              ),
+              _SupportTile(
                 icon: Icons.bug_report,
-                title: 'Contact Support / Report a Bug',
+                title: 'Report a Bug',
                 subtitle: 'Technical issues with the app',
                 onTap: () => _showBugReport(
                   context,
@@ -55,12 +61,6 @@ class SupportCenterScreen extends ConsumerWidget {
                   bugReportService,
                   userPubkey,
                 ),
-              ),
-              _SupportTile(
-                icon: Icons.chat,
-                title: 'View Support Messages',
-                subtitle: 'Check responses from support',
-                onTap: () => _viewSupportMessages(context),
               ),
               _SupportTile(
                 icon: Icons.help,
