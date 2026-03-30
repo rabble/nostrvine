@@ -52,8 +52,7 @@ void main() {
 
     test('deduplicates entries that appear in both sets', () {
       // 60 info logs, then an error at minute 60.
-      // The error falls into both the "all errors" set AND the "last 50" set
-      // (last 50 = indices 11-60, which includes the error at index 60).
+      // The error falls into both the "all errors" set AND the "last 50" set.
       final logs = <LogEntry>[
         for (var i = 0; i < 60; i++) _log(i, LogLevel.info, 'info-$i'),
         _log(60, LogLevel.error, 'shared-error'),
