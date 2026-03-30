@@ -277,9 +277,6 @@ class _TextEditor extends StatelessWidget {
                 right: 48,
               ),
             ),
-            // Overlay text is decorative content, not prose. Disable keyboard
-            // suggestion UI so IME underlines do not leak into the editor.
-            enableSuggestions: false,
             enableAutocorrect: false,
             resizeToAvoidBottomInset: false,
             minFontScale: VideoEditorConstants.minFontScale,
