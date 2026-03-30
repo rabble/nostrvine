@@ -340,7 +340,7 @@ class _ProfileScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: VineTheme.surfaceBackground,
       extendBodyBehindAppBar: true,
       appBar: DiVineAppBar(
         title: '',

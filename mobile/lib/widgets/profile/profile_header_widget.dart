@@ -115,21 +115,23 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final appBarBottom = MediaQuery.paddingOf(context).top;
     final totalHeight = appBarBottom + avatarSize + actionLabelHeight;
 
-    return Column(
-      children: [
-        // Banner + avatar area
-        SizedBox(
-          width: double.infinity,
-          height: totalHeight,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Background: banner image, color gradient, or plain dark
-              _ProfileBanner(
-                bannerUrl: bannerUrl,
-                profileColor: profileColor,
-                height: bannerHeight,
-              ),
+    return ColoredBox(
+      color: VineTheme.surfaceBackground,
+      child: Column(
+        children: [
+          // Banner + avatar area
+          SizedBox(
+            width: double.infinity,
+            height: totalHeight,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Background: banner image or color, fades to transparent
+                _ProfileBanner(
+                  bannerUrl: bannerUrl,
+                  profileColor: profileColor,
+                  height: bannerHeight,
+                ),
 
               // Session expired banner (floats at top of banner area)
               if (isOwnProfile && hasExpiredSession)
@@ -161,27 +163,21 @@ class ProfileHeaderWidget extends ConsumerWidget {
         ),
 
         // Name, NIP-05, and bio (centered text)
-        Container(
-          width: double.infinity,
-          color: VineTheme.backgroundColor,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-            child: _ProfileNameAndBio(
-              profile: effectiveProfile,
-              userIdHex: userIdHex,
-              nip05: nip05,
-              about: about,
-              displayNameHint: displayNameHint,
-              accentColor: profileColor,
-              isOwnProfile: isOwnProfile,
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+          child: _ProfileNameAndBio(
+            profile: effectiveProfile,
+            userIdHex: userIdHex,
+            nip05: nip05,
+            about: about,
+            displayNameHint: displayNameHint,
+            accentColor: profileColor,
+            isOwnProfile: isOwnProfile,
           ),
         ),
 
         // Stats row: Followers | Following | Likes | Loops
-        Container(
-          width: double.infinity,
-          color: VineTheme.backgroundColor,
+        Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: _ProfileStatsRow(
             userIdHex: userIdHex,
@@ -191,7 +187,8 @@ class ProfileHeaderWidget extends ConsumerWidget {
             videoCount: videoCount,
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -535,7 +532,7 @@ class _ProfileBanner extends StatelessWidget {
               bannerUrl!,
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) =>
-                  const ColoredBox(color: VineTheme.backgroundColor),
+                  const ColoredBox(color: VineTheme.surfaceBackground),
             )
           else if (profileColor != null)
             DecoratedBox(
@@ -548,19 +545,19 @@ class _ProfileBanner extends StatelessWidget {
               ),
             )
           else
-            const ColoredBox(color: VineTheme.backgroundColor),
+            const ColoredBox(color: VineTheme.surfaceBackground),
 
-          // Layer 2: gradient scrim fading to background at the bottom
-          const DecoratedBox(
+          // Layer 2: gradient scrim fading to bg/surface at the bottom
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0x00000000),
-                  VineTheme.backgroundColor,
+                  VineTheme.surfaceBackground.withValues(alpha: 0),
+                  VineTheme.surfaceBackground,
                 ],
-                stops: [0.32, 1.0],
+                stops: const [0.0, 1.0],
               ),
             ),
           ),
