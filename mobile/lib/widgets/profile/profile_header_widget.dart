@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
@@ -404,49 +403,24 @@ class _UniqueIdentifier extends ConsumerWidget {
       displayText = npub;
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                displayText,
-                style: VineTheme.bodyMediumFont(color: linkColor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: GestureDetector(
-                onTap: () {
-                  // Only use NIP-05 subdomain when verification passed
-                  // to avoid linking to wrong profile (see divine-web#195)
-                  final verifiedNip05 = hasNip05 && !verificationFailed
-                      ? nip05
-                      : null;
-                  final profileUrl = buildProfileUrl(verifiedNip05, npub);
-                  ClipboardUtils.copy(
-                    context,
-                    profileUrl,
-                    message: 'Profile link copied',
-                  );
-                },
-                child: SvgPicture.asset(
-                  DivineIconName.copy.assetPath,
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(linkColor, BlendMode.srcIn),
-                ),
-              ),
-            ),
-          ],
-        ),
-        // NIP-05 verification failure is silently ignored for now.
-        // TODO(#1658): surface NIP-05 verification errors once backend is fixed.
-      ],
+    return GestureDetector(
+      onTap: () {
+        final verifiedNip05 = hasNip05 && !verificationFailed
+            ? nip05
+            : null;
+        final profileUrl = buildProfileUrl(verifiedNip05, npub);
+        ClipboardUtils.copy(
+          context,
+          profileUrl,
+          message: 'Profile link copied',
+        );
+      },
+      child: Text(
+        displayText,
+        style: VineTheme.bodyMediumFont(color: linkColor),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }
