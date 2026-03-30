@@ -33,10 +33,9 @@ class SectionHeader extends StatelessWidget {
               ),
             ),
             if (onTap != null)
-              const Icon(
-                Icons.chevron_right,
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
                 color: VineTheme.whiteText,
-                size: 24,
               ),
           ],
         ),

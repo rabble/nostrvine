@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:openvine/screens/search_results/widgets/widgets.dart';
 
 class SearchResultsView extends StatelessWidget {
+  /// Use [SearchResultsPage] to ensure BLoC providers are wired.
   const SearchResultsView({super.key});
 
   @override

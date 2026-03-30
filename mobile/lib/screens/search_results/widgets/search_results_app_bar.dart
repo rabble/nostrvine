@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,6 +24,7 @@ class SearchResultsAppBar extends StatefulWidget {
 class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller
       ..removeListener(_onSearchChanged)
       ..dispose();
@@ -49,10 +53,14 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
   }
 
   void _onSearchChanged() {
-    final query = _controller.text;
-    context.read<VideoSearchBloc>().add(VideoSearchQueryChanged(query));
-    context.read<UserSearchBloc>().add(UserSearchQueryChanged(query));
-    context.read<HashtagSearchBloc>().add(HashtagSearchQueryChanged(query));
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      final query = _controller.text;
+      context.read<VideoSearchBloc>().add(VideoSearchQueryChanged(query));
+      context.read<UserSearchBloc>().add(UserSearchQueryChanged(query));
+      context.read<HashtagSearchBloc>().add(HashtagSearchQueryChanged(query));
+    });
   }
 
   @override
@@ -95,10 +103,9 @@ class _BackButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: VineTheme.outlineMuted, width: 2),
         ),
-        child: const Icon(
-          Icons.chevron_left,
+        child: const DivineIcon(
+          icon: DivineIconName.caretLeft,
           color: VineTheme.whiteText,
-          size: 24,
         ),
       ),
     );

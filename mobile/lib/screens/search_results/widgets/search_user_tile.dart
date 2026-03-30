@@ -8,6 +8,9 @@ import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Reusable tile widget for displaying a user profile in search results.
+///
+/// Uses [ConsumerWidget] (Riverpod) because [nip05VerificationProvider] is a
+/// legacy Riverpod provider that has not yet been migrated to BLoC.
 class SearchUserTile extends ConsumerWidget {
   const SearchUserTile({required this.profile, this.onTap, super.key});
 
@@ -16,8 +19,8 @@ class SearchUserTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final followerCount = profile.rawData['follower_count'] as int?;
-    final videoCount = profile.rawData['video_count'] as int?;
+    final followerCount = profile.followerCount;
+    final videoCount = profile.videoCount;
     final claimedNip05 = profile.displayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref

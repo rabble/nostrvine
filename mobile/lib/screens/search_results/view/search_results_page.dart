@@ -5,58 +5,9 @@ import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/search_results/local_hashtag_search.dart';
 import 'package:openvine/screens/search_results/view/search_results_view.dart';
 import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
-
-// TODO(oscar): Move fallback logic into HashtagRepository
-// https://github.com/divinevideo/divine-mobile/issues/2535
-Future<List<String>> _searchLocalHashtags(
-  WidgetRef ref,
-  String query, {
-  int limit = 20,
-}) async {
-  final normalizedQuery = query.trim().replaceFirst('#', '').toLowerCase();
-  if (normalizedQuery.isEmpty) return const [];
-
-  final results = <String>[];
-  final seen = <String>{};
-
-  void addResults(Iterable<String> hashtags) {
-    for (final hashtag in hashtags) {
-      final normalizedTag = hashtag.replaceFirst('#', '').trim();
-      final key = normalizedTag.toLowerCase();
-      if (key.isEmpty || seen.contains(key)) continue;
-      seen.add(key);
-      results.add(normalizedTag);
-      if (results.length >= limit) return;
-    }
-  }
-
-  try {
-    addResults(
-      ref.read(hashtagServiceProvider).searchHashtags(normalizedQuery),
-    );
-  } catch (_) {
-    // Ignore local feed lookup failures and continue with static hashtags.
-  }
-
-  if (results.length >= limit) return results;
-
-  try {
-    await TopHashtagsService.instance.loadTopHashtags();
-    addResults(
-      TopHashtagsService.instance.searchHashtags(
-        normalizedQuery,
-        limit: limit,
-      ),
-    );
-  } catch (_) {
-    // Ignore asset lookup failures — remote results have already failed.
-  }
-
-  return results;
-}
 
 /// Page that creates and wires the search BLoCs, then renders
 /// [SearchResultsView].
@@ -78,6 +29,9 @@ class SearchResultsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profileRepository = ref.read(profileRepositoryProvider);
+    if (profileRepository == null) return const SizedBox.shrink();
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -87,7 +41,7 @@ class SearchResultsPage extends ConsumerWidget {
         ),
         BlocProvider(
           create: (_) => UserSearchBloc(
-            profileRepository: ref.read(profileRepositoryProvider)!,
+            profileRepository: profileRepository,
           ),
         ),
         BlocProvider(
@@ -96,7 +50,7 @@ class SearchResultsPage extends ConsumerWidget {
             // TODO(oscar): Move fallback logic into HashtagRepository
             // https://github.com/divinevideo/divine-mobile/issues/2535
             localHashtagSearch: (query, {limit = 20}) =>
-                _searchLocalHashtags(ref, query, limit: limit),
+                searchLocalHashtags(ref, query, limit: limit),
           ),
         ),
       ],
