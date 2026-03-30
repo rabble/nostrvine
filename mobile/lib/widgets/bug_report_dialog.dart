@@ -103,6 +103,10 @@ class _BugReportDialogState extends State<BugReportDialog> {
         userPubkey: widget.userPubkey,
       );
 
+      // Best-effort: upload full logs to Blossom
+      final fullLogsUrl =
+          await widget.bugReportService.uploadFullLogs(reportData);
+
       // Submit directly to Zendesk with structured fields
       final subject = _subjectController.text.trim();
       final success = await ZendeskSupportService.createStructuredBugReport(
@@ -117,6 +121,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
         userPubkey: widget.userPubkey,
         errorCounts: reportData.errorCounts,
         logsSummary: _buildLogsSummary(reportData.recentLogs),
+        fullLogsUrl: fullLogsUrl,
       );
 
       if (!_isDisposed && mounted) {
