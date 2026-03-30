@@ -78,17 +78,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
     final hashtagService = ref.read(hashtagServiceProvider);
 
-    // Run both fetches in parallel for speed
-    // Always try Funnelcake - it will fail fast if unavailable
-    final futures = <Future<void>>[
-      _fetchFromFunnelcake(),
-      _subscribeViaWebSocket(hashtagService),
-    ];
+    // Kick off both sources in the background and leave loading state
+    // immediately. This screen should render cached or empty content while
+    // the live subscription starts up.
+    unawaited(_fetchFromFunnelcake());
+    unawaited(_subscribeViaWebSocket(hashtagService));
 
-    // Both run in parallel - Funnelcake shows results immediately via setState
-    await Future.wait(futures);
-
-    if (!mounted) return;
     setState(() => _subscriptionAttempted = true);
   }
 
@@ -284,7 +279,6 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           '🏷️ Building HashtagFeedScreen for #${widget.hashtag}',
           category: LogCategory.video,
         );
-        final videoService = ref.watch(videoEventServiceProvider);
         final hashtagService = ref.watch(hashtagServiceProvider);
 
         // Combine Funnelcake videos (fast, pre-sorted) with WebSocket videos
@@ -305,15 +299,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           category: LogCategory.video,
         );
 
-        // Use per-subscription loading state for hashtag feed
-        final isLoadingHashtag = videoService.isLoadingForSubscription(
-          SubscriptionType.hashtag,
-        );
-
-        // Show loading if:
-        // 1. We haven't attempted subscription yet (initial state), OR
-        // 2. Subscription is actively loading
-        final shouldShowLoading = !_subscriptionAttempted || isLoadingHashtag;
+        // Show a full-screen loader only before the initial startup attempt.
+        // Once background loading has started, render empty or cached state
+        // instead of blocking on relay subscription setup.
+        final shouldShowLoading = !_subscriptionAttempted;
 
         if (shouldShowLoading && videos.isEmpty) {
           return Center(

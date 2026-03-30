@@ -2,6 +2,7 @@
 // ABOUTME: Manages video lists for individual user profiles with loadMore() capability
 // ABOUTME: Tries REST API first for better performance, falls back to Nostr subscription
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -152,9 +153,22 @@ class ProfileFeed extends _$ProfileFeed {
 
     // Fall back to Nostr subscription if REST API not used
     if (!_usingRestApi) {
-      // Subscribe to this user's videos (non-blocking: events stream in
-      // progressively via VideoEventService)
-      await videoEventService.subscribeToUserVideos(userId);
+      // Start the Nostr subscription in the background so the provider can
+      // return retained, cached, or empty state immediately.
+      unawaited(
+        videoEventService.subscribeToUserVideos(userId).catchError((
+          Object error,
+          StackTrace stackTrace,
+        ) {
+          Log.error(
+            'ProfileFeed: Background Nostr subscribe failed for user=$userId: $error',
+            name: 'ProfileFeedProvider',
+            category: LogCategory.video,
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }),
+      );
 
       // Return immediately with whatever videos are available.
       // Progressive updates arrive via the video update/new video listeners
