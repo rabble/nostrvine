@@ -17,7 +17,6 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
@@ -125,9 +124,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   /// Notifier to trigger refresh of profile BLoCs (likes, reposts).
   final _refreshNotifier = ValueNotifier<int>(0);
 
-  /// Whether a refresh is currently in progress.
-  bool _isRefreshing = false;
-
   /// Whether the profile feed load has been tracked.
   bool _hasTrackedFeedLoad = false;
 
@@ -147,44 +143,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     _scrollController.dispose();
     _refreshNotifier.dispose();
     super.dispose();
-  }
-
-  Future<void> _refreshProfile() async {
-    if (_isRefreshing) return;
-
-    setState(() => _isRefreshing = true);
-
-    try {
-      // Run refresh operations and minimum duration in parallel
-      // This ensures the spinner shows for at least 500ms for visual feedback
-      await Future.wait([
-        _doRefresh(),
-        Future<void>.delayed(const Duration(milliseconds: 500)),
-      ]);
-
-      Log.info(
-        '🔄 Profile refreshed for ${widget.pubkey}',
-        name: 'OtherProfileView',
-        category: LogCategory.ui,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isRefreshing = false);
-      }
-    }
-  }
-
-  Future<void> _doRefresh() async {
-    // Refresh videos from provider
-    await ref.read(profileFeedProvider(widget.pubkey).notifier).refresh();
-
-    if (!mounted) return;
-
-    // Refresh user profile info
-    context.read<OtherProfileBloc>().add(const OtherProfileRefreshRequested());
-
-    // Trigger BLoC refresh for likes/reposts via notifier
-    _refreshNotifier.value++;
   }
 
   Future<void> _more() async {
@@ -340,7 +298,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           OtherProfileLoaded(:final profile) => profile,
           OtherProfileError(:final profile) => profile,
         };
-        final profileColor = headerProfile?.profileBackgroundColor;
         final headerStats = statsAsync.value;
 
         final displayName =
@@ -349,23 +306,19 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             'Profile';
 
         return Scaffold(
-          backgroundColor: VineTheme.backgroundColor,
+          backgroundColor: VineTheme.surfaceBackground,
+          extendBodyBehindAppBar: true,
           appBar: DiVineAppBar(
-            title: displayName,
+            title: '',
             showBackButton: true,
             onBackPressed: context.pop,
-            backgroundColor: profileColor ?? VineTheme.navGreen,
+            backgroundMode: DiVineAppBarBackgroundMode.transparent,
+            style: DiVineAppBarStyle.transparentStyle.copyWith(
+              iconSize: 24,
+              iconButtonSize: 40,
+              iconButtonBorderRadius: 16,
+            ),
             actions: [
-              DiVineAppBarAction(
-                icon: _isRefreshing
-                    ? const MaterialIconSource(Icons.refresh)
-                    : SvgIconSource(
-                        DivineIconName.arrowsCounterClockwise.assetPath,
-                      ),
-                onPressed: _isRefreshing ? null : _refreshProfile,
-                tooltip: 'Refresh',
-                semanticLabel: 'Refresh profile',
-              ),
               DiVineAppBarAction(
                 icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
                 onPressed: _more,

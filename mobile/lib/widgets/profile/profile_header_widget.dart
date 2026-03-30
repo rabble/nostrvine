@@ -133,60 +133,60 @@ class ProfileHeaderWidget extends ConsumerWidget {
                   height: bannerHeight,
                 ),
 
-              // Session expired banner (floats at top of banner area)
-              if (isOwnProfile && hasExpiredSession)
-                const Positioned(
-                  top: 8,
-                  left: 16,
-                  right: 16,
-                  child: _SessionExpiredBanner(),
-                ),
+                // Session expired banner (floats at top of banner area)
+                if (isOwnProfile && hasExpiredSession)
+                  const Positioned(
+                    top: 8,
+                    left: 16,
+                    right: 16,
+                    child: _SessionExpiredBanner(),
+                  ),
 
-              // Centered avatar — top edge aligns with app bar bottom
-              Positioned(
-                top: appBarBottom,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: _ProfileAvatarWithColor(
-                    imageUrl: profilePictureUrl,
-                    profileColor: profileColor,
-                    pendingActions: pendingActions,
-                    onActionTap: pendingActions.isNotEmpty
-                        ? () => _showActionsSheet(context, pendingActions)
-                        : null,
+                // Centered avatar — top edge aligns with app bar bottom
+                Positioned(
+                  top: appBarBottom,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: _ProfileAvatarWithColor(
+                      imageUrl: profilePictureUrl,
+                      profileColor: profileColor,
+                      pendingActions: pendingActions,
+                      onActionTap: pendingActions.isNotEmpty
+                          ? () => _showActionsSheet(context, pendingActions)
+                          : null,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        // Name, NIP-05, and bio (centered text)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-          child: _ProfileNameAndBio(
-            profile: effectiveProfile,
-            userIdHex: userIdHex,
-            nip05: nip05,
-            about: about,
-            displayNameHint: displayNameHint,
-            accentColor: profileColor,
-            isOwnProfile: isOwnProfile,
+          // Name, NIP-05, and bio (centered text)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+            child: _ProfileNameAndBio(
+              profile: effectiveProfile,
+              userIdHex: userIdHex,
+              nip05: nip05,
+              about: about,
+              displayNameHint: displayNameHint,
+              accentColor: profileColor,
+              isOwnProfile: isOwnProfile,
+            ),
           ),
-        ),
 
-        // Stats row: Followers | Following | Likes | Loops
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: _ProfileStatsRow(
-            userIdHex: userIdHex,
-            displayName: displayName,
-            isOwnProfile: isOwnProfile,
-            profileStats: profileStats,
-            videoCount: videoCount,
+          // Stats row: Followers | Following | Likes | Loops
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: _ProfileStatsRow(
+              userIdHex: userIdHex,
+              displayName: displayName,
+              isOwnProfile: isOwnProfile,
+              profileStats: profileStats,
+              videoCount: videoCount,
+            ),
           ),
-        ),
         ],
       ),
     );
@@ -402,9 +402,7 @@ class _UniqueIdentifier extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        final verifiedNip05 = hasNip05 && !verificationFailed
-            ? nip05
-            : null;
+        final verifiedNip05 = hasNip05 && !verificationFailed ? nip05 : null;
         final profileUrl = buildProfileUrl(verifiedNip05, npub);
         ClipboardUtils.copy(
           context,
