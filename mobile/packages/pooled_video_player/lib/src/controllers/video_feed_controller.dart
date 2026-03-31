@@ -1025,11 +1025,16 @@ class VideoFeedController extends ChangeNotifier {
       _logDebug(
         'player_error ${_videoDebugDetails(index)} '
         'error=$error '
-        'source=${_openedSources[index]}',
+        'source=${_openedSources[index]} '
+        'loadState=${_loadStates[index]}',
       );
-      // Media decoding failed (e.g. server returned JSON instead of video).
-      // Try the next fallback source before giving up.
-      unawaited(_retryCurrentVideoWithNextSource(index));
+      // Only act on errors during initial load. Once the video is playing
+      // successfully (LoadState.ready), mpv may emit non-critical errors
+      // (e.g. on loop seeks, transient network hiccups) that should not
+      // trigger a source failover.
+      if (_loadStates[index] == LoadState.loading) {
+        unawaited(_retryCurrentVideoWithNextSource(index));
+      }
     });
   }
 
