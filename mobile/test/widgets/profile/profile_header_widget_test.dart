@@ -278,7 +278,35 @@ void main() {
       expect(find.text('Loops'), findsOneWidget);
     });
 
-    testWidgets('displays all four stat columns', (tester) async {
+    testWidgets('displays all four stat columns when stats are available', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'Test User');
+      const profileStats = ProfileStats(
+        pubkey: testUserHex,
+        totalLikes: 0,
+        totalViews: 0,
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: testProfile,
+          profileStats: profileStats,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Followers'), findsOneWidget);
+      expect(find.text('Following'), findsOneWidget);
+      expect(find.text('Likes'), findsOneWidget);
+      expect(find.text('Loops'), findsOneWidget);
+    });
+
+    testWidgets('hides Likes and Loops columns when stats are null', (
+      tester,
+    ) async {
       final testProfile = createTestProfile(displayName: 'Test User');
 
       await tester.pumpWidget(
@@ -292,8 +320,8 @@ void main() {
 
       expect(find.text('Followers'), findsOneWidget);
       expect(find.text('Following'), findsOneWidget);
-      expect(find.text('Likes'), findsOneWidget);
-      expect(find.text('Loops'), findsOneWidget);
+      expect(find.text('Likes'), findsNothing);
+      expect(find.text('Loops'), findsNothing);
     });
 
     testWidgets('displays user bio when present', (tester) async {
