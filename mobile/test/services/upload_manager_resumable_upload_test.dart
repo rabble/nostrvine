@@ -248,12 +248,14 @@ void main() {
           return uploadCompleter.future;
         });
 
-        unawaited(
-          uploadManager.startUpload(
-            videoFile: videoFile,
-            nostrPubkey: 'test-pubkey',
-            title: 'Serialization test',
-          ),
+        // Start the upload — startUpload blocks until the upload completes,
+        // but we need to interact with the callback mid-upload so we don't
+        // await yet. We await uploadFuture at the end so the full
+        // post-upload logic finishes before tearDown disposes the manager.
+        final uploadFuture = uploadManager.startUpload(
+          videoFile: videoFile,
+          nostrPubkey: 'test-pubkey',
+          title: 'Serialization test',
         );
 
         await TestHelpers.waitForCondition(
@@ -296,6 +298,8 @@ void main() {
         );
         expect(persisted.uploadProgress, closeTo(expectedProgress, 0.001));
 
+        // Complete the upload future and await the full startUpload so
+        // post-upload logic finishes before tearDown disposes the manager.
         uploadCompleter.complete(
           const BlossomUploadResult(
             success: true,
@@ -304,6 +308,7 @@ void main() {
             fallbackUrl: 'https://media.divine.video/video-serial',
           ),
         );
+        await uploadFuture;
       },
     );
 
