@@ -138,6 +138,40 @@ void main() {
       expect(coordinator.metrics.serviceTimings['NostrService'], isNotNull);
     });
 
+    test(
+      'should leave deferred phases pending after blocking startup only',
+      () async {
+        final deferredCompleter = Completer<void>();
+
+        coordinator.registerService(
+          name: 'EnvironmentService',
+          phase: StartupPhase.critical,
+          initialize: () async {},
+        );
+
+        coordinator.registerService(
+          name: 'DeferredWarmup',
+          phase: StartupPhase.deferred,
+          initialize: () => deferredCompleter.future,
+          optional: true,
+        );
+
+        await coordinator.initializeThrough(StartupPhase.critical);
+
+        expect(coordinator.isPhaseComplete(StartupPhase.critical), isTrue);
+        expect(coordinator.isPhaseComplete(StartupPhase.deferred), isFalse);
+
+        final remainingFuture = coordinator.initializeRemaining();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.isPhaseComplete(StartupPhase.deferred), isFalse);
+
+        deferredCompleter.complete();
+        await remainingFuture;
+
+        expect(coordinator.isPhaseComplete(StartupPhase.deferred), isTrue);
+      },
+    );
+
     test('should detect and warn about slow initialization', () async {
       // Arrange
       final completer = Completer<void>();

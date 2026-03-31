@@ -90,71 +90,47 @@ class StartupCoordinator {
   }
 
   /// Initialize all services
-  Future<void> initialize() async {
-    if (_isInitializing) {
-      throw StateError('Initialization already in progress');
-    }
+  Future<void> initialize() => _runInitialization(
+    logMessage: 'Starting app initialization',
+    body: () => _initializePhases(StartupPhase.values),
+  );
 
-    _isInitializing = true;
-    Log.info('Starting app initialization', name: 'StartupCoordinator');
+  /// Initialize services only through the requested phase.
+  Future<void> initializeThrough(StartupPhase lastPhase) => _runInitialization(
+    logMessage: 'Starting app initialization through ${lastPhase.name} phase',
+    body: () => _initializePhases(
+      StartupPhase.values.where(
+        (phase) => phase.priority <= lastPhase.priority,
+      ),
+    ),
+  );
 
-    try {
-      // Initialize phases in order
-      for (final phase in StartupPhase.values) {
-        await _initializePhase(phase);
-      }
-
-      _metrics = _metricsCollector.generateMetrics();
-      Log.info(
-        'App initialization complete in ${_metrics!.totalDuration.inMilliseconds}ms',
-        name: 'StartupCoordinator',
-      );
-
-      if (kDebugMode) {
-        debugPrint(_metrics!.generateReport());
-      }
-    } finally {
-      _isInitializing = false;
-      _progressController.add(1);
-    }
-  }
+  /// Initialize every phase that has not already completed.
+  Future<void> initializeRemaining() => _runInitialization(
+    logMessage: 'Starting remaining app initialization phases',
+    body: () => _initializePhases(
+      StartupPhase.values.where((phase) => !isPhaseComplete(phase)),
+    ),
+  );
 
   /// Initialize with progressive loading
-  Future<void> initializeProgressive() async {
-    if (_isInitializing) {
-      throw StateError('Initialization already in progress');
-    }
+  Future<void> initializeProgressive() => _runInitialization(
+    logMessage: 'Starting progressive app initialization',
+    body: () async {
+      // Start all phases concurrently but respect dependencies
+      final phaseFutures = <StartupPhase, Future<void>>{};
 
-    _isInitializing = true;
-    Log.info(
-      'Starting progressive app initialization',
-      name: 'StartupCoordinator',
-    );
+      for (final phase in StartupPhase.values) {
+        if (isPhaseComplete(phase)) continue;
+        phaseFutures[phase] = _initializePhaseWithDependencies(
+          phase,
+          phaseFutures,
+        );
+      }
 
-    // Start all phases concurrently but respect dependencies
-    final phaseFutures = <StartupPhase, Future<void>>{};
-
-    for (final phase in StartupPhase.values) {
-      phaseFutures[phase] = _initializePhaseWithDependencies(
-        phase,
-        phaseFutures,
-      );
-    }
-
-    // Wait for all phases
-    try {
       await Future.wait(phaseFutures.values);
-      _metrics = _metricsCollector.generateMetrics();
-
-      Log.info(
-        'Progressive initialization complete in ${_metrics!.totalDuration.inMilliseconds}ms',
-        name: 'StartupCoordinator',
-      );
-    } finally {
-      _isInitializing = false;
-      _progressController.add(1);
-    }
-  }
+    },
+  );
 
   /// Wait for a specific phase to complete
   Future<void> waitForPhase(StartupPhase phase) async {
@@ -195,6 +171,8 @@ class StartupCoordinator {
 
   /// Initialize all services in a phase
   Future<void> _initializePhase(StartupPhase phase) async {
+    if (isPhaseComplete(phase)) return;
+
     final services = _servicesByPhase[phase] ?? [];
     if (services.isEmpty) {
       _markPhaseComplete(phase);
@@ -227,6 +205,10 @@ class StartupCoordinator {
 
   /// Initialize a single service
   Future<void> _initializeService(ServiceRegistration service) async {
+    if (_completedServices[service.name] ?? false) {
+      return;
+    }
+
     Log.debug('Initializing ${service.name}', name: 'StartupCoordinator');
     CrashReportingService.instance.logInitializationStep(
       'Initializing service: ${service.name}',
@@ -347,6 +329,50 @@ class StartupCoordinator {
       }
     }
     return StartupPhase.values.first;
+  }
+
+  Future<void> _initializePhases(Iterable<StartupPhase> phases) async {
+    for (final phase in phases) {
+      await _initializePhase(phase);
+    }
+  }
+
+  Future<void> _runInitialization({
+    required String logMessage,
+    required Future<void> Function() body,
+  }) async {
+    if (_isInitializing) {
+      throw StateError('Initialization already in progress');
+    }
+
+    _isInitializing = true;
+    Log.info(logMessage, name: 'StartupCoordinator');
+
+    try {
+      await body();
+      _finalizeMetricsIfComplete();
+    } finally {
+      _isInitializing = false;
+    }
+  }
+
+  void _finalizeMetricsIfComplete() {
+    final allPhasesComplete = StartupPhase.values.every(isPhaseComplete);
+    if (!allPhasesComplete) {
+      return;
+    }
+
+    _metrics = _metricsCollector.generateMetrics();
+    Log.info(
+      'App initialization complete in ${_metrics!.totalDuration.inMilliseconds}ms',
+      name: 'StartupCoordinator',
+    );
+
+    if (kDebugMode) {
+      debugPrint(_metrics!.generateReport());
+    }
+
+    _progressController.add(1);
   }
 
   void dispose() {

@@ -180,6 +180,73 @@ void main() {
       await initFuture;
     });
 
+    test('should initialize only through the requested phase', () async {
+      coordinator.registerService(
+        name: 'EnvironmentService',
+        phase: StartupPhase.critical,
+        initialize: createServiceInitializer('EnvironmentService'),
+      );
+
+      coordinator.registerService(
+        name: 'AuthService',
+        phase: StartupPhase.essential,
+        initialize: createServiceInitializer('AuthService'),
+      );
+
+      final initFuture = coordinator.initializeThrough(StartupPhase.critical);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(initializationLog, contains('EnvironmentService:start'));
+      expect(initializationLog, isNot(contains('AuthService:start')));
+
+      serviceCompleters['EnvironmentService']!.complete();
+      await initFuture;
+
+      expect(
+        initializationLog.where((entry) => entry == 'EnvironmentService:start'),
+        hasLength(1),
+      );
+      expect(initializationLog, isNot(contains('AuthService:start')));
+      expect(coordinator.isPhaseComplete(StartupPhase.critical), isTrue);
+      expect(coordinator.isPhaseComplete(StartupPhase.essential), isFalse);
+    });
+
+    test(
+      'should continue remaining phases without restarting completed work',
+      () async {
+        coordinator.registerService(
+          name: 'EnvironmentService',
+          phase: StartupPhase.critical,
+          initialize: createServiceInitializer('EnvironmentService'),
+        );
+
+        coordinator.registerService(
+          name: 'AuthService',
+          phase: StartupPhase.essential,
+          initialize: createServiceInitializer('AuthService'),
+        );
+
+        serviceCompleters['EnvironmentService']!.complete();
+        await coordinator.initializeThrough(StartupPhase.critical);
+
+        final initFuture = coordinator.initializeRemaining();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          initializationLog.where(
+            (entry) => entry == 'EnvironmentService:start',
+          ),
+          hasLength(1),
+        );
+        expect(initializationLog, contains('AuthService:start'));
+
+        serviceCompleters['AuthService']!.complete();
+        await initFuture;
+
+        expect(coordinator.isPhaseComplete(StartupPhase.essential), isTrue);
+      },
+    );
+
     test('should handle initialization failures gracefully', () async {
       coordinator.registerService(
         name: 'FailingService',

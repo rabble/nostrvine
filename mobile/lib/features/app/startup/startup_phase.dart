@@ -3,20 +3,16 @@
 
 /// Phases of application startup in priority order
 enum StartupPhase implements Comparable<StartupPhase> {
-  /// Must initialize before app can function
-  /// Examples: Auth, key storage, core platform services
+  /// Must complete before `runApp()` so the first route can build safely.
   critical(0, 'Critical services'),
 
-  /// Required for basic UI interaction
-  /// Examples: Navigation, theme, basic UI state
+  /// Starts right after the first frame to unblock auth/core readiness.
   essential(1, 'Essential UI'),
 
-  /// Important but not blocking
-  /// Examples: User profiles, video feed, social features
+  /// Background startup work that improves later interactions.
   standard(2, 'Standard features'),
 
-  /// Can be loaded after UI is responsive
-  /// Examples: Analytics, caching, optimization services
+  /// Nice-to-have warmups and observability that should stay off first paint.
   deferred(3, 'Deferred services')
   ;
 
