@@ -4293,7 +4293,7 @@ void main() {
       test('handles URLs that trigger FormatException', () async {
         // A URL with an invalid format to trigger the FormatException catch
         final videos = [
-          VideoItem(
+          const VideoItem(
             id: 'bad_url_video',
             url: 'https://media.divine.video/abc/hls/master.m3u8',
           ),
