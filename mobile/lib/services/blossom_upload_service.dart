@@ -324,6 +324,55 @@ class BlossomUploadService {
     };
   }
 
+  bool _isTransientCapabilityDiscoveryError(DioException error) {
+    final statusCode = error.response?.statusCode;
+    if (statusCode != null && statusCode >= 500) return true;
+
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError => true,
+      _ => false,
+    };
+  }
+
+  bool _isDivineOwnedUploadHost(String serverUrl) {
+    final host = Uri.tryParse(serverUrl)?.host.toLowerCase();
+    if (host == null || host.isEmpty) {
+      return false;
+    }
+
+    return host == 'divine.video' || host.endsWith('.divine.video');
+  }
+
+  Future<BlossomUploadResult> _uploadToServerLegacyFallback({
+    required String serverUrl,
+    required File file,
+    required String fileHash,
+    required int fileSize,
+    required String contentType,
+    required String fallbackReason,
+    String? proofManifestJson,
+    void Function(double)? onProgress,
+  }) async {
+    Log.warning(
+      'Falling back to legacy upload for $serverUrl after resumable failure: $fallbackReason',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
+    );
+
+    return _uploadToServer(
+      serverUrl: serverUrl,
+      file: file,
+      fileHash: fileHash,
+      fileSize: fileSize,
+      contentType: contentType,
+      proofManifestJson: proofManifestJson,
+      onProgress: onProgress,
+    );
+  }
+
   Map<String, String>? _parseRequiredHeaders(dynamic headersData) {
     if (headersData is! Map) {
       return null;
@@ -414,6 +463,26 @@ class BlossomUploadService {
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
+
+      if (_isDivineOwnedUploadHost(serverUrl) &&
+          _isTransientCapabilityDiscoveryError(error)) {
+        final fallback = cached?.capability.supportsResumable == true
+            ? cached!.capability
+            : const _DivineUploadCapability(supportsResumable: true);
+
+        Log.warning(
+          'Assuming resumable upload support for Divine host $serverUrl after transient capability probe failure',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+
+        _capabilityCache[serverUrl] = _CachedCapability(
+          fallback,
+          _clock().add(_capabilityCacheTtl),
+        );
+
+        return fallback;
+      }
 
       const fallback = _DivineUploadCapability(supportsResumable: false);
 
@@ -1051,27 +1120,61 @@ class BlossomUploadService {
             );
           }
 
-          final result = useResumable
-              ? await _uploadToServerResumable(
-                  serverUrl: serverUrl,
-                  file: videoFile,
-                  fileHash: fileHash,
-                  fileSize: fileSize,
-                  contentType: 'video/mp4',
-                  proofManifestJson: proofManifestJson,
-                  resumableSession: resumableSession,
-                  onProgress: onProgress,
-                  onResumableSessionUpdated: onResumableSessionUpdated,
-                )
-              : await _uploadToServer(
-                  serverUrl: serverUrl,
-                  file: videoFile,
-                  fileHash: fileHash,
-                  fileSize: fileSize,
-                  contentType: 'video/mp4',
-                  proofManifestJson: proofManifestJson,
-                  onProgress: onProgress,
-                );
+          late BlossomUploadResult result;
+          if (useResumable) {
+            try {
+              result = await _uploadToServerResumable(
+                serverUrl: serverUrl,
+                file: videoFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: 'video/mp4',
+                proofManifestJson: proofManifestJson,
+                resumableSession: resumableSession,
+                onProgress: onProgress,
+                onResumableSessionUpdated: onResumableSessionUpdated,
+              );
+            } catch (error) {
+              if (!_isDivineOwnedUploadHost(serverUrl)) {
+                rethrow;
+              }
+
+              result = await _uploadToServerLegacyFallback(
+                serverUrl: serverUrl,
+                file: videoFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: 'video/mp4',
+                proofManifestJson: proofManifestJson,
+                onProgress: onProgress,
+                fallbackReason: error.toString(),
+              );
+            }
+
+            if (!result.success && _isDivineOwnedUploadHost(serverUrl)) {
+              result = await _uploadToServerLegacyFallback(
+                serverUrl: serverUrl,
+                file: videoFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: 'video/mp4',
+                proofManifestJson: proofManifestJson,
+                onProgress: onProgress,
+                fallbackReason:
+                    result.errorMessage ?? 'unknown resumable failure',
+              );
+            }
+          } else {
+            result = await _uploadToServer(
+              serverUrl: serverUrl,
+              file: videoFile,
+              fileHash: fileHash,
+              fileSize: fileSize,
+              contentType: 'video/mp4',
+              proofManifestJson: proofManifestJson,
+              onProgress: onProgress,
+            );
+          }
 
           if (result.success) {
             // Construct the canonical Blossom URL from server + hash

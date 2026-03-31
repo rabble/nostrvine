@@ -910,7 +910,7 @@ class ZendeskSupportService {
     }
     if (logsSummary != null && logsSummary.isNotEmpty) {
       buffer.writeln();
-      buffer.writeln('### Recent Logs (Summary)');
+      buffer.writeln('### Recent Logs (errors/warnings + recent context)');
       buffer.writeln('```');
       buffer.writeln(logsSummary);
       buffer.writeln('```');

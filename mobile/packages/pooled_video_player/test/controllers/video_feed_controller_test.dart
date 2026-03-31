@@ -2536,6 +2536,84 @@ void main() {
         ]);
       });
 
+      test(
+        'desktop canonical Divine MP4 URLs retry raw blob before HLS '
+        'when the derivative open fails',
+        () async {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+          addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+          const hash =
+              'abcdef9876543210abcdef9876543210'
+              'abcdef9876543210abcdef9876543210';
+          const mp4Url = 'https://media.divine.video/$hash/720p.mp4';
+          const rawUrl = 'https://media.divine.video/$hash';
+          const hlsUrl = 'https://media.divine.video/$hash/hls/master.m3u8';
+          const divineVideo = VideoItem(id: 'divine_video', url: mp4Url);
+          final setup = createMockPlayerSetup();
+          when(
+            () => setup.player.open(
+              any(that: isA<Media>().having((m) => m.uri, 'uri', mp4Url)),
+              play: false,
+            ),
+          ).thenThrow(Exception('202 processing'));
+          when(
+            () => setup.player.open(
+              any(that: isA<Media>().having((m) => m.uri, 'uri', rawUrl)),
+              play: false,
+            ),
+          ).thenThrow(Exception('codec mismatch'));
+          when(
+            () => setup.player.open(
+              any(that: isA<Media>().having((m) => m.uri, 'uri', hlsUrl)),
+              play: false,
+            ),
+          ).thenAnswer((_) async {});
+
+          final pooledPlayer = _MockPooledPlayer();
+          when(() => pooledPlayer.player).thenReturn(setup.player);
+          when(
+            () => pooledPlayer.videoController,
+          ).thenReturn(createMockVideoController());
+          when(() => pooledPlayer.isDisposed).thenReturn(false);
+          when(() => pooledPlayer.wasRecycled).thenReturn(false);
+          when(pooledPlayer.clearRecycled).thenReturn(null);
+          when(pooledPlayer.dispose).thenAnswer((_) async {});
+
+          final localPool = TestablePlayerPool(
+            maxPlayers: 1,
+            mockPlayerFactory: (_) => pooledPlayer,
+          );
+          addTearDown(() async {
+            await setup.dispose();
+            await localPool.dispose();
+          });
+
+          final controller = VideoFeedController(
+            videos: [divineVideo],
+            pool: localPool,
+          );
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          verifyInOrder([
+            () => setup.player.open(
+              any(that: isA<Media>().having((m) => m.uri, 'uri', mp4Url)),
+              play: false,
+            ),
+            () => setup.player.open(
+              any(that: isA<Media>().having((m) => m.uri, 'uri', rawUrl)),
+              play: false,
+            ),
+            () => setup.player.open(
+              any(that: isA<Media>().having((m) => m.uri, 'uri', hlsUrl)),
+              play: false,
+            ),
+          ]);
+        },
+      );
+
       test('accepts HLS URLs with .m3u8 extension', () {
         final hlsVideos = [
           const VideoItem(
@@ -3656,6 +3734,63 @@ void main() {
 
           controller.dispose();
           await stuckPool.dispose();
+        },
+      );
+
+      test(
+        'retries the raw Divine blob before error when a derivative stalls',
+        () async {
+          const hash =
+              '1234567890abcdef1234567890abcdef'
+              '1234567890abcdef1234567890abcdef';
+          const mp4Url = 'https://media.divine.video/$hash/720p.mp4';
+          const rawUrl = 'https://media.divine.video/$hash';
+          final videos = [
+            const VideoItem(id: 'video_0', url: 'https://example.com/a.mp4'),
+            const VideoItem(id: 'divine_video', url: mp4Url),
+          ];
+
+          final setupByUrl = <String, MockPlayerSetup>{};
+          final divinePool = TestablePlayerPool(
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup();
+              setupByUrl[url] = setup;
+              return createMockPooledPlayerFromSetup(setup);
+            },
+          );
+
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: divinePool,
+            preloadBehind: 0,
+            preloadAhead: 1,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          final setup = setupByUrl[mp4Url]!;
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          controller.onPageChanged(1);
+          final notifier = controller.getIndexNotifier(1);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          expect(notifier.value.isReady, isTrue);
+          expect(notifier.value.hasError, isFalse);
+
+          await Future<void>.delayed(const Duration(milliseconds: 5500));
+
+          verify(
+            () => setup.player.open(
+              any(that: isA<Media>().having((m) => m.uri, 'uri', rawUrl)),
+              play: false,
+            ),
+          ).called(1);
+          expect(notifier.value.hasError, isFalse);
+
+          controller.dispose();
+          await divinePool.dispose();
         },
       );
 

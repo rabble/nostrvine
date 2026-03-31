@@ -16,14 +16,17 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('returns true when contentWarningLabels is non-empty', () {
-      final result = shouldShowContentWarningOverlay(
-        contentWarningLabels: ['violence'],
-        warnLabels: [],
-      );
+    test(
+      'returns false when contentWarningLabels is non-empty but warnLabels is empty',
+      () {
+        final result = shouldShowContentWarningOverlay(
+          contentWarningLabels: ['violence'],
+          warnLabels: [],
+        );
 
-      expect(result, isTrue);
-    });
+        expect(result, isFalse);
+      },
+    );
 
     test('returns true when warnLabels is non-empty', () {
       final result = shouldShowContentWarningOverlay(
