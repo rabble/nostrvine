@@ -920,5 +920,257 @@ void main() {
         );
       });
     });
+
+    group('error state with overlay', () {
+      testWidgets('renders overlay in error state when overlayBuilder given', (
+        tester,
+      ) async {
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.error),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            overlayBuilder: (context, controller, player) =>
+                const Text('Error Overlay'),
+          ),
+        );
+
+        expect(find.text('Error Overlay'), findsOneWidget);
+        expect(find.text('Failed to load video'), findsOneWidget);
+      });
+    });
+
+    group('didUpdateWidget', () {
+      testWidgets('resets reveal state when videoController changes', (
+        tester,
+      ) async {
+        final firstCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => firstCompleter.future);
+
+        // Start with first controller
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.ready,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        // Complete first frame
+        firstCompleter.complete();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+
+        // Create a new mock video controller
+        final newMockVideoController = _MockVideoController();
+        final newTextureIdNotifier = ValueNotifier<int?>(5);
+        final newTextureRectNotifier = ValueNotifier<Rect?>(
+          const Rect.fromLTWH(0, 0, 1920, 1080),
+        );
+        final secondCompleter = Completer<void>();
+        when(
+          () => newMockVideoController.id,
+        ).thenReturn(newTextureIdNotifier);
+        when(
+          () => newMockVideoController.rect,
+        ).thenReturn(newTextureRectNotifier);
+        when(
+          () => newMockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => secondCompleter.future);
+
+        // Swap to new controller — should reset reveal state
+        indexNotifiers[0]!.value = VideoIndexState(
+          loadState: LoadState.ready,
+          videoController: newMockVideoController,
+          player: mockPlayer,
+        );
+        await tester.pump();
+
+        // Should be hidden again (reset)
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        // Complete second controller's first frame
+        secondCompleter.complete();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
+
+      testWidgets('syncs fallback timer when readyForFallback changes', (
+        tester,
+      ) async {
+        final neverCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => neverCompleter.future);
+
+        // Start in loading state (readyForFallback = false)
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        // Wait for fallback timeout — should NOT reveal because loading
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        // Switch to ready state (readyForFallback = true)
+        indexNotifiers[0]!.value = VideoIndexState(
+          loadState: LoadState.ready,
+          videoController: mockVideoController,
+          player: mockPlayer,
+        );
+        await tester.pump();
+
+        // Wait for new fallback timeout
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        // Now the fallback should have revealed the video
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
+
+      testWidgets(
+        'cancels fallback timer when readyForFallback becomes false',
+        (tester) async {
+          final neverCompleter = Completer<void>();
+          when(
+            () => mockVideoController.waitUntilFirstFrameRendered,
+          ).thenAnswer((_) => neverCompleter.future);
+
+          // Start in ready state (readyForFallback = true)
+          indexNotifiers[0] = ValueNotifier(
+            VideoIndexState(
+              loadState: LoadState.ready,
+              videoController: mockVideoController,
+              player: mockPlayer,
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+
+          // Switch back to loading before timeout fires
+          indexNotifiers[0]!.value = VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          );
+          await tester.pump();
+
+          // Wait for the fallback timeout duration
+          await tester.pump(const Duration(seconds: 2));
+          await tester.pump(const Duration(milliseconds: 120));
+
+          final opacityFinder = find.ancestor(
+            of: find.byKey(const Key('video_widget')),
+            matching: find.byType(AnimatedOpacity),
+          );
+
+          // Should stay hidden — timer was cancelled
+          expect(
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+            equals(0),
+          );
+        },
+      );
+
+      testWidgets(
+        'cancels fallback timer early when first frame already rendered',
+        (tester) async {
+          // Start ready with first frame that completes immediately
+          indexNotifiers[0] = ValueNotifier(
+            VideoIndexState(
+              loadState: LoadState.ready,
+              videoController: mockVideoController,
+              player: mockPlayer,
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 120));
+
+          final opacityFinder = find.ancestor(
+            of: find.byKey(const Key('video_widget')),
+            matching: find.byType(AnimatedOpacity),
+          );
+
+          // Video should be visible via first frame (not timeout)
+          expect(
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+            equals(1),
+          );
+        },
+      );
+
+      testWidgets(
+        'reveals video when waitUntilFirstFrameRendered fails',
+        (tester) async {
+          when(
+            () => mockVideoController.waitUntilFirstFrameRendered,
+          ).thenAnswer((_) => Future<void>.error(Exception('surface lost')));
+
+          indexNotifiers[0] = ValueNotifier(
+            VideoIndexState(
+              loadState: LoadState.ready,
+              videoController: mockVideoController,
+              player: mockPlayer,
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 120));
+
+          final opacityFinder = find.ancestor(
+            of: find.byKey(const Key('video_widget')),
+            matching: find.byType(AnimatedOpacity),
+          );
+
+          expect(
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+            equals(1),
+          );
+        },
+      );
+    });
   });
 }
