@@ -44,6 +44,21 @@ String? _extractCanonicalDivineBlobHash(String url) {
 String _canonicalDivineBlobHlsUrl(String hash) =>
     'https://media.divine.video/$hash/hls/master.m3u8';
 
+String _canonicalDivineBlobRawUrl(String hash) =>
+    'https://media.divine.video/$hash';
+
+List<String> _orderedUniqueSources(Iterable<String?> sources) {
+  final ordered = <String>[];
+  final seen = <String>{};
+
+  for (final source in sources) {
+    if (source == null || source.isEmpty) continue;
+    if (seen.add(source)) ordered.add(source);
+  }
+
+  return ordered;
+}
+
 /// Controller for a video feed with automatic preloading.
 ///
 /// Manages video playback and preloads adjacent videos for smooth scrolling.
@@ -151,6 +166,8 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, Timer> _loadWatchdogTimers = {};
   final Map<int, Stopwatch> _loadStopwatches = {};
   final Map<int, String> _openedSources = {};
+  final Map<int, List<String>> _playbackSources = {};
+  final Map<int, int> _playbackSourceIndices = {};
   final Set<int> _slowLoadIndices = {};
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
@@ -336,25 +353,131 @@ class VideoFeedController extends ChangeNotifier {
     _loadWatchdogTimers.remove(index);
   }
 
-  ({String primary, String? fallback}) _resolvePlaybackSources(
-    VideoItem video,
-  ) {
+  List<String> _resolvePlaybackSources(VideoItem video) {
     final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
 
-    // For Divine progressive URLs (/720p, /480p, or bare hash),
-    // provide HLS as fallback for codec errors. If already HLS, no fallback
-    // needed since HLS is self-healing per segment.
+    // Divine-hosted sources can fail in different ways:
+    // - progressive derivatives may still be processing
+    // - raw blobs can hit codec issues on some devices
+    // - HLS can be missing while a transcode is being created
+    //
+    // Prefer the resolved source first, then the raw blob, and finally HLS.
+    // For bare raw blobs, keep the existing raw -> HLS codec fallback.
     final hash = _extractCanonicalDivineBlobHash(resolvedSource);
     if (hash != null) {
+      final rawUrl = _canonicalDivineBlobRawUrl(hash);
       final hlsUrl = _canonicalDivineBlobHlsUrl(hash);
       final isAlreadyHls = resolvedSource.contains('/hls/');
-      return (
-        primary: resolvedSource,
-        fallback: isAlreadyHls ? null : hlsUrl,
-      );
+      if (isAlreadyHls) {
+        return _orderedUniqueSources([resolvedSource, rawUrl]);
+      }
+
+      final isRawBlob = resolvedSource == rawUrl;
+      return isRawBlob
+          ? _orderedUniqueSources([resolvedSource, hlsUrl])
+          : _orderedUniqueSources([resolvedSource, rawUrl, hlsUrl]);
     }
 
-    return (primary: resolvedSource, fallback: null);
+    return [resolvedSource];
+  }
+
+  Future<({String openedSource, int sourceIndex})> _openWithFallbacks({
+    required int index,
+    required Player player,
+    required List<String> playbackSources,
+    required int startIndex,
+    required Stopwatch? loadStopwatch,
+    required String retryLogLabel,
+  }) async {
+    var sourceIndex = startIndex;
+
+    while (true) {
+      final source = playbackSources[sourceIndex];
+
+      try {
+        await player.open(Media(source), play: false);
+        return (openedSource: source, sourceIndex: sourceIndex);
+      } on Exception catch (error) {
+        final nextIndex = sourceIndex + 1;
+        if (nextIndex >= playbackSources.length) rethrow;
+
+        final retrySource = playbackSources[nextIndex];
+        _logDebug(
+          '$retryLogLabel ${_videoDebugDetails(index)} '
+          'failedSource=$source '
+          'retrySource=$retrySource '
+          'elapsedMs=${loadStopwatch?.elapsedMilliseconds} '
+          'error=$error',
+        );
+        sourceIndex = nextIndex;
+      }
+    }
+  }
+
+  void _markLoadError(int index) {
+    if (_isDisposed) return;
+    _loadStates[index] = LoadState.error;
+    _notifyIndex(index);
+  }
+
+  Future<void> _retryCurrentVideoWithNextSource(int index) async {
+    final pooledPlayer = _loadedPlayers[index];
+    final player = pooledPlayer?.player;
+    if (player == null) {
+      _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
+      _markLoadError(index);
+      return;
+    }
+
+    final playbackSources = _playbackSources[index];
+    final currentSourceIndex = _playbackSourceIndices[index] ?? 0;
+    final nextSourceIndex = currentSourceIndex + 1;
+
+    if (playbackSources == null || nextSourceIndex >= playbackSources.length) {
+      _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
+      _markLoadError(index);
+      return;
+    }
+
+    _logDebug(
+      'stuck_failover ${_videoDebugDetails(index)} '
+      'failedSource=${_openedSources[index]} '
+      'retrySource=${playbackSources[nextSourceIndex]}',
+    );
+
+    _stopLoadWatchdog(index);
+    _stopPositionTimer(index);
+    _loadStates[index] = LoadState.loading;
+    _notifyIndex(index);
+
+    try {
+      await player.pause();
+      final reopened = await _openWithFallbacks(
+        index: index,
+        player: player,
+        playbackSources: playbackSources,
+        startIndex: nextSourceIndex,
+        loadStopwatch: _loadStopwatches[index],
+        retryLogLabel: 'stuck_retry',
+      );
+      _playbackSourceIndices[index] = reopened.sourceIndex;
+      _openedSources[index] = reopened.openedSource;
+      await player.setPlaylistMode(PlaylistMode.single);
+      await player.setVolume(0);
+      await player.play();
+      _startLoadWatchdog(index);
+      _startStuckPlaybackWatchdog(index);
+
+      if (!player.state.buffering) {
+        _onBufferReady(index);
+      }
+    } on Exception catch (error, stack) {
+      debugPrint(
+        '[POOLED] stuck_retry_failed ${_videoDebugDetails(index)} '
+        'error=$error\n$stack',
+      );
+      _markLoadError(index);
+    }
   }
 
   /// Called when the visible page changes.
@@ -681,39 +804,33 @@ class VideoFeedController extends ChangeNotifier {
       }
 
       final playbackSources = _resolvePlaybackSources(video);
-      var openedSource = playbackSources.primary;
+      _playbackSources[index] = playbackSources;
+      var sourceIndex = _playbackSourceIndices[index] ?? 0;
+      if (sourceIndex < 0 || sourceIndex >= playbackSources.length) {
+        sourceIndex = 0;
+      }
       _logDebug(
         'open_start ${_videoDebugDetails(index)} '
-        'resolvedSource=${playbackSources.primary} '
-        'fallbackSource=${playbackSources.fallback} '
+        'resolvedSource=${playbackSources[sourceIndex]} '
+        'fallbackSources=${playbackSources.skip(sourceIndex + 1).join(',')} '
         'elapsedMs=${loadStopwatch.elapsedMilliseconds}',
       );
 
-      try {
-        await pooledPlayer.player.open(
-          Media(playbackSources.primary),
-          play: false,
-        );
-      } on Exception catch (error) {
-        final fallbackSource = playbackSources.fallback;
-        if (fallbackSource == null) rethrow;
-
-        openedSource = fallbackSource;
-        _logDebug(
-          'open_retry ${_videoDebugDetails(index)} '
-          'failedSource=${playbackSources.primary} '
-          'retrySource=$fallbackSource '
-          'elapsedMs=${loadStopwatch.elapsedMilliseconds} '
-          'error=$error',
-        );
-        await pooledPlayer.player.open(Media(fallbackSource), play: false);
-      }
+      final opened = await _openWithFallbacks(
+        index: index,
+        player: pooledPlayer.player,
+        playbackSources: playbackSources,
+        startIndex: sourceIndex,
+        loadStopwatch: loadStopwatch,
+        retryLogLabel: 'open_retry',
+      );
       await pooledPlayer.player.setPlaylistMode(PlaylistMode.single);
-      _openedSources[index] = openedSource;
+      _playbackSourceIndices[index] = opened.sourceIndex;
+      _openedSources[index] = opened.openedSource;
 
       _logDebug(
         'open_complete ${_videoDebugDetails(index)} '
-        'openedSource=$openedSource '
+        'openedSource=${opened.openedSource} '
         'elapsedMs=${loadStopwatch.elapsedMilliseconds}',
       );
 
@@ -751,10 +868,7 @@ class VideoFeedController extends ChangeNotifier {
         'error=$e\n$stack',
       );
       _stopLoadWatchdog(index);
-      if (!_isDisposed) {
-        _loadStates[index] = LoadState.error;
-        _notifyIndex(index);
-      }
+      _markLoadError(index);
     } finally {
       _loadingIndices.remove(index);
     }
@@ -941,12 +1055,7 @@ class VideoFeedController extends ChangeNotifier {
       checksRemaining--;
       if (checksRemaining <= 0) {
         timer.cancel();
-        _logDebug(
-          'stuck_playback ${_videoDebugDetails(index)} '
-          'giving up',
-        );
-        _loadStates[index] = LoadState.error;
-        _notifyIndex(index);
+        unawaited(_retryCurrentVideoWithNextSource(index));
       }
     });
   }
@@ -1242,6 +1351,8 @@ class VideoFeedController extends ChangeNotifier {
     }
     _loadStopwatches.clear();
     _openedSources.clear();
+    _playbackSources.clear();
+    _playbackSourceIndices.clear();
 
     // Notify all index listeners that their video is gone.  This causes
     // ValueListenableBuilder to rebuild with videoController == null,
