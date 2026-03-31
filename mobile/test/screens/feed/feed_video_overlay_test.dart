@@ -141,7 +141,7 @@ void main() {
 
     group('list attribution', () {
       testWidgets(
-        'shows the content warning overlay for flagged videos even without warn labels',
+        'does not show the content warning overlay for creator labels without warn labels',
         (tester) async {
           testVideo = testVideo.copyWith(
             contentWarningLabels: const ['violence'],
@@ -150,10 +150,10 @@ void main() {
           await tester.pumpWidget(buildSubject());
           await tester.pump();
 
-          expect(find.text('Sensitive Content'), findsOneWidget);
-          expect(find.text('View Anyway'), findsOneWidget);
-          expect(find.text('Hide all content like this'), findsOneWidget);
-          expect(find.byType(ProofModeBadgeRow), findsNothing);
+          expect(find.text('Sensitive Content'), findsNothing);
+          expect(find.text('View Anyway'), findsNothing);
+          expect(find.text('Hide all content like this'), findsNothing);
+          expect(find.byType(ProofModeBadgeRow), findsOneWidget);
         },
       );
 

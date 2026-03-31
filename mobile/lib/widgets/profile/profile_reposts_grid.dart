@@ -1,12 +1,15 @@
 // ABOUTME: Grid widget displaying user's reposted videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails and repost badge indicator
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -15,11 +18,48 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 /// Grid widget displaying user's reposted videos
 ///
 /// Requires [ProfileRepostedVideosBloc] to be provided in the widget tree.
-class ProfileRepostsGrid extends StatelessWidget {
+class ProfileRepostsGrid extends StatefulWidget {
   const ProfileRepostsGrid({required this.isOwnProfile, super.key});
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  @override
+  State<ProfileRepostsGrid> createState() => _ProfileRepostsGridState();
+}
+
+class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
+    with ScrollPaginationMixin {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final bloc = context.read<ProfileRepostedVideosBloc>();
+    return bloc.state.hasMoreContent && !bloc.state.isLoadingMore;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<ProfileRepostedVideosBloc>().add(
+      const ProfileRepostedVideosLoadMoreRequested(),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPagination();
+  }
+
+  @override
+  void dispose() {
+    disposePagination();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,64 +99,46 @@ class ProfileRepostsGrid extends StatelessWidget {
         final repostedVideos = state.videos;
 
         if (repostedVideos.isEmpty) {
-          return _RepostsEmptyState(isOwnProfile: isOwnProfile);
+          return _RepostsEmptyState(isOwnProfile: widget.isOwnProfile);
         }
 
-        return NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            // Trigger load more when near the bottom
-            if (notification is ScrollUpdateNotification) {
-              final pixels = notification.metrics.pixels;
-              final maxExtent = notification.metrics.maxScrollExtent;
-              // Load more when within 200 pixels of the bottom
-              if (pixels >= maxExtent - 200 &&
-                  state.hasMoreContent &&
-                  !state.isLoadingMore) {
-                context.read<ProfileRepostedVideosBloc>().add(
-                  const ProfileRepostedVideosLoadMoreRequested(),
-                );
-              }
-            }
-            return false;
-          },
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(2),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 2,
-                    mainAxisSpacing: 2,
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    if (index >= repostedVideos.length) {
-                      return const SizedBox.shrink();
-                    }
-
-                    final videoEvent = repostedVideos[index];
-                    return _RepostGridTile(
-                      videoEvent: videoEvent,
-                      index: index,
-                      allVideos: repostedVideos,
-                    );
-                  }, childCount: repostedVideos.length),
+        return CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(2),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 2,
+                  mainAxisSpacing: 2,
                 ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index >= repostedVideos.length) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final videoEvent = repostedVideos[index];
+                  return _RepostGridTile(
+                    videoEvent: videoEvent,
+                    index: index,
+                    allVideos: repostedVideos,
+                  );
+                }, childCount: repostedVideos.length),
               ),
-              // Loading indicator at the bottom
-              if (state.isLoadingMore)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                      ),
+            ),
+            if (state.isLoadingMore)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: VineTheme.vineGreen,
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         );
       },
     );

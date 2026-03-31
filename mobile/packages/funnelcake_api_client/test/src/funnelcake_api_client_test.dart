@@ -758,12 +758,12 @@ void main() {
         expect(uri.queryParameters['limit'], equals('100'));
       });
 
-      test('includes before parameter when provided', () async {
+      test('includes offset parameter when provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response('[]', 200));
 
-        await client.getVideosByAuthor(pubkey: testPubkey, before: 1700000000);
+        await client.getVideosByAuthor(pubkey: testPubkey, offset: 50);
 
         final captured = verify(
           () =>
@@ -771,7 +771,7 @@ void main() {
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(uri.queryParameters['before'], equals('1700000000'));
+        expect(uri.queryParameters['offset'], equals('50'));
       });
 
       test('sends correct headers', () async {

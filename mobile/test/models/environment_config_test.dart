@@ -47,8 +47,6 @@ void main() {
     });
 
     group('apiBaseUrl', () {
-      // apiBaseUrl is derived from relayUrl by converting wss:// to https://
-      // This ensures the API URL always matches the relay being used
       test('poc derives from relay URL', () {
         const config = EnvironmentConfig(environment: AppEnvironment.poc);
         expect(config.apiBaseUrl, 'https://relay.poc.dvines.org');
@@ -69,11 +67,11 @@ void main() {
         expect(config.apiBaseUrl, 'http://10.0.2.2:43001');
       });
 
-      test('production derives from relay URL', () {
+      test('production uses api.divine.video for Funnelcake REST', () {
         const config = EnvironmentConfig(
           environment: AppEnvironment.production,
         );
-        expect(config.apiBaseUrl, 'https://relay.divine.video');
+        expect(config.apiBaseUrl, 'https://api.divine.video');
       });
     });
 

@@ -5,6 +5,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+typedef WebVideoPlayerControllerFactory =
+    VideoPlayerController Function({
+      required Uri url,
+      required Map<String, String> headers,
+    });
+
 /// A simple video player widget for web that uses Flutter's video_player
 /// package (backed by HTML5 video element via video_player_web_hls).
 class WebVideoPlayer extends StatefulWidget {
@@ -17,6 +23,8 @@ class WebVideoPlayer extends StatefulWidget {
     this.headers = const {},
     this.onInitialized,
     this.onError,
+    this.initializeTimeout = const Duration(seconds: 8),
+    this.controllerFactory = _defaultControllerFactory,
     super.key,
   });
 
@@ -40,6 +48,17 @@ class WebVideoPlayer extends StatefulWidget {
 
   /// Called when an error occurs.
   final VoidCallback? onError;
+
+  /// Maximum time to wait for the underlying HTML5 player to initialize.
+  final Duration initializeTimeout;
+
+  /// Factory used to create the underlying controller.
+  final WebVideoPlayerControllerFactory controllerFactory;
+
+  static VideoPlayerController _defaultControllerFactory({
+    required Uri url,
+    required Map<String, String> headers,
+  }) => VideoPlayerController.networkUrl(url, httpHeaders: headers);
 
   @override
   State<WebVideoPlayer> createState() => WebVideoPlayerState();
@@ -70,16 +89,16 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
   }
 
   Future<void> _initializeController() async {
-    final controller = VideoPlayerController.networkUrl(
-      Uri.parse(widget.url),
-      httpHeaders: widget.headers,
+    final controller = widget.controllerFactory(
+      url: Uri.parse(widget.url),
+      headers: widget.headers,
     );
     _controller = controller;
 
     try {
-      await controller.initialize();
+      await controller.initialize().timeout(widget.initializeTimeout);
       if (!mounted) {
-        controller.dispose();
+        await controller.dispose();
         return;
       }
 
@@ -91,6 +110,11 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
       setState(() => _isInitialized = true);
       widget.onInitialized?.call(controller);
     } on Exception {
+      await controller.dispose();
+      if (!mounted) return;
+      if (identical(_controller, controller)) {
+        _controller = null;
+      }
       if (!mounted) return;
       setState(() => _hasError = true);
       widget.onError?.call();

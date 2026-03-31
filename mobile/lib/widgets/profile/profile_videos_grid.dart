@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -60,15 +61,33 @@ class ProfileVideosGrid extends ConsumerStatefulWidget {
 }
 
 class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
-    with GridPrefetchMixin {
+    with GridPrefetchMixin, ScrollPaginationMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
   final _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
-  bool _isLoadingTriggered = false;
+  final _scrollController = ScrollController();
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final feedState = ref
+        .read(profileFeedProvider(widget.userIdHex))
+        .asData
+        ?.value;
+    return feedState != null &&
+        feedState.hasMoreContent &&
+        !feedState.isLoadingMore;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() => _triggerLoadMore();
 
   @override
   void initState() {
     super.initState();
+    initPagination();
     // Prefetch visible grid videos after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -79,6 +98,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   @override
   void dispose() {
+    disposePagination();
+    _scrollController.dispose();
     _videosStreamController.close();
     super.dispose();
   }
@@ -99,42 +120,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     prefetchGridVideos(videos);
   }
 
-  bool _onScrollNotification(ScrollNotification notification) {
-    if (notification.metrics.axis != Axis.vertical) return false;
-    if (_isLoadingTriggered) return false;
-
-    final feedState = ref
-        .read(profileFeedProvider(widget.userIdHex))
-        .asData
-        ?.value;
-    if (feedState == null ||
-        !feedState.hasMoreContent ||
-        feedState.isLoadingMore) {
-      return false;
-    }
-
-    final maxScroll = notification.metrics.maxScrollExtent;
-    final currentScroll = notification.metrics.pixels;
-
-    if (maxScroll > 0 && currentScroll >= maxScroll - 200) {
-      unawaited(_triggerLoadMore());
-    }
-
-    return false;
-  }
-
   Future<void> _triggerLoadMore() async {
-    if (_isLoadingTriggered) return;
-
-    _isLoadingTriggered = true;
-
-    try {
-      await ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore();
-    } finally {
-      if (mounted) {
-        _isLoadingTriggered = false;
-      }
-    }
+    await ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore();
   }
 
   void _onVideoTapped(int index, {required VoidCallback onLoadMore}) {
@@ -208,51 +195,49 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         .where((upload) => upload.result == null)
         .length;
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: _onScrollNotification,
-      child: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: .fromLTRB(
-              4,
-              4,
-              4,
-              4 + MediaQuery.viewPaddingOf(context).bottom,
-            ),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
-              ),
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final videoEntry = allVideos[index];
-                return switch (videoEntry) {
-                  final _GridUploadingVideoEntry uploadEntry =>
-                    _VideoGridUploadingTile(
-                      backgroundUpload: uploadEntry.backgroundUpload,
-                    ),
-                  final _GridVideoEventEntry eventEntry => _VideoGridTile(
-                    videoEvent: eventEntry.videoEvent,
-                    userIdHex: widget.userIdHex,
-                    index: index,
-                    onTap: () {
-                      // Adjust index to account for uploading videos at the top
-                      final publishedIndex = index - uploadingCount;
-                      if (publishedIndex >= 0) {
-                        _onVideoTapped(
-                          publishedIndex,
-                          onLoadMore: loadMoreProfileVideos,
-                        );
-                      }
-                    },
-                  ),
-                };
-              }, childCount: allVideos.length),
-            ),
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        SliverPadding(
+          padding: .fromLTRB(
+            4,
+            4,
+            4,
+            4 + MediaQuery.viewPaddingOf(context).bottom,
           ),
-        ],
-      ),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 4,
+              mainAxisSpacing: 4,
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final videoEntry = allVideos[index];
+              return switch (videoEntry) {
+                final _GridUploadingVideoEntry uploadEntry =>
+                  _VideoGridUploadingTile(
+                    backgroundUpload: uploadEntry.backgroundUpload,
+                  ),
+                final _GridVideoEventEntry eventEntry => _VideoGridTile(
+                  videoEvent: eventEntry.videoEvent,
+                  userIdHex: widget.userIdHex,
+                  index: index,
+                  onTap: () {
+                    // Adjust index to account for uploading videos at the top
+                    final publishedIndex = index - uploadingCount;
+                    if (publishedIndex >= 0) {
+                      _onVideoTapped(
+                        publishedIndex,
+                        onLoadMore: loadMoreProfileVideos,
+                      );
+                    }
+                  },
+                ),
+              };
+            }, childCount: allVideos.length),
+          ),
+        ),
+      ],
     );
   }
 }

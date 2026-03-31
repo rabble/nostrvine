@@ -12,6 +12,39 @@
 
 Use BLoC/Cubit for all new feature development.
 
+## No BLoC-to-BLoC Dependencies
+
+BLoCs must **never** depend on or dispatch events to other BLoCs. Each BLoC only depends on repositories and clients (the layers below it).
+
+If one BLoC's state change should trigger another BLoC's event, use a `BlocListener` in the UI layer to bridge them.
+
+**Bad — BLoC dispatches to another BLoC:**
+```dart
+class SearchResultsBloc extends Bloc<SearchResultsEvent, SearchResultsState> {
+  SearchResultsBloc({required VideoSearchBloc videoSearchBloc})
+    : _videoSearchBloc = videoSearchBloc;
+
+  final VideoSearchBloc _videoSearchBloc;
+
+  void _onQuery(QueryChanged event, Emitter emit) {
+    _videoSearchBloc.add(VideoSearchQueryChanged(event.query)); // WRONG
+  }
+}
+```
+
+**Good — UI coordinates via BlocListener:**
+```dart
+BlocListener<SearchResultsBloc, SearchResultsState>(
+  listenWhen: (prev, curr) => prev.query != curr.query,
+  listener: (context, state) {
+    context.read<VideoSearchBloc>().add(
+      VideoSearchQueryChanged(state.query),
+    );
+  },
+  child: ...,
+)
+```
+
 ## Event Transformers
 
 Since Bloc v.7.2.0, events are handled concurrently by default. This allows event handler instances to execute simultaneously but provides no guarantees regarding the order of handler completion.

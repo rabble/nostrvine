@@ -315,6 +315,43 @@ void main() {
     });
 
     group('navigation', () {
+      testWidgets('dispatches load more when conversation list scrolls', (
+        tester,
+      ) async {
+        final conversations = List.generate(
+          30,
+          (index) => DmConversation(
+            id: 'conv$index',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix - index,
+            lastMessageContent: 'Hello $index',
+            lastMessageTimestamp: nowUnix - index,
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: conversations,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pumpAndSettle();
+
+        await tester.drag(find.byType(ListView), const Offset(0, -5000));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        verify(
+          () => mockBloc.add(const ConversationListLoadMore()),
+        ).called(greaterThanOrEqualTo(1));
+      });
+
       testWidgets('calls push when a conversation is tapped', (
         tester,
       ) async {

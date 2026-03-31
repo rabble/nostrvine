@@ -1,19 +1,18 @@
 // ABOUTME: Widget for displaying user search results
 // ABOUTME: Consumes UserSearchBloc from parent BlocProvider
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
-import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
+import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/user_avatar.dart';
 
 /// Displays user search results from UserSearchBloc.
 ///
@@ -95,33 +94,32 @@ class _UserSearchResultsList extends StatefulWidget {
   State<_UserSearchResultsList> createState() => _UserSearchResultsListState();
 }
 
-class _UserSearchResultsListState extends State<_UserSearchResultsList> {
+class _UserSearchResultsListState extends State<_UserSearchResultsList>
+    with ScrollPaginationMixin {
   final _scrollController = ScrollController();
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() => widget.hasMore && !widget.isLoadingMore;
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<UserSearchBloc>().add(const UserSearchLoadMore());
+  }
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    initPagination();
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    disposePagination();
+    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-    // Trigger load more at 80% scroll
-    if (currentScroll >= maxScroll * 0.8 &&
-        widget.hasMore &&
-        !widget.isLoadingMore) {
-      context.read<UserSearchBloc>().add(const UserSearchLoadMore());
-    }
   }
 
   @override
@@ -145,7 +143,7 @@ class _UserSearchResultsListState extends State<_UserSearchResultsList> {
         }
 
         final profile = widget.results[index];
-        return _SearchUserTile(
+        return SearchUserTile(
           profile: profile,
           onTap: () {
             final npub = normalizeToNpub(profile.pubkey);
@@ -155,123 +153,6 @@ class _UserSearchResultsListState extends State<_UserSearchResultsList> {
           },
         );
       },
-    );
-  }
-}
-
-/// Tile widget for displaying a user from search results.
-/// Uses UserProfile from package:models directly.
-class _SearchUserTile extends ConsumerWidget {
-  const _SearchUserTile({required this.profile, this.onTap});
-
-  final UserProfile profile;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final followerCount = profile.rawData['follower_count'] as int?;
-    final videoCount = profile.rawData['video_count'] as int?;
-    final claimedNip05 = profile.displayNip05;
-    final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
-        ? ref
-              .watch(nip05VerificationProvider(profile.pubkey))
-              .whenOrNull(data: (status) => status)
-        : null;
-    final showVerifiedNip05 =
-        verificationStatus == Nip05VerificationStatus.verified;
-
-    return Semantics(
-      identifier: 'search_user_tile_${profile.pubkey}',
-      label: profile.bestDisplayName,
-      container: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: VineTheme.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              UserAvatar(imageUrl: profile.picture, size: 48),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      profile.bestDisplayName,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (showVerifiedNip05 && claimedNip05 != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          claimedNip05,
-                          style: const TextStyle(
-                            color: VineTheme.vineGreen,
-                            fontSize: 13,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    if (followerCount != null || videoCount != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: _ProfileStats(
-                          followerCount: followerCount,
-                          videoCount: videoCount,
-                        ),
-                      ),
-                    if (profile.about != null && profile.about!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          profile.about!,
-                          style: const TextStyle(
-                            color: VineTheme.secondaryText,
-                            fontSize: 14,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileStats extends StatelessWidget {
-  const _ProfileStats({this.followerCount, this.videoCount});
-
-  final int? followerCount;
-  final int? videoCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final parts = <String>[];
-    if (followerCount != null) {
-      parts.add('${StringUtils.formatCompactNumber(followerCount!)} followers');
-    }
-    if (videoCount != null) {
-      parts.add('${StringUtils.formatCompactNumber(videoCount!)} videos');
-    }
-    return Text(
-      parts.join(' \u00B7 '),
-      style: const TextStyle(color: VineTheme.lightText, fontSize: 13),
     );
   }
 }

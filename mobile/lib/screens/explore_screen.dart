@@ -1,7 +1,10 @@
 // ABOUTME: Explore screen with proper Vine theme and video grid functionality
 // ABOUTME: Pure Riverpod architecture for video discovery with grid/feed modes
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +22,7 @@ import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -61,6 +65,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   // Feed mode and videos are now derived from URL + providers - no internal state needed
   String? _hashtagMode; // When non-null, showing hashtag feed
   String? _customTitle; // Custom title to override default "Explore"
+
+  // Search bar state
+  final _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   // Track classics availability to rebuild tabs when it changes
   bool _classicsAvailable = false;
@@ -139,6 +147,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     super.initState();
 
     _initTabController();
+    _searchController.addListener(_onSearchChanged);
 
     // Track screen load
     _screenAnalytics.startScreenLoad('explore_screen');
@@ -189,6 +198,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController
+      ..removeListener(_onSearchChanged)
+      ..dispose();
     _tabController?.removeListener(_onTabChanged);
     _tabController?.dispose();
     super.dispose();
@@ -197,6 +210,17 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       '🎯 ExploreScreenPure: Disposed cleanly',
       category: LogCategory.video,
     );
+  }
+
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
+    final query = _searchController.text.trim();
+    if (query.length < 2) return;
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _searchController.clear();
+      context.push(SearchResultsPage.pathForQuery(query));
+    });
   }
 
   void _onTabChanged() {
@@ -389,9 +413,17 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       return _buildContent();
     }
 
-    // Show Column with TabBar + content in grid mode
+    // Show Column with search bar + TabBar + content in grid mode
     return Column(
       children: [
+        // Search bar (debug-only until #2470 is complete)
+        if (kDebugMode)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: DivineSearchBar(
+              controller: _searchController,
+            ),
+          ),
         // Tabs only visible in grid mode
         // Material widget is required for TabBar to render ink splashes
         Material(

@@ -2,23 +2,63 @@
 // ABOUTME: Shows video replies as a 3-column thumbnail grid at top,
 // ABOUTME: followed by text comments as a list below.
 
+import 'dart:async';
+
 import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Grid widget displaying a user's comments (video replies + text).
 ///
 /// Requires [ProfileCommentsBloc] to be provided in the widget tree.
-class ProfileCommentsGrid extends StatelessWidget {
+class ProfileCommentsGrid extends StatefulWidget {
   const ProfileCommentsGrid({required this.isOwnProfile, super.key});
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  @override
+  State<ProfileCommentsGrid> createState() => _ProfileCommentsGridState();
+}
+
+class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
+    with ScrollPaginationMixin {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() {
+    final bloc = context.read<ProfileCommentsBloc>();
+    return bloc.state.hasMoreContent && !bloc.state.isLoadingMore;
+  }
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<ProfileCommentsBloc>().add(
+      const ProfileCommentsLoadMoreRequested(),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPagination();
+  }
+
+  @override
+  void dispose() {
+    disposePagination();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,83 +81,62 @@ class ProfileCommentsGrid extends StatelessWidget {
         }
 
         if (state.videoReplies.isEmpty && state.textComments.isEmpty) {
-          return _CommentsEmptyState(isOwnProfile: isOwnProfile);
+          return _CommentsEmptyState(isOwnProfile: widget.isOwnProfile);
         }
 
-        return NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification is ScrollUpdateNotification) {
-              final pixels = notification.metrics.pixels;
-              final maxExtent = notification.metrics.maxScrollExtent;
-              if (pixels >= maxExtent - 200 &&
-                  state.hasMoreContent &&
-                  !state.isLoadingMore) {
-                context.read<ProfileCommentsBloc>().add(
-                  const ProfileCommentsLoadMoreRequested(),
-                );
-              }
-            }
-            return false;
-          },
-          child: CustomScrollView(
-            slivers: [
-              // Video Replies section
-              if (state.videoReplies.isNotEmpty) ...[
-                const SliverToBoxAdapter(
-                  child: _SectionHeader(title: 'Video Replies'),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.all(2),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 2,
-                          mainAxisSpacing: 2,
-                        ),
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      if (index >= state.videoReplies.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return _VideoReplyTile(
-                        comment: state.videoReplies[index],
-                      );
-                    }, childCount: state.videoReplies.length),
+        return CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            if (state.videoReplies.isNotEmpty) ...[
+              const SliverToBoxAdapter(
+                child: _SectionHeader(title: 'Video Replies'),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.all(2),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 2,
+                    mainAxisSpacing: 2,
                   ),
-                ),
-              ],
-
-              // Text Comments section
-              if (state.textComments.isNotEmpty) ...[
-                const SliverToBoxAdapter(
-                  child: _SectionHeader(title: 'Comments'),
-                ),
-                SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    if (index >= state.textComments.length) {
+                    if (index >= state.videoReplies.length) {
                       return const SizedBox.shrink();
                     }
-                    return _ProfileCommentCard(
-                      comment: state.textComments[index],
+                    return _VideoReplyTile(
+                      comment: state.videoReplies[index],
                     );
-                  }, childCount: state.textComments.length),
+                  }, childCount: state.videoReplies.length),
                 ),
-              ],
-
-              // Loading indicator at the bottom
-              if (state.isLoadingMore)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                      ),
+              ),
+            ],
+            if (state.textComments.isNotEmpty) ...[
+              const SliverToBoxAdapter(
+                child: _SectionHeader(title: 'Comments'),
+              ),
+              SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index >= state.textComments.length) {
+                    return const SizedBox.shrink();
+                  }
+                  return _ProfileCommentCard(
+                    comment: state.textComments[index],
+                  );
+                }, childCount: state.textComments.length),
+              ),
+            ],
+            if (state.isLoadingMore)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: VineTheme.vineGreen,
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         );
       },
     );

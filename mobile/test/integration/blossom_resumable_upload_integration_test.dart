@@ -382,6 +382,9 @@ void main() {
     late Directory tempDir;
     late File videoFile;
 
+    const testServerUrl = 'https://custom.blossom.server';
+    const testUploadUrl =
+        'https://uploads.custom.blossom.server/sessions/up_retry';
     const testPublicKey =
         '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -393,7 +396,9 @@ void main() {
       service = BlossomUploadService(
         authService: mockAuthService,
         dio: mockDio,
+        defaultServerUrl: testServerUrl,
       );
+      await service.setBlossomServer(testServerUrl);
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
@@ -432,8 +437,10 @@ void main() {
             DivineUploadHeaders.extensions: [
               DivineUploadExtensions.resumableSessions,
             ],
-            DivineUploadHeaders.controlHost: ['https://media.divine.video'],
-            DivineUploadHeaders.dataHost: ['https://upload.divine.video'],
+            DivineUploadHeaders.controlHost: [testServerUrl],
+            DivineUploadHeaders.dataHost: [
+              'https://uploads.custom.blossom.server',
+            ],
           }),
         ),
       );
@@ -453,7 +460,7 @@ void main() {
             statusCode: 200,
             data: {
               'uploadId': 'up_retry',
-              'uploadUrl': 'https://upload.divine.video/sessions/up_retry',
+              'uploadUrl': testUploadUrl,
               'chunkSize': 4,
               'nextOffset': 0,
               'requiredHeaders': {'Authorization': 'Bearer token'},
@@ -465,8 +472,8 @@ void main() {
             requestOptions: RequestOptions(path: '/upload/up_retry/complete'),
             statusCode: 200,
             data: {
-              'url': 'https://media.divine.video/final',
-              'fallbackUrl': 'https://media.divine.video/final',
+              'url': '$testServerUrl/final',
+              'fallbackUrl': '$testServerUrl/final',
             },
           );
         }
