@@ -247,15 +247,15 @@ class _RevealVideoAfterFirstFrameState
     _hasDecodedFrames =
         widget.videoController.player.state.position > Duration.zero;
     if (_hasDecodedFrames) return;
-    _positionSubscription =
-        widget.videoController.player.stream.position.listen((pos) {
-      if (!mounted || _hasDecodedFrames) return;
-      if (pos > Duration.zero) {
-        unawaited(_positionSubscription?.cancel());
-        _positionSubscription = null;
-        setState(() => _hasDecodedFrames = true);
-      }
-    });
+    _positionSubscription = widget.videoController.player.stream.position
+        .listen((pos) {
+          if (!mounted || _hasDecodedFrames) return;
+          if (pos > Duration.zero) {
+            unawaited(_positionSubscription?.cancel());
+            _positionSubscription = null;
+            setState(() => _hasDecodedFrames = true);
+          }
+        });
   }
 
   void _listenToTextureId() {
