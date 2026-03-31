@@ -19,6 +19,11 @@ platforms:
 # Reporter configuration
 reporter: expanded
 
+# Registered test tags
+tags:
+  integration:
+    timeout: 10m
+
 # Test randomization
 shuffle: false
 chain_stack_traces: true
