@@ -73,6 +73,12 @@ class ContentBlocklistService {
   // Subscription tracking for block list sync
   bool _blockListSyncStarted = false;
 
+  /// Fallback relay for kind 30000 block list events.
+  ///
+  /// The Divine relay (Funnelcake) does not persist kind 30000 events,
+  /// so we publish to and subscribe from a public relay as well.
+  static const _blockListFallbackRelay = 'wss://nos.lol';
+
   // Services for Nostr publishing (injected via sync methods)
   AuthService? _authService;
   NostrClient? _nostrClient;
@@ -237,7 +243,10 @@ class ContentBlocklistService {
       );
 
       if (event != null) {
-        final sentEvent = await nostrClient.publishEvent(event);
+        final sentEvent = await nostrClient.publishEvent(
+          event,
+          targetRelays: [_blockListFallbackRelay],
+        );
         if (sentEvent != null) {
           Log.info(
             'Published block list to Nostr with ${_runtimeBlocklist.length} entries',
@@ -316,8 +325,8 @@ class ContentBlocklistService {
     if (!_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.add(pubkey);
       await _saveBlockedUsers();
-      _publishBlockListToNostr();
       _notifyChanged();
+      await _publishBlockListToNostr();
 
       Log.debug(
         'Added user to blocklist: $pubkey',
@@ -343,8 +352,8 @@ class ContentBlocklistService {
     if (_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.remove(pubkey);
       await _saveBlockedUsers();
-      _publishBlockListToNostr();
       _notifyChanged();
+      await _publishBlockListToNostr();
 
       Log.info(
         'Removed user from blocklist: $pubkey',
@@ -538,6 +547,7 @@ class ContentBlocklistService {
 
       final subscription = nostrService.subscribe(
         [othersFilter, ownFilter],
+        tempRelays: [_blockListFallbackRelay],
       );
 
       subscription.listen(_handleBlockListEvent);
