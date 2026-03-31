@@ -811,6 +811,7 @@ class _FittedVideoPlayer extends StatelessWidget {
       controls: null,
       width: videoWidth,
       height: videoHeight,
+      fill: const Color(0x00000000),
     );
   }
 }
