@@ -469,10 +469,10 @@ void main() {
         expect(othersFilter.p, contains(ourPubkey));
 
         // Filter 2: our own block list for relay restoration
+        // No #d constraint — handler checks d=block, avoids relay compat issues
         final ownFilter = capturedFilters![1] as Filter;
         expect(ownFilter.kinds, contains(30000));
         expect(ownFilter.authors, contains(ourPubkey));
-        expect(ownFilter.d, contains('block'));
       },
     );
 

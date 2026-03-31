@@ -425,6 +425,12 @@ class ContentBlocklistService {
     NostrClient nostrService,
     String ourPubkey,
   ) async {
+    // If the NostrClient changed (e.g., account switch), the old subscription
+    // was on a disposed client. Reset so we create a fresh subscription.
+    if (_mutualMuteSyncStarted && _nostrClient != nostrService) {
+      _mutualMuteSyncStarted = false;
+    }
+
     if (_mutualMuteSyncStarted) {
       Log.debug(
         'Mutual mute sync already started, skipping',
@@ -434,7 +440,6 @@ class ContentBlocklistService {
       return;
     }
 
-    _mutualMuteSyncStarted = true;
     _ourPubkey = ourPubkey;
 
     // Store references for Nostr publishing
@@ -453,6 +458,7 @@ class ContentBlocklistService {
 
       final subscription = nostrService.subscribe([filter]);
 
+      _mutualMuteSyncStarted = true;
       _mutualMuteSubscriptionId =
           'mutual-mute-${DateTime.now().millisecondsSinceEpoch}';
 
@@ -478,9 +484,11 @@ class ContentBlocklistService {
   /// Subscribes to two filter sets in a single subscription:
   /// 1. Kind 30000 events where our pubkey is in 'p' tags — detects when
   ///    other users block us.
-  /// 2. Our own kind 30000 (d=block) event — restores our block list from
+  /// 2. All of our own kind 30000 events — restores our block list from
   ///    the relay so blocks survive app reinstalls (SharedPreferences is
-  ///    wiped on uninstall, but the relay keeps the event).
+  ///    wiped on uninstall, but the relay keeps the event). The `d=block`
+  ///    check is done in [_handleBlockListEvent] instead of in the filter
+  ///    because not all relays support `#d` tag filtering.
   ///
   /// Using `subscribe` (persistent stream) instead of `queryEvents`
   /// (one-shot) ensures events arrive even if relays connect after this
@@ -490,6 +498,12 @@ class ContentBlocklistService {
     AuthService authService,
     String ourPubkey,
   ) async {
+    // If the NostrClient changed (e.g., account switch), the old subscription
+    // was on a disposed client. Reset so we create a fresh subscription.
+    if (_blockListSyncStarted && _nostrClient != nostrService) {
+      _blockListSyncStarted = false;
+    }
+
     if (_blockListSyncStarted) {
       Log.debug(
         'Block list sync already started, skipping',
@@ -499,7 +513,6 @@ class ContentBlocklistService {
       return;
     }
 
-    _blockListSyncStarted = true;
     _ourPubkey = ourPubkey;
     _authService = authService;
     _nostrClient = nostrService;
@@ -516,10 +529,11 @@ class ContentBlocklistService {
       othersFilter.p = [ourPubkey];
 
       // Filter 2: Our own block list (for relay-based restoration)
+      // Omit the d-tag constraint here — not all relays support #d
+      // filtering, and _handleBlockListEvent already checks for d=block.
       final ownFilter = Filter(
         authors: [ourPubkey],
         kinds: const [30000],
-        d: const ['block'],
       );
 
       final subscription = nostrService.subscribe(
@@ -527,6 +541,8 @@ class ContentBlocklistService {
       );
 
       subscription.listen(_handleBlockListEvent);
+
+      _blockListSyncStarted = true;
 
       Log.info(
         'Block list subscription created (includes own block list restore)',
