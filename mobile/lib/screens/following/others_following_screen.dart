@@ -104,9 +104,20 @@ class _OthersFollowingView extends ConsumerWidget {
         ],
         child: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
           builder: (context, state) {
+            final showFollowingList = state.followingPubkeys.isNotEmpty;
+
             return switch (state.status) {
-              OthersFollowingStatus.initial || OthersFollowingStatus.loading =>
-                const Center(child: CircularProgressIndicator()),
+              OthersFollowingStatus.initial => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              OthersFollowingStatus.loading when showFollowingList =>
+                _FollowingListBody(
+                  following: state.followingPubkeys,
+                  targetPubkey: pubkey,
+                ),
+              OthersFollowingStatus.loading => const Center(
+                child: CircularProgressIndicator(),
+              ),
               OthersFollowingStatus.success => _FollowingListBody(
                 following: state.followingPubkeys,
                 targetPubkey: pubkey,

@@ -9,11 +9,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class MockRelayNotificationApiService extends Mock
     implements RelayNotificationApiService {}
@@ -21,6 +22,8 @@ class MockRelayNotificationApiService extends Mock
 class MockAuthService extends Mock implements AuthService {}
 
 class MockVideoEventService extends Mock implements VideoEventService {}
+
+class MockProfileRepository extends Mock implements ProfileRepository {}
 
 class MockNip98AuthService extends Mock implements Nip98AuthService {}
 
@@ -32,6 +35,7 @@ void main() {
     late MockRelayNotificationApiService mockApiService;
     late MockAuthService mockAuthService;
     late MockVideoEventService mockVideoEventService;
+    late MockProfileRepository mockProfileRepository;
     late MockNip98AuthService mockNip98AuthService;
     late MockBackgroundActivityManager mockBackgroundManager;
 
@@ -42,6 +46,7 @@ void main() {
       mockApiService = MockRelayNotificationApiService();
       mockAuthService = MockAuthService();
       mockVideoEventService = MockVideoEventService();
+      mockProfileRepository = MockProfileRepository();
       mockNip98AuthService = MockNip98AuthService();
       mockBackgroundManager = MockBackgroundActivityManager();
 
@@ -56,6 +61,17 @@ void main() {
       when(
         () => mockVideoEventService.getVideoEventById(any()),
       ).thenReturn(null);
+
+      when(
+        () => mockProfileRepository.getCachedProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockProfileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => <String, UserProfile>{});
 
       // Default background manager behavior - app in foreground
       when(() => mockBackgroundManager.isAppInForeground).thenReturn(true);
@@ -81,14 +97,16 @@ void main() {
       );
     }
 
-    ProviderContainer createTestContainer() {
+    ProviderContainer createTestContainer({
+      ProfileRepository? profileRepository,
+    }) {
       return ProviderContainer(
         overrides: [
           relayNotificationApiServiceProvider.overrideWithValue(mockApiService),
           authServiceProvider.overrideWithValue(mockAuthService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nip98AuthServiceProvider.overrideWithValue(mockNip98AuthService),
-          profileRepositoryProvider.overrideWithValue(null),
+          profileRepositoryProvider.overrideWithValue(profileRepository),
           backgroundActivityManagerProvider.overrideWithValue(
             mockBackgroundManager,
           ),
@@ -251,6 +269,58 @@ void main() {
           expect(notification.id, 'notif_1');
           expect(notification.type, NotificationType.like);
           expect(notification.isRead, isFalse);
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'completes initial load before profile enrichment finishes',
+        () async {
+          final profileLookupCompleter = Completer<UserProfile?>();
+          final mockNotifications = [
+            createMockRelayNotification(id: 'notif_1'),
+          ];
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: mockNotifications,
+              unreadCount: 1,
+            ),
+          );
+
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) => profileLookupCompleter.future);
+
+          final container = createTestContainer(
+            profileRepository: mockProfileRepository,
+          );
+
+          final result = await waitForLoadComplete(container).timeout(
+            const Duration(milliseconds: 200),
+            onTimeout: () => throw TimeoutException(
+              'Initial notification load blocked on enrichment',
+            ),
+          );
+
+          expect(result.notifications, hasLength(1));
+          expect(result.notifications.single.actorName, isNull);
+          expect(
+            result.notifications.single.message,
+            'Someone liked your video',
+          );
+          expect(result.isInitialLoad, isFalse);
 
           container.dispose();
         },
