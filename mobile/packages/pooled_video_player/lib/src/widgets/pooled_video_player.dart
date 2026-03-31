@@ -105,64 +105,49 @@ class PooledVideoPlayer extends StatelessWidget {
         final loadState = state.loadState;
         final overlay = overlayBuilder?.call(context, videoController, player);
 
-        Widget content;
+        final isReady = videoController != null && loadState == .ready;
 
-        if (loadState == LoadState.error) {
-          content = Stack(
-            fit: StackFit.expand,
+        return GestureDetector(
+          behavior: .translucent,
+          onTap: isReady && (onTap != null || enableTapToPause)
+              ? () => _handleTap(feedController)
+              : null,
+          onDoubleTapDown: isReady ? onDoubleTap : null,
+          child: Stack(
+            fit: .expand,
             children: [
-              errorBuilder?.call(
-                    context,
-                    () => feedController.onPageChanged(
-                      feedController.currentIndex,
+              /// Error state or loading + video layers.
+              if (loadState == .error)
+                errorBuilder?.call(
+                      context,
+                      () => feedController.onPageChanged(
+                        feedController.currentIndex,
+                      ),
+                    ) ??
+                    const _DefaultErrorState()
+              else ...[
+                /// Thumbnail / spinner shown until the first frame.
+                loadingBuilder?.call(context) ??
+                    _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
+
+                /// Video texture, hidden when off-screen to avoid
+                /// media_kit texture bleeding during page transitions.
+                if (videoController != null && player != null)
+                  Opacity(
+                    opacity: isActive ? 1 : 0,
+                    child: _RevealVideoAfterFirstFrame(
+                      videoController: videoController,
+                      readyForFallback: loadState == LoadState.ready,
+                      child: videoBuilder(context, videoController, player),
                     ),
-                  ) ??
-                  const _DefaultErrorState(),
+                  ),
+              ],
+
+              /// Consumer-provided overlay (controls, progress bar, etc.).
               ?overlay,
             ],
-          );
-        } else if (videoController != null && player != null) {
-          final loadingPlaceholder =
-              loadingBuilder?.call(context) ??
-              _DefaultLoadingState(thumbnailUrl: thumbnailUrl);
-          final children = <Widget>[
-            loadingPlaceholder,
-            Opacity(
-              opacity: isActive ? 1 : 0,
-              child: _RevealVideoAfterFirstFrame(
-                videoController: videoController,
-                readyForFallback: loadState == LoadState.ready,
-                child: videoBuilder(context, videoController, player),
-              ),
-            ),
-            ?overlay,
-          ];
-          content = Stack(fit: StackFit.expand, children: children);
-        } else {
-          content = Stack(
-            fit: StackFit.expand,
-            children: [
-              loadingBuilder?.call(context) ??
-                  _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
-              ?overlay,
-            ],
-          );
-        }
-
-        if ((enableTapToPause || onTap != null || onDoubleTap != null) &&
-            videoController != null &&
-            loadState == LoadState.ready) {
-          content = GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: onTap != null || enableTapToPause
-                ? () => _handleTap(feedController)
-                : null,
-            onDoubleTapDown: onDoubleTap,
-            child: content,
-          );
-        }
-
-        return content;
+          ),
+        );
       },
     );
   }
@@ -188,8 +173,15 @@ class _RevealVideoAfterFirstFrameState
     extends State<_RevealVideoAfterFirstFrame> {
   bool _hasRenderedFirstFrame = false;
   bool _revealedByTimeout = false;
+
+  /// Latching flag: set to `true` the first time the player starts playing
+  /// after a load/reset and never cleared until [_resetRevealState].
+  /// Prevents revealing a black texture before the first frame is decoded,
+  /// without hiding the surface again on subsequent pause/play cycles.
+  bool _hasEverPlayed = false;
   int _generation = 0;
   Timer? _firstFrameTimeout;
+  StreamSubscription<bool>? _playingSubscription;
 
   /// Tracks the last known texture ID to detect Android surface recreation.
   ///
@@ -213,6 +205,7 @@ class _RevealVideoAfterFirstFrameState
   void initState() {
     super.initState();
     _subscribeToFirstFrame();
+    _subscribeToPlaying();
     _syncFallbackTimer();
     _listenToTextureId();
   }
@@ -224,6 +217,7 @@ class _RevealVideoAfterFirstFrameState
       _stopListeningToTextureId(oldWidget.videoController);
       _resetRevealState();
       _subscribeToFirstFrame();
+      _subscribeToPlaying();
       _listenToTextureId();
     }
     if (oldWidget.readyForFallback != widget.readyForFallback) {
@@ -234,10 +228,26 @@ class _RevealVideoAfterFirstFrameState
   void _resetRevealState() {
     _firstFrameTimeout?.cancel();
     _surfaceRecoveryTimer?.cancel();
+    unawaited(_playingSubscription?.cancel());
+    _playingSubscription = null;
     _hasRenderedFirstFrame = false;
     _revealedByTimeout = false;
+    _hasEverPlayed = false;
     _surfaceRecreating = false;
     _lastTextureId = null;
+  }
+
+  void _subscribeToPlaying() {
+    unawaited(_playingSubscription?.cancel());
+    _hasEverPlayed = widget.videoController.player.state.playing;
+    _playingSubscription = widget.videoController.player.stream.playing.listen((
+      playing,
+    ) {
+      if (!mounted || _hasEverPlayed) return;
+      if (playing) {
+        setState(() => _hasEverPlayed = true);
+      }
+    });
   }
 
   void _listenToTextureId() {
@@ -329,15 +339,28 @@ class _RevealVideoAfterFirstFrameState
   void dispose() {
     _stopListeningToTextureId(widget.videoController);
     _firstFrameTimeout?.cancel();
+    unawaited(_playingSubscription?.cancel());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Require `readyForFallback` (LoadState.ready) AND `_isPlaying` as gates
+    // before revealing the video surface.
+    //
+    // `readyForFallback` prevents reveal while the controller is still
+    // loading or retrying fallback sources.
+    //
+    // `_hasEverPlayed` prevents the black-frame flash that occurs when the
+    // buffer is ready (LoadState.ready) but the player has not yet decoded
+    // and rendered the first frame of the new source. Unlike a live
+    // `isPlaying` check, this is a latch: once set it stays true so that
+    // pausing the video does not hide the surface and flash the thumbnail.
     final shouldReveal =
         !_surfaceRecreating &&
-        (_hasRenderedFirstFrame ||
-            (widget.readyForFallback && _revealedByTimeout));
+        widget.readyForFallback &&
+        (_hasEverPlayed || _revealedByTimeout) &&
+        (_hasRenderedFirstFrame || _revealedByTimeout);
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 120),
