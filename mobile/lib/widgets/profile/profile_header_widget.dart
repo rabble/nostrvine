@@ -583,32 +583,41 @@ class _ProfileStatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasLikes = profileStats?.totalLikes != null;
+    final hasLoops = profileStats?.totalViews != null;
+
+    final columns = <Widget>[
+      ProfileFollowersStat(
+        pubkey: userIdHex,
+        displayName: displayName,
+        isOwnProfile: isOwnProfile,
+      ),
+      ProfileFollowingStat(
+        pubkey: userIdHex,
+        displayName: displayName,
+      ),
+      if (hasLikes)
+        ProfileStatColumn(
+          count: profileStats!.totalLikes,
+          label: 'Likes',
+          isLoading: false,
+        ),
+      if (hasLoops)
+        ProfileStatColumn(
+          count: profileStats!.totalViews,
+          label: 'Loops',
+          isLoading: false,
+        ),
+    ];
+
     return IntrinsicHeight(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          ProfileFollowersStat(
-            pubkey: userIdHex,
-            displayName: displayName,
-            isOwnProfile: isOwnProfile,
-          ),
-          const _StatDivider(),
-          ProfileFollowingStat(
-            pubkey: userIdHex,
-            displayName: displayName,
-          ),
-          const _StatDivider(),
-          ProfileStatColumn(
-            count: profileStats?.totalLikes,
-            label: 'Likes',
-            isLoading: false,
-          ),
-          const _StatDivider(),
-          ProfileStatColumn(
-            count: profileStats?.totalViews,
-            label: 'Loops',
-            isLoading: false,
-          ),
+          for (int i = 0; i < columns.length; i++) ...[
+            if (i > 0) const _StatDivider(),
+            columns[i],
+          ],
         ],
       ),
     );
