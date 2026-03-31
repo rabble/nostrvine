@@ -1,6 +1,9 @@
 // ABOUTME: Helpers for resolving API base URLs from Nostr relay WebSocket URLs.
 // ABOUTME: Keeps REST endpoints aligned with active relay configuration.
 
+const _divineRelayHost = 'relay.divine.video';
+const _divineApiBaseUrl = 'https://api.divine.video';
+
 /// Convert a relay WebSocket URL to an HTTP(S) base URL.
 ///
 /// Examples:
@@ -25,7 +28,7 @@ String relayWsToHttpBase(String relayUrl) {
 String resolveApiBaseUrlFromRelays({
   required List<String> configuredRelays,
   required String fallbackBaseUrl,
-  String preferredRelayHost = 'relay.divine.video',
+  String preferredRelayHost = _divineRelayHost,
 }) {
   if (configuredRelays.isEmpty) return fallbackBaseUrl;
 
@@ -38,6 +41,11 @@ String resolveApiBaseUrlFromRelays({
       ? preferred.first
       : configuredRelays.first;
 
+  final selectedHost = Uri.tryParse(selectedRelay)?.host.toLowerCase();
+  if (selectedHost == _divineRelayHost) {
+    return _divineApiBaseUrl;
+  }
+
   return relayWsToHttpBase(selectedRelay);
 }
 
@@ -49,7 +57,7 @@ String resolveApiBaseUrlFromRelays({
 String resolvePinnedApiBaseUrlFromRelays({
   required List<String> configuredRelays,
   required String fallbackBaseUrl,
-  String pinnedRelayHost = 'relay.divine.video',
+  String pinnedRelayHost = _divineRelayHost,
 }) {
   final pinnedRelay = configuredRelays.where((url) {
     final host = Uri.tryParse(url)?.host.toLowerCase();

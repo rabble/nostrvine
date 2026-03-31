@@ -10,6 +10,7 @@ const localRelayPort = 47777;
 const localApiPort = 43001;
 const localBlossomPort = 43003;
 const localInvitePort = 43004;
+const productionApiBaseUrl = 'https://api.divine.video';
 
 /// Build-time default environment
 /// Set via: --dart-define=DEFAULT_ENV=STAGING
@@ -68,10 +69,14 @@ class EnvironmentConfig {
   /// Get REST API base URL (FunnelCake REST API)
   ///
   /// For local environment, the API runs on a separate port from the relay.
-  /// For all other environments, derives from relayUrl to stay in sync.
+  /// Production uses the Fastly-backed API host while other environments
+  /// derive from the relay URL to stay in sync.
   String get apiBaseUrl {
     if (environment == AppEnvironment.local) {
       return 'http://$localHost:$localApiPort';
+    }
+    if (environment == AppEnvironment.production) {
+      return productionApiBaseUrl;
     }
     final url = relayUrl;
     if (url.startsWith('wss://')) {
