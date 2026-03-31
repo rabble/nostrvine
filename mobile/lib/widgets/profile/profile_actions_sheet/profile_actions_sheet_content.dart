@@ -1,6 +1,6 @@
 // ABOUTME: Multi-state bottom sheet content for pending profile actions.
 // ABOUTME: Animates between "Secure Your Account" and "Complete Your Profile"
-// ABOUTME: prompts using the same fade pattern as MoreSheetContent.
+// ABOUTME: prompts using AnimatedSwitcher for cross-fade transitions.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -34,71 +34,20 @@ class ProfileActionsSheetContent extends StatefulWidget {
       _ProfileActionsSheetContentState();
 }
 
-class _ProfileActionsSheetContentState extends State<ProfileActionsSheetContent>
-    with SingleTickerProviderStateMixin {
-  /// Index into [widget.actions] that we are transitioning **to**.
-  late int _targetIndex;
+class _ProfileActionsSheetContentState
+    extends State<ProfileActionsSheetContent> {
+  int _currentIndex = 0;
 
-  /// Index currently rendered on screen (swapped mid-animation).
-  late int _displayedIndex;
-
-  late AnimationController _controller;
-  late Animation<double> _fadeOutAnimation;
-  late Animation<double> _fadeInAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _targetIndex = 0;
-    _displayedIndex = 0;
-
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    // Fade out current content: 0–250 ms.
-    _fadeOutAnimation = Tween<double>(begin: 1, end: 0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0, 0.333, curve: Curves.easeOut),
-      ),
-    );
-
-    // Fade in next content: 500–750 ms.
-    _fadeInAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.667, 1, curve: Curves.easeIn),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _transitionToNext() {
-    final nextIndex = _targetIndex + 1;
+  void _onMaybeLater() {
+    final nextIndex = _currentIndex + 1;
     if (nextIndex >= widget.actions.length) {
       Navigator.of(context).pop();
       return;
     }
-
-    setState(() => _targetIndex = nextIndex);
-    _controller.forward(from: 0);
-
-    // Swap displayed content after fade-out completes.
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) {
-        setState(() => _displayedIndex = nextIndex);
-      }
-    });
+    setState(() => _currentIndex = nextIndex);
   }
 
-  Future<void> _onPrimaryTap(ProfileActionType action) async {
+  void _onPrimaryTap(ProfileActionType action) {
     final route = switch (action) {
       ProfileActionType.secureAccount => SecureAccountScreen.path,
       ProfileActionType.completeProfile => ProfileSetupScreen.setupPath,
@@ -112,36 +61,45 @@ class _ProfileActionsSheetContentState extends State<ProfileActionsSheetContent>
 
   @override
   Widget build(BuildContext context) {
-    final isTransitioning = _targetIndex != _displayedIndex;
+    final action = widget.actions[_currentIndex];
 
     return AnimatedSize(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       alignment: Alignment.topCenter,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final opacity = isTransitioning
-              ? (_displayedIndex == _targetIndex ? _fadeInAnimation.value : 0.0)
-              : (_targetIndex > 0 && _controller.isAnimating
-                    ? _fadeOutAnimation.value
-                    : 1.0);
-
-          return Opacity(
-            opacity: isTransitioning
-                ? opacity
-                : _fadeOutAnimation.value.clamp(
-                    0.0,
-                    1.0,
-                  ),
-            child: _buildPrompt(widget.actions[_displayedIndex]),
-          );
-        },
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        switchInCurve: Curves.easeIn,
+        switchOutCurve: Curves.easeOut,
+        child: _ActionPrompt(
+          key: ValueKey(action),
+          action: action,
+          onPrimaryTap: () => _onPrimaryTap(action),
+          onSecondaryTap: _onMaybeLater,
+        ),
       ),
     );
   }
+}
 
-  Widget _buildPrompt(ProfileActionType action) {
+/// Single prompt view for one [ProfileActionType].
+///
+/// Displays a sticker illustration, title, subtitle, and primary/secondary
+/// action buttons matching the [VineBottomSheetPrompt] layout pattern.
+class _ActionPrompt extends StatelessWidget {
+  const _ActionPrompt({
+    required this.action,
+    required this.onPrimaryTap,
+    required this.onSecondaryTap,
+    super.key,
+  });
+
+  final ProfileActionType action;
+  final VoidCallback onPrimaryTap;
+  final VoidCallback onSecondaryTap;
+
+  @override
+  Widget build(BuildContext context) {
     final (sticker, title, subtitle, primaryLabel) = switch (action) {
       ProfileActionType.secureAccount => (
         DivineStickerName.skeletonKey,
@@ -185,13 +143,13 @@ class _ProfileActionsSheetContentState extends State<ProfileActionsSheetContent>
           const SizedBox(height: 32),
           DivineButton(
             label: primaryLabel,
-            onPressed: () => _onPrimaryTap(action),
+            onPressed: onPrimaryTap,
             expanded: true,
           ),
           const SizedBox(height: 16),
           DivineButton(
             label: 'Maybe Later',
-            onPressed: _transitionToNext,
+            onPressed: onSecondaryTap,
             type: DivineButtonType.secondary,
             expanded: true,
           ),
