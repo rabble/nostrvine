@@ -174,14 +174,16 @@ class _RevealVideoAfterFirstFrameState
   bool _hasRenderedFirstFrame = false;
   bool _revealedByTimeout = false;
 
-  /// Latching flag: set to `true` the first time the player starts playing
-  /// after a load/reset and never cleared until [_resetRevealState].
-  /// Prevents revealing a black texture before the first frame is decoded,
-  /// without hiding the surface again on subsequent pause/play cycles.
-  bool _hasEverPlayed = false;
+  /// Latching flag: set to `true` once the player's position advances past
+  /// zero, meaning the decoder has produced at least one frame.
+  ///
+  /// Unlike the previous `playing`-based latch, this is immune to stale
+  /// state during fallback retries: `player.open()` resets the position to
+  /// zero, so the latch only fires once the *new* source has decoded frames.
+  bool _hasDecodedFrames = false;
   int _generation = 0;
   Timer? _firstFrameTimeout;
-  StreamSubscription<bool>? _playingSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
 
   /// Tracks the last known texture ID to detect Android surface recreation.
   ///
@@ -205,7 +207,7 @@ class _RevealVideoAfterFirstFrameState
   void initState() {
     super.initState();
     _subscribeToFirstFrame();
-    _subscribeToPlaying();
+    _subscribeToPosition();
     _syncFallbackTimer();
     _listenToTextureId();
   }
@@ -217,7 +219,7 @@ class _RevealVideoAfterFirstFrameState
       _stopListeningToTextureId(oldWidget.videoController);
       _resetRevealState();
       _subscribeToFirstFrame();
-      _subscribeToPlaying();
+      _subscribeToPosition();
       _listenToTextureId();
     }
     if (oldWidget.readyForFallback != widget.readyForFallback) {
@@ -228,24 +230,30 @@ class _RevealVideoAfterFirstFrameState
   void _resetRevealState() {
     _firstFrameTimeout?.cancel();
     _surfaceRecoveryTimer?.cancel();
-    unawaited(_playingSubscription?.cancel());
-    _playingSubscription = null;
+    unawaited(_positionSubscription?.cancel());
+    _positionSubscription = null;
     _hasRenderedFirstFrame = false;
     _revealedByTimeout = false;
-    _hasEverPlayed = false;
+    _hasDecodedFrames = false;
     _surfaceRecreating = false;
     _lastTextureId = null;
   }
 
-  void _subscribeToPlaying() {
-    unawaited(_playingSubscription?.cancel());
-    _hasEverPlayed = widget.videoController.player.state.playing;
-    _playingSubscription = widget.videoController.player.stream.playing.listen((
-      playing,
-    ) {
-      if (!mounted || _hasEverPlayed) return;
-      if (playing) {
-        setState(() => _hasEverPlayed = true);
+  /// Subscribes to the player's position stream to detect when the decoder
+  /// has actually produced frames. `position > Duration.zero` is a reliable,
+  /// non-stale signal because `player.open()` resets position to zero.
+  void _subscribeToPosition() {
+    unawaited(_positionSubscription?.cancel());
+    _hasDecodedFrames =
+        widget.videoController.player.state.position > Duration.zero;
+    if (_hasDecodedFrames) return;
+    _positionSubscription =
+        widget.videoController.player.stream.position.listen((pos) {
+      if (!mounted || _hasDecodedFrames) return;
+      if (pos > Duration.zero) {
+        unawaited(_positionSubscription?.cancel());
+        _positionSubscription = null;
+        setState(() => _hasDecodedFrames = true);
       }
     });
   }
@@ -339,27 +347,28 @@ class _RevealVideoAfterFirstFrameState
   void dispose() {
     _stopListeningToTextureId(widget.videoController);
     _firstFrameTimeout?.cancel();
-    unawaited(_playingSubscription?.cancel());
+    unawaited(_positionSubscription?.cancel());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Require `readyForFallback` (LoadState.ready) AND `_isPlaying` as gates
+    // Require `readyForFallback` (LoadState.ready) AND decoded-frames gate
     // before revealing the video surface.
     //
     // `readyForFallback` prevents reveal while the controller is still
     // loading or retrying fallback sources.
     //
-    // `_hasEverPlayed` prevents the black-frame flash that occurs when the
-    // buffer is ready (LoadState.ready) but the player has not yet decoded
-    // and rendered the first frame of the new source. Unlike a live
-    // `isPlaying` check, this is a latch: once set it stays true so that
-    // pausing the video does not hide the surface and flash the thumbnail.
+    // `_hasDecodedFrames` (position > 0) prevents the black-frame flash
+    // that occurs when the buffer is ready but the decoder has not yet
+    // produced a visible frame. Unlike the previous `playing`-based latch,
+    // this is immune to stale state during fallback retries because
+    // `player.open()` resets position to zero. Once set it stays true so
+    // that pausing the video does not hide the surface.
     final shouldReveal =
         !_surfaceRecreating &&
         widget.readyForFallback &&
-        (_hasEverPlayed || _revealedByTimeout) &&
+        (_hasDecodedFrames || _revealedByTimeout) &&
         (_hasRenderedFirstFrame || _revealedByTimeout);
 
     return AnimatedOpacity(
