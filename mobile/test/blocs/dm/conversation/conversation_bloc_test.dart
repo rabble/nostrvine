@@ -200,6 +200,7 @@ void main() {
               ),
             ).thenAnswer(
               (_) async => NIP17SendResult.success(
+                rumorEventId: sentEventId,
                 messageEventId: sentEventId,
                 recipientPubkey: recipientPubkey,
               ),
@@ -297,6 +298,7 @@ void main() {
             ).thenAnswer(
               (_) async => [
                 NIP17SendResult.success(
+                  rumorEventId: sentEventId,
                   messageEventId: sentEventId,
                   recipientPubkey: recipientPubkey,
                 ),
@@ -481,6 +483,7 @@ void main() {
                 );
               }
               return NIP17SendResult.success(
+                rumorEventId: sentEventId,
                 messageEventId: sentEventId,
                 recipientPubkey: recipientPubkey,
               );
@@ -575,6 +578,7 @@ void main() {
             ).then((_) {
               completer1.complete(
                 NIP17SendResult.success(
+                  rumorEventId: sentEventId,
                   messageEventId: sentEventId,
                   recipientPubkey: recipientPubkey,
                 ),
@@ -585,6 +589,7 @@ void main() {
             ).then((_) {
               completer2.complete(
                 NIP17SendResult.success(
+                  rumorEventId: sentEventId,
                   messageEventId: sentEventId,
                   recipientPubkey: recipientPubkey,
                 ),

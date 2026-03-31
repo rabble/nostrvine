@@ -118,6 +118,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
+          rumorEventId: 'rumor-abc123',
           messageEventId: 'event-abc123',
           recipientPubkey: 'test-pubkey',
         ),
@@ -203,6 +204,7 @@ void main() {
           capturedTags =
               invocation.namedArguments[#additionalTags] as List<List<String>>?;
           return NIP17SendResult.success(
+            rumorEventId: 'rumor-xyz',
             messageEventId: 'event-xyz',
             recipientPubkey: 'test-pubkey',
           );
@@ -237,6 +239,7 @@ void main() {
       ).thenAnswer((invocation) async {
         capturedContent = invocation.namedArguments[#content] as String?;
         return NIP17SendResult.success(
+          rumorEventId: 'rumor-no-blossom',
           messageEventId: 'event-no-blossom',
           recipientPubkey: 'test-pubkey',
         );

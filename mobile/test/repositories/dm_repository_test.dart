@@ -65,6 +65,22 @@ void main() {
       // Stub relay properties used by startListening() log.
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
+
+      // Global stub for runInTransaction — executes the callback directly.
+      // Stub both <void> and <Null> since Dart infers different type args
+      // depending on whether the callback returns or is void-typed.
+      when(
+        () => mockConversationsDao.runInTransaction<void>(any()),
+      ).thenAnswer((inv) async {
+        final callback = inv.positionalArguments[0] as Future<void> Function();
+        await callback();
+      });
+      when(
+        () => mockConversationsDao.runInTransaction<Null>(any()),
+      ).thenAnswer((inv) async {
+        final callback = inv.positionalArguments[0] as Future<Null> Function();
+        await callback();
+      });
     });
 
     DmRepository createRepository({
@@ -217,7 +233,8 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => NIP17SendResult.success(
-            messageEventId: _rumorEventId,
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
             recipientPubkey: _validPubkeyB,
           ),
         );
@@ -262,7 +279,10 @@ void main() {
           ),
         ).thenAnswer((_) async {});
         when(
-          () => mockConversationsDao.getConversation(any()),
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
         // Stub publishEvent for the NIP-04 fallback (fire-and-forget)
         when(
@@ -285,7 +305,7 @@ void main() {
             senderPubkey: _validPubkeyA,
             content: 'Hello!',
             createdAt: any(named: 'createdAt'),
-            giftWrapId: _rumorEventId,
+            giftWrapId: _giftWrapEventId,
             messageKind: any(named: 'messageKind'),
             subject: any(named: 'subject'),
             fileType: any(named: 'fileType'),
@@ -476,6 +496,7 @@ void main() {
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
             createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -519,7 +540,10 @@ void main() {
           ),
         ).thenAnswer((_) async {});
         when(
-          () => mockConversationsDao.getConversation(any()),
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
       }
 
@@ -1133,7 +1157,7 @@ void main() {
         verify(
           () => mockNostrClient.subscribe(
             any(),
-            subscriptionId: 'dm_inbox',
+            subscriptionId: any(named: 'subscriptionId'),
           ),
         ).called(1);
 
@@ -1156,7 +1180,7 @@ void main() {
         verify(
           () => mockNostrClient.subscribe(
             any(),
-            subscriptionId: 'dm_inbox',
+            subscriptionId: any(named: 'subscriptionId'),
           ),
         ).called(1);
 
@@ -1172,7 +1196,7 @@ void main() {
           ),
         ).thenAnswer((_) => controller.stream);
         when(
-          () => mockNostrClient.unsubscribe('dm_inbox'),
+          () => mockNostrClient.unsubscribe(any()),
         ).thenAnswer((_) async {});
 
         final repository = createRepository();
@@ -1180,7 +1204,7 @@ void main() {
         await repository.stopListening();
 
         verify(
-          () => mockNostrClient.unsubscribe('dm_inbox'),
+          () => mockNostrClient.unsubscribe(any()),
         ).called(1);
 
         await controller.close();
@@ -1240,7 +1264,10 @@ void main() {
         final convId = DmRepository.computeConversationId(participants);
 
         when(
-          () => mockConversationsDao.getConversation(convId),
+          () => mockConversationsDao.getConversation(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer(
           (_) async => ConversationRow(
             id: convId,
@@ -1265,7 +1292,10 @@ void main() {
 
       test('returns null when conversation does not exist', () async {
         when(
-          () => mockConversationsDao.getConversation(any()),
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
 
         final repository = createRepository();
@@ -1322,14 +1352,20 @@ void main() {
       test('delegates to $ConversationsDao', () async {
         const convId = 'some-conversation-id';
         when(
-          () => mockConversationsDao.markAsRead(convId),
+          () => mockConversationsDao.markAsRead(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => true);
 
         final repository = createRepository();
         await repository.markConversationAsRead(convId);
 
         verify(
-          () => mockConversationsDao.markAsRead(convId),
+          () => mockConversationsDao.markAsRead(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).called(1);
       });
     });
@@ -1354,10 +1390,16 @@ void main() {
             await callback();
           });
           when(
-            () => mockDirectMessagesDao.deleteConversationMessages(convId),
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => 3);
           when(
-            () => mockConversationsDao.deleteConversation(convId),
+            () => mockConversationsDao.deleteConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => 1);
 
           final repository = createRepository();
@@ -1367,10 +1409,16 @@ void main() {
             () => mockConversationsDao.runInTransaction<void>(any()),
           ).called(1);
           verify(
-            () => mockDirectMessagesDao.deleteConversationMessages(convId),
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).called(1);
           verify(
-            () => mockConversationsDao.deleteConversation(convId),
+            () => mockConversationsDao.deleteConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).called(1);
         },
       );
@@ -1387,7 +1435,10 @@ void main() {
           await callback();
         });
         when(
-          () => mockDirectMessagesDao.deleteConversationMessages(convId),
+          () => mockDirectMessagesDao.deleteConversationMessages(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenThrow(Exception('db error'));
 
         final repository = createRepository();
@@ -1418,10 +1469,16 @@ void main() {
             await callback();
           });
           when(
-            () => mockDirectMessagesDao.deleteMultipleConversationMessages(ids),
+            () => mockDirectMessagesDao.deleteMultipleConversationMessages(
+              ids,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => 5);
           when(
-            () => mockConversationsDao.deleteMultiple(ids),
+            () => mockConversationsDao.deleteMultiple(
+              ids,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => 2);
 
           final repository = createRepository();
@@ -1431,10 +1488,16 @@ void main() {
             () => mockConversationsDao.runInTransaction<void>(any()),
           ).called(1);
           verify(
-            () => mockDirectMessagesDao.deleteMultipleConversationMessages(ids),
+            () => mockDirectMessagesDao.deleteMultipleConversationMessages(
+              ids,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).called(1);
           verify(
-            () => mockConversationsDao.deleteMultiple(ids),
+            () => mockConversationsDao.deleteMultiple(
+              ids,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).called(1);
         },
       );
@@ -1447,10 +1510,16 @@ void main() {
           () => mockConversationsDao.runInTransaction<void>(any()),
         );
         verifyNever(
-          () => mockDirectMessagesDao.deleteMultipleConversationMessages(any()),
+          () => mockDirectMessagesDao.deleteMultipleConversationMessages(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         );
         verifyNever(
-          () => mockConversationsDao.deleteMultiple(any()),
+          () => mockConversationsDao.deleteMultiple(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         );
       });
     });
@@ -1464,14 +1533,20 @@ void main() {
         final ids = [convIdA, convIdB];
 
         when(
-          () => mockConversationsDao.markMultipleAsRead(ids),
+          () => mockConversationsDao.markMultipleAsRead(
+            ids,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async {});
 
         final repository = createRepository();
         await repository.markConversationsAsRead(ids);
 
         verify(
-          () => mockConversationsDao.markMultipleAsRead(ids),
+          () => mockConversationsDao.markMultipleAsRead(
+            ids,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).called(1);
       });
     });
@@ -1509,6 +1584,7 @@ void main() {
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
             createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -1552,7 +1628,10 @@ void main() {
           ),
         ).thenAnswer((_) async {});
         when(
-          () => mockConversationsDao.getConversation(any()),
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
       }
 
@@ -1599,7 +1678,10 @@ void main() {
           // stubDaoInserts to return an existing row where
           // currentUserHasSent is already true.
           when(
-            () => mockConversationsDao.getConversation(convId),
+            () => mockConversationsDao.getConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer(
             (_) async => ConversationRow(
               id: convId,
@@ -1667,6 +1749,7 @@ void main() {
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
             createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -1710,7 +1793,10 @@ void main() {
           ),
         ).thenAnswer((_) async {});
         when(
-          () => mockConversationsDao.getConversation(any()),
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
       }
 
@@ -2013,7 +2099,8 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => NIP17SendResult.success(
-            messageEventId: _rumorEventId,
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
             recipientPubkey: _validPubkeyB,
           ),
         );
@@ -2058,7 +2145,10 @@ void main() {
           ),
         ).thenAnswer((_) async {});
         when(
-          () => mockConversationsDao.getConversation(any()),
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
 
         final repository = createRepository();
@@ -2089,7 +2179,7 @@ void main() {
             senderPubkey: _validPubkeyA,
             content: 'https://blossom.example.com/file.enc',
             createdAt: any(named: 'createdAt'),
-            giftWrapId: _rumorEventId,
+            giftWrapId: _giftWrapEventId,
             messageKind: EventKind.fileMessage,
             subject: any(named: 'subject'),
             fileType: 'image/jpeg',
@@ -2186,6 +2276,7 @@ void main() {
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
             createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -2229,7 +2320,10 @@ void main() {
           ),
         ).thenAnswer((_) async {});
         when(
-          () => mockConversationsDao.getConversation(any()),
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
       }
 
@@ -2250,7 +2344,8 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => NIP17SendResult.success(
-              messageEventId: _rumorEventId,
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
               recipientPubkey: moderationPubkey,
             ),
           );
@@ -2285,7 +2380,7 @@ void main() {
               senderPubkey: _validPubkeyA,
               content: reportContent,
               createdAt: any(named: 'createdAt'),
-              giftWrapId: _rumorEventId,
+              giftWrapId: _giftWrapEventId,
               messageKind: any(named: 'messageKind'),
               subject: any(named: 'subject'),
               fileType: any(named: 'fileType'),
@@ -2482,7 +2577,8 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => NIP17SendResult.success(
-              messageEventId: _rumorEventId,
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
               recipientPubkey: externalUserPubkey,
             ),
           );
@@ -2551,6 +2647,7 @@ void main() {
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
             createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -2594,7 +2691,10 @@ void main() {
           ),
         ).thenAnswer((_) async {});
         when(
-          () => mockConversationsDao.getConversation(any()),
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
       }
 
@@ -2610,6 +2710,7 @@ void main() {
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
             createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -3074,6 +3175,7 @@ void main() {
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
             createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -3119,7 +3221,10 @@ void main() {
 
         // Return existing conversation already upgraded to nip17
         when(
-          () => mockConversationsDao.getConversation(convId),
+          () => mockConversationsDao.getConversation(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer(
           (_) async => ConversationRow(
             id: convId,
@@ -3185,6 +3290,7 @@ void main() {
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
             createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -3241,7 +3347,8 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => NIP17SendResult.success(
-              messageEventId: _rumorEventId,
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
               recipientPubkey: _validPubkeyB,
             ),
           );
@@ -3249,7 +3356,10 @@ void main() {
 
           // Return null (unknown protocol)
           when(
-            () => mockConversationsDao.getConversation(any()),
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => null);
 
           // Stub publishEvent — NIP-04 fallback will call this
@@ -3310,7 +3420,8 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => NIP17SendResult.success(
-              messageEventId: _rumorEventId,
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
               recipientPubkey: _validPubkeyB,
             ),
           );
@@ -3387,7 +3498,10 @@ void main() {
         final repo = createRepository();
 
         when(
-          () => mockDirectMessagesDao.getMessageById(_rumorEventId),
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => null);
 
         expect(
@@ -3406,7 +3520,10 @@ void main() {
         final repo = createRepository();
 
         when(
-          () => mockDirectMessagesDao.getMessageById(_rumorEventId),
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
             id: _rumorEventId,
@@ -3438,7 +3555,10 @@ void main() {
           final repo = createRepository();
 
           when(
-            () => mockDirectMessagesDao.getMessageById(_rumorEventId),
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer(
             (_) async => DirectMessageRow(
               id: _rumorEventId,
@@ -3453,7 +3573,10 @@ void main() {
           );
 
           when(
-            () => mockConversationsDao.getConversation(conversationId),
+            () => mockConversationsDao.getConversation(
+              conversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer(
             (_) async => ConversationRow(
               id: conversationId,
@@ -3470,7 +3593,10 @@ void main() {
           ).thenAnswer((_) async => _FakeEvent());
 
           when(
-            () => mockDirectMessagesDao.markMessageDeleted(_rumorEventId),
+            () => mockDirectMessagesDao.markMessageDeleted(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => true);
 
           when(
@@ -3516,7 +3642,10 @@ void main() {
 
           // Verify soft-delete
           verify(
-            () => mockDirectMessagesDao.markMessageDeleted(_rumorEventId),
+            () => mockDirectMessagesDao.markMessageDeleted(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).called(1);
         },
       );

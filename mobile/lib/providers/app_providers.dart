@@ -1005,8 +1005,15 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   final db = ref.watch(databaseProvider);
   final service = UserDataCleanupService(prefs);
 
-  // Wire database cleanup callback so signOut() clears DM and notification data
+  // Wire database cleanup callback so signOut() clears DM and notification data.
+  // Stop DM listening FIRST to prevent in-flight event handlers from writing
+  // to tables that are being cleared (H3 race condition fix).
   service.onDatabaseCleanup = () async {
+    try {
+      await ref.read(dmRepositoryProvider).stopListening();
+    } catch (_) {
+      // DmRepository may not exist yet (e.g., first launch).
+    }
     await db.directMessagesDao.clearAll();
     await db.conversationsDao.clearAll();
     await db.notificationsDao.clearAll();

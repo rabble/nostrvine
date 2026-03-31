@@ -159,17 +159,25 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get a single conversation by ID.
-  Future<ConversationRow?> getConversation(String id) {
-    return (select(
-      conversations,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<ConversationRow?> getConversation(
+    String id, {
+    String? ownerPubkey,
+  }) {
+    return (select(conversations)..where(
+          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .getSingleOrNull();
   }
 
   /// Watch a single conversation by ID.
-  Stream<ConversationRow?> watchConversation(String id) {
-    return (select(
-      conversations,
-    )..where((t) => t.id.equals(id))).watchSingleOrNull();
+  Stream<ConversationRow?> watchConversation(
+    String id, {
+    String? ownerPubkey,
+  }) {
+    return (select(conversations)..where(
+          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .watchSingleOrNull();
   }
 
   /// Mark a conversation as read.
@@ -179,9 +187,16 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   /// Throws:
   ///
   /// * [InvalidDataException] if a column constraint is violated.
-  Future<bool> markAsRead(String id) async {
-    final rows = await (update(conversations)..where((t) => t.id.equals(id)))
-        .write(const ConversationsCompanion(isRead: Value(true)));
+  Future<bool> markAsRead(
+    String id, {
+    String? ownerPubkey,
+  }) async {
+    final rows =
+        await (update(conversations)..where(
+              (t) =>
+                  t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            ))
+            .write(const ConversationsCompanion(isRead: Value(true)));
     return rows > 0;
   }
 
@@ -229,22 +244,38 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Mark multiple conversations as read in a single batch.
-  Future<void> markMultipleAsRead(List<String> ids) async {
+  Future<void> markMultipleAsRead(
+    List<String> ids, {
+    String? ownerPubkey,
+  }) async {
     if (ids.isEmpty) return;
-    await (update(conversations)..where((t) => t.id.isIn(ids))).write(
-      const ConversationsCompanion(isRead: Value(true)),
-    );
+    await (update(conversations)..where(
+          (t) => t.id.isIn(ids) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .write(const ConversationsCompanion(isRead: Value(true)));
   }
 
   /// Delete a conversation by ID.
-  Future<int> deleteConversation(String id) {
-    return (delete(conversations)..where((t) => t.id.equals(id))).go();
+  Future<int> deleteConversation(
+    String id, {
+    String? ownerPubkey,
+  }) {
+    return (delete(conversations)..where(
+          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .go();
   }
 
   /// Delete multiple conversations in a single batch.
-  Future<int> deleteMultiple(List<String> ids) {
+  Future<int> deleteMultiple(
+    List<String> ids, {
+    String? ownerPubkey,
+  }) {
     if (ids.isEmpty) return Future.value(0);
-    return (delete(conversations)..where((t) => t.id.isIn(ids))).go();
+    return (delete(conversations)..where(
+          (t) => t.id.isIn(ids) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .go();
   }
 
   /// Run a callback inside a database transaction.

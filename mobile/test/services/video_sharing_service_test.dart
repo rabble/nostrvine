@@ -364,6 +364,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
+          rumorEventId: 'nip17-rumor-id',
           messageEventId: 'nip17-msg-id',
           recipientPubkey: _recipientPubkey,
         ),
@@ -442,6 +443,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
+          rumorEventId: 'nip17-rumor-id',
           messageEventId: 'nip17-msg-id',
           recipientPubkey: _recipientPubkey,
         ),
@@ -484,6 +486,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
+          rumorEventId: 'nip17-rumor-id',
           messageEventId: 'nip17-msg-id',
           recipientPubkey: _recipientPubkey,
         ),
@@ -528,6 +531,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
+          rumorEventId: 'nip17-rumor-id',
           messageEventId: 'nip17-msg-id',
           recipientPubkey: _recipientPubkey,
         ),
@@ -571,6 +575,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
+          rumorEventId: 'nip17-rumor-id',
           messageEventId: 'nip17-msg-id',
           recipientPubkey: _recipientPubkey,
         ),
@@ -608,6 +613,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
+          rumorEventId: 'nip17-rumor-id',
           messageEventId: 'nip17-msg-id',
           recipientPubkey: _recipientPubkey,
         ),
