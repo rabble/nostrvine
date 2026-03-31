@@ -2,7 +2,7 @@
 // ABOUTME: Enables prioritized loading of critical services first
 
 /// Phases of application startup in priority order
-enum StartupPhase implements Comparable<StartupPhase> {
+enum StartupPhase {
   /// Must complete before `runApp()` so the first route can build safely.
   critical(0, 'Critical services'),
 
@@ -20,21 +20,4 @@ enum StartupPhase implements Comparable<StartupPhase> {
   final String description;
 
   const StartupPhase(this.priority, this.description);
-
-  @override
-  int compareTo(StartupPhase other) => priority.compareTo(other.priority);
-
-  /// Get phases that must complete before this phase
-  List<StartupPhase> get dependencies {
-    final deps = <StartupPhase>[];
-    for (final phase in StartupPhase.values) {
-      if (phase.priority < priority) {
-        deps.add(phase);
-      }
-    }
-    return deps;
-  }
-
-  /// Check if this phase depends on another
-  bool dependsOn(StartupPhase other) => other.priority < priority;
 }
