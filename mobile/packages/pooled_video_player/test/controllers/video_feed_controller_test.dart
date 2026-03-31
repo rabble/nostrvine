@@ -2544,7 +2544,8 @@ void main() {
           addTearDown(() => debugDefaultTargetPlatformOverride = null);
 
           const hash =
-              'abcdef9876543210abcdef9876543210abcdef9876543210abcdef9876543210';
+              'abcdef9876543210abcdef9876543210'
+              'abcdef9876543210abcdef9876543210';
           const mp4Url = 'https://media.divine.video/$hash/720p.mp4';
           const rawUrl = 'https://media.divine.video/$hash';
           const hlsUrl = 'https://media.divine.video/$hash/hls/master.m3u8';
@@ -3740,7 +3741,8 @@ void main() {
         'retries the raw Divine blob before error when a derivative stalls',
         () async {
           const hash =
-              '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+              '1234567890abcdef1234567890abcdef'
+              '1234567890abcdef1234567890abcdef';
           const mp4Url = 'https://media.divine.video/$hash/720p.mp4';
           const rawUrl = 'https://media.divine.video/$hash';
           final videos = [
