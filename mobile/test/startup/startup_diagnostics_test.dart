@@ -172,6 +172,33 @@ void main() {
       },
     );
 
+    test('should generate a startup metrics report', () async {
+      coordinator.registerService(
+        name: 'FastService',
+        phase: StartupPhase.critical,
+        initialize: () async {
+          await Future.delayed(const Duration(milliseconds: 10));
+        },
+      );
+
+      coordinator.registerService(
+        name: 'DeferredService',
+        phase: StartupPhase.deferred,
+        initialize: () async {
+          await Future.delayed(const Duration(milliseconds: 5));
+        },
+        optional: true,
+      );
+
+      await coordinator.initialize();
+
+      final report = coordinator.metrics.generateReport();
+      expect(report, contains('Startup Performance Report'));
+      expect(report, contains('Total time:'));
+      expect(report, contains('FastService'));
+      expect(report, contains('DeferredService'));
+    });
+
     test('should detect and warn about slow initialization', () async {
       // Arrange
       final completer = Completer<void>();
