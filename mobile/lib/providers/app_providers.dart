@@ -716,10 +716,12 @@ void blocklistSyncBridge(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final nostrService = ref.watch(nostrServiceProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
-  final keyManager = ref.watch(nostrKeyManagerProvider);
 
   Future<void> startSync() async {
-    final pubkey = keyManager.publicKey;
+    // Use authService.currentPublicKeyHex — it is available immediately
+    // after authentication, unlike nostrKeyManagerProvider which loads
+    // its keys asynchronously via RPC and may not be ready yet.
+    final pubkey = authService.currentPublicKeyHex;
     if (pubkey == null) return;
 
     try {
@@ -747,7 +749,7 @@ void blocklistSyncBridge(Ref ref) {
   }
 
   // Sync immediately if already authenticated
-  if (authService.isAuthenticated && keyManager.publicKey != null) {
+  if (authService.isAuthenticated && authService.currentPublicKeyHex != null) {
     unawaited(startSync());
   }
 
