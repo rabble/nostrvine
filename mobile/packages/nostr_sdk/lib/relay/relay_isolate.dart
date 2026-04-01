@@ -95,6 +95,7 @@ class RelayIsolate extends Relay {
     List message, {
     bool? forceSend,
     bool queueIfFailed = true,
+    bool skipReconnect = false,
   }) async {
     if (mainToSubSendPort == null) {
       if (queueIfFailed) {

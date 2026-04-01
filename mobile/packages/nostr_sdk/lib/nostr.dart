@@ -265,7 +265,7 @@ class Nostr {
     List<String>? tempRelays,
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
-    Duration timeout = const Duration(seconds: 10),
+    Duration timeout = const Duration(seconds: 5),
   }) async {
     var eventBox = EventMemBox(sortAfterAdd: false);
     var completer = Completer<void>();
@@ -306,7 +306,7 @@ class Nostr {
     String? id,
     List<String>? tempRelays,
     List<int> relayTypes = RelayType.all,
-    Duration timeout = const Duration(seconds: 10),
+    Duration timeout = const Duration(seconds: 5),
   }) async {
     return _pool.count(
       filters,
