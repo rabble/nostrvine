@@ -237,7 +237,9 @@ class ProfileRepository {
       followingCount: (social?['following_count'] as num?)?.toInt(),
       videoCount: (stats?['video_count'] as num?)?.toInt(),
       totalLikes: (engagement?['total_reactions'] as num?)?.toInt(),
-      totalViews: (engagement?['total_loops'] as num?)?.toInt(),
+      // total_loops can be fractional due to a backend aggregation issue;
+      // round to the nearest integer.
+      totalViews: (engagement?['total_loops'] as num?)?.round(),
     );
   }
 
