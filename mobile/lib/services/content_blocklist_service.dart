@@ -31,8 +31,10 @@ class ContentBlocklistService {
   ContentBlocklistService({
     SharedPreferences? prefs,
     void Function()? onChanged,
+    List<String> blockListFallbackRelays = const ['wss://nos.lol'],
   }) : _prefs = prefs,
-       _onChanged = onChanged {
+       _onChanged = onChanged,
+       _blockListFallbackRelays = blockListFallbackRelays {
     // Initialize with the specific npub requested
     _addInitialBlockedContent();
     _loadBlockedUsers();
@@ -46,6 +48,7 @@ class ContentBlocklistService {
 
   final SharedPreferences? _prefs;
   final void Function()? _onChanged;
+  final List<String> _blockListFallbackRelays;
 
   // Internal blocklist of public keys (hex format) - kept empty for now
   static const Set<String> _internalBlocklist = {
@@ -73,12 +76,6 @@ class ContentBlocklistService {
 
   // Subscription tracking for block list sync
   bool _blockListSyncStarted = false;
-
-  /// Fallback relay for kind 30000 block list events.
-  ///
-  /// The Divine relay (Funnelcake) does not persist kind 30000 events,
-  /// so we publish to and subscribe from a public relay as well.
-  static const _blockListFallbackRelay = 'wss://nos.lol';
 
   // Services for Nostr publishing (injected via sync methods)
   AuthService? _authService;
@@ -247,13 +244,15 @@ class ContentBlocklistService {
         // Publish to all connected relays (some may persist kind 30000)
         final sentEvent = await nostrClient.publishEvent(event);
 
-        // Also publish to the fallback relay which is known to persist
-        // kind 30000 events. This is critical for cross-device / reinstall
-        // restoration when the user's primary relays do not store them.
-        await nostrClient.publishEvent(
-          event,
-          targetRelays: [_blockListFallbackRelay],
-        );
+        // Also publish to fallback relays known to persist kind 30000
+        // events. Critical for cross-device / reinstall restoration when
+        // the user's primary relays do not store them.
+        if (_blockListFallbackRelays.isNotEmpty) {
+          await nostrClient.publishEvent(
+            event,
+            targetRelays: _blockListFallbackRelays,
+          );
+        }
 
         if (sentEvent != null) {
           Log.info(
@@ -555,7 +554,7 @@ class ContentBlocklistService {
 
       final subscription = nostrService.subscribe(
         [othersFilter, ownFilter],
-        tempRelays: [_blockListFallbackRelay],
+        tempRelays: _blockListFallbackRelays,
       );
 
       subscription.listen(_handleBlockListEvent);
@@ -600,7 +599,7 @@ class ContentBlocklistService {
 
       final events = await nostrService.queryEvents(
         [filter],
-        tempRelays: [_blockListFallbackRelay],
+        tempRelays: _blockListFallbackRelays,
       );
 
       for (final event in events) {
