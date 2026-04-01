@@ -57,6 +57,17 @@ class MockFollowRepository extends Mock implements FollowRepository {
 
   @override
   bool isFollowing(String pubkey) => false;
+
+  @override
+  Stream<({List<String> pubkeys, int count})> watchMyFollowers() {
+    return Stream.value((pubkeys: <String>[], count: 0));
+  }
+
+  @override
+  Future<int> getMyFollowerCount() async => 0;
+
+  @override
+  Future<int> getFollowerCount(String pubkey) async => 0;
 }
 
 class MockNostrClient extends Mock implements NostrClient {
@@ -196,7 +207,10 @@ void main() {
 
       return ProviderScope(
         overrides: [
-          ...getStandardTestOverrides(mockNostrService: mockNostrClient),
+          ...getStandardTestOverrides(
+            mockNostrService: mockNostrClient,
+            mockNip05VerificationService: createMockNip05VerificationService(),
+          ),
           fetchUserProfileProvider(userIdHex).overrideWith(
             profileIsLoading
                 ? (ref) => Completer<UserProfile?>().future
