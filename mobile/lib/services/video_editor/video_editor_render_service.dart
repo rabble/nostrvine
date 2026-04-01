@@ -282,7 +282,6 @@ class VideoEditorRenderService {
     required List<DivineVideoClip> clips,
     double originalAudioVolume = 1.0,
     double customAudioVolume = 1.0,
-    Uint8List? imageBytes,
     bool usePersistentStorage = false,
     model.AspectRatio? aspectRatio,
     CompleteParameters? parameters,
@@ -323,7 +322,6 @@ class VideoEditorRenderService {
         aspectRatio: aspectRatio ?? clips.first.targetAspectRatio,
         originalAudioVolume: originalAudioVolume,
         customAudioVolume: customAudioVolume,
-        imageBytes: imageBytes,
         parameters: parameters,
       );
 
@@ -372,7 +370,11 @@ class VideoEditorRenderService {
       final taskId = DateTime.now().microsecondsSinceEpoch.toString();
       await _cancelAndRender(
         outputPath,
-        VideoRenderData(id: taskId, video: clip.video, endTime: duration),
+        VideoRenderData(
+          id: taskId,
+          videoSegments: [VideoSegment(video: clip.video)],
+          endTime: duration,
+        ),
       );
 
       // Replace original file with trimmed version
@@ -448,7 +450,7 @@ class VideoEditorRenderService {
     );
 
     final task = VideoRenderData(
-      video: video,
+      videoSegments: [VideoSegment(video: video)],
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
       transform: cropParams.toExportTransform(),
@@ -585,13 +587,19 @@ class VideoEditorRenderService {
 
     final task = VideoRenderData(
       id: '${clip.id}_normalized',
-      video: clip.video,
+      videoSegments: [VideoSegment(video: clip.video)],
       shouldOptimizeForNetworkUse: true,
-      imageBytes: parameters?.layers.isNotEmpty == true
-          ? parameters?.image
+      imageLayers: parameters?.layers.isNotEmpty == true
+          ? [
+              ImageLayer(
+                image: EditorLayerImage.memory(parameters!.image),
+              ),
+            ]
           : null,
       blur: parameters?.blur,
-      colorMatrixList: parameters?.colorFilters ?? [],
+      colorFilters: (parameters?.colorFilters ?? [])
+          .map((matrix) => ColorFilter(matrix: matrix))
+          .toList(),
       imageBytesWithCropping: true,
       transform: ExportTransform(
         x: cropParams.x,
@@ -622,8 +630,7 @@ class VideoEditorRenderService {
   /// Concatenates all video segments into a final output file.
   ///
   /// If [globalTransform] is provided, applies it to all segments in a single
-  /// pass. When [imageBytes] is provided, the image is
-  /// composited as an overlay (e.g. watermark).
+  /// pass.
   static Future<String> _concatenateSegments({
     required List<VideoSegment> segments,
     required String taskId,
@@ -633,7 +640,6 @@ class VideoEditorRenderService {
     _CropParameters? globalTransform,
     double originalAudioVolume = 1.0,
     double customAudioVolume = 1.0,
-    Uint8List? imageBytes,
   }) async {
     final outputPath = path.join(
       outputDir.path,
@@ -643,24 +649,43 @@ class VideoEditorRenderService {
     final hasCustomAudio =
         customAudioVolume > 0 && parameters?.customAudioTrack != null;
 
+    final audioTracks = <VideoAudioTrack>[];
+    if (hasCustomAudio) {
+      final audioPath = await parameters?.customAudioTrack?.audio
+          .safeFilePath();
+      if (audioPath != null) {
+        audioTracks.add(
+          VideoAudioTrack(
+            path: audioPath,
+            volume: customAudioVolume,
+            audioStartTime: parameters?.customAudioTrack?.startTime,
+          ),
+        );
+      }
+    }
+
+    final volumeSegments = segments
+        .map((s) => s.copyWith(volume: originalAudioVolume))
+        .toList();
+
     final task = VideoRenderData(
       id: taskId,
-      videoSegments: segments,
+      videoSegments: volumeSegments,
       endTime: VideoEditorConstants.maxDuration,
       shouldOptimizeForNetworkUse: true,
-      customAudioPath: hasCustomAudio
-          ? await parameters?.customAudioTrack?.audio.safeFilePath()
-          : null,
-      loopCustomAudio: false,
+      audioTracks: audioTracks,
       enableAudio: originalAudioVolume > 0 || hasCustomAudio,
-      originalAudioVolume: originalAudioVolume,
-      customAudioVolume: customAudioVolume,
-      customAudioStartTime: parameters?.customAudioTrack?.startTime,
-      imageBytes: parameters?.layers.isNotEmpty == true
-          ? parameters?.image
+      imageLayers: parameters?.layers.isNotEmpty == true
+          ? [
+              ImageLayer(
+                image: EditorLayerImage.memory(parameters!.image),
+              ),
+            ]
           : null,
       blur: parameters?.blur,
-      colorMatrixList: parameters?.colorFilters ?? [],
+      colorFilters: (parameters?.colorFilters ?? [])
+          .map((matrix) => ColorFilter(matrix: matrix))
+          .toList(),
       imageBytesWithCropping: true,
       qualityConfig: VideoQualityConfig.custom(
         bitrate: VideoEditorConstants.quality.bitrate,
