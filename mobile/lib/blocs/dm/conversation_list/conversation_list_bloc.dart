@@ -112,7 +112,7 @@ class ConversationListBloc
               ) ??
               split.requests,
           potentialRequests: data.potentialRequests,
-          hasMore: data.accepted.length >= state.currentLimit,
+          hasMore: data.accepted.length == state.currentLimit,
           isLoadingMore: false,
         );
       },

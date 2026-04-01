@@ -23,15 +23,19 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return column.equals(ownerPubkey) | column.isNull();
   }
 
-  /// Insert a decrypted DM, ignoring duplicates by gift_wrap_id.
+  /// Insert a decrypted DM, silently skipping duplicates.
+  ///
+  /// Uses `INSERT OR IGNORE` so that violations on either the primary key
+  /// (`id`) **or** the UNIQUE index on `gift_wrap_id` are handled gracefully
+  /// without throwing. Callers already dedup via [hasGiftWrap] before calling
+  /// this method; the ignore mode is a safety net for race conditions.
+  ///
+  /// NIP-17 rumor events are immutable — the same rumor ID always carries
+  /// the same content, so skipping duplicates never loses data.
   ///
   /// For kind 14 (text), only [content] is used.
   /// For kind 15 (file), [content] holds the file URL and file metadata
   /// fields are populated from the event tags.
-  ///
-  /// Throws:
-  ///
-  /// * [InvalidDataException] if a column constraint is violated.
   Future<void> insertMessage({
     required String id,
     required String conversationId,
@@ -54,7 +58,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     String? thumbnailUrl,
     String? ownerPubkey,
   }) {
-    return into(directMessages).insertOnConflictUpdate(
+    return into(directMessages).insert(
       DirectMessagesCompanion.insert(
         id: id,
         conversationId: conversationId,
@@ -77,6 +81,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         thumbnailUrl: Value(thumbnailUrl),
         ownerPubkey: Value(ownerPubkey),
       ),
+      mode: InsertMode.insertOrIgnore,
     );
   }
 
@@ -138,9 +143,16 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Returns `true` if the row was updated, `false` if [rumorId] was not
   /// found.
-  Future<bool> markMessageDeleted(String rumorId) async {
+  Future<bool> markMessageDeleted(
+    String rumorId, {
+    String? ownerPubkey,
+  }) async {
     final rows =
-        await (update(directMessages)..where((t) => t.id.equals(rumorId)))
+        await (update(directMessages)..where(
+              (t) =>
+                  t.id.equals(rumorId) &
+                  _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            ))
             .write(const DirectMessagesCompanion(isDeleted: Value(true)));
     return rows > 0;
   }
@@ -148,13 +160,21 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Look up a message by rumor event ID.
   ///
   /// Used to validate sender pubkey before applying a kind 5 deletion.
-  Future<DirectMessageRow?> getMessageById(String id) {
-    return (select(
-      directMessages,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<DirectMessageRow?> getMessageById(
+    String id, {
+    String? ownerPubkey,
+  }) {
+    return (select(directMessages)..where(
+          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .getSingleOrNull();
   }
 
   /// Check if a gift wrap event has already been processed (dedup).
+  ///
+  /// Intentionally NOT scoped by `ownerPubkey`: gift-wrap event IDs are
+  /// globally unique per the Nostr protocol, so cross-account dedup
+  /// prevents re-processing the same relay event for multiple local accounts.
   Future<bool> hasGiftWrap(String giftWrapId) async {
     final query = selectOnly(directMessages)
       ..where(directMessages.giftWrapId.equals(giftWrapId))
@@ -176,6 +196,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     required String content,
     required int createdAt,
     int windowSeconds = 5,
+    String? ownerPubkey,
   }) async {
     final query = selectOnly(directMessages)
       ..where(
@@ -187,7 +208,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
             ) &
             directMessages.createdAt.isSmallerOrEqualValue(
               createdAt + windowSeconds,
-            ),
+            ) &
+            _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey),
       )
       ..addColumns([directMessages.id])
       ..limit(1);
@@ -198,25 +220,41 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Delete all messages in a conversation.
   ///
   /// Returns the number of deleted rows.
-  Future<int> deleteConversationMessages(String conversationId) {
-    return (delete(
-      directMessages,
-    )..where((t) => t.conversationId.equals(conversationId))).go();
+  Future<int> deleteConversationMessages(
+    String conversationId, {
+    String? ownerPubkey,
+  }) {
+    return (delete(directMessages)..where(
+          (t) =>
+              t.conversationId.equals(conversationId) &
+              _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .go();
   }
 
   /// Delete a single message by ID.
-  Future<int> deleteMessage(String id) {
-    return (delete(directMessages)..where((t) => t.id.equals(id))).go();
+  Future<int> deleteMessage(
+    String id, {
+    String? ownerPubkey,
+  }) {
+    return (delete(directMessages)..where(
+          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .go();
   }
 
   /// Delete messages for multiple conversations in a single batch.
   Future<int> deleteMultipleConversationMessages(
-    List<String> conversationIds,
-  ) {
+    List<String> conversationIds, {
+    String? ownerPubkey,
+  }) {
     if (conversationIds.isEmpty) return Future.value(0);
-    return (delete(
-      directMessages,
-    )..where((t) => t.conversationId.isIn(conversationIds))).go();
+    return (delete(directMessages)..where(
+          (t) =>
+              t.conversationId.isIn(conversationIds) &
+              _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .go();
   }
 
   /// Count messages in a conversation.
@@ -232,6 +270,11 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ..addColumns([directMessages.id.count()]);
     final result = await query.getSingle();
     return result.read(directMessages.id.count()) ?? 0;
+  }
+
+  /// Run a callback inside a database transaction.
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    return attachedDatabase.transaction(action);
   }
 
   /// Delete all DMs for a specific user.

@@ -89,6 +89,7 @@ class MockPlayerSetup {
     required this.bufferingController,
     required this.playingController,
     required this.positionController,
+    required this.errorController,
   });
 
   final Player player;
@@ -97,12 +98,14 @@ class MockPlayerSetup {
   final StreamController<bool> bufferingController;
   final StreamController<bool> playingController;
   final StreamController<Duration> positionController;
+  final StreamController<String> errorController;
 
   /// Disposes all stream controllers.
   Future<void> dispose() async {
     await bufferingController.close();
     await playingController.close();
     await positionController.close();
+    await errorController.close();
   }
 }
 
@@ -123,6 +126,7 @@ MockPlayerSetup createMockPlayerSetup({
   final bufferingController = StreamController<bool>.broadcast();
   final playingController = StreamController<bool>.broadcast();
   final positionController = StreamController<Duration>.broadcast();
+  final errorController = StreamController<String>.broadcast();
 
   // Configure state
   when(() => mockState.playing).thenReturn(isPlaying);
@@ -137,6 +141,7 @@ MockPlayerSetup createMockPlayerSetup({
   ).thenAnswer((_) => bufferingController.stream);
   when(() => mockStream.playing).thenAnswer((_) => playingController.stream);
   when(() => mockStream.position).thenAnswer((_) => positionController.stream);
+  when(() => mockStream.error).thenAnswer((_) => errorController.stream);
   when(() => mockPlayer.stream).thenReturn(mockStream);
 
   // Configure common methods
@@ -159,6 +164,7 @@ MockPlayerSetup createMockPlayerSetup({
     bufferingController: bufferingController,
     playingController: playingController,
     positionController: positionController,
+    errorController: errorController,
   );
 }
 

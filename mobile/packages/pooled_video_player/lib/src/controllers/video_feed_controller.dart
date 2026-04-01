@@ -161,6 +161,7 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, LoadState> _loadStates = {};
   final Map<int, StreamSubscription<bool>> _bufferSubscriptions = {};
   final Map<int, StreamSubscription<bool>> _playingSubscriptions = {};
+  final Map<int, StreamSubscription<String>> _errorSubscriptions = {};
   final Set<int> _loadingIndices = {};
   final Map<int, Timer> _positionTimers = {};
   final Map<int, Timer> _loadWatchdogTimers = {};
@@ -320,8 +321,8 @@ class VideoFeedController extends ChangeNotifier {
         );
         _notifyIndex(index);
 
-        // Current video stuck in buffering too long — mark as error
-        // so the user can swipe past instead of waiting forever.
+        // Current video stuck in buffering too long — try next source
+        // before giving up completely.
         if (index == _currentIndex) {
           _logDebug(
             'load_gave_up ${_videoDebugDetails(index)} '
@@ -329,8 +330,7 @@ class VideoFeedController extends ChangeNotifier {
           );
           timer.cancel();
           _loadWatchdogTimers.remove(index);
-          _loadStates[index] = LoadState.error;
-          _notifyIndex(index);
+          unawaited(_retryCurrentVideoWithNextSource(index));
           return;
         }
       }
@@ -355,6 +355,7 @@ class VideoFeedController extends ChangeNotifier {
 
   List<String> _resolvePlaybackSources(VideoItem video) {
     final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
+    final originalUrl = video.originalUrl;
 
     // Divine-hosted sources can fail in different ways:
     // - progressive derivatives may still be processing
@@ -363,22 +364,26 @@ class VideoFeedController extends ChangeNotifier {
     //
     // Prefer the resolved source first, then the raw blob, and finally HLS.
     // For bare raw blobs, keep the existing raw -> HLS codec fallback.
+    // Always include the original event URL as a last-resort fallback in case
+    // all derived Divine URLs fail (e.g. non-Divine Blossom source).
     final hash = _extractCanonicalDivineBlobHash(resolvedSource);
     if (hash != null) {
       final rawUrl = _canonicalDivineBlobRawUrl(hash);
       final hlsUrl = _canonicalDivineBlobHlsUrl(hash);
       final isAlreadyHls = resolvedSource.contains('/hls/');
       if (isAlreadyHls) {
-        return _orderedUniqueSources([resolvedSource, rawUrl]);
+        return _orderedUniqueSources([resolvedSource, rawUrl, originalUrl]);
       }
 
       final isRawBlob = resolvedSource == rawUrl;
       return isRawBlob
-          ? _orderedUniqueSources([resolvedSource, hlsUrl])
-          : _orderedUniqueSources([resolvedSource, rawUrl, hlsUrl]);
+          ? _orderedUniqueSources([resolvedSource, hlsUrl, originalUrl])
+          : _orderedUniqueSources(
+              [resolvedSource, rawUrl, hlsUrl, originalUrl],
+            );
     }
 
-    return [resolvedSource];
+    return _orderedUniqueSources([resolvedSource, originalUrl]);
   }
 
   Future<({String openedSource, int sourceIndex})> _openWithFallbacks({
@@ -389,27 +394,26 @@ class VideoFeedController extends ChangeNotifier {
     required Stopwatch? loadStopwatch,
     required String retryLogLabel,
   }) async {
-    var sourceIndex = startIndex;
+    var attemptIndex = startIndex;
 
     while (true) {
-      final source = playbackSources[sourceIndex];
+      final source = playbackSources[attemptIndex];
 
       try {
         await player.open(Media(source), play: false);
-        return (openedSource: source, sourceIndex: sourceIndex);
+        return (openedSource: source, sourceIndex: attemptIndex);
       } on Exception catch (error) {
-        final nextIndex = sourceIndex + 1;
-        if (nextIndex >= playbackSources.length) rethrow;
+        final nextAttempt = attemptIndex + 1;
+        if (nextAttempt >= playbackSources.length) rethrow;
 
-        final retrySource = playbackSources[nextIndex];
         _logDebug(
           '$retryLogLabel ${_videoDebugDetails(index)} '
           'failedSource=$source '
-          'retrySource=$retrySource '
+          'retrySource=${playbackSources[nextAttempt]} '
           'elapsedMs=${loadStopwatch?.elapsedMilliseconds} '
           'error=$error',
         );
-        sourceIndex = nextIndex;
+        attemptIndex = nextAttempt;
       }
     }
   }
@@ -447,6 +451,7 @@ class VideoFeedController extends ChangeNotifier {
 
     _stopLoadWatchdog(index);
     _stopPositionTimer(index);
+    _slowLoadIndices.remove(index);
     _loadStates[index] = LoadState.loading;
     _notifyIndex(index);
 
@@ -893,6 +898,8 @@ class VideoFeedController extends ChangeNotifier {
     _bufferSubscriptions.remove(index);
     unawaited(_playingSubscriptions[index]?.cancel());
     _playingSubscriptions.remove(index);
+    unawaited(_errorSubscriptions[index]?.cancel());
+    _errorSubscriptions.remove(index);
     _stopLoadWatchdog(index);
     _loadStopwatches.remove(index)?.stop();
     _openedSources.remove(index);
@@ -1009,6 +1016,25 @@ class VideoFeedController extends ChangeNotifier {
         '${pooledPlayer.player.state.position.inMilliseconds} '
         'current=${index == _currentIndex}',
       );
+    });
+
+    unawaited(_errorSubscriptions[index]?.cancel());
+    _errorSubscriptions[index] = pooledPlayer.player.stream.error.listen((
+      error,
+    ) {
+      _logDebug(
+        'player_error ${_videoDebugDetails(index)} '
+        'error=$error '
+        'source=${_openedSources[index]} '
+        'loadState=${_loadStates[index]}',
+      );
+      // Only act on errors during initial load. Once the video is playing
+      // successfully (LoadState.ready), mpv may emit non-critical errors
+      // (e.g. on loop seeks, transient network hiccups) that should not
+      // trigger a source failover.
+      if (_loadStates[index] == LoadState.loading) {
+        unawaited(_retryCurrentVideoWithNextSource(index));
+      }
     });
   }
 
@@ -1287,6 +1313,8 @@ class VideoFeedController extends ChangeNotifier {
     _bufferSubscriptions.remove(index);
     unawaited(_playingSubscriptions[index]?.cancel());
     _playingSubscriptions.remove(index);
+    unawaited(_errorSubscriptions[index]?.cancel());
+    _errorSubscriptions.remove(index);
     _stopLoadWatchdog(index);
     _loadStopwatches.remove(index)?.stop();
     _openedSources.remove(index);
@@ -1324,6 +1352,11 @@ class VideoFeedController extends ChangeNotifier {
       unawaited(subscription.cancel());
     }
     _playingSubscriptions.clear();
+
+    for (final subscription in _errorSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
+    _errorSubscriptions.clear();
 
     // Stop audio on ALL loaded players immediately to prevent audio leaks
     // during the async disposal that follows.
