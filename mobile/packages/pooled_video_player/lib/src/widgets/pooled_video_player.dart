@@ -371,7 +371,9 @@ class _RevealVideoAfterFirstFrameState
         (_hasDecodedFrames || _revealedByTimeout) &&
         (_hasRenderedFirstFrame || _revealedByTimeout);
 
-    return Opacity(
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
       opacity: shouldReveal ? 1 : 0,
       child: widget.child,
     );
