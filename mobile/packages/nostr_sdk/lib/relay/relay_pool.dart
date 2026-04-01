@@ -1115,10 +1115,13 @@ class RelayPool {
       }
     }
 
-    // Send COUNT to all relays in parallel, return first success
+    // Send COUNT to all relays in parallel, return the largest count.
+    // Different relays may have different subsets of data, so the highest
+    // count is the most accurate.
     final resultCompleter = Completer<CountResponse>();
-    var failCount = 0;
+    var doneCount = 0;
     var totalSent = 0;
+    CountResponse? bestResponse;
 
     for (final relay in relaysToTry) {
       if (!relay.relayStatus.readAccess) continue;
@@ -1141,17 +1144,25 @@ class RelayPool {
             );
           }()
           .then((response) {
-            if (!resultCompleter.isCompleted) {
-              resultCompleter.complete(response);
+            if (bestResponse == null || response.count > bestResponse!.count) {
+              bestResponse = response;
+            }
+            doneCount++;
+            if (doneCount == totalSent && !resultCompleter.isCompleted) {
+              resultCompleter.complete(bestResponse);
             }
           })
           .catchError((Object e) {
             log('📊 COUNT failed on ${relay.url}: $e');
-            failCount++;
-            if (failCount == totalSent && !resultCompleter.isCompleted) {
-              resultCompleter.completeError(
-                CountNotSupportedException('No relay responded to COUNT'),
-              );
+            doneCount++;
+            if (doneCount == totalSent && !resultCompleter.isCompleted) {
+              if (bestResponse != null) {
+                resultCompleter.complete(bestResponse);
+              } else {
+                resultCompleter.completeError(
+                  CountNotSupportedException('No relay responded to COUNT'),
+                );
+              }
             }
           });
       totalSent++;
