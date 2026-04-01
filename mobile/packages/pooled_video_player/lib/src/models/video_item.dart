@@ -10,13 +10,18 @@ class VideoItem extends Equatable {
   const VideoItem({
     required this.id,
     required this.url,
+    this.originalUrl,
   });
 
   /// Unique identifier for this video.
   final String id;
 
-  /// URL of the video source.
+  /// URL of the video source (may be a platform-optimized derivative).
   final String url;
+
+  /// Original source URL from the event, used as a last-resort fallback
+  /// when all derived URLs fail.
+  final String? originalUrl;
 
   @override
   List<Object?> get props => [id];

@@ -83,7 +83,7 @@ class NIP17MessageService {
         category: LogCategory.system,
       );
 
-      // Use GiftWrapUtil to create the three-layer encrypted gift wrap
+      // Create gift wrap for the recipient
       final giftWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
         nostr,
         rumorEvent,
@@ -95,28 +95,49 @@ class NIP17MessageService {
       }
 
       Log.debug(
-        'Created kind 1059 gift wrap event with ephemeral key: '
+        'Created recipient gift wrap with ephemeral key: '
         '${giftWrapEvent.pubkey}',
         category: LogCategory.system,
       );
 
-      // Publish the gift wrap event
+      // Publish the recipient's gift wrap
       final sentEvent = await _nostrService.publishEvent(giftWrapEvent);
 
-      if (sentEvent != null) {
-        Log.info(
-          'Successfully published NIP-17 message',
-          category: LogCategory.system,
-        );
-        return NIP17SendResult.success(
-          messageEventId: giftWrapEvent.id,
-          recipientPubkey: recipientPubkey,
-        );
-      } else {
+      if (sentEvent == null) {
         const errorMsg = 'Message publish failed to relays';
         Log.error(errorMsg, category: LogCategory.system);
         return NIP17SendResult.failure(errorMsg);
       }
+
+      // NIP-17: publish a self-addressed gift wrap so our own sent messages
+      // are recoverable from relays after reinstall or data loss.
+      // Wrapped in its own try-catch because the message was already
+      // delivered to the recipient — self-wrap failure is non-fatal.
+      try {
+        final selfWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
+          nostr,
+          rumorEvent,
+          _senderPublicKey,
+        );
+        if (selfWrapEvent != null) {
+          await _nostrService.publishEvent(selfWrapEvent);
+        }
+      } catch (e) {
+        Log.error(
+          'Self-wrap failed (non-fatal): $e',
+          category: LogCategory.system,
+        );
+      }
+
+      Log.info(
+        'Successfully published NIP-17 message',
+        category: LogCategory.system,
+      );
+      return NIP17SendResult.success(
+        rumorEventId: rumorEvent.id,
+        messageEventId: giftWrapEvent.id,
+        recipientPubkey: recipientPubkey,
+      );
     } catch (e, stackTrace) {
       Log.error(
         'Failed to send NIP-17 message: $e',

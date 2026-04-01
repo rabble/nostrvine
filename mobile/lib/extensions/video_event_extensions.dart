@@ -424,6 +424,7 @@ extension VideoEventCollectionAppExtensions on Iterable<VideoEvent> {
             (video) => VideoItem(
               id: video.id,
               url: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
+              originalUrl: video.videoUrl,
             ),
           )
           .toList();
