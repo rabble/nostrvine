@@ -75,6 +75,35 @@ void main() {
       });
     });
 
+    group('blockListFallbackRelays', () {
+      test('local returns local relay', () {
+        const config = EnvironmentConfig(environment: AppEnvironment.local);
+        expect(config.blockListFallbackRelays, ['ws://10.0.2.2:47777']);
+      });
+
+      test('production returns nos.lol', () {
+        const config = EnvironmentConfig(
+          environment: AppEnvironment.production,
+        );
+        expect(config.blockListFallbackRelays, ['wss://nos.lol']);
+      });
+
+      test('non-local environments return nos.lol', () {
+        for (final env in [
+          AppEnvironment.poc,
+          AppEnvironment.staging,
+          AppEnvironment.test,
+        ]) {
+          final config = EnvironmentConfig(environment: env);
+          expect(
+            config.blockListFallbackRelays,
+            ['wss://nos.lol'],
+            reason: '${env.name} should use nos.lol',
+          );
+        }
+      });
+    });
+
     test('blossomUrl is same for all environments', () {
       const poc = EnvironmentConfig(environment: AppEnvironment.poc);
       const staging = EnvironmentConfig(environment: AppEnvironment.staging);
