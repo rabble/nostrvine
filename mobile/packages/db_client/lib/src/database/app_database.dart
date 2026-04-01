@@ -392,6 +392,13 @@ class AppDatabase extends _$AppDatabase {
       'is_deleted',
       'INTEGER NOT NULL DEFAULT 0',
     );
+    // Ensure the UNIQUE index on gift_wrap_id exists unconditionally.
+    // It was originally inside the "if table missing" block, so databases
+    // created by Drift's m.createAll() were missing it.
+    await customStatement('''
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_gift_wrap_id
+      ON direct_messages (gift_wrap_id)
+    ''');
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_dm_owner_pubkey
       ON direct_messages (owner_pubkey)

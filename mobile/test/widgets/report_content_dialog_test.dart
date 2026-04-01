@@ -610,6 +610,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
+          rumorEventId: 'dm_rumor_id',
           messageEventId: 'dm_event_id',
           recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
         ),

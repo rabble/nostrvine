@@ -161,6 +161,49 @@ class BugReportService {
     }
   }
 
+  /// Upload full diagnostic logs to Blossom server.
+  /// Returns the Blossom URL on success, null on any failure.
+  /// Best-effort: failures are logged and return null, never throws.
+  Future<String?> uploadFullLogs(BugReportData data) async {
+    if (_blossomUploadService == null) {
+      Log.debug(
+        'BlossomUploadService not available, skipping full log upload',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+
+    try {
+      final sanitizedData = sanitizeSensitiveData(data);
+      final file = await _createBugReportFile(sanitizedData);
+      final url = await _blossomUploadService.uploadBugReport(
+        bugReportFile: file,
+      );
+
+      if (url != null) {
+        Log.info(
+          'Full logs uploaded to Blossom: $url',
+          category: LogCategory.system,
+        );
+      } else {
+        Log.warning(
+          'Blossom upload returned null, continuing without full logs URL',
+          category: LogCategory.system,
+        );
+      }
+
+      return url;
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to upload full logs to Blossom: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
   /// Sanitize sensitive data from bug report
   BugReportData sanitizeSensitiveData(BugReportData data) {
     Log.debug(

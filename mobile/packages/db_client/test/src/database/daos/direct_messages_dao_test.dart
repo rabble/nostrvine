@@ -125,29 +125,61 @@ void main() {
         expect(results[0].replyToId, equals('msg_1'));
       });
 
-      test('updates existing message with same ID (upsert)', () async {
-        await dao.insertMessage(
-          id: 'msg_1',
-          conversationId: conversationId1,
-          senderPubkey: 'pubkey_alice',
-          content: 'Original',
-          createdAt: 1700000000,
-          giftWrapId: 'gw_1',
-        );
+      test(
+        'ignores duplicate insert with same ID (INSERT OR IGNORE)',
+        () async {
+          await dao.insertMessage(
+            id: 'msg_1',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'Original',
+            createdAt: 1700000000,
+            giftWrapId: 'gw_1',
+          );
 
-        await dao.insertMessage(
-          id: 'msg_1',
-          conversationId: conversationId1,
-          senderPubkey: 'pubkey_alice',
-          content: 'Updated',
-          createdAt: 1700000000,
-          giftWrapId: 'gw_1_new',
-        );
+          // Second insert with same id is silently ignored — no update.
+          await dao.insertMessage(
+            id: 'msg_1',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'Updated',
+            createdAt: 1700000000,
+            giftWrapId: 'gw_1_new',
+          );
 
-        final results = await dao.getMessagesForConversation(conversationId1);
-        expect(results, hasLength(1));
-        expect(results.first.content, equals('Updated'));
-      });
+          final results = await dao.getMessagesForConversation(conversationId1);
+          expect(results, hasLength(1));
+          expect(results.first.content, equals('Original'));
+        },
+      );
+
+      test(
+        'ignores duplicate insert with same gift_wrap_id (C1 fix)',
+        () async {
+          await dao.insertMessage(
+            id: 'msg_1',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'First message',
+            createdAt: 1700000000,
+            giftWrapId: 'gw_shared',
+          );
+
+          // Different rumor ID but same gift_wrap_id — silently ignored.
+          await dao.insertMessage(
+            id: 'msg_2',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'Duplicate wrap',
+            createdAt: 1700000100,
+            giftWrapId: 'gw_shared',
+          );
+
+          final results = await dao.getMessagesForConversation(conversationId1);
+          expect(results, hasLength(1));
+          expect(results.first.id, equals('msg_1'));
+        },
+      );
     });
 
     group('getMessagesForConversation', () {

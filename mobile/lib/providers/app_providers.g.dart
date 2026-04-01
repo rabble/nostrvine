@@ -2419,7 +2419,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'808d26e12d8cc5c18793a22f4e888bf3c9840abe';
+    r'3c3497cc89997f9995bdee112182fb36a35cc198';
 
 /// Subscription manager for centralized subscription management
 
@@ -4138,7 +4138,7 @@ final class BugReportServiceProvider
   }
 }
 
-String _$bugReportServiceHash() => r'abb60eedfb073bfc9c441bd7aca78bfe82114fb1';
+String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 
 /// Provider for NIP-17 DM repository.
 ///

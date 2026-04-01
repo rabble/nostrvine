@@ -7,11 +7,38 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' show LogEntry;
+import 'package:models/models.dart' show LogEntry, LogLevel;
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
+
+/// Build a log summary prioritizing errors/warnings with recent context.
+/// Returns null if logs are empty.
+/// Takes up to 200 most recent error/warning entries plus the last 50
+/// entries of any level, deduplicates, and sorts chronologically.
+String? buildLogsSummary(List<LogEntry> logs) {
+  if (logs.isEmpty) return null;
+
+  // Last 200 error/warning entries
+  final errorWarnings = logs
+      .where((l) => l.level == LogLevel.error || l.level == LogLevel.warning)
+      .toList();
+  final recentErrors = errorWarnings.length > 200
+      ? errorWarnings.sublist(errorWarnings.length - 200)
+      : errorWarnings;
+
+  // Last 50 entries of any level
+  final recentContext = logs.length > 50
+      ? logs.sublist(logs.length - 50)
+      : logs;
+
+  // Merge, deduplicate, sort chronologically
+  final merged = <LogEntry>{...recentErrors, ...recentContext}.toList()
+    ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+  return merged.map((log) => log.toFormattedString()).join('\n');
+}
 
 /// Dialog for collecting and submitting bug reports
 class BugReportDialog extends StatefulWidget {
@@ -133,11 +160,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
     }
   }
 
-  String? _buildLogsSummary(List<LogEntry> logs) {
-    if (logs.isEmpty) return null;
-    final recentLines = logs.take(50).map((log) => log.toFormattedString());
-    return recentLines.join('\n');
-  }
+  String? _buildLogsSummary(List<LogEntry> logs) => buildLogsSummary(logs);
 
   @override
   Widget build(BuildContext context) {
