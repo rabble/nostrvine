@@ -682,8 +682,10 @@ SeenVideosService seenVideosService(Ref ref) {
 @Riverpod(keepAlive: true)
 ContentBlocklistService contentBlocklistService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
+  final envConfig = ref.watch(currentEnvironmentProvider);
   return ContentBlocklistService(
     prefs: prefs,
+    blockListFallbackRelays: envConfig.blockListFallbackRelays,
     onChanged: () {
       if (!ref.mounted) return;
       ref.read(blocklistVersionProvider.notifier).increment();

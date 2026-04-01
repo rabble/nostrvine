@@ -95,6 +95,18 @@ class EnvironmentConfig {
     return 'https://media.divine.video';
   }
 
+  /// Fallback relays for block list persistence (kind 30000, d=block).
+  ///
+  /// Funnelcake does not persist kind 30000 events, so we publish to and
+  /// subscribe from these relays as well. In LOCAL mode, the local relay
+  /// is used instead of external public relays.
+  List<String> get blockListFallbackRelays {
+    if (environment == AppEnvironment.local) {
+      return ['ws://$localHost:$localRelayPort'];
+    }
+    return const ['wss://nos.lol'];
+  }
+
   /// Indexer relay URLs for the current environment.
   ///
   /// In LOCAL mode, queries go to the local funnelcake relay to avoid
