@@ -210,6 +210,37 @@ class ProfileRepository {
     });
   }
 
+  /// Extracts social/stats/engagement fields from a REST API response
+  /// and caches them in [ProfileStatsDao].
+  ///
+  /// The `/api/users/{pubkey}` response includes `social`, `stats`, and
+  /// `engagement` objects. This method maps them into [ProfileStatsDao]
+  /// fields: follower/following counts, video count, total reactions
+  /// (likes), and total loops (views).
+  Future<void> _cacheProfileStats(
+    String pubkey,
+    Map<String, dynamic> data,
+  ) async {
+    final dao = _profileStatsDao;
+    if (dao == null) return;
+
+    final social = data['social'] as Map<String, dynamic>?;
+    final stats = data['stats'] as Map<String, dynamic>?;
+    final engagement = data['engagement'] as Map<String, dynamic>?;
+
+    // Only cache if at least one section is present.
+    if (social == null && stats == null && engagement == null) return;
+
+    await dao.upsertStats(
+      pubkey: pubkey,
+      followerCount: (social?['follower_count'] as num?)?.toInt(),
+      followingCount: (social?['following_count'] as num?)?.toInt(),
+      videoCount: (stats?['video_count'] as num?)?.toInt(),
+      totalLikes: (engagement?['total_reactions'] as num?)?.toInt(),
+      totalViews: (engagement?['total_loops'] as num?)?.toInt(),
+    );
+  }
+
   /// Fetches a fresh profile and updates the local cache.
   ///
   /// Strategy:
@@ -252,6 +283,8 @@ class ProfileRepository {
           );
           _knownCached.add(pubkey);
           await _userProfilesDao.upsertProfile(profile);
+          // Cache stats from the same API response (social + engagement).
+          await _cacheProfileStats(pubkey, data);
           return profile;
         }
         // _noProfile sentinel — user exists but has no Kind 0.
