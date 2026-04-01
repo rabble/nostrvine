@@ -35,7 +35,7 @@ enum ProfileActionType {
 
     return [
       if (isAnonymous && !hasExpiredSession) secureAccount,
-      if (hasProfile && !hasCustomName) completeProfile,
+      if (!hasCustomName) completeProfile,
     ];
   }
 }

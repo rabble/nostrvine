@@ -81,7 +81,7 @@ void main() {
         expect(actions, equals([ProfileActionType.completeProfile]));
       });
 
-      test('excludes completeProfile when profile is not loaded', () {
+      test('shows completeProfile even when profile is not loaded', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
@@ -90,7 +90,9 @@ void main() {
           hasCustomName: false,
         );
 
-        expect(actions, equals([ProfileActionType.secureAccount]));
+        expect(actions, hasLength(2));
+        expect(actions[0], equals(ProfileActionType.secureAccount));
+        expect(actions[1], equals(ProfileActionType.completeProfile));
       });
 
       test(
