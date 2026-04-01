@@ -3494,8 +3494,9 @@ void main() {
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Wait for stale detection (100ms interval × 4 ticks for threshold=3)
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Wait for stale detection:
+        // 5 grace ticks (500ms) + 3 stale ticks (300ms) + async buffer
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // Recovery should have called pause + seek + play
         verify(setup.player.pause).called(greaterThanOrEqualTo(1));
@@ -3529,8 +3530,8 @@ void main() {
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Let heartbeat run for a while — position is always advancing
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Let heartbeat run through grace + threshold — position always advances
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // seek should only be called for the initial _resume seek-to-zero
         // check, not for stale recovery
@@ -3561,7 +3562,8 @@ void main() {
         );
 
         setup.bufferingController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Wait through grace + threshold — buffering prevents recovery
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // Recovery seek should NOT be called — buffering resets stale count
         verifyNever(
@@ -3589,11 +3591,12 @@ void main() {
         );
 
         setup.bufferingController.add(false);
+        // Swipe away during grace period — stale tracking never fires
         await Future<void>.delayed(const Duration(milliseconds: 250));
 
         // Swipe away before threshold is reached — resets stale tracking
         controller.onPageChanged(1);
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // Recovery seek to 533ms should NOT have been called on index 0
         verifyNever(
@@ -3875,8 +3878,9 @@ void main() {
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Wait for stale detection (100ms interval × 4 ticks for threshold=3)
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Wait for stale detection:
+        // 5 grace ticks (500ms) + 3 stale ticks (300ms) + async buffer
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // Recovery should have called pause + seek + play
         verify(setup.player.pause).called(greaterThanOrEqualTo(1));
@@ -3910,8 +3914,8 @@ void main() {
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Let heartbeat run for a while — position is always advancing
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Let heartbeat run through grace + threshold — position always advances
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // seek should only be called for the initial _resume seek-to-zero
         // check, not for stale recovery
@@ -3942,7 +3946,8 @@ void main() {
         );
 
         setup.bufferingController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Wait through grace + threshold — buffering prevents recovery
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // Recovery seek should NOT be called — buffering resets stale count
         verifyNever(
@@ -3970,11 +3975,12 @@ void main() {
         );
 
         setup.bufferingController.add(false);
+        // Swipe away during grace period — stale tracking never fires
         await Future<void>.delayed(const Duration(milliseconds: 250));
 
         // Swipe away before threshold is reached — resets stale tracking
         controller.onPageChanged(1);
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // Recovery seek to 533ms should NOT have been called on index 0
         verifyNever(

@@ -28,7 +28,7 @@ void _setUpFallbacks() {
   registerFallbackValue(_FakeVideoItem());
 }
 
-_MockPlayer _createMockPlayer() {
+_MockPlayer _createMockPlayer(StreamController<Duration> positionCtrl) {
   final mockPlayer = _MockPlayer();
   final mockState = _MockPlayerState();
   final mockStream = _MockPlayerStream();
@@ -38,6 +38,11 @@ _MockPlayer _createMockPlayer() {
   when(() => mockState.position).thenReturn(Duration.zero);
   when(() => mockPlayer.state).thenReturn(mockState);
   when(() => mockPlayer.stream).thenReturn(mockStream);
+  // Stub position stream so _subscribeToPosition can emit decoded-frame
+  // events that drive the _hasDecodedFrames flag in PooledVideoPlayer.
+  when(() => mockStream.position).thenAnswer(
+    (_) => positionCtrl.stream,
+  );
 
   return mockPlayer;
 }
@@ -101,6 +106,7 @@ void main() {
     late _MockPlayer mockPlayer;
     late ValueNotifier<int?> textureIdNotifier;
     late ValueNotifier<Rect?> textureRectNotifier;
+    late StreamController<Duration> positionController;
 
     setUp(() {
       final result = _createMockVideoFeedControllerWithNotifier();
@@ -116,7 +122,13 @@ void main() {
       when(
         () => mockVideoController.waitUntilFirstFrameRendered,
       ).thenAnswer((_) => Future<void>.value());
-      mockPlayer = _createMockPlayer();
+      positionController = StreamController<Duration>.broadcast();
+      mockPlayer = _createMockPlayer(positionController);
+      when(() => mockVideoController.player).thenReturn(mockPlayer);
+    });
+
+    tearDown(() async {
+      await positionController.close();
     });
 
     Widget buildWidget({
@@ -168,7 +180,13 @@ void main() {
       testWidgets('default enableTapToPause is false', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(find.byType(GestureDetector), findsNothing);
+        // GestureDetector is always present for layout; onTap is null when
+        // enableTapToPause is false and no onTap callback is provided.
+        expect(find.byType(GestureDetector), findsOneWidget);
+        final gesture = tester.widget<GestureDetector>(
+          find.byType(GestureDetector),
+        );
+        expect(gesture.onTap, isNull);
       });
     });
 
@@ -273,13 +291,15 @@ void main() {
           equals(0),
         );
 
+        // While still in loading state, readyForFallback is false, so the
+        // video stays hidden even after the first frame renders.
         firstFrameCompleter.complete();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
         expect(
           tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-          equals(1),
+          equals(0),
         );
       });
 
@@ -424,6 +444,10 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         firstFrameCompleter.complete();
+        await tester.pump();
+        // Emit a non-zero position to set _hasDecodedFrames = true, which
+        // is required alongside _hasRenderedFirstFrame for shouldReveal.
+        positionController.add(const Duration(milliseconds: 100));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -577,7 +601,13 @@ void main() {
         (tester) async {
           await tester.pumpWidget(buildWidget());
 
-          expect(find.byType(GestureDetector), findsNothing);
+          // GestureDetector always exists in the tree; onTap is null when
+          // neither enableTapToPause nor an onTap callback is provided.
+          expect(find.byType(GestureDetector), findsOneWidget);
+          final gesture = tester.widget<GestureDetector>(
+            find.byType(GestureDetector),
+          );
+          expect(gesture.onTap, isNull);
         },
       );
 
@@ -647,7 +677,13 @@ void main() {
           indexNotifiers[0] = ValueNotifier(const VideoIndexState());
           await tester.pumpWidget(buildWidget(onDoubleTap: (_) {}));
 
-          expect(find.byType(GestureDetector), findsNothing);
+          // GestureDetector always exists; onDoubleTapDown is null when
+          // there is no videoController (isReady = false).
+          expect(find.byType(GestureDetector), findsOneWidget);
+          final gesture = tester.widget<GestureDetector>(
+            find.byType(GestureDetector),
+          );
+          expect(gesture.onDoubleTapDown, isNull);
         },
       );
 
@@ -806,6 +842,9 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
+        // Emit a non-zero position so _hasDecodedFrames becomes true.
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
         final opacityFinder = find.ancestor(
@@ -834,6 +873,9 @@ void main() {
         'reveals video after rect update following surface recreation',
         (tester) async {
           await tester.pumpWidget(buildWidget());
+          await tester.pump();
+          // Emit a non-zero position so _hasDecodedFrames becomes true.
+          positionController.add(const Duration(milliseconds: 100));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 120));
 
@@ -868,6 +910,9 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
+        // Emit a non-zero position so _hasDecodedFrames becomes true.
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
         final opacityFinder = find.ancestor(
@@ -901,6 +946,9 @@ void main() {
         textureIdNotifier.value = null;
 
         await tester.pumpWidget(buildWidget());
+        await tester.pump();
+        // Emit a non-zero position so _hasDecodedFrames becomes true.
+        positionController.add(const Duration(milliseconds: 100));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -964,6 +1012,9 @@ void main() {
         // Complete first frame
         firstCompleter.complete();
         await tester.pump();
+        // Emit a non-zero position so _hasDecodedFrames becomes true.
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
         final opacityFinder = find.ancestor(
@@ -991,6 +1042,9 @@ void main() {
         when(
           () => newMockVideoController.waitUntilFirstFrameRendered,
         ).thenAnswer((_) => secondCompleter.future);
+        when(
+          () => newMockVideoController.player,
+        ).thenReturn(mockPlayer);
 
         // Swap to new controller — should reset reveal state
         indexNotifiers[0]!.value = VideoIndexState(
@@ -1008,6 +1062,10 @@ void main() {
 
         // Complete second controller's first frame
         secondCompleter.complete();
+        await tester.pump();
+        // Emit position again to satisfy _hasDecodedFrames for the new
+        // controller.
+        positionController.add(const Duration(milliseconds: 200));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -1126,6 +1184,10 @@ void main() {
 
           await tester.pumpWidget(buildWidget());
           await tester.pump();
+          // Emit a non-zero position so _hasDecodedFrames becomes true,
+          // which is required alongside _hasRenderedFirstFrame.
+          positionController.add(const Duration(milliseconds: 100));
+          await tester.pump();
           await tester.pump(const Duration(milliseconds: 120));
 
           final opacityFinder = find.ancestor(
@@ -1157,6 +1219,12 @@ void main() {
           );
 
           await tester.pumpWidget(buildWidget());
+          await tester.pump();
+          // catchError in _subscribeToFirstFrame sets
+          // _hasRenderedFirstFrame=true and cancels the timer, so we need a
+          // position event to satisfy _hasDecodedFrames for shouldReveal to
+          //be true.
+          positionController.add(const Duration(milliseconds: 100));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 120));
 
