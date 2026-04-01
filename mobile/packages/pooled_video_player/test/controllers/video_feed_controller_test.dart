@@ -3530,7 +3530,8 @@ void main() {
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Let heartbeat run through grace + threshold — position always advances
+        // Let heartbeat run through grace + threshold — position always
+        // advances
         await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // seek should only be called for the initial _resume seek-to-zero
@@ -3914,7 +3915,8 @@ void main() {
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Let heartbeat run through grace + threshold — position always advances
+        // Let heartbeat run through grace + threshold — position always
+        // advances
         await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         // seek should only be called for the initial _resume seek-to-zero
