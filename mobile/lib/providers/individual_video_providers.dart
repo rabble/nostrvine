@@ -14,6 +14,7 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
 import 'package:openvine/services/openvine_media_cache.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
@@ -840,8 +841,18 @@ VideoPlayerController individualVideoController(
           }
         }
 
+        // Check for 403 Forbidden — moderation-restricted content.
+        // Do NOT try fallback URLs (content is intentionally blocked on all
+        // servers) and do NOT mark as broken (moderation status may change).
+        if (_is403Error(errorMessage)) {
+          Log.warning(
+            '🛡️ Detected 403 Forbidden for video $videoIdDisplay — moderation-restricted',
+            name: 'IndividualVideoController',
+            category: LogCategory.video,
+          );
+        }
         // Check for corrupted cache file (OSStatus error -12848 or "media may be damaged")
-        if (_isCacheCorruption(errorMessage) && !kIsWeb) {
+        else if (_isCacheCorruption(errorMessage) && !kIsWeb) {
           Log.warning(
             '🗑️ Detected corrupted cache for video $videoIdDisplay... - removing and will retry',
             name: 'IndividualVideoController',
@@ -977,25 +988,60 @@ VideoPlayerController individualVideoController(
               }
             }
 
-            // No fallback available or already tried - mark video as broken
-            // Get tracker synchronously, then mark broken in fire-and-forget manner
-            final trackerFuture = ref.read(brokenVideoTrackerProvider.future);
-            unawaited(
-              trackerFuture
-                  .then((tracker) {
-                    tracker.markVideoBroken(
-                      params.videoId,
-                      'Playback initialization failed: $errorMessage',
-                    );
-                  })
-                  .catchError((trackerError) {
-                    Log.warning(
-                      'Failed to mark video as broken: $trackerError',
-                      name: 'IndividualVideoController',
-                      category: LogCategory.system,
-                    );
-                  }),
+            // No fallback available or already tried.
+            // Before marking broken, check if this is moderation-restricted
+            // content. Moderation-restricted videos aren't "broken" — their
+            // status may change, so we should not hide them for 7 days.
+            final sha256 = VideoModerationStatusService.resolveSha256(
+              explicitSha256: params.videoEvent?.sha256,
+              videoUrl: params.videoUrl,
             );
+            final trackerFuture = ref.read(brokenVideoTrackerProvider.future);
+
+            if (sha256 != null) {
+              final moderationService = ref.read(
+                videoModerationStatusServiceProvider,
+              );
+              unawaited(
+                moderationService
+                    .fetchStatus(sha256)
+                    .then((status) {
+                      if (status != null &&
+                          status.isUnavailableDueToModeration) {
+                        Log.info(
+                          '🛡️ Video $videoIdDisplay is moderation-restricted '
+                          '(blocked=${status.blocked}, '
+                          'quarantined=${status.quarantined}, '
+                          'ageRestricted=${status.ageRestricted}) — '
+                          'not marking as broken',
+                          name: 'IndividualVideoController',
+                          category: LogCategory.video,
+                        );
+                        return;
+                      }
+                      _markVideoBroken(
+                        trackerFuture,
+                        params.videoId,
+                        errorMessage,
+                      );
+                    })
+                    .catchError((_) {
+                      // Moderation check failed — fall back to marking broken
+                      _markVideoBroken(
+                        trackerFuture,
+                        params.videoId,
+                        errorMessage,
+                      );
+                    }),
+              );
+            } else {
+              // No sha256 — can't check moderation, mark broken
+              _markVideoBroken(
+                trackerFuture,
+                params.videoId,
+                errorMessage,
+              );
+            }
           } catch (e) {
             // Provider may be disposed - ignore since this is error handling
             Log.debug(
@@ -1313,12 +1359,48 @@ Future<dynamic> _cacheVideoWithAuth(
   }
 }
 
+/// Fire-and-forget helper to mark a video as broken via the tracker.
+void _markVideoBroken(
+  Future<BrokenVideoTracker> trackerFuture,
+  String videoId,
+  String errorMessage,
+) {
+  unawaited(
+    trackerFuture
+        .then((tracker) {
+          tracker.markVideoBroken(
+            videoId,
+            'Playback initialization failed: $errorMessage',
+          );
+        })
+        .catchError((trackerError) {
+          Log.warning(
+            'Failed to mark video as broken: $trackerError',
+            name: 'IndividualVideoController',
+            category: LogCategory.system,
+          );
+        }),
+  );
+}
+
 /// Check if error indicates a 401 Unauthorized (likely NSFW content)
 bool _is401Error(String errorMessage) {
   final lowerError = errorMessage.toLowerCase();
   return lowerError.contains('401') ||
       lowerError.contains('unauthorized') ||
       lowerError.contains('invalid statuscode: 401');
+}
+
+/// Check if error indicates a 403 Forbidden (moderation-restricted content)
+///
+/// The blossom server returns 403 when content exists but is blocked by
+/// moderation (e.g., banned, quarantined, or restricted). Unlike 404, the
+/// content IS present — it's intentionally withheld.
+bool _is403Error(String errorMessage) {
+  final lowerError = errorMessage.toLowerCase();
+  return lowerError.contains('403') ||
+      lowerError.contains('forbidden') ||
+      lowerError.contains('invalid statuscode: 403');
 }
 
 /// Check if error indicates a corrupted cache file
