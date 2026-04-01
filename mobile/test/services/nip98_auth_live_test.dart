@@ -88,7 +88,9 @@ void main() {
         anyOf(200, 404),
         reason: 'Format should be accepted, got $status: $body',
       );
-    });
+      // TODO(backend): Move these live NIP-98 tests to the backend.
+      // https://github.com/divinevideo/divine-mobile/issues/2527
+    }, skip: true);
 
     test('WITHOUT payload tag -> check relay behavior', () async {
       final url =
