@@ -226,8 +226,11 @@ class RelayNotifications extends _$RelayNotifications {
         );
       }
 
-      final rawNotifications = _buildNotificationModels(
+      final consolidatedNotifications = _consolidateFollowNotifications(
         result.notifications,
+      );
+      final rawNotifications = _buildNotificationModels(
+        consolidatedNotifications,
         videoEventService: videoEventService,
       );
       final initialState = NotificationFeedState(
@@ -239,7 +242,7 @@ class RelayNotifications extends _$RelayNotifications {
       );
       state = AsyncData(initialState);
       _scheduleEnrichment(
-        result.notifications,
+        consolidatedNotifications,
         profileRepo: profileRepo,
         videoEventService: videoEventService,
       );
@@ -364,15 +367,15 @@ class RelayNotifications extends _$RelayNotifications {
         return;
       }
 
-      final rawNew = _buildNotificationModels(
+      final consolidatedNotifications = _consolidateFollowNotifications(
         result.notifications,
+      );
+      final rawNew = _buildNotificationModels(
+        consolidatedNotifications,
         videoEventService: videoEventService,
       );
 
-      final allNotifications = [
-        ...currentState.notifications,
-        ...rawNew,
-      ];
+      final allNotifications = [...currentState.notifications, ...rawNew];
 
       Log.info(
         'RelayNotifications: Loaded ${rawNew.length} more notifications '
@@ -390,7 +393,7 @@ class RelayNotifications extends _$RelayNotifications {
         ),
       );
       _scheduleEnrichment(
-        result.notifications,
+        consolidatedNotifications,
         profileRepo: profileRepo,
         videoEventService: videoEventService,
       );
@@ -482,8 +485,11 @@ class RelayNotifications extends _$RelayNotifications {
 
       if (!ref.mounted) return;
 
-      final rawNotifications = _buildNotificationModels(
+      final consolidatedNotifications = _consolidateFollowNotifications(
         result.notifications,
+      );
+      final rawNotifications = _buildNotificationModels(
+        consolidatedNotifications,
         videoEventService: videoEventService,
       );
       final refreshedState = NotificationFeedState(
@@ -505,7 +511,7 @@ class RelayNotifications extends _$RelayNotifications {
 
       state = AsyncData(refreshedState);
       _scheduleEnrichment(
-        result.notifications,
+        consolidatedNotifications,
         profileRepo: profileRepo,
         videoEventService: videoEventService,
       );
@@ -634,11 +640,7 @@ class RelayNotifications extends _$RelayNotifications {
   }
 
   /// Result type for _fetchRawNotifications
-  ({
-    List<RelayNotification> notifications,
-    int unreadCount,
-    bool hasMore,
-  })
+  ({List<RelayNotification> notifications, int unreadCount, bool hasMore})
   _makeFetchResult(
     List<RelayNotification> notifications,
     int unreadCount,
@@ -654,11 +656,7 @@ class RelayNotifications extends _$RelayNotifications {
   /// Handles pagination, deduplication, and auto-loading in a single place.
   /// Used by build(), refresh(), and loadMore().
   Future<
-    ({
-      List<RelayNotification> notifications,
-      int unreadCount,
-      bool hasMore,
-    })
+    ({List<RelayNotification> notifications, int unreadCount, bool hasMore})
   >
   _fetchRawNotifications({
     required String pubkey,
@@ -774,7 +772,6 @@ class RelayNotifications extends _$RelayNotifications {
   }) async {
     if (relayNotifications.isEmpty) return [];
 
-    // DEBUG: Log all raw notifications before consolidation
     final rawPubkeys = relayNotifications.map((n) => n.sourcePubkey).toList();
     final uniqueRawPubkeys = rawPubkeys.toSet();
     Log.debug(
@@ -786,12 +783,8 @@ class RelayNotifications extends _$RelayNotifications {
       category: LogCategory.system,
     );
 
-    final consolidatedNotifications = _consolidateFollowNotifications(
-      relayNotifications,
-    );
-
     // Batch fetch profiles for all unique pubkeys
-    final pubkeys = consolidatedNotifications
+    final pubkeys = relayNotifications
         .map((n) => n.sourcePubkey)
         .toSet()
         .toList();
@@ -831,11 +824,7 @@ class RelayNotifications extends _$RelayNotifications {
   }) {
     if (relayNotifications.isEmpty) return const [];
 
-    final consolidatedNotifications = _consolidateFollowNotifications(
-      relayNotifications,
-    );
-
-    return consolidatedNotifications.map((relay) {
+    return relayNotifications.map((relay) {
       final profile = profilesByPubkey[relay.sourcePubkey];
 
       String? videoUrl;

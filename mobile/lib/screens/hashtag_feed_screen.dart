@@ -64,9 +64,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     super.dispose();
   }
 
-  /// Load videos from both Funnelcake REST API and WebSocket in parallel.
-  /// Funnelcake is fast and provides complete video data - show immediately.
-  /// WebSocket provides real-time updates and additional videos.
+  /// Load the fast initial hashtag results first, then detach realtime updates.
+  /// This keeps the first paint honest: no empty-state flash before the
+  /// initial source has answered, while the websocket subscription still starts
+  /// in the background.
   Future<void> _loadHashtagVideos() async {
     if (!mounted) return;
 
@@ -77,10 +78,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
     final hashtagService = ref.read(hashtagServiceProvider);
 
-    // Kick off both sources in the background and leave loading state
-    // immediately. This screen should render cached or empty content while
-    // the live subscription starts up.
-    unawaited(_fetchFromFunnelcake());
+    // Wait for the fast initial source before leaving the loading gate.
+    // The websocket can continue in the background once the first pass has
+    // answered.
+    await _fetchFromFunnelcake();
+    if (!mounted) return;
+
     unawaited(_subscribeViaWebSocket(hashtagService));
 
     setState(() => _subscriptionAttempted = true);

@@ -812,7 +812,6 @@ void main() {
 class DivineApp extends ConsumerStatefulWidget {
   const DivineApp({required this.startupCoordinator, super.key});
 
-  @visibleForTesting
   final StartupCoordinator startupCoordinator;
 
   @override
