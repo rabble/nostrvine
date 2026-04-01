@@ -526,8 +526,11 @@ class _ProfileDataView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get video data from profile feed
+    // Get video data and stats from providers
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
+    final profileStats = ref.watch(
+      userProfileStatsReactiveProvider(userIdHex),
+    ).value;
 
     if (videosAsync is AsyncData) {
       ScreenAnalyticsService().markDataLoaded(
@@ -562,6 +565,7 @@ class _ProfileDataView extends ConsumerWidget {
           userIdHex: userIdHex,
           isOwnProfile: isOwnProfile,
           displayName: displayName,
+          profileStats: profileStats,
           videos: value.videos,
           videoIndex: videoIndex,
           scrollController: scrollController,
@@ -587,6 +591,7 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.scrollController,
     required this.onOpenClips,
     required this.onMore,
+    this.profileStats,
     this.refreshNotifier,
     this.displayName,
     super.key,
@@ -596,6 +601,7 @@ class ProfileViewSwitcher extends StatelessWidget {
   final String userIdHex;
   final bool isOwnProfile;
   final String? displayName;
+  final ProfileStats? profileStats;
   final List<VideoEvent> videos;
   final int? videoIndex;
   final ScrollController scrollController;
@@ -627,6 +633,7 @@ class ProfileViewSwitcher extends StatelessWidget {
             userIdHex: userIdHex,
             isOwnProfile: isOwnProfile,
             displayName: displayName,
+            profileStats: profileStats,
             videos: videos,
             scrollController: scrollController,
             onOpenClips: onOpenClips,
