@@ -438,6 +438,15 @@ void main() {
     setUp(() {
       mockNostrService = _MockNostrClient();
       mockAuthService = _MockAuthService();
+
+      // Default stub for the backup queryEvents call in
+      // syncBlockListsInBackground. Individual tests can override.
+      when(
+        () => mockNostrService.queryEvents(
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+        ),
+      ).thenAnswer((_) async => <Event>[]);
     });
 
     test(
@@ -619,6 +628,14 @@ void main() {
       when(
         () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => controller.stream);
+
+      // Default stub for the backup queryEvents call
+      when(
+        () => mockNostrService.queryEvents(
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+        ),
+      ).thenAnswer((_) async => <Event>[]);
     });
 
     tearDown(() async {
@@ -761,6 +778,43 @@ void main() {
 
         expect(service.hasBlockedUs(blockedPubkey2), isTrue);
         expect(changeCount, equals(2));
+      },
+    );
+
+    test(
+      'backup queryEvents restores blocks when subscription misses them',
+      () async {
+        service = ContentBlocklistService();
+
+        // Subscribe returns empty (simulates no events via stream)
+        when(
+          () => mockNostrService.subscribe(any()),
+        ).thenAnswer((_) => const Stream.empty());
+
+        // But queryEvents returns our block list (backup path)
+        when(
+          () => mockNostrService.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]),
+          ],
+        );
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        // Give the async queryEvents time to complete
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        expect(service.isBlocked(blockedPubkey1), isTrue);
+        expect(service.isBlocked(blockedPubkey2), isTrue);
+        expect(service.totalBlockedCount, equals(2));
       },
     );
   });

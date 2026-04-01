@@ -2,6 +2,7 @@
 // ABOUTME: Maintains internal blocklist while allowing explicit profile visits
 // ABOUTME: Persists blocks to SharedPreferences and publishes to Nostr (kind 30000)
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:models/models.dart';
@@ -243,10 +244,17 @@ class ContentBlocklistService {
       );
 
       if (event != null) {
-        final sentEvent = await nostrClient.publishEvent(
+        // Publish to all connected relays (some may persist kind 30000)
+        final sentEvent = await nostrClient.publishEvent(event);
+
+        // Also publish to the fallback relay which is known to persist
+        // kind 30000 events. This is critical for cross-device / reinstall
+        // restoration when the user's primary relays do not store them.
+        await nostrClient.publishEvent(
           event,
           targetRelays: [_blockListFallbackRelay],
         );
+
         if (sentEvent != null) {
           Log.info(
             'Published block list to Nostr with ${_runtimeBlocklist.length} entries',
@@ -559,9 +567,56 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
+
+      // Backup restoration: query the fallback relay directly. The
+      // subscription above should eventually deliver stored events, but
+      // queryEvents provides a bounded, one-shot fetch that catches cases
+      // where the temp-relay pending-message queue does not fire (e.g.
+      // connection timeout or SDK edge case). queryEvents waits up to
+      // 10 s for the relay to connect before returning.
+      unawaited(_queryOwnBlockListFromFallback(nostrService, ourPubkey));
     } catch (e) {
       Log.error(
         'Failed to start block list sync: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// One-shot query to the fallback relay for our own block list.
+  ///
+  /// Acts as a safety net alongside the persistent subscription. The
+  /// handler is idempotent — duplicate events are harmlessly skipped.
+  Future<void> _queryOwnBlockListFromFallback(
+    NostrClient nostrService,
+    String ourPubkey,
+  ) async {
+    try {
+      final filter = Filter(
+        authors: [ourPubkey],
+        kinds: const [30000],
+      );
+
+      final events = await nostrService.queryEvents(
+        [filter],
+        tempRelays: [_blockListFallbackRelay],
+      );
+
+      for (final event in events) {
+        _handleBlockListEvent(event);
+      }
+
+      if (events.isNotEmpty) {
+        Log.info(
+          'Fallback query returned ${events.length} kind 30000 event(s)',
+          name: 'ContentBlocklistService',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e) {
+      Log.warning(
+        'Fallback block list query failed (non-critical): $e',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
