@@ -231,15 +231,17 @@ class ProfileRepository {
     // Only cache if at least one section is present.
     if (social == null && stats == null && engagement == null) return;
 
+    final likes = (engagement?['total_reactions'] as num?)?.toInt();
+    final loops = (engagement?['total_loops'] as num?)?.round();
     await dao.upsertStats(
       pubkey: pubkey,
       followerCount: (social?['follower_count'] as num?)?.toInt(),
       followingCount: (social?['following_count'] as num?)?.toInt(),
       videoCount: (stats?['video_count'] as num?)?.toInt(),
-      totalLikes: (engagement?['total_reactions'] as num?)?.toInt(),
+      totalLikes: likes,
       // total_loops can be fractional due to a backend aggregation issue;
       // round to the nearest integer.
-      totalViews: (engagement?['total_loops'] as num?)?.round(),
+      totalViews: loops,
     );
   }
 
@@ -259,7 +261,10 @@ class ProfileRepository {
   /// Returns `null` if no profile exists across all sources.
   /// On success, the profile is automatically cached locally.
   Future<UserProfile?> fetchFreshProfile({required String pubkey}) {
-    if (_confirmedMissing.contains(pubkey)) return Future.value();
+    // Clear stale _confirmedMissing so we always re-check the REST API.
+    // The sentinel may have been set by a batch fetch when the user had
+    // no Kind 0 profile, but they may have published one since then.
+    _confirmedMissing.remove(pubkey);
 
     // Deduplicate: return existing in-flight future if present.
     final existing = _inFlightFetches[pubkey];
@@ -278,20 +283,16 @@ class ProfileRepository {
         final data = await _funnelcakeApiClient!.getUserProfile(pubkey);
         if (data != null && data['_noProfile'] != true) {
           final profile = UserProfile.fromFunnelcake(pubkey, data);
-          developer.log(
-            'Fetched from REST API and caching: '
-            '${profile.bestDisplayName}',
-            name: 'ProfileRepository.fetchFreshProfile',
-          );
           _knownCached.add(pubkey);
           await _userProfilesDao.upsertProfile(profile);
-          // Cache stats from the same API response (social + engagement).
           await _cacheProfileStats(pubkey, data);
           return profile;
         }
         // _noProfile sentinel — user exists but has no Kind 0.
-        // Skip relay/indexer fallback.
+        // Still cache stats (social/engagement) since the API returns
+        // them even for users without a profile event.
         if (data != null && data['_noProfile'] == true) {
+          await _cacheProfileStats(pubkey, data);
           _confirmedMissing.add(pubkey);
           return null;
         }
