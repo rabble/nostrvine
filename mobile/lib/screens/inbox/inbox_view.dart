@@ -286,15 +286,16 @@ class _ConversationListState extends ConsumerState<_ConversationList>
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
         );
-    final requestConversations = context
-        .select<ConversationListBloc, List<DmConversation>>(
-          (bloc) => bloc.state.requestConversations,
-        );
+    final hasRequests = context.select<ConversationListBloc, bool>(
+      (bloc) => bloc.state.requestConversations.isNotEmpty,
+    );
+    final requestUnreadCount = context.select<ConversationListBloc, int>(
+      (bloc) => bloc.state.requestUnreadCount,
+    );
     final hasMore = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.hasMore,
     );
 
-    final hasRequests = requestConversations.isNotEmpty;
     final bannerOffset = hasRequests ? 1 : 0;
 
     if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
@@ -304,7 +305,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
       return Column(
         children: [
           MessageRequestsBanner(
-            requestCount: requestConversations.length,
+            requestCount: requestUnreadCount,
             onTap: () => _openMessageRequests(context),
           ),
           const Expanded(child: InboxEmptyState()),
@@ -318,7 +319,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
       itemBuilder: (context, index) {
         if (hasRequests && index == 0) {
           return MessageRequestsBanner(
-            requestCount: requestConversations.length,
+            requestCount: requestUnreadCount,
             onTap: () => _openMessageRequests(context),
           );
         }
