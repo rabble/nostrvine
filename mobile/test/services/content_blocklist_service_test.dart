@@ -456,7 +456,12 @@ void main() {
         service = ContentBlocklistService();
 
         List<dynamic>? capturedFilters;
-        when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
+        when(
+          () => mockNostrService.subscribe(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+          ),
+        ).thenAnswer((invocation) {
           capturedFilters = invocation.positionalArguments[0] as List;
           return const Stream.empty();
         });
@@ -467,7 +472,12 @@ void main() {
           ourPubkey,
         );
 
-        verify(() => mockNostrService.subscribe(any())).called(1);
+        verify(
+          () => mockNostrService.subscribe(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+          ),
+        ).called(1);
 
         expect(capturedFilters, isNotNull);
         expect(capturedFilters!.length, equals(2));
@@ -510,7 +520,10 @@ void main() {
         event.sig = 'signature';
 
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+          ),
         ).thenAnswer((_) => Stream.fromIterable([event]));
 
         await service.syncBlockListsInBackground(
@@ -567,7 +580,10 @@ void main() {
         final controller = StreamController<Event>();
 
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+          ),
         ).thenAnswer((_) => controller.stream);
 
         await service.syncBlockListsInBackground(
@@ -626,7 +642,10 @@ void main() {
       controller = StreamController<Event>();
 
       when(
-        () => mockNostrService.subscribe(any()),
+        () => mockNostrService.subscribe(
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+        ),
       ).thenAnswer((_) => controller.stream);
 
       // Default stub for the backup queryEvents call
@@ -786,12 +805,9 @@ void main() {
       () async {
         service = ContentBlocklistService();
 
-        // Subscribe returns empty (simulates no events via stream)
-        when(
-          () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => const Stream.empty());
-
-        // But queryEvents returns our block list (backup path)
+        // setUp's subscribe mock uses controller.stream — no events are
+        // added, so the subscription alone yields nothing. The backup
+        // queryEvents path provides the blocks instead.
         when(
           () => mockNostrService.queryEvents(
             any(),
