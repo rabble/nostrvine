@@ -88,7 +88,9 @@ void main() {
         anyOf(200, 404),
         reason: 'Format should be accepted, got $status: $body',
       );
-    });
+      // TODO(backend): Move these live NIP-98 tests to the backend.
+      // https://github.com/divinevideo/divine-mobile/issues/2527
+    }, skip: true);
 
     test('WITHOUT payload tag -> check relay behavior', () async {
       final url =
@@ -102,7 +104,9 @@ void main() {
       final (status, body) = await curlGet('$url?limit=1', 'Nostr $token');
 
       print('WITHOUT payload tag: $status $body');
-    });
+      // TODO(backend): Move these live NIP-98 tests to the backend.
+      // https://github.com/divinevideo/divine-mobile/issues/2527
+    }, skip: true);
 
     test('WITH query params in u tag -> check relay behavior', () async {
       final baseUrl =
@@ -113,6 +117,8 @@ void main() {
       final (status, body) = await curlGet(urlWithQuery, 'Nostr $token');
 
       print('WITH query params in u tag: $status $body');
-    });
+      // TODO(backend): Move these live NIP-98 tests to the backend.
+      // https://github.com/divinevideo/divine-mobile/issues/2527
+    }, skip: true);
   });
 }

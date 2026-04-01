@@ -22,11 +22,11 @@ class PausedVideoPlayOverlay extends StatefulWidget {
 }
 
 class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
-  static final Expando<bool> _playerPlaybackSeen = Expando<bool>(
-    'playerPlaybackSeen',
-  );
-
   StreamSubscription<bool>? _playingSubscription;
+
+  /// Latching flag: set once this widget's player transitions to playing
+  /// for the *current* video. Reset when the player identity changes
+  /// (recycled for a new video) via [didUpdateWidget].
   bool _hasStartedPlayback = false;
 
   @override
@@ -40,22 +40,20 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.player, widget.player)) {
       unawaited(_playingSubscription?.cancel());
+      _hasStartedPlayback = false;
       _subscribeToPlayback();
     }
   }
 
   void _subscribeToPlayback() {
-    final playerIsPlaying = widget.player.state.playing;
-    _hasStartedPlayback =
-        playerIsPlaying || (_playerPlaybackSeen[widget.player] ?? false);
-    if (playerIsPlaying) {
-      _playerPlaybackSeen[widget.player] = true;
-    }
+    // Only latch when the overlay is visible (active video). During preload
+    // the player is played muted for buffering then paused — that play must
+    // not set the latch, otherwise the pause indicator flashes briefly when
+    // the user arrives at the preloaded video (isBuffering=false before
+    // isPlaying=true, amplified by the 180ms AnimatedSwitcher).
+    _hasStartedPlayback = widget.isVisible && widget.player.state.playing;
     _playingSubscription = widget.player.stream.playing.listen((isPlaying) {
-      if (isPlaying) {
-        _playerPlaybackSeen[widget.player] = true;
-      }
-      if (isPlaying && !_hasStartedPlayback && mounted) {
+      if (isPlaying && !_hasStartedPlayback && widget.isVisible && mounted) {
         setState(() {
           _hasStartedPlayback = true;
         });

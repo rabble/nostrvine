@@ -248,6 +248,9 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
       pool: _effectivePool,
       feedController: _controller,
       child: PageView.builder(
+        // Builds ±1 off-screen pages so thumbnails in the loading
+        // placeholder are precached before the user swipes.
+        allowImplicitScrolling: true,
         controller: _pageController,
         scrollDirection: widget.scrollDirection,
         onPageChanged: _onPageChanged,

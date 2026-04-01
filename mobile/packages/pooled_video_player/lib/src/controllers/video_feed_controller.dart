@@ -180,6 +180,10 @@ class VideoFeedController extends ChangeNotifier {
   int _staleHeartbeatCount = 0;
   int _staleRecoveryAttempts = 0;
 
+  /// Remaining heartbeats to skip after a play/resume before stale-position
+  /// detection activates. Gives the decoder time to start producing frames.
+  int _staleGraceHeartbeats = 0;
+
   /// Number of consecutive stale heartbeats before triggering recovery.
   /// With a 100ms heartbeat interval, this means ~300ms of confirmed
   /// frozen video before recovery kicks in. False positives cause only
@@ -190,6 +194,10 @@ class VideoFeedController extends ChangeNotifier {
   /// After this many failed seek-recovery attempts with no position progress,
   /// give up and mark the video as error.
   static const _maxStaleRecoveryAttempts = 2;
+
+  /// Number of heartbeats to skip after play/resume before stale detection
+  /// kicks in. With 100ms intervals this is ~500ms grace.
+  static const _staleGraceAfterPlay = 5;
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -1147,6 +1155,7 @@ class VideoFeedController extends ChangeNotifier {
     _lastHeartbeatPositionMs = null;
     _staleHeartbeatCount = 0;
     _staleRecoveryAttempts = 0;
+    _staleGraceHeartbeats = _staleGraceAfterPlay;
 
     // Use the shorter of the caller's interval and the stale-detection
     // interval so both position callbacks and recovery work correctly.
@@ -1195,6 +1204,14 @@ class VideoFeedController extends ChangeNotifier {
   /// the player reports `playing=true` and `buffering=false`, we assume
   /// media_kit's decoder is stuck and attempt recovery.
   void _checkStalePosition(int index, Player player, int positionMs) {
+    // Grace period after play/resume — decoder needs time to start.
+    if (_staleGraceHeartbeats > 0) {
+      _staleGraceHeartbeats--;
+      _lastHeartbeatPositionMs = null;
+      _staleHeartbeatCount = 0;
+      return;
+    }
+
     if (!player.state.playing || player.state.buffering) {
       // Not in a state where we'd expect position to advance.
       _staleHeartbeatCount = 0;

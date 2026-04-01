@@ -28,7 +28,7 @@ void _setUpFallbacks() {
   registerFallbackValue(_FakeVideoItem());
 }
 
-_MockPlayer _createMockPlayer() {
+_MockPlayer _createMockPlayer(StreamController<Duration> positionCtrl) {
   final mockPlayer = _MockPlayer();
   final mockState = _MockPlayerState();
   final mockStream = _MockPlayerStream();
@@ -38,6 +38,11 @@ _MockPlayer _createMockPlayer() {
   when(() => mockState.position).thenReturn(Duration.zero);
   when(() => mockPlayer.state).thenReturn(mockState);
   when(() => mockPlayer.stream).thenReturn(mockStream);
+  // Stub position stream so _subscribeToPosition can emit decoded-frame
+  // events that drive the _hasDecodedFrames flag in PooledVideoPlayer.
+  when(() => mockStream.position).thenAnswer(
+    (_) => positionCtrl.stream,
+  );
 
   return mockPlayer;
 }
@@ -101,6 +106,7 @@ void main() {
     late _MockPlayer mockPlayer;
     late ValueNotifier<int?> textureIdNotifier;
     late ValueNotifier<Rect?> textureRectNotifier;
+    late StreamController<Duration> positionController;
 
     setUp(() {
       final result = _createMockVideoFeedControllerWithNotifier();
@@ -116,7 +122,13 @@ void main() {
       when(
         () => mockVideoController.waitUntilFirstFrameRendered,
       ).thenAnswer((_) => Future<void>.value());
-      mockPlayer = _createMockPlayer();
+      positionController = StreamController<Duration>.broadcast();
+      mockPlayer = _createMockPlayer(positionController);
+      when(() => mockVideoController.player).thenReturn(mockPlayer);
+    });
+
+    tearDown(() async {
+      await positionController.close();
     });
 
     Widget buildWidget({
@@ -168,7 +180,13 @@ void main() {
       testWidgets('default enableTapToPause is false', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(find.byType(GestureDetector), findsNothing);
+        // GestureDetector is always present for layout; onTap is null when
+        // enableTapToPause is false and no onTap callback is provided.
+        expect(find.byType(GestureDetector), findsOneWidget);
+        final gesture = tester.widget<GestureDetector>(
+          find.byType(GestureDetector),
+        );
+        expect(gesture.onTap, isNull);
       });
     });
 
@@ -273,13 +291,15 @@ void main() {
           equals(0),
         );
 
+        // While still in loading state, readyForFallback is false, so the
+        // video stays hidden even after the first frame renders.
         firstFrameCompleter.complete();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
         expect(
           tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-          equals(1),
+          equals(0),
         );
       });
 
@@ -424,6 +444,10 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         firstFrameCompleter.complete();
+        await tester.pump();
+        // Emit a non-zero position to set _hasDecodedFrames = true, which
+        // is required alongside _hasRenderedFirstFrame for shouldReveal.
+        positionController.add(const Duration(milliseconds: 100));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -577,7 +601,13 @@ void main() {
         (tester) async {
           await tester.pumpWidget(buildWidget());
 
-          expect(find.byType(GestureDetector), findsNothing);
+          // GestureDetector always exists in the tree; onTap is null when
+          // neither enableTapToPause nor an onTap callback is provided.
+          expect(find.byType(GestureDetector), findsOneWidget);
+          final gesture = tester.widget<GestureDetector>(
+            find.byType(GestureDetector),
+          );
+          expect(gesture.onTap, isNull);
         },
       );
 
@@ -647,7 +677,13 @@ void main() {
           indexNotifiers[0] = ValueNotifier(const VideoIndexState());
           await tester.pumpWidget(buildWidget(onDoubleTap: (_) {}));
 
-          expect(find.byType(GestureDetector), findsNothing);
+          // GestureDetector always exists; onDoubleTapDown is null when
+          // there is no videoController (isReady = false).
+          expect(find.byType(GestureDetector), findsOneWidget);
+          final gesture = tester.widget<GestureDetector>(
+            find.byType(GestureDetector),
+          );
+          expect(gesture.onDoubleTapDown, isNull);
         },
       );
 
@@ -806,6 +842,9 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
+        // Emit a non-zero position so _hasDecodedFrames becomes true.
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
         final opacityFinder = find.ancestor(
@@ -834,6 +873,9 @@ void main() {
         'reveals video after rect update following surface recreation',
         (tester) async {
           await tester.pumpWidget(buildWidget());
+          await tester.pump();
+          // Emit a non-zero position so _hasDecodedFrames becomes true.
+          positionController.add(const Duration(milliseconds: 100));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 120));
 
@@ -867,6 +909,9 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(buildWidget());
+        await tester.pump();
+        // Emit a non-zero position so _hasDecodedFrames becomes true.
+        positionController.add(const Duration(milliseconds: 100));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -902,6 +947,9 @@ void main() {
 
         await tester.pumpWidget(buildWidget());
         await tester.pump();
+        // Emit a non-zero position so _hasDecodedFrames becomes true.
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
         final opacityFinder = find.ancestor(
@@ -919,6 +967,278 @@ void main() {
           equals(1),
         );
       });
+    });
+
+    group('error state with overlay', () {
+      testWidgets('renders overlay in error state when overlayBuilder given', (
+        tester,
+      ) async {
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.error),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            overlayBuilder: (context, controller, player) =>
+                const Text('Error Overlay'),
+          ),
+        );
+
+        expect(find.text('Error Overlay'), findsOneWidget);
+        expect(find.text('Failed to load video'), findsOneWidget);
+      });
+    });
+
+    group('didUpdateWidget', () {
+      testWidgets('resets reveal state when videoController changes', (
+        tester,
+      ) async {
+        final firstCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => firstCompleter.future);
+
+        // Start with first controller
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.ready,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        // Complete first frame
+        firstCompleter.complete();
+        await tester.pump();
+        // Emit a non-zero position so _hasDecodedFrames becomes true.
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+
+        // Create a new mock video controller
+        final newMockVideoController = _MockVideoController();
+        final newTextureIdNotifier = ValueNotifier<int?>(5);
+        final newTextureRectNotifier = ValueNotifier<Rect?>(
+          const Rect.fromLTWH(0, 0, 1920, 1080),
+        );
+        final secondCompleter = Completer<void>();
+        when(
+          () => newMockVideoController.id,
+        ).thenReturn(newTextureIdNotifier);
+        when(
+          () => newMockVideoController.rect,
+        ).thenReturn(newTextureRectNotifier);
+        when(
+          () => newMockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => secondCompleter.future);
+        when(
+          () => newMockVideoController.player,
+        ).thenReturn(mockPlayer);
+
+        // Swap to new controller — should reset reveal state
+        indexNotifiers[0]!.value = VideoIndexState(
+          loadState: LoadState.ready,
+          videoController: newMockVideoController,
+          player: mockPlayer,
+        );
+        await tester.pump();
+
+        // Should be hidden again (reset)
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        // Complete second controller's first frame
+        secondCompleter.complete();
+        await tester.pump();
+        // Emit position again to satisfy _hasDecodedFrames for the new
+        // controller.
+        positionController.add(const Duration(milliseconds: 200));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
+
+      testWidgets('syncs fallback timer when readyForFallback changes', (
+        tester,
+      ) async {
+        final neverCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => neverCompleter.future);
+
+        // Start in loading state (readyForFallback = false)
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        // Wait for fallback timeout — should NOT reveal because loading
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        // Switch to ready state (readyForFallback = true)
+        indexNotifiers[0]!.value = VideoIndexState(
+          loadState: LoadState.ready,
+          videoController: mockVideoController,
+          player: mockPlayer,
+        );
+        await tester.pump();
+
+        // Wait for new fallback timeout
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        // Now the fallback should have revealed the video
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
+
+      testWidgets(
+        'cancels fallback timer when readyForFallback becomes false',
+        (tester) async {
+          final neverCompleter = Completer<void>();
+          when(
+            () => mockVideoController.waitUntilFirstFrameRendered,
+          ).thenAnswer((_) => neverCompleter.future);
+
+          // Start in ready state (readyForFallback = true)
+          indexNotifiers[0] = ValueNotifier(
+            VideoIndexState(
+              loadState: LoadState.ready,
+              videoController: mockVideoController,
+              player: mockPlayer,
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+
+          // Switch back to loading before timeout fires
+          indexNotifiers[0]!.value = VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          );
+          await tester.pump();
+
+          // Wait for the fallback timeout duration
+          await tester.pump(const Duration(seconds: 2));
+          await tester.pump(const Duration(milliseconds: 120));
+
+          final opacityFinder = find.ancestor(
+            of: find.byKey(const Key('video_widget')),
+            matching: find.byType(AnimatedOpacity),
+          );
+
+          // Should stay hidden — timer was cancelled
+          expect(
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+            equals(0),
+          );
+        },
+      );
+
+      testWidgets(
+        'cancels fallback timer early when first frame already rendered',
+        (tester) async {
+          // Start ready with first frame that completes immediately
+          indexNotifiers[0] = ValueNotifier(
+            VideoIndexState(
+              loadState: LoadState.ready,
+              videoController: mockVideoController,
+              player: mockPlayer,
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+          await tester.pump();
+          // Emit a non-zero position so _hasDecodedFrames becomes true,
+          // which is required alongside _hasRenderedFirstFrame.
+          positionController.add(const Duration(milliseconds: 100));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 120));
+
+          final opacityFinder = find.ancestor(
+            of: find.byKey(const Key('video_widget')),
+            matching: find.byType(AnimatedOpacity),
+          );
+
+          // Video should be visible via first frame (not timeout)
+          expect(
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+            equals(1),
+          );
+        },
+      );
+
+      testWidgets(
+        'reveals video when waitUntilFirstFrameRendered fails',
+        (tester) async {
+          when(
+            () => mockVideoController.waitUntilFirstFrameRendered,
+          ).thenAnswer((_) => Future<void>.error(Exception('surface lost')));
+
+          indexNotifiers[0] = ValueNotifier(
+            VideoIndexState(
+              loadState: LoadState.ready,
+              videoController: mockVideoController,
+              player: mockPlayer,
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+          await tester.pump();
+          // catchError in _subscribeToFirstFrame sets
+          // _hasRenderedFirstFrame=true and cancels the timer, so we need a
+          // position event to satisfy _hasDecodedFrames for shouldReveal to
+          //be true.
+          positionController.add(const Duration(milliseconds: 100));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 120));
+
+          final opacityFinder = find.ancestor(
+            of: find.byKey(const Key('video_widget')),
+            matching: find.byType(AnimatedOpacity),
+          );
+
+          expect(
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+            equals(1),
+          );
+        },
+      );
     });
   });
 }

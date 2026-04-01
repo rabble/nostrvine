@@ -277,6 +277,7 @@ class _TextEditor extends StatelessWidget {
                 right: 48,
               ),
             ),
+            safeArea: const EditorSafeArea.none(),
             enableAutocorrect: false,
             resizeToAvoidBottomInset: false,
             minFontScale: VideoEditorConstants.minFontScale,

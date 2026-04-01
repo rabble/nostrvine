@@ -38,14 +38,25 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
             ),
           ),
         // Close/Done buttons at the top
-        const Align(alignment: .topCenter, child: _TopBar()),
+        Align(
+          alignment: .topCenter,
+          child: VideoEditorToolbar(
+            onClose: () => VideoTextEditorScope.of(context).editor.close(),
+            onDone: () => VideoTextEditorScope.of(context).editor.done(),
+          ),
+        ),
 
         // Vertical slider for font size on the right side
-        const Align(
+        Align(
           alignment: .centerRight,
           child: Padding(
-            padding: .fromLTRB(0, 96, 10, 16),
-            child: _FontSizeSlider(),
+            padding: .fromLTRB(
+              0,
+              64 + MediaQuery.viewPaddingOf(context).top,
+              10,
+              16,
+            ),
+            child: const _FontSizeSlider(),
           ),
         ),
       ],
@@ -85,19 +96,6 @@ class _FontSizeSlider extends StatelessWidget {
           VideoEditorTextFontSizeChanged(normalizedValue),
         );
       },
-    );
-  }
-}
-
-/// Top bar with close and done buttons.
-class _TopBar extends StatelessWidget {
-  const _TopBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return VideoEditorToolbar(
-      onClose: () => VideoTextEditorScope.of(context).editor.close(),
-      onDone: () => VideoTextEditorScope.of(context).editor.done(),
     );
   }
 }

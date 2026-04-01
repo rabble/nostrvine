@@ -712,6 +712,8 @@ class _PooledFullscreenItemContentState
               child: _FittedVideoPlayer(
                 videoController: videoController,
                 isPortrait: isPortrait,
+                videoWidth: video.width?.toDouble(),
+                videoHeight: video.height?.toDouble(),
               ),
             ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
@@ -787,10 +789,14 @@ class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
     required this.videoController,
     this.isPortrait = true,
+    this.videoWidth,
+    this.videoHeight,
   });
 
   final VideoController videoController;
   final bool isPortrait;
+  final double? videoWidth;
+  final double? videoHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -803,6 +809,9 @@ class _FittedVideoPlayer extends StatelessWidget {
       controller: videoController,
       fit: boxFit,
       controls: null,
+      width: videoWidth,
+      height: videoHeight,
+      fill: const Color(0x00000000),
     );
   }
 }
