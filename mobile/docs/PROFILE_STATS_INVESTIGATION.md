@@ -193,6 +193,52 @@ Note: `total_views` (unique views) and `total_loops` (loop plays) are different 
 
 ---
 
+## Break 7: Backend Aggregation Bug — `engagement` Numbers Are Unreliable
+
+### Discovery
+
+After fixing all client-side pipeline breaks and successfully displaying stats in the UI, the Likes numbers appeared disproportionately large. A creator with 78 followers and 93 videos was showing 121,139 likes.
+
+### Verification
+
+We compared the `engagement` aggregate with the sum of per-video stats from `/api/users/{pubkey}/videos`:
+
+**User: 963368c4...** (93 videos, 78 followers)
+
+| Metric | Per-video sum (real) | `engagement` aggregate | Factor |
+|--------|---------------------|----------------------|--------|
+| Reactions (Likes) | **473** | 121,139 | ~256x inflated |
+| Loops | **616** | 478 | 0.77x deflated |
+| Views | **966** | 719 | 0.74x deflated |
+
+**User: 295dbec7...** (Sebastian, 2 videos)
+
+| Metric | Per-video sum (real) | `engagement` aggregate | Factor |
+|--------|---------------------|----------------------|--------|
+| Reactions (Likes) | **~9** (from 1 video) | 6,452 | ~700x inflated |
+
+### Conclusion
+
+The `engagement.total_reactions` field returned by `GET /api/users/{pubkey}` is **massively inflated** — likely a ClickHouse aggregation bug (possibly counting duplicates across relays/shards, or a multiplication error in the query). The per-video `reactions` field from `GET /api/users/{pubkey}/videos` is accurate.
+
+`engagement.total_loops` and `engagement.total_views` are also inaccurate but deflated rather than inflated, suggesting a different aggregation issue.
+
+### Impact
+
+We **cannot use `engagement.*` fields** for profile stats until the backend team fixes the aggregation.
+
+### Options Under Consideration
+
+1. **Client-side aggregation**: Fetch all videos via `/api/users/{pubkey}/videos` (paginated) and sum `reactions` and `loops` per video. Accurate but expensive — requires fetching all pages for users with many videos.
+
+2. **Hide Likes and Loops for now**: Revert to showing only Followers and Following until the backend aggregation is fixed. The conditional visibility already handles this (null stats hide the columns).
+
+3. **Use `stats.reaction_count` instead**: This field (120 for the test user) represents reactions *given by* the user, not *received*. Wrong semantics — this is how many times the user liked others' content.
+
+4. **Request backend fix**: Report the issue to the backend team with the evidence above, and wait for a corrected `engagement` endpoint.
+
+---
+
 ## Architecture: How It Should Work
 
 ```
