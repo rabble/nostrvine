@@ -271,9 +271,11 @@ class WatermarkDownloadService {
 
       final task = VideoRenderData(
         id: '${videoId}_watermark',
-        video: EditorVideo.file(videoFile),
+        videoSegments: [VideoSegment(video: EditorVideo.file(videoFile))],
         shouldOptimizeForNetworkUse: true,
-        imageBytes: watermarkBytes,
+        imageLayers: [
+          ImageLayer(image: EditorLayerImage.memory(watermarkBytes)),
+        ],
       );
 
       await ProVideoEditor.instance.renderVideoToFile(outputPath, task);

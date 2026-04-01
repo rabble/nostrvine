@@ -299,6 +299,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       return false;
     }
 
+    ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip();
+
     final clip = _clips[index];
     _clips.removeAt(index);
     Log.info(
@@ -306,7 +308,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       name: 'ClipManagerNotifier',
       category: .video,
     );
-    state = state.copyWith(clips: List.unmodifiable(_clips));
+    state = state.copyWith(
+      clips: List.unmodifiable(_clips),
+      clearMergeOutputPath: true,
+    );
 
     // Force immediate autosave so draft references are updated before cleanup
     await _forceAutosave();

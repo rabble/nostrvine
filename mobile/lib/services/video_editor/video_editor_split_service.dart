@@ -133,7 +133,7 @@ class VideoEditorSplitService {
         sourceVideo: sourceClip.video,
         renderData: VideoRenderData(
           id: startClip.id,
-          video: sourceClip.video,
+          videoSegments: [VideoSegment(video: sourceClip.video)],
           endTime: splitPosition,
         ),
         onClipRendered: onClipRendered,
@@ -144,7 +144,7 @@ class VideoEditorSplitService {
         sourceVideo: sourceClip.video,
         renderData: VideoRenderData(
           id: endClip.id,
-          video: sourceClip.video,
+          videoSegments: [VideoSegment(video: sourceClip.video)],
           startTime: splitPosition,
         ),
         onClipRendered: onClipRendered,
