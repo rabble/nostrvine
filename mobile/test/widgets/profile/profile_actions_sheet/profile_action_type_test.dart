@@ -7,13 +7,12 @@ import 'package:openvine/widgets/profile/profile_actions_sheet/profile_action_ty
 void main() {
   group(ProfileActionType, () {
     group('pending', () {
-      test('returns both actions when anonymous without custom name', () {
+      test('returns both actions when anonymous without profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
           hasExpiredSession: false,
-          hasProfile: true,
-          hasCustomName: false,
+          hasAnyProfileInfo: false,
         );
 
         expect(actions, hasLength(2));
@@ -21,37 +20,37 @@ void main() {
         expect(actions[1], equals(ProfileActionType.completeProfile));
       });
 
-      test('returns only secureAccount when anonymous with custom name', () {
+      test('returns only secureAccount when anonymous with profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
           hasExpiredSession: false,
-          hasProfile: true,
-          hasCustomName: true,
+          hasAnyProfileInfo: true,
         );
 
         expect(actions, equals([ProfileActionType.secureAccount]));
       });
 
-      test('returns only completeProfile when not anonymous without name', () {
+      test(
+        'returns only completeProfile when not anonymous without profile info',
+        () {
+          final actions = ProfileActionType.pending(
+            isOwnProfile: true,
+            isAnonymous: false,
+            hasExpiredSession: false,
+            hasAnyProfileInfo: false,
+          );
+
+          expect(actions, equals([ProfileActionType.completeProfile]));
+        },
+      );
+
+      test('returns empty when not anonymous and has profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: false,
           hasExpiredSession: false,
-          hasProfile: true,
-          hasCustomName: false,
-        );
-
-        expect(actions, equals([ProfileActionType.completeProfile]));
-      });
-
-      test('returns empty when not anonymous and has custom name', () {
-        final actions = ProfileActionType.pending(
-          isOwnProfile: true,
-          isAnonymous: false,
-          hasExpiredSession: false,
-          hasProfile: true,
-          hasCustomName: true,
+          hasAnyProfileInfo: true,
         );
 
         expect(actions, isEmpty);
@@ -62,8 +61,7 @@ void main() {
           isOwnProfile: false,
           isAnonymous: true,
           hasExpiredSession: false,
-          hasProfile: true,
-          hasCustomName: false,
+          hasAnyProfileInfo: false,
         );
 
         expect(actions, isEmpty);
@@ -74,41 +72,22 @@ void main() {
           isOwnProfile: true,
           isAnonymous: true,
           hasExpiredSession: true,
-          hasProfile: true,
-          hasCustomName: false,
+          hasAnyProfileInfo: false,
         );
 
         expect(actions, equals([ProfileActionType.completeProfile]));
       });
 
-      test('shows completeProfile even when profile is not loaded', () {
+      test('returns empty when session expired and has profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
-          hasExpiredSession: false,
-          hasProfile: false,
-          hasCustomName: false,
+          hasExpiredSession: true,
+          hasAnyProfileInfo: true,
         );
 
-        expect(actions, hasLength(2));
-        expect(actions[0], equals(ProfileActionType.secureAccount));
-        expect(actions[1], equals(ProfileActionType.completeProfile));
+        expect(actions, isEmpty);
       });
-
-      test(
-        'returns empty when session expired and profile has custom name',
-        () {
-          final actions = ProfileActionType.pending(
-            isOwnProfile: true,
-            isAnonymous: true,
-            hasExpiredSession: true,
-            hasProfile: true,
-            hasCustomName: true,
-          );
-
-          expect(actions, isEmpty);
-        },
-      );
     });
   });
 }

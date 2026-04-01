@@ -83,6 +83,10 @@ class ProfileHeaderWidget extends ConsumerWidget {
         effectiveProfile?.name?.isNotEmpty == true ||
         effectiveProfile?.displayName?.isNotEmpty == true ||
         displayNameHint?.isNotEmpty == true;
+    final hasAnyProfileInfo = hasCustomName ||
+        effectiveProfile?.picture?.isNotEmpty == true ||
+        effectiveProfile?.about?.isNotEmpty == true ||
+        effectiveProfile?.nip05?.isNotEmpty == true;
     final nip05 = effectiveProfile?.displayNip05;
     final about = effectiveProfile?.about;
     final profileColor = effectiveProfile?.profileBackgroundColor;
@@ -99,8 +103,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
       isOwnProfile: isOwnProfile,
       isAnonymous: isAnonymous,
       hasExpiredSession: hasExpiredSession,
-      hasProfile: effectiveProfile != null,
-      hasCustomName: hasCustomName,
+      hasAnyProfileInfo: hasAnyProfileInfo,
     );
 
     final hasBannerImage = effectiveProfile?.hasBannerImage ?? false;

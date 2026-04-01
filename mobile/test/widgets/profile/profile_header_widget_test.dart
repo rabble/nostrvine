@@ -380,7 +380,7 @@ void main() {
       },
     );
 
-    testWidgets('hides action label while profile is still loading', (
+    testWidgets('shows Complete your profile while profile is still loading', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -393,8 +393,8 @@ void main() {
       // Do not pumpAndSettle — provider never resolves
       await tester.pump();
 
-      expect(find.text('Complete your profile'), findsNothing);
-      expect(find.text('Secure your account'), findsNothing);
+      // No profile info available yet → prompt should show
+      expect(find.text('Complete your profile'), findsOneWidget);
     });
 
     testWidgets('hides action label when profile has custom name', (

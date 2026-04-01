@@ -22,20 +22,19 @@ enum ProfileActionType {
   /// [isAnonymous] — the user signed in with an auto-generated key (no email).
   /// [hasExpiredSession] — an OAuth session that failed to refresh (handled
   ///   separately by [_SessionExpiredBanner]).
-  /// [hasProfile] — a Kind 0 profile event has been loaded.
-  /// [hasCustomName] — the user set a display name or name field.
+  /// [hasAnyProfileInfo] — the user has set at least one profile field
+  ///   (name, display name, picture, bio, or NIP-05).
   static List<ProfileActionType> pending({
     required bool isOwnProfile,
     required bool isAnonymous,
     required bool hasExpiredSession,
-    required bool hasProfile,
-    required bool hasCustomName,
+    required bool hasAnyProfileInfo,
   }) {
     if (!isOwnProfile) return const [];
 
     return [
       if (isAnonymous && !hasExpiredSession) secureAccount,
-      if (!hasCustomName) completeProfile,
+      if (!hasAnyProfileInfo) completeProfile,
     ];
   }
 }
