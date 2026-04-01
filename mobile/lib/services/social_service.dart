@@ -14,7 +14,6 @@ import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:profile_repository/profile_repository.dart';
 
 /// Represents a follow set (NIP-51 Kind 30000)
 class FollowSet {
@@ -88,10 +87,8 @@ class SocialService {
     this._nostrService,
     this._authService, {
     PersonalEventCacheService? personalEventCache,
-    ProfileRepository? profileRepository,
     List<String>? indexerRelayUrls,
   }) : _personalEventCache = personalEventCache,
-       _profileRepository = profileRepository,
        _indexerRelayUrls =
            indexerRelayUrls ?? IndexerRelayConfig.defaultIndexers {
     _initialize();
@@ -99,7 +96,6 @@ class SocialService {
   final NostrClient _nostrService;
   final AuthService _authService;
   final PersonalEventCacheService? _personalEventCache;
-  final ProfileRepository? _profileRepository;
   final List<String> _indexerRelayUrls;
 
   // Cache for follower/following counts
@@ -206,79 +202,11 @@ class SocialService {
   /// for broader coverage. Both queries use short timeouts (3s) to keep
   /// profile loading fast.
   Future<Map<String, int>> _fetchFollowerStats(String pubkey) async {
-    // Run REST and WebSocket queries in parallel for best coverage
-    final results = await Future.wait([
-      _fetchFollowerStatsViaRest(pubkey),
-      _fetchFollowerStatsViaWebSocket(pubkey),
-    ]);
-
-    final restResult = results[0];
-    // wsResult is always non-null since _fetchFollowerStatsViaWebSocket
-    // never returns null, but Future.wait widens the type to nullable.
-    final wsResult = results[1]!;
-
-    if (restResult == null) {
-      return wsResult;
-    }
-
-    // Use the higher count from each source
-    final followers = restResult['followers']! > wsResult['followers']!
-        ? restResult['followers']!
-        : wsResult['followers']!;
-    final following = restResult['following']! > wsResult['following']!
-        ? restResult['following']!
-        : wsResult['following']!;
-
-    if (followers != restResult['followers'] ||
-        following != restResult['following']) {
-      Log.info(
-        'Follower stats merged: REST=${restResult["followers"]}/'
-        '${restResult["following"]}, WS=${wsResult["followers"]}/'
-        '${wsResult["following"]} → using $followers/$following',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
-
-    return {'followers': followers, 'following': following};
+    // Use WebSocket (relay COUNT) only — REST API is disabled for followers
+    return _fetchFollowerStatsViaWebSocket(pubkey);
   }
 
-  /// Try fetching follower stats via the Funnelcake REST API.
-  ///
-  /// Returns null if the REST API is unavailable or the request fails.
-  Future<Map<String, int>?> _fetchFollowerStatsViaRest(String pubkey) async {
-    final profileRepo = _profileRepository;
-    if (profileRepo == null) {
-      return null;
-    }
-
-    try {
-      final counts = await profileRepo.getSocialCounts(pubkey);
-      if (counts != null) {
-        Log.debug(
-          'REST API follower stats: ${counts.followerCount} followers, '
-          '${counts.followingCount} following for $pubkey',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-        return {
-          'followers': counts.followerCount,
-          'following': counts.followingCount,
-        };
-      }
-    } catch (e) {
-      Log.warning(
-        'REST API follower stats failed, falling back to WebSocket: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
-    return null;
-  }
-
-  /// Fetch follower stats via WebSocket queries (parallel).
-  ///
-  /// Used as a fallback when the REST API is unavailable.
+  /// Fetch follower stats via WebSocket COUNT queries to relays.
   Future<Map<String, int>> _fetchFollowerStatsViaWebSocket(
     String pubkey,
   ) async {
@@ -334,112 +262,39 @@ class SocialService {
   /// network, not our backend.
   // Indexer relays come from IndexerRelayConfig.defaultIndexers.
 
-  /// Get followers count by querying indexer relays directly.
+  /// Get followers count using NIP-45 COUNT queries to indexer relays.
   ///
-  /// User's connected relays only have their own events, not other
-  /// people's kind 3 contact lists. Indexer relays like relay.nostr.band
-  /// and purplepag.es maintain broad indexes of kind 3 events by p-tag,
-  /// giving accurate follower counts.
+  /// Uses the relay pool's count method which queries all provided relays
+  /// concurrently and returns the largest count.
   Future<int> _fetchFollowersCountViaIndexers(String pubkey) async {
-    final results = await Future.wait(
-      _indexerRelayUrls.map(
-        (url) => _queryIndexerForFollowers(url, pubkey).catchError((e) {
-          // Return 0 on error so other indexers still contribute to the max.
-          Log.warning(
-            'Indexer $url follower count query failed: $e',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          return 0;
-        }),
-      ),
-    );
-
-    // Use the highest count from any indexer
-    var best = 0;
-    for (final count in results) {
-      if (count > best) best = count;
-    }
-
-    Log.info(
-      'Indexer followers counts: $results, using $best for $pubkey',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    return best;
-  }
-
-  /// Query a single indexer relay for kind 3 events mentioning pubkey.
-  Future<int> _queryIndexerForFollowers(
-    String indexerUrl,
-    String pubkey,
-  ) async {
-    final relayStatus = RelayStatus(indexerUrl);
-    final relay = RelayBase(indexerUrl, relayStatus);
-    final completer = Completer<int>();
-    final followerPubkeys = <String>{};
-    final subscriptionId = 'fc_${DateTime.now().millisecondsSinceEpoch}';
-
-    relay.onMessage = (relay, jsonMsg) async {
-      if (jsonMsg.isEmpty) return;
-
-      final messageType = jsonMsg[0] as String;
-
-      if (messageType == 'EVENT' && jsonMsg.length >= 3) {
-        final eventJson = jsonMsg[2] as Map<String, dynamic>;
-        final eventPubkey = eventJson['pubkey'] as String?;
-        if (eventPubkey != null) {
-          followerPubkeys.add(eventPubkey);
-        }
-      } else if (messageType == 'EOSE') {
-        if (!completer.isCompleted) {
-          completer.complete(followerPubkeys.length);
-        }
-      }
-    };
-
     try {
-      final filter = <String, dynamic>{
-        'kinds': <int>[NostrEventKinds.contactList],
-        '#p': <String>[pubkey],
-      };
-      relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
-
-      final connected = await relay.connect();
-      if (!connected) {
-        return 0;
-      }
-
-      final result = await completer.future.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => followerPubkeys.length,
+      final filter = Filter(
+        kinds: [NostrEventKinds.contactList],
+        p: [pubkey],
       );
 
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
-      Log.debug(
-        'Indexer $indexerUrl returned $result followers for $pubkey',
+      final result = await _nostrService.countEvents(
+        [filter],
+        tempRelays: _indexerRelayUrls,
+        relayTypes: [RelayType.temp],
+        timeout: const Duration(seconds: 60),
+      );
+
+      Log.info(
+        'Follower count for $pubkey: ${result.count} '
+        '(approximate: ${result.approximate})',
         name: 'SocialService',
         category: LogCategory.system,
       );
-      return result;
+
+      return result.count;
     } catch (e) {
       Log.warning(
-        'Error querying $indexerUrl for followers: $e',
+        'Follower count query failed for $pubkey: $e',
         name: 'SocialService',
         category: LogCategory.system,
       );
-      return followerPubkeys.length;
-    } finally {
-      try {
-        await relay.disconnect();
-      } catch (e) {
-        Log.warning(
-          'Error disconnecting from $indexerUrl: $e',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-      }
+      return 0;
     }
   }
 

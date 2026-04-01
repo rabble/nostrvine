@@ -1060,7 +1060,6 @@ class RelayPool {
     tempRelays = handleAddrList(tempRelays);
 
     final subscriptionId = id ?? StringUtil.rndNameStr(16);
-    final message = ['COUNT', subscriptionId, ...filters];
 
     // Collect all relays to try
     final relaysToTry = <Relay>[];
@@ -1094,38 +1093,62 @@ class RelayPool {
       }
     }
 
-    // Try each relay until one responds
+    // Query all relays concurrently and return the largest count
+    final futures = <Future<CountResponse>>[];
+
     for (final relay in relaysToTry) {
       if (!relay.relayStatus.readAccess) {
         continue;
       }
 
+      // Each relay needs its own subscription ID to avoid collisions
+      final relaySubId = relaysToTry.length > 1
+          ? '${subscriptionId}_${relay.url.hashCode}'
+          : subscriptionId;
+      final relayMessage = ['COUNT', relaySubId, ...filters];
+
       // Register the query before sending
-      final responseFuture = relay.registerCountQuery(subscriptionId);
+      final responseFuture = relay.registerCountQuery(relaySubId);
 
       // Send the COUNT request
-      final sent = await relay.send(message);
-      if (!sent) {
-        continue;
-      }
-
-      log('📊 COUNT request sent to ${relay.url}');
-
-      // Wait for response with timeout
-      try {
-        final response = await responseFuture.timeout(
+      final sentFuture = relay.send(relayMessage).then((sent) async {
+        if (!sent) {
+          throw CountNotSupportedException('Failed to send');
+        }
+        log('📊 COUNT request sent to ${relay.url}');
+        return responseFuture.timeout(
           timeout,
           onTimeout: () => throw CountNotSupportedException('Timeout'),
         );
-        return response;
-      } on CountNotSupportedException {
-        // Try next relay
-        log('📊 COUNT not supported or timed out on ${relay.url}');
-        continue;
+      });
+
+      futures.add(sentFuture);
+    }
+
+    if (futures.isEmpty) {
+      throw CountNotSupportedException('No relay responded to COUNT');
+    }
+
+    // Wait for all responses, keeping the largest count
+    CountResponse? best;
+    final settled = await Future.wait(
+      futures.map(
+        (f) => f.then<CountResponse?>((r) => r).catchError((_) => null),
+      ),
+    );
+
+    for (final response in settled) {
+      if (response != null && (best == null || response.count > best.count)) {
+        best = response;
       }
     }
 
-    throw CountNotSupportedException('No relay responded to COUNT');
+    if (best == null) {
+      throw CountNotSupportedException('No relay responded to COUNT');
+    }
+
+    log('📊 COUNT best result: ${best.count} from ${settled.length} relays');
+    return best;
   }
 
   /// Returns the set of relay URLs that have the given subscription active.

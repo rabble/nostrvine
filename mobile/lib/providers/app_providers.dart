@@ -1069,15 +1069,12 @@ SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
-  final profileRepository = ref.watch(profileRepositoryProvider);
-
   final env = ref.watch(currentEnvironmentProvider);
 
   return SocialService(
     nostrService,
     authService,
     personalEventCache: personalEventCache,
-    profileRepository: profileRepository,
     indexerRelayUrls: env.indexerRelays,
   );
 }
