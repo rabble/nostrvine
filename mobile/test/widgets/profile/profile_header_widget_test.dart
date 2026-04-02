@@ -282,11 +282,7 @@ void main() {
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Test User');
-      const profileStats = ProfileStats(
-        pubkey: testUserHex,
-        totalLikes: 0,
-        totalViews: 0,
-      );
+      const profileStats = ProfileStats(pubkey: testUserHex);
 
       await tester.pumpWidget(
         buildTestWidget(
