@@ -96,10 +96,10 @@ class _AndroidPlayerView extends StatelessWidget {
   final Map<String, dynamic> creationParams;
 
   @override
+  // coverage:ignore-start — callbacks invoked by the platform view engine
   Widget build(BuildContext context) {
     return PlatformViewLink(
       viewType: viewType,
-      // coverage:ignore-start — invoked by the platform view engine
       surfaceFactory: (context, controller) {
         return AndroidViewSurface(
           controller: controller as AndroidViewController,
@@ -121,9 +121,9 @@ class _AndroidPlayerView extends StatelessWidget {
           // ignore: discarded_futures
           ..create();
       },
-      // coverage:ignore-end
     );
   }
+  // coverage:ignore-end
 }
 
 /// Shows the [placeholder] over the video surface and hides it once
