@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show VideoEvent;
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -90,7 +90,7 @@ void main() {
     when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
   });
 
-  PendingUpload _createUpload() {
+  PendingUpload createUpload() {
     return PendingUpload(
       id: 'test-upload-id',
       localVideoPath: '/tmp/test.mp4',
@@ -104,7 +104,7 @@ void main() {
     );
   }
 
-  Event _createSignedEvent() {
+  Event createSignedEvent() {
     return Event(
       testPubkey,
       NIP71VideoKinds.getPreferredAddressableKind(),
@@ -118,7 +118,7 @@ void main() {
     );
   }
 
-  void _stubSigning(Event event) {
+  void stubSigning(Event event) {
     when(
       () => mockAuthService.createAndSignEvent(
         kind: any(named: 'kind'),
@@ -128,7 +128,7 @@ void main() {
     ).thenAnswer((_) async => event);
   }
 
-  void _stubPublish(Event event) {
+  void stubPublish(Event event) {
     when(
       () => mockNostrClient.publishEvent(any()),
     ).thenAnswer((_) async => event);
@@ -138,9 +138,9 @@ void main() {
     test(
       'returns false and avoids local feed updates when relays cannot query the published event',
       () async {
-        final signedEvent = _createSignedEvent();
-        _stubSigning(signedEvent);
-        _stubPublish(signedEvent);
+        final signedEvent = createSignedEvent();
+        stubSigning(signedEvent);
+        stubPublish(signedEvent);
         when(
           () => mockNostrClient.queryEvents(
             any(),
@@ -152,7 +152,7 @@ void main() {
           ),
         ).thenAnswer((_) async => <Event>[]);
 
-        final result = await publisher.publishDirectUpload(_createUpload());
+        final result = await publisher.publishDirectUpload(createUpload());
 
         expect(result, isFalse);
         verify(
@@ -174,15 +174,15 @@ void main() {
     );
 
     test('reuses a cached signed event when retrying publish', () async {
-      final signedEvent = _createSignedEvent();
-      final retryUpload = _createUpload().copyWith(
+      final signedEvent = createSignedEvent();
+      final retryUpload = createUpload().copyWith(
         nostrEventId: signedEvent.id,
       );
 
       when(
         () => mockPersonalEventCache.getEventById(signedEvent.id),
       ).thenReturn(signedEvent);
-      _stubPublish(signedEvent);
+      stubPublish(signedEvent);
       when(
         () => mockNostrClient.queryEvents(
           any(),
@@ -210,9 +210,9 @@ void main() {
     test(
       'marks publish successful only after the event is queryable from relays',
       () async {
-        final signedEvent = _createSignedEvent();
-        _stubSigning(signedEvent);
-        _stubPublish(signedEvent);
+        final signedEvent = createSignedEvent();
+        stubSigning(signedEvent);
+        stubPublish(signedEvent);
         when(
           () => mockNostrClient.queryEvents(
             any(),
@@ -224,7 +224,7 @@ void main() {
           ),
         ).thenAnswer((_) async => <Event>[signedEvent]);
 
-        final result = await publisher.publishDirectUpload(_createUpload());
+        final result = await publisher.publishDirectUpload(createUpload());
 
         expect(result, isTrue);
         verify(
