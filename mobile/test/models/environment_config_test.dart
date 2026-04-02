@@ -85,7 +85,10 @@ void main() {
         const config = EnvironmentConfig(
           environment: AppEnvironment.production,
         );
-        expect(config.blockListFallbackRelays, ['wss://nos.lol']);
+        expect(
+          config.blockListFallbackRelays,
+          [defaultBlockListFallbackRelay],
+        );
       });
 
       test('non-local environments return nos.lol', () {
@@ -97,7 +100,7 @@ void main() {
           final config = EnvironmentConfig(environment: env);
           expect(
             config.blockListFallbackRelays,
-            ['wss://nos.lol'],
+            [defaultBlockListFallbackRelay],
             reason: '${env.name} should use nos.lol',
           );
         }

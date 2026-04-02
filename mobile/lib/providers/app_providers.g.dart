@@ -2123,7 +2123,7 @@ final class BlocklistSyncBridgeProvider
 }
 
 String _$blocklistSyncBridgeHash() =>
-    r'17d1bb1d5bd3302add6506a308f039e6abadcb60';
+    r'821b0f14b15e81cd7eadd8e6bcb0fc98d533dc73';
 
 /// Draft storage service for persisting vine drafts
 
