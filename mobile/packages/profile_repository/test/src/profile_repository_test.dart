@@ -466,19 +466,32 @@ void main() {
       });
 
       test(
-        're-checks on second fetchFreshProfile even after missing',
+        'rechecks sources on explicit fetch after confirmed missing',
         () async {
           stubAllSourcesMiss();
 
           // First call — hits all sources, marks missing
-          await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+          final firstResult = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+          expect(firstResult, isNull);
+          expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
 
-          // Second call — _confirmedMissing is cleared on explicit fetch,
-          // so it re-checks (allows profiles published after the initial
-          // batch fetch to be discovered).
-          await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+          // Second call — explicit fetch should clear the stale marker
+          // and try the sources again.
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => mockProfileEvent);
 
+          final secondResult = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(secondResult, isNotNull);
+          expect(secondResult!.pubkey, equals(testPubkey));
+          expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
           verify(() => mockNostrClient.fetchProfile(testPubkey)).called(2);
+          verify(() => mockUserProfilesDao.upsertProfile(any())).called(1);
         },
       );
 
