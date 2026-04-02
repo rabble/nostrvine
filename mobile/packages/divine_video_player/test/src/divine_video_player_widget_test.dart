@@ -12,18 +12,18 @@ void main() {
   setUp(() async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('divine_video_player'),
-      (call) async => null,
-    );
+          const MethodChannel('divine_video_player'),
+          (call) async => null,
+        );
 
     controller = DivineVideoPlayerController();
     await controller.initialize();
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      MethodChannel('divine_video_player/player_${controller.playerId}'),
-      (call) async => null,
-    );
+          MethodChannel('divine_video_player/player_${controller.playerId}'),
+          (call) async => null,
+        );
   });
 
   group(DivineVideoPlayerWidget, () {
@@ -120,8 +120,9 @@ void main() {
       },
     );
 
-    testWidgets('does not render Stack when placeholder is null',
-        (tester) async {
+    testWidgets('does not render Stack when placeholder is null', (
+      tester,
+    ) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
 
       await tester.pumpWidget(
@@ -135,8 +136,9 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     });
 
-    testWidgets('renders placeholder over surface before first frame',
-        (tester) async {
+    testWidgets('renders placeholder over surface before first frame', (
+      tester,
+    ) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
 
       await tester.pumpWidget(
@@ -154,8 +156,7 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     });
 
-    testWidgets('hides placeholder after first frame rendered',
-        (tester) async {
+    testWidgets('hides placeholder after first frame rendered', (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
 
       // Set up a mock stream handler that emits firstFrameRendered=true,
@@ -165,15 +166,15 @@ void main() {
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        MethodChannel('divine_video_player/player_$nextId'),
-        (call) async => null,
-      );
+            MethodChannel('divine_video_player/player_$nextId'),
+            (call) async => null,
+          );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockStreamHandler(
-        EventChannel('divine_video_player/player_$nextId/events'),
-        _FirstFrameStreamHandler(),
-      );
+            EventChannel('divine_video_player/player_$nextId/events'),
+            _FirstFrameStreamHandler(),
+          );
 
       final freshController = DivineVideoPlayerController();
       await freshController.initialize();
