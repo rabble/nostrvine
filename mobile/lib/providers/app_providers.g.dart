@@ -1986,7 +1986,7 @@ final class ContentBlocklistServiceProvider
 }
 
 String _$contentBlocklistServiceHash() =>
-    r'6636e44c40b7f6bec7c5485313c47357cb8795f8';
+    r'ab2be1c7be1db5cebbe4293f2e0f04cadd16b638';
 
 /// Version counter to trigger rebuilds when blocklist changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.

@@ -12,9 +12,6 @@ const localBlossomPort = 43003;
 const localInvitePort = 43004;
 const productionApiBaseUrl = 'https://api.divine.video';
 
-/// Default fallback relay for block list persistence (kind 30000, d=block).
-const defaultBlockListFallbackRelay = 'wss://nos.lol';
-
 /// Build-time default environment
 /// Set via: --dart-define=DEFAULT_ENV=STAGING
 const String _defaultEnvString = String.fromEnvironment(
@@ -96,18 +93,6 @@ class EnvironmentConfig {
       return 'http://$localHost:$localBlossomPort';
     }
     return 'https://media.divine.video';
-  }
-
-  /// Fallback relays for block list persistence (kind 30000, d=block).
-  ///
-  /// Funnelcake does not persist kind 30000 events, so we publish to and
-  /// subscribe from these relays as well. In LOCAL mode, the local relay
-  /// is used instead of external public relays.
-  List<String> get blockListFallbackRelays {
-    if (environment == AppEnvironment.local) {
-      return ['ws://$localHost:$localRelayPort'];
-    }
-    return const [defaultBlockListFallbackRelay];
   }
 
   /// Indexer relay URLs for the current environment.

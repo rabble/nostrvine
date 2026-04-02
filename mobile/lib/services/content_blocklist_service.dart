@@ -9,7 +9,6 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,12 +31,8 @@ class ContentBlocklistService {
   ContentBlocklistService({
     SharedPreferences? prefs,
     void Function()? onChanged,
-    List<String> blockListFallbackRelays = const [
-      defaultBlockListFallbackRelay,
-    ],
   }) : _prefs = prefs,
-       _onChanged = onChanged,
-       _blockListFallbackRelays = blockListFallbackRelays {
+       _onChanged = onChanged {
     // Initialize with the specific npub requested
     _addInitialBlockedContent();
     _loadBlockedUsers();
@@ -51,8 +46,6 @@ class ContentBlocklistService {
 
   final SharedPreferences? _prefs;
   final void Function()? _onChanged;
-  final List<String> _blockListFallbackRelays;
-
   // Internal blocklist of public keys (hex format) - kept empty for now
   static const Set<String> _internalBlocklist = {
     // Add blocked public keys here in hex format if needed
@@ -244,18 +237,7 @@ class ContentBlocklistService {
       );
 
       if (event != null) {
-        // Publish to all connected relays (some may persist kind 30000)
         final sentEvent = await nostrClient.publishEvent(event);
-
-        // Also publish to fallback relays known to persist kind 30000
-        // events. Critical for cross-device / reinstall restoration when
-        // the user's primary relays do not store them.
-        if (_blockListFallbackRelays.isNotEmpty) {
-          await nostrClient.publishEvent(
-            event,
-            targetRelays: _blockListFallbackRelays,
-          );
-        }
 
         if (sentEvent != null) {
           Log.info(
@@ -557,7 +539,6 @@ class ContentBlocklistService {
 
       final subscription = nostrService.subscribe(
         [othersFilter, ownFilter],
-        tempRelays: _blockListFallbackRelays,
       );
 
       subscription.listen(_handleBlockListEvent);
@@ -569,56 +550,9 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
-
-      // Backup restoration: query the fallback relay directly. The
-      // subscription above should eventually deliver stored events, but
-      // queryEvents provides a bounded, one-shot fetch that catches cases
-      // where the temp-relay pending-message queue does not fire (e.g.
-      // connection timeout or SDK edge case). queryEvents waits up to
-      // 10 s for the relay to connect before returning.
-      unawaited(_queryOwnBlockListFromFallback(nostrService, ourPubkey));
     } catch (e) {
       Log.error(
         'Failed to start block list sync: $e',
-        name: 'ContentBlocklistService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// One-shot query to the fallback relay for our own block list.
-  ///
-  /// Acts as a safety net alongside the persistent subscription. The
-  /// handler is idempotent — duplicate events are harmlessly skipped.
-  Future<void> _queryOwnBlockListFromFallback(
-    NostrClient nostrService,
-    String ourPubkey,
-  ) async {
-    try {
-      final filter = Filter(
-        authors: [ourPubkey],
-        kinds: const [30000],
-      );
-
-      final events = await nostrService.queryEvents(
-        [filter],
-        tempRelays: _blockListFallbackRelays,
-      );
-
-      for (final event in events) {
-        _handleBlockListEvent(event);
-      }
-
-      if (events.isNotEmpty) {
-        Log.info(
-          'Fallback query returned ${events.length} kind 30000 event(s)',
-          name: 'ContentBlocklistService',
-          category: LogCategory.system,
-        );
-      }
-    } catch (e) {
-      Log.warning(
-        'Fallback block list query failed (non-critical): $e',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
