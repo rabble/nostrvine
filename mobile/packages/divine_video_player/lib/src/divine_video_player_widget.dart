@@ -96,7 +96,7 @@ class _AndroidPlayerView extends StatelessWidget {
   final Map<String, dynamic> creationParams;
 
   @override
-  // coverage:ignore-start — callbacks invoked by the platform view engine
+  // coverage:ignore-start
   Widget build(BuildContext context) {
     return PlatformViewLink(
       viewType: viewType,
