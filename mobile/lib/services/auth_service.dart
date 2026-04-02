@@ -18,6 +18,7 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -298,6 +299,7 @@ class AuthService implements BackgroundAwareService {
           category: LogCategory.auth,
         );
         await refreshed.save(_flutterSecureStorage);
+        await _clearDismissedDivineLoginBannerForCurrentUser();
         await signInWithDivineOAuth(refreshed);
         return true;
       }
@@ -309,6 +311,18 @@ class AuthService implements BackgroundAwareService {
       );
     }
     return false;
+  }
+
+  Future<void> _clearDismissedDivineLoginBannerForCurrentUser([
+    String? publicKeyHex,
+  ]) async {
+    final prefs = await SharedPreferences.getInstance();
+    final targetPubkey =
+        publicKeyHex ?? prefs.getString('current_user_pubkey_hex');
+    if (targetPubkey == null || targetPubkey.isEmpty) {
+      return;
+    }
+    await clearDivineLoginBannerDismissal(prefs, targetPubkey);
   }
 
   /// Get discovered user relays (NIP-65)
@@ -2280,6 +2294,7 @@ class AuthService implements BackgroundAwareService {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('current_user_pubkey_hex', publicKeyHex);
+      await _clearDismissedDivineLoginBannerForCurrentUser(publicKeyHex);
 
       Log.info(
         '✅ Divine oauth listener setting auth state to authenticated.',

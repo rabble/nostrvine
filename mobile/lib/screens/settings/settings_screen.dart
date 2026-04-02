@@ -176,16 +176,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Account header
               if (isAuthenticated) ...[
                 _AccountHeader(onSwitchAccount: _handleSwitchAccount),
-                // Auth-state conditional tiles
-                if (authService.hasExpiredOAuthSession)
-                  _SettingsTile(
-                    icon: Icons.refresh,
-                    title: 'Session Expired',
-                    subtitle: 'Sign in again to restore full access',
-                    onTap: _handleSessionExpired,
-                    iconColor: VineTheme.accentOrange,
-                  )
-                else if (authService.isAnonymous)
+                if (authService.isAnonymous)
                   _SettingsTile(
                     icon: Icons.security,
                     title: 'Secure Your Account',
@@ -193,6 +184,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         'Add email & password to recover your '
                         'account on any device',
                     onTap: () => context.push(SecureAccountScreen.path),
+                  ),
+                if (!authService.isAnonymous &&
+                    authService.hasExpiredOAuthSession)
+                  _SettingsTile(
+                    icon: Icons.refresh,
+                    title: 'Session Expired',
+                    subtitle: 'Sign in again to restore full access',
+                    onTap: _handleSessionExpired,
+                    iconColor: VineTheme.accentOrange,
                   ),
               ],
 
