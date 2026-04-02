@@ -104,12 +104,24 @@ class VideoErrorOverlay extends ConsumerWidget {
         (moderationStatus != null &&
             moderationStatus.isUnavailableDueToModeration);
 
-    // If moderation confirms restricted, clear any stale broken marking so the
-    // video can be re-evaluated when moderation status changes.
-    if (isModerationRestricted && !_is401Error) {
-      ref.read(brokenVideoTrackerProvider).whenData((tracker) {
-        tracker.unmarkVideoBroken(video.id);
-      });
+    // Clear stale broken marking when moderation confirms restricted.
+    // Uses ref.listen instead of a direct call so the side-effect fires only
+    // on provider state changes, not on every widget rebuild.
+    if (sha256 != null && !_is401Error) {
+      ref.listen<AsyncValue<VideoModerationStatus?>>(
+        videoModerationStatusProvider(sha256),
+        (_, next) {
+          final status = next.whenOrNull(data: (s) => s);
+          final isRestricted =
+              _is403Error ||
+              (status != null && status.isUnavailableDueToModeration);
+          if (isRestricted) {
+            ref.read(brokenVideoTrackerProvider).whenData((tracker) {
+              tracker.unmarkVideoBroken(video.id);
+            });
+          }
+        },
+      );
     }
 
     // Determine icon, message, and action based on error category
