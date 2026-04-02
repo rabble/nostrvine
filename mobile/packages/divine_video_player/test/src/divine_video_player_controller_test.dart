@@ -16,6 +16,7 @@ void main() {
   late StreamController<Map<Object?, Object?>> eventController;
 
   setUp(() {
+    DivineVideoPlayerController.resetIdCounterForTesting();
     globalCalls = <MethodCall>[];
     playerCalls = <MethodCall>[];
     eventController = StreamController<Map<Object?, Object?>>.broadcast();

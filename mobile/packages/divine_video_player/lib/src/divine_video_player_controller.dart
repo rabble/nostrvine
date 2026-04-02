@@ -48,6 +48,13 @@ class DivineVideoPlayerController {
   @visibleForTesting
   static int get nextId => _nextId;
 
+  /// Resets the player ID counter to 0.
+  ///
+  /// Call in test `setUp` to make IDs deterministic regardless of
+  /// test ordering.
+  @visibleForTesting
+  static void resetIdCounterForTesting() => _nextId = 0;
+
   /// Configures the native video cache.
   ///
   /// Call once at app startup before creating any controllers.
