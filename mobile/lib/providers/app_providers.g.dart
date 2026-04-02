@@ -2876,7 +2876,7 @@ final class HashtagRepositoryProvider
   }
 }
 
-String _$hashtagRepositoryHash() => r'aacff5fc9d7d369a80b68ffa4595628b18ab1f99';
+String _$hashtagRepositoryHash() => r'fe5341fcbbd62c6418fd00154f9ea24112476251';
 
 /// Provider for CategoriesRepository instance.
 ///

@@ -1,5 +1,5 @@
 // ABOUTME: Tests for HashtagRepository.
-// ABOUTME: Tests delegation to FunnelcakeApiClient and exception propagation.
+// ABOUTME: Tests remote search with local fallback and exception handling.
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
@@ -20,30 +20,20 @@ void main() {
     });
 
     group('searchHashtags', () {
-      test(
-        'delegates to FunnelcakeApiClient with correct parameters',
-        () async {
-          when(
-            () => mockClient.searchHashtags(
-              query: 'bitcoin',
-            ),
-          ).thenAnswer((_) async => ['bitcoin', 'bitcoinmining']);
+      test('returns filtered remote results when they contain query', () async {
+        when(
+          () => mockClient.searchHashtags(query: 'bitcoin'),
+        ).thenAnswer((_) async => ['bitcoin', 'bitcoinmining', 'unrelated']);
 
-          final results = await repository.searchHashtags(query: 'bitcoin');
+        final results = await repository.searchHashtags(query: 'bitcoin');
 
-          expect(results, equals(['bitcoin', 'bitcoinmining']));
-          verify(
-            () => mockClient.searchHashtags(query: 'bitcoin'),
-          ).called(1);
-        },
-      );
+        expect(results, equals(['bitcoin', 'bitcoinmining']));
+        verify(() => mockClient.searchHashtags(query: 'bitcoin')).called(1);
+      });
 
       test('passes custom limit to client', () async {
         when(
-          () => mockClient.searchHashtags(
-            query: 'nostr',
-            limit: 50,
-          ),
+          () => mockClient.searchHashtags(query: 'nostr', limit: 50),
         ).thenAnswer((_) async => ['nostr']);
 
         final results = await repository.searchHashtags(
@@ -57,7 +47,7 @@ void main() {
         ).called(1);
       });
 
-      test('passes null query to client', () async {
+      test('skips filtering when query is null', () async {
         when(
           () => mockClient.searchHashtags(),
         ).thenAnswer((_) async => ['trending1', 'trending2']);
@@ -68,31 +58,53 @@ void main() {
         verify(() => mockClient.searchHashtags()).called(1);
       });
 
-      test('returns empty list when client returns empty', () async {
+      test('skips filtering when query is empty', () async {
+        when(
+          () => mockClient.searchHashtags(query: ''),
+        ).thenAnswer((_) async => ['trending1', 'trending2']);
+
+        final results = await repository.searchHashtags(query: '');
+
+        expect(results, equals(['trending1', 'trending2']));
+      });
+
+      test('falls back to local when remote returns empty list', () async {
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) => ['localresult'],
+        );
         when(
           () => mockClient.searchHashtags(query: 'zzzzz'),
         ).thenAnswer((_) async => []);
 
-        final results = await repository.searchHashtags(query: 'zzzzz');
+        final results = await repoWithLocal.searchHashtags(query: 'zzzzz');
 
-        expect(results, isEmpty);
+        expect(results, equals(['localresult']));
       });
 
-      test('propagates FunnelcakeNotConfiguredException', () {
-        when(
-          () => mockClient.searchHashtags(
-            query: any(named: 'query'),
-            limit: any(named: 'limit'),
-          ),
-        ).thenThrow(const FunnelcakeNotConfiguredException());
+      test(
+        'falls back to local when remote results do not match query',
+        () async {
+          final repoWithLocal = HashtagRepository(
+            funnelcakeApiClient: mockClient,
+            localSearch: (query, limit) => ['music', 'musician'],
+          );
+          when(
+            () => mockClient.searchHashtags(query: 'music'),
+          ).thenAnswer((_) async => ['unrelated', 'othertag']);
 
-        expect(
-          () => repository.searchHashtags(query: 'test'),
-          throwsA(isA<FunnelcakeNotConfiguredException>()),
+          final results = await repoWithLocal.searchHashtags(query: 'music');
+
+          expect(results, equals(['music', 'musician']));
+        },
+      );
+
+      test('falls back to local when remote throws '
+          'FunnelcakeApiException', () async {
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) => ['localfallback'],
         );
-      });
-
-      test('propagates FunnelcakeApiException', () {
         when(
           () => mockClient.searchHashtags(
             query: any(named: 'query'),
@@ -106,19 +118,17 @@ void main() {
           ),
         );
 
-        expect(
-          () => repository.searchHashtags(query: 'test'),
-          throwsA(
-            isA<FunnelcakeApiException>().having(
-              (e) => e.statusCode,
-              'statusCode',
-              equals(500),
-            ),
-          ),
-        );
+        final results = await repoWithLocal.searchHashtags(query: 'test');
+
+        expect(results, equals(['localfallback']));
       });
 
-      test('propagates FunnelcakeTimeoutException', () {
+      test('falls back to local when remote throws '
+          'FunnelcakeTimeoutException', () async {
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) => ['localfallback'],
+        );
         when(
           () => mockClient.searchHashtags(
             query: any(named: 'query'),
@@ -126,10 +136,154 @@ void main() {
           ),
         ).thenThrow(const FunnelcakeTimeoutException());
 
-        expect(
-          () => repository.searchHashtags(query: 'test'),
-          throwsA(isA<FunnelcakeTimeoutException>()),
+        final results = await repoWithLocal.searchHashtags(query: 'test');
+
+        expect(results, equals(['localfallback']));
+      });
+
+      test('falls back to local when remote throws '
+          'FunnelcakeNotConfiguredException', () async {
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) => ['localfallback'],
         );
+        when(
+          () => mockClient.searchHashtags(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(const FunnelcakeNotConfiguredException());
+
+        final results = await repoWithLocal.searchHashtags(query: 'test');
+
+        expect(results, equals(['localfallback']));
+      });
+
+      test(
+        'returns empty list when remote fails and no local callback',
+        () async {
+          when(
+            () => mockClient.searchHashtags(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(const FunnelcakeException('search failed'));
+
+          final results = await repository.searchHashtags(query: 'test');
+
+          expect(results, isEmpty);
+        },
+      );
+
+      test('returns empty list when remote returns empty and no local '
+          'callback', () async {
+        when(
+          () => mockClient.searchHashtags(query: 'zzzzz'),
+        ).thenAnswer((_) async => []);
+
+        final results = await repository.searchHashtags(query: 'zzzzz');
+
+        expect(results, isEmpty);
+      });
+    });
+
+    group('searchHashtagsLocally', () {
+      test('returns results from local callback', () {
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) => ['local1', 'local2'],
+        );
+
+        final results = repoWithLocal.searchHashtagsLocally(
+          query: 'local',
+        );
+
+        expect(results, equals(['local1', 'local2']));
+      });
+
+      test('returns empty list when no local callback', () {
+        final results = repository.searchHashtagsLocally(query: 'test');
+
+        expect(results, isEmpty);
+      });
+
+      test('returns empty list for empty query', () {
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) => ['result'],
+        );
+
+        final results = repoWithLocal.searchHashtagsLocally(query: '');
+
+        expect(results, isEmpty);
+      });
+
+      test('returns empty list for whitespace-only query', () {
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) => ['result'],
+        );
+
+        final results = repoWithLocal.searchHashtagsLocally(
+          query: '   ',
+        );
+
+        expect(results, isEmpty);
+      });
+
+      test('passes trimmed query and limit to callback', () {
+        String? capturedQuery;
+        int? capturedLimit;
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) {
+            capturedQuery = query;
+            capturedLimit = limit;
+            return [];
+          },
+        );
+
+        repoWithLocal.searchHashtagsLocally(
+          query: '  music  ',
+          limit: 50,
+        );
+
+        expect(capturedQuery, equals('music'));
+        expect(capturedLimit, equals(50));
+      });
+    });
+
+    group('countHashtagsLocally', () {
+      test('returns count of local results', () {
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) => ['a', 'b', 'c'],
+        );
+
+        final count = repoWithLocal.countHashtagsLocally(query: 'test');
+
+        expect(count, equals(3));
+      });
+
+      test('returns zero when no local callback', () {
+        final count = repository.countHashtagsLocally(query: 'test');
+
+        expect(count, equals(0));
+      });
+
+      test('passes maxLocalHashtagCount as limit', () {
+        int? capturedLimit;
+        final repoWithLocal = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          localSearch: (query, limit) {
+            capturedLimit = limit;
+            return [];
+          },
+        );
+
+        repoWithLocal.countHashtagsLocally(query: 'test');
+
+        expect(capturedLimit, equals(maxLocalHashtagCount));
       });
     });
 
@@ -164,9 +318,7 @@ void main() {
       );
 
       test('passes custom limit to client', () async {
-        when(
-          () => mockClient.fetchTrendingHashtags(limit: 50),
-        ).thenAnswer(
+        when(() => mockClient.fetchTrendingHashtags(limit: 50)).thenAnswer(
           (_) async => [
             const TrendingHashtag(
               tag: 'bitcoin',
@@ -195,9 +347,7 @@ void main() {
 
       test('propagates FunnelcakeNotConfiguredException', () {
         when(
-          () => mockClient.fetchTrendingHashtags(
-            limit: any(named: 'limit'),
-          ),
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
         ).thenThrow(const FunnelcakeNotConfiguredException());
 
         expect(
@@ -208,9 +358,7 @@ void main() {
 
       test('propagates FunnelcakeApiException', () {
         when(
-          () => mockClient.fetchTrendingHashtags(
-            limit: any(named: 'limit'),
-          ),
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
         ).thenThrow(
           const FunnelcakeApiException(
             message: 'Server error',
@@ -233,9 +381,7 @@ void main() {
 
       test('propagates FunnelcakeTimeoutException', () {
         when(
-          () => mockClient.fetchTrendingHashtags(
-            limit: any(named: 'limit'),
-          ),
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
         ).thenThrow(const FunnelcakeTimeoutException());
 
         expect(
@@ -249,9 +395,7 @@ void main() {
       late HashtagRepository cachingRepository;
 
       setUp(() {
-        cachingRepository = HashtagRepository(
-          funnelcakeApiClient: mockClient,
-        );
+        cachingRepository = HashtagRepository(funnelcakeApiClient: mockClient);
       });
 
       test('fetches from client on cache miss', () async {
@@ -270,9 +414,7 @@ void main() {
         final results = await cachingRepository.getTrendingHashtags();
 
         expect(results, equals(trendingHashtags));
-        verify(
-          () => mockClient.fetchTrendingHashtags(),
-        ).called(1);
+        verify(() => mockClient.fetchTrendingHashtags()).called(1);
       });
 
       test(
@@ -295,9 +437,7 @@ void main() {
 
           expect(secondResult, equals(trendingHashtags));
           // Client called only once; second call served from cache.
-          verify(
-            () => mockClient.fetchTrendingHashtags(),
-          ).called(1);
+          verify(() => mockClient.fetchTrendingHashtags()).called(1);
         },
       );
 
@@ -332,9 +472,7 @@ void main() {
         );
 
         expect(refreshed, equals(secondBatch));
-        verify(
-          () => mockClient.fetchTrendingHashtags(),
-        ).called(2);
+        verify(() => mockClient.fetchTrendingHashtags()).called(2);
       });
 
       test('cache expires after cacheDuration', () async {
@@ -359,9 +497,7 @@ void main() {
 
         // With Duration.zero the cache is always stale, so client is called
         // twice.
-        verify(
-          () => mockClient.fetchTrendingHashtags(),
-        ).called(2);
+        verify(() => mockClient.fetchTrendingHashtags()).called(2);
       });
 
       test('passes custom limit to client', () async {
@@ -374,33 +510,27 @@ void main() {
         verify(() => mockClient.fetchTrendingHashtags(limit: 50)).called(1);
       });
 
-      test(
-        'returns default hashtags when API is not configured',
-        () async {
-          when(
-            () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
-          ).thenThrow(const FunnelcakeNotConfiguredException());
+      test('returns default hashtags when API is not configured', () async {
+        when(
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+        ).thenThrow(const FunnelcakeNotConfiguredException());
 
-          final results = await cachingRepository.getTrendingHashtags();
+        final results = await cachingRepository.getTrendingHashtags();
 
-          expect(results, isNotEmpty);
-          expect(results.first, isA<TrendingHashtag>());
-          // Does not throw — callers always get a usable list.
-        },
-      );
+        expect(results, isNotEmpty);
+        expect(results.first, isA<TrendingHashtag>());
+        // Does not throw — callers always get a usable list.
+      });
 
-      test(
-        'default hashtags respect the limit parameter',
-        () async {
-          when(
-            () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
-          ).thenThrow(const FunnelcakeNotConfiguredException());
+      test('default hashtags respect the limit parameter', () async {
+        when(
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+        ).thenThrow(const FunnelcakeNotConfiguredException());
 
-          final results = await cachingRepository.getTrendingHashtags(limit: 5);
+        final results = await cachingRepository.getTrendingHashtags(limit: 5);
 
-          expect(results, hasLength(5));
-        },
-      );
+        expect(results, hasLength(5));
+      });
 
       test('propagates FunnelcakeApiException', () {
         when(

@@ -12,9 +12,6 @@ import 'package:stream_transform/stream_transform.dart';
 part 'hashtag_search_event.dart';
 part 'hashtag_search_state.dart';
 
-typedef LocalHashtagSearch =
-    Future<List<String>> Function(String query, {int limit});
-
 /// Event transformer that debounces and restarts on new events
 EventTransformer<E> _debounceRestartable<E>() {
   return (events, mapper) {
@@ -27,17 +24,15 @@ EventTransformer<E> _debounceRestartable<E>() {
 
 /// BLoC for searching hashtags via the Funnelcake API.
 ///
-/// Delegates search to [HashtagRepository] which calls the server-side
-/// hashtag search endpoint. Results are sorted by popularity/trending
+/// Delegates search to [HashtagRepository] which handles remote search
+/// with local fallback. Results are sorted by popularity/trending
 /// on the server.
 class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
   HashtagSearchBloc({
     required HashtagRepository hashtagRepository,
     FeedPerformanceTracker? feedTracker,
-    LocalHashtagSearch? localHashtagSearch,
   }) : _hashtagRepository = hashtagRepository,
        _feedTracker = feedTracker,
-       _localHashtagSearch = localHashtagSearch,
        super(const HashtagSearchState()) {
     on<HashtagSearchQueryChanged>(
       _onQueryChanged,
@@ -48,7 +43,6 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
 
   final HashtagRepository _hashtagRepository;
   final FeedPerformanceTracker? _feedTracker;
-  final LocalHashtagSearch? _localHashtagSearch;
 
   Future<void> _onQueryChanged(
     HashtagSearchQueryChanged event,
@@ -86,10 +80,7 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     _feedTracker?.startFeedLoad('hashtag_search');
 
     try {
-      final remoteResults = await _hashtagRepository.searchHashtags(
-        query: query,
-      );
-      final results = await _resolveResults(query, remoteResults);
+      final results = await _hashtagRepository.searchHashtags(query: query);
 
       _feedTracker?.markFirstVideosReceived('hashtag_search', results.length);
 
@@ -103,26 +94,9 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
 
       _feedTracker?.markFeedDisplayed('hashtag_search', results.length);
     } on Exception catch (e) {
-      final fallbackResults = await _searchLocalHashtags(query);
-      if (fallbackResults.isNotEmpty) {
-        _feedTracker?.markFirstVideosReceived(
-          'hashtag_search',
-          fallbackResults.length,
-        );
-        emit(
-          state.copyWith(
-            status: HashtagSearchStatus.success,
-            results: fallbackResults,
-            resultCount: fallbackResults.length,
-          ),
-        );
-        _feedTracker?.markFeedDisplayed(
-          'hashtag_search',
-          fallbackResults.length,
-        );
-        return;
-      }
-
+      // Defensive: repository.searchHashtags should never throw per its
+      // contract, but we guard against unexpected violations to avoid
+      // unhandled exceptions in the UI.
       _feedTracker?.trackFeedError(
         'hashtag_search',
         errorType: 'search_failed',
@@ -137,31 +111,5 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     Emitter<HashtagSearchState> emit,
   ) {
     emit(const HashtagSearchState());
-  }
-
-  Future<List<String>> _resolveResults(
-    String query,
-    List<String> remoteResults,
-  ) async {
-    final filteredRemote = remoteResults
-        .where((tag) => tag.toLowerCase().contains(query))
-        .toList();
-    if (filteredRemote.isNotEmpty) {
-      return filteredRemote;
-    }
-    return _searchLocalHashtags(query);
-  }
-
-  Future<List<String>> _searchLocalHashtags(String query) async {
-    final localHashtagSearch = _localHashtagSearch;
-    if (localHashtagSearch == null) {
-      return const [];
-    }
-
-    try {
-      return await localHashtagSearch(query, limit: 20);
-    } on Exception {
-      return const [];
-    }
   }
 }

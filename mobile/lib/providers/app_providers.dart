@@ -1230,6 +1230,11 @@ CuratedListRepository curatedListRepository(Ref ref) {
 HashtagRepository hashtagRepository(Ref ref) {
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
   final hashtagService = ref.watch(hashtagServiceProvider);
+
+  // Ensure static hashtags are loaded before any local search callback runs.
+  // loadTopHashtags is idempotent and no-ops if already loaded.
+  TopHashtagsService.instance.loadTopHashtags();
+
   return HashtagRepository(
     funnelcakeApiClient: funnelcakeClient,
     localSearch: (query, limit) {
