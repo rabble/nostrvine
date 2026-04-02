@@ -1913,6 +1913,11 @@ String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
 /// Injects SharedPreferences for local block persistence across restarts.
 /// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
 /// during app startup in main.dart.
+///
+/// keepAlive ensures the relay subscription created by
+/// [syncBlockListsInBackground] survives widget rebuilds. Without it the
+/// provider auto-disposes, the subscription is lost, and blocks restored
+/// from the relay are never delivered to new instances.
 
 @ProviderFor(contentBlocklistService)
 const contentBlocklistServiceProvider = ContentBlocklistServiceProvider._();
@@ -1922,6 +1927,11 @@ const contentBlocklistServiceProvider = ContentBlocklistServiceProvider._();
 /// Injects SharedPreferences for local block persistence across restarts.
 /// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
 /// during app startup in main.dart.
+///
+/// keepAlive ensures the relay subscription created by
+/// [syncBlockListsInBackground] survives widget rebuilds. Without it the
+/// provider auto-disposes, the subscription is lost, and blocks restored
+/// from the relay are never delivered to new instances.
 
 final class ContentBlocklistServiceProvider
     extends
@@ -1936,13 +1946,18 @@ final class ContentBlocklistServiceProvider
   /// Injects SharedPreferences for local block persistence across restarts.
   /// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
   /// during app startup in main.dart.
+  ///
+  /// keepAlive ensures the relay subscription created by
+  /// [syncBlockListsInBackground] survives widget rebuilds. Without it the
+  /// provider auto-disposes, the subscription is lost, and blocks restored
+  /// from the relay are never delivered to new instances.
   const ContentBlocklistServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'contentBlocklistServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -1971,7 +1986,7 @@ final class ContentBlocklistServiceProvider
 }
 
 String _$contentBlocklistServiceHash() =>
-    r'e9f2a94864c583c91619dffc906067ba6c907bb0';
+    r'ab2be1c7be1db5cebbe4293f2e0f04cadd16b638';
 
 /// Version counter to trigger rebuilds when blocklist changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
@@ -2035,6 +2050,80 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
     element.handleValue(ref, created);
   }
 }
+
+/// Bridge that starts blocklist sync when the user becomes authenticated.
+///
+/// Watch this at app shell level. It listens to [authStateStream] and
+/// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
+/// the first time the user is authenticated. This covers:
+/// - Already-authenticated startup (iOS keychain persists across reinstalls)
+/// - Post-login authentication (Android wipes credentials on uninstall)
+///
+/// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
+/// `_blockListSyncStarted`) so duplicate calls are no-ops.
+
+@ProviderFor(blocklistSyncBridge)
+const blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
+
+/// Bridge that starts blocklist sync when the user becomes authenticated.
+///
+/// Watch this at app shell level. It listens to [authStateStream] and
+/// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
+/// the first time the user is authenticated. This covers:
+/// - Already-authenticated startup (iOS keychain persists across reinstalls)
+/// - Post-login authentication (Android wipes credentials on uninstall)
+///
+/// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
+/// `_blockListSyncStarted`) so duplicate calls are no-ops.
+
+final class BlocklistSyncBridgeProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridge that starts blocklist sync when the user becomes authenticated.
+  ///
+  /// Watch this at app shell level. It listens to [authStateStream] and
+  /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
+  /// the first time the user is authenticated. This covers:
+  /// - Already-authenticated startup (iOS keychain persists across reinstalls)
+  /// - Post-login authentication (Android wipes credentials on uninstall)
+  ///
+  /// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
+  /// `_blockListSyncStarted`) so duplicate calls are no-ops.
+  const BlocklistSyncBridgeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'blocklistSyncBridgeProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$blocklistSyncBridgeHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return blocklistSyncBridge(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$blocklistSyncBridgeHash() =>
+    r'821b0f14b15e81cd7eadd8e6bcb0fc98d533dc73';
 
 /// Draft storage service for persisting vine drafts
 

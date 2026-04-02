@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -23,6 +24,8 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 
 // Fake fallback values for mocktail any() matchers
 class _FakeEvent extends Fake implements Event {}
+
+class _FakeFilter extends Fake implements Filter {}
 
 const _deepEquals = DeepCollectionEquality();
 
@@ -42,6 +45,8 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
+    registerFallbackValue(_FakeFilter());
+    registerFallbackValue(<Filter>[]);
     registerFallbackValue(UploadStatus.pending);
   });
 
@@ -102,6 +107,8 @@ void main() {
   List<List<String>>? capturedTags;
 
   void stubSignAndPublish() {
+    late Event publishedEvent;
+
     when(
       () => mockAuthService.createAndSignEvent(
         kind: any(named: 'kind'),
@@ -111,22 +118,28 @@ void main() {
     ).thenAnswer((invocation) async {
       capturedTags = invocation.namedArguments[#tags] as List<List<String>>?;
       final tags = capturedTags ?? [];
-      return Event(
+      publishedEvent = Event(
         testPubkey,
         NIP71VideoKinds.getPreferredAddressableKind(),
         tags,
         'test content',
       );
+      return publishedEvent;
     });
 
     when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-      (_) async => Event(
-        testPubkey,
-        NIP71VideoKinds.getPreferredAddressableKind(),
-        [],
-        '',
-      ),
+      (_) async => publishedEvent,
     );
+    when(
+      () => mockNostrClient.queryEvents(
+        any(),
+        subscriptionId: any(named: 'subscriptionId'),
+        tempRelays: any(named: 'tempRelays'),
+        relayTypes: any(named: 'relayTypes'),
+        sendAfterAuth: any(named: 'sendAfterAuth'),
+        useCache: any(named: 'useCache'),
+      ),
+    ).thenAnswer((_) async => <Event>[publishedEvent]);
   }
 
   group('NIP-32 language tagging', () {

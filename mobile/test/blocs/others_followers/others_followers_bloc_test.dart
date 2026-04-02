@@ -1,6 +1,8 @@
 // ABOUTME: Tests for OthersFollowersBloc - another user's followers list
 // ABOUTME: Tests loading from repository, error handling, and follow operations
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -279,6 +281,65 @@ void main() {
         verify: (bloc) {
           verify(() => mockFollowRepository.getFollowers(any())).called(1);
           expect(bloc.state.status, OthersFollowersStatus.success);
+        },
+      );
+
+      test(
+        'emits followers before the exact follower count resolves',
+        () async {
+          final countCompleter = Completer<int>();
+
+          when(() => mockFollowRepository.getFollowers(any())).thenAnswer(
+            (_) async => [validPubkey('follower1')],
+          );
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) => countCompleter.future);
+
+          final bloc = createBloc();
+
+          final firstStates = expectLater(
+            bloc.stream,
+            emitsInOrder([
+              isA<OthersFollowersState>().having(
+                (state) => state.status,
+                'status',
+                OthersFollowersStatus.loading,
+              ),
+              isA<OthersFollowersState>()
+                  .having(
+                    (state) => state.status,
+                    'status',
+                    OthersFollowersStatus.success,
+                  )
+                  .having(
+                    (state) => state.followersPubkeys,
+                    'followersPubkeys',
+                    [validPubkey('follower1')],
+                  )
+                  .having(
+                    (state) => state.followerCount,
+                    'followerCount',
+                    1,
+                  ),
+            ]),
+          );
+
+          bloc.add(OthersFollowersListLoadRequested(validPubkey('target')));
+
+          await firstStates.timeout(
+            const Duration(milliseconds: 200),
+            onTimeout: () => throw TimeoutException(
+              'Followers list never resolved before count finished',
+            ),
+          );
+
+          countCompleter.complete(500);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.followerCount, 500);
+
+          await bloc.close();
         },
       );
     });

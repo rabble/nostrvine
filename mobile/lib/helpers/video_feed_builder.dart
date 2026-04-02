@@ -55,8 +55,22 @@ class VideoFeedBuilder {
       category: LogCategory.video,
     );
 
-    // Subscribe to the feed (non-blocking: events stream in progressively)
-    await config.subscribe(_service);
+    // Start the subscription in the background so callers can render from
+    // retained, cached, or empty state immediately.
+    unawaited(
+      config.subscribe(_service).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        Log.error(
+          'VideoFeedBuilder: Background subscribe failed for ${config.subscriptionType}: $error',
+          name: 'VideoFeedBuilder',
+          category: LogCategory.video,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }),
+    );
 
     // Return immediately with whatever videos are available
     var videos = config.getVideos(_service);

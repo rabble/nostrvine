@@ -10,19 +10,25 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Maps provider types to appropriate startup phases
 class StartupPhaseMapper {
   static StartupPhase getPhaseForProvider(String providerName) {
-    // Critical services - must init before app can function
-    if (providerName.contains('Auth') ||
-        providerName.contains('KeyStorage') ||
-        providerName.contains('SecureKey')) {
+    // Blocking work before runApp should stay extremely small.
+    if (providerName.contains('Environment')) {
       return StartupPhase.critical;
     }
 
-    // Essential services - needed for basic UI
-    if (providerName.contains('ConnectionStatus') ||
-        providerName.contains('VideoVisibility') ||
-        providerName.contains('NostrService') ||
+    // Core identity/auth services should start as soon as the first frame
+    // exists, but they no longer need to gate first paint.
+    if (providerName.contains('Auth') ||
+        providerName.contains('KeyStorage') ||
+        providerName.contains('SecureKey') ||
         providerName.contains('NostrKeyManager')) {
       return StartupPhase.essential;
+    }
+
+    // Standard services improve app readiness but shouldn't block paint.
+    if (providerName.contains('ConnectionStatus') ||
+        providerName.contains('VideoVisibility') ||
+        providerName.contains('NostrService')) {
+      return StartupPhase.standard;
     }
 
     // Deferred services - can load after UI is responsive

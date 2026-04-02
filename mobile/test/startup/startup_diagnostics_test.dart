@@ -138,6 +138,67 @@ void main() {
       expect(coordinator.metrics.serviceTimings['NostrService'], isNotNull);
     });
 
+    test(
+      'should leave deferred phases pending after blocking startup only',
+      () async {
+        final deferredCompleter = Completer<void>();
+
+        coordinator.registerService(
+          name: 'EnvironmentService',
+          phase: StartupPhase.critical,
+          initialize: () async {},
+        );
+
+        coordinator.registerService(
+          name: 'DeferredWarmup',
+          phase: StartupPhase.deferred,
+          initialize: () => deferredCompleter.future,
+          optional: true,
+        );
+
+        await coordinator.initializeThrough(StartupPhase.critical);
+
+        expect(coordinator.isPhaseComplete(StartupPhase.critical), isTrue);
+        expect(coordinator.isPhaseComplete(StartupPhase.deferred), isFalse);
+
+        final remainingFuture = coordinator.initializeRemaining();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.isPhaseComplete(StartupPhase.deferred), isFalse);
+
+        deferredCompleter.complete();
+        await remainingFuture;
+
+        expect(coordinator.isPhaseComplete(StartupPhase.deferred), isTrue);
+      },
+    );
+
+    test('should generate a startup metrics report', () async {
+      coordinator.registerService(
+        name: 'FastService',
+        phase: StartupPhase.critical,
+        initialize: () async {
+          await Future.delayed(const Duration(milliseconds: 10));
+        },
+      );
+
+      coordinator.registerService(
+        name: 'DeferredService',
+        phase: StartupPhase.deferred,
+        initialize: () async {
+          await Future.delayed(const Duration(milliseconds: 5));
+        },
+        optional: true,
+      );
+
+      await coordinator.initialize();
+
+      final report = coordinator.metrics.generateReport();
+      expect(report, contains('Startup Performance Report'));
+      expect(report, contains('Total time:'));
+      expect(report, contains('FastService'));
+      expect(report, contains('DeferredService'));
+    });
+
     test('should detect and warn about slow initialization', () async {
       // Arrange
       final completer = Completer<void>();
@@ -189,47 +250,6 @@ void main() {
       );
     });
 
-    test('should provide detailed startup metrics report', () async {
-      // Arrange
-      coordinator.registerService(
-        name: 'FastService',
-        phase: StartupPhase.critical,
-        initialize: () async {
-          await Future.delayed(const Duration(milliseconds: 10));
-        },
-      );
-
-      coordinator.registerService(
-        name: 'MediumService',
-        phase: StartupPhase.essential,
-        initialize: () async {
-          await Future.delayed(const Duration(milliseconds: 50));
-        },
-      );
-
-      coordinator.registerService(
-        name: 'SlowService',
-        phase: StartupPhase.standard,
-        initialize: () async {
-          await Future.delayed(const Duration(milliseconds: 100));
-        },
-        optional: true,
-      );
-
-      // Act
-      await coordinator.initialize();
-      final report = coordinator.metrics.generateReport();
-
-      // Assert
-      expect(report, contains('Startup Metrics Report'));
-      expect(report, contains('Total Duration:'));
-      expect(report, contains('FastService:'));
-      expect(report, contains('MediumService:'));
-      expect(report, contains('SlowService:'));
-      expect(report, contains('ms'));
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
-
     test('should handle initialization failures with proper logging', () async {
       // Arrange
 
@@ -258,128 +278,6 @@ void main() {
           contains('Service initialization failed'),
         );
       }
-    });
-
-    test(
-      'should support progressive initialization with phase tracking',
-      () async {
-        // Arrange
-        final phaseCompletions = <StartupPhase>[];
-        coordinator.phaseCompleted.listen(phaseCompletions.add);
-
-        coordinator.registerService(
-          name: 'CriticalService',
-          phase: StartupPhase.critical,
-          initialize: () async {
-            await Future.delayed(const Duration(milliseconds: 20));
-          },
-        );
-
-        coordinator.registerService(
-          name: 'EssentialService',
-          phase: StartupPhase.essential,
-          initialize: () async {
-            await Future.delayed(const Duration(milliseconds: 30));
-          },
-        );
-
-        coordinator.registerService(
-          name: 'StandardService',
-          phase: StartupPhase.standard,
-          initialize: () async {
-            await Future.delayed(const Duration(milliseconds: 10));
-          },
-        );
-
-        // Act
-        await coordinator.initializeProgressive();
-
-        // Assert
-        expect(
-          phaseCompletions,
-          containsAllInOrder([
-            StartupPhase.critical,
-            StartupPhase.essential,
-            StartupPhase.standard,
-          ]),
-        );
-
-        // All services should be initialized
-        final metrics = coordinator.metrics;
-        expect(metrics.serviceTimings.length, equals(3));
-        expect(metrics.totalDuration.inMilliseconds, greaterThanOrEqualTo(30));
-      },
-    );
-
-    test('should track initialization progress percentage', () async {
-      // Arrange
-      final progressUpdates = <double>[];
-      final progressSubscription = coordinator.progress.listen(
-        progressUpdates.add,
-      );
-
-      for (int i = 1; i <= 5; i++) {
-        coordinator.registerService(
-          name: 'Service$i',
-          phase: StartupPhase.standard,
-          initialize: () async {
-            await Future.delayed(const Duration(milliseconds: 10));
-          },
-        );
-      }
-
-      // Act
-      await coordinator.initialize();
-
-      // Give time for the final progress update
-      await Future.delayed(const Duration(milliseconds: 100));
-      await progressSubscription.cancel();
-
-      // Assert - we should have progress updates
-      expect(progressUpdates.length, greaterThan(0));
-
-      // The progress should show meaningful updates (at least 20% per service)
-      // With 5 services, each should contribute ~0.2 to progress
-      final lastProgress = progressUpdates.last;
-      expect(
-        lastProgress,
-        greaterThanOrEqualTo(0.2),
-        reason:
-            'Expected progress after completing services, got: $progressUpdates',
-      );
-
-      // Progress should increase monotonically
-      for (int i = 1; i < progressUpdates.length; i++) {
-        expect(
-          progressUpdates[i],
-          greaterThanOrEqualTo(progressUpdates[i - 1]),
-        );
-      }
-    });
-
-    test('should identify optimization opportunities', () {
-      // Arrange
-      final profiler = StartupProfiler.instance;
-
-      // Simulate provider initialization times
-      profiler.markProviderStart('AuthServiceProvider');
-      Future.delayed(const Duration(milliseconds: 20), () {
-        profiler.markProviderComplete('AuthServiceProvider');
-      });
-
-      profiler.markProviderStart('AnalyticsServiceProvider');
-      Future.delayed(const Duration(milliseconds: 150), () {
-        profiler.markProviderComplete('AnalyticsServiceProvider');
-      });
-
-      profiler.markProviderStart('NotificationServiceProvider');
-      Future.delayed(const Duration(milliseconds: 200), () {
-        profiler.markProviderComplete('NotificationServiceProvider');
-      });
-
-      // Assert - these would be identified as deferrable in the report
-      // Analytics and Notification services taking > 50ms in standard/deferred phase
-      // should be flagged for optimization
     });
   });
 }

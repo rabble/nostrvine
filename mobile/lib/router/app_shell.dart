@@ -270,6 +270,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);
 
+    // Start block/mute list sync once authenticated (handles post-reinstall login)
+    ref.watch(blocklistSyncBridgeProvider);
+
     // Watch page context to determine if back button should show and if on search route
     final pageCtxAsync = ref.watch(pageContextProvider);
 

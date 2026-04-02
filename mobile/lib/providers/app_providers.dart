@@ -674,7 +674,12 @@ SeenVideosService seenVideosService(Ref ref) {
 /// Injects SharedPreferences for local block persistence across restarts.
 /// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
 /// during app startup in main.dart.
-@riverpod
+///
+/// keepAlive ensures the relay subscription created by
+/// [syncBlockListsInBackground] survives widget rebuilds. Without it the
+/// provider auto-disposes, the subscription is lost, and blocks restored
+/// from the relay are never delivered to new instances.
+@Riverpod(keepAlive: true)
 ContentBlocklistService contentBlocklistService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return ContentBlocklistService(
@@ -694,6 +699,70 @@ class BlocklistVersion extends _$BlocklistVersion {
   int build() => 0;
 
   void increment() => state++;
+}
+
+/// Bridge that starts blocklist sync when the user becomes authenticated.
+///
+/// Watch this at app shell level. It listens to [authStateStream] and
+/// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
+/// the first time the user is authenticated. This covers:
+/// - Already-authenticated startup (iOS keychain persists across reinstalls)
+/// - Post-login authentication (Android wipes credentials on uninstall)
+///
+/// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
+/// `_blockListSyncStarted`) so duplicate calls are no-ops.
+@Riverpod(keepAlive: true)
+void blocklistSyncBridge(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrService = ref.watch(nostrServiceProvider);
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
+  Future<void> startSync() async {
+    // Use authService.currentPublicKeyHex — it is available immediately
+    // after authentication, unlike nostrKeyManagerProvider which loads
+    // its keys asynchronously via RPC and may not be ready yet.
+    final pubkey = authService.currentPublicKeyHex;
+    if (pubkey == null) return;
+
+    try {
+      await Future.wait([
+        blocklistService.syncMuteListsInBackground(
+          nostrService,
+          pubkey,
+        ),
+        blocklistService.syncBlockListsInBackground(
+          nostrService,
+          authService,
+          pubkey,
+        ),
+      ]);
+      Log.info(
+        '[BRIDGE] Block/mute list sync started',
+        name: 'BlocklistSyncBridge',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.warning(
+        '[BRIDGE] Block/mute list sync failed (non-critical): $e',
+        name: 'BlocklistSyncBridge',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  // Sync immediately if already authenticated
+  if (authService.isAuthenticated && authService.currentPublicKeyHex != null) {
+    unawaited(startSync());
+  }
+
+  // Also listen for future auth transitions (e.g. post-reinstall login)
+  final subscription = authService.authStateStream.listen((authState) {
+    if (authState == AuthState.authenticated) {
+      unawaited(startSync());
+    }
+  });
+
+  ref.onDispose(subscription.cancel);
 }
 
 /// Draft storage service for persisting vine drafts

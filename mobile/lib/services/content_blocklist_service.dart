@@ -2,6 +2,7 @@
 // ABOUTME: Maintains internal blocklist while allowing explicit profile visits
 // ABOUTME: Persists blocks to SharedPreferences and publishes to Nostr (kind 30000)
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:models/models.dart';
@@ -45,7 +46,6 @@ class ContentBlocklistService {
 
   final SharedPreferences? _prefs;
   final void Function()? _onChanged;
-
   // Internal blocklist of public keys (hex format) - kept empty for now
   static const Set<String> _internalBlocklist = {
     // Add blocked public keys here in hex format if needed
@@ -238,6 +238,7 @@ class ContentBlocklistService {
 
       if (event != null) {
         final sentEvent = await nostrClient.publishEvent(event);
+
         if (sentEvent != null) {
           Log.info(
             'Published block list to Nostr with ${_runtimeBlocklist.length} entries',
@@ -316,8 +317,8 @@ class ContentBlocklistService {
     if (!_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.add(pubkey);
       await _saveBlockedUsers();
-      _publishBlockListToNostr();
       _notifyChanged();
+      await _publishBlockListToNostr();
 
       Log.debug(
         'Added user to blocklist: $pubkey',
@@ -343,8 +344,8 @@ class ContentBlocklistService {
     if (_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.remove(pubkey);
       await _saveBlockedUsers();
-      _publishBlockListToNostr();
       _notifyChanged();
+      await _publishBlockListToNostr();
 
       Log.info(
         'Removed user from blocklist: $pubkey',
@@ -425,6 +426,12 @@ class ContentBlocklistService {
     NostrClient nostrService,
     String ourPubkey,
   ) async {
+    // If the NostrClient changed (e.g., account switch), the old subscription
+    // was on a disposed client. Reset so we create a fresh subscription.
+    if (_mutualMuteSyncStarted && _nostrClient != nostrService) {
+      _mutualMuteSyncStarted = false;
+    }
+
     if (_mutualMuteSyncStarted) {
       Log.debug(
         'Mutual mute sync already started, skipping',
@@ -434,7 +441,6 @@ class ContentBlocklistService {
       return;
     }
 
-    _mutualMuteSyncStarted = true;
     _ourPubkey = ourPubkey;
 
     // Store references for Nostr publishing
@@ -453,6 +459,7 @@ class ContentBlocklistService {
 
       final subscription = nostrService.subscribe([filter]);
 
+      _mutualMuteSyncStarted = true;
       _mutualMuteSubscriptionId =
           'mutual-mute-${DateTime.now().millisecondsSinceEpoch}';
 
@@ -473,15 +480,31 @@ class ContentBlocklistService {
     }
   }
 
-  /// Start background sync of block lists from other users (kind 30000, d=block)
+  /// Start background sync of block lists (kind 30000, d=block).
   ///
-  /// Subscribes to kind 30000 events WHERE our pubkey appears in 'p' tags
-  /// AND the 'd' tag is 'block'. This detects when other users block us.
+  /// Subscribes to two filter sets in a single subscription:
+  /// 1. Kind 30000 events where our pubkey is in 'p' tags — detects when
+  ///    other users block us.
+  /// 2. All of our own kind 30000 events — restores our block list from
+  ///    the relay so blocks survive app reinstalls (SharedPreferences is
+  ///    wiped on uninstall, but the relay keeps the event). The `d=block`
+  ///    check is done in [_handleBlockListEvent] instead of in the filter
+  ///    because not all relays support `#d` tag filtering.
+  ///
+  /// Using `subscribe` (persistent stream) instead of `queryEvents`
+  /// (one-shot) ensures events arrive even if relays connect after this
+  /// method is called.
   Future<void> syncBlockListsInBackground(
     NostrClient nostrService,
     AuthService authService,
     String ourPubkey,
   ) async {
+    // If the NostrClient changed (e.g., account switch), the old subscription
+    // was on a disposed client. Reset so we create a fresh subscription.
+    if (_blockListSyncStarted && _nostrClient != nostrService) {
+      _blockListSyncStarted = false;
+    }
+
     if (_blockListSyncStarted) {
       Log.debug(
         'Block list sync already started, skipping',
@@ -491,7 +514,6 @@ class ContentBlocklistService {
       return;
     }
 
-    _blockListSyncStarted = true;
     _ourPubkey = ourPubkey;
     _authService = authService;
     _nostrClient = nostrService;
@@ -503,16 +525,28 @@ class ContentBlocklistService {
     );
 
     try {
-      // Subscribe to kind 30000 events WHERE our pubkey is in 'p' tags
-      final filter = Filter(kinds: const [30000]);
-      filter.p = [ourPubkey];
+      // Filter 1: Others' block lists that include our pubkey
+      final othersFilter = Filter(kinds: const [30000]);
+      othersFilter.p = [ourPubkey];
 
-      final subscription = nostrService.subscribe([filter]);
+      // Filter 2: Our own block list (for relay-based restoration)
+      // Omit the d-tag constraint here — not all relays support #d
+      // filtering, and _handleBlockListEvent already checks for d=block.
+      final ownFilter = Filter(
+        authors: [ourPubkey],
+        kinds: const [30000],
+      );
+
+      final subscription = nostrService.subscribe(
+        [othersFilter, ownFilter],
+      );
 
       subscription.listen(_handleBlockListEvent);
 
+      _blockListSyncStarted = true;
+
       Log.info(
-        'Block list subscription created',
+        'Block list subscription created (includes own block list restore)',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
@@ -573,10 +607,10 @@ class ContentBlocklistService {
     }
   }
 
-  /// Handle incoming kind 30000 block list events (d=block)
+  /// Handle incoming kind 30000 block list events (d=block).
   ///
-  /// Checks if the event has d=block tag and our pubkey in 'p' tags,
-  /// then adds/removes the blocker from [_blockedByOthers].
+  /// Routes to the appropriate handler based on whether the event is
+  /// authored by us (relay restoration) or by another user (blocked-by).
   void _handleBlockListEvent(Event event) {
     if (event.kind != 30000) return;
 
@@ -590,6 +624,49 @@ class ContentBlocklistService {
     );
     if (!hasBlockDTag) return;
 
+    if (event.pubkey == _ourPubkey) {
+      _handleOwnBlockListEvent(event);
+    } else {
+      _handleOthersBlockListEvent(event);
+    }
+  }
+
+  /// Restore our block list from a relay-stored event we authored.
+  ///
+  /// Extracts blocked pubkeys from 'p' tags and merges them into the
+  /// runtime blocklist. This ensures blocks survive app reinstalls where
+  /// SharedPreferences data is lost but the relay still holds our event.
+  void _handleOwnBlockListEvent(Event event) {
+    final relayPubkeys = <String>{};
+    for (final tag in event.tags) {
+      if (tag.isNotEmpty &&
+          tag[0] == 'p' &&
+          tag.length >= 2 &&
+          tag[1] != _ourPubkey) {
+        relayPubkeys.add(tag[1]);
+      }
+    }
+
+    final added = relayPubkeys.difference(_runtimeBlocklist);
+    if (added.isEmpty) return;
+
+    _runtimeBlocklist.addAll(added);
+    _saveBlockedUsers();
+    _notifyChanged();
+
+    Log.info(
+      'Restored ${added.length} blocks from relay '
+      '(total: ${_runtimeBlocklist.length})',
+      name: 'ContentBlocklistService',
+      category: LogCategory.system,
+    );
+  }
+
+  /// Handle another user's block list event.
+  ///
+  /// Checks if our pubkey is in their 'p' tags, then adds/removes
+  /// the blocker from [_blockedByOthers].
+  void _handleOthersBlockListEvent(Event event) {
     final blockerPubkey = event.pubkey;
 
     // Check if our pubkey is in this user's block list

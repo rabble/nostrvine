@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -19,6 +20,8 @@ class MockAuthService extends Mock implements AuthService {}
 class MockNostrService extends Mock implements NostrClient {}
 
 class MockUploadManager extends Mock implements UploadManager {}
+
+class _FakeFilter extends Fake implements Filter {}
 
 void main() {
   setUpAll(() {
@@ -35,6 +38,8 @@ void main() {
       }),
     );
     registerFallbackValue(UploadStatus.pending);
+    registerFallbackValue(_FakeFilter());
+    registerFallbackValue(<Filter>[]);
   });
 
   group('VideoEventPublisher - Native ProofMode Integration', () {
@@ -124,6 +129,18 @@ void main() {
       ) async {
         return invocation.positionalArguments[0] as Event;
       });
+      when(
+        () => mockNostrService.queryEvents(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          tempRelays: any(named: 'tempRelays'),
+          relayTypes: any(named: 'relayTypes'),
+          sendAfterAuth: any(named: 'sendAfterAuth'),
+          useCache: any(named: 'useCache'),
+        ),
+      ).thenAnswer(
+        (_) async => capturedEvent == null ? <Event>[] : [capturedEvent!],
+      );
 
       await publisher.publishDirectUpload(upload);
       final publishedEvent = capturedEvent;
