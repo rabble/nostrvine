@@ -1,0 +1,26 @@
+# ABOUTME: CI workflow for the divine_video_player package.
+# ABOUTME: Runs tests, formatting, and analysis only when divine_video_player files change.
+
+name: Divine Video Player CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/divine_video_player/**"
+      - ".github/workflows/divine_video_player.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/divine_video_player/**"
+      - ".github/workflows/divine_video_player.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/divine_video_player"

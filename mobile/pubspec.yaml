@@ -29,6 +29,7 @@ workspace:
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
+  - packages/divine_video_player
   - packages/funnelcake_api_client
   - packages/hashtag_repository
   - packages/image_metadata_stripper
@@ -92,6 +93,8 @@ dependencies:
       ref: 0.0.3
   divine_camera:
     path: packages/divine_camera
+  divine_video_player:
+    path: packages/divine_video_player
   camera_macos_plus: ^0.0.4
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
