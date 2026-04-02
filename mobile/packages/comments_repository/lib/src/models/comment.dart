@@ -78,7 +78,7 @@ class Comment extends Equatable {
   /// Get relative time string (e.g., "2h ago", "1d ago", "3mo ago", "2y ago").
   String get relativeTime {
     final now = DateTime.now();
-    final difference = now.difference(createdAt);
+    final difference = now.difference(createdAt.toLocal());
 
     if (difference.inMinutes < 1) {
       return 'now';

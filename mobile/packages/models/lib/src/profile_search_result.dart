@@ -50,7 +50,10 @@ class ProfileSearchResult {
     DateTime? createdAt;
     final rawCreatedAt = json['created_at'];
     if (rawCreatedAt is int) {
-      createdAt = DateTime.fromMillisecondsSinceEpoch(rawCreatedAt * 1000);
+      createdAt = DateTime.fromMillisecondsSinceEpoch(
+        rawCreatedAt * 1000,
+        isUtc: true,
+      );
     } else if (rawCreatedAt is String) {
       createdAt = DateTime.tryParse(rawCreatedAt);
     }

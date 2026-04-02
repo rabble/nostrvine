@@ -32,7 +32,7 @@ class NotificationEventParser {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName liked your video',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent?.videoUrl,
       targetVideoThumbnail: videoEvent?.thumbnailUrl,
@@ -60,7 +60,7 @@ class NotificationEventParser {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName commented on your video',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent?.videoUrl,
       targetVideoThumbnail: videoEvent?.thumbnailUrl,
@@ -83,7 +83,7 @@ class NotificationEventParser {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName started following you',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
     );
   }
 
@@ -102,7 +102,7 @@ class NotificationEventParser {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName mentioned you',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
       metadata: {'text': event.content},
     );
   }
@@ -128,7 +128,7 @@ class NotificationEventParser {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName reposted your video',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent?.videoUrl,
       targetVideoThumbnail: videoEvent?.thumbnailUrl,

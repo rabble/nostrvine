@@ -81,7 +81,7 @@ class CurationSet {
       description: description,
       imageUrl: imageUrl,
       videoIds: videoIds,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      createdAt: event.createdAtDateTime,
     );
   }
   final String id; // "d" tag identifier

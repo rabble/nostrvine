@@ -814,6 +814,7 @@ class CommentsRepository {
         authorPubkey: restComment.pubkey,
         createdAt: DateTime.fromMillisecondsSinceEpoch(
           restComment.createdAt * 1000,
+          isUtc: true,
         ),
         rootEventId: parsedRootEventId ?? rootEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',

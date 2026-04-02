@@ -609,7 +609,10 @@ class VideoEvent {
       pubkey: event.pubkey,
       createdAt: effectiveTimestamp,
       content: event.content,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        effectiveTimestamp * 1000,
+        isUtc: true,
+      ),
       title: title,
       videoUrl: videoUrl,
       thumbnailUrl: thumbnailUrl,
@@ -665,6 +668,10 @@ class VideoEvent {
   final List<String> categories;
 
   final DateTime timestamp;
+
+  /// Local [DateTime] for display purposes, converted from UTC [timestamp].
+  DateTime get localTimestamp => timestamp.toLocal();
+
   final String? publishedAt;
   final Map<String, String> rawTags;
 
