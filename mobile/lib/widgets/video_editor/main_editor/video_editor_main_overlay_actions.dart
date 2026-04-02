@@ -9,7 +9,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -18,7 +17,6 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_layer_reo
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Top action bar for the video editor.
 ///
@@ -187,7 +185,7 @@ class _PlayStateIndicatorState extends State<_PlayStateIndicator> {
   static const _hideDelay = Duration(seconds: 1);
 
   Timer? _hideTimer;
-  final _iconVisible = ValueNotifier<bool>(true);
+  final _iconVisible = ValueNotifier<bool>(false);
   bool _didSyncInitialState = false;
 
   @override
@@ -199,6 +197,14 @@ class _PlayStateIndicatorState extends State<_PlayStateIndicator> {
 
   void _onPlayingChanged({required bool isPlaying}) {
     _hideTimer?.cancel();
+
+    // Suppress the indicator on the very first play transition,
+    // which is the auto-play when the editor opens.
+    if (!_didSyncInitialState) {
+      _didSyncInitialState = true;
+      if (isPlaying) return;
+    }
+
     if (isPlaying) {
       _iconVisible.value = true;
       _hideTimer = Timer(_hideDelay, () {
@@ -211,71 +217,49 @@ class _PlayStateIndicatorState extends State<_PlayStateIndicator> {
 
   @override
   Widget build(BuildContext context) {
-    final (:isPlaying, :isPlayerReady) = context.select(
-      (VideoEditorMainBloc b) =>
-          (isPlaying: b.state.isPlaying, isPlayerReady: b.state.isPlayerReady),
-    );
-
     return IgnorePointer(
-      child: BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+      child: BlocConsumer<VideoEditorMainBloc, VideoEditorMainState>(
         listenWhen: (prev, curr) => prev.isPlaying != curr.isPlaying,
         listener: (_, state) => _onPlayingChanged(isPlaying: state.isPlaying),
-        child: Builder(
-          builder: (context) {
-            // Sync once: if already playing at first build, hide immediately.
-            if (!_didSyncInitialState && isPlayerReady) {
-              _didSyncInitialState = true;
-              if (isPlaying) _iconVisible.value = false;
-            }
+        buildWhen: (prev, curr) =>
+            prev.isPlaying != curr.isPlaying ||
+            prev.isPlayerReady != curr.isPlayerReady,
+        builder: (context, state) {
+          final isPlaying = state.isPlaying;
+          final isPlayerReady = state.isPlayerReady;
 
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              layoutBuilder: (currentChild, previousChildren) => Stack(
-                alignment: .center,
-                fit: .expand,
-                children: <Widget>[...previousChildren, ?currentChild],
-              ),
-              child: isPlayerReady
-                  ? Center(
-                      child: ValueListenableBuilder<bool>(
-                        valueListenable: _iconVisible,
-                        builder: (_, visible, child) => AnimatedOpacity(
-                          opacity: visible ? 1 : 0,
-                          duration: const Duration(milliseconds: 200),
-                          child: child,
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: VineTheme.scrim65,
-                            borderRadius: .circular(24),
-                          ),
-                          padding: const .all(16),
-                          child: DivineIcon(
-                            icon: isPlaying ? .pauseFill : .playFill,
-                            size: _iconSize,
-                          ),
-                        ),
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              alignment: .center,
+              fit: .expand,
+              children: <Widget>[...previousChildren, ?currentChild],
+            ),
+            child: isPlayerReady
+                ? Center(
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _iconVisible,
+                      builder: (_, visible, child) => AnimatedOpacity(
+                        opacity: visible ? 1 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: child,
                       ),
-                    )
-                  : ColoredBox(
-                      color: VineTheme.scrim65,
-                      child: Center(
-                        child: RepaintBoundary(
-                          child: StreamBuilder<ProgressModel>(
-                            stream: ProVideoEditor.instance.progressStreamById(
-                              VideoEditorConstants.renderMergeTaskId,
-                            ),
-                            builder: (context, snapshot) {
-                              final progress = snapshot.data?.progress ?? 0;
-                              return PartialCircleSpinner(progress: progress);
-                            },
-                          ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: VineTheme.scrim65,
+                          borderRadius: .circular(24),
+                        ),
+                        padding: const .all(16),
+                        child: DivineIcon(
+                          icon: isPlaying ? .pauseFill : .playFill,
+                          size: _iconSize,
                         ),
                       ),
                     ),
-            );
-          },
-        ),
+                  )
+                : const SizedBox.shrink(),
+          );
+        },
       ),
     );
   }

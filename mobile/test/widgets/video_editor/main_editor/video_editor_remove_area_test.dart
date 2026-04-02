@@ -44,7 +44,6 @@ void main() {
               removeAreaKey: GlobalKey(),
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: ValueNotifier(const Size(400, 600)),
-              videoOutputPathNotifier: ValueNotifier('temp/video.mp4'),
               fromLibrary: false,
               onOpenClipsEditor: () {},
               onAddStickers: () {},
