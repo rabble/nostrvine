@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
@@ -414,20 +415,27 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // Wrap content with surfaceBackground to match app bar
     content = ColoredBox(color: VineTheme.surfaceBackground, child: content);
 
-    // Wrap with OthersFollowersBloc for other users' profiles
-    // This allows the follow button to update the followers count optimistically
-    if (!widget.isOwnProfile) {
-      return BlocProvider<OthersFollowersBloc>(
-        create: (_) => OthersFollowersBloc(
+    // Pre-fetch follower lists so the followers/following screens load
+    // instantly when tapped. The BLoCs warm the relay connections and
+    // cache the pubkey lists in memory.
+    if (widget.isOwnProfile) {
+      return BlocProvider<MyFollowersBloc>(
+        create: (_) => MyFollowersBloc(
           followRepository: followRepository,
           contentBlocklistService: contentBlocklistService,
-          currentUserPubkey: currentUserPubkey,
-        )..add(OthersFollowersListLoadRequested(widget.userIdHex)),
+        )..add(const MyFollowersListLoadRequested()),
         child: content,
       );
     }
 
-    return content;
+    return BlocProvider<OthersFollowersBloc>(
+      create: (_) => OthersFollowersBloc(
+        followRepository: followRepository,
+        contentBlocklistService: contentBlocklistService,
+        currentUserPubkey: currentUserPubkey,
+      )..add(OthersFollowersListLoadRequested(widget.userIdHex)),
+      child: content,
+    );
   }
 }
 
