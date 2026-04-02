@@ -162,6 +162,7 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, StreamSubscription<bool>> _bufferSubscriptions = {};
   final Map<int, StreamSubscription<bool>> _playingSubscriptions = {};
   final Map<int, StreamSubscription<String>> _errorSubscriptions = {};
+  final Map<int, String> _errorMessages = {};
   final Set<int> _loadingIndices = {};
   final Map<int, Timer> _positionTimers = {};
   final Map<int, Timer> _loadWatchdogTimers = {};
@@ -268,6 +269,7 @@ class VideoFeedController extends ChangeNotifier {
         videoController: isAlive ? pooledPlayer.videoController : null,
         player: isAlive ? pooledPlayer.player : null,
         isSlowLoad: _slowLoadIndices.contains(index),
+        errorMessage: _errorMessages[index],
       );
     }
   }
@@ -426,9 +428,12 @@ class VideoFeedController extends ChangeNotifier {
     }
   }
 
-  void _markLoadError(int index) {
+  void _markLoadError(int index, [String? errorMessage]) {
     if (_isDisposed) return;
     _loadStates[index] = LoadState.error;
+    if (errorMessage != null) {
+      _errorMessages[index] = errorMessage;
+    }
     _notifyIndex(index);
   }
 
@@ -489,7 +494,7 @@ class VideoFeedController extends ChangeNotifier {
         '[POOLED] stuck_retry_failed ${_videoDebugDetails(index)} '
         'error=$error\n$stack',
       );
-      _markLoadError(index);
+      _markLoadError(index, error.toString());
     }
   }
 
@@ -881,7 +886,7 @@ class VideoFeedController extends ChangeNotifier {
         'error=$e\n$stack',
       );
       _stopLoadWatchdog(index);
-      _markLoadError(index);
+      _markLoadError(index, e.toString());
     } finally {
       _loadingIndices.remove(index);
     }
@@ -1036,6 +1041,9 @@ class VideoFeedController extends ChangeNotifier {
         'source=${_openedSources[index]} '
         'loadState=${_loadStates[index]}',
       );
+      // Store the latest error message so the UI can differentiate error
+      // types (e.g. 401/403/404 HTTP status codes from blossom servers).
+      _errorMessages[index] = error;
       // Only act on errors during initial load. Once the video is playing
       // successfully (LoadState.ready), mpv may emit non-critical errors
       // (e.g. on loop seeks, transient network hiccups) that should not
@@ -1241,8 +1249,7 @@ class VideoFeedController extends ChangeNotifier {
           '${_videoDebugDetails(index)}',
         );
         _staleRecoveryAttempts = 0;
-        _loadStates[index] = LoadState.error;
-        _notifyIndex(index);
+        _markLoadError(index, 'stale_playback');
         return;
       }
 
@@ -1338,6 +1345,7 @@ class VideoFeedController extends ChangeNotifier {
     _slowLoadIndices.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
+    _errorMessages.remove(index);
     _loadingIndices.remove(index);
     _notifyIndex(index);
   }

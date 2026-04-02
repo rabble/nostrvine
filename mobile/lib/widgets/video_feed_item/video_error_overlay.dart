@@ -1,5 +1,5 @@
 // ABOUTME: Error overlay widget for video playback failures
-// ABOUTME: Handles 401 age-restricted, 403 moderation-restricted, and general playback errors
+// ABOUTME: Handles 401 age-restricted content and general playback errors with retry functionality
 
 import 'dart:async' show unawaited;
 
@@ -12,16 +12,13 @@ import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 /// Error overlay shown when video playback fails
 ///
-/// Displays different UI based on error type:
+/// Displays different UI for 401 errors (age-restricted) vs other errors:
 /// - 401: Lock icon + "Age-restricted content" + "Verify Age" button
-/// - 403: Shield icon + "Content restricted" (no retry — intentionally blocked)
-/// - 404 with moderation: Shield icon + "Content unavailable"
 /// - Other: Error icon + error message + "Retry" button
 class VideoErrorOverlay extends ConsumerWidget {
   const VideoErrorOverlay({
@@ -42,21 +39,6 @@ class VideoErrorOverlay extends ConsumerWidget {
     final lowerError = errorDescription.toLowerCase();
     return lowerError.contains('401') || lowerError.contains('unauthorized');
   }
-
-  /// Check for 403 Forbidden — moderation-restricted content
-  bool get _is403Error {
-    final lowerError = errorDescription.toLowerCase();
-    return lowerError.contains('403') || lowerError.contains('forbidden');
-  }
-
-  /// Check for 404 Not Found
-  bool get _is404Error {
-    final lowerError = errorDescription.toLowerCase();
-    return lowerError.contains('404') || lowerError.contains('not found');
-  }
-
-  /// Whether moderation status should be checked for this error
-  bool get _shouldCheckModeration => _is403Error || _is404Error;
 
   /// Translate error messages to user-friendly text
   String get _errorMessage {
@@ -84,59 +66,6 @@ class VideoErrorOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Resolve sha256 for moderation lookup on 403/404 errors
-    final sha256 = _shouldCheckModeration
-        ? VideoModerationStatusService.resolveSha256(
-            explicitSha256: video.sha256,
-            videoUrl: video.videoUrl,
-          )
-        : null;
-
-    final moderationAsync = sha256 != null
-        ? ref.watch(videoModerationStatusProvider(sha256))
-        : null;
-
-    final moderationStatus = moderationAsync?.whenOrNull(
-      data: (status) => status,
-    );
-    final isModerationRestricted =
-        _is403Error ||
-        (moderationStatus != null &&
-            moderationStatus.isUnavailableDueToModeration);
-
-    // Clear stale broken marking when moderation confirms restricted.
-    // Uses ref.listen instead of a direct call so the side-effect fires only
-    // on provider state changes, not on every widget rebuild.
-    if (sha256 != null && !_is401Error) {
-      ref.listen<AsyncValue<VideoModerationStatus?>>(
-        videoModerationStatusProvider(sha256),
-        (_, next) {
-          final status = next.whenOrNull(data: (s) => s);
-          final isRestricted =
-              _is403Error ||
-              (status != null && status.isUnavailableDueToModeration);
-          if (isRestricted) {
-            ref.read(brokenVideoTrackerProvider).whenData((tracker) {
-              tracker.unmarkVideoBroken(video.id);
-            });
-          }
-        },
-      );
-    }
-
-    // Determine icon, message, and action based on error category
-    final icon = _is401Error
-        ? Icons.lock_outline
-        : isModerationRestricted
-        ? Icons.shield_outlined
-        : Icons.error_outline;
-
-    final message = _is401Error
-        ? 'Age-restricted content'
-        : isModerationRestricted
-        ? 'Content restricted'
-        : _errorMessage;
-
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -150,10 +79,14 @@ class VideoErrorOverlay extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, color: VineTheme.whiteText, size: 48),
+                  Icon(
+                    _is401Error ? Icons.lock_outline : Icons.error_outline,
+                    color: VineTheme.whiteText,
+                    size: 48,
+                  ),
                   const SizedBox(height: 16),
                   Text(
-                    message,
+                    _is401Error ? 'Age-restricted content' : _errorMessage,
                     style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 14,
@@ -161,157 +94,144 @@ class VideoErrorOverlay extends ConsumerWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-                  // 403 / moderation-restricted: no action button — content
-                  // is intentionally blocked and retry won't help.
-                  if (_is401Error)
-                    _AgeVerifyButton(
-                      video: video,
-                      controllerParams: controllerParams,
-                    )
-                  else if (!isModerationRestricted)
-                    ElevatedButton(
-                      onPressed: () {
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (_is401Error) {
+                        Log.info(
+                          '🔐 [AGE-GATE] User tapped Verify Age button for video ${video.id}',
+                          name: 'VideoErrorOverlay',
+                          category: LogCategory.video,
+                        );
+
+                        // Show age verification dialog
+                        final ageVerificationService = ref.read(
+                          ageVerificationServiceProvider,
+                        );
+                        final verified = await ageVerificationService
+                            .verifyAdultContentAccess(context);
+
+                        Log.info(
+                          '🔐 [AGE-GATE] Dialog result: verified=$verified, isAdultContentVerified=${ageVerificationService.isAdultContentVerified}',
+                          name: 'VideoErrorOverlay',
+                          category: LogCategory.video,
+                        );
+
+                        if (verified && context.mounted) {
+                          // Pre-cache auth headers before retrying
+                          // This ensures the retry will have headers available immediately
+                          Log.info(
+                            '🔐 [AGE-GATE] Starting _precacheAuthHeaders for video ${video.id}',
+                            name: 'VideoErrorOverlay',
+                            category: LogCategory.video,
+                          );
+                          await _precacheAuthHeaders(ref, controllerParams);
+
+                          // Check if headers were actually cached
+                          final cachedHeaders = ref.read(
+                            authHeadersCacheProvider,
+                          );
+                          final hasHeaders = cachedHeaders.containsKey(
+                            video.id,
+                          );
+                          Log.info(
+                            '🔐 [AGE-GATE] After precache: hasHeaders=$hasHeaders, cacheSize=${cachedHeaders.length}',
+                            name: 'VideoErrorOverlay',
+                            category: LogCategory.video,
+                          );
+
+                          // CRITICAL: Only retry if this video is still active
+                          // If user swiped away during verification, don't invalidate -
+                          // the new active video's controller is already correct
+                          // NOTE: activeVideoIdProvider returns stableId (vineId ?? id),
+                          // but we check both to be defensive against future changes.
+                          final activeVideoId = ref.read(activeVideoIdProvider);
+                          final isThisVideoActive =
+                              activeVideoId == video.stableId ||
+                              activeVideoId == video.id;
+                          Log.info(
+                            '🔐 [AGE-GATE] Checking active video: activeVideoId=$activeVideoId, stableId=${video.stableId}, id=${video.id}, match=$isThisVideoActive',
+                            name: 'VideoErrorOverlay',
+                            category: LogCategory.video,
+                          );
+
+                          if (isThisVideoActive) {
+                            // Video is still active - safe to invalidate and retry
+                            if (context.mounted) {
+                              Log.info(
+                                '🔐 [AGE-GATE] Marking video for retry and invalidating provider: ${video.id}',
+                                name: 'VideoErrorOverlay',
+                                category: LogCategory.video,
+                              );
+
+                              if (!kIsWeb) {
+                                unawaited(
+                                  ref
+                                      .read(mediaCacheProvider)
+                                      .removeCachedFile(
+                                        controllerParams.videoId,
+                                      )
+                                      .catchError((e) {
+                                        Log.debug(
+                                          '🔐 [AGE-GATE] Cache clear failed (non-fatal): $e',
+                                          name: 'VideoErrorOverlay',
+                                          category: LogCategory.video,
+                                        );
+                                      }),
+                                );
+                              }
+
+                              ref
+                                  .read(ageVerificationRetryProvider.notifier)
+                                  .update((state) {
+                                    return {...state, video.id: true};
+                                  });
+
+                              ref.invalidate(
+                                individualVideoControllerProvider(
+                                  controllerParams,
+                                ),
+                              );
+
+                              _scheduleRetryAutoPlay(
+                                ref,
+                                video,
+                                controllerParams,
+                              );
+                            }
+                          } else {
+                            // User swiped to different video during verification
+                            // Auth headers are cached, so when user swipes back, it will work
+                            Log.debug(
+                              'Age verification completed but video no longer active (active=$activeVideoId, stableId=${video.stableId}, id=${video.id})',
+                              name: 'VideoErrorOverlay',
+                              category: LogCategory.video,
+                            );
+                          }
+                        } else {
+                          Log.warning(
+                            '🔐 [AGE-GATE] Verification failed or context not mounted: verified=$verified, mounted=${context.mounted}',
+                            name: 'VideoErrorOverlay',
+                            category: LogCategory.video,
+                          );
+                        }
+                      } else {
+                        // Regular retry for other errors
                         ref.invalidate(
                           individualVideoControllerProvider(controllerParams),
                         );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: VineTheme.whiteText,
-                        foregroundColor: VineTheme.backgroundColor,
-                      ),
-                      child: const Text('Retry'),
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: VineTheme.whiteText,
+                      foregroundColor: VineTheme.backgroundColor,
                     ),
+                    child: Text(_is401Error ? 'Verify Age' : 'Retry'),
+                  ),
                 ],
               ),
             ),
           ),
       ],
-    );
-  }
-}
-
-/// Button that triggers the age-verification dialog and retries playback.
-///
-/// Extracted from [VideoErrorOverlay] to keep the build method readable and
-/// to give the button its own BuildContext for the mounted check.
-class _AgeVerifyButton extends ConsumerWidget {
-  const _AgeVerifyButton({
-    required this.video,
-    required this.controllerParams,
-  });
-
-  final VideoEvent video;
-  final VideoControllerParams controllerParams;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ElevatedButton(
-      onPressed: () async {
-        Log.info(
-          '🔐 [AGE-GATE] User tapped Verify Age button for video ${video.id}',
-          name: 'VideoErrorOverlay',
-          category: LogCategory.video,
-        );
-
-        final ageVerificationService = ref.read(
-          ageVerificationServiceProvider,
-        );
-        final verified = await ageVerificationService.verifyAdultContentAccess(
-          context,
-        );
-
-        Log.info(
-          '🔐 [AGE-GATE] Dialog result: verified=$verified, '
-          'isAdultContentVerified=${ageVerificationService.isAdultContentVerified}',
-          name: 'VideoErrorOverlay',
-          category: LogCategory.video,
-        );
-
-        if (verified && context.mounted) {
-          Log.info(
-            '🔐 [AGE-GATE] Starting _precacheAuthHeaders for video ${video.id}',
-            name: 'VideoErrorOverlay',
-            category: LogCategory.video,
-          );
-          await _precacheAuthHeaders(ref, controllerParams);
-
-          final cachedHeaders = ref.read(authHeadersCacheProvider);
-          final hasHeaders = cachedHeaders.containsKey(video.id);
-          Log.info(
-            '🔐 [AGE-GATE] After precache: hasHeaders=$hasHeaders, '
-            'cacheSize=${cachedHeaders.length}',
-            name: 'VideoErrorOverlay',
-            category: LogCategory.video,
-          );
-
-          final activeVideoId = ref.read(activeVideoIdProvider);
-          final isThisVideoActive =
-              activeVideoId == video.stableId || activeVideoId == video.id;
-          Log.info(
-            '🔐 [AGE-GATE] Checking active video: '
-            'activeVideoId=$activeVideoId, stableId=${video.stableId}, '
-            'id=${video.id}, match=$isThisVideoActive',
-            name: 'VideoErrorOverlay',
-            category: LogCategory.video,
-          );
-
-          if (isThisVideoActive) {
-            if (context.mounted) {
-              Log.info(
-                '🔐 [AGE-GATE] Marking video for retry and invalidating '
-                'provider: ${video.id}',
-                name: 'VideoErrorOverlay',
-                category: LogCategory.video,
-              );
-
-              if (!kIsWeb) {
-                unawaited(
-                  ref
-                      .read(mediaCacheProvider)
-                      .removeCachedFile(controllerParams.videoId)
-                      .catchError((e) {
-                        Log.debug(
-                          '🔐 [AGE-GATE] Cache clear failed (non-fatal): $e',
-                          name: 'VideoErrorOverlay',
-                          category: LogCategory.video,
-                        );
-                      }),
-                );
-              }
-
-              ref.read(ageVerificationRetryProvider.notifier).update((state) {
-                return {...state, video.id: true};
-              });
-
-              ref.invalidate(
-                individualVideoControllerProvider(controllerParams),
-              );
-
-              _scheduleRetryAutoPlay(ref, video, controllerParams);
-            }
-          } else {
-            Log.debug(
-              'Age verification completed but video no longer active '
-              '(active=$activeVideoId, stableId=${video.stableId}, '
-              'id=${video.id})',
-              name: 'VideoErrorOverlay',
-              category: LogCategory.video,
-            );
-          }
-        } else {
-          Log.warning(
-            '🔐 [AGE-GATE] Verification failed or context not mounted: '
-            'verified=$verified, mounted=${context.mounted}',
-            name: 'VideoErrorOverlay',
-            category: LogCategory.video,
-          );
-        }
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: VineTheme.whiteText,
-        foregroundColor: VineTheme.backgroundColor,
-      ),
-      child: const Text('Verify Age'),
     );
   }
 }

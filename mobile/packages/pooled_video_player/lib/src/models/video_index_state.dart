@@ -16,6 +16,7 @@ class VideoIndexState extends Equatable {
     this.videoController,
     this.player,
     this.isSlowLoad = false,
+    this.errorMessage,
   });
 
   /// The loading state of the video.
@@ -34,6 +35,13 @@ class VideoIndexState extends Equatable {
   /// or skip action for externally hosted videos.
   final bool isSlowLoad;
 
+  /// The error message when [loadState] is [LoadState.error], or null.
+  ///
+  /// Contains the raw error string from media_kit (e.g. HTTP status codes
+  /// like "403", "forbidden") so the consuming UI can differentiate error
+  /// types (moderation, age-gate, missing content).
+  final String? errorMessage;
+
   /// Whether the video is ready for playback.
   bool get isReady => loadState == LoadState.ready;
 
@@ -44,5 +52,11 @@ class VideoIndexState extends Equatable {
   bool get isLoading => loadState == LoadState.loading;
 
   @override
-  List<Object?> get props => [loadState, videoController, player, isSlowLoad];
+  List<Object?> get props => [
+    loadState,
+    videoController,
+    player,
+    isSlowLoad,
+    errorMessage,
+  ];
 }
