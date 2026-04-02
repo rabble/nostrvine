@@ -10,7 +10,7 @@ void main() {
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
     const testEventId =
         'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2';
-    final testCreatedAt = DateTime(2024);
+    final testCreatedAt = DateTime.utc(2024);
 
     group('constructor', () {
       test('creates profile with required fields', () {

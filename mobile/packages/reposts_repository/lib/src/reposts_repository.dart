@@ -548,6 +548,7 @@ class RepostsRepository {
             originalAuthorPubkey: authorPubkey,
             createdAt: DateTime.fromMillisecondsSinceEpoch(
               event.createdAt * 1000,
+              isUtc: true,
             ),
           );
 
@@ -664,6 +665,7 @@ class RepostsRepository {
               originalAuthorPubkey: authorPubkey,
               createdAt: DateTime.fromMillisecondsSinceEpoch(
                 event.createdAt * 1000,
+                isUtc: true,
               ),
             ),
           );
@@ -776,6 +778,7 @@ class RepostsRepository {
 
     final createdAt = DateTime.fromMillisecondsSinceEpoch(
       event.createdAt * 1000,
+      isUtc: true,
     );
 
     // Deduplicate: only update if newer than existing record

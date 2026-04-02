@@ -249,7 +249,12 @@ void main() {
 
         expect(
           stats.createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(
+              1700000000 * 1000,
+              isUtc: true,
+            ),
+          ),
         );
       });
 

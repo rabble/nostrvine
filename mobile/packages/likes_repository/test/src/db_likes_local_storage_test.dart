@@ -193,7 +193,9 @@ void main() {
         expect(result.reactionEventId, equals(testReactionEventId));
         expect(
           result.createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(1000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(1000 * 1000, isUtc: true),
+          ),
         );
       });
 
@@ -273,13 +275,17 @@ void main() {
         expect(result[0].reactionEventId, equals(testReactionEventId));
         expect(
           result[0].createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(1000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(1000 * 1000, isUtc: true),
+          ),
         );
         expect(result[1].targetEventId, equals(testTargetEventId2));
         expect(result[1].reactionEventId, equals(testReactionEventId2));
         expect(
           result[1].createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(2000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(2000 * 1000, isUtc: true),
+          ),
         );
 
         verify(() => mockDao.getAllReactions(testUserPubkey)).called(1);
@@ -427,6 +433,7 @@ void main() {
         const unixTimestamp = 1705322445; // 2024-01-15 12:00:45 UTC
         final expectedDateTime = DateTime.fromMillisecondsSinceEpoch(
           unixTimestamp * 1000,
+          isUtc: true,
         );
 
         final row = PersonalReactionRow(

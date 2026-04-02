@@ -818,6 +818,7 @@ class LikesRepository {
             reactionEventId: event.id,
             createdAt: DateTime.fromMillisecondsSinceEpoch(
               event.createdAt * 1000,
+              isUtc: true,
             ),
           );
 
