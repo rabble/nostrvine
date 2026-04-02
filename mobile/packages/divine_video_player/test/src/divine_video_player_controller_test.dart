@@ -610,7 +610,7 @@ void main() {
 
         expect(
           globalCalls.first.arguments,
-          containsPair('maxSizeBytes', 500 * 1024 * 1024),
+          containsPair('maxSizeBytes', kDefaultCacheMaxSizeBytes),
         );
       });
 

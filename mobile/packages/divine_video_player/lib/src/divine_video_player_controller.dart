@@ -7,6 +7,9 @@ import 'package:divine_video_player/src/video_player_state.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+/// Default maximum cache size on disk (500 MB).
+const int kDefaultCacheMaxSizeBytes = 500 * 1024 * 1024;
+
 /// Controls a native multi-clip video player that treats multiple clips
 /// as a single continuous timeline.
 ///
@@ -53,20 +56,18 @@ class DivineVideoPlayerController {
   /// On iOS/macOS it configures the shared `URLCache` disk capacity.
   ///
   /// [maxSizeBytes] is the maximum cache size on disk. Defaults to
-  /// 500 MB. Least-recently-used entries are evicted automatically
-  /// when the cache is full.
+  /// [kDefaultCacheMaxSizeBytes] (500 MB). Least-recently-used entries
+  /// are evicted automatically when the cache is full.
   ///
   /// ```dart
   /// void main() async {
   ///   WidgetsFlutterBinding.ensureInitialized();
-  ///   await DivineVideoPlayerController.configureCache(
-  ///     maxSizeBytes: 500 * 1024 * 1024, // 500 MB
-  ///   );
+  ///   await DivineVideoPlayerController.configureCache();
   ///   runApp(MyApp());
   /// }
   /// ```
   static Future<void> configureCache({
-    int maxSizeBytes = 500 * 1024 * 1024,
+    int maxSizeBytes = kDefaultCacheMaxSizeBytes,
   }) {
     return _globalChannel.invokeMethod<void>(
       'configureCache',
