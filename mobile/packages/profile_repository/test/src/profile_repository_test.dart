@@ -465,16 +465,18 @@ void main() {
         expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
       });
 
-      test('skips all fetches for confirmed missing pubkeys', () async {
+      test('re-checks on second fetchFreshProfile even after missing', () async {
         stubAllSourcesMiss();
 
         // First call — hits all sources, marks missing
         await profileRepository.fetchFreshProfile(pubkey: testPubkey);
 
-        // Second call — should not hit any source
+        // Second call — _confirmedMissing is cleared on explicit fetch,
+        // so it re-checks (allows profiles published after the initial
+        // batch fetch to be discovered).
         await profileRepository.fetchFreshProfile(pubkey: testPubkey);
 
-        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(2);
       });
 
       test('deduplicates concurrent calls for the same pubkey', () async {
