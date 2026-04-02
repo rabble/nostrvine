@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
+import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -77,39 +78,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (draftCount > 0) {
       final draftWord = draftCount == 1 ? 'draft' : 'drafts';
-      final proceedWithWarning = await showDialog<bool>(
+      final proceedWithWarning = await VineBottomSheet.show<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: VineTheme.cardBackground,
-          title: const Text(
-            'Unsaved Drafts',
-            style: TextStyle(color: VineTheme.error),
-          ),
-          content: Text(
-            'You have $draftCount unsaved $draftWord. '
-            'Switching accounts will keep your $draftWord, but '
-            'you may want to publish or review '
-            '${draftCount == 1 ? 'it' : 'them'} first.\n\n'
-            'Do you want to switch accounts anyway?',
-            style: const TextStyle(color: VineTheme.lightText),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => context.pop(false),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: VineTheme.lightText),
+        scrollable: false,
+        contentTitle: 'Unsaved Drafts',
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              'You have $draftCount unsaved $draftWord. '
+              'Switching accounts will keep your $draftWord, but '
+              'you may want to publish or review '
+              '${draftCount == 1 ? 'it' : 'them'} first.',
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.onSurfaceVariant,
               ),
             ),
-            TextButton(
-              onPressed: () => context.pop(true),
-              child: const Text(
-                'Switch Anyway',
-                style: TextStyle(color: VineTheme.error),
-              ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Row(
+              spacing: 16,
+              children: [
+                Expanded(
+                  child: DivineButton(
+                    label: 'Cancel',
+                    type: DivineButtonType.secondary,
+                    expanded: true,
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                ),
+                Expanded(
+                  child: DivineButton(
+                    label: 'Switch Anyway',
+                    type: DivineButtonType.error,
+                    expanded: true,
+                    onPressed: () => Navigator.of(context).pop(true),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       );
 
       if (proceedWithWarning != true) return;
@@ -117,44 +127,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (!mounted) return;
 
-    await showDialog<bool>(
+    final authService = ref.read(authServiceProvider);
+    final currentPubkey = authService.currentPublicKeyHex;
+    final accounts = await ref.read(knownAccountsProvider.future);
+
+    if (!mounted) return;
+
+    await VineBottomSheet.show<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          'Switch Account?',
-          style: TextStyle(color: VineTheme.whiteText),
-        ),
-        content: const Text(
-          'You will be taken to the sign in screen where you '
-          'can:\n\n'
-          '\u2022 Continue with your saved keys\n'
-          '\u2022 Import a different account\n'
-          '\u2022 Create a new identity\n\n'
-          'Your current keys will stay saved on this device.',
-          style: TextStyle(color: VineTheme.lightText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.lightText),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              final authService = ref.read(authServiceProvider);
+      children: [
+        ...accounts.map(
+          (account) => _AccountSwitchTile(
+            account: account,
+            isCurrentAccount: account.pubkeyHex == currentPubkey,
+            onTap: () {
+              Navigator.of(context).pop();
+              if (account.pubkeyHex == currentPubkey) return;
+              // Store the target pubkey on the auth service so WelcomeBloc
+              // can pre-select it regardless of router redirect timing.
+              authService.pendingAccountSwitchPubkey = account.pubkeyHex;
               authService.signOut();
-              context.pop(true);
             },
-            child: const Text(
-              'Switch Account',
-              style: TextStyle(color: VineTheme.vineGreen),
-            ),
           ),
-        ],
-      ),
+        ),
+        _AddAccountTile(
+          onTap: () {
+            Navigator.of(context).pop();
+            authService.signOut();
+          },
+        ),
+      ],
     );
   }
 
@@ -173,7 +175,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: VineTheme.navGreen,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -187,9 +189,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsTile(
                     icon: Icons.security,
                     title: 'Secure Your Account',
-                    subtitle:
-                        'Add email & password to recover your '
-                        'account on any device',
                     onTap: () => context.push(SecureAccountScreen.path),
                   ),
                 if (!authService.isAnonymous &&
@@ -204,34 +203,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
 
               _SettingsTile(
-                icon: Icons.analytics_outlined,
                 title: 'Creator Analytics',
-                subtitle: 'View your video performance',
+                divineIcon: DivineIconName.trendUp,
                 onTap: () => context.push(CreatorAnalyticsScreen.path),
               ),
               _SettingsTile(
-                icon: Icons.support_agent,
                 title: 'Support Center',
-                subtitle: 'Report bugs, request features, view FAQ',
+                icon: Icons.support_agent,
                 onTap: () => context.push(SupportCenterScreen.path),
               ),
 
               _SettingsTile(
-                icon: Icons.notifications,
                 title: 'Notifications',
-                subtitle: 'Manage notification preferences',
+                divineIcon: DivineIconName.bellSimple,
                 onTap: () => context.push(NotificationSettingsScreen.path),
               ),
               _SettingsTile(
-                icon: Icons.tune,
                 title: 'Content Preferences',
-                subtitle: 'Language, audio, and content filters',
+                divineIcon: DivineIconName.globe,
                 onTap: () => context.push(ContentPreferencesScreen.path),
               ),
               _SettingsTile(
-                icon: Icons.shield,
                 title: 'Moderation Controls',
-                subtitle: 'Blocked users, muted content, and reports',
+                divineIcon: DivineIconName.faders,
                 onTap: () => context.push(SafetySettingsScreen.path),
               ),
               if (showBluesky)
@@ -242,9 +236,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => context.push(BlueskySettingsScreen.path),
                 ),
               _SettingsTile(
-                icon: Icons.hub,
                 title: 'Nostr Settings',
-                subtitle: 'Relays, media servers, keys, and account',
+                divineIcon: DivineIconName.graph,
                 onTap: () => context.push(NostrSettingsScreen.path),
               ),
               _SettingsTile(
@@ -259,11 +252,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               _SettingsTile(
-                icon: Icons.gavel,
                 title: 'Legal',
-                subtitle:
-                    'Terms of Service, Privacy Policy, Safety Standards, '
-                    'DMCA, Open Source Licenses',
+                icon: Icons.gavel,
                 onTap: () => context.push(LegalScreen.path),
               ),
 
@@ -305,6 +295,12 @@ class _AccountHeader extends ConsumerWidget {
         ? claimedNip05
         : truncatedNpub;
 
+    final accounts =
+        ref.watch(knownAccountsProvider).whenOrNull(data: (v) => v) ?? [];
+    final hasMultipleAccounts = accounts.length > 1;
+    final buttonLabel = hasMultipleAccounts
+        ? 'Switch account'
+        : 'Add another account';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 32),
       child: Column(
@@ -337,22 +333,46 @@ class _AccountHeader extends ConsumerWidget {
               ),
             ],
           ),
-          GestureDetector(
-            onTap: onSwitchAccount,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: VineTheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: VineTheme.outlineMuted,
-                  width: 2,
+          Semantics(
+            button: true,
+            label: buttonLabel,
+            child: InkWell(
+              onTap: onSwitchAccount,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-              ),
-              child: Text(
-                'Switch account',
-                style: VineTheme.titleMediumFont(
-                  color: VineTheme.vineGreen,
+                decoration: BoxDecoration(
+                  color: VineTheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: VineTheme.outlineMuted,
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 8,
+                  children: [
+                    if (!hasMultipleAccounts)
+                      const DivineIcon(
+                        icon: DivineIconName.userPlus,
+                        color: VineTheme.vineGreen,
+                      ),
+                    Text(
+                      buttonLabel,
+                      style: VineTheme.titleMediumFont(
+                        color: VineTheme.vineGreen,
+                      ),
+                    ),
+                    if (hasMultipleAccounts)
+                      const DivineIcon(
+                        icon: DivineIconName.caretDown,
+                        color: VineTheme.vineGreen,
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -374,105 +394,243 @@ class _VersionTile extends ConsumerWidget {
     final environmentService = ref.watch(environmentServiceProvider);
     final newCount = ref.watch(developerModeTapCounterProvider);
 
-    return ListTile(
-      leading: const Icon(Icons.info, color: VineTheme.vineGreen),
-      title: const Text(
-        'Version',
-        style: TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        _appVersion.isEmpty ? 'Loading...' : _appVersion,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
-      ),
-      onTap: () async {
-        if (isDeveloperMode) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Developer mode is already enabled'),
-              backgroundColor: VineTheme.vineGreen,
-            ),
-          );
-          return;
-        }
-
-        ref.read(developerModeTapCounterProvider.notifier).tap();
-
-        Log.debug(
-          'Dev mode count: $newCount',
-          name: 'SettingsScreen',
-          category: LogCategory.ui,
-        );
-
-        if (newCount >= 7) {
-          await environmentService.enableDeveloperMode();
-          ref.read(developerModeTapCounterProvider.notifier).reset();
-
-          if (context.mounted) {
+    return Semantics(
+      button: true,
+      label: 'App version',
+      child: InkWell(
+        onTap: () async {
+          if (isDeveloperMode) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Developer mode enabled!'),
+                content: Text('Developer mode is already enabled'),
                 backgroundColor: VineTheme.vineGreen,
-                duration: Duration(seconds: 2),
               ),
             );
+            return;
           }
-          return;
-        }
 
-        if (newCount >= 4) {
-          final remaining = 7 - newCount;
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$remaining more taps to enable developer mode'),
-                duration: const Duration(milliseconds: 500),
-              ),
-            );
+          ref.read(developerModeTapCounterProvider.notifier).tap();
+
+          Log.debug(
+            'Dev mode count: $newCount',
+            name: 'SettingsScreen',
+            category: LogCategory.ui,
+          );
+
+          if (newCount >= 7) {
+            await environmentService.enableDeveloperMode();
+            ref.read(developerModeTapCounterProvider.notifier).reset();
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Developer mode enabled!'),
+                  backgroundColor: VineTheme.vineGreen,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+            return;
           }
-          return;
-        }
-      },
+
+          if (newCount >= 4) {
+            final remaining = 7 - newCount;
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '$remaining more taps to enable developer mode',
+                  ),
+                  duration: const Duration(milliseconds: 500),
+                ),
+              );
+            }
+            return;
+          }
+        },
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 64),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _appVersion.isEmpty ? 'Version' : 'Version $_appVersion',
+                style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _SettingsTile extends StatelessWidget {
   const _SettingsTile({
-    required this.icon,
     required this.title,
-    required this.subtitle,
     required this.onTap,
+    this.divineIcon,
+    this.icon,
     this.iconColor,
-  });
+    this.subtitle,
+  }) : assert(
+         divineIcon != null || icon != null,
+         '_SettingsTile requires either divineIcon or icon',
+       );
 
-  final IconData icon;
+  final DivineIconName? divineIcon;
+  final IconData? icon;
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final VoidCallback onTap;
   final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
+    final Widget leadingWidget = divineIcon != null
+        ? DivineIcon(
+            icon: divineIcon!,
+            color: iconColor ?? VineTheme.onSurfaceVariant,
+          )
+        : Icon(icon, color: iconColor ?? VineTheme.onSurfaceVariant);
+
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? VineTheme.vineGreen),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+      minTileHeight: 64,
+      leading: leadingWidget,
+      title: Text(title, style: VineTheme.titleMediumFont()),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle!,
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            )
+          : null,
+      trailing: const DivineIcon(
+        icon: DivineIconName.caretRight,
+        color: VineTheme.primary,
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+/// A single account row in the account-switcher bottom sheet.
+class _AccountSwitchTile extends ConsumerWidget {
+  const _AccountSwitchTile({
+    required this.account,
+    required this.isCurrentAccount,
+    required this.onTap,
+  });
+
+  final KnownAccount account;
+  final bool isCurrentAccount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref
+        .watch(userProfileReactiveProvider(account.pubkeyHex))
+        .value;
+    final displayName =
+        profile?.bestDisplayName ??
+        UserProfile.defaultDisplayNameFor(account.pubkeyHex);
+    final identifier =
+        profile?.displayNip05 ?? NostrKeyUtils.truncateNpub(account.pubkeyHex);
+
+    return Semantics(
+      button: true,
+      label: displayName,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 84,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: isCurrentAccount
+                ? VineTheme.vineGreen.withValues(alpha: 0.1)
+                : VineTheme.transparent,
+          ),
+          child: Row(
+            spacing: 12,
+            children: [
+              UserAvatar(
+                imageUrl: profile?.picture,
+                name: displayName,
+                size: 40,
+              ),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: VineTheme.titleMediumFont(
+                        color: VineTheme.onSurface,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      identifier,
+                      style: VineTheme.bodyMediumFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (isCurrentAccount)
+                const DivineIcon(
+                  icon: DivineIconName.check,
+                  color: VineTheme.vineGreen,
+                ),
+            ],
+          ),
         ),
       ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+    );
+  }
+}
+
+/// "Add account" row at the bottom of the account-switcher sheet.
+class _AddAccountTile extends StatelessWidget {
+  const _AddAccountTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Add another account',
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 84,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            spacing: 12,
+            children: [
+              const DivineIcon(
+                icon: DivineIconName.userPlus,
+                color: VineTheme.onSurfaceVariant,
+              ),
+              Expanded(
+                child: Text(
+                  'Add another account',
+                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+                ),
+              ),
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
+                color: VineTheme.primary,
+              ),
+            ],
+          ),
+        ),
       ),
-      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
-      onTap: onTap,
     );
   }
 }

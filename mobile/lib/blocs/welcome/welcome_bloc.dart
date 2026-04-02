@@ -33,6 +33,10 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       transformer: droppable(),
     );
     on<WelcomeLogBackInRequested>(_onLogBackIn, transformer: droppable());
+    on<WelcomeCancelSwitchRequested>(
+      _onCancelSwitch,
+      transformer: droppable(),
+    );
     on<WelcomeAccountSelected>(_onAccountSelected);
     on<WelcomeCreateAccountRequested>(
       _onCreateAccountRequested,
@@ -56,6 +60,10 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       name: 'WelcomeBloc',
       category: LogCategory.auth,
     );
+
+    // Consume any pending account-switch selection set before sign-out.
+    final pendingPubkey = _authService.pendingAccountSwitchPubkey;
+    _authService.pendingAccountSwitchPubkey = null;
 
     // Load known accounts from the registry
     final knownAccounts = await _authService.getKnownAccounts();
@@ -116,7 +124,11 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     );
 
     emit(
-      state.copyWith(status: WelcomeStatus.loaded, previousAccounts: accounts),
+      state.copyWith(
+        status: WelcomeStatus.loaded,
+        previousAccounts: accounts,
+        selectedPubkeyHex: pendingPubkey ?? event.initialSelectedPubkeyHex,
+      ),
     );
   }
 
@@ -201,6 +213,51 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         state.copyWith(
           status: WelcomeStatus.error,
           error: 'Failed to continue: $e',
+          clearSigningIn: true,
+        ),
+      );
+    }
+  }
+
+  /// Cancels an account switch and restores the previous (most-recently-used)
+  /// account — i.e. [WelcomeState.previousAccounts.first], regardless of
+  /// [WelcomeState.selectedPubkeyHex].
+  Future<void> _onCancelSwitch(
+    WelcomeCancelSwitchRequested event,
+    Emitter<WelcomeState> emit,
+  ) async {
+    final previous = state.previousAccounts.firstOrNull;
+    if (previous == null) return;
+
+    Log.info(
+      'WelcomeBloc: cancel switch — restoring previous account '
+      'pubkey=${previous.pubkeyHex}',
+      name: 'WelcomeBloc',
+      category: LogCategory.auth,
+    );
+
+    emit(
+      state.copyWith(
+        status: WelcomeStatus.accepting,
+        signingInPubkeyHex: previous.pubkeyHex,
+        clearError: true,
+      ),
+    );
+
+    try {
+      await _authService.signInForAccount(
+        previous.pubkeyHex,
+        previous.authSource,
+      );
+    } on SessionExpiredException {
+      await _authService.acceptTerms();
+      emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
+      emit(state.copyWith(status: WelcomeStatus.loaded, clearError: true));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: WelcomeStatus.error,
+          error: 'Failed to restore previous account: $e',
           clearSigningIn: true,
         ),
       );

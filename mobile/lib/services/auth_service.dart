@@ -1049,6 +1049,38 @@ class AuthService implements BackgroundAwareService {
     await _clearArchivedSignerInfo(pubkeyHex);
   }
 
+  /// Pubkey to pre-select on the welcome screen after the next sign-out.
+  ///
+  /// Set this before calling [signOut] when the user picks a different account
+  /// from the account-switcher. [WelcomeBloc] reads and clears this on start.
+  String? pendingAccountSwitchPubkey;
+
+  /// Updates [lastUsedAt] for an existing known account without signing in.
+  ///
+  /// Use this before [signOut] when the user explicitly selects a different
+  /// account from the account-switcher, so the welcome screen presents that
+  /// account as the pre-selected returning user.
+  Future<void> touchKnownAccount(String pubkeyHex) async {
+    final accounts = await getKnownAccounts();
+    final index = accounts.indexWhere((a) => a.pubkeyHex == pubkeyHex);
+    if (index < 0) return;
+    final updated = accounts[index].copyWith(lastUsedAt: DateTime.now());
+    accounts[index] = updated;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        kKnownAccountsKey,
+        jsonEncode(accounts.map((a) => a.toJson()).toList()),
+      );
+    } catch (e) {
+      Log.warning(
+        'touchKnownAccount: failed to persist for $pubkeyHex: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Per-account signer info archival
   // ---------------------------------------------------------------------------

@@ -23,6 +23,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/environment_config.dart';
+import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -939,6 +940,17 @@ AuthState currentAuthState(Ref ref) {
 
   // Return current state
   return authService.authState;
+}
+
+/// Provider that fetches the list of known accounts from the auth service.
+///
+/// Invalidate this provider after sign-in or sign-out to refresh the list.
+@riverpod
+Future<List<KnownAccount>> knownAccounts(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  // Rebuild when auth state changes so the list stays current.
+  ref.watch(currentAuthStateProvider);
+  return authService.getKnownAccounts();
 }
 
 /// Provider for the local auth-backed signer used by creator-binding flows.

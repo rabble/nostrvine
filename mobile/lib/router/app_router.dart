@@ -534,7 +534,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: WelcomeScreen.path,
         name: WelcomeScreen.routeName,
-        builder: (_, _) => const WelcomeScreen(),
+        builder: (_, state) => WelcomeScreen(
+          initialSelectedPubkeyHex:
+              state.uri.queryParameters[WelcomeScreen.selectedPubkeyParam],
+        ),
         routes: [
           GoRoute(
             path: 'invite',

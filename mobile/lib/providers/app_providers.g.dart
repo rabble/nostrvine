@@ -2324,6 +2324,58 @@ final class CurrentAuthStateProvider
 
 String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 
+/// Provider that fetches the list of known accounts from the auth service.
+///
+/// Invalidate this provider after sign-in or sign-out to refresh the list.
+
+@ProviderFor(knownAccounts)
+const knownAccountsProvider = KnownAccountsProvider._();
+
+/// Provider that fetches the list of known accounts from the auth service.
+///
+/// Invalidate this provider after sign-in or sign-out to refresh the list.
+
+final class KnownAccountsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<KnownAccount>>,
+          List<KnownAccount>,
+          FutureOr<List<KnownAccount>>
+        >
+    with
+        $FutureModifier<List<KnownAccount>>,
+        $FutureProvider<List<KnownAccount>> {
+  /// Provider that fetches the list of known accounts from the auth service.
+  ///
+  /// Invalidate this provider after sign-in or sign-out to refresh the list.
+  const KnownAccountsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'knownAccountsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$knownAccountsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<KnownAccount>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<KnownAccount>> create(Ref ref) {
+    return knownAccounts(ref);
+  }
+}
+
+String _$knownAccountsHash() => r'8e9753265420cf092af04aa07686c98cdaa8eb1e';
+
 /// Provider that returns true only when NostrClient is fully ready for operations.
 /// Combines auth state check AND nostrClient.hasKeys verification.
 /// Use this to guard providers that require authenticated NostrClient access.
