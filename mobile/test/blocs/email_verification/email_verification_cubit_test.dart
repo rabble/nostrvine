@@ -425,6 +425,73 @@ void main() {
       });
     });
 
+    group('stale authSource guard', () {
+      // Regression test for: isRegistered returns true based on _authSource
+      // which persists across sign-outs. On a device with a prior OAuth session,
+      // _authSource stays divineOAuth even after auth state goes unauthenticated.
+      // The polling guard must require isAuthenticated AND isRegistered or it
+      // kills legitimate new-user registration polls on the first tick.
+      test(
+        'does not stop polling when isRegistered=true but isAuthenticated=false',
+        () async {
+          // Simulate stale authSource: device had a prior OAuth session (signed
+          // out), so isRegistered=true but isAuthenticated=false.
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isRegistered).thenReturn(true);
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          // Let two poll cycles run
+          await Future<void>.delayed(const Duration(seconds: 7));
+
+          // Polling should still be running — guard must NOT have fired
+          expect(cubit.state.status, EmailVerificationStatus.polling);
+          verify(() => mockOAuth.pollForCode(testDeviceCode)).called(
+            greaterThanOrEqualTo(2),
+          );
+
+          await cubit.close();
+        },
+      );
+
+      test(
+        'stops polling when both isAuthenticated=true and isRegistered=true',
+        () async {
+          // Guard should still fire for the legitimate zombie-cubit case:
+          // user IS authenticated AND registered (completed sign-in elsewhere).
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(() => mockAuthService.isRegistered).thenReturn(true);
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
+
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          // Let the first poll cycle run
+          await Future<void>.delayed(const Duration(seconds: 4));
+
+          // Guard fires before the network call — pollForCode never called.
+          // (The cubit stops its timer silently without emitting a state change.)
+          verifyNever(() => mockOAuth.pollForCode(any()));
+
+          await cubit.close();
+        },
+      );
+    });
+
     group('close', () {
       test('cleans up timers on close', () async {
         final cubit = buildCubit();
