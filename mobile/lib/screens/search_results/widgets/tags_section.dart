@@ -15,25 +15,27 @@ const _maxTagsPreview = 6;
 /// Returns a [SliverMainAxisGroup] so the header and content participate
 /// natively in the parent [CustomScrollView]'s sliver protocol.
 class TagsSection extends StatelessWidget {
-  const TagsSection({this.onSeeAll, super.key});
+  const TagsSection({this.showAll = false, super.key});
 
-  /// Called when the user taps the "See all" chevron.
-  final VoidCallback? onSeeAll;
+  /// When true, shows all results instead of a limited preview.
+  final bool showAll;
 
   @override
   Widget build(BuildContext context) {
     return SliverMainAxisGroup(
       slivers: [
-        SliverToBoxAdapter(
-          child: SectionHeader(title: 'Tags', onTap: onSeeAll),
-        ),
-        SliverToBoxAdapter(child: _TagsContent()),
+        const SliverToBoxAdapter(child: SectionHeader(title: 'Tags')),
+        SliverToBoxAdapter(child: _TagsContent(showAll: showAll)),
       ],
     );
   }
 }
 
 class _TagsContent extends StatelessWidget {
+  const _TagsContent({this.showAll = false});
+
+  final bool showAll;
+
   @override
   Widget build(BuildContext context) {
     final status = context.select(
@@ -54,7 +56,7 @@ class _TagsContent extends StatelessWidget {
 
     if (results.isEmpty) return const SizedBox.shrink();
 
-    final tags = results.take(_maxTagsPreview).toList();
+    final tags = showAll ? results : results.take(_maxTagsPreview).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
