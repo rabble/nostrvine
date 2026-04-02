@@ -789,17 +789,13 @@ class RelayNotifications extends _$RelayNotifications {
         .toSet()
         .toList();
 
-    // Fire-and-forget batch fetch
-    unawaited(
-      profileRepo?.fetchBatchProfiles(pubkeys: pubkeys) ?? Future<void>.value(),
-    );
+    final profiles =
+        await profileRepo?.fetchBatchProfiles(pubkeys: pubkeys) ??
+        <String, UserProfile>{};
 
-    final profilesByPubkey = <String, UserProfile?>{};
-    for (final pubkey in pubkeys) {
-      profilesByPubkey[pubkey] = await profileRepo?.getCachedProfile(
-        pubkey: pubkey,
-      );
-    }
+    final profilesByPubkey = <String, UserProfile?>{
+      for (final pubkey in pubkeys) pubkey: profiles[pubkey],
+    };
 
     final enriched = _buildNotificationModels(
       relayNotifications,

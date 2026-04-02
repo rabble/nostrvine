@@ -277,7 +277,7 @@ void main() {
       test(
         'completes initial load before profile enrichment finishes',
         () async {
-          final profileLookupCompleter = Completer<UserProfile?>();
+          final batchFetchCompleter = Completer<Map<String, UserProfile>>();
           final mockNotifications = [
             createMockRelayNotification(id: 'notif_1'),
           ];
@@ -298,10 +298,10 @@ void main() {
           );
 
           when(
-            () => mockProfileRepository.getCachedProfile(
-              pubkey: any(named: 'pubkey'),
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
             ),
-          ).thenAnswer((_) => profileLookupCompleter.future);
+          ).thenAnswer((_) => batchFetchCompleter.future);
 
           final container = createTestContainer(
             profileRepository: mockProfileRepository,
@@ -1019,6 +1019,315 @@ void main() {
         expect(empty.isLoadingMore, isFalse);
         expect(empty.isInitialLoad, isTrue);
         expect(empty.error, isNull);
+      });
+    });
+
+    group('enrichment', () {
+      /// Waits for the enrichment phase to update notifications with
+      /// non-null actor names. Returns the enriched state.
+      Future<NotificationFeedState> waitForEnrichment(
+        ProviderContainer container,
+      ) async {
+        final completer = Completer<NotificationFeedState>();
+
+        container.listen<AsyncValue<NotificationFeedState>>(
+          relayNotificationsProvider,
+          (previous, next) {
+            next.whenData((state) {
+              if (state.notifications.isNotEmpty &&
+                  state.notifications.first.actorName != null &&
+                  !completer.isCompleted) {
+                completer.complete(state);
+              }
+            });
+          },
+        );
+
+        return completer.future.timeout(
+          const Duration(seconds: 2),
+          onTimeout: () =>
+              throw TimeoutException('Enrichment did not complete'),
+        );
+      }
+
+      test('populates actor names and avatars', () async {
+        const sourcePubkey = 'source_pubkey_123';
+        final testProfile = UserProfile(
+          pubkey: sourcePubkey,
+          displayName: 'Alice',
+          name: 'alice',
+          picture: 'https://example.com/alice.jpg',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_profile_1',
+        );
+
+        final mockNotifications = [
+          createMockRelayNotification(id: 'notif_1'),
+        ];
+
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: mockNotifications,
+            unreadCount: 1,
+          ),
+        );
+
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((_) async => {sourcePubkey: testProfile});
+
+        final container = createTestContainer(
+          profileRepository: mockProfileRepository,
+        );
+
+        // Initial load shows skeleton
+        final initial = await waitForLoadComplete(container);
+        expect(initial.notifications.single.actorName, isNull);
+        expect(
+          initial.notifications.single.message,
+          'Someone liked your video',
+        );
+
+        // Enrichment populates real profile data
+        final enriched = await waitForEnrichment(container);
+        expect(enriched.notifications, hasLength(1));
+        expect(enriched.notifications.single.actorName, equals('Alice'));
+        expect(
+          enriched.notifications.single.actorPictureUrl,
+          equals('https://example.com/alice.jpg'),
+        );
+        expect(
+          enriched.notifications.single.message,
+          equals('Alice liked your video'),
+        );
+
+        container.dispose();
+      });
+
+      test('merges without duplicating notifications', () async {
+        const pubkey1 = 'pubkey_aaa';
+        const pubkey2 = 'pubkey_bbb';
+        const pubkey3 = 'pubkey_ccc';
+
+        final profileA = UserProfile(
+          pubkey: pubkey1,
+          displayName: 'Alice',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_a',
+        );
+        final profileB = UserProfile(
+          pubkey: pubkey2,
+          displayName: 'Bob',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_b',
+        );
+
+        final mockNotifications = [
+          createMockRelayNotification(
+            id: 'n1',
+            sourcePubkey: pubkey1,
+            createdAtSeconds: 1700000300,
+          ),
+          createMockRelayNotification(
+            id: 'n2',
+            sourcePubkey: pubkey2,
+            createdAtSeconds: 1700000200,
+          ),
+          createMockRelayNotification(
+            id: 'n3',
+            sourcePubkey: pubkey3,
+            createdAtSeconds: 1700000100,
+          ),
+        ];
+
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: mockNotifications,
+            unreadCount: 3,
+          ),
+        );
+
+        // Only 2 of 3 pubkeys have profiles
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer(
+          (_) async => {pubkey1: profileA, pubkey2: profileB},
+        );
+
+        final container = createTestContainer(
+          profileRepository: mockProfileRepository,
+        );
+
+        await waitForLoadComplete(container);
+        final enriched = await waitForEnrichment(container);
+
+        expect(enriched.notifications, hasLength(3));
+        expect(enriched.notifications[0].actorName, equals('Alice'));
+        expect(enriched.notifications[1].actorName, equals('Bob'));
+        // Third notification has no profile — stays as "Someone"
+        expect(enriched.notifications[2].actorName, isNull);
+        expect(
+          enriched.notifications[2].message,
+          equals('Someone liked your video'),
+        );
+
+        container.dispose();
+      });
+
+      test('with null profileRepo does not crash', () async {
+        final mockNotifications = [
+          createMockRelayNotification(id: 'notif_1'),
+        ];
+
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: mockNotifications,
+            unreadCount: 1,
+          ),
+        );
+
+        // No profileRepository passed — defaults to null
+        final container = createTestContainer();
+
+        final result = await waitForLoadComplete(container);
+
+        expect(result.notifications, hasLength(1));
+        expect(result.notifications.single.actorName, isNull);
+        expect(
+          result.notifications.single.message,
+          equals('Someone liked your video'),
+        );
+
+        container.dispose();
+      });
+
+      test('loadMore notifications are enriched', () async {
+        const pubkey1 = 'pubkey_initial';
+        const pubkey2 = 'pubkey_loadmore';
+
+        final profile1 = UserProfile(
+          pubkey: pubkey1,
+          displayName: 'Alice',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_1',
+        );
+        final profile2 = UserProfile(
+          pubkey: pubkey2,
+          displayName: 'Bob',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_2',
+        );
+
+        var callCount = 0;
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'n1',
+                  sourcePubkey: pubkey1,
+                  createdAtSeconds: 1700000200,
+                ),
+              ],
+              unreadCount: 1,
+              nextCursor: 'cursor_1',
+              hasMore: true,
+            );
+          } else {
+            return NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'n2',
+                  sourcePubkey: pubkey2,
+                  createdAtSeconds: 1700000100,
+                ),
+              ],
+              unreadCount: 1,
+            );
+          }
+        });
+
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((invocation) async {
+          final pubkeys = invocation.namedArguments[#pubkeys] as List<String>;
+          final result = <String, UserProfile>{};
+          for (final pk in pubkeys) {
+            if (pk == pubkey1) result[pk] = profile1;
+            if (pk == pubkey2) result[pk] = profile2;
+          }
+          return result;
+        });
+
+        final container = createTestContainer(
+          profileRepository: mockProfileRepository,
+        );
+
+        // Wait for initial load + enrichment
+        await waitForLoadComplete(container);
+        await waitForEnrichment(container);
+
+        // Trigger loadMore
+        final notifier = container.read(relayNotificationsProvider.notifier);
+        await notifier.loadMore();
+
+        // Let loadMore enrichment complete
+        // Pump microtasks for the unawaited enrichment closure
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(relayNotificationsProvider).value!;
+
+        expect(state.notifications, hasLength(2));
+        expect(state.notifications[0].actorName, equals('Alice'));
+        expect(state.notifications[1].actorName, equals('Bob'));
+
+        container.dispose();
       });
     });
   });
