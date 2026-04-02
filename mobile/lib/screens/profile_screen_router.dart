@@ -528,9 +528,11 @@ class _ProfileDataView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Get video data and stats from providers
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
-    final profileStats = ref.watch(
-      userProfileStatsReactiveProvider(userIdHex),
-    ).value;
+    final profileStats = ref
+        .watch(
+          userProfileStatsReactiveProvider(userIdHex),
+        )
+        .value;
 
     if (videosAsync is AsyncData) {
       ScreenAnalyticsService().markDataLoaded(
