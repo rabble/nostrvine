@@ -169,6 +169,49 @@ void main() {
 
         expect(() => controller.initialize(), throwsStateError);
       });
+
+      test('stores textureId when useTexture is true', () async {
+        controller = DivineVideoPlayerController(useTexture: true);
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (call) async {
+                globalCalls.add(call);
+                if (call.method == 'create') {
+                  final id = (call.arguments as Map)['id'] as int;
+
+                  TestDefaultBinaryMessengerBinding
+                      .instance
+                      .defaultBinaryMessenger
+                      .setMockMethodCallHandler(
+                        MethodChannel('divine_video_player/player_$id'),
+                        (call) async {
+                          playerCalls.add(call);
+                          return null;
+                        },
+                      );
+
+                  TestDefaultBinaryMessengerBinding
+                      .instance
+                      .defaultBinaryMessenger
+                      .setMockStreamHandler(
+                        EventChannel(
+                          'divine_video_player/player_$id/events',
+                        ),
+                        _TestStreamHandler(eventController),
+                      );
+
+                  return <Object?, Object?>{'textureId': 42};
+                }
+                return null;
+              },
+            );
+
+        await controller.initialize();
+
+        expect(controller.textureId, equals(42));
+      });
     });
 
     group('playback methods', () {

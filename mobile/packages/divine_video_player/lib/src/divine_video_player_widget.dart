@@ -99,6 +99,7 @@ class _AndroidPlayerView extends StatelessWidget {
   Widget build(BuildContext context) {
     return PlatformViewLink(
       viewType: viewType,
+      // coverage:ignore-start — invoked by the platform view engine
       surfaceFactory: (context, controller) {
         return AndroidViewSurface(
           controller: controller as AndroidViewController,
@@ -120,6 +121,7 @@ class _AndroidPlayerView extends StatelessWidget {
           // ignore: discarded_futures
           ..create();
       },
+      // coverage:ignore-end
     );
   }
 }

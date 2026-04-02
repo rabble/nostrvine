@@ -120,6 +120,56 @@ void main() {
       },
     );
 
+    testWidgets(
+      'renders Texture when useTexture is true and textureId is set',
+      (tester) async {
+        final nextId = DivineVideoPlayerController.nextId;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (call) async {
+                if (call.method == 'create') {
+                  TestDefaultBinaryMessengerBinding
+                      .instance
+                      .defaultBinaryMessenger
+                      .setMockMethodCallHandler(
+                        MethodChannel('divine_video_player/player_$nextId'),
+                        (call) async => null,
+                      );
+
+                  TestDefaultBinaryMessengerBinding
+                      .instance
+                      .defaultBinaryMessenger
+                      .setMockStreamHandler(
+                        EventChannel(
+                          'divine_video_player/player_$nextId/events',
+                        ),
+                        _FirstFrameStreamHandler(),
+                      );
+
+                  return <Object?, Object?>{'textureId': 42};
+                }
+                return null;
+              },
+            );
+
+        final textureController = DivineVideoPlayerController(
+          useTexture: true,
+        );
+        await textureController.initialize();
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: DivineVideoPlayerWidget(controller: textureController),
+          ),
+        );
+
+        expect(find.byType(Texture), findsOneWidget);
+      },
+    );
+
     testWidgets('does not render Stack when placeholder is null', (
       tester,
     ) async {
