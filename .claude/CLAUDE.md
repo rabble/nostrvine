@@ -2,7 +2,13 @@
 
 Start with `/AGENTS.md` for repo workflow, worktree hygiene, verification, and commit expectations.
 
-## Standards Reference
+## Workflow And Standards
+
+- `rules/workflow.md`: plan mode, subagent strategy, self-improvement loop, verification quality bar, autonomous bug fixing
+- Review `tasks/lessons.md` at session start for operational mistake-prevention rules. Update it after every user correction.
+- Use `/investigate` for deep, complex bug analysis. Use `/plan` for routine issue planning.
+
+### Standards Reference
 
 Generic Flutter and Dart standards live in `.claude/rules/`:
 
