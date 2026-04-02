@@ -5,6 +5,8 @@ import 'dart:async';
 
 import 'package:divine_camera/divine_camera.dart'
     show DivineCameraLens, DivineVideoQuality;
+import 'package:divine_video_player/divine_video_player.dart'
+    show DivineVideoPlayerController, VideoClip;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -764,6 +766,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
+
+    // Preload the first clip into the native player cache so the video
+    // editor can start playback instantly when the user opens it.
+    if (clipProvider.clips.length == 1) {
+      unawaited(
+        DivineVideoPlayerController.preload([VideoClip.file(videoPath)]),
+      );
+    }
 
     // Generate and attach thumbnail.
     // Take the smaller of remaining duration or actual video duration.

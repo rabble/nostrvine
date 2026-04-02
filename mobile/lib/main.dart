@@ -6,6 +6,8 @@ import 'dart:io'
 import 'package:audio_session/audio_session.dart';
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart'
+    show DivineVideoPlayerController;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -108,6 +110,9 @@ Future<void> _startOpenVineApp() async {
   // NOTE: video_player_web_hls auto-registers for HLS support on web.
   // Just needs <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   // in web/index.html (already added).
+
+  // Configure the native video player disk cache (500 MB, LRU eviction).
+  await DivineVideoPlayerController.configureCache();
 
   StartupPerformanceService.instance.completePhase('bindings');
 
