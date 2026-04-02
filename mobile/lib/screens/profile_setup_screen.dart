@@ -991,8 +991,7 @@ class _ProfileSetupScreenViewState
                     if (pubkey != null)
                       Expanded(
                         child: _SaveButton(
-                          canSave:
-                              profileEditorState.isSaveReady,
+                          canSave: profileEditorState.isSaveReady,
                           onSave: () {
                             if (_nameController.text.trim().isEmpty) {
                               _nameFocusNode.requestFocus();
