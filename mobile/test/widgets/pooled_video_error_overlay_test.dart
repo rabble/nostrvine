@@ -200,6 +200,49 @@ void main() {
           expect(find.text('Content restricted'), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'skips moderation lookup for non-divine video URLs',
+        (tester) async {
+          // Use a non-divine URL — moderation provider returns blocked but
+          // should never be consulted because shouldCheckModeration is false.
+          final thirdPartyVideo = TestVideoEventBuilder.create(
+            id: 'third-party-video',
+            videoUrl: 'https://cdn.example.com/$testSha256.mp4',
+          );
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoModerationStatusProvider.overrideWith(
+                  (ref, sha256) async => const VideoModerationStatus(
+                    moderated: true,
+                    blocked: true,
+                    quarantined: false,
+                    ageRestricted: false,
+                    needsReview: false,
+                    aiGenerated: false,
+                  ),
+                ),
+              ],
+              child: MaterialApp(
+                home: Scaffold(
+                  body: PooledVideoErrorOverlay(
+                    video: thirdPartyVideo,
+                    onRetry: () => retryPressed = true,
+                    errorMessage: '404 not found',
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Should show plain 404, not moderation-restricted.
+          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(find.text('Video not found'), findsOneWidget);
+          expect(find.text('Retry'), findsOneWidget);
+        },
+      );
     });
 
     group('generic errors', () {

@@ -32,8 +32,11 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final errorType = _VideoErrorType.fromMessage(errorMessage);
 
-    // Resolve sha256 for moderation lookup on 403/404 errors.
-    final sha256 = errorType.shouldCheckModeration
+    // Resolve sha256 for moderation lookup on 403/404 errors from divine
+    // servers only — skip the API call for third-party video URLs.
+    final sha256 =
+        errorType.shouldCheckModeration &&
+            VideoModerationStatusService.shouldCheckModeration(video.videoUrl)
         ? VideoModerationStatusService.resolveSha256(
             explicitSha256: video.sha256,
             videoUrl: video.videoUrl,

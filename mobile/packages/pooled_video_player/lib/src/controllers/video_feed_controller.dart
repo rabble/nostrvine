@@ -442,7 +442,7 @@ class VideoFeedController extends ChangeNotifier {
     final player = pooledPlayer?.player;
     if (player == null) {
       _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
-      _markLoadError(index);
+      _markLoadError(index, _errorMessages[index] ?? 'player_unavailable');
       return;
     }
 
@@ -452,7 +452,7 @@ class VideoFeedController extends ChangeNotifier {
 
     if (playbackSources == null || nextSourceIndex >= playbackSources.length) {
       _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
-      _markLoadError(index);
+      _markLoadError(index, _errorMessages[index] ?? 'sources_exhausted');
       return;
     }
 
