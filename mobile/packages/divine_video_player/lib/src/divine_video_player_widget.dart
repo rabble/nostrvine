@@ -14,13 +14,13 @@ import 'package:flutter/widgets.dart';
 /// surface until the first video frame has been rendered. This
 /// prevents black-frame flashes on Android where the platform view
 /// composites before ExoPlayer has decoded the initial frame.
-class DivineVideoPlayerWidget extends StatelessWidget {
+class DivineVideoPlayer extends StatelessWidget {
   /// Creates a video player widget bound to [controller].
   ///
   /// If [placeholder] is non-null it covers the video surface and
   /// fades out once [DivineVideoPlayerController.firstFrameRendered]
   /// completes.
-  const DivineVideoPlayerWidget({
+  const DivineVideoPlayer({
     required this.controller,
     this.placeholder,
     super.key,

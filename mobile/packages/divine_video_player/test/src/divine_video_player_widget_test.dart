@@ -26,14 +26,14 @@ void main() {
         );
   });
 
-  group(DivineVideoPlayerWidget, () {
+  group(DivineVideoPlayer, () {
     testWidgets('renders Text for unsupported platform', (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
 
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: DivineVideoPlayerWidget(controller: controller),
+          child: DivineVideoPlayer(controller: controller),
         ),
       );
 
@@ -47,7 +47,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: DivineVideoPlayerWidget(controller: controller),
+          child: DivineVideoPlayer(controller: controller),
         ),
       );
 
@@ -61,7 +61,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: DivineVideoPlayerWidget(controller: controller),
+          child: DivineVideoPlayer(controller: controller),
         ),
       );
 
@@ -77,7 +77,7 @@ void main() {
         await tester.pumpWidget(
           Directionality(
             textDirection: TextDirection.ltr,
-            child: DivineVideoPlayerWidget(controller: controller),
+            child: DivineVideoPlayer(controller: controller),
           ),
         );
 
@@ -94,7 +94,7 @@ void main() {
         await tester.pumpWidget(
           Directionality(
             textDirection: TextDirection.ltr,
-            child: DivineVideoPlayerWidget(controller: controller),
+            child: DivineVideoPlayer(controller: controller),
           ),
         );
 
@@ -111,7 +111,7 @@ void main() {
         await tester.pumpWidget(
           Directionality(
             textDirection: TextDirection.ltr,
-            child: DivineVideoPlayerWidget(controller: controller),
+            child: DivineVideoPlayer(controller: controller),
           ),
         );
 
@@ -162,7 +162,7 @@ void main() {
         await tester.pumpWidget(
           Directionality(
             textDirection: TextDirection.ltr,
-            child: DivineVideoPlayerWidget(controller: textureController),
+            child: DivineVideoPlayer(controller: textureController),
           ),
         );
 
@@ -178,7 +178,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: DivineVideoPlayerWidget(controller: controller),
+          child: DivineVideoPlayer(controller: controller),
         ),
       );
 
@@ -194,7 +194,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: DivineVideoPlayerWidget(
+          child: DivineVideoPlayer(
             controller: controller,
             placeholder: const Text('Loading...'),
           ),
@@ -232,7 +232,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: DivineVideoPlayerWidget(
+          child: DivineVideoPlayer(
             controller: freshController,
             placeholder: const Text('Loading...'),
           ),
