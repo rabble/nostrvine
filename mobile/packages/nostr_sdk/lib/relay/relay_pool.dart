@@ -332,7 +332,11 @@ class RelayPool {
         var callback = _queryCompleteCallbacks[subId];
         if (callback != null) {
           // need to callback, check if all relay complete query
-          final list = [..._relaysSnapshot(), ..._tempRelaysSnapshot()];
+          final list = [
+            ..._relaysSnapshot(),
+            ..._tempRelaysSnapshot(),
+            ..._cacheRelaysSnapshot(),
+          ];
           bool completeQuery = true;
           for (var r in list) {
             if (r.checkQuery(subId)) {
@@ -748,6 +752,11 @@ class RelayPool {
       _queryCompleteCallbacks[subscription.id] = onComplete;
     }
 
+    // Collect futures so we can await them before the early-completion
+    // check. Each relayDoQuery call only resolves after relay.send()
+    // and saveQuery(), which is fast with skipReconnect: true.
+    final queryFutures = <Future<bool>>[];
+
     // tempRelay, only query those relay which has bean provide
     if (tempRelays != null &&
         tempRelays.isNotEmpty &&
@@ -757,11 +766,13 @@ class RelayPool {
         Relay? relay = _relays[tempRelayAddr];
         relay ??= checkAndGenTempRelay(tempRelayAddr);
 
-        relayDoQuery(
-          relay,
-          subscription,
-          sendAfterAuth,
-          runBeforeConnected: true,
+        queryFutures.add(
+          relayDoQuery(
+            relay,
+            subscription,
+            sendAfterAuth,
+            runBeforeConnected: true,
+          ),
         );
       }
     }
@@ -778,21 +789,29 @@ class RelayPool {
           }
         }
 
-        relayDoQuery(relay, subscription, sendAfterAuth);
+        queryFutures.add(relayDoQuery(relay, subscription, sendAfterAuth));
       }
     }
 
     // cache relay
     if (relayTypes.contains(RelayType.cache)) {
       for (final relay in _cacheRelaysSnapshot()) {
-        relayDoQuery(relay, subscription, sendAfterAuth);
+        queryFutures.add(relayDoQuery(relay, subscription, sendAfterAuth));
       }
     }
+
+    // Wait for all sends to complete (and saveQuery to run) before
+    // checking whether any relay accepted the query.
+    await Future.wait(queryFutures);
 
     // If no relay accepted the query (all sends failed), fire onComplete
     // immediately so callers don't wait for the full timeout.
     if (onComplete != null) {
-      final list = [..._relaysSnapshot(), ..._tempRelaysSnapshot()];
+      final list = [
+        ..._relaysSnapshot(),
+        ..._tempRelaysSnapshot(),
+        ..._cacheRelaysSnapshot(),
+      ];
       final anyPending = list.any((r) => r.checkQuery(subscription.id));
       if (!anyPending) {
         _queryCompleteCallbacks.remove(subscription.id);
@@ -1028,7 +1047,7 @@ class RelayPool {
     final eventMap = <String, Event>{};
 
     // Set up timeout and EOSE-based early completion
-    final timeoutDuration = timeout ?? Duration(seconds: 5);
+    final timeoutDuration = timeout ?? const Duration(seconds: 5);
     final completer = Completer<List<Event>>();
     String? subscriptionId;
 
@@ -1118,61 +1137,61 @@ class RelayPool {
     // Send COUNT to all relays in parallel, return the largest count.
     // Different relays may have different subsets of data, so the highest
     // count is the most accurate.
-    final resultCompleter = Completer<CountResponse>();
-    var doneCount = 0;
-    var totalSent = 0;
-    CountResponse? bestResponse;
+    final eligibleRelays = relaysToTry
+        .where((r) => r.relayStatus.readAccess)
+        .toList();
 
-    for (final relay in relaysToTry) {
-      if (!relay.relayStatus.readAccess) continue;
-
-      // Each relay needs a unique subscription ID to avoid collisions
-      final relaySubId = '${subscriptionId}_${relay.url.hashCode}';
-      final relayMessage = ['COUNT', relaySubId, ...filters];
-      final responseFuture = relay.registerCountQuery(relaySubId);
-
-      // Fire-and-forget: send and await response concurrently
-      () async {
-            final sent = await relay.send(relayMessage);
-            if (!sent) {
-              throw CountNotSupportedException('Send failed');
-            }
-            log('📊 COUNT request sent to ${relay.url}');
-            return responseFuture.timeout(
-              timeout,
-              onTimeout: () => throw CountNotSupportedException('Timeout'),
-            );
-          }()
-          .then((response) {
-            if (bestResponse == null || response.count > bestResponse!.count) {
-              bestResponse = response;
-            }
-            doneCount++;
-            if (doneCount == totalSent && !resultCompleter.isCompleted) {
-              resultCompleter.complete(bestResponse);
-            }
-          })
-          .catchError((Object e) {
-            log('📊 COUNT failed on ${relay.url}: $e');
-            doneCount++;
-            if (doneCount == totalSent && !resultCompleter.isCompleted) {
-              if (bestResponse != null) {
-                resultCompleter.complete(bestResponse);
-              } else {
-                resultCompleter.completeError(
-                  CountNotSupportedException('No relay responded to COUNT'),
-                );
-              }
-            }
-          });
-      totalSent++;
-    }
-
-    if (totalSent == 0) {
+    if (eligibleRelays.isEmpty) {
       throw CountNotSupportedException('No relay responded to COUNT');
     }
 
-    return resultCompleter.future;
+    final futures = <Future<CountResponse?>>[];
+    for (var i = 0; i < eligibleRelays.length; i++) {
+      final relay = eligibleRelays[i];
+      // Use index as suffix to avoid hashCode collisions between URLs
+      final relaySubId = '${subscriptionId}_$i';
+      final relayMessage = ['COUNT', relaySubId, ...filters];
+
+      futures.add(() async {
+        try {
+          final sent = await relay.send(relayMessage, skipReconnect: true);
+          if (!sent) return null;
+
+          // Only register after successful send to avoid orphaned completers
+          final responseFuture = relay.registerCountQuery(relaySubId);
+          log('📊 COUNT request sent to ${relay.url}');
+          return await responseFuture.timeout(
+            timeout,
+            onTimeout: () {
+              // Clean up the completer on timeout
+              if (relay.hasCountQuery(relaySubId)) {
+                relay.failCountQuery(relaySubId, 'Timeout');
+              }
+              throw CountNotSupportedException('Timeout');
+            },
+          );
+        } catch (e) {
+          log('📊 COUNT failed on ${relay.url}: $e');
+          // Clean up if the completer is still pending
+          if (relay.hasCountQuery(relaySubId)) {
+            relay.failCountQuery(relaySubId, e.toString());
+          }
+          return null;
+        }
+      }());
+    }
+
+    final responses = await Future.wait(futures);
+    final best = responses.whereType<CountResponse>().fold<CountResponse?>(
+      null,
+      (a, b) => a == null || b.count > a.count ? b : a,
+    );
+
+    if (best == null) {
+      throw CountNotSupportedException('No relay responded to COUNT');
+    }
+
+    return best;
   }
 
   /// Returns the set of relay URLs that have the given subscription active.

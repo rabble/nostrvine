@@ -328,6 +328,30 @@ void main() {
         );
       });
 
+      test('send with skipReconnect returns false when disconnected', () async {
+        // Manager starts disconnected — skipReconnect should return
+        // false immediately without attempting to create a connection.
+        final result = await manager.send('test', skipReconnect: true);
+
+        expect(result, isFalse);
+        expect(mockFactory.createdChannels, isEmpty);
+        expect(logMessages.any((m) => m.contains('skipReconnect')), isTrue);
+      });
+
+      test(
+        'sendJson with skipReconnect returns false when disconnected',
+        () async {
+          final result = await manager.sendJson([
+            'REQ',
+            'sub1',
+            {},
+          ], skipReconnect: true);
+
+          expect(result, isFalse);
+          expect(mockFactory.createdChannels, isEmpty);
+        },
+      );
+
       test('sendJson reconnects when disconnected', () async {
         final result = await manager.sendJson(['REQ', 'sub1', {}]);
 

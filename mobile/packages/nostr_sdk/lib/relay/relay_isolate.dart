@@ -90,6 +90,11 @@ class RelayIsolate extends Relay {
     }
   }
 
+  /// Sends a message to the relay via its isolate.
+  ///
+  /// [skipReconnect] is accepted for API compatibility with [Relay.send]
+  /// but has no effect here — isolate relays manage their own connection
+  /// lifecycle inside the worker isolate.
   @override
   Future<bool> send(
     List message, {
