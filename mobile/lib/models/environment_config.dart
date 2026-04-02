@@ -12,6 +12,9 @@ const localBlossomPort = 43003;
 const localInvitePort = 43004;
 const productionApiBaseUrl = 'https://api.divine.video';
 
+/// Default fallback relay for block list persistence (kind 30000, d=block).
+const defaultBlockListFallbackRelay = 'wss://nos.lol';
+
 /// Build-time default environment
 /// Set via: --dart-define=DEFAULT_ENV=STAGING
 const String _defaultEnvString = String.fromEnvironment(
@@ -104,7 +107,7 @@ class EnvironmentConfig {
     if (environment == AppEnvironment.local) {
       return ['ws://$localHost:$localRelayPort'];
     }
-    return const ['wss://nos.lol'];
+    return const [defaultBlockListFallbackRelay];
   }
 
   /// Indexer relay URLs for the current environment.

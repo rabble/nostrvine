@@ -9,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,7 +32,9 @@ class ContentBlocklistService {
   ContentBlocklistService({
     SharedPreferences? prefs,
     void Function()? onChanged,
-    List<String> blockListFallbackRelays = const ['wss://nos.lol'],
+    List<String> blockListFallbackRelays = const [
+      defaultBlockListFallbackRelay,
+    ],
   }) : _prefs = prefs,
        _onChanged = onChanged,
        _blockListFallbackRelays = blockListFallbackRelays {

@@ -727,15 +727,17 @@ void blocklistSyncBridge(Ref ref) {
     if (pubkey == null) return;
 
     try {
-      await blocklistService.syncMuteListsInBackground(
-        nostrService,
-        pubkey,
-      );
-      await blocklistService.syncBlockListsInBackground(
-        nostrService,
-        authService,
-        pubkey,
-      );
+      await Future.wait([
+        blocklistService.syncMuteListsInBackground(
+          nostrService,
+          pubkey,
+        ),
+        blocklistService.syncBlockListsInBackground(
+          nostrService,
+          authService,
+          pubkey,
+        ),
+      ]);
       Log.info(
         '[BRIDGE] Block/mute list sync started',
         name: 'BlocklistSyncBridge',
