@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Playback status of the video player.
 enum PlaybackStatus {
   /// Player is created but has no media loaded.
@@ -45,6 +47,7 @@ enum PlaybackStatus {
 }
 
 /// Immutable snapshot of the video player's current state.
+@immutable
 class DivineVideoPlayerState {
   /// Creates a player state.
   const DivineVideoPlayerState({
@@ -178,6 +181,39 @@ class DivineVideoPlayerState {
       _ => PlaybackStatus.idle,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DivineVideoPlayerState &&
+          status == other.status &&
+          position == other.position &&
+          duration == other.duration &&
+          bufferedPosition == other.bufferedPosition &&
+          currentClipIndex == other.currentClipIndex &&
+          clipCount == other.clipCount &&
+          isLooping == other.isLooping &&
+          volume == other.volume &&
+          playbackSpeed == other.playbackSpeed &&
+          isFirstFrameRendered == other.isFirstFrameRendered &&
+          videoWidth == other.videoWidth &&
+          videoHeight == other.videoHeight;
+
+  @override
+  int get hashCode => Object.hash(
+    status,
+    position,
+    duration,
+    bufferedPosition,
+    currentClipIndex,
+    clipCount,
+    isLooping,
+    volume,
+    playbackSpeed,
+    isFirstFrameRendered,
+    videoWidth,
+    videoHeight,
+  );
 
   @override
   String toString() =>

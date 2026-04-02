@@ -90,6 +90,75 @@ void main() {
       });
     });
 
+    group('equality', () {
+      test('two default states are equal', () {
+        const a = DivineVideoPlayerState();
+        const b = DivineVideoPlayerState();
+
+        expect(a, equals(b));
+        expect(a.hashCode, equals(b.hashCode));
+      });
+
+      test('states with identical fields are equal', () {
+        const a = DivineVideoPlayerState(
+          status: PlaybackStatus.playing,
+          position: Duration(seconds: 5),
+          duration: Duration(seconds: 30),
+          bufferedPosition: Duration(seconds: 10),
+          currentClipIndex: 1,
+          clipCount: 3,
+          isLooping: true,
+          volume: 0.5,
+          playbackSpeed: 2,
+          isFirstFrameRendered: true,
+          videoWidth: 1920,
+          videoHeight: 1080,
+        );
+        const b = DivineVideoPlayerState(
+          status: PlaybackStatus.playing,
+          position: Duration(seconds: 5),
+          duration: Duration(seconds: 30),
+          bufferedPosition: Duration(seconds: 10),
+          currentClipIndex: 1,
+          clipCount: 3,
+          isLooping: true,
+          volume: 0.5,
+          playbackSpeed: 2,
+          isFirstFrameRendered: true,
+          videoWidth: 1920,
+          videoHeight: 1080,
+        );
+
+        expect(a, equals(b));
+        expect(a.hashCode, equals(b.hashCode));
+      });
+
+      test('states with different status are not equal', () {
+        const a = DivineVideoPlayerState(status: PlaybackStatus.playing);
+        const b = DivineVideoPlayerState(status: PlaybackStatus.paused);
+
+        expect(a, isNot(equals(b)));
+      });
+
+      test('states with different position are not equal', () {
+        const a = DivineVideoPlayerState(position: Duration(seconds: 1));
+        const b = DivineVideoPlayerState(position: Duration(seconds: 2));
+
+        expect(a, isNot(equals(b)));
+      });
+
+      test('copyWith without changes returns equal state', () {
+        const original = DivineVideoPlayerState(
+          status: PlaybackStatus.playing,
+          position: Duration(seconds: 5),
+        );
+        final copy = original.copyWith();
+
+        expect(copy, equals(original));
+        expect(copy.hashCode, equals(original.hashCode));
+      });
+    });
+
     group('copyWith', () {
       test('returns identical state when no args given', () {
         const original = DivineVideoPlayerState(
