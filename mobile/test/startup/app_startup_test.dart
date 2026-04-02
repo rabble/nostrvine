@@ -2,6 +2,8 @@
 // ABOUTME: Validates that the app can initialize without errors
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/features/app/startup/startup_profiler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -75,5 +77,23 @@ void main() {
         category: LogCategory.system,
       );
     });
+
+    test(
+      'startup phase mapper keeps auth and notifications off the blocking path',
+      () {
+        expect(
+          StartupPhaseMapper.getPhaseForProvider('AuthService'),
+          StartupPhase.essential,
+        );
+        expect(
+          StartupPhaseMapper.getPhaseForProvider('NotificationServiceEnhanced'),
+          StartupPhase.deferred,
+        );
+        expect(
+          StartupPhaseMapper.getPhaseForProvider('AnalyticsService'),
+          StartupPhase.deferred,
+        );
+      },
+    );
   });
 }

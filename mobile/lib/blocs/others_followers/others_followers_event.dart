@@ -42,3 +42,11 @@ final class OthersFollowersDecrementRequested extends OthersFollowersEvent {
 final class OthersFollowersBlocklistChanged extends OthersFollowersEvent {
   const OthersFollowersBlocklistChanged();
 }
+
+/// Internal event fired when the authoritative follower count resolves.
+final class OthersFollowersCountLoaded extends OthersFollowersEvent {
+  const OthersFollowersCountLoaded(this.targetPubkey, this.followerCount);
+
+  final String targetPubkey;
+  final int followerCount;
+}

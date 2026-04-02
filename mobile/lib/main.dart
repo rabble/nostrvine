@@ -20,6 +20,8 @@ import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/config/zendesk_config.dart';
+import 'package:openvine/features/app/startup/startup_coordinator.dart';
+import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -80,6 +82,190 @@ bool handleKnownFrameworkError(
   return false;
 }
 
+Future<void> _runTimedStartupTask({
+  required String phaseName,
+  required String initializationStep,
+  required Future<void> Function() task,
+}) async {
+  StartupPerformanceService.instance.startPhase(phaseName);
+  CrashReportingService.instance.logInitializationStep(initializationStep);
+  try {
+    await task();
+  } finally {
+    StartupPerformanceService.instance.completePhase(phaseName);
+  }
+}
+
+StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
+  final coordinator = StartupCoordinator();
+
+  coordinator.registerService(
+    name: 'EnvironmentService',
+    phase: StartupPhase.critical,
+    initialize: () async {
+      await _runTimedStartupTask(
+        phaseName: 'environment_service',
+        initializationStep: 'Initializing environment service',
+        task: () async {
+          await container
+              .read(environmentServiceProvider)
+              .initialize(
+                sharedPreferences: container.read(sharedPreferencesProvider),
+              );
+          Log.info(
+            '[INIT] EnvironmentService initialized: '
+            '${container.read(currentEnvironmentProvider).displayName}',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+        },
+      );
+    },
+  );
+
+  coordinator.registerService(
+    name: 'CoreServices',
+    phase: StartupPhase.essential,
+    initialize: () async {
+      await _runTimedStartupTask(
+        phaseName: 'core_services',
+        initializationStep: 'Initializing core services',
+        task: () => _initializeCoreServices(container),
+      );
+    },
+  );
+
+  coordinator.registerService(
+    name: 'PlaybackAudioSession',
+    phase: StartupPhase.essential,
+    initialize: () async {
+      await _runTimedStartupTask(
+        phaseName: 'audio_session',
+        initializationStep: 'Configuring playback audio session',
+        task: _configurePlaybackAudioSession,
+      );
+    },
+    optional: true,
+  );
+
+  if (!kIsWeb) {
+    coordinator.registerService(
+      name: 'MediaPlayback',
+      phase: StartupPhase.essential,
+      initialize: () async {
+        await _runTimedStartupTask(
+          phaseName: 'media_playback',
+          initializationStep: 'Initializing media playback pool',
+          task: _initializeMediaPlayback,
+        );
+      },
+      optional: true,
+    );
+  }
+
+  coordinator.registerService(
+    name: 'HiveStorage',
+    phase: StartupPhase.standard,
+    initialize: () async {
+      await _runTimedStartupTask(
+        phaseName: 'hive_storage',
+        initializationStep: 'Initializing Hive storage',
+        task: _initializeHiveStorage,
+      );
+    },
+  );
+
+  coordinator.registerService(
+    name: 'SeenVideosService',
+    phase: StartupPhase.standard,
+    initialize: () => container.read(seenVideosServiceProvider).initialize(),
+    optional: true,
+  );
+
+  coordinator.registerService(
+    name: 'BandwidthTracker',
+    phase: StartupPhase.standard,
+    initialize: bandwidthTracker.initialize,
+    optional: true,
+  );
+
+  coordinator.registerService(
+    name: 'VideoFormatPreference',
+    phase: StartupPhase.standard,
+    initialize: videoFormatPreference.initialize,
+    optional: true,
+  );
+
+  coordinator.registerService(
+    name: 'UploadManager',
+    phase: StartupPhase.standard,
+    dependencies: const ['HiveStorage'],
+    initialize: () => container.read(uploadManagerProvider).initialize(),
+    optional: true,
+  );
+
+  coordinator.registerService(
+    name: 'PerformanceMonitoring',
+    phase: StartupPhase.deferred,
+    initialize: () async {
+      await _runTimedStartupTask(
+        phaseName: 'performance_monitoring',
+        initializationStep: 'Initializing performance monitoring',
+        task: PerformanceMonitoringService.instance.initialize,
+      );
+    },
+    optional: true,
+  );
+
+  coordinator.registerService(
+    name: 'LoggingConfig',
+    phase: StartupPhase.deferred,
+    initialize: () async {
+      await _runTimedStartupTask(
+        phaseName: 'logging_config',
+        initializationStep: 'Initializing logging configuration',
+        task: () async {
+          await LoggingConfigService.instance.initialize();
+          LogMessageBatcher.instance.initialize();
+        },
+      );
+    },
+    optional: true,
+  );
+
+  coordinator.registerService(
+    name: 'VideoCacheManifest',
+    phase: StartupPhase.deferred,
+    initialize: _initializeVideoCacheManifest,
+    optional: true,
+  );
+
+  coordinator.registerService(
+    name: 'SeedDataPreload',
+    phase: StartupPhase.deferred,
+    initialize: _initializeSeedDataPreload,
+    optional: true,
+  );
+
+  if (!kIsWeb) {
+    coordinator.registerService(
+      name: 'SeedMediaPreload',
+      phase: StartupPhase.deferred,
+      initialize: _initializeSeedMediaPreload,
+      optional: true,
+    );
+  }
+
+  coordinator.registerService(
+    name: 'ZendeskSupport',
+    phase: StartupPhase.deferred,
+    initialize: _initializeZendeskSupport,
+    optional: true,
+  );
+
+  return coordinator;
+}
+
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
   final startTime = DateTime.now();
@@ -111,42 +297,10 @@ Future<void> _startOpenVineApp() async {
 
   StartupPerformanceService.instance.completePhase('bindings');
 
-  // Configure audio session to respect mute switch on iOS
-  // When device is in silent mode, videos play without audio (user expectation)
-  StartupPerformanceService.instance.startPhase('audio_session');
-  try {
-    final session = await AudioSession.instance;
-    await session.configure(
-      const AudioSessionConfiguration(
-        avAudioSessionCategory: AVAudioSessionCategory.ambient,
-        avAudioSessionMode: AVAudioSessionMode.defaultMode,
-        avAudioSessionCategoryOptions:
-            AVAudioSessionCategoryOptions.mixWithOthers,
-      ),
-    );
-    Log.info(
-      'Audio session configured to respect mute switch',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-  } catch (e) {
-    Log.warning(
-      'Failed to configure audio session: $e',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-  }
-  StartupPerformanceService.instance.completePhase('audio_session');
-
   // Initialize crash reporting ASAP so we can use it for logging
   StartupPerformanceService.instance.startPhase('crash_reporting');
   await CrashReportingService.instance.initialize();
   StartupPerformanceService.instance.completePhase('crash_reporting');
-
-  // Initialize performance monitoring (depends on Firebase Core from crash reporting)
-  StartupPerformanceService.instance.startPhase('performance_monitoring');
-  await PerformanceMonitoringService.instance.initialize();
-  StartupPerformanceService.instance.completePhase('performance_monitoring');
 
   // Now we can start logging
   Log.info(
@@ -222,93 +376,6 @@ Future<void> _startOpenVineApp() async {
       }
     });
   }
-
-  // Initialize logging configuration
-  StartupPerformanceService.instance.startPhase('logging_config');
-  CrashReportingService.instance.logInitializationStep(
-    'Initializing logging configuration',
-  );
-  await LoggingConfigService.instance.initialize();
-
-  // Initialize log message batcher to reduce noise from repetitive native logs
-  LogMessageBatcher.instance.initialize();
-
-  StartupPerformanceService.instance.completePhase('logging_config');
-
-  // Initialize video cache manifest for instant cache lookups
-  if (!kIsWeb) {
-    // Web doesn't use file-based caching
-    StartupPerformanceService.instance.startPhase('video_cache');
-    CrashReportingService.instance.logInitializationStep(
-      'Initializing video cache manifest',
-    );
-    try {
-      await initializeMediaCache();
-      StartupPerformanceService.instance.completePhase('video_cache');
-    } catch (e) {
-      Log.error(
-        '[STARTUP] Video cache initialization failed: $e',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-      StartupPerformanceService.instance.completePhase('video_cache');
-    }
-  }
-
-  // Log that core startup is complete
-  CrashReportingService.instance.logInitializationStep(
-    'Core app startup complete',
-  );
-
-  // Initialize Zendesk Support SDK (gracefully degrades if credentials not configured)
-  StartupPerformanceService.instance.startPhase('zendesk');
-  CrashReportingService.instance.logInitializationStep(
-    'Initializing Zendesk Support SDK',
-  );
-  try {
-    final zendeskInitialized = await ZendeskSupportService.initialize(
-      appId: ZendeskConfig.appId,
-      clientId: ZendeskConfig.clientId,
-      zendeskUrl: ZendeskConfig.zendeskUrl,
-    );
-    if (zendeskInitialized) {
-      Log.info(
-        '[STARTUP] Zendesk Support SDK initialized successfully',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-      CrashReportingService.instance.logInitializationStep(
-        '✓ Zendesk initialized',
-      );
-    } else {
-      Log.info(
-        '[STARTUP] Zendesk Support SDK not initialized (credentials not configured)',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-      CrashReportingService.instance.logInitializationStep(
-        '○ Zendesk skipped (no credentials)',
-      );
-    }
-    StartupPerformanceService.instance.completePhase('zendesk');
-  } catch (e) {
-    Log.warning(
-      '[STARTUP] Zendesk initialization failed: $e',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-    CrashReportingService.instance.logInitializationStep(
-      '✗ Zendesk failed: $e',
-    );
-    StartupPerformanceService.instance.completePhase('zendesk');
-  }
-
-  // Log startup time tracking
-  final initDuration = DateTime.now().difference(startTime).inMilliseconds;
-  CrashReportingService.instance.log(
-    '[STARTUP] Initial setup took ${initDuration}ms',
-  );
-  StartupPerformanceService.instance.checkpoint('core_startup_complete');
 
   // Set default log level based on build mode if not already configured
   if (const String.fromEnvironment('LOG_LEVEL').isEmpty) {
@@ -508,114 +575,39 @@ Future<void> _startOpenVineApp() async {
     FlutterError.presentError(details);
   };
 
-  // Initialize Hive for local data storage
-  StartupPerformanceService.instance.startPhase('hive_storage');
-  await Hive.initFlutter();
-  StartupPerformanceService.instance.completePhase('hive_storage');
-
-  // Load seed data if database is empty (first install only)
-  StartupPerformanceService.instance.startPhase('seed_data_preload');
-  AppDatabase? seedDb;
-  try {
-    seedDb = AppDatabase();
-    await SeedDataPreloadService.loadSeedDataIfNeeded(seedDb);
-  } catch (e, stack) {
-    // Non-critical: user will fetch from relay normally
-    Log.error(
-      '[SEED] Data preload failed (non-critical): $e',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-    Log.verbose(
-      '[SEED] Stack: $stack',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-  } finally {
-    await seedDb?.close();
-  }
-  StartupPerformanceService.instance.completePhase('seed_data_preload');
-
-  // Load seed media files if cache is empty (first install only)
-  // Skip on web - no file-based caching
-  if (!kIsWeb) {
-    StartupPerformanceService.instance.startPhase('seed_media_preload');
-    try {
-      await SeedMediaPreloadService.loadSeedMediaIfNeeded();
-    } catch (e, stack) {
-      // Non-critical: user will download videos from network normally
-      Log.error(
-        '[SEED] Media preload failed (non-critical): $e',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-      Log.verbose(
-        '[SEED] Stack: $stack',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-    }
-    StartupPerformanceService.instance.completePhase('seed_media_preload');
-  }
-
   // Initialize SharedPreferences for feature flags
   StartupPerformanceService.instance.startPhase('shared_preferences');
   final sharedPreferences = await SharedPreferences.getInstance();
   StartupPerformanceService.instance.completePhase('shared_preferences');
-
-  StartupPerformanceService.instance.checkpoint('pre_app_launch');
 
   // Create ProviderContainer to initialize services BEFORE runApp
   final container = ProviderContainer(
     overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
   );
 
-  // Initialize environment service FIRST (before other services that depend on relay config)
-  await container.read(environmentServiceProvider).initialize();
-  Log.info(
-    '[INIT] EnvironmentService initialized: ${container.read(currentEnvironmentProvider).displayName}',
-    name: 'Main',
-    category: LogCategory.system,
-  );
-
-  // Initialize critical services at app startup level (not UI level)
-  StartupPerformanceService.instance.startPhase('core_services');
-  await _initializeCoreServices(container);
-  StartupPerformanceService.instance.completePhase('core_services');
+  final startupCoordinator = _createStartupCoordinator(container);
+  await startupCoordinator.initializeThrough(StartupPhase.critical);
 
   Log.info('Divine starting...', name: 'Main');
   Log.info('Log level: ${UnifiedLogger.currentLevel.name}', name: 'Main');
-  // Configure audio session for media playback
-  // This ensures audio plays even when iOS mute switch is on
-  final session = await AudioSession.instance;
-  await session.configure(
-    const AudioSessionConfiguration(
-      avAudioSessionCategory: AVAudioSessionCategory.playback,
-      avAudioSessionMode: AVAudioSessionMode.moviePlayback,
-      androidAudioAttributes: AndroidAudioAttributes(
-        contentType: AndroidAudioContentType.movie,
-        usage: AndroidAudioUsage.media,
-      ),
-    ),
+  final initDuration = DateTime.now().difference(startTime).inMilliseconds;
+  CrashReportingService.instance.log(
+    '[STARTUP] Blocking setup took ${initDuration}ms',
   );
-
-  // Initialize MediaKit for pooled_video_player (uses media_kit internally).
-  // Skip on web — media_kit requires native libraries (libmpv) that are not
-  // available in browser environments. Web uses video_player instead.
-  if (!kIsWeb) {
-    MediaKit.ensureInitialized();
-
-    // Initialize the player pool singleton
-    await PlayerPool.init();
-  }
+  CrashReportingService.instance.logInitializationStep(
+    'Blocking startup complete',
+  );
+  StartupPerformanceService.instance.checkpoint('pre_app_launch');
 
   runApp(
-    UncontrolledProviderScope(container: container, child: const DivineApp()),
+    UncontrolledProviderScope(
+      container: container,
+      child: DivineApp(startupCoordinator: startupCoordinator),
+    ),
   );
 }
 
-/// Initialize critical services before the UI renders.
-/// This ensures services are ready when widgets first build.
+/// Initialize core identity services after the first frame.
 Future<void> _initializeCoreServices(ProviderContainer container) async {
   Log.info(
     '[INIT] Starting service initialization...',
@@ -656,18 +648,145 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     );
   }
 
-  // Initialize independent services in parallel
-  await Future.wait([
-    container.read(seenVideosServiceProvider).initialize(),
-    bandwidthTracker.initialize(),
-    videoFormatPreference.initialize(),
-    container.read(uploadManagerProvider).initialize(),
-  ]);
-
   Log.info(
-    '[INIT] ✅ All critical services initialized',
+    '[INIT] ✅ Core services initialized',
     name: 'Main',
     category: LogCategory.system,
+  );
+}
+
+Future<void> _configurePlaybackAudioSession() async {
+  final session = await AudioSession.instance;
+  await session.configure(
+    const AudioSessionConfiguration(
+      avAudioSessionCategory: AVAudioSessionCategory.playback,
+      avAudioSessionMode: AVAudioSessionMode.moviePlayback,
+      androidAudioAttributes: AndroidAudioAttributes(
+        contentType: AndroidAudioContentType.movie,
+        usage: AndroidAudioUsage.media,
+      ),
+    ),
+  );
+}
+
+Future<void> _initializeMediaPlayback() async {
+  MediaKit.ensureInitialized();
+  await PlayerPool.init();
+}
+
+Future<void> _initializeHiveStorage() => Hive.initFlutter();
+
+Future<void> _initializeVideoCacheManifest() async {
+  if (kIsWeb) return;
+
+  await _runTimedStartupTask(
+    phaseName: 'video_cache',
+    initializationStep: 'Initializing video cache manifest',
+    task: () async {
+      try {
+        await initializeMediaCache();
+      } catch (e) {
+        Log.error(
+          '[STARTUP] Video cache initialization failed: $e',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+      }
+    },
+  );
+}
+
+Future<void> _initializeSeedDataPreload() async {
+  await _runTimedStartupTask(
+    phaseName: 'seed_data_preload',
+    initializationStep: 'Loading bundled seed data',
+    task: () async {
+      AppDatabase? seedDb;
+      try {
+        seedDb = AppDatabase();
+        await SeedDataPreloadService.loadSeedDataIfNeeded(seedDb);
+      } catch (e, stack) {
+        Log.error(
+          '[SEED] Data preload failed (non-critical): $e',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+        Log.verbose(
+          '[SEED] Stack: $stack',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+      } finally {
+        await seedDb?.close();
+      }
+    },
+  );
+}
+
+Future<void> _initializeSeedMediaPreload() async {
+  await _runTimedStartupTask(
+    phaseName: 'seed_media_preload',
+    initializationStep: 'Loading bundled seed media',
+    task: () async {
+      try {
+        await SeedMediaPreloadService.loadSeedMediaIfNeeded();
+      } catch (e, stack) {
+        Log.error(
+          '[SEED] Media preload failed (non-critical): $e',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+        Log.verbose(
+          '[SEED] Stack: $stack',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+      }
+    },
+  );
+}
+
+Future<void> _initializeZendeskSupport() async {
+  await _runTimedStartupTask(
+    phaseName: 'zendesk',
+    initializationStep: 'Initializing Zendesk Support SDK',
+    task: () async {
+      try {
+        final zendeskInitialized = await ZendeskSupportService.initialize(
+          appId: ZendeskConfig.appId,
+          clientId: ZendeskConfig.clientId,
+          zendeskUrl: ZendeskConfig.zendeskUrl,
+        );
+        if (zendeskInitialized) {
+          Log.info(
+            '[STARTUP] Zendesk Support SDK initialized successfully',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+          CrashReportingService.instance.logInitializationStep(
+            '✓ Zendesk initialized',
+          );
+        } else {
+          Log.info(
+            '[STARTUP] Zendesk Support SDK not initialized (credentials not configured)',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+          CrashReportingService.instance.logInitializationStep(
+            '○ Zendesk skipped (no credentials)',
+          );
+        }
+      } catch (e) {
+        Log.warning(
+          '[STARTUP] Zendesk initialization failed: $e',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+        CrashReportingService.instance.logInitializationStep(
+          '✗ Zendesk failed: $e',
+        );
+      }
+    },
   );
 }
 
@@ -691,7 +810,9 @@ void main() {
 }
 
 class DivineApp extends ConsumerStatefulWidget {
-  const DivineApp({super.key});
+  const DivineApp({required this.startupCoordinator, super.key});
+
+  final StartupCoordinator startupCoordinator;
 
   @override
   ConsumerState<DivineApp> createState() => _DivineAppState();
@@ -704,11 +825,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   @override
   void initState() {
     super.initState();
-    // Initialize non-critical background services after first frame
+    // Start deferred startup after the first frame so the shell can paint first.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (!_backgroundInitDone) {
         _backgroundInitDone = true;
+        _initializeDeferredStartup();
         _initializeDeepLinkServices();
         _initializeBackgroundServices();
       }
@@ -744,8 +866,27 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     );
   }
 
-  /// Initialize non-critical background services.
-  /// Critical services are already initialized before runApp in _initializeCoreServices.
+  void _initializeDeferredStartup() {
+    unawaited(
+      widget.startupCoordinator.initializeRemaining().catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) async {
+        Log.error(
+          '[INIT] Deferred startup failed: $error',
+          name: 'Main',
+          category: LogCategory.system,
+        );
+        await CrashReportingService.instance.recordError(
+          error,
+          stackTrace,
+          reason: 'Deferred startup initialization failed',
+        );
+      }),
+    );
+  }
+
+  /// Initialize opportunistic background warmups owned by the app shell.
   void _initializeBackgroundServices() {
     Future.microtask(() {
       unawaited(

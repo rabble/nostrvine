@@ -10,8 +10,10 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/notification_model_converter.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'relay_notifications_provider.g.dart';
@@ -206,6 +208,8 @@ class RelayNotifications extends _$RelayNotifications {
     state = const AsyncData(NotificationFeedState(notifications: []));
 
     try {
+      final profileRepo = ref.read(profileRepositoryProvider);
+      final videoEventService = ref.read(videoEventServiceProvider);
       final result = await _fetchRawNotifications(
         pubkey: currentUserPubkey,
         resetCursor: true,
@@ -222,23 +226,35 @@ class RelayNotifications extends _$RelayNotifications {
         );
       }
 
-      final enrichedNotifications = await _enrichNotifications(
+      final consolidatedNotifications = _consolidateFollowNotifications(
         result.notifications,
       );
-
-      if (!ref.mounted) {
-        keepAliveLink.close();
-        return NotificationFeedState.empty;
-      }
+      final rawNotifications = _buildNotificationModels(
+        consolidatedNotifications,
+        videoEventService: videoEventService,
+      );
+      final initialState = NotificationFeedState(
+        notifications: rawNotifications,
+        unreadCount: result.unreadCount,
+        hasMoreContent: result.hasMore,
+        isInitialLoad: false,
+        lastUpdated: DateTime.now(),
+      );
+      state = AsyncData(initialState);
+      _scheduleEnrichment(
+        consolidatedNotifications,
+        profileRepo: profileRepo,
+        videoEventService: videoEventService,
+      );
 
       // Log breakdown by type for debugging
       final typeBreakdown = <String, int>{};
-      for (final n in enrichedNotifications) {
+      for (final n in rawNotifications) {
         final typeName = n.type.name;
         typeBreakdown[typeName] = (typeBreakdown[typeName] ?? 0) + 1;
       }
       Log.info(
-        'RelayNotifications: Loaded ${enrichedNotifications.length} notifications '
+        'RelayNotifications: Loaded ${rawNotifications.length} notifications '
         '(from ${result.notifications.length} raw), '
         'unread: ${result.unreadCount}, hasMore: ${result.hasMore}, '
         'types: $typeBreakdown',
@@ -247,13 +263,7 @@ class RelayNotifications extends _$RelayNotifications {
       );
 
       keepAliveLink.close();
-      return NotificationFeedState(
-        notifications: enrichedNotifications,
-        unreadCount: result.unreadCount,
-        hasMoreContent: result.hasMore,
-        isInitialLoad: false,
-        lastUpdated: DateTime.now(),
-      );
+      return initialState;
     } catch (e) {
       Log.error(
         'RelayNotifications: Error loading notifications: $e',
@@ -307,6 +317,8 @@ class RelayNotifications extends _$RelayNotifications {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
+      final profileRepo = ref.read(profileRepositoryProvider);
+      final videoEventService = ref.read(videoEventServiceProvider);
       final authService = ref.read(authServiceProvider);
       final currentUserPubkey = authService.currentPublicKeyHex;
 
@@ -355,17 +367,18 @@ class RelayNotifications extends _$RelayNotifications {
         return;
       }
 
-      final enrichedNew = await _enrichNotifications(result.notifications);
+      final consolidatedNotifications = _consolidateFollowNotifications(
+        result.notifications,
+      );
+      final rawNew = _buildNotificationModels(
+        consolidatedNotifications,
+        videoEventService: videoEventService,
+      );
 
-      if (!ref.mounted) return;
-
-      final allNotifications = [
-        ...currentState.notifications,
-        ...enrichedNew,
-      ];
+      final allNotifications = [...currentState.notifications, ...rawNew];
 
       Log.info(
-        'RelayNotifications: Loaded ${enrichedNew.length} more notifications '
+        'RelayNotifications: Loaded ${rawNew.length} more notifications '
         '(total: ${allNotifications.length})',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
@@ -378,6 +391,11 @@ class RelayNotifications extends _$RelayNotifications {
           hasMoreContent: result.hasMore,
           isLoadingMore: false,
         ),
+      );
+      _scheduleEnrichment(
+        consolidatedNotifications,
+        profileRepo: profileRepo,
+        videoEventService: videoEventService,
       );
     } catch (e) {
       Log.error(
@@ -458,6 +476,8 @@ class RelayNotifications extends _$RelayNotifications {
     }
 
     try {
+      final profileRepo = ref.read(profileRepositoryProvider);
+      final videoEventService = ref.read(videoEventServiceProvider);
       final result = await _fetchRawNotifications(
         pubkey: currentUserPubkey,
         resetCursor: true,
@@ -465,29 +485,35 @@ class RelayNotifications extends _$RelayNotifications {
 
       if (!ref.mounted) return;
 
-      final enrichedNotifications = await _enrichNotifications(
+      final consolidatedNotifications = _consolidateFollowNotifications(
         result.notifications,
       );
-
-      if (!ref.mounted) return;
+      final rawNotifications = _buildNotificationModels(
+        consolidatedNotifications,
+        videoEventService: videoEventService,
+      );
+      final refreshedState = NotificationFeedState(
+        notifications: rawNotifications,
+        unreadCount: result.unreadCount,
+        hasMoreContent: result.hasMore,
+        isInitialLoad: false,
+        lastUpdated: DateTime.now(),
+      );
 
       Log.info(
         'RelayNotifications: Refreshed with '
-        '${enrichedNotifications.length} notifications '
+        '${rawNotifications.length} notifications '
         '(from ${result.notifications.length} raw), '
         'unread: ${result.unreadCount}, hasMore: ${result.hasMore}',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
 
-      state = AsyncData(
-        NotificationFeedState(
-          notifications: enrichedNotifications,
-          unreadCount: result.unreadCount,
-          hasMoreContent: result.hasMore,
-          isInitialLoad: false,
-          lastUpdated: DateTime.now(),
-        ),
+      state = AsyncData(refreshedState);
+      _scheduleEnrichment(
+        consolidatedNotifications,
+        profileRepo: profileRepo,
+        videoEventService: videoEventService,
       );
     } catch (e) {
       Log.error(
@@ -614,11 +640,7 @@ class RelayNotifications extends _$RelayNotifications {
   }
 
   /// Result type for _fetchRawNotifications
-  ({
-    List<RelayNotification> notifications,
-    int unreadCount,
-    bool hasMore,
-  })
+  ({List<RelayNotification> notifications, int unreadCount, bool hasMore})
   _makeFetchResult(
     List<RelayNotification> notifications,
     int unreadCount,
@@ -634,11 +656,7 @@ class RelayNotifications extends _$RelayNotifications {
   /// Handles pagination, deduplication, and auto-loading in a single place.
   /// Used by build(), refresh(), and loadMore().
   Future<
-    ({
-      List<RelayNotification> notifications,
-      int unreadCount,
-      bool hasMore,
-    })
+    ({List<RelayNotification> notifications, int unreadCount, bool hasMore})
   >
   _fetchRawNotifications({
     required String pubkey,
@@ -748,11 +766,12 @@ class RelayNotifications extends _$RelayNotifications {
 
   /// Enrich RelayNotification objects with profile data
   Future<List<NotificationModel>> _enrichNotifications(
-    List<RelayNotification> relayNotifications,
-  ) async {
+    List<RelayNotification> relayNotifications, {
+    required ProfileRepository? profileRepo,
+    required VideoEventService videoEventService,
+  }) async {
     if (relayNotifications.isEmpty) return [];
 
-    // DEBUG: Log all raw notifications before consolidation
     final rawPubkeys = relayNotifications.map((n) => n.sourcePubkey).toList();
     final uniqueRawPubkeys = rawPubkeys.toSet();
     Log.debug(
@@ -764,16 +783,8 @@ class RelayNotifications extends _$RelayNotifications {
       category: LogCategory.system,
     );
 
-    // First, consolidate follow notifications (keep only most recent per user)
-    final consolidatedNotifications = _consolidateFollowNotifications(
-      relayNotifications,
-    );
-
-    final profileRepo = ref.read(profileRepositoryProvider);
-    final videoEventService = ref.read(videoEventServiceProvider);
-
     // Batch fetch profiles for all unique pubkeys
-    final pubkeys = consolidatedNotifications
+    final pubkeys = relayNotifications
         .map((n) => n.sourcePubkey)
         .toSet()
         .toList();
@@ -783,15 +794,39 @@ class RelayNotifications extends _$RelayNotifications {
       profileRepo?.fetchBatchProfiles(pubkeys: pubkeys) ?? Future<void>.value(),
     );
 
-    // Convert to NotificationModel with available profile data
-    final enriched = <NotificationModel>[];
-    for (final relay in consolidatedNotifications) {
-      // Get cached profile (may be null if still loading)
-      final profile = await profileRepo?.getCachedProfile(
-        pubkey: relay.sourcePubkey,
+    final profilesByPubkey = <String, UserProfile?>{};
+    for (final pubkey in pubkeys) {
+      profilesByPubkey[pubkey] = await profileRepo?.getCachedProfile(
+        pubkey: pubkey,
       );
+    }
 
-      // Get video info if available
+    final enriched = _buildNotificationModels(
+      relayNotifications,
+      videoEventService: videoEventService,
+      profilesByPubkey: profilesByPubkey,
+    );
+
+    Log.debug(
+      'RelayNotifications: _enrichNotifications OUTPUT - '
+      '${enriched.length} notifications after enrichment',
+      name: 'RelayNotificationsProvider',
+      category: LogCategory.system,
+    );
+
+    return enriched;
+  }
+
+  List<NotificationModel> _buildNotificationModels(
+    List<RelayNotification> relayNotifications, {
+    required VideoEventService videoEventService,
+    Map<String, UserProfile?> profilesByPubkey = const {},
+  }) {
+    if (relayNotifications.isEmpty) return const [];
+
+    return relayNotifications.map((relay) {
+      final profile = profilesByPubkey[relay.sourcePubkey];
+
       String? videoUrl;
       String? videoThumbnail;
       if (relay.referencedEventId != null) {
@@ -802,25 +837,69 @@ class RelayNotifications extends _$RelayNotifications {
         videoThumbnail = video?.thumbnailUrl;
       }
 
-      enriched.add(
-        notificationModelFromRelayApi(
-          relay,
-          actorName: profile?.bestDisplayName,
-          actorPictureUrl: profile?.picture,
-          targetVideoUrl: videoUrl,
-          targetVideoThumbnail: videoThumbnail,
+      return notificationModelFromRelayApi(
+        relay,
+        actorName: profile?.bestDisplayName,
+        actorPictureUrl: profile?.picture,
+        targetVideoUrl: videoUrl,
+        targetVideoThumbnail: videoThumbnail,
+      );
+    }).toList();
+  }
+
+  void _scheduleEnrichment(
+    List<RelayNotification> relayNotifications, {
+    required ProfileRepository? profileRepo,
+    required VideoEventService videoEventService,
+  }) {
+    if (relayNotifications.isEmpty) return;
+
+    unawaited(() async {
+      final enrichedNotifications = await _enrichNotifications(
+        relayNotifications,
+        profileRepo: profileRepo,
+        videoEventService: videoEventService,
+      );
+
+      if (!ref.mounted || enrichedNotifications.isEmpty) return;
+
+      final currentState = state.whenOrNull(data: (value) => value);
+      if (currentState == null) return;
+
+      state = AsyncData(
+        currentState.copyWith(
+          notifications: _mergeEnrichedNotifications(
+            currentState.notifications,
+            enrichedNotifications,
+          ),
         ),
       );
-    }
+    }());
+  }
 
-    Log.debug(
-      'RelayNotifications: _enrichNotifications OUTPUT - '
-      '${enriched.length} notifications after enrichment',
-      name: 'RelayNotificationsProvider',
-      category: LogCategory.system,
-    );
+  List<NotificationModel> _mergeEnrichedNotifications(
+    List<NotificationModel> currentNotifications,
+    List<NotificationModel> enrichedNotifications,
+  ) {
+    final enrichedById = {
+      for (final notification in enrichedNotifications)
+        notification.id: notification,
+    };
 
-    return enriched;
+    return currentNotifications.map((current) {
+      final enriched = enrichedById[current.id];
+      if (enriched == null) return current;
+
+      return current.copyWith(
+        actorName: enriched.actorName,
+        actorPictureUrl: enriched.actorPictureUrl,
+        message: enriched.message,
+        targetEventId: enriched.targetEventId,
+        targetVideoUrl: enriched.targetVideoUrl,
+        targetVideoThumbnail: enriched.targetVideoThumbnail,
+        metadata: enriched.metadata,
+      );
+    }).toList();
   }
 
   /// Consolidate follow/unfollow notifications to show only the most recent per user
