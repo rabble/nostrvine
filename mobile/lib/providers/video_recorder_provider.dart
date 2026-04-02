@@ -775,17 +775,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         halfDuration < VideoEditorConstants.defaultThumbnailExtractTime
         ? halfDuration
         : VideoEditorConstants.defaultThumbnailExtractTime;
-    // Extract thumbnail and ghost frame in parallel.
-    final (thumbnailResult, ghostResult) = await (
-      VideoThumbnailService.extractThumbnail(
-        videoPath: videoPath,
-        targetTimestamp: targetTimestamp,
-      ),
-      VideoThumbnailService.extractThumbnail(
-        videoPath: videoPath,
-        targetTimestamp: metadata.duration,
-      ),
-    ).wait;
+    // Extract thumbnail first, then ghost frame sequentially.
+    // Running both in parallel causes "Cannot Open" on iOS because
+    // AVAssetImageGenerator holds an exclusive lock on the video file.
+    final thumbnailResult = await VideoThumbnailService.extractThumbnail(
+      videoPath: videoPath,
+      targetTimestamp: targetTimestamp,
+    );
 
     if (thumbnailResult != null) {
       clipProvider.updateThumbnail(
@@ -806,13 +802,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       );
     }
 
-    if (ghostResult != null) {
+    final ghostFramePath = await VideoThumbnailService.extractLastFrame(
+      videoPath: videoPath,
+      videoDuration: metadata.duration,
+    );
+
+    if (ghostFramePath != null) {
       clipProvider.updateGhostFrame(
         clipId: clip.id,
-        ghostFramePath: ghostResult.path,
+        ghostFramePath: ghostFramePath,
       );
       Log.debug(
-        '👻 Ghost frame generated: ${ghostResult.path}',
+        '👻 Ghost frame generated: $ghostFramePath',
         name: 'VideoRecorderNotifier',
         category: .video,
       );
