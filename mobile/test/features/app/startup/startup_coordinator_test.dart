@@ -31,7 +31,7 @@ void main() {
       };
     }
 
-    test('should initialize critical services first', () async {
+    test('should initialize phases in order', () async {
       // Register services in different phases
       coordinator.registerService(
         name: 'AuthService',
@@ -65,9 +65,6 @@ void main() {
       // Complete critical services
       serviceCompleters['AuthService']!.complete();
       serviceCompleters['NostrService']!.complete();
-
-      // Wait for critical phase to complete
-      await coordinator.waitForPhase(StartupPhase.critical);
 
       // Now deferred services should start
       await Future.delayed(Duration.zero);
@@ -143,42 +140,98 @@ void main() {
       await initFuture;
     });
 
-    test('should support progressive initialization', () async {
-      // Register services across phases
+    test('should initialize only through the requested phase', () async {
+      coordinator.registerService(
+        name: 'EnvironmentService',
+        phase: StartupPhase.critical,
+        initialize: createServiceInitializer('EnvironmentService'),
+      );
+
       coordinator.registerService(
         name: 'AuthService',
-        phase: StartupPhase.critical,
+        phase: StartupPhase.essential,
         initialize: createServiceInitializer('AuthService'),
       );
 
-      coordinator.registerService(
-        name: 'UIService',
-        phase: StartupPhase.essential,
-        initialize: createServiceInitializer('UIService'),
+      final initFuture = coordinator.initializeThrough(StartupPhase.critical);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(initializationLog, contains('EnvironmentService:start'));
+      expect(initializationLog, isNot(contains('AuthService:start')));
+
+      serviceCompleters['EnvironmentService']!.complete();
+      await initFuture;
+
+      expect(
+        initializationLog.where((entry) => entry == 'EnvironmentService:start'),
+        hasLength(1),
       );
-
-      coordinator.registerService(
-        name: 'AnalyticsService',
-        phase: StartupPhase.deferred,
-        initialize: createServiceInitializer('AnalyticsService'),
-      );
-
-      // Start initialization
-      final initFuture = coordinator.initializeProgressive();
-
-      // Wait for critical phase
-      serviceCompleters['AuthService']!.complete();
-      await coordinator.waitForPhase(StartupPhase.critical);
-
-      // App should be ready for basic interaction
+      expect(initializationLog, isNot(contains('AuthService:start')));
       expect(coordinator.isPhaseComplete(StartupPhase.critical), isTrue);
       expect(coordinator.isPhaseComplete(StartupPhase.essential), isFalse);
-
-      // Complete remaining services
-      serviceCompleters['UIService']!.complete();
-      serviceCompleters['AnalyticsService']!.complete();
-      await initFuture;
     });
+
+    test(
+      'should continue remaining phases without restarting completed work',
+      () async {
+        coordinator.registerService(
+          name: 'EnvironmentService',
+          phase: StartupPhase.critical,
+          initialize: createServiceInitializer('EnvironmentService'),
+        );
+
+        coordinator.registerService(
+          name: 'AuthService',
+          phase: StartupPhase.essential,
+          initialize: createServiceInitializer('AuthService'),
+        );
+
+        serviceCompleters['EnvironmentService']!.complete();
+        await coordinator.initializeThrough(StartupPhase.critical);
+
+        final initFuture = coordinator.initializeRemaining();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          initializationLog.where(
+            (entry) => entry == 'EnvironmentService:start',
+          ),
+          hasLength(1),
+        );
+        expect(initializationLog, contains('AuthService:start'));
+
+        serviceCompleters['AuthService']!.complete();
+        await initFuture;
+
+        expect(coordinator.isPhaseComplete(StartupPhase.essential), isTrue);
+      },
+    );
+
+    test(
+      'should reject service registration after initialization starts',
+      () async {
+        coordinator.registerService(
+          name: 'EnvironmentService',
+          phase: StartupPhase.critical,
+          initialize: createServiceInitializer('EnvironmentService'),
+        );
+
+        final initFuture = coordinator.initializeThrough(StartupPhase.critical);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          () => coordinator.registerService(
+            name: 'LateService',
+            phase: StartupPhase.deferred,
+            initialize: createServiceInitializer('LateService'),
+          ),
+          throwsStateError,
+        );
+
+        serviceCompleters['EnvironmentService']!.complete();
+        await initFuture;
+      },
+    );
 
     test('should handle initialization failures gracefully', () async {
       coordinator.registerService(
@@ -228,35 +281,6 @@ void main() {
       await initFuture;
     });
 
-    test('should provide initialization progress', () async {
-      // Register multiple services
-      for (var i = 0; i < 5; i++) {
-        coordinator.registerService(
-          name: 'Service$i',
-          phase: StartupPhase.critical,
-          initialize: createServiceInitializer('Service$i'),
-        );
-      }
-
-      final progressValues = <double>[];
-      coordinator.progress.listen(progressValues.add);
-
-      // Start initialization
-      final initFuture = coordinator.initialize();
-
-      // Complete services one by one
-      for (var i = 0; i < 5; i++) {
-        serviceCompleters['Service$i']!.complete();
-        await Future.delayed(Duration.zero);
-      }
-
-      await initFuture;
-
-      // Should have progress updates
-      expect(progressValues.length, greaterThan(0));
-      expect(progressValues.last, equals(1.0));
-    });
-
     test('should calculate initialization bottlenecks', () async {
       // Create services with different durations
       coordinator.registerService(
@@ -289,72 +313,6 @@ void main() {
       expect(bottlenecks, contains('SlowService'));
       expect(bottlenecks, isNot(contains('QuickService1')));
       expect(bottlenecks, isNot(contains('QuickService2')));
-    });
-
-    test('should support lazy service registration', () async {
-      // Start with critical services
-      coordinator.registerService(
-        name: 'CoreService',
-        phase: StartupPhase.critical,
-        initialize: createServiceInitializer('CoreService'),
-      );
-
-      // Start initialization
-      final initFuture = coordinator.initializeProgressive();
-
-      // Complete critical phase
-      serviceCompleters['CoreService']!.complete();
-      await coordinator.waitForPhase(StartupPhase.critical);
-
-      // Register additional services in a phase that hasn't started yet
-      coordinator.registerService(
-        name: 'LateService',
-        phase: StartupPhase.deferred,
-        initialize: createServiceInitializer('LateService'),
-      );
-
-      // Wait a bit for deferred phase to start
-      await Future.delayed(const Duration(milliseconds: 10));
-
-      // Late service should now be initializing
-      expect(
-        initializationLog.any((log) => log.contains('LateService')),
-        isTrue,
-      );
-
-      serviceCompleters['LateService']!.complete();
-      await initFuture;
-    });
-
-    test('should enforce phase ordering', () async {
-      final phaseCompletionOrder = <StartupPhase>[];
-
-      // Listen for phase completions
-      coordinator.phaseCompleted.listen(phaseCompletionOrder.add);
-
-      // Register services in all phases
-      for (final phase in StartupPhase.values) {
-        coordinator.registerService(
-          name: '${phase.name}Service',
-          phase: phase,
-          initialize: createServiceInitializer('${phase.name}Service'),
-        );
-      }
-
-      // Start initialization
-      final initFuture = coordinator.initialize();
-
-      // Complete services in random order
-      final phases = StartupPhase.values.toList()..shuffle();
-      for (final phase in phases) {
-        serviceCompleters['${phase.name}Service']!.complete();
-        await Future.delayed(Duration.zero);
-      }
-
-      await initFuture;
-
-      // Phases should complete in order
-      expect(phaseCompletionOrder, equals(StartupPhase.values));
     });
   });
 }

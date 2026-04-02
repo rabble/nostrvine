@@ -1,6 +1,7 @@
 // ABOUTME: Tests for VideoFeedBuilder streaming behavior (Change 2 of EOSE fix)
 // ABOUTME: Validates buildFeed returns immediately and progressive updates work
 
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -66,6 +67,29 @@ void main() {
       expect(state.videos, isEmpty);
       expect(state.isInitialLoad, isTrue);
       expect(state.hasMoreContent, isFalse);
+    });
+
+    test('buildFeed returns even when subscribe never completes', () async {
+      final subscribeCompleter = Completer<void>();
+      addTearDown(() {
+        if (!subscribeCompleter.isCompleted) {
+          subscribeCompleter.complete();
+        }
+      });
+
+      final config = VideoFeedConfig(
+        subscriptionType: SubscriptionType.discovery,
+        subscribe: (service) => subscribeCompleter.future,
+        getVideos: (service) => <VideoEvent>[],
+        sortVideos: (videos) => videos,
+      );
+
+      final state = await builder
+          .buildFeed(config: config)
+          .timeout(const Duration(milliseconds: 100));
+
+      expect(state.videos, isEmpty);
+      expect(state.isInitialLoad, isTrue);
     });
 
     test('continuous listener updates state as videos arrive', () async {

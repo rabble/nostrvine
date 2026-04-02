@@ -2,21 +2,17 @@
 // ABOUTME: Enables prioritized loading of critical services first
 
 /// Phases of application startup in priority order
-enum StartupPhase implements Comparable<StartupPhase> {
-  /// Must initialize before app can function
-  /// Examples: Auth, key storage, core platform services
+enum StartupPhase {
+  /// Must complete before `runApp()` so the first route can build safely.
   critical(0, 'Critical services'),
 
-  /// Required for basic UI interaction
-  /// Examples: Navigation, theme, basic UI state
+  /// Starts right after the first frame to unblock auth/core readiness.
   essential(1, 'Essential UI'),
 
-  /// Important but not blocking
-  /// Examples: User profiles, video feed, social features
+  /// Background startup work that improves later interactions.
   standard(2, 'Standard features'),
 
-  /// Can be loaded after UI is responsive
-  /// Examples: Analytics, caching, optimization services
+  /// Nice-to-have warmups and observability that should stay off first paint.
   deferred(3, 'Deferred services')
   ;
 
@@ -24,21 +20,4 @@ enum StartupPhase implements Comparable<StartupPhase> {
   final String description;
 
   const StartupPhase(this.priority, this.description);
-
-  @override
-  int compareTo(StartupPhase other) => priority.compareTo(other.priority);
-
-  /// Get phases that must complete before this phase
-  List<StartupPhase> get dependencies {
-    final deps = <StartupPhase>[];
-    for (final phase in StartupPhase.values) {
-      if (phase.priority < priority) {
-        deps.add(phase);
-      }
-    }
-    return deps;
-  }
-
-  /// Check if this phase depends on another
-  bool dependsOn(StartupPhase other) => other.priority < priority;
 }

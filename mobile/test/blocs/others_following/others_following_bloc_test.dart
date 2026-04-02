@@ -1,6 +1,8 @@
 // ABOUTME: Tests for OthersFollowingBloc - another user's following list
 // ABOUTME: Tests loading from Nostr and error handling
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -185,6 +187,71 @@ void main() {
             bloc.add(OthersFollowingListLoadRequested(validPubkey('other'))),
         verify: (bloc) {
           expect(bloc.state.targetPubkey, validPubkey('other'));
+        },
+      );
+
+      test(
+        'retains existing following list while a reload is in flight',
+        () async {
+          final reloadCompleter = Completer<List<nostr_sdk.Event>>();
+          var queryCount = 0;
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) {
+            queryCount++;
+            if (queryCount == 1) {
+              return Future.value([
+                nostr_sdk.Event(
+                  validPubkey('other'),
+                  3,
+                  [
+                    ['p', validPubkey('following1')],
+                    ['p', validPubkey('following2')],
+                  ],
+                  '',
+                  createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ),
+              ]);
+            }
+            return reloadCompleter.future;
+          });
+
+          final bloc = createBloc();
+
+          final initialLoad = expectLater(
+            bloc.stream,
+            emitsThrough(
+              isA<OthersFollowingState>()
+                  .having(
+                    (state) => state.status,
+                    'status',
+                    OthersFollowingStatus.success,
+                  )
+                  .having(
+                    (state) => state.followingPubkeys,
+                    'followingPubkeys',
+                    [
+                      validPubkey('following1'),
+                      validPubkey('following2'),
+                    ],
+                  ),
+            ),
+          );
+
+          bloc.add(OthersFollowingListLoadRequested(validPubkey('other')));
+          await initialLoad;
+
+          bloc.add(OthersFollowingListLoadRequested(validPubkey('other')));
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.status, OthersFollowingStatus.loading);
+          expect(bloc.state.followingPubkeys, [
+            validPubkey('following1'),
+            validPubkey('following2'),
+          ]);
+
+          reloadCompleter.complete(const []);
+          await Future<void>.delayed(Duration.zero);
+          await bloc.close();
         },
       );
     });

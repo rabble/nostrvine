@@ -1066,6 +1066,43 @@ class VideoEventService extends ChangeNotifier {
     }
   }
 
+  void _hydrateCachedProfilesInBackground(
+    List<Event> cachedEvents, {
+    required SubscriptionType subscriptionType,
+  }) {
+    final profileRepository = _profileRepository;
+    if (profileRepository == null || cachedEvents.isEmpty) {
+      return;
+    }
+
+    final uniquePubkeys = cachedEvents.map((e) => e.pubkey).toSet().toList();
+    if (uniquePubkeys.isEmpty) {
+      return;
+    }
+
+    Log.info(
+      '⚡ Batch fetching profiles in background for ${cachedEvents.length} cached events',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+
+    unawaited(
+      profileRepository.fetchBatchProfiles(pubkeys: uniquePubkeys).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        Log.error(
+          'Background cached profile hydration failed for $subscriptionType: $error',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return <String, UserProfile>{};
+      }),
+    );
+  }
+
   /// Subscribe to NIP-71 video events with proper subscription type separation
   Future<void> subscribeToVideoFeed({
     required SubscriptionType subscriptionType,
@@ -1610,27 +1647,6 @@ class VideoEventService extends ChangeNotifier {
           }
         }
 
-        // 🎯 OPTIMIZATION: Batch fetch profiles BEFORE processing events
-        // This prevents 100+ sequential profile fetches that cause database locks
-        if (cachedEvents.isNotEmpty && _profileRepository != null) {
-          final uniquePubkeys = cachedEvents
-              .map((e) => e.pubkey)
-              .toSet()
-              .toList();
-
-          if (uniquePubkeys.isNotEmpty) {
-            Log.info(
-              '⚡ Batch fetching profiles for ${cachedEvents.length} cached events',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-            // fetchBatchProfiles checks cache internally (step 1)
-            await _profileRepository.fetchBatchProfiles(
-              pubkeys: uniquePubkeys,
-            );
-          }
-        }
-
         // Process cached events immediately (same flow as relay events)
         for (final event in cachedEvents) {
           _handleNewVideoEvent(event, subscriptionType);
@@ -1733,6 +1749,11 @@ class VideoEventService extends ChangeNotifier {
               notifyListeners();
             }
           },
+        );
+
+        _hydrateCachedProfilesInBackground(
+          cachedEvents,
+          subscriptionType: subscriptionType,
         );
 
         final streamSubscription = eventStream.listen(
