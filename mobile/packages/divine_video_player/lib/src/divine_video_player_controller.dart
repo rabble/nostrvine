@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:divine_video_player/src/audio_track.dart';
 import 'package:divine_video_player/src/video_clip.dart';
@@ -319,6 +320,19 @@ class DivineVideoPlayerController {
     if (event is! Map) return;
     final map = event.cast<Object?, Object?>();
     _state = DivineVideoPlayerState.fromMap(map);
+
+    // Log native error details rather than storing them in state.
+    if (_state.status == PlaybackStatus.error) {
+      final nativeError = map['errorMessage'] as String?;
+      if (nativeError != null) {
+        developer.log(
+          'Native player error: $nativeError',
+          name: 'DivineVideoPlayer',
+          level: 1000,
+        );
+      }
+    }
+
     if (_state.isFirstFrameRendered && !_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter.complete(true);
     }

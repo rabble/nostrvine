@@ -55,7 +55,6 @@ void main() {
       expect(state.isFirstFrameRendered, isFalse);
       expect(state.videoWidth, isZero);
       expect(state.videoHeight, isZero);
-      expect(state.errorMessage, isNull);
     });
 
     test('isPlaying delegates to status', () {
@@ -106,7 +105,6 @@ void main() {
           isFirstFrameRendered: true,
           videoWidth: 1920,
           videoHeight: 1080,
-          errorMessage: 'err',
         );
         final copy = original.copyWith();
 
@@ -125,7 +123,6 @@ void main() {
         );
         expect(copy.videoWidth, equals(original.videoWidth));
         expect(copy.videoHeight, equals(original.videoHeight));
-        expect(copy.errorMessage, equals(original.errorMessage));
       });
 
       test('overrides only specified fields', () {
@@ -156,7 +153,6 @@ void main() {
           'isFirstFrameRendered': true,
           'videoWidth': 1920,
           'videoHeight': 1080,
-          'errorMessage': 'something failed',
         });
 
         expect(state.status, equals(PlaybackStatus.playing));
@@ -171,7 +167,6 @@ void main() {
         expect(state.isFirstFrameRendered, isTrue);
         expect(state.videoWidth, equals(1920));
         expect(state.videoHeight, equals(1080));
-        expect(state.errorMessage, equals('something failed'));
       });
 
       test('uses defaults for missing keys', () {
@@ -189,7 +184,6 @@ void main() {
         expect(state.isFirstFrameRendered, isFalse);
         expect(state.videoWidth, isZero);
         expect(state.videoHeight, isZero);
-        expect(state.errorMessage, isNull);
       });
 
       test('parses all status values', () {
@@ -236,14 +230,13 @@ void main() {
       test('includes error message when present', () {
         const state = DivineVideoPlayerState(
           status: PlaybackStatus.error,
-          errorMessage: 'test error',
         );
-        expect(state.toString(), contains('test error'));
+        expect(state.toString(), contains('error'));
       });
 
-      test('omits error section when null', () {
+      test('omits error section when not in error state', () {
         const state = DivineVideoPlayerState();
-        expect(state.toString(), isNot(contains('error:')));
+        expect(state.toString(), isNot(contains('error')));
       });
     });
   });

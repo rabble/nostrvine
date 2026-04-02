@@ -60,7 +60,6 @@ class DivineVideoPlayerState {
     this.isFirstFrameRendered = false,
     this.videoWidth = 0,
     this.videoHeight = 0,
-    this.errorMessage,
   });
 
   /// Current playback status.
@@ -112,12 +111,6 @@ class DivineVideoPlayerState {
   double get aspectRatio =>
       videoWidth > 0 && videoHeight > 0 ? videoWidth / videoHeight : 0;
 
-  /// Error description when [status] is [PlaybackStatus.error].
-  ///
-  /// Contains the native player's error message, for example when a
-  /// network URL returns invalid data or the file cannot be read.
-  final String? errorMessage;
-
   /// Whether the player is currently playing.
   bool get isPlaying => status.isPlaying;
 
@@ -135,7 +128,6 @@ class DivineVideoPlayerState {
     bool? isFirstFrameRendered,
     int? videoWidth,
     int? videoHeight,
-    String? errorMessage,
   }) {
     return DivineVideoPlayerState(
       status: status ?? this.status,
@@ -150,7 +142,6 @@ class DivineVideoPlayerState {
       isFirstFrameRendered: isFirstFrameRendered ?? this.isFirstFrameRendered,
       videoWidth: videoWidth ?? this.videoWidth,
       videoHeight: videoHeight ?? this.videoHeight,
-      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
@@ -172,7 +163,6 @@ class DivineVideoPlayerState {
       isFirstFrameRendered: (map['isFirstFrameRendered'] as bool?) ?? false,
       videoWidth: (map['videoWidth'] as int?) ?? 0,
       videoHeight: (map['videoHeight'] as int?) ?? 0,
-      errorMessage: map['errorMessage'] as String?,
     );
   }
 
@@ -195,6 +185,5 @@ class DivineVideoPlayerState {
       'duration: $duration, buffered: $bufferedPosition, '
       'clipIndex: $currentClipIndex/$clipCount, '
       'size: ${videoWidth}x$videoHeight, '
-      'firstFrame: $isFirstFrameRendered'
-      '${errorMessage != null ? ', error: $errorMessage' : ''})';
+      'firstFrame: $isFirstFrameRendered)';
 }
