@@ -123,6 +123,7 @@ class _AndroidPlayerView extends StatelessWidget {
       },
     );
   }
+
   // coverage:ignore-end
 }
 
