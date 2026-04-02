@@ -11,6 +11,8 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/widgets/followers_screen_router.dart';
+import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
@@ -180,7 +182,10 @@ class ProfileHeaderWidget extends ConsumerWidget {
           // Stats row: Followers | Following | Likes | Loops
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _ProfileStatsRow(profileStats: profileStats),
+            child: _ProfileStatsRow(
+              userIdHex: userIdHex,
+              profileStats: profileStats,
+            ),
           ),
         ],
       ),
@@ -562,8 +567,12 @@ class _ProfileBanner extends StatelessWidget {
 
 /// Stats row displaying Followers, Following, Likes, and Loops with dividers.
 class _ProfileStatsRow extends StatelessWidget {
-  const _ProfileStatsRow({this.profileStats});
+  const _ProfileStatsRow({
+    required this.userIdHex,
+    this.profileStats,
+  });
 
+  final String userIdHex;
   final ProfileStats? profileStats;
 
   @override
@@ -579,12 +588,18 @@ class _ProfileStatsRow extends StatelessWidget {
           count: profileStats!.followers,
           label: 'Followers',
           isLoading: false,
+          onTap: () => context.push(
+            FollowersScreenRouter.pathForPubkey(userIdHex),
+          ),
         ),
       if (hasFollowing)
         ProfileStatColumn(
           count: profileStats!.following,
           label: 'Following',
           isLoading: false,
+          onTap: () => context.push(
+            FollowingScreenRouter.pathForPubkey(userIdHex),
+          ),
         ),
       if (hasLikes)
         ProfileStatColumn(
