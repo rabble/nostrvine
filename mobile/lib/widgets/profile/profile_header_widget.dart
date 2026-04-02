@@ -17,8 +17,6 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
-import 'package:openvine/widgets/profile/profile_followers_stat.dart';
-import 'package:openvine/widgets/profile/profile_following_stat.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -78,12 +76,12 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final profilePictureUrl = (effectiveProfile?.picture?.isNotEmpty == true)
         ? effectiveProfile!.picture
         : avatarUrlHint;
-    final displayName = effectiveProfile?.bestDisplayName ?? displayNameHint;
     final hasCustomName =
         effectiveProfile?.name?.isNotEmpty == true ||
         effectiveProfile?.displayName?.isNotEmpty == true ||
         displayNameHint?.isNotEmpty == true;
-    final hasAnyProfileInfo = hasCustomName ||
+    final hasAnyProfileInfo =
+        hasCustomName ||
         effectiveProfile?.picture?.isNotEmpty == true ||
         effectiveProfile?.about?.isNotEmpty == true ||
         effectiveProfile?.nip05?.isNotEmpty == true;
@@ -182,13 +180,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
           // Stats row: Followers | Following | Likes | Loops
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _ProfileStatsRow(
-              userIdHex: userIdHex,
-              displayName: displayName,
-              isOwnProfile: isOwnProfile,
-              profileStats: profileStats,
-              videoCount: videoCount,
-            ),
+            child: _ProfileStatsRow(profileStats: profileStats),
           ),
         ],
       ),
@@ -570,35 +562,30 @@ class _ProfileBanner extends StatelessWidget {
 
 /// Stats row displaying Followers, Following, Likes, and Loops with dividers.
 class _ProfileStatsRow extends StatelessWidget {
-  const _ProfileStatsRow({
-    required this.userIdHex,
-    required this.isOwnProfile,
-    this.displayName,
-    this.profileStats,
-    this.videoCount = 0,
-  });
+  const _ProfileStatsRow({this.profileStats});
 
-  final String userIdHex;
-  final bool isOwnProfile;
-  final String? displayName;
   final ProfileStats? profileStats;
-  final int videoCount;
 
   @override
   Widget build(BuildContext context) {
+    final hasFollowers = profileStats?.followers != null;
+    final hasFollowing = profileStats?.following != null;
     final hasLikes = profileStats?.totalLikes != null;
     final hasLoops = profileStats?.totalViews != null;
 
     final columns = <Widget>[
-      ProfileFollowersStat(
-        pubkey: userIdHex,
-        displayName: displayName,
-        isOwnProfile: isOwnProfile,
-      ),
-      ProfileFollowingStat(
-        pubkey: userIdHex,
-        displayName: displayName,
-      ),
+      if (hasFollowers)
+        ProfileStatColumn(
+          count: profileStats!.followers,
+          label: 'Followers',
+          isLoading: false,
+        ),
+      if (hasFollowing)
+        ProfileStatColumn(
+          count: profileStats!.following,
+          label: 'Following',
+          isLoading: false,
+        ),
       if (hasLikes)
         ProfileStatColumn(
           count: profileStats!.totalLikes,

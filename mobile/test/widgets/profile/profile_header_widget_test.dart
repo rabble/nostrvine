@@ -304,7 +304,7 @@ void main() {
       expect(find.text('Loops'), findsOneWidget);
     });
 
-    testWidgets('hides Likes and Loops columns when stats are null', (
+    testWidgets('hides all stat columns when profileStats is null', (
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Test User');
@@ -318,8 +318,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Followers'), findsOneWidget);
-      expect(find.text('Following'), findsOneWidget);
+      expect(find.text('Followers'), findsNothing);
+      expect(find.text('Following'), findsNothing);
       expect(find.text('Likes'), findsNothing);
       expect(find.text('Loops'), findsNothing);
     });
