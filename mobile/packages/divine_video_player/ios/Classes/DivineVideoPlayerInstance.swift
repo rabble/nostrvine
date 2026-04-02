@@ -530,12 +530,21 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     // MARK: - Video size
 
     private func updateVideoSize(from item: AVPlayerItem) {
-        guard let track = item.asset.tracks(withMediaType: .video).first else {
-            return
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let track = try? await item.asset.loadTracks(
+                withMediaType: .video
+            ).first else {
+                return
+            }
+            let (naturalSize, transform) = try await track.load(
+                .naturalSize, .preferredTransform
+            )
+            let size = naturalSize.applying(transform)
+            self.videoWidth = Int(abs(size.width))
+            self.videoHeight = Int(abs(size.height))
+            self.sendStateUpdate()
         }
-        let size = track.naturalSize.applying(track.preferredTransform)
-        videoWidth = Int(abs(size.width))
-        videoHeight = Int(abs(size.height))
     }
 
     // MARK: - Buffered position
