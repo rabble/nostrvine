@@ -2,6 +2,7 @@
 // ABOUTME: Verifies error differentiation for 401, 403, 404, and generic
 // ABOUTME: errors in the pooled video player path.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,9 @@ import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 
 import '../builders/test_video_event_builder.dart';
+
+Finder _findDivineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group(PooledVideoErrorOverlay, () {
@@ -30,6 +34,7 @@ void main() {
 
     Widget buildWidget({
       String? errorMessage,
+      VideoEvent? video,
     }) {
       return ProviderScope(
         overrides: [
@@ -40,7 +45,7 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: PooledVideoErrorOverlay(
-              video: testVideo,
+              video: video ?? testVideo,
               onRetry: () => retryPressed = true,
               errorMessage: errorMessage,
             ),
@@ -52,6 +57,7 @@ void main() {
     Widget buildWidgetWithModeration({
       required String? errorMessage,
       required VideoModerationStatus moderationStatus,
+      VideoEvent? video,
     }) {
       return ProviderScope(
         overrides: [
@@ -62,7 +68,7 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: PooledVideoErrorOverlay(
-              video: testVideo,
+              video: video ?? testVideo,
               onRetry: () => retryPressed = true,
               errorMessage: errorMessage,
             ),
@@ -80,7 +86,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.shield_outlined), findsOneWidget);
+        expect(_findDivineIcon(DivineIconName.shieldCheck), findsOneWidget);
         expect(find.text('Content restricted'), findsOneWidget);
       });
 
@@ -99,7 +105,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.shield_outlined), findsOneWidget);
+        expect(_findDivineIcon(DivineIconName.shieldCheck), findsOneWidget);
         expect(find.text('Content restricted'), findsOneWidget);
       });
     });
@@ -115,7 +121,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(_findDivineIcon(DivineIconName.lockSimple), findsOneWidget);
         expect(find.text('Age-restricted content'), findsOneWidget);
       });
 
@@ -136,23 +142,24 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(_findDivineIcon(DivineIconName.lockSimple), findsOneWidget);
       });
     });
 
     group('404 Not Found', () {
-      testWidgets('shows error icon and "Video not found" without moderation', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildWidget(errorMessage: '404 not found'),
-        );
-        await tester.pumpAndSettle();
+      testWidgets(
+        'shows "Video not found" with retry for explicit 404',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(errorMessage: '404 not found'),
+          );
+          await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
-        expect(find.text('Video not found'), findsOneWidget);
-        expect(find.text('Retry'), findsOneWidget);
-      });
+          expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text('Video not found'), findsOneWidget);
+          expect(find.text('Retry'), findsOneWidget);
+        },
+      );
 
       testWidgets(
         'shows shield icon when moderation status indicates blocked',
@@ -172,7 +179,7 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.byIcon(Icons.shield_outlined), findsOneWidget);
+          expect(_findDivineIcon(DivineIconName.shieldCheck), findsOneWidget);
           expect(find.text('Content restricted'), findsOneWidget);
           expect(find.text('Retry'), findsNothing);
         },
@@ -196,7 +203,7 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.byIcon(Icons.shield_outlined), findsOneWidget);
+          expect(_findDivineIcon(DivineIconName.shieldCheck), findsOneWidget);
           expect(find.text('Content restricted'), findsOneWidget);
         },
       );
@@ -204,57 +211,96 @@ void main() {
       testWidgets(
         'skips moderation lookup for non-divine video URLs',
         (tester) async {
-          // Use a non-divine URL — moderation provider returns blocked but
-          // should never be consulted because shouldCheckModeration is false.
           final thirdPartyVideo = TestVideoEventBuilder.create(
             id: 'third-party-video',
             videoUrl: 'https://cdn.example.com/$testSha256.mp4',
           );
           await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                videoModerationStatusProvider.overrideWith(
-                  (ref, sha256) async => const VideoModerationStatus(
-                    moderated: true,
-                    blocked: true,
-                    quarantined: false,
-                    ageRestricted: false,
-                    needsReview: false,
-                    aiGenerated: false,
-                  ),
-                ),
-              ],
-              child: MaterialApp(
-                home: Scaffold(
-                  body: PooledVideoErrorOverlay(
-                    video: thirdPartyVideo,
-                    onRetry: () => retryPressed = true,
-                    errorMessage: '404 not found',
-                  ),
-                ),
+            buildWidgetWithModeration(
+              errorMessage: '404 not found',
+              moderationStatus: const VideoModerationStatus(
+                moderated: true,
+                blocked: true,
+                quarantined: false,
+                ageRestricted: false,
+                needsReview: false,
+                aiGenerated: false,
               ),
+              video: thirdPartyVideo,
             ),
           );
           await tester.pumpAndSettle();
 
           // Should show plain 404, not moderation-restricted.
-          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
           expect(find.text('Video not found'), findsOneWidget);
           expect(find.text('Retry'), findsOneWidget);
         },
       );
     });
 
-    group('generic errors', () {
-      testWidgets('shows error icon and retry for unknown errors', (
+    group('divine URL generic fallback', () {
+      testWidgets(
+        'shows "Video not found" for divine URLs with unparseable errors',
+        (tester) async {
+          // media_kit error strings often lack HTTP status codes, so divine
+          // URLs with a generic error should fall back to "Video not found".
+          await tester.pumpWidget(
+            buildWidget(
+              errorMessage: 'PlatformException: Failed to open stream',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.text('Video not found'), findsOneWidget);
+          expect(find.text('Retry'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'shows "Content restricted" for divine URL generic error '
+        'when moderation status indicates blocked',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidgetWithModeration(
+              errorMessage: 'Failed to open stream',
+              moderationStatus: const VideoModerationStatus(
+                moderated: true,
+                blocked: true,
+                quarantined: false,
+                ageRestricted: false,
+                needsReview: false,
+                aiGenerated: false,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(_findDivineIcon(DivineIconName.shieldCheck), findsOneWidget);
+          expect(find.text('Content restricted'), findsOneWidget);
+          expect(find.text('Retry'), findsNothing);
+        },
+      );
+    });
+
+    group('non-divine generic errors', () {
+      testWidgets('shows "Video playback error" for third-party URLs', (
         tester,
       ) async {
+        final thirdPartyVideo = TestVideoEventBuilder.create(
+          id: 'third-party-video',
+          videoUrl: 'https://cdn.example.com/video.mp4',
+        );
         await tester.pumpWidget(
-          buildWidget(errorMessage: 'PlatformException: video decode error'),
+          buildWidget(
+            errorMessage: 'PlatformException: video decode error',
+            video: thirdPartyVideo,
+          ),
         );
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
         expect(find.text('Video playback error'), findsOneWidget);
         expect(find.text('Retry'), findsOneWidget);
       });
@@ -262,17 +308,30 @@ void main() {
       testWidgets('shows generic error for null error message', (
         tester,
       ) async {
-        await tester.pumpWidget(buildWidget());
+        final thirdPartyVideo = TestVideoEventBuilder.create(
+          id: 'third-party-video',
+          videoUrl: 'https://cdn.example.com/video.mp4',
+        );
+        await tester.pumpWidget(
+          buildWidget(video: thirdPartyVideo),
+        );
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
         expect(find.text('Video playback error'), findsOneWidget);
         expect(find.text('Retry'), findsOneWidget);
       });
 
       testWidgets('retry button calls onRetry', (tester) async {
+        final thirdPartyVideo = TestVideoEventBuilder.create(
+          id: 'third-party-video',
+          videoUrl: 'https://cdn.example.com/video.mp4',
+        );
         await tester.pumpWidget(
-          buildWidget(errorMessage: 'some error'),
+          buildWidget(
+            errorMessage: 'some error',
+            video: thirdPartyVideo,
+          ),
         );
         await tester.pumpAndSettle();
 

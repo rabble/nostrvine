@@ -498,6 +498,15 @@ class VideoFeedController extends ChangeNotifier {
     }
   }
 
+  /// Retries loading the video at [index] by releasing its player state
+  /// and re-triggering the preload window.
+  void retryLoad(int index) {
+    if (_isDisposed) return;
+    _logDebug('retry_load ${_videoDebugDetails(index)}');
+    _releasePlayer(index);
+    _updatePreloadWindow(_currentIndex);
+  }
+
   /// Called when the visible page changes.
   void onPageChanged(int index) {
     if (_isDisposed || index == _currentIndex) return;

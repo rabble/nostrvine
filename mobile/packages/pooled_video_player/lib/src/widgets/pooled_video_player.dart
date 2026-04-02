@@ -128,7 +128,7 @@ class PooledVideoPlayer extends StatelessWidget {
               if (loadState == .error)
                 errorBuilder?.call(
                       context,
-                      () => feedController.onPageChanged(
+                      () => feedController.retryLoad(
                         feedController.currentIndex,
                       ),
                       state.errorMessage,

@@ -581,7 +581,7 @@ void main() {
         await tester.tap(find.byKey(const Key('retry_button')));
 
         expect(retryPressed, isTrue);
-        verify(() => mockController.onPageChanged(0)).called(1);
+        verify(() => mockController.retryLoad(0)).called(1);
       });
     });
 

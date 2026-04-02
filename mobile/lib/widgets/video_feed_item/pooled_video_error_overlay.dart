@@ -14,8 +14,9 @@ import 'package:openvine/widgets/video_thumbnail_widget.dart';
 /// Shows different UI based on the error:
 /// - 403 Forbidden: Shield icon + "Content restricted" (no retry)
 /// - 404 with moderation status: Shield icon + "Content restricted" (no retry)
-/// - 401 Unauthorized: Lock icon + "Age-restricted content" + Retry
-/// - Other: Error icon + user-friendly message + Retry
+/// - 401 Unauthorized: Lock icon + "Age-restricted content" + Verify Age
+/// - Divine URL generic failure: Error icon + "Video not found" + Retry
+/// - Other: Error icon + "Video playback error" + Retry
 class PooledVideoErrorOverlay extends ConsumerWidget {
   const PooledVideoErrorOverlay({
     required this.video,
@@ -31,12 +32,14 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final errorType = _VideoErrorType.fromMessage(errorMessage);
+    final isDivineUrl = VideoModerationStatusService.shouldCheckModeration(
+      video.videoUrl,
+    );
 
-    // Resolve sha256 for moderation lookup on 403/404 errors from divine
-    // servers only — skip the API call for third-party video URLs.
-    final sha256 =
-        errorType.shouldCheckModeration &&
-            VideoModerationStatusService.shouldCheckModeration(video.videoUrl)
+    // For divine URLs, always check moderation status — mpv error strings
+    // don't reliably contain HTTP status codes, so we can't distinguish
+    // 404 from generic failures by string alone.
+    final sha256 = isDivineUrl
         ? VideoModerationStatusService.resolveSha256(
             explicitSha256: video.sha256,
             videoUrl: video.videoUrl,
@@ -55,17 +58,24 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
         (moderationStatus != null &&
             moderationStatus.isUnavailableDueToModeration);
 
-    final icon = errorType == _VideoErrorType.ageRestricted
-        ? Icons.lock_outline
-        : isModerationRestricted
-        ? Icons.shield_outlined
-        : Icons.error_outline;
+    // For divine URLs where the error type couldn't be parsed from the
+    // error string, treat as "not found" — this is the most common failure
+    // mode (missing upload, hash not on blossom, transcode pending).
+    final effectiveType = errorType == _VideoErrorType.generic && isDivineUrl
+        ? _VideoErrorType.notFound
+        : errorType;
 
-    final message = errorType == _VideoErrorType.ageRestricted
+    final icon = effectiveType == _VideoErrorType.ageRestricted
+        ? DivineIconName.lockSimple
+        : isModerationRestricted
+        ? DivineIconName.shieldCheck
+        : DivineIconName.warningCircle;
+
+    final message = effectiveType == _VideoErrorType.ageRestricted
         ? 'Age-restricted content'
         : isModerationRestricted
         ? 'Content restricted'
-        : errorType.userMessage;
+        : effectiveType.userMessage;
 
     final showRetry = !isModerationRestricted;
 
@@ -78,9 +88,13 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              spacing: 16,
               children: [
-                Icon(icon, color: VineTheme.whiteText, size: 48),
-                const SizedBox(height: 16),
+                DivineIcon(
+                  icon: icon,
+                  color: VineTheme.whiteText,
+                  size: 48,
+                ),
                 Text(
                   message,
                   style: const TextStyle(
@@ -89,8 +103,7 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                if (showRetry) ...[
-                  const SizedBox(height: 16),
+                if (showRetry)
                   ElevatedButton(
                     onPressed: onRetry,
                     style: ElevatedButton.styleFrom(
@@ -98,12 +111,11 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
                       foregroundColor: VineTheme.backgroundColor,
                     ),
                     child: Text(
-                      errorType == _VideoErrorType.ageRestricted
+                      effectiveType == _VideoErrorType.ageRestricted
                           ? 'Verify Age'
                           : 'Retry',
                     ),
                   ),
-                ],
               ],
             ),
           ),
@@ -142,9 +154,6 @@ enum _VideoErrorType {
     }
     return generic;
   }
-
-  /// Whether moderation status should be checked for this error type.
-  bool get shouldCheckModeration => this == forbidden || this == notFound;
 
   /// User-facing message for this error type.
   String get userMessage => switch (this) {
