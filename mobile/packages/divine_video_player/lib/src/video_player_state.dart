@@ -227,11 +227,18 @@ class DivineVideoPlayerState {
   );
 
   @override
-  String toString() =>
+  String toString() {
+    final buffer = StringBuffer(
       'DivineVideoPlayerState(status: $status, position: $position, '
       'duration: $duration, buffered: $bufferedPosition, '
       'clipIndex: $currentClipIndex/$clipCount, '
       'size: ${videoWidth}x$videoHeight, '
-      'firstFrame: $isFirstFrameRendered, '
-      'error: $errorMessage)';
+      'firstFrame: $isFirstFrameRendered',
+    );
+    if (status == PlaybackStatus.error || errorMessage != null) {
+      buffer.write(', error: $errorMessage');
+    }
+    buffer.write(')');
+    return buffer.toString();
+  }
 }
