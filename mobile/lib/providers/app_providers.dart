@@ -16,6 +16,7 @@ import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -70,11 +71,6 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/services/nostr_app_audit_service.dart';
-import 'package:openvine/services/nostr_app_bridge_policy.dart';
-import 'package:openvine/services/nostr_app_bridge_service.dart';
-import 'package:openvine/services/nostr_app_directory_service.dart';
-import 'package:openvine/services/nostr_app_grant_store.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
@@ -121,6 +117,7 @@ final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
   return NostrAppDirectoryService(
     sharedPreferences: prefs,
     client: client,
+    baseUrl: AppConfig.appsDirectoryBaseUrl,
   );
 });
 
@@ -144,7 +141,22 @@ final nostrAppAuditServiceProvider = Provider<NostrAppAuditService>((ref) {
   ref.onDispose(client.close);
   return NostrAppAuditService(
     workerBaseUri: Uri.parse(AppConfig.appsDirectoryBaseUrl),
-    nip98AuthService: nip98AuthService,
+    authTokenProvider:
+        ({
+          required url,
+          required method,
+          required payload,
+        }) async {
+          final token = await nip98AuthService.createAuthToken(
+            url: url,
+            method: HttpMethod.post,
+            payload: payload,
+          );
+          if (token == null) return null;
+          return AuditAuthToken(
+            authorizationHeader: token.authorizationHeader,
+          );
+        },
     httpClient: client,
   );
 });
@@ -154,8 +166,11 @@ final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
   final policy = ref.watch(nostrAppBridgePolicyProvider);
   final auditService = ref.watch(nostrAppAuditServiceProvider);
   return NostrAppBridgeService(
-    authService: authService,
+    authProvider: _AuthServiceBridgeAdapter(authService),
     policy: policy,
+    signerFactory: () =>
+        authService.rpcSigner ??
+        AuthServiceSigner(authService.currentKeyContainer),
     auditService: auditService,
   );
 });
@@ -2126,4 +2141,39 @@ RepostsRepository repostsRepository(Ref ref) {
   ref.onDispose(repository.dispose);
 
   return repository;
+}
+
+/// Adapts the app-level [AuthService] to the package-level
+/// [BridgeAuthProvider] interface.
+class _AuthServiceBridgeAdapter implements BridgeAuthProvider {
+  const _AuthServiceBridgeAdapter(this._authService);
+
+  final AuthService _authService;
+
+  @override
+  String? get currentPublicKeyHex => _authService.currentPublicKeyHex;
+
+  @override
+  List<BridgeRelay> get userRelays => _authService.userRelays
+      .map(
+        (r) => BridgeRelay(url: r.url, read: r.read, write: r.write),
+      )
+      .toList();
+
+  @override
+  Future<BridgeSignedEvent?> createAndSignEvent({
+    required int kind,
+    required String content,
+    required List<List<String>> tags,
+    int? createdAt,
+  }) async {
+    final event = await _authService.createAndSignEvent(
+      kind: kind,
+      content: content,
+      tags: tags,
+      createdAt: createdAt,
+    );
+    if (event == null) return null;
+    return BridgeSignedEvent(json: event.toJson());
+  }
 }

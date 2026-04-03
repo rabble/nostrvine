@@ -1,16 +1,18 @@
 import 'dart:convert';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/services/nostr_app_directory_service.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:test/test.dart';
 
 class _MockHttpClient extends Mock implements http.Client {}
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(Uri.parse('https://apps.divine.video/v1/apps'));
+    registerFallbackValue(
+      Uri.parse('https://apps.divine.video/v1/apps'),
+    );
     registerFallbackValue(<String, String>{});
   });
 
@@ -30,50 +32,64 @@ void main() {
       );
     });
 
-    test('fetchApprovedApps returns remote apps and caches them', () async {
-      when(
-        () => mockHttpClient.get(
-          Uri.parse('https://apps.divine.video/v1/apps'),
-          headers: any(named: 'headers'),
-        ),
-      ).thenAnswer(
-        (_) async => http.Response(
-          jsonEncode({
-            'items': [
-              _appJson(
-                slug: 'primal',
-                name: 'Primal',
-                updatedAt: '2026-03-25T10:00:00Z',
-              ),
-            ],
-          }),
-          200,
-        ),
-      );
+    test(
+      'fetchApprovedApps returns remote apps and caches them',
+      () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://apps.divine.video/v1/apps'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'items': [
+                _appJson(
+                  slug: 'primal',
+                  name: 'Primal',
+                  updatedAt: '2026-03-25T10:00:00Z',
+                ),
+              ],
+            }),
+            200,
+          ),
+        );
 
-      final apps = await service.fetchApprovedApps();
+        final apps = await service.fetchApprovedApps();
 
-      expect(apps, hasLength(_starterSlugs.length));
-      expect(apps.where((app) => app.slug == 'primal').single.id, '1');
-      expect(
-        apps.where((app) => app.slug == 'primal').single.name,
-        'Primal',
-      );
+        expect(apps, hasLength(_starterSlugs.length));
+        expect(
+          apps.where((app) => app.slug == 'primal').single.id,
+          '1',
+        );
+        expect(
+          apps.where((app) => app.slug == 'primal').single.name,
+          'Primal',
+        );
 
-      final cachedApps = await service.fetchApprovedApps(useCacheOnly: true);
-      expect(cachedApps.map((app) => app.slug), _starterSlugs);
-      verify(
-        () => mockHttpClient.get(
-          Uri.parse('https://apps.divine.video/v1/apps'),
-          headers: any(named: 'headers'),
-        ),
-      ).called(1);
-    });
+        final cachedApps = await service.fetchApprovedApps(
+          useCacheOnly: true,
+        );
+        expect(
+          cachedApps.map((app) => app.slug),
+          _starterSlugs,
+        );
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse('https://apps.divine.video/v1/apps'),
+            headers: any(named: 'headers'),
+          ),
+        ).called(1);
+      },
+    );
 
     test(
-      'fetchApprovedApps with useCacheOnly returns bundled starter apps when cache is empty',
+      'fetchApprovedApps with useCacheOnly returns bundled '
+      'starter apps when cache is empty',
       () async {
-        final apps = await service.fetchApprovedApps(useCacheOnly: true);
+        final apps = await service.fetchApprovedApps(
+          useCacheOnly: true,
+        );
 
         expect(apps.map((app) => app.slug), _starterSlugs);
         verifyNever(
@@ -98,7 +114,8 @@ void main() {
     );
 
     test(
-      'fetchApprovedApps with useCacheOnly includes the new bundled starter apps',
+      'fetchApprovedApps with useCacheOnly includes the new '
+      'bundled starter apps',
       () async {
         final apps = await service.fetchApprovedApps(useCacheOnly: true);
 
@@ -141,7 +158,8 @@ void main() {
     );
 
     test(
-      'fetchApprovedApps with useCacheOnly reads cached apps only',
+      'fetchApprovedApps with useCacheOnly reads cached apps '
+      'only',
       () async {
         await sharedPreferences.setString(
           'nostr_app_directory_cache',
@@ -154,7 +172,9 @@ void main() {
           ]),
         );
 
-        final apps = await service.fetchApprovedApps(useCacheOnly: true);
+        final apps = await service.fetchApprovedApps(
+          useCacheOnly: true,
+        );
 
         expect(apps, hasLength(_starterSlugs.length));
         expect(
@@ -171,7 +191,8 @@ void main() {
     );
 
     test(
-      'fetchApprovedApps returns bundled starter apps when remote directory is empty',
+      'fetchApprovedApps returns bundled starter apps when '
+      'remote directory is empty',
       () async {
         when(
           () => mockHttpClient.get(
@@ -179,7 +200,10 @@ void main() {
             headers: any(named: 'headers'),
           ),
         ).thenAnswer(
-          (_) async => http.Response(jsonEncode({'items': []}), 200),
+          (_) async => http.Response(
+            jsonEncode({'items': <Object>[]}),
+            200,
+          ),
         );
 
         final apps = await service.fetchApprovedApps();
@@ -189,7 +213,8 @@ void main() {
     );
 
     test(
-      'fetchApprovedApps lets the remote directory hide a bundled starter app',
+      'fetchApprovedApps lets the remote directory hide a '
+      'bundled starter app',
       () async {
         when(
           () => mockHttpClient.get(
@@ -214,12 +239,16 @@ void main() {
 
         final apps = await service.fetchApprovedApps();
 
-        expect(apps.any((app) => app.slug == 'primal'), isFalse);
+        expect(
+          apps.any((app) => app.slug == 'primal'),
+          isFalse,
+        );
       },
     );
 
     test(
-      'fetchApprovedApps falls back to cached apps when remote fetch fails',
+      'fetchApprovedApps falls back to cached apps when '
+      'remote fetch fails',
       () async {
         await sharedPreferences.setString(
           'nostr_app_directory_cache',
@@ -242,12 +271,16 @@ void main() {
         final apps = await service.fetchApprovedApps();
 
         expect(apps, hasLength(_starterSlugs.length + 1));
-        expect(apps.any((app) => app.slug == 'noauth'), isTrue);
+        expect(
+          apps.any((app) => app.slug == 'noauth'),
+          isTrue,
+        );
       },
     );
 
     test(
-      'fetchApprovedApps replaces cached apps so revoked entries disappear',
+      'fetchApprovedApps replaces cached apps so revoked '
+      'entries disappear',
       () async {
         await sharedPreferences.setString(
           'nostr_app_directory_cache',
@@ -286,14 +319,31 @@ void main() {
         );
 
         final apps = await service.fetchApprovedApps();
-        final cachedApps = await service.fetchApprovedApps(useCacheOnly: true);
+        final cachedApps = await service.fetchApprovedApps(
+          useCacheOnly: true,
+        );
 
         expect(apps, hasLength(_starterSlugs.length + 1));
-        expect(cachedApps, hasLength(_starterSlugs.length + 1));
-        expect(apps.any((app) => app.slug == 'keep-app'), isTrue);
-        expect(cachedApps.any((app) => app.slug == 'keep-app'), isTrue);
-        expect(apps.any((app) => app.slug == 'old-app'), isFalse);
-        expect(cachedApps.any((app) => app.slug == 'old-app'), isFalse);
+        expect(
+          cachedApps,
+          hasLength(_starterSlugs.length + 1),
+        );
+        expect(
+          apps.any((app) => app.slug == 'keep-app'),
+          isTrue,
+        );
+        expect(
+          cachedApps.any((app) => app.slug == 'keep-app'),
+          isTrue,
+        );
+        expect(
+          apps.any((app) => app.slug == 'old-app'),
+          isFalse,
+        );
+        expect(
+          cachedApps.any((app) => app.slug == 'old-app'),
+          isFalse,
+        );
       },
     );
   });

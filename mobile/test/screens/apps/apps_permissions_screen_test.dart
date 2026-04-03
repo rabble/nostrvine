@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
-import 'package:openvine/services/nostr_app_grant_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

@@ -36,6 +36,7 @@ workspace:
   - packages/likes_repository
   - packages/media_cache
   - packages/models
+  - packages/nostr_app_bridge_repository
   - packages/nostr_sdk
   - packages/nostr_client
   - packages/nostr_key_manager
@@ -134,6 +135,7 @@ dependencies:
   sound_service:
 
   # Nostr SDK - Local package for comprehensive Nostr support
+  nostr_app_bridge_repository:
   nostr_sdk:
 
   # Nostr Key Manager - Secure key management with hardware-backed storage

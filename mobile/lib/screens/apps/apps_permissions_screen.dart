@@ -4,8 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/apps/apps_permissions_cubit.dart';
-import 'package:openvine/services/nostr_app_grant_store.dart';
 
 class AppsPermissionsScreen extends StatelessWidget {
   static const routeName = 'apps-permissions';

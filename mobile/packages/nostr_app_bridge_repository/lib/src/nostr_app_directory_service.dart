@@ -1,31 +1,37 @@
-// ABOUTME: Fetches and caches approved Nostr app manifests for the mobile app directory
-// ABOUTME: Falls back to cached manifests when the Cloudflare directory is unavailable
-
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
-import 'package:openvine/config/app_config.dart';
-import 'package:openvine/models/nostr_app_directory_entry.dart';
-import 'package:openvine/services/preloaded_nostr_apps.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:nostr_app_bridge_repository/src/models/nostr_app_directory_entry.dart';
+import 'package:nostr_app_bridge_repository/src/preloaded_nostr_apps.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Fetches and caches approved Nostr app manifests from the
+/// directory worker, falling back to cached or bundled entries.
 class NostrAppDirectoryService {
+  /// Creates a directory service.
+  ///
+  /// [baseUrl] is the root URL of the apps directory API
+  /// (e.g. `https://apps.divine.video`). It is required.
   NostrAppDirectoryService({
     required SharedPreferences sharedPreferences,
     required http.Client client,
-    String? baseUrl,
+    required String baseUrl,
   }) : _sharedPreferences = sharedPreferences,
        _client = client,
-       _baseUrl = _normalizeBaseUrl(baseUrl ?? AppConfig.appsDirectoryBaseUrl);
+       _baseUrl = _normalizeBaseUrl(baseUrl);
 
+  /// SharedPreferences key for the cached app list.
   static const String cacheKey = 'nostr_app_directory_cache';
+
+  /// SharedPreferences key for the cached ETag.
   static const String eTagCacheKey = 'nostr_app_directory_etag';
 
   final SharedPreferences _sharedPreferences;
   final http.Client _client;
   final String _baseUrl;
 
+  /// Fetches approved apps, optionally from cache only.
   Future<List<NostrAppDirectoryEntry>> fetchApprovedApps({
     bool useCacheOnly = false,
   }) async {
@@ -46,12 +52,15 @@ class NostrAppDirectoryService {
       );
 
       if (response.statusCode == 304) {
-        return _mergeWithPreloadedApps(await _readCachedApps());
+        return _mergeWithPreloadedApps(
+          await _readCachedApps(),
+        );
       }
 
       if (response.statusCode != 200) {
         throw http.ClientException(
-          'Directory fetch failed with status ${response.statusCode}',
+          'Directory fetch failed with status '
+          '${response.statusCode}',
           uri,
         );
       }
@@ -61,20 +70,19 @@ class NostrAppDirectoryService {
 
       final responseETag = response.headers['etag'];
       if (responseETag != null && responseETag.isNotEmpty) {
-        await _sharedPreferences.setString(eTagCacheKey, responseETag);
+        await _sharedPreferences.setString(
+          eTagCacheKey,
+          responseETag,
+        );
       }
 
       return _mergeWithPreloadedApps(remoteApps);
-    } catch (error, stackTrace) {
-      Log.warning(
+    } on Object catch (error, stackTrace) {
+      developer.log(
         'Falling back to cached Nostr app directory: $error',
         name: 'NostrAppDirectoryService',
-        category: LogCategory.system,
-      );
-      Log.debug(
-        '$stackTrace',
-        name: 'NostrAppDirectoryService',
-        category: LogCategory.system,
+        error: error,
+        stackTrace: stackTrace,
       );
       return _mergeWithPreloadedApps(await _readCachedApps());
     }
@@ -85,15 +93,17 @@ class NostrAppDirectoryService {
     final rawItems = switch (decoded) {
       {'items': final List<dynamic> items} => items,
       final List<dynamic> items => items,
-      _ => throw const FormatException('Unexpected app directory payload'),
+      _ => throw const FormatException(
+        'Unexpected app directory payload',
+      ),
     };
 
-    final apps = rawItems
-        .whereType<Map<String, dynamic>>()
-        .map(NostrAppDirectoryEntry.fromJson)
-        .toList();
-
-    apps.sort(_compareApps);
+    final apps =
+        rawItems
+            .whereType<Map<String, dynamic>>()
+            .map(NostrAppDirectoryEntry.fromJson)
+            .toList()
+          ..sort(_compareApps);
     return List<NostrAppDirectoryEntry>.unmodifiable(apps);
   }
 
@@ -105,26 +115,31 @@ class NostrAppDirectoryService {
 
     try {
       final decoded = jsonDecode(rawCache) as List<dynamic>;
-      final apps = decoded
-          .whereType<Map<String, dynamic>>()
-          .map(NostrAppDirectoryEntry.fromJson)
-          .toList();
-      apps.sort(_compareApps);
+      final apps =
+          decoded
+              .whereType<Map<String, dynamic>>()
+              .map(NostrAppDirectoryEntry.fromJson)
+              .toList()
+            ..sort(_compareApps);
       return List<NostrAppDirectoryEntry>.unmodifiable(apps);
-    } catch (error) {
-      Log.warning(
+    } on Object catch (error) {
+      developer.log(
         'Ignoring invalid Nostr app directory cache: $error',
         name: 'NostrAppDirectoryService',
-        category: LogCategory.system,
+        error: error,
       );
       return const [];
     }
   }
 
-  Future<void> _writeCachedApps(List<NostrAppDirectoryEntry> apps) {
+  Future<void> _writeCachedApps(
+    List<NostrAppDirectoryEntry> apps,
+  ) {
     return _sharedPreferences.setString(
       cacheKey,
-      jsonEncode(apps.map((app) => app.toJson()).toList(growable: false)),
+      jsonEncode(
+        apps.map((app) => app.toJson()).toList(growable: false),
+      ),
     );
   }
 
@@ -161,8 +176,7 @@ class NostrAppDirectoryService {
       }
     }
 
-    final apps = appsBySlug.values.toList(growable: false);
-    apps.sort(_compareApps);
+    final apps = appsBySlug.values.toList(growable: false)..sort(_compareApps);
     return List<NostrAppDirectoryEntry>.unmodifiable(apps);
   }
 }

@@ -7,16 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/models/nostr_app_directory_entry.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_app_bridge_policy.dart';
-import 'package:openvine/services/nostr_app_bridge_service.dart';
-import 'package:openvine/services/nostr_app_grant_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
-
-class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
   group('NostrAppSandboxScreen', () {
@@ -178,15 +174,13 @@ void main() {
       final grantStore = NostrAppGrantStore(
         sharedPreferences: sharedPreferences,
       );
-      final authService = _MockAuthService();
-      when(() => authService.currentPublicKeyHex).thenReturn('f' * 64);
-
       final bridgeService = NostrAppBridgeService(
-        authService: authService,
+        authProvider: _FakeAuthProvider(),
         policy: NostrAppBridgePolicy(
           grantStore: grantStore,
           currentUserPubkey: 'f' * 64,
         ),
+        signerFactory: _FakeNostrSigner.new,
       );
 
       Future<void> Function(String message)? bridgeHandler;
@@ -488,4 +482,49 @@ class _FakeNavigationDelegate extends PlatformNavigationDelegate {
 
   @override
   Future<void> setOnHttpAuthRequest(HttpAuthRequestCallback handler) async {}
+}
+
+class _FakeAuthProvider implements BridgeAuthProvider {
+  @override
+  String? get currentPublicKeyHex => 'f' * 64;
+
+  @override
+  List<BridgeRelay> get userRelays => const [];
+
+  @override
+  Future<BridgeSignedEvent?> createAndSignEvent({
+    required int kind,
+    required String content,
+    required List<List<String>> tags,
+    int? createdAt,
+  }) async {
+    final event = Event('f' * 64, kind, tags, content, createdAt: createdAt);
+    return BridgeSignedEvent(json: event.toJson());
+  }
+}
+
+class _FakeNostrSigner implements NostrSigner {
+  @override
+  void close() {}
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) async => null;
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) async => null;
+
+  @override
+  Future<String?> getPublicKey() async => 'f' * 64;
+
+  @override
+  Future<Map<dynamic, dynamic>?> getRelays() async => null;
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) async => null;
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) async => null;
+
+  @override
+  Future<Event?> signEvent(Event event) async => event;
 }

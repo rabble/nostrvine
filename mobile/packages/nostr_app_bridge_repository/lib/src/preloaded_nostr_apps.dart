@@ -1,7 +1,4 @@
-// ABOUTME: Bundled starter catalog for vetted third-party Nostr app integrations
-// ABOUTME: Gives Divine a curated baseline app list before remote directory data exists
-
-import 'package:openvine/models/nostr_app_directory_entry.dart';
+import 'package:nostr_app_bridge_repository/src/models/nostr_app_directory_entry.dart';
 
 const List<String> _sharedAllowedMethods = [
   'getPublicKey',
@@ -28,6 +25,10 @@ const List<int> _sharedSignEventKinds = [
   30023,
 ];
 
+/// Bundled starter catalog of vetted third-party Nostr apps.
+///
+/// Provides a curated baseline before the remote directory is
+/// available.
 final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
   _buildPreloadedApp(
     id: 'bundled-flotilla',
@@ -35,7 +36,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Flotilla',
     tagline: 'Nostr feeds and conversations in a lighter client.',
     description:
-        'A curated third-party Nostr client surfaced inside Divine for lightweight social browsing.',
+        'A curated third-party Nostr client surfaced inside '
+        'Divine for lightweight social browsing.',
     launchUrl: 'https://app.flotilla.social/',
     sortOrder: 1,
   ),
@@ -45,7 +47,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Habla',
     tagline: 'Long-form writing on Nostr.',
     description:
-        'A curated third-party Nostr writing client for publishing and browsing articles.',
+        'A curated third-party Nostr writing client for '
+        'publishing and browsing articles.',
     launchUrl: 'https://habla.news/',
     sortOrder: 2,
   ),
@@ -55,7 +58,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'zap.stream',
     tagline: 'Live Nostr streaming and chats.',
     description:
-        'A curated third-party Nostr live-streaming app for browsing streams and joining chats.',
+        'A curated third-party Nostr live-streaming app for '
+        'browsing streams and joining chats.',
     launchUrl: 'https://zap.stream/',
     sortOrder: 3,
   ),
@@ -65,7 +69,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Primal',
     tagline: 'Fast Nostr feeds and messages.',
     description:
-        'A curated third-party Nostr client for timelines, replies, reactions, and direct messages.',
+        'A curated third-party Nostr client for timelines, '
+        'replies, reactions, and direct messages.',
     launchUrl: 'https://primal.net/',
     sortOrder: 4,
   ),
@@ -75,7 +80,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'YakiHonne',
     tagline: 'Social timelines and publishing on Nostr.',
     description:
-        'A curated third-party Nostr client for feeds, publishing, and profile-centric social activity.',
+        'A curated third-party Nostr client for feeds, '
+        'publishing, and profile-centric social activity.',
     launchUrl: 'https://yakihonne.com/',
     sortOrder: 5,
   ),
@@ -85,7 +91,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Shopstr',
     tagline: 'A Nostr marketplace experience.',
     description:
-        'A curated third-party Nostr marketplace surfaced inside Divine for commerce browsing.',
+        'A curated third-party Nostr marketplace surfaced '
+        'inside Divine for commerce browsing.',
     launchUrl: 'https://shopstr.store/',
     sortOrder: 6,
   ),
@@ -95,9 +102,15 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Nostr Nests',
     tagline: 'Shared Nostr spaces and live conversations.',
     description:
-        'A curated third-party Nostr app for live spaces and community conversations.',
+        'A curated third-party Nostr app for live spaces '
+        'and community conversations.',
     launchUrl: 'https://nostrnests.com/',
-    allowedSignEventKinds: [..._sharedSignEventKinds, 10312, 30312, 30313],
+    allowedSignEventKinds: [
+      ..._sharedSignEventKinds,
+      10312,
+      30312,
+      30313,
+    ],
     sortOrder: 7,
   ),
   _buildPreloadedApp(
