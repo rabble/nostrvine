@@ -29,7 +29,11 @@ enum FeatureFlag {
     'Classics Trending Hashtags',
     'Show trending hashtags section on the Classics tab',
   ),
-  curatedLists('Curated Lists', 'Enable curated lists feature in share menu')
+  curatedLists('Curated Lists', 'Enable curated lists feature in share menu'),
+  blueskyPublishing(
+    'Bluesky Publishing',
+    'Enable Bluesky crosspost toggle in settings',
+  )
   ;
 
   const FeatureFlag(this.displayName, this.description);

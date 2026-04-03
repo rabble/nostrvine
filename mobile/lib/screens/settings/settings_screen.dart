@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -160,6 +162,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final authService = ref.watch(authServiceProvider);
     final authState = ref.watch(currentAuthStateProvider);
     final isAuthenticated = authState == AuthState.authenticated;
+    final showBluesky = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.blueskyPublishing),
+    );
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -228,12 +233,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Blocked users, muted content, and reports',
                 onTap: () => context.push(SafetySettingsScreen.path),
               ),
-              _SettingsTile(
-                icon: Icons.cloud_upload,
-                title: 'Bluesky Publishing',
-                subtitle: 'Manage crossposting to Bluesky',
-                onTap: () => context.push(BlueskySettingsScreen.path),
-              ),
+              if (showBluesky)
+                _SettingsTile(
+                  icon: Icons.cloud_upload,
+                  title: 'Bluesky Publishing',
+                  subtitle: 'Manage crossposting to Bluesky',
+                  onTap: () => context.push(BlueskySettingsScreen.path),
+                ),
               _SettingsTile(
                 icon: Icons.hub,
                 title: 'Nostr Settings',
