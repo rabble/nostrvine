@@ -26,7 +26,6 @@ class VideoEditorScope extends InheritedWidget {
     required this.onAddEditTextLayer,
     required this.originalClipAspectRatio,
     required this.bodySizeNotifier,
-    required this.videoOutputPathNotifier,
     required this.fromLibrary,
     super.child = const SizedBox.shrink(),
     super.key,
@@ -55,13 +54,6 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Notifier for the body size, updated by [_CanvasFitter].
   final ValueNotifier<Size> bodySizeNotifier;
-
-  /// Notifier for the rendered video output path.
-  ///
-  /// When `null`, the video is being rendered and the player should pause or
-  /// show a loading indicator. When non-null, the canvas should initialize
-  /// (or reinitialize) the player with this file path.
-  final ValueNotifier<String?> videoOutputPathNotifier;
 
   /// Callback to open the text editor.
   final Future<TextLayer?> Function([TextLayer? layer]) onAddEditTextLayer;

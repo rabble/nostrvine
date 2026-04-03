@@ -61,12 +61,12 @@ final class BuildConfigurationProvider
 String _$buildConfigurationHash() =>
     r'a62d4699f2242a50e8b591df8d9c62496bbb0123';
 
-/// Feature flag service provider
+/// Feature flag service provider — kept alive so flag state survives navigation
 
 @ProviderFor(featureFlagService)
 const featureFlagServiceProvider = FeatureFlagServiceProvider._();
 
-/// Feature flag service provider
+/// Feature flag service provider — kept alive so flag state survives navigation
 
 final class FeatureFlagServiceProvider
     extends
@@ -76,14 +76,14 @@ final class FeatureFlagServiceProvider
           FeatureFlagService
         >
     with $Provider<FeatureFlagService> {
-  /// Feature flag service provider
+  /// Feature flag service provider — kept alive so flag state survives navigation
   const FeatureFlagServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'featureFlagServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -112,7 +112,7 @@ final class FeatureFlagServiceProvider
 }
 
 String _$featureFlagServiceHash() =>
-    r'f46cff92b5b08bd9517ffa18792018ed99b9350c';
+    r'd33155b88044c601621da0725982b9bd17c811e8';
 
 /// Feature flag state provider (reactive to service changes)
 

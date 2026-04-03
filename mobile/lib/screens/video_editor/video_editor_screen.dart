@@ -14,14 +14,11 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
-import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -75,11 +72,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
 
-  /// Notifier for the rendered video output path.
-  ///
-  /// `null` while rendering is in progress.
-  final _videoOutputPathNotifier = ValueNotifier<String?>(null);
-
   ProImageEditorState? get _editor => _editorKey.currentState;
 
   DivineVideoClip get _clip =>
@@ -124,9 +116,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       if (mounted) {
         _isLoadingDraft.value = false;
       }
-
-      // Initial video render
-      await _renderVideo();
     });
   }
 
@@ -140,8 +129,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     _stickerBloc.close();
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
-    _videoOutputPathNotifier.dispose();
-    VideoEditorRenderService.cancelTask(VideoEditorConstants.renderMergeTaskId);
     super.dispose();
   }
 
@@ -170,50 +157,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
-  /// Renders the video from current clips and updates the output path notifier.
-  ///
-  /// Reuses the cached merge output when clips haven't changed.
-  Future<void> _renderVideo() async {
-    final clipState = ref.read(clipManagerProvider);
-    final clips = clipState.clips;
-    if (clips.isEmpty) return;
-
-    // Single clip needs no merge — use its video file directly.
-    if (clips.length == 1) {
-      _videoOutputPathNotifier.value = clips.first.video.file?.path;
-      return;
-    }
-
-    final cached = clipState.mergeOutputPath;
-    if (cached != null && File(cached).existsSync()) {
-      Log.debug(
-        '⚡ Reusing cached merge output',
-        name: 'VideoEditorScreen',
-        category: LogCategory.video,
-      );
-      _videoOutputPathNotifier.value = cached;
-      return;
-    }
-
-    Log.debug(
-      '🎬 Rendering video from ${clips.length} clip(s)',
-      name: 'VideoEditorScreen',
-      category: LogCategory.video,
-    );
-
-    _videoOutputPathNotifier.value = null;
-
-    final outputPath = await VideoEditorRenderService.renderVideo(
-      taskId: VideoEditorConstants.renderMergeTaskId,
-      clips: clips,
-    );
-
-    if (mounted && outputPath != null) {
-      _videoOutputPathNotifier.value = outputPath;
-      ref.read(clipManagerProvider.notifier).cacheMergeOutput(outputPath);
-    }
-  }
-
   Future<void> _openClipsEditor({
     required VideoEditorMainBloc mainBloc,
   }) async {
@@ -221,7 +164,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     mainBloc
       ..add(const VideoEditorMainOpenSubEditor(.clips))
       ..add(const VideoEditorExternalPauseRequested(isPaused: true));
-    final currentPath = _videoOutputPathNotifier.value;
     final initialClips = ref.read(clipManagerProvider).clips;
 
     final clips = await Navigator.push<List<DivineVideoClip>>(
@@ -237,7 +179,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
     if (clips != null) {
       Log.info(
-        '🎬 Clips changed after clip editor – re-rendering video',
+        '🎬 Clips changed after clip editor',
         name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
@@ -246,12 +188,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       clipManager
         ..clearClips()
         ..addMultipleClips(clips);
-
-      _videoOutputPathNotifier.value = null;
-      await _renderVideo();
-    } else {
-      // Clips unchanged – restore the previous output path to resume playback.
-      _videoOutputPathNotifier.value = currentPath;
     }
   }
 
@@ -397,7 +333,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             removeAreaKey: _removeAreaKey,
             originalClipAspectRatio: _clip.originalAspectRatio,
             bodySizeNotifier: _bodySizeNotifier,
-            videoOutputPathNotifier: _videoOutputPathNotifier,
             fromLibrary: widget.fromLibrary,
             onOpenClipsEditor: () {
               final mainBloc = context.read<VideoEditorMainBloc>();

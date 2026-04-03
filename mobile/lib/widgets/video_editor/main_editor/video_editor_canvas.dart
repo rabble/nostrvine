@@ -2,10 +2,11 @@
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,9 +26,8 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
-import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:sound_service/sound_service.dart';
-import 'package:video_player/video_player.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    hide AudioTrack, VideoClip;
 
 /// The main canvas area for the video editor.
 ///
@@ -82,7 +82,8 @@ class _VideoEditor extends ConsumerStatefulWidget {
 class _VideoEditorState extends ConsumerState<_VideoEditor> {
   late final ProVideoController _proVideoController;
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
-  VideoPlayerController? _videoPlayer;
+  DivineVideoPlayerController? _videoPlayer;
+  StreamSubscription<DivineVideoPlayerState>? _videoPlayerSubscription;
 
   bool _isInitialized = false;
   bool _isImportingHistory = false;
@@ -96,20 +97,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Used to deduplicate haptic feedback so it only fires once on entry.
   bool _wasOverRemoveArea = false;
 
-  /// Audio playback service for syncing audio with video.
-  AudioPlaybackService? _audioService;
-
-  /// Tracks last video position to detect loops.
-  Duration _lastVideoPosition = Duration.zero;
-
   /// Tracks last playback state to detect changes.
   bool _lastIsPlaying = false;
-
-  /// Guards against seek/play calls while audio is loading.
-  bool _isAudioLoading = false;
-
-  /// Cached reference to the output path notifier for cleanup in [dispose].
-  ValueNotifier<String?>? _outputPathNotifier;
 
   @override
   void initState() {
@@ -120,23 +109,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     _initializeController();
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    final notifier = VideoEditorScope.of(context).videoOutputPathNotifier;
-    if (_outputPathNotifier == notifier) return;
-
-    // Remove old listener if scope changed.
-    _outputPathNotifier?.removeListener(_onOutputPathChanged);
-    _outputPathNotifier = notifier;
-    notifier.addListener(_onOutputPathChanged);
-
-    // If the output path is already available, initialize the player.
-    if (notifier.value != null) {
-      _initializePlayerFromPath(notifier.value!);
+    // Initialize the player with the current clips.
+    if (_clipPaths.isNotEmpty) {
+      _initializePlayer(_clipPaths);
     }
   }
 
@@ -147,19 +123,24 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
-    _outputPathNotifier = null;
-    _videoPlayer?.removeListener(_onVideoPositionChange);
+    _videoPlayerSubscription?.cancel();
     _videoPlayer?.dispose();
-    _audioService?.dispose();
     _isPlayerReadyNotifier.dispose();
     super.dispose();
   }
+
+  /// Extracts playable file paths from the current clip state.
+  List<String> get _clipPaths => ref
+      .read(clipManagerProvider)
+      .clips
+      .map((c) => c.video.file?.path)
+      .whereType<String>()
+      .toList();
 
   /// Handles playback restart requests from BLoC.
   void _onPlaybackRestartRequested() {
     if (!_isPlayerReadyNotifier.value) return;
 
-    // Restart video from beginning - audio sync handled by listener
     _videoPlayer?.seekTo(Duration.zero);
     _videoPlayer?.play();
   }
@@ -168,13 +149,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   void _onPlaybackToggleRequested() {
     if (!_isPlayerReadyNotifier.value) return;
 
-    final isPlaying = _videoPlayer?.value.isPlaying ?? false;
+    final isPlaying = _videoPlayer?.state.isPlaying ?? false;
     if (isPlaying) {
       _videoPlayer?.pause();
-      // Audio pause handled by _onVideoPositionChange listener
     } else {
       _videoPlayer?.play();
-      // Audio play handled by _onVideoPositionChange listener
     }
   }
 
@@ -189,65 +168,25 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
   }
 
-  /// Handles video position changes to sync audio.
+  /// Dispatches playback state changes to the BLoC.
   ///
-  /// This is the single source of truth for audio synchronization.
-  /// The video player is the "master" and audio follows automatically.
-  void _onVideoPositionChange() {
-    final position = _videoPlayer?.value.position ?? Duration.zero;
-    final isPlaying = _videoPlayer?.value.isPlaying ?? false;
+  /// Audio synchronization is handled natively by the player's
+  /// audio overlay tracks — no manual sync needed.
+  void _onPlayerStateChanged(DivineVideoPlayerState playerState) {
+    final isPlaying = playerState.isPlaying;
 
-    // Dispatch playback state change if it changed
     if (isPlaying != _lastIsPlaying) {
       _lastIsPlaying = isPlaying;
       context.read<VideoEditorMainBloc>().add(
         VideoEditorPlaybackChanged(isPlaying: isPlaying),
       );
-
-      // Sync audio play/pause state with video
-      if (_audioService != null) {
-        if (isPlaying) {
-          unawaited(_syncAudioToVideo());
-        } else {
-          unawaited(_audioService!.pause());
-        }
-      }
     }
-
-    // Detect loop: position jumped backwards significantly
-    // (Video looped from end to start)
-    if (_lastVideoPosition.inMilliseconds - position.inMilliseconds > 500) {
-      unawaited(_syncAudioToVideo());
-    }
-
-    _lastVideoPosition = position;
   }
 
-  /// Syncs audio playback to video position.
-  Future<void> _syncAudioToVideo() async {
-    final selectedSound = ref.read(videoEditorProvider).selectedSound;
-    if (selectedSound == null || _audioService == null) return;
-
-    // Skip sync while audio is still loading to avoid "Loading interrupted".
-    if (_isAudioLoading) return;
-
-    final videoPosition = _videoPlayer?.value.position ?? Duration.zero;
-    final audioPosition = selectedSound.startOffset + videoPosition;
-    await _audioService!.seek(audioPosition);
-    await _audioService!.play();
-  }
-
-  /// Called when the video output path changes.
-  ///
-  /// When `null`, pauses the current player. When a new path is provided,
-  /// disposes the old player and initializes a new one.
-  void _onOutputPathChanged() {
-    final outputPath = VideoEditorScope.of(
-      context,
-    ).videoOutputPathNotifier.value;
-
-    if (outputPath == null) {
-      // Rendering in progress – pause and mark as not ready.
+  /// Called when clip paths change. Reinitializes the player with the new
+  /// paths or pauses when no clips are available.
+  void _onClipPathsChanged(List<String> clipPaths) {
+    if (clipPaths.isEmpty) {
       _videoPlayer?.pause();
       _isPlayerReadyNotifier.value = false;
       context.read<VideoEditorMainBloc>()
@@ -256,7 +195,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       return;
     }
 
-    _initializePlayerFromPath(outputPath);
+    _initializePlayer(clipPaths);
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -268,7 +207,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         valueListenable: _isPlayerReadyNotifier,
         builder: (_, isPlayerReady, _) {
           return VideoEditorPlayer(
-            isPlayerReady: isPlayerReady,
             controller: _videoPlayer,
             targetAspectRatio: clips.first.targetAspectRatio,
             originalAspectRatio: clips.first.originalAspectRatio,
@@ -284,38 +222,36 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
   }
 
-  /// Initializes (or reinitializes) the video player from a rendered file.
-  Future<void> _initializePlayerFromPath(String outputPath) async {
+  /// Initializes (or reinitializes) the native video player with [clipPaths].
+  Future<void> _initializePlayer(List<String> clipPaths) async {
     // Dispose old player if it exists.
-    _videoPlayer?.removeListener(_onVideoPositionChange);
+    await _videoPlayerSubscription?.cancel();
     await _videoPlayer?.dispose();
     _isPlayerReadyNotifier.value = false;
 
     final clips = ref.read(clipManagerProvider).clips;
 
     Log.debug(
-      '🎬 Initializing video player from $outputPath',
+      '🎬 Initializing video player with ${clipPaths.length} clip(s)',
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
 
-    _videoPlayer = VideoPlayerController.file(File(outputPath));
+    _videoPlayer = DivineVideoPlayerController(useTexture: true);
 
     await _videoPlayer!.initialize();
     if (!mounted) return;
-    await _videoPlayer!.seekTo(clips.first.thumbnailTimestamp);
-    // Wait for the video player to actually reach the seek position.
-    // The player doesn't seek instantly, it usually takes just a few
-    // milliseconds, but we use a slightly higher value to be safe.
-    // In the worst case, the user might see a quick frame jump.
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (!mounted) return;
-    await _videoPlayer!.setLooping(true);
+    await _videoPlayer!.setClips(
+      clipPaths.map((path) => VideoClip(uri: path)).toList(),
+    );
     if (!mounted) return;
 
-    // Apply stored volume from state
     final editorState = ref.read(videoEditorProvider);
-    await _videoPlayer!.setVolume(editorState.originalAudioVolume);
+    await Future.wait([
+      _videoPlayer!.seekTo(clips.first.thumbnailTimestamp),
+      _videoPlayer!.setLooping(looping: true),
+      _videoPlayer!.setVolume(editorState.originalAudioVolume),
+    ]);
     if (!mounted) return;
 
     await _videoPlayer!.play();
@@ -329,8 +265,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       );
     }
 
-    // Setup audio sync listener
-    _videoPlayer!.addListener(_onVideoPositionChange);
+    // Setup state stream listener
+    _videoPlayerSubscription = _videoPlayer!.stateStream.listen(
+      _onPlayerStateChanged,
+    );
 
     // Initialize audio if selected
     final selectedSound = ref.read(videoEditorProvider).selectedSound;
@@ -342,15 +280,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
   }
 
-  /// Loads audio for the given sound event.
+  /// Sets or clears the native audio overlay track.
   ///
-  /// Stops any currently playing audio, then loads and plays the new sound.
-  /// If [sound] is null, clears the audio service.
+  /// Uses the video player's built-in audio overlay support so that
+  /// synchronisation, loop handling, and drift correction happen on
+  /// the native side automatically.
   Future<void> _loadAudio(AudioEvent? sound) async {
-    // Stop current audio
-    await _audioService?.stop();
+    if (_videoPlayer == null) return;
 
     if (sound == null || sound.url == null) {
+      await _videoPlayer!.removeAllAudioTracks();
       Log.info(
         '🎵 Audio cleared',
         name: 'VideoEditorCanvas',
@@ -359,47 +298,42 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       return;
     }
 
-    // Initialize service if needed
-    _audioService ??= AudioPlaybackService(
-      handleAudioSessionActivation: false,
-    );
+    final customVolume = ref.read(videoEditorProvider).customAudioVolume;
 
-    _isAudioLoading = true;
-    try {
-      // Configure audio session to mix with video (prevents video pause)
-      await _audioService!.configureForMixedPlayback();
-
-      // Load audio from URL
-      await _audioService!.loadAudio(sound.url!);
-      _isAudioLoading = false;
-
-      // Apply stored custom audio volume
-      final customVolume = ref.read(videoEditorProvider).customAudioVolume;
-      await _audioService!.setVolume(customVolume);
-
-      // Sync to current video position
-      final videoPosition = _videoPlayer?.value.position ?? Duration.zero;
-      final audioPosition = sound.startOffset + videoPosition;
-      await _audioService!.seek(audioPosition);
-
-      // Play if video is playing
-      if (_videoPlayer?.value.isPlaying ?? false) {
-        await _audioService!.play();
-      }
-
-      Log.info(
-        '🎵 Audio loaded: ${sound.title} (startOffset: ${sound.startOffset.inMilliseconds}ms)',
-        name: 'VideoEditorCanvas',
-        category: LogCategory.video,
+    final AudioTrack track;
+    if (sound.isBundled && sound.assetPath != null) {
+      track = await AudioTrack.asset(
+        sound.assetPath!,
+        volume: customVolume,
+        trackStart: sound.startOffset,
       );
-    } catch (e) {
-      _isAudioLoading = false;
+    } else {
+      track = AudioTrack.network(
+        sound.url!,
+        volume: customVolume,
+        trackStart: sound.startOffset,
+      );
+    }
+
+    try {
+      await _videoPlayer!.setAudioTracks([track]);
+    } catch (e, stackTrace) {
       Log.error(
         '🎵 Failed to load audio: $e',
         name: 'VideoEditorCanvas',
         category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
       );
+      return;
     }
+
+    Log.info(
+      '🎵 Audio loaded via native overlay: ${sound.title} '
+      '(trackStart: ${sound.startOffset.inMilliseconds}ms)',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
   }
 
   /// Syncs the main-editor capabilities from the main editor to the bloc.
@@ -481,7 +415,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     _videoPlayer?.pause();
-    // Audio pause handled automatically by _onVideoPositionChange listener
     // IMPORTANT: Don't start video rendering here. We must await
     // `_handleEditorComplete` which generate the layer image before we start
     // rendering! However, we can navigate to the metadata screen immediately
@@ -490,7 +423,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     await context.push(VideoMetadataScreen.path);
     if (mounted) {
       _videoPlayer?.play();
-      // Audio resume handled automatically by _onVideoPositionChange listener
     }
   }
 
@@ -510,14 +442,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       clipManagerProvider.select((s) => s.clips.first.targetAspectRatio),
     );
 
-    // Listen for sound changes to reload audio or re-sync offset
+    // Listen for sound changes to reload audio overlay track
     ref.listen<AudioEvent?>(
       videoEditorProvider.select((s) => s.selectedSound),
       (previous, next) {
-        if (previous?.url != next?.url) {
+        if (previous?.url != next?.url ||
+            previous?.startOffset != next?.startOffset) {
           _loadAudio(next);
-        } else if (previous?.startOffset != next?.startOffset) {
-          unawaited(_syncAudioToVideo());
         }
       },
     );
@@ -529,7 +460,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
     ref.listen<double>(
       videoEditorProvider.select((s) => s.customAudioVolume),
-      (_, volume) => _audioService?.setVolume(volume),
+      (_, volume) => _videoPlayer?.setAudioTrackVolume(0, volume),
+    );
+
+    // Reinitialize the player when clip paths change.
+    // Uses a custom equality check because List uses reference equality by
+    // default, which would cause the listener to fire on every provider
+    // rebuild even when the paths haven't actually changed.
+    ref.listen<List<String>>(
+      clipManagerProvider.select(
+        (s) =>
+            s.clips.map((c) => c.video.file?.path).whereType<String>().toList(),
+      ),
+      (previous, clipPaths) {
+        if (listEquals(previous, clipPaths)) return;
+        _onClipPathsChanged(clipPaths);
+      },
     );
 
     // Listen for playback control requests from BLoC

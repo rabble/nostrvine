@@ -465,17 +465,35 @@ void main() {
         expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
       });
 
-      test('skips all fetches for confirmed missing pubkeys', () async {
-        stubAllSourcesMiss();
+      test(
+        'rechecks sources on explicit fetch after confirmed missing',
+        () async {
+          stubAllSourcesMiss();
 
-        // First call — hits all sources, marks missing
-        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+          // First call — hits all sources, marks missing
+          final firstResult = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+          expect(firstResult, isNull);
+          expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
 
-        // Second call — should not hit any source
-        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+          // Second call — explicit fetch should clear the stale marker
+          // and try the sources again.
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => mockProfileEvent);
 
-        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
-      });
+          final secondResult = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(secondResult, isNotNull);
+          expect(secondResult!.pubkey, equals(testPubkey));
+          expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(2);
+          verify(() => mockUserProfilesDao.upsertProfile(any())).called(1);
+        },
+      );
 
       test('deduplicates concurrent calls for the same pubkey', () async {
         final results = await Future.wait([
@@ -494,15 +512,28 @@ void main() {
 
       group('with Funnelcake API', () {
         late MockFunnelcakeApiClient mockFunnelcakeClient;
+        late MockProfileStatsDao mockProfileStatsDao;
         late ProfileRepository repoWithFunnelcake;
 
         setUp(() {
           mockFunnelcakeClient = MockFunnelcakeApiClient();
+          mockProfileStatsDao = MockProfileStatsDao();
+          when(
+            () => mockProfileStatsDao.upsertStats(
+              pubkey: any(named: 'pubkey'),
+              videoCount: any(named: 'videoCount'),
+              followerCount: any(named: 'followerCount'),
+              followingCount: any(named: 'followingCount'),
+              totalViews: any(named: 'totalViews'),
+              totalLikes: any(named: 'totalLikes'),
+            ),
+          ).thenAnswer((_) async {});
           repoWithFunnelcake = ProfileRepository(
             nostrClient: mockNostrClient,
             userProfilesDao: mockUserProfilesDao,
             httpClient: mockHttpClient,
             funnelcakeApiClient: mockFunnelcakeClient,
+            profileStatsDao: mockProfileStatsDao,
           );
         });
 
@@ -571,7 +602,23 @@ void main() {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
             () => mockFunnelcakeClient.getUserProfile(testPubkey),
-          ).thenAnswer((_) async => {'_noProfile': true, 'pubkey': testPubkey});
+          ).thenAnswer(
+            (_) async => {
+              '_noProfile': true,
+              'pubkey': testPubkey,
+              'social': {
+                'follower_count': 12,
+                'following_count': 7,
+              },
+              'stats': {
+                'video_count': 3,
+              },
+              'engagement': {
+                'total_reactions': 42,
+                'total_loops': 12.6,
+              },
+            },
+          );
 
           final result = await repoWithFunnelcake.fetchFreshProfile(
             pubkey: testPubkey,
@@ -588,6 +635,16 @@ void main() {
               useCache: any(named: 'useCache'),
             ),
           );
+          verify(
+            () => mockProfileStatsDao.upsertStats(
+              pubkey: testPubkey,
+              followerCount: 12,
+              followingCount: 7,
+              videoCount: 3,
+              totalLikes: 42,
+              totalViews: 13,
+            ),
+          ).called(1);
         });
 
         test('skips Funnelcake when not available', () async {

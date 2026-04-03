@@ -3,6 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/apps/app_detail_screen.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
@@ -35,6 +37,21 @@ void main() {
         final context = parseRoute(SettingsScreen.path);
         expect(context.type, RouteType.settings);
       });
+
+      test('${AppsDirectoryScreen.path} parses to RouteType.settings', () {
+        final context = parseRoute(AppsDirectoryScreen.path);
+        expect(context.type, RouteType.settings);
+        expect(context.appSlug, '');
+      });
+
+      test(
+        '${AppDetailScreen.pathForSlug('primal')} parses to RouteType.settings',
+        () {
+          final context = parseRoute(AppDetailScreen.pathForSlug('primal'));
+          expect(context.type, RouteType.settings);
+          expect(context.appSlug, 'primal');
+        },
+      );
 
       test('${RelaySettingsScreen.path} parses to RouteType.relaySettings', () {
         final context = parseRoute(RelaySettingsScreen.path);
@@ -118,6 +135,38 @@ void main() {
               '${LibraryScreen.draftsPath} should parse to RouteType.drafts',
         );
       });
+    });
+
+    group('Apps routes build correctly', () {
+      test('RouteType.settings builds to ${AppsDirectoryScreen.path}', () {
+        final path = buildRoute(
+          const RouteContext(type: RouteType.settings, appSlug: ''),
+        );
+        expect(path, AppsDirectoryScreen.path);
+      });
+
+      test('RouteType.settings builds to the slugged detail path', () {
+        final path = buildRoute(
+          const RouteContext(type: RouteType.settings, appSlug: 'primal'),
+        );
+        expect(path, AppDetailScreen.pathForSlug('primal'));
+      });
+    });
+
+    group('Apps routes hide the bottom nav', () {
+      test('${AppsDirectoryScreen.path} is treated as a non-tab route', () {
+        expect(tabIndexFromLocation(AppsDirectoryScreen.path), -1);
+      });
+
+      test(
+        '${AppDetailScreen.pathForSlug('primal')} is treated as a non-tab route',
+        () {
+          expect(
+            tabIndexFromLocation(AppDetailScreen.pathForSlug('primal')),
+            -1,
+          );
+        },
+      );
     });
 
     group('Tab routes parse correctly', () {

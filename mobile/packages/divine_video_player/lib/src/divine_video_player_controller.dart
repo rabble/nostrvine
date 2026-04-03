@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:divine_video_player/src/audio_track.dart';
 import 'package:divine_video_player/src/video_clip.dart';
 import 'package:divine_video_player/src/video_player_state.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+
+/// Default maximum cache size on disk (500 MB).
+const int kDefaultCacheMaxSizeBytes = 500 * 1024 * 1024;
 
 /// Controls a native multi-clip video player that treats multiple clips
 /// as a single continuous timeline.
@@ -44,6 +48,13 @@ class DivineVideoPlayerController {
   @visibleForTesting
   static int get nextId => _nextId;
 
+  /// Resets the player ID counter to 0.
+  ///
+  /// Call in test `setUp` to make IDs deterministic regardless of
+  /// test ordering.
+  @visibleForTesting
+  static void resetIdCounterForTesting() => _nextId = 0;
+
   /// Configures the native video cache.
   ///
   /// Call once at app startup before creating any controllers.
@@ -52,20 +63,18 @@ class DivineVideoPlayerController {
   /// On iOS/macOS it configures the shared `URLCache` disk capacity.
   ///
   /// [maxSizeBytes] is the maximum cache size on disk. Defaults to
-  /// 500 MB. Least-recently-used entries are evicted automatically
-  /// when the cache is full.
+  /// [kDefaultCacheMaxSizeBytes] (500 MB). Least-recently-used entries
+  /// are evicted automatically when the cache is full.
   ///
   /// ```dart
   /// void main() async {
   ///   WidgetsFlutterBinding.ensureInitialized();
-  ///   await DivineVideoPlayerController.configureCache(
-  ///     maxSizeBytes: 500 * 1024 * 1024, // 500 MB
-  ///   );
+  ///   await DivineVideoPlayerController.configureCache();
   ///   runApp(MyApp());
   /// }
   /// ```
   static Future<void> configureCache({
-    int maxSizeBytes = 500 * 1024 * 1024,
+    int maxSizeBytes = kDefaultCacheMaxSizeBytes,
   }) {
     return _globalChannel.invokeMethod<void>(
       'configureCache',
@@ -187,20 +196,6 @@ class DivineVideoPlayerController {
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }
-    // Eagerly reset Dart-side state so that code reading `state` after
-    // this method returns sees correct values. The native side resets
-    // firstFrameRendered/position in handleSetClips and broadcasts via
-    // EventChannel, but that update arrives asynchronously. Without this
-    // eager reset, a recycled player's stale isFirstFrameRendered=true
-    // can cause the reveal widget to show the previous video's texture.
-    _state = DivineVideoPlayerState(
-      volume: _state.volume,
-      playbackSpeed: _state.playbackSpeed,
-      isLooping: _state.isLooping,
-    );
-    if (!_stateController.isClosed) {
-      _stateController.add(_state);
-    }
     await _methodChannel.invokeMethod<void>(
       'setClips',
       {'clips': clips.map((c) => c.toMap()).toList()},
@@ -226,16 +221,6 @@ class DivineVideoPlayerController {
   /// be reused by calling [setSource] or [setClips] again.
   Future<void> stop() async {
     _ensureInitialized();
-    // Eagerly reset Dart-side state before the native call so that any
-    // code checking `state` after this await sees idle/zero values
-    // instead of stale data from the previous media.
-    _state = DivineVideoPlayerState(
-      volume: _state.volume,
-      playbackSpeed: _state.playbackSpeed,
-    );
-    if (!_stateController.isClosed) {
-      _stateController.add(_state);
-    }
     await _methodChannel.invokeMethod<void>('stop');
   }
 
@@ -343,6 +328,18 @@ class DivineVideoPlayerController {
     if (event is! Map) return;
     final map = event.cast<Object?, Object?>();
     _state = DivineVideoPlayerState.fromMap(map);
+
+    if (_state.status == PlaybackStatus.error) {
+      final nativeError = _state.errorMessage;
+      if (nativeError != null) {
+        developer.log(
+          'Native player error: $nativeError',
+          name: 'DivineVideoPlayer',
+          level: 1000,
+        );
+      }
+    }
+
     if (_state.isFirstFrameRendered && !_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter.complete(true);
     }
@@ -352,7 +349,10 @@ class DivineVideoPlayerController {
   }
 
   void _handleEventError(Object error) {
-    _state = _state.copyWith(status: PlaybackStatus.error);
+    _state = _state.copyWith(
+      status: PlaybackStatus.error,
+      errorMessage: error.toString(),
+    );
     if (!_stateController.isClosed) {
       _stateController.add(_state);
     }

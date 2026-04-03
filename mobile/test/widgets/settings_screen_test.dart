@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -144,12 +146,41 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Session Expired'), findsOneWidget);
-      // Should NOT show Secure Your Account when session expired
-      expect(find.text('Secure Your Account'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+
+    testWidgets(
+      'shows secure account tile instead of session expired for anonymous '
+      'users',
+      (tester) async {
+        when(() => mockAuthService.isAnonymous).thenReturn(true);
+        when(
+          () => mockAuthService.hasExpiredOAuthSession,
+        ).thenReturn(true);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              currentAuthStateProvider.overrideWithValue(
+                AuthState.authenticated,
+              ),
+            ],
+            child: const MaterialApp(home: SettingsScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Secure Your Account'), findsOneWidget);
+        expect(find.text('Session Expired'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
 
     testWidgets('hides Secure Your Account for non-anonymous users', (
       tester,
@@ -179,5 +210,54 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+
+    testWidgets(
+      'hides Bluesky Publishing tile when feature flag is off',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Bluesky Publishing'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'shows Bluesky Publishing tile when feature flag is on',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              currentAuthStateProvider.overrideWith(
+                (ref) => AuthState.authenticated,
+              ),
+              userProfileReactiveProvider.overrideWith(
+                (ref, pubkey) => Stream.value(null),
+              ),
+              isFeatureEnabledProvider(
+                FeatureFlag.blueskyPublishing,
+              ).overrideWith((ref) => true),
+            ],
+            child: const MaterialApp(home: SettingsScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await tester.scrollUntilVisible(
+          find.text('Bluesky Publishing'),
+          100,
+          scrollable: scrollable,
+        );
+        expect(find.text('Bluesky Publishing'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
   });
 }

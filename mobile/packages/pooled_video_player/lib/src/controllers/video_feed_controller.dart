@@ -159,6 +159,7 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, PooledPlayer> _loadedPlayers = {};
   final Map<int, LoadState> _loadStates = {};
   final Map<int, StreamSubscription<bool>> _errorSubscriptions = {};
+  final Map<int, VideoErrorType> _errorTypes = {};
   final Set<int> _loadingIndices = {};
   final Map<int, Timer> _positionTimers = {};
   final Map<int, String> _openedSources = {};
@@ -203,6 +204,7 @@ class VideoFeedController extends ChangeNotifier {
         VideoIndexState(
           loadState: _loadStates[index] ?? LoadState.none,
           controller: _loadedPlayers[index]?.controller,
+          errorType: _errorTypes[index],
         ),
       ),
     );
@@ -231,6 +233,7 @@ class VideoFeedController extends ChangeNotifier {
             ? LoadState.none
             : (_loadStates[index] ?? LoadState.none),
         controller: isAlive ? pooledPlayer.controller : null,
+        errorType: _errorTypes[index],
       );
     }
   }
@@ -315,9 +318,44 @@ class VideoFeedController extends ChangeNotifier {
     }
   }
 
-  void _markLoadError(int index) {
+  /// Classifies a raw error string into a [VideoErrorType].
+  ///
+  /// Checks for HTTP status code patterns (401, 403, 404) in the error
+  /// message. For divine-hosted URLs where the error string is unparseable,
+  /// falls back to [VideoErrorType.notFound] since missing content is the
+  /// most common failure mode.
+  VideoErrorType _classifyError(String? errorMessage, int index) {
+    if (errorMessage != null) {
+      final lower = errorMessage.toLowerCase();
+      if (lower.contains('401') || lower.contains('unauthorized')) {
+        return VideoErrorType.ageRestricted;
+      }
+      if (lower.contains('403') || lower.contains('forbidden')) {
+        return VideoErrorType.forbidden;
+      }
+      if (lower.contains('404') || lower.contains('not found')) {
+        return VideoErrorType.notFound;
+      }
+    }
+    // For divine-hosted URLs, generic errors most likely mean missing
+    // content (hash not on blossom, transcode pending). Non-divine URLs
+    // keep the generic classification.
+    if (index >= 0 && index < _videos.length) {
+      final hash = _extractCanonicalDivineBlobHash(_videos[index].url);
+      if (hash != null) return VideoErrorType.notFound;
+    }
+    return VideoErrorType.generic;
+  }
+
+  void _markLoadError(int index, [String? errorMessage]) {
     if (_isDisposed) return;
     _loadStates[index] = LoadState.error;
+    if (errorMessage != null) {
+      _errorTypes[index] = _classifyError(errorMessage, index);
+    }
+    // If no message, _errorTypes[index] may already be set from the
+    // error stream handler. Fall back to generic if nothing was stored.
+    _errorTypes[index] ??= VideoErrorType.generic;
     _notifyIndex(index);
   }
 
@@ -371,8 +409,17 @@ class VideoFeedController extends ChangeNotifier {
         '[POOLED] stuck_retry_failed ${_videoDebugDetails(index)} '
         'error=$error\n$stack',
       );
-      _markLoadError(index);
+      _markLoadError(index, error.toString());
     }
+  }
+
+  /// Retries loading the video at [index] by releasing its player state
+  /// and re-triggering the preload window.
+  void retryLoad(int index) {
+    if (_isDisposed) return;
+    _logDebug('retry_load ${_videoDebugDetails(index)}');
+    _releasePlayer(index);
+    _updatePreloadWindow(_currentIndex);
   }
 
   /// Called when the visible page changes.
@@ -801,7 +848,7 @@ class VideoFeedController extends ChangeNotifier {
         'videoCount=${_videos.length} '
         'error=$e\n$stack',
       );
-      _markLoadError(index);
+      _markLoadError(index, e.toString());
     } finally {
       _loadingIndices.remove(index);
     }
@@ -872,6 +919,8 @@ class VideoFeedController extends ChangeNotifier {
             'source=${_openedSources[index]} '
             'loadState=$loadState',
           );
+          _errorTypes[index] = _classifyError(errorMsg, index);
+
           // Retry with the next source for both loading and ready states.
           // A "ready" player can still error when the server returns
           // non-video data (e.g. a JSON "processing" response) after
@@ -1000,6 +1049,7 @@ class VideoFeedController extends ChangeNotifier {
     _openedSources.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
+    _errorTypes.remove(index);
     _loadingIndices.remove(index);
     _notifyIndex(index);
   }

@@ -2,6 +2,7 @@
 // ABOUTME: Header title uses Bricolage Grotesque font, camera button in bottom nav
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -505,39 +506,40 @@ class _AppShellState extends ConsumerState<AppShell> {
                 currentIndex,
                 'explore_tab',
               ),
-              // Camera button in center of bottom nav
-              Semantics(
-                identifier: 'camera_button',
-                button: true,
-                label: 'Open camera',
-                child: GestureDetector(
-                  onTap: () {
-                    Log.info(
-                      '👆 User tapped camera button',
-                      name: 'Navigation',
-                      category: LogCategory.ui,
-                    );
-                    context.pushToCameraWithPermission();
-                  },
-                  child: Container(
-                    width: 72,
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: VineTheme.cameraButtonGreen,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: SvgPicture.asset(
-                      DivineIconName.cameraRetro.assetPath,
-                      width: 32,
-                      height: 32,
+              // Camera button in center of bottom nav (hidden on web)
+              if (!kIsWeb)
+                Semantics(
+                  identifier: 'camera_button',
+                  button: true,
+                  label: 'Open camera',
+                  child: GestureDetector(
+                    onTap: () {
+                      Log.info(
+                        '👆 User tapped camera button',
+                        name: 'Navigation',
+                        category: LogCategory.ui,
+                      );
+                      context.pushToCameraWithPermission();
+                    },
+                    child: Container(
+                      width: 72,
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: VineTheme.cameraButtonGreen,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: SvgPicture.asset(
+                        DivineIconName.cameraRetro.assetPath,
+                        width: 32,
+                        height: 32,
+                      ),
                     ),
                   ),
                 ),
-              ),
               NotificationBadge(
                 count:
                     context.watch<DmUnreadCountCubit>().state +

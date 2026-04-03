@@ -522,7 +522,7 @@ void main() {
       testWidgets('shows custom errorBuilder when provided', (tester) async {
         await tester.pumpWidget(
           buildWidget(
-            errorBuilder: (context, onRetry) {
+            errorBuilder: (context, onRetry, errorType) {
               return TextButton(
                 key: const Key('retry_button'),
                 onPressed: onRetry,
@@ -543,7 +543,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            errorBuilder: (context, onRetry) {
+            errorBuilder: (context, onRetry, errorType) {
               return TextButton(
                 key: const Key('retry_button'),
                 onPressed: () {
@@ -559,7 +559,7 @@ void main() {
         await tester.tap(find.byKey(const Key('retry_button')));
 
         expect(retryPressed, isTrue);
-        verify(() => mockController.onPageChanged(0)).called(1);
+        verify(() => mockController.retryLoad(0)).called(1);
       });
     });
 

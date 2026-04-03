@@ -5,7 +5,7 @@ import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/search_results/local_hashtag_search.dart';
+import 'package:openvine/screens/search_results/cubit/search_results_filter_cubit.dart';
 import 'package:openvine/screens/search_results/view/search_results_view.dart';
 import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
 
@@ -40,29 +40,53 @@ class SearchResultsPage extends ConsumerWidget {
           ),
         ),
         BlocProvider(
-          create: (_) => UserSearchBloc(
-            profileRepository: profileRepository,
-          ),
+          create: (_) => UserSearchBloc(profileRepository: profileRepository),
         ),
         BlocProvider(
           create: (_) => HashtagSearchBloc(
             hashtagRepository: ref.read(hashtagRepositoryProvider),
-            // TODO(oscar): Move fallback logic into HashtagRepository
-            // https://github.com/divinevideo/divine-mobile/issues/2535
-            localHashtagSearch: (query, {limit = 20}) =>
-                searchLocalHashtags(ref, query, limit: limit),
           ),
         ),
+        BlocProvider(create: (_) => SearchResultsFilterCubit()),
       ],
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: Column(
-          children: [
-            SearchResultsAppBar(initialQuery: initialQuery ?? ''),
-            const Expanded(child: SearchResultsView()),
-          ],
-        ),
+        body: _SearchResultsBody(initialQuery: initialQuery ?? ''),
       ),
+    );
+  }
+}
+
+/// Reads filter state from [SearchResultsFilterCubit] and wires the app bar
+/// and body together.
+class _SearchResultsBody extends StatelessWidget {
+  const _SearchResultsBody({required this.initialQuery});
+
+  final String initialQuery;
+
+  @override
+  Widget build(BuildContext context) {
+    final filter = context.select(
+      (SearchResultsFilterCubit cubit) => cubit.state,
+    );
+    return Column(
+      children: [
+        SearchResultsAppBar(
+          initialQuery: initialQuery,
+          filterLabel: filter.label,
+          onFilterTap: filter == SearchResultsFilter.all
+              ? null
+              : () => context.read<SearchResultsFilterCubit>().setFilter(
+                  SearchResultsFilter.all,
+                ),
+        ),
+        Expanded(
+          child: SearchResultsView(
+            filter: filter,
+            onFilterChanged: context.read<SearchResultsFilterCubit>().setFilter,
+          ),
+        ),
+      ],
     );
   }
 }

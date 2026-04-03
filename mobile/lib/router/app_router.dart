@@ -5,13 +5,19 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/apps/app_detail_screen.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
+import 'package:openvine/screens/apps/apps_permissions_screen.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
@@ -52,6 +58,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
+import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -96,7 +103,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       routeObserver,
       PageLoadObserver(),
       VideoStopNavigatorObserver(),
-      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      if (Firebase.apps.isNotEmpty)
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
     ],
     // Refresh router when auth state changes
     refreshListenable: authListenable,
@@ -604,6 +612,51 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const SettingsScreen(),
       ),
       GoRoute(
+        path: AppsDirectoryScreen.path,
+        name: AppsDirectoryScreen.routeName,
+        builder: (_, _) => const AppsDirectoryScreen(),
+      ),
+      GoRoute(
+        path: AppsPermissionsScreen.path,
+        name: AppsPermissionsScreen.routeName,
+        builder: (_, state) {
+          final authService = ref.read(authServiceProvider);
+          final grantStore = ref.read(nostrAppGrantStoreProvider);
+          return AppsPermissionsScreen(
+            grantStore: grantStore,
+            currentUserPubkey: authService.currentPublicKeyHex,
+          );
+        },
+      ),
+      GoRoute(
+        path: NostrAppSandboxScreen.path,
+        name: NostrAppSandboxScreen.routeName,
+        builder: (_, state) {
+          final app = state.extra is NostrAppDirectoryEntry
+              ? state.extra! as NostrAppDirectoryEntry
+              : null;
+          final appId = state.pathParameters['appId'] ?? '';
+          return ResolvedSandboxRouteScreen(
+            appId: appId,
+            initialApp: app,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppDetailScreen.path,
+        name: AppDetailScreen.routeName,
+        builder: (_, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          final initialEntry = state.extra is NostrAppDirectoryEntry
+              ? state.extra! as NostrAppDirectoryEntry
+              : null;
+          return AppDetailScreen(
+            slug: slug,
+            initialEntry: initialEntry,
+          );
+        },
+      ),
+      GoRoute(
         path: SupportCenterScreen.path,
         name: SupportCenterScreen.routeName,
         builder: (_, _) => const SupportCenterScreen(),
@@ -617,6 +670,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: ContentPreferencesScreen.path,
         name: ContentPreferencesScreen.routeName,
         builder: (_, _) => const ContentPreferencesScreen(),
+      ),
+      GoRoute(
+        path: BlueskySettingsScreen.path,
+        name: BlueskySettingsScreen.routeName,
+        builder: (_, _) => const BlueskySettingsScreen(),
       ),
       GoRoute(
         path: NostrSettingsScreen.path,
@@ -970,6 +1028,7 @@ int tabIndexFromLocation(String loc) {
     case 'liked-videos':
       return 3; // Liked videos keeps profile tab active
     case 'search':
+    case 'apps':
     case 'settings':
     case 'relay-settings':
     case 'relay-diagnostic':
@@ -982,6 +1041,7 @@ int tabIndexFromLocation(String loc) {
     case 'support-center':
     case 'legal':
     case 'nostr-settings':
+    case 'bluesky-settings':
     case 'developer-options':
     case 'edit-profile':
     case 'setup-profile':

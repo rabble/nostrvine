@@ -55,7 +55,6 @@ void main() {
       expect(state.isFirstFrameRendered, isFalse);
       expect(state.videoWidth, isZero);
       expect(state.videoHeight, isZero);
-      expect(state.errorMessage, isNull);
     });
 
     test('isPlaying delegates to status', () {
@@ -91,6 +90,75 @@ void main() {
       });
     });
 
+    group('equality', () {
+      test('two default states are equal', () {
+        const a = DivineVideoPlayerState();
+        const b = DivineVideoPlayerState();
+
+        expect(a, equals(b));
+        expect(a.hashCode, equals(b.hashCode));
+      });
+
+      test('states with identical fields are equal', () {
+        const a = DivineVideoPlayerState(
+          status: PlaybackStatus.playing,
+          position: Duration(seconds: 5),
+          duration: Duration(seconds: 30),
+          bufferedPosition: Duration(seconds: 10),
+          currentClipIndex: 1,
+          clipCount: 3,
+          isLooping: true,
+          volume: 0.5,
+          playbackSpeed: 2,
+          isFirstFrameRendered: true,
+          videoWidth: 1920,
+          videoHeight: 1080,
+        );
+        const b = DivineVideoPlayerState(
+          status: PlaybackStatus.playing,
+          position: Duration(seconds: 5),
+          duration: Duration(seconds: 30),
+          bufferedPosition: Duration(seconds: 10),
+          currentClipIndex: 1,
+          clipCount: 3,
+          isLooping: true,
+          volume: 0.5,
+          playbackSpeed: 2,
+          isFirstFrameRendered: true,
+          videoWidth: 1920,
+          videoHeight: 1080,
+        );
+
+        expect(a, equals(b));
+        expect(a.hashCode, equals(b.hashCode));
+      });
+
+      test('states with different status are not equal', () {
+        const a = DivineVideoPlayerState(status: PlaybackStatus.playing);
+        const b = DivineVideoPlayerState(status: PlaybackStatus.paused);
+
+        expect(a, isNot(equals(b)));
+      });
+
+      test('states with different position are not equal', () {
+        const a = DivineVideoPlayerState(position: Duration(seconds: 1));
+        const b = DivineVideoPlayerState(position: Duration(seconds: 2));
+
+        expect(a, isNot(equals(b)));
+      });
+
+      test('copyWith without changes returns equal state', () {
+        const original = DivineVideoPlayerState(
+          status: PlaybackStatus.playing,
+          position: Duration(seconds: 5),
+        );
+        final copy = original.copyWith();
+
+        expect(copy, equals(original));
+        expect(copy.hashCode, equals(original.hashCode));
+      });
+    });
+
     group('copyWith', () {
       test('returns identical state when no args given', () {
         const original = DivineVideoPlayerState(
@@ -106,7 +174,6 @@ void main() {
           isFirstFrameRendered: true,
           videoWidth: 1920,
           videoHeight: 1080,
-          errorMessage: 'err',
         );
         final copy = original.copyWith();
 
@@ -125,7 +192,6 @@ void main() {
         );
         expect(copy.videoWidth, equals(original.videoWidth));
         expect(copy.videoHeight, equals(original.videoHeight));
-        expect(copy.errorMessage, equals(original.errorMessage));
       });
 
       test('overrides only specified fields', () {
@@ -156,7 +222,6 @@ void main() {
           'isFirstFrameRendered': true,
           'videoWidth': 1920,
           'videoHeight': 1080,
-          'errorMessage': 'something failed',
         });
 
         expect(state.status, equals(PlaybackStatus.playing));
@@ -171,7 +236,6 @@ void main() {
         expect(state.isFirstFrameRendered, isTrue);
         expect(state.videoWidth, equals(1920));
         expect(state.videoHeight, equals(1080));
-        expect(state.errorMessage, equals('something failed'));
       });
 
       test('uses defaults for missing keys', () {
@@ -189,7 +253,6 @@ void main() {
         expect(state.isFirstFrameRendered, isFalse);
         expect(state.videoWidth, isZero);
         expect(state.videoHeight, isZero);
-        expect(state.errorMessage, isNull);
       });
 
       test('parses all status values', () {
@@ -236,14 +299,13 @@ void main() {
       test('includes error message when present', () {
         const state = DivineVideoPlayerState(
           status: PlaybackStatus.error,
-          errorMessage: 'test error',
         );
-        expect(state.toString(), contains('test error'));
+        expect(state.toString(), contains('error'));
       });
 
-      test('omits error section when null', () {
+      test('omits error section when not in error state', () {
         const state = DivineVideoPlayerState();
-        expect(state.toString(), isNot(contains('error:')));
+        expect(state.toString(), isNot(contains('error')));
       });
     });
   });

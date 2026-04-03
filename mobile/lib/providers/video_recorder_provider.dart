@@ -5,6 +5,8 @@ import 'dart:async';
 
 import 'package:divine_camera/divine_camera.dart'
     show DivineCameraLens, DivineVideoQuality;
+import 'package:divine_video_player/divine_video_player.dart'
+    show DivineVideoPlayerController, VideoClip;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -765,6 +767,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
+    // Preload the first clip into the native player cache so the video
+    // editor can start playback instantly when the user opens it.
+    if (clipProvider.clips.length == 1) {
+      unawaited(
+        DivineVideoPlayerController.preload([VideoClip.file(videoPath)]),
+      );
+    }
+
     // Generate and attach thumbnail.
     // Take the smaller of remaining duration or actual video duration.
     final effectiveDuration = remainingDuration < metadata.duration
@@ -775,17 +785,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         halfDuration < VideoEditorConstants.defaultThumbnailExtractTime
         ? halfDuration
         : VideoEditorConstants.defaultThumbnailExtractTime;
-    // Extract thumbnail and ghost frame in parallel.
-    final (thumbnailResult, ghostResult) = await (
-      VideoThumbnailService.extractThumbnail(
-        videoPath: videoPath,
-        targetTimestamp: targetTimestamp,
-      ),
-      VideoThumbnailService.extractThumbnail(
-        videoPath: videoPath,
-        targetTimestamp: metadata.duration,
-      ),
-    ).wait;
+    // Extract thumbnail first, then ghost frame sequentially.
+    // Running both in parallel causes "Cannot Open" on iOS because
+    // AVAssetImageGenerator holds an exclusive lock on the video file.
+    final thumbnailResult = await VideoThumbnailService.extractThumbnail(
+      videoPath: videoPath,
+      targetTimestamp: targetTimestamp,
+    );
 
     if (thumbnailResult != null) {
       clipProvider.updateThumbnail(
@@ -806,13 +812,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       );
     }
 
-    if (ghostResult != null) {
+    final ghostFramePath = await VideoThumbnailService.extractLastFrame(
+      videoPath: videoPath,
+      videoDuration: metadata.duration,
+    );
+
+    if (ghostFramePath != null) {
       clipProvider.updateGhostFrame(
         clipId: clip.id,
-        ghostFramePath: ghostResult.path,
+        ghostFramePath: ghostFramePath,
       );
       Log.debug(
-        '👻 Ghost frame generated: ${ghostResult.path}',
+        '👻 Ghost frame generated: $ghostFramePath',
         name: 'VideoRecorderNotifier',
         category: .video,
       );

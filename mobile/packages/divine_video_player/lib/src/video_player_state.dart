@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Playback status of the video player.
 enum PlaybackStatus {
   /// Player is created but has no media loaded.
@@ -45,6 +47,7 @@ enum PlaybackStatus {
 }
 
 /// Immutable snapshot of the video player's current state.
+@immutable
 class DivineVideoPlayerState {
   /// Creates a player state.
   const DivineVideoPlayerState({
@@ -106,17 +109,16 @@ class DivineVideoPlayerState {
   /// Height of the video in pixels, or 0 if unknown.
   final int videoHeight;
 
+  /// Human-readable error message from the native player.
+  ///
+  /// Only set when [status] is [PlaybackStatus.error].
+  final String? errorMessage;
+
   /// The aspect ratio of the video (width / height).
   ///
   /// Returns 0 when dimensions are not yet available.
   double get aspectRatio =>
       videoWidth > 0 && videoHeight > 0 ? videoWidth / videoHeight : 0;
-
-  /// Error description when [status] is [PlaybackStatus.error].
-  ///
-  /// Contains the native player's error message, for example when a
-  /// network URL returns invalid data or the file cannot be read.
-  final String? errorMessage;
 
   /// Whether the player is currently playing.
   bool get isPlaying => status.isPlaying;
@@ -190,11 +192,46 @@ class DivineVideoPlayerState {
   }
 
   @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DivineVideoPlayerState &&
+          status == other.status &&
+          position == other.position &&
+          duration == other.duration &&
+          bufferedPosition == other.bufferedPosition &&
+          currentClipIndex == other.currentClipIndex &&
+          clipCount == other.clipCount &&
+          isLooping == other.isLooping &&
+          volume == other.volume &&
+          playbackSpeed == other.playbackSpeed &&
+          isFirstFrameRendered == other.isFirstFrameRendered &&
+          videoWidth == other.videoWidth &&
+          videoHeight == other.videoHeight &&
+          errorMessage == other.errorMessage;
+
+  @override
+  int get hashCode => Object.hash(
+    status,
+    position,
+    duration,
+    bufferedPosition,
+    currentClipIndex,
+    clipCount,
+    isLooping,
+    volume,
+    playbackSpeed,
+    isFirstFrameRendered,
+    videoWidth,
+    videoHeight,
+    errorMessage,
+  );
+
+  @override
   String toString() =>
       'DivineVideoPlayerState(status: $status, position: $position, '
       'duration: $duration, buffered: $bufferedPosition, '
       'clipIndex: $currentClipIndex/$clipCount, '
       'size: ${videoWidth}x$videoHeight, '
-      'firstFrame: $isFirstFrameRendered'
-      '${errorMessage != null ? ', error: $errorMessage' : ''})';
+      'firstFrame: $isFirstFrameRendered, '
+      'error: $errorMessage)';
 }

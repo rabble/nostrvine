@@ -1,26 +1,24 @@
 import 'dart:math';
 
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
-import 'package:video_player/video_player.dart';
 
 class VideoEditorPlayer extends StatelessWidget {
   const VideoEditorPlayer({
     required this.controller,
     required this.targetAspectRatio,
     required this.originalAspectRatio,
-    required this.isPlayerReady,
     required this.bodySize,
     required this.renderSize,
     super.key,
   });
 
-  final bool isPlayerReady;
   final model.AspectRatio targetAspectRatio;
   final double originalAspectRatio;
-  final VideoPlayerController? controller;
+  final DivineVideoPlayerController? controller;
   final Size bodySize;
   final Size renderSize;
 
@@ -40,25 +38,9 @@ class VideoEditorPlayer extends StatelessWidget {
       ),
       child: AspectRatio(
         aspectRatio: aspectRatio,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Video layer
-            if (isPlayerReady)
-              FittedBox(
-                child: SizedBox(
-                  width: controller!.value.size.width,
-                  height: controller!.value.size.height,
-                  child: VideoPlayer(controller!),
-                ),
-              ),
-
-            // Thumbnail layer with fade out
-            VideoEditorThumbnail(
-              isInitialized: isPlayerReady,
-              contentSize: renderSize,
-            ),
-          ],
+        child: DivineVideoPlayer(
+          controller: controller,
+          placeholder: VideoEditorThumbnail(contentSize: renderSize),
         ),
       ),
     );

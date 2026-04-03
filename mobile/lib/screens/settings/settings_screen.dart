@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -18,6 +21,7 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -159,6 +163,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final authService = ref.watch(authServiceProvider);
     final authState = ref.watch(currentAuthStateProvider);
     final isAuthenticated = authState == AuthState.authenticated;
+    final showBluesky = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.blueskyPublishing),
+    );
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -176,16 +183,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Account header
               if (isAuthenticated) ...[
                 _AccountHeader(onSwitchAccount: _handleSwitchAccount),
-                // Auth-state conditional tiles
-                if (authService.hasExpiredOAuthSession)
-                  _SettingsTile(
-                    icon: Icons.refresh,
-                    title: 'Session Expired',
-                    subtitle: 'Sign in again to restore full access',
-                    onTap: _handleSessionExpired,
-                    iconColor: VineTheme.accentOrange,
-                  )
-                else if (authService.isAnonymous)
+                if (authService.isAnonymous)
                   _SettingsTile(
                     icon: Icons.security,
                     title: 'Secure Your Account',
@@ -193,6 +191,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         'Add email & password to recover your '
                         'account on any device',
                     onTap: () => context.push(SecureAccountScreen.path),
+                  ),
+                if (!authService.isAnonymous &&
+                    authService.hasExpiredOAuthSession)
+                  _SettingsTile(
+                    icon: Icons.refresh,
+                    title: 'Session Expired',
+                    subtitle: 'Sign in again to restore full access',
+                    onTap: _handleSessionExpired,
+                    iconColor: VineTheme.accentOrange,
                   ),
               ],
 
@@ -227,11 +234,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Blocked users, muted content, and reports',
                 onTap: () => context.push(SafetySettingsScreen.path),
               ),
+              if (showBluesky)
+                _SettingsTile(
+                  icon: Icons.cloud_upload,
+                  title: 'Bluesky Publishing',
+                  subtitle: 'Manage crossposting to Bluesky',
+                  onTap: () => context.push(BlueskySettingsScreen.path),
+                ),
               _SettingsTile(
                 icon: Icons.hub,
                 title: 'Nostr Settings',
                 subtitle: 'Relays, media servers, keys, and account',
                 onTap: () => context.push(NostrSettingsScreen.path),
+              ),
+              _SettingsTile(
+                icon: Icons.science,
+                title: 'Experimental Features',
+                subtitle: 'Tweaks that may hiccup—try them if you are curious.',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FeatureFlagScreen(),
+                  ),
+                ),
               ),
               _SettingsTile(
                 icon: Icons.gavel,

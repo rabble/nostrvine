@@ -3,6 +3,24 @@ import 'package:equatable/equatable.dart';
 
 import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
 
+/// Classifies a video playback error into an actionable type.
+///
+/// Set by [VideoFeedController] when a video fails to load. The consuming
+/// UI reads this to decide which icon, message, and actions to show.
+enum VideoErrorType {
+  /// 401 Unauthorized — age-gated content.
+  ageRestricted,
+
+  /// 403 Forbidden — moderation-restricted content.
+  forbidden,
+
+  /// 404 Not Found — may or may not be moderation-related.
+  notFound,
+
+  /// Any other playback failure.
+  generic,
+}
+
 /// State of a video at a specific index in the feed.
 ///
 /// Used by [VideoFeedController] to notify individual video player
@@ -13,6 +31,7 @@ class VideoIndexState extends Equatable {
   const VideoIndexState({
     this.loadState = LoadState.none,
     this.controller,
+    this.errorType,
   });
 
   /// The loading state of the video.
@@ -21,6 +40,12 @@ class VideoIndexState extends Equatable {
   /// The video player controller for playback and rendering, or null if
   /// not loaded.
   final DivineVideoPlayerController? controller;
+
+  /// The classified error type when [loadState] is [LoadState.error].
+  ///
+  /// Set by [VideoFeedController] based on the raw error string from
+  /// media_kit (e.g. HTTP status codes like "403", "forbidden").
+  final VideoErrorType? errorType;
 
   /// Whether the video is ready for playback.
   bool get isReady => loadState == LoadState.ready;
@@ -32,5 +57,5 @@ class VideoIndexState extends Equatable {
   bool get isLoading => loadState == LoadState.loading;
 
   @override
-  List<Object?> get props => [loadState, controller];
+  List<Object?> get props => [loadState, controller, errorType];
 }

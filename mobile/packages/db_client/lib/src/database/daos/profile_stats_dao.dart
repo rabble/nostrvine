@@ -14,7 +14,11 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     with _$ProfileStatsDaoMixin {
   ProfileStatsDao(super.attachedDatabase);
 
-  /// Upsert profile stats (insert or update)
+  /// Upsert profile stats (insert or update).
+  ///
+  /// Only overwrites fields that are explicitly provided (non-null).
+  /// Null parameters are left unchanged in the existing row, preventing
+  /// partial REST responses from zeroing out previously cached values.
   Future<void> upsertStats({
     required String pubkey,
     int? videoCount,
@@ -22,18 +26,22 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     int? followingCount,
     int? totalViews,
     int? totalLikes,
-  }) {
-    return into(profileStats).insertOnConflictUpdate(
-      ProfileStatsCompanion.insert(
-        pubkey: pubkey,
-        videoCount: Value(videoCount),
-        followerCount: Value(followerCount),
-        followingCount: Value(followingCount),
-        totalViews: Value(totalViews),
-        totalLikes: Value(totalLikes),
-        cachedAt: DateTime.now(),
-      ),
+  }) async {
+    final existing = await (select(
+      profileStats,
+    )..where((t) => t.pubkey.equals(pubkey))).getSingleOrNull();
+
+    final companion = ProfileStatsCompanion.insert(
+      pubkey: pubkey,
+      videoCount: Value(videoCount ?? existing?.videoCount),
+      followerCount: Value(followerCount ?? existing?.followerCount),
+      followingCount: Value(followingCount ?? existing?.followingCount),
+      totalViews: Value(totalViews ?? existing?.totalViews),
+      totalLikes: Value(totalLikes ?? existing?.totalLikes),
+      cachedAt: DateTime.now(),
     );
+
+    await into(profileStats).insertOnConflictUpdate(companion);
   }
 
   /// Get stats for a pubkey (returns null if not found or expired)

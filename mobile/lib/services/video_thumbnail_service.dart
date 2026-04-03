@@ -367,6 +367,121 @@ class VideoThumbnailService {
     }
   }
 
+  /// Extract the last frame of a video.
+  ///
+  /// Strategy:
+  /// 1. Try the native `position: .last` API which resolves the final
+  ///    frame without a manual timestamp.
+  /// 2. If that fails (e.g. "Cannot Open" on some iOS videos), fall back
+  ///    to timestamp-based extraction at `duration − 50 ms`, which
+  ///    avoids the seek-past-end issue while still returning a frame
+  ///    near the end.
+  ///
+  /// [videoDuration] can be provided to skip an internal metadata
+  /// lookup.
+  static Future<String?> extractLastFrame({
+    required String videoPath,
+    Duration? videoDuration,
+    int quality = _thumbnailQuality,
+  }) async {
+    // --- Attempt 1: native position-based extraction ---
+    try {
+      final bytes = await _proVideoEditor.getSingleThumbnail(
+        SingleThumbnailConfigs(
+          video: EditorVideo.file(videoPath),
+          outputSize: _thumbnailSize,
+          position: ThumbnailPosition.last,
+          videoDuration: videoDuration,
+          jpegQuality: quality,
+        ),
+      );
+
+      if (bytes != null && bytes.isNotEmpty) {
+        return _writeGhostFrame(bytes);
+      }
+
+      Log.warning(
+        '⚠️ getSingleThumbnail(position: .last) returned null/empty',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.warning(
+        '⚠️ getSingleThumbnail(position: .last) failed: $e',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+    }
+
+    // --- Attempt 2: timestamp-based fallback near end ---
+    try {
+      final duration =
+          videoDuration ??
+          (await _proVideoEditor.getMetadata(
+            EditorVideo.file(videoPath),
+          )).duration;
+
+      // Offset slightly before the end to avoid the iOS seek-past-end bug.
+      const offset = Duration(milliseconds: 50);
+      final fallbackTimestamp = duration > offset
+          ? duration - offset
+          : Duration.zero;
+
+      Log.debug(
+        '↩️ Falling back to timestamp extraction at '
+        '${fallbackTimestamp.inMilliseconds} ms',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+
+      final result = await extractThumbnailBytes(
+        videoPath: videoPath,
+        timestamp: fallbackTimestamp,
+        quality: quality,
+      );
+
+      if (result != null) {
+        return _writeGhostFrame(result.bytes);
+      }
+
+      Log.warning(
+        '⚠️ Timestamp-based last-frame fallback also returned null',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        'Last-frame fallback failed: $e',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+      await CrashReportingService.instance.recordError(
+        e,
+        stackTrace,
+        reason:
+            'VideoThumbnailService: Failed to extract last frame from '
+            '$videoPath (both strategies failed)',
+      );
+    }
+
+    return null;
+  }
+
+  /// Persist ghost-frame bytes to disk and return the path.
+  static Future<String> _writeGhostFrame(Uint8List bytes) async {
+    final destPath =
+        '${(await getApplicationDocumentsDirectory()).path}/'
+        'ghost_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    await File(destPath).writeAsBytes(bytes);
+
+    Log.debug(
+      '👻 Last frame extracted: $destPath',
+      name: 'VideoThumbnailService',
+      category: LogCategory.video,
+    );
+    return destPath;
+  }
+
   /// Get optimal thumbnail timestamp based on video duration
   static Duration getOptimalTimestamp(Duration videoDuration) {
     // Extract thumbnail from 10% into the video

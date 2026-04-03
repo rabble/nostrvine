@@ -4,8 +4,9 @@ import 'dart:io'
     as io;
 
 import 'package:audio_session/audio_session.dart';
-import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart'
+    show DivineVideoPlayerController;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
@@ -242,7 +244,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
   coordinator.registerService(
     name: 'SeedDataPreload',
     phase: StartupPhase.deferred,
-    initialize: _initializeSeedDataPreload,
+    initialize: () => _initializeSeedDataPreload(container),
     optional: true,
   );
 
@@ -293,6 +295,9 @@ Future<void> _startOpenVineApp() async {
   // NOTE: video_player_web_hls auto-registers for HLS support on web.
   // Just needs <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   // in web/index.html (already added).
+
+  // Configure the native video player disk cache (500 MB, LRU eviction).
+  await DivineVideoPlayerController.configureCache();
 
   StartupPerformanceService.instance.completePhase('bindings');
 
@@ -694,15 +699,14 @@ Future<void> _initializeVideoCacheManifest() async {
   );
 }
 
-Future<void> _initializeSeedDataPreload() async {
+Future<void> _initializeSeedDataPreload(ProviderContainer container) async {
   await _runTimedStartupTask(
     phaseName: 'seed_data_preload',
     initializationStep: 'Loading bundled seed data',
     task: () async {
-      AppDatabase? seedDb;
       try {
-        seedDb = AppDatabase();
-        await SeedDataPreloadService.loadSeedDataIfNeeded(seedDb);
+        final db = container.read(databaseProvider);
+        await SeedDataPreloadService.loadSeedDataIfNeeded(db);
       } catch (e, stack) {
         Log.error(
           '[SEED] Data preload failed (non-critical): $e',
@@ -714,8 +718,6 @@ Future<void> _initializeSeedDataPreload() async {
           name: 'Main',
           category: LogCategory.system,
         );
-      } finally {
-        await seedDb?.close();
       }
     },
   );

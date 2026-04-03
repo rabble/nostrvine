@@ -15,13 +15,16 @@ BuildConfiguration buildConfiguration(Ref ref) {
   return const BuildConfiguration();
 }
 
-/// Feature flag service provider
-@riverpod
+/// Feature flag service provider — kept alive so flag state survives navigation
+@Riverpod(keepAlive: true)
 FeatureFlagService featureFlagService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final buildConfig = ref.watch(buildConfigurationProvider);
 
-  return FeatureFlagService(prefs, buildConfig);
+  final service = FeatureFlagService(prefs, buildConfig);
+  // Load persisted overrides from SharedPreferences
+  service.initialize();
+  return service;
 }
 
 /// Feature flag state provider (reactive to service changes)

@@ -37,9 +37,11 @@ workspace:
   - packages/likes_repository
   - packages/media_cache
   - packages/models
+  - packages/nostr_app_bridge_repository
   - packages/nostr_sdk
   - packages/nostr_client
   - packages/nostr_key_manager
+  - packages/nostr_apps
   - packages/permissions_service
   - packages/pooled_video_player
   - packages/profile_repository
@@ -83,6 +85,8 @@ dependencies:
   # https://developer.apple.com/documentation/authenticationservices/aswebauthenticationsession
   flutter_web_auth_2: ^4.1.0
   dio: ^5.8.0
+  webview_flutter: ^4.13.0
+  webview_flutter_wkwebview: ^3.24.1
 
   permission_handler: ^12.0.1 # Handle runtime permissions
 
@@ -134,10 +138,13 @@ dependencies:
   sound_service:
 
   # Nostr SDK - Local package for comprehensive Nostr support
+  nostr_app_bridge_repository:
   nostr_sdk:
 
   # Nostr Key Manager - Secure key management with hardware-backed storage
   nostr_key_manager:
+
+  nostr_apps:
 
   keycast_flutter:
 
@@ -213,6 +220,7 @@ dev_dependencies:
   very_good_analysis: ^10.2.0
 
   # Testing
+  fake_async: ^1.3.3
   mocktail: ^1.0.3
   bloc_test: ^10.0.0
 
