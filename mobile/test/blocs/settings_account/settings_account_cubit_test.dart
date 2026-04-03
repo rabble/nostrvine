@@ -72,7 +72,6 @@ void main() {
         SettingsAccountState(
           status: SettingsAccountStatus.loaded,
           accounts: testAccounts,
-          draftCount: 0,
           currentPubkey: testAccounts.first.pubkeyHex,
         ),
       ],
@@ -177,9 +176,7 @@ void main() {
         act: (cubit) => cubit.addNewAccount(),
         verify: (_) {
           verify(() => mockAuthService.signOut()).called(1);
-          verifyNever(
-            () => mockAuthService.pendingAccountSwitchPubkey = any(),
-          );
+          verifyNever(() => mockAuthService.pendingAccountSwitchPubkey = any());
         },
       );
     });
@@ -191,9 +188,7 @@ void main() {
       });
 
       test('hasMultipleAccounts returns false with single account', () {
-        final state = SettingsAccountState(
-          accounts: [testAccounts.first],
-        );
+        final state = SettingsAccountState(accounts: [testAccounts.first]);
         expect(state.hasMultipleAccounts, isFalse);
       });
 
