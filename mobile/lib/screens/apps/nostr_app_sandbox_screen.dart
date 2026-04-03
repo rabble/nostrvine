@@ -48,6 +48,7 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
   final SandboxJavaScriptRunner? javaScriptRunnerOverride;
   final ValueChanged<Future<void> Function(String message)>?
   onBridgeMessageHandlerReady;
+  @visibleForTesting
   final String? currentUserPubkeyOverride;
 
   static String pathForAppId(String appId) =>
@@ -595,6 +596,7 @@ String _escapeJs(String value) {
   return value
       .replaceAll(r'\', r'\\')
       .replaceAll("'", r"\'")
+      .replaceAll('`', r'\`')
       .replaceAll('\n', r'\n')
       .replaceAll('\r', r'\r');
 }

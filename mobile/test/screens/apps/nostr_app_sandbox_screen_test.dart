@@ -270,6 +270,26 @@ void main() {
         final script = buildBridgeBootstrapScript(pubkey: 'abc');
         expect(script, isNot(contains('localStorage.setItem')));
       });
+
+      test('escapes single quotes in pubkey', () {
+        final script = buildBridgeBootstrapScript(pubkey: "a'b");
+        expect(script, contains(r"_pubkey: 'a\'b'"));
+      });
+
+      test('escapes backslashes in pubkey', () {
+        final script = buildBridgeBootstrapScript(pubkey: r'a\b');
+        expect(script, contains(r"_pubkey: 'a\\b'"));
+      });
+
+      test('escapes backticks in pubkey', () {
+        final script = buildBridgeBootstrapScript(pubkey: 'a`b');
+        expect(script, contains(r"_pubkey: 'a\`b'"));
+      });
+
+      test('escapes newlines in pubkey', () {
+        final script = buildBridgeBootstrapScript(pubkey: 'a\nb');
+        expect(script, contains(r"_pubkey: 'a\nb'"));
+      });
     });
 
     group('injectBridgeBootstrapIntoHtml', () {
