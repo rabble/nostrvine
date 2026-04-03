@@ -141,6 +141,12 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     propertiesOf: composition
                 )
                 self.textureOutput?.attach(to: playerItem)
+
+                // Reset dimensions so stale values from the previous video
+                // are not reported before the new track loads.
+                self.videoWidth = 0
+                self.videoHeight = 0
+
                 if let existing = self.player {
                     existing.replaceCurrentItem(with: playerItem)
                     await existing.seek(to: .zero)
@@ -149,8 +155,12 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     self.player = newPlayer
                     self.textureOutput?.attachPlayer(newPlayer)
                     self.addTimeObserver()
-                    self.observeStatus()
                 }
+
+                // (Re-)observe the NEW player item's status so
+                // updateVideoSize fires for every clip change, not just
+                // the first.
+                self.observeStatus()
 
                 self.observeEnd(for: self.player!.currentItem!)
                 self.currentStatus = "ready"
@@ -454,8 +464,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         guard let player, let sink = eventSink else { return }
 
         let currentTime = CMTimeGetSeconds(player.currentTime())
-        let positionMs = Int(max(currentTime, 0) * 1000)
-        let durationMs = Int(totalDuration * 1000)
+        let positionMs = currentTime.isFinite ? Int(max(currentTime, 0) * 1000) : 0
+        let durationMs = totalDuration.isFinite ? Int(totalDuration * 1000) : 0
 
         // Determine current clip index.
         var clipIndex = 0
@@ -541,8 +551,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 .naturalSize, .preferredTransform
             )
             let size = naturalSize.applying(transform)
-            self.videoWidth = Int(abs(size.width))
-            self.videoHeight = Int(abs(size.height))
+            let w = abs(size.width)
+            let h = abs(size.height)
+            self.videoWidth = w.isFinite ? Int(w) : 0
+            self.videoHeight = h.isFinite ? Int(h) : 0
             self.sendStateUpdate()
         }
     }
@@ -558,7 +570,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         let bufferedEnd = CMTimeGetSeconds(
             CMTimeAdd(range.start, range.duration)
         )
-        return Int(max(bufferedEnd, 0) * 1000)
+        return bufferedEnd.isFinite ? Int(max(bufferedEnd, 0) * 1000) : 0
     }
 
     // MARK: - App Lifecycle
