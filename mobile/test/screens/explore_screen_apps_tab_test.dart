@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' hide NostrAppDirectoryEntry;
-import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -16,9 +17,6 @@ import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
-
-class _MockNostrAppDirectoryService extends Mock
-    implements NostrAppDirectoryService {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -41,31 +39,27 @@ void main() {
     registerFallbackValue(() {});
   });
 
+  late _MockVideoEventService videoEventService;
+
+  setUp(() {
+    videoEventService = _MockVideoEventService();
+
+    when(
+      () => videoEventService.addVideoUpdateListener(any()),
+    ).thenReturn(() {});
+    when(() => videoEventService.filterVideoList(any())).thenAnswer(
+      (invocation) => invocation.positionalArguments.first as List<VideoEvent>,
+    );
+    when(() => videoEventService.discoveryVideos).thenReturn([]);
+    when(() => videoEventService.popularNowVideos).thenReturn([]);
+    when(() => videoEventService.isSubscribed(any())).thenReturn(false);
+    // ignore: invalid_use_of_protected_member
+    when(() => videoEventService.hasListeners).thenReturn(false);
+  });
+
   testWidgets(
-    'ExploreScreen includes the Integrated Apps tab and embedded directory',
-    (
-      tester,
-    ) async {
-      final directoryService = _MockNostrAppDirectoryService();
-      final videoEventService = _MockVideoEventService();
-
-      // ignore: unnecessary_lambdas
-      when(() => directoryService.fetchApprovedApps()).thenAnswer(
-        _fetchApprovedAppsAnswer,
-      );
-      when(
-        () => videoEventService.addVideoUpdateListener(any()),
-      ).thenReturn(() {});
-      when(() => videoEventService.filterVideoList(any())).thenAnswer(
-        (invocation) =>
-            invocation.positionalArguments.first as List<VideoEvent>,
-      );
-      when(() => videoEventService.discoveryVideos).thenReturn([]);
-      when(() => videoEventService.popularNowVideos).thenReturn([]);
-      when(() => videoEventService.isSubscribed(any())).thenReturn(false);
-      // ignore: invalid_use_of_protected_member
-      when(() => videoEventService.hasListeners).thenReturn(false);
-
+    'ExploreScreen shows Integrated Apps tab when feature flag is enabled',
+    (tester) async {
       await tester.pumpWidget(
         testProviderScope(
           additionalOverrides: [
@@ -74,9 +68,10 @@ void main() {
             routerLocationStreamProvider.overrideWith(
               (ref) => Stream.value(ExploreScreen.path),
             ),
-            forceExploreTabNameProvider.overrideWith((ref) => 'apps'),
             exploreTabVideosProvider.overrideWith((ref) => null),
-            classicVinesAvailableProvider.overrideWith((ref) async => false),
+            classicVinesAvailableProvider.overrideWith(
+              (ref) async => false,
+            ),
             forYouAvailableProvider.overrideWithValue(false),
             allListsProvider.overrideWith(
               (ref) async => (
@@ -84,10 +79,12 @@ void main() {
                 curatedLists: <CuratedList>[],
               ),
             ),
-            curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
-            nostrAppDirectoryServiceProvider.overrideWithValue(
-              directoryService,
+            curatedListsStateProvider.overrideWith(
+              _FakeCuratedListsState.new,
             ),
+            isFeatureEnabledProvider(
+              FeatureFlag.integratedApps,
+            ).overrideWithValue(true),
           ],
           child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
         ),
@@ -96,32 +93,45 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Integrated Apps'), findsOneWidget);
-      expect(find.text('Primal'), findsOneWidget);
-      expect(find.text('Fast Nostr feeds and messages'), findsOneWidget);
     },
   );
-}
 
-Future<List<NostrAppDirectoryEntry>> _fetchApprovedAppsAnswer(
-  Invocation _,
-) async => [_fixtureApp()];
+  testWidgets(
+    'ExploreScreen hides Integrated Apps tab when feature flag is disabled',
+    (tester) async {
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            appForegroundProvider.overrideWith(_FakeAppForeground.new),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            routerLocationStreamProvider.overrideWith(
+              (ref) => Stream.value(ExploreScreen.path),
+            ),
+            exploreTabVideosProvider.overrideWith((ref) => null),
+            classicVinesAvailableProvider.overrideWith(
+              (ref) async => false,
+            ),
+            forYouAvailableProvider.overrideWithValue(false),
+            allListsProvider.overrideWith(
+              (ref) async => (
+                userLists: <UserList>[],
+                curatedLists: <CuratedList>[],
+              ),
+            ),
+            curatedListsStateProvider.overrideWith(
+              _FakeCuratedListsState.new,
+            ),
+            isFeatureEnabledProvider(
+              FeatureFlag.integratedApps,
+            ).overrideWithValue(false),
+          ],
+          child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+        ),
+      );
 
-NostrAppDirectoryEntry _fixtureApp() {
-  return NostrAppDirectoryEntry(
-    id: 'app-primal',
-    slug: 'primal',
-    name: 'Primal',
-    tagline: 'Fast Nostr feeds and messages',
-    description: 'A vetted Nostr client for timelines and DMs.',
-    iconUrl: 'https://cdn.divine.video/primal.png',
-    launchUrl: 'https://primal.net',
-    allowedOrigins: const ['https://primal.net'],
-    allowedMethods: const ['getPublicKey', 'signEvent'],
-    allowedSignEventKinds: const [1, 7],
-    promptRequiredFor: const ['signEvent'],
-    status: 'approved',
-    sortOrder: 1,
-    createdAt: DateTime.parse('2026-03-24T08:00:00Z'),
-    updatedAt: DateTime.parse('2026-03-25T08:00:00Z'),
+      await tester.pumpAndSettle();
+
+      expect(find.text('Integrated Apps'), findsNothing);
+    },
   );
 }

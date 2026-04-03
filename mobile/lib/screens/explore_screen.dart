@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -76,6 +78,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   bool _classicsAvailable = false;
   // Track For You availability (staging only)
   bool _forYouAvailable = false;
+  // Track Integrated Apps feature flag
+  bool _appsAvailable = false;
 
   // Analytics services
   final _screenAnalytics = ScreenAnalyticsService();
@@ -84,12 +88,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   /// Calculate tab count based on feature availability
   /// Base: New Videos, Trending, Categories, Lists = 4
-  /// +1 if Apps are supported, +1 if Classics available, +1 if For You available
+  /// +1 if Classics available, +1 if For You available, +1 if Apps enabled
   int get _tabCount {
     int count = 4; // Base tabs: New Videos, Trending, Categories, Lists
-    if (nostrAppsSandboxSupported) count++;
     if (_classicsAvailable) count++;
     if (_forYouAvailable) count++;
+    if (_appsAvailable) count++;
     return count;
   }
 
@@ -100,7 +104,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     names.addAll(['new', 'popular', 'categories']);
     if (_forYouAvailable) names.add('for_you');
     names.add('lists');
-    if (nostrAppsSandboxSupported) names.add('apps');
+    if (_appsAvailable) names.add('apps');
     return names;
   }
 
@@ -380,21 +384,29 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     // Watch For You availability (staging only)
     final newForYouAvailable = ref.watch(forYouAvailableProvider);
 
+    // Watch Integrated Apps feature flag
+    final newAppsAvailable = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.integratedApps),
+    );
+
     // When availability changes, rebuild TabController synchronously
     final needsRebuild =
         _classicsAvailable != newClassicsAvailable ||
-        _forYouAvailable != newForYouAvailable;
+        _forYouAvailable != newForYouAvailable ||
+        _appsAvailable != newAppsAvailable;
 
     if (needsRebuild) {
       Log.info(
         '🎯 ExploreScreen: Tab availability changed - '
         'classics: $_classicsAvailable -> $newClassicsAvailable, '
-        'forYou: $_forYouAvailable -> $newForYouAvailable',
+        'forYou: $_forYouAvailable -> $newForYouAvailable, '
+        'apps: $_appsAvailable -> $newAppsAvailable',
         name: 'ExploreScreen',
         category: LogCategory.ui,
       );
       _classicsAvailable = newClassicsAvailable;
       _forYouAvailable = newForYouAvailable;
+      _appsAvailable = newAppsAvailable;
 
       // Rebuild tab controller to match the new tab count
       // _initTabController handles forced tab name -> correct index conversion
@@ -480,7 +492,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               const Tab(text: 'Categories'),
               if (_forYouAvailable) const Tab(text: 'For You'),
               const Tab(text: 'Lists'),
-              if (nostrAppsSandboxSupported) const Tab(text: 'Integrated Apps'),
+              if (_appsAvailable) const Tab(text: 'Integrated Apps'),
             ],
           ),
         ),
@@ -553,8 +565,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 const CategoriesTab(),
                 if (_forYouAvailable) const ForYouTab(),
                 _buildListsTab(),
-                if (nostrAppsSandboxSupported)
-                  const AppsDirectoryScreen(embedded: true),
+                if (_appsAvailable) const _IntegratedAppsPlaceholder(),
               ],
             ),
             // New videos banner (only show on New Videos and Trending tabs)
@@ -1105,6 +1116,22 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Placeholder for Integrated Apps tab while the full AppsDirectoryScreen
+/// dependencies are being completed.
+class _IntegratedAppsPlaceholder extends StatelessWidget {
+  const _IntegratedAppsPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Integrated Apps coming soon',
+        style: TextStyle(color: Colors.white70),
       ),
     );
   }

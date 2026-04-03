@@ -81,5 +81,20 @@ void main() {
         equals('FF_ENHANCED_VIDEO_PLAYER'),
       );
     });
+
+    test('integratedApps should default to false', () {
+      const config = BuildConfiguration();
+
+      expect(config.getDefault(FeatureFlag.integratedApps), isFalse);
+    });
+
+    test('integratedApps should map to FF_INTEGRATED_APPS env var', () {
+      const config = BuildConfiguration();
+
+      expect(
+        config.getEnvironmentKey(FeatureFlag.integratedApps),
+        equals('FF_INTEGRATED_APPS'),
+      );
+    });
   });
 }

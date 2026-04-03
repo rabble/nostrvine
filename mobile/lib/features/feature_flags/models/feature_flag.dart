@@ -33,6 +33,10 @@ enum FeatureFlag {
   blueskyPublishing(
     'Bluesky Publishing',
     'Enable Bluesky crosspost toggle in settings',
+  ),
+  integratedApps(
+    'Integrated Apps',
+    'Enable the integrated Nostr apps directory and sandbox',
   )
   ;
 
