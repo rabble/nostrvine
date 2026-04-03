@@ -934,7 +934,11 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      // Retry up to 3 times with exponential backoff
+      // Retry up to 3 times with exponential backoff.
+      // A successful send (relay accepted the event) is treated as success.
+      // The visibility confirmation is best-effort diagnostics only — relay
+      // indexing lag can cause the read-back to time out even though the
+      // event was accepted and is already being delivered via subscriptions.
       const maxRetries = 3;
       var publishResult = false;
 
@@ -942,12 +946,20 @@ class VideoEventPublisher {
         final sendResult = await _publishEventToNostr(event);
 
         if (sendResult) {
-          publishResult = await _confirmEventVisibleOnRelays(event);
-        } else {
-          publishResult = false;
-        }
+          // Relay accepted the event — treat as success regardless of
+          // whether the read-back confirmation succeeds.
+          publishResult = true;
 
-        if (publishResult) {
+          final confirmed = await _confirmEventVisibleOnRelays(event);
+          if (!confirmed) {
+            Log.warning(
+              '⚠️ Event accepted by relay but not yet queryable '
+              '(attempt $attempt): ${event.id}',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          }
+
           if (attempt > 1) {
             Log.info(
               '✅ Publish succeeded on attempt $attempt',

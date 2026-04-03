@@ -136,11 +136,14 @@ void main() {
 
   group('VideoEventPublisher direct publish confirmation', () {
     test(
-      'returns false and avoids local feed updates when relays cannot query the published event',
+      'succeeds when relay accepts the event even if visibility '
+      'confirmation fails',
       () async {
         final signedEvent = createSignedEvent();
         stubSigning(signedEvent);
         stubPublish(signedEvent);
+        // Relay accepts the event (publishEvent returns non-null) but
+        // the read-back query returns empty — should still succeed.
         when(
           () => mockNostrClient.queryEvents(
             any(),
@@ -154,14 +157,31 @@ void main() {
 
         final result = await publisher.publishDirectUpload(createUpload());
 
-        expect(result, isFalse);
+        expect(result, isTrue);
         verify(
           () => mockUploadManager.updateUploadStatus(
             'test-upload-id',
-            UploadStatus.readyToPublish,
+            UploadStatus.published,
             nostrEventId: signedEvent.id,
           ),
         ).called(1);
+        verify(() => mockVideoEventService.addVideoEvent(any())).called(1);
+      },
+    );
+
+    test(
+      'returns false when relay rejects the event on all attempts',
+      () async {
+        final signedEvent = createSignedEvent();
+        stubSigning(signedEvent);
+        // Relay rejects the event (publishEvent returns null).
+        when(
+          () => mockNostrClient.publishEvent(any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await publisher.publishDirectUpload(createUpload());
+
+        expect(result, isFalse);
         verifyNever(
           () => mockUploadManager.updateUploadStatus(
             any(),
