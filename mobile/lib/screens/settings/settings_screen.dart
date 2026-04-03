@@ -235,6 +235,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push(NostrSettingsScreen.path),
               ),
               _SettingsTile(
+                icon: Icons.science,
+                title: 'Experimental Features',
+                subtitle: 'Tweaks that may hiccup—try them if you are curious.',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FeatureFlagScreen(),
+                  ),
+                ),
+              ),
+              _SettingsTile(
                 icon: Icons.gavel,
                 title: 'Legal',
                 subtitle:

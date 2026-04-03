@@ -13,16 +13,16 @@
 ## Chunk 1: Settings tile entry
 
 **Files:**
-- Modify: `mobile/lib/screens/settings/settings_screen.dart` (new tile insertion, layout adjustments near Legal/Version tiles)
+- Modify: `mobile/lib/screens/settings/settings_screen.dart` (new tile insertion, layout adjustments near Nostr Settings/Legal)
 - Modify: `mobile/lib/features/feature_flags/screens/feature_flag_screen.dart` and README already exist; no change unless doc update required
 
 - [ ] **Step 1: Add the new `ListTile`**
 
 ```dart
 _SettingsTile(
-  icon: Icons.bolt,
-  title: 'Try Edgey Features',
-  subtitle: 'These toggles might hiccup—proceed with curiosity.',
+  icon: Icons.science,
+  title: 'Experimental Features',
+  subtitle: 'Tweaks that may hiccup—try them if you are curious.',
   onTap: () => Navigator.push(
     context,
     MaterialPageRoute(builder: (_) => const FeatureFlagScreen()),
@@ -30,7 +30,7 @@ _SettingsTile(
 ),
 ```
 
-Ensure the tile sits above the version row and uses the same style as other `_SettingsTile`s.
+Ensure the tile sits between `Nostr Settings` and `Legal` and uses the same style as other `_SettingsTile`s.
 
 - [ ] **Step 2: Run the app to sanity-check the layout**
 
@@ -58,7 +58,7 @@ Expected: PASS.
 
 - [ ] **Step 1: Launch the app (simulator/emulator)**
 
-Navigate to Settings, confirm the tile appears below Legal, tap it, and verify `FeatureFlagScreen` opens immediately.
+Navigate to Settings, confirm the tile sits right after Nostr Settings and before Legal, tap it, and verify `FeatureFlagScreen` opens immediately.
 
 ***
 

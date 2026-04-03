@@ -9,7 +9,7 @@ Feature flags are already manageable through `FeatureFlagScreen`, but there is n
 3. Use existing navigation patterns (`MaterialPageRoute`) so we don't need new router plumbing.
 
 ### Proposed Design
-- **Settings tile**: Add a `ListTile` near the bottom of `SettingsScreen` with title `Try Edgey Features` and subtitle `These toggles might hiccup—proceed with curiosity.` `onTap` pushes `FeatureFlagScreen` via `MaterialPageRoute`. The tile uses the same `VineTheme` colors as other tiles and sits below the Legal row but above the Version tile so it feels optional but visible.
+- **Settings tile**: Add a `ListTile` right after the `Nostr Settings` row with title `Experimental Features` and subtitle `Tweaks that may hiccup—try them if you are curious.` `onTap` pushes `FeatureFlagScreen` via `MaterialPageRoute`. The tile uses the same `VineTheme` colors as other tiles so it feels hidden among the less experimental settings.
 - **Navigation behavior**: Tapping the row immediately transitions to `FeatureFlagScreen`. No dialog or secret code; the copy signals that the area is for experimental tweaks. We rely on the README guidance (`Navigator.push(... FeatureFlagScreen())`).
 - **Testing/QA**: Add widget tests verifying the new tile appears, uses expected copy, and pushes the screen. Update any existing `SettingsScreen` tests to account for the extra tile count. Manual smoke test: run Settings screen, tap the row, confirm `FeatureFlagScreen` pushes.
 
