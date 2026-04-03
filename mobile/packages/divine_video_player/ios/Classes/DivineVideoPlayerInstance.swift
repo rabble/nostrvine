@@ -96,12 +96,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             player?.play()
             player?.rate = Float(speed)
             audioOverlayManager.resumeActive(speed: speed)
-            textureOutput?.setPlaying(true)
             result(nil)
         case "pause":
             player?.pause()
             audioOverlayManager.pauseAndDeactivateAll()
-            textureOutput?.setPlaying(false)
             result(nil)
         case "stop":
             handleStop(result: result)
@@ -332,12 +330,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             return
         }
         let time = CMTime(value: Int64(positionMs), timescale: 1000)
-        let previousTime = player?.currentTime()
         player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             self?.syncAudioOverlays()
-            if let prev = previousTime, prev != time {
-                self?.textureOutput?.expectFrame()
-            }
             result(nil)
         }
     }
@@ -390,13 +384,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             return
         }
         let targetTime = CMTime(seconds: clipOffsets[index], preferredTimescale: 600)
-        let previousTime = player?.currentTime()
         player?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) {
             [weak self] _ in
             self?.syncAudioOverlays()
-            if let prev = previousTime, prev != targetTime {
-                self?.textureOutput?.expectFrame()
-            }
             result(nil)
         }
     }
@@ -405,7 +395,6 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private func handleStop(result: @escaping FlutterResult) {
         audioOverlayManager.pauseAndDeactivateAll()
-        textureOutput?.setPlaying(false)
         // Pause and clear media so the surface goes blank.
         player?.pause()
         player?.replaceCurrentItem(with: nil)
@@ -518,7 +507,6 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             syncAudioOverlays()
         } else {
             audioOverlayManager.pauseAndDeactivateAll()
-            textureOutput?.setPlaying(false)
             currentStatus = "completed"
             sendStateUpdate()
         }
@@ -665,7 +653,6 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         if wasPlayingBeforePause {
             player?.pause()
             audioOverlayManager.pauseAndDeactivateAll()
-            textureOutput?.setPlaying(false)
             sendStateUpdate()
         }
     }
@@ -675,7 +662,6 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             player?.play()
             player?.rate = Float(speed)
             audioOverlayManager.resumeActive(speed: speed)
-            textureOutput?.setPlaying(true)
             wasPlayingBeforePause = false
             sendStateUpdate()
         }

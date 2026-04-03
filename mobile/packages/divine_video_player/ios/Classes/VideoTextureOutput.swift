@@ -20,16 +20,6 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
     private var hasDeliveredFirstFrame = false
     private weak var player: AVPlayer?
 
-    /// Whether the host AVPlayer is currently playing.
-    private var isPlaying = false
-    /// Set to `true` when a seek or attach happens while paused so the
-    /// display-link runs long enough to pull the new frame.
-    private var waitingForFrame = false
-    /// Desired presentation time returned by the last display-link
-    /// callback.  Used with `itemTime(forHostTime:)` for precise
-    /// frame selection.
-    private var targetTime: CFTimeInterval = 0
-
     init(
         registry: FlutterTextureRegistry,
         onFirstFrame: (() -> Void)? = nil
@@ -65,7 +55,6 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
         item.add(output)
         videoOutput = output
         hasDeliveredFirstFrame = false
-        expectFrame()
     }
 
     /// Attaches the display-link driven polling loop to the player.
@@ -91,29 +80,6 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
         return Unmanaged.passRetained(pixelBuffer)
     }
 
-    // MARK: - Playback state (controls display-link)
-
-    /// Informs the texture output that playback started or stopped.
-    func setPlaying(_ playing: Bool) {
-        isPlaying = playing
-        updateDisplayLinkRunning()
-    }
-
-    /// Requests exactly one frame pull — used after seek-while-paused
-    /// or when a new item is attached so the UI shows the correct
-    /// poster frame.
-    func expectFrame() {
-        waitingForFrame = true
-        updateDisplayLinkRunning()
-    }
-
-    /// Pauses the display-link when the player is idle **and** no
-    /// one-shot frame is outstanding.
-    private func updateDisplayLinkRunning() {
-        let shouldRun = isPlaying || waitingForFrame
-        displayLink?.isPaused = !shouldRun
-    }
-
     // MARK: - Display link
 
     private func startDisplayLink() {
@@ -124,7 +90,6 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
         )
         link.add(to: .main, forMode: .common)
         displayLink = link
-        updateDisplayLinkRunning()
     }
 
     private func stopDisplayLink() {
@@ -132,12 +97,11 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
         displayLink = nil
     }
 
-    @objc private func onDisplayLink(_ link: CADisplayLink) {
+    @objc private func onDisplayLink() {
         guard let output = videoOutput,
               let player else { return }
 
-        let hostTime = link.targetTimestamp
-        let itemTime = output.itemTime(forHostTime: hostTime)
+        let itemTime = player.currentTime()
         guard output.hasNewPixelBuffer(forItemTime: itemTime) else { return }
 
         if let pixelBuffer = output.copyPixelBuffer(
@@ -146,11 +110,6 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
         ) {
             latestPixelBuffer = pixelBuffer
             registry.textureFrameAvailable(textureId)
-
-            if waitingForFrame {
-                waitingForFrame = false
-                updateDisplayLinkRunning()
-            }
 
             if !hasDeliveredFirstFrame {
                 hasDeliveredFirstFrame = true

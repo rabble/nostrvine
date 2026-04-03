@@ -311,6 +311,11 @@ class VideoFeedController extends ChangeNotifier {
         // request; actual load success/failure arrives asynchronously via
         // the event stream. Wait for a meaningful status so we can fall
         // back to the next source synchronously within this loop.
+        //
+        // "paused" is included because on iOS the player can transition
+        // directly to paused (rate == 0 with buffer filled) without
+        // passing through buffering first — unlike Android's ExoPlayer
+        // which always emits STATE_BUFFERING initially.
         final status = await controller.stateStream
             .map((s) => s.status)
             .where(
@@ -318,7 +323,8 @@ class VideoFeedController extends ChangeNotifier {
                   s == PlaybackStatus.error ||
                   s == PlaybackStatus.buffering ||
                   s == PlaybackStatus.ready ||
-                  s == PlaybackStatus.playing,
+                  s == PlaybackStatus.playing ||
+                  s == PlaybackStatus.paused,
             )
             .first
             .timeout(_sourceStatusTimeout);
