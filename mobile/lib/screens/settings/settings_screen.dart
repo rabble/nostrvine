@@ -21,6 +21,7 @@ import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
+import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -253,6 +254,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     'Terms of Service, Privacy Policy, Safety Standards, '
                     'DMCA, Open Source Licenses',
                 onTap: () => context.push(LegalScreen.path),
+              ),
+              _SettingsTile(
+                icon: Icons.bolt,
+                title: 'Try Edgey Features',
+                subtitle: 'These toggles might hiccup—proceed with curiosity.',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FeatureFlagScreen(),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 24),
