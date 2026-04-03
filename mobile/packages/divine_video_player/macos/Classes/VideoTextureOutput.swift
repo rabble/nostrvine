@@ -46,6 +46,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
         let attrs: [String: Any] = [
             kCVPixelBufferPixelFormatTypeKey as String:
                 kCVPixelFormatType_32BGRA,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [String: Any](),
         ]
         let output = AVPlayerItemVideoOutput(
             pixelBufferAttributes: attrs

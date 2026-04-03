@@ -131,8 +131,18 @@ MockControllerSetup createMockControllerSetup({
   ).thenAnswer((_) => Future<bool>.value(true));
   when(() => mockController.isInitialized).thenReturn(true);
 
-  // Configure common methods
-  when(() => mockController.setSource(any())).thenAnswer((_) async {});
+  // Configure common methods.
+  // setSource must emit a state on stateStream so that _openWithFallbacks
+  // (which awaits the first meaningful status) can proceed.
+  when(() => mockController.setSource(any())).thenAnswer((_) async {
+    final next = DivineVideoPlayerState(
+      status: isBuffering ? PlaybackStatus.buffering : PlaybackStatus.buffering,
+      position: position,
+      duration: duration,
+    );
+    when(() => mockController.state).thenReturn(next);
+    stateController.add(next);
+  });
   when(() => mockController.setClips(any())).thenAnswer((_) async {});
   when(mockController.play).thenAnswer((_) async {});
   when(mockController.pause).thenAnswer((_) async {});

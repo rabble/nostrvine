@@ -96,10 +96,12 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             player?.play()
             player?.rate = Float(speed)
             audioOverlayManager.resumeActive(speed: speed)
+            textureOutput?.setPlaying(true)
             result(nil)
         case "pause":
             player?.pause()
             audioOverlayManager.pauseAndDeactivateAll()
+            textureOutput?.setPlaying(false)
             result(nil)
         case "stop":
             handleStop(result: result)
@@ -155,30 +157,31 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
                 let playerItem = AVPlayerItem(asset: composition)
 
-                // AVVideoComposition(propertiesOf:) generates correct
-                // layer instructions but sets renderSize to the track's
-                // un-rotated naturalSize, which leaves black bars for
-                // rotated (e.g. portrait) videos. We let it generate
-                // instructions, then create a mutable copy with the
-                // corrected renderSize that accounts for the transform.
-                let autoVC = AVVideoComposition(
-                    propertiesOf: composition
-                )
-                let naturalSize = result_.sourceNaturalSize
-                let transformedRect = CGRect(
-                    origin: .zero, size: naturalSize
-                ).applying(transform)
-                let correctedRenderSize = CGSize(
-                    width: abs(transformedRect.size.width),
-                    height: abs(transformedRect.size.height)
-                )
+                // Only apply a video composition when the source
+                // track has a non-identity transform (e.g. a rotation).
+                // Skipping the composition for HLS and identity-
+                // transform progressives avoids AVFoundation errors
+                // on streams that do not support AVVideoComposition.
+                if !transform.isIdentity {
+                    let autoVC = AVVideoComposition(
+                        propertiesOf: composition
+                    )
+                    let naturalSize = result_.sourceNaturalSize
+                    let transformedRect = CGRect(
+                        origin: .zero, size: naturalSize
+                    ).applying(transform)
+                    let correctedRenderSize = CGSize(
+                        width: abs(transformedRect.size.width),
+                        height: abs(transformedRect.size.height)
+                    )
 
-                let fixedVC = AVMutableVideoComposition()
-                fixedVC.renderSize = correctedRenderSize
-                fixedVC.frameDuration = autoVC.frameDuration
-                fixedVC.instructions = autoVC.instructions
-                fixedVC.sourceTrackIDForFrameTiming = videoTrack.trackID
-                playerItem.videoComposition = fixedVC
+                    let fixedVC = AVMutableVideoComposition()
+                    fixedVC.renderSize = correctedRenderSize
+                    fixedVC.frameDuration = autoVC.frameDuration
+                    fixedVC.instructions = autoVC.instructions
+                    fixedVC.sourceTrackIDForFrameTiming = videoTrack.trackID
+                    playerItem.videoComposition = fixedVC
+                }
                 self.textureOutput?.attach(to: playerItem)
 
                 // Reset dimensions so stale values from the previous video
@@ -329,8 +332,12 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             return
         }
         let time = CMTime(value: Int64(positionMs), timescale: 1000)
+        let previousTime = player?.currentTime()
         player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             self?.syncAudioOverlays()
+            if let prev = previousTime, prev != time {
+                self?.textureOutput?.expectFrame()
+            }
             result(nil)
         }
     }
@@ -383,9 +390,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             return
         }
         let targetTime = CMTime(seconds: clipOffsets[index], preferredTimescale: 600)
+        let previousTime = player?.currentTime()
         player?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) {
             [weak self] _ in
             self?.syncAudioOverlays()
+            if let prev = previousTime, prev != targetTime {
+                self?.textureOutput?.expectFrame()
+            }
             result(nil)
         }
     }
@@ -394,6 +405,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private func handleStop(result: @escaping FlutterResult) {
         audioOverlayManager.pauseAndDeactivateAll()
+        textureOutput?.setPlaying(false)
         // Pause and clear media so the surface goes blank.
         player?.pause()
         player?.replaceCurrentItem(with: nil)
@@ -506,6 +518,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             syncAudioOverlays()
         } else {
             audioOverlayManager.pauseAndDeactivateAll()
+            textureOutput?.setPlaying(false)
             currentStatus = "completed"
             sendStateUpdate()
         }
@@ -652,6 +665,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         if wasPlayingBeforePause {
             player?.pause()
             audioOverlayManager.pauseAndDeactivateAll()
+            textureOutput?.setPlaying(false)
             sendStateUpdate()
         }
     }
@@ -661,6 +675,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             player?.play()
             player?.rate = Float(speed)
             audioOverlayManager.resumeActive(speed: speed)
+            textureOutput?.setPlaying(true)
             wasPlayingBeforePause = false
             sendStateUpdate()
         }
