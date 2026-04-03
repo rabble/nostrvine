@@ -24,6 +24,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/fitted_video_player.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
@@ -708,11 +709,11 @@ class _PooledFullscreenItemContentState
           isActive: widget.isActive,
           trafficSource: widget.trafficSource,
           sourceDetail: widget.sourceDetail,
-          child: _FittedVideoPlayer(
+          child: FittedVideoPlayer(
             controller: controller,
             isPortrait: isPortrait,
-            videoWidth: video.width?.toDouble(),
-            videoHeight: video.height?.toDouble(),
+            metadataWidth: video.width,
+            metadataHeight: video.height,
           ),
         ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
@@ -778,46 +779,6 @@ class _PooledFullscreenItemContentState
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _FittedVideoPlayer extends StatelessWidget {
-  const _FittedVideoPlayer({
-    required this.controller,
-    this.isPortrait = true,
-    this.videoWidth,
-    this.videoHeight,
-  });
-
-  final DivineVideoPlayerController controller;
-  final bool isPortrait;
-  final double? videoWidth;
-  final double? videoHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
-    final state = controller.state;
-    final w = videoWidth ?? state.videoWidth.toDouble();
-    final h = videoHeight ?? state.videoHeight.toDouble();
-
-    // When dimensions are unknown, fill the available space without fitting.
-    if (w <= 0 || h <= 0) {
-      return SizedBox.expand(
-        child: DivineVideoPlayer(controller: controller),
-      );
-    }
-
-    return SizedBox.expand(
-      child: FittedBox(
-        fit: boxFit,
-        child: SizedBox(
-          width: w,
-          height: h,
-          child: DivineVideoPlayer(controller: controller),
-        ),
       ),
     );
   }

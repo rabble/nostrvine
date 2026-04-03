@@ -8,6 +8,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
@@ -88,6 +89,16 @@ internal class DivineVideoPlayerInstance(
         return player ?: ExoPlayer.Builder(context)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(VideoCache.dataSourceFactory(context)),
+            )
+            .setLoadControl(
+                DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(
+                        /* minBufferMs */ 2_000,
+                        /* maxBufferMs */ 15_000,
+                        /* bufferForPlaybackMs */ 1_000,
+                        /* bufferForPlaybackAfterRebufferMs */ 2_000,
+                    )
+                    .build(),
             )
             .build().also { newPlayer ->
                 player = newPlayer

@@ -20,6 +20,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/fitted_video_player.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -727,9 +728,11 @@ class _PooledVideoFeedItemContentState
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
         onDoubleTap: _handleDoubleTapLike,
-        videoBuilder: (context, controller) => _FittedVideoPlayer(
+        videoBuilder: (context, controller) => FittedVideoPlayer(
           controller: controller,
           isPortrait: isPortrait,
+          metadataWidth: video.width,
+          metadataHeight: video.height,
         ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
@@ -755,118 +758,9 @@ class _PooledVideoFeedItemContentState
             Positioned.fill(
               child: DoubleTapHeartOverlay(trigger: _heartTrigger),
             ),
-            if (!video.isFromDivineServer)
-              _SlowExternalVideoOverlay(index: widget.index),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _FittedVideoPlayer extends StatelessWidget {
-  const _FittedVideoPlayer({
-    required this.controller,
-    this.isPortrait = true,
-  });
-
-  final DivineVideoPlayerController controller;
-  final bool isPortrait;
-
-  @override
-  Widget build(BuildContext context) {
-    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
-    final state = controller.state;
-    final w = state.videoWidth.toDouble();
-    final h = state.videoHeight.toDouble();
-
-    // When dimensions are unknown, fill the available space without fitting.
-    if (w <= 0 || h <= 0) {
-      return SizedBox.expand(
-        child: DivineVideoPlayer(controller: controller),
-      );
-    }
-
-    return SizedBox.expand(
-      child: FittedBox(
-        fit: boxFit,
-        child: SizedBox(
-          width: w,
-          height: h,
-          child: DivineVideoPlayer(controller: controller),
-        ),
-      ),
-    );
-  }
-}
-
-/// Overlay shown when an externally hosted video takes too long to load.
-///
-/// Listens to the controller's index notifier and shows a skip action
-/// when `isSlowLoad` is true and the video is still loading.
-/// Only rendered for non-Divine videos (controlled by the parent).
-class _SlowExternalVideoOverlay extends StatelessWidget {
-  const _SlowExternalVideoOverlay({required this.index});
-
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    final feedController = VideoPoolProvider.feedOf(context);
-
-    return ValueListenableBuilder<VideoIndexState>(
-      valueListenable: feedController.getIndexNotifier(index),
-      builder: (context, state, _) {
-        if (!state.isSlowLoad || !state.isLoading) {
-          return const SizedBox.shrink();
-        }
-
-        final isLastVideo =
-            feedController.currentIndex >= feedController.videoCount - 1;
-
-        return Positioned(
-          bottom: 120,
-          left: 16,
-          right: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: VineTheme.backgroundColor.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const DivineIcon(
-                  icon: DivineIconName.globe,
-                  color: VineTheme.secondaryText,
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'External video loading slowly',
-                    style: VineTheme.bodyMediumFont(),
-                  ),
-                ),
-                if (!isLastVideo)
-                  TextButton(
-                    onPressed: () {
-                      final nextIndex = feedController.currentIndex + 1;
-                      context
-                          .findAncestorStateOfType<PooledVideoFeedState>()
-                          ?.animateToPage(nextIndex);
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: VineTheme.vineGreen,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    child: const Text('Skip'),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

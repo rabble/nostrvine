@@ -7,6 +7,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -130,6 +131,16 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
         val preloadPlayer = ExoPlayer.Builder(context)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(VideoCache.dataSourceFactory(context)),
+            )
+            .setLoadControl(
+                DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(
+                        /* minBufferMs */ 1_000,
+                        /* maxBufferMs */ 2_500,
+                        /* bufferForPlaybackMs */ 500,
+                        /* bufferForPlaybackAfterRebufferMs */ 1_000,
+                    )
+                    .build(),
             )
             .build()
 

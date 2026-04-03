@@ -189,6 +189,16 @@ class _RevealVideoAfterFirstFrameState
       _subscribeToFirstFrame();
       _subscribeToPosition();
     }
+    // readyForFallback transitions false→true when the load finishes.
+    // For recycled players the controller identity stays the same, so the
+    // block above does not fire. Reset reveal state on this transition to
+    // prevent stale _hasRenderedFirstFrame / _hasDecodedFrames from the
+    // previous video leaking through.
+    if (!oldWidget.readyForFallback && widget.readyForFallback) {
+      _resetRevealState();
+      _subscribeToFirstFrame();
+      _subscribeToPosition();
+    }
     if (oldWidget.readyForFallback != widget.readyForFallback) {
       _syncFallbackTimer();
     }
@@ -227,8 +237,13 @@ class _RevealVideoAfterFirstFrameState
     _firstFrameTimeout?.cancel();
     unawaited(_firstFrameSubscription?.cancel());
 
-    // Check if already rendered.
-    if (widget.controller.state.isFirstFrameRendered) {
+    // Check if already rendered. Trust the synchronous check only when
+    // readyForFallback is true (meaning _markReady has fired and the
+    // state definitely belongs to the current video). During the loading
+    // phase a recycled player's stale isFirstFrameRendered=true from the
+    // previous video may not yet be reset by the EventChannel.
+    if (widget.readyForFallback &&
+        widget.controller.state.isFirstFrameRendered) {
       _hasRenderedFirstFrame = true;
       return;
     }
@@ -276,15 +291,17 @@ class _RevealVideoAfterFirstFrameState
 
   @override
   Widget build(BuildContext context) {
-    // Always require _hasDecodedFrames (position > 0) as a hard
-    // condition. This proves the *current* media has produced frames.
-    // Without it, the fallback timeout can reveal a recycled player's
-    // stale texture (last frame of the previous video) before the new
-    // content has decoded.
+    // Reveal when the native side signals the first frame of the *current*
+    // media, OR fall back after a timeout but only if position > 0 (guards
+    // against showing a recycled player's stale last-frame texture).
+    //
+    // _hasRenderedFirstFrame alone is sufficient: the native player resets
+    // the flag on setSource, so a true value always means the correct
+    // content. For the timeout path we still require _hasDecodedFrames to
+    // avoid revealing stale recycled textures.
     final shouldReveal =
         widget.readyForFallback &&
-        _hasDecodedFrames &&
-        (_hasRenderedFirstFrame || _revealedByTimeout);
+        (_hasRenderedFirstFrame || (_hasDecodedFrames && _revealedByTimeout));
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 120),
