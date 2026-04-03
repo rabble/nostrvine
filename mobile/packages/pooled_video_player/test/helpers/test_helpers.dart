@@ -134,14 +134,20 @@ MockControllerSetup createMockControllerSetup({
   // Configure common methods.
   // setSource must emit a state on stateStream so that _openWithFallbacks
   // (which awaits the first meaningful status) can proceed.
+  // The emission is deferred via Timer.run so that it fires AFTER the
+  // caller subscribes to stateStream.first (broadcast streams don't
+  // buffer events emitted before subscription).
   when(() => mockController.setSource(any())).thenAnswer((_) async {
-    final next = DivineVideoPlayerState(
-      status: isBuffering ? PlaybackStatus.buffering : PlaybackStatus.buffering,
-      position: position,
-      duration: duration,
-    );
-    when(() => mockController.state).thenReturn(next);
-    stateController.add(next);
+    Timer.run(() {
+      if (stateController.isClosed) return;
+      final next = DivineVideoPlayerState(
+        status: PlaybackStatus.buffering,
+        position: position,
+        duration: duration,
+      );
+      when(() => mockController.state).thenReturn(next);
+      stateController.add(next);
+    });
   });
   when(() => mockController.setClips(any())).thenAnswer((_) async {});
   when(mockController.play).thenAnswer((_) async {});
