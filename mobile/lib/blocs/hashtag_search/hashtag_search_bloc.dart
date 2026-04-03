@@ -22,6 +22,9 @@ EventTransformer<E> _debounceRestartable<E>() {
   };
 }
 
+/// Number of results per page for hashtag search pagination.
+const _pageSize = 20;
+
 /// BLoC for searching hashtags via the Funnelcake API.
 ///
 /// Delegates search to [HashtagRepository] which handles remote search
@@ -38,6 +41,7 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
       _onQueryChanged,
       transformer: _debounceRestartable(),
     );
+    on<HashtagSearchLoadMore>(_onLoadMore, transformer: sequential());
     on<HashtagSearchCleared>(_onCleared);
   }
 
@@ -89,6 +93,9 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
           status: HashtagSearchStatus.success,
           results: results,
           resultCount: results.length,
+          offset: results.length,
+          hasMore: results.length == _pageSize,
+          isLoadingMore: false,
         ),
       );
 
@@ -103,6 +110,35 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
         errorMessage: e.toString(),
       );
       emit(state.copyWith(status: HashtagSearchStatus.failure));
+    }
+  }
+
+  Future<void> _onLoadMore(
+    HashtagSearchLoadMore event,
+    Emitter<HashtagSearchState> emit,
+  ) async {
+    if (!state.hasMore || state.isLoadingMore || state.query.isEmpty) return;
+
+    emit(state.copyWith(isLoadingMore: true));
+
+    try {
+      final moreResults = await _hashtagRepository.searchHashtags(
+        query: state.query,
+        offset: state.offset,
+      );
+
+      final allResults = [...state.results, ...moreResults];
+
+      emit(
+        state.copyWith(
+          results: allResults,
+          offset: allResults.length,
+          hasMore: moreResults.length == _pageSize,
+          isLoadingMore: false,
+        ),
+      );
+    } on Exception {
+      emit(state.copyWith(isLoadingMore: false));
     }
   }
 

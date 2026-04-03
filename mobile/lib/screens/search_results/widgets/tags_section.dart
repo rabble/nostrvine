@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 
 /// Maximum number of hashtag chips shown in the Tags preview.
@@ -14,14 +15,17 @@ const _maxTagsPreview = 6;
 /// Returns a [SliverMainAxisGroup] so the header and content participate
 /// natively in the parent [CustomScrollView]'s sliver protocol.
 class TagsSection extends StatelessWidget {
-  const TagsSection({super.key});
+  const TagsSection({this.onSeeAll, super.key});
+
+  /// Called when the user taps the "See all" chevron.
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
     return SliverMainAxisGroup(
       slivers: [
-        const SliverToBoxAdapter(
-          child: SectionHeader(title: 'Tags'),
+        SliverToBoxAdapter(
+          child: SectionHeader(title: 'Tags', onTap: onSeeAll),
         ),
         SliverToBoxAdapter(child: _TagsContent()),
       ],
@@ -59,53 +63,11 @@ class _TagsContent extends StatelessWidget {
         runSpacing: 8,
         children: [
           for (final tag in tags)
-            _SearchTagChip(
+            SearchTagChip(
               tag: tag,
               onTap: () => context.push(HashtagScreenRouter.pathForTag(tag)),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _SearchTagChip extends StatelessWidget {
-  const _SearchTagChip({
-    required this.tag,
-    required this.onTap,
-  });
-
-  final String tag;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'View videos tagged $tag',
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 4,
-            children: [
-              Text(
-                '#',
-                style: VineTheme.bodyLargeFont(color: VineTheme.vineGreen),
-              ),
-              Text(
-                tag,
-                style: VineTheme.titleSmallFont(),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

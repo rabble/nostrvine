@@ -8,6 +8,7 @@ import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/screens/search_results/view/search_results_view.dart';
 import 'package:openvine/screens/search_results/widgets/widgets.dart';
+import 'package:openvine/widgets/hashtag_search_view.dart';
 import 'package:openvine/widgets/user_search_view.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
@@ -106,6 +107,23 @@ void main() {
           expect(changedFilter, equals(SearchResultsFilter.people));
         },
       );
+
+      testWidgets(
+        'calls onFilterChanged with tags when Tags See all is tapped',
+        (tester) async {
+          SearchResultsFilter? changedFilter;
+
+          await tester.pumpWidget(
+            createTestWidget(onFilterChanged: (f) => changedFilter = f),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Tags'));
+          await tester.pump();
+
+          expect(changedFilter, equals(SearchResultsFilter.tags));
+        },
+      );
     });
 
     group('people filter', () {
@@ -139,6 +157,44 @@ void main() {
       testWidgets('does not render $VideosSection', (tester) async {
         await tester.pumpWidget(
           createTestWidget(filter: SearchResultsFilter.people),
+        );
+        await tester.pump();
+
+        expect(find.byType(VideosSection), findsNothing);
+      });
+    });
+
+    group('tags filter', () {
+      testWidgets('renders $HashtagSearchView', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(filter: SearchResultsFilter.tags),
+        );
+        await tester.pump();
+
+        expect(find.byType(HashtagSearchView), findsOneWidget);
+      });
+
+      testWidgets('does not render $PeopleSection', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(filter: SearchResultsFilter.tags),
+        );
+        await tester.pump();
+
+        expect(find.byType(PeopleSection), findsNothing);
+      });
+
+      testWidgets('does not render $TagsSection', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(filter: SearchResultsFilter.tags),
+        );
+        await tester.pump();
+
+        expect(find.byType(TagsSection), findsNothing);
+      });
+
+      testWidgets('does not render $VideosSection', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(filter: SearchResultsFilter.tags),
         );
         await tester.pump();
 

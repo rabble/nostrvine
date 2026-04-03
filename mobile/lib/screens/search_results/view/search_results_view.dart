@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/screens/search_results/widgets/widgets.dart';
+import 'package:openvine/widgets/hashtag_search_view.dart';
 import 'package:openvine/widgets/user_search_view.dart';
 
 /// Filter for the search results content.
@@ -9,7 +10,10 @@ enum SearchResultsFilter {
   all('All'),
 
   /// Show only the full paginated people list.
-  people('People')
+  people('People'),
+
+  /// Show only the full hashtag list.
+  tags('Tags'),
   ;
 
   const SearchResultsFilter(this.label);
@@ -39,24 +43,30 @@ class SearchResultsView extends StatelessWidget {
       child: switch (filter) {
         SearchResultsFilter.all => _AllSectionsView(
           onSeeAllPeople: () => onFilterChanged(SearchResultsFilter.people),
+          onSeeAllTags: () => onFilterChanged(SearchResultsFilter.tags),
         ),
         SearchResultsFilter.people => const UserSearchView(),
+        SearchResultsFilter.tags => const HashtagSearchView(),
       },
     );
   }
 }
 
 class _AllSectionsView extends StatelessWidget {
-  const _AllSectionsView({required this.onSeeAllPeople});
+  const _AllSectionsView({
+    required this.onSeeAllPeople,
+    required this.onSeeAllTags,
+  });
 
   final VoidCallback onSeeAllPeople;
+  final VoidCallback onSeeAllTags;
 
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
         PeopleSection(onSeeAll: onSeeAllPeople),
-        const TagsSection(),
+        TagsSection(onSeeAll: onSeeAllTags),
         const VideosSection(),
       ],
     );

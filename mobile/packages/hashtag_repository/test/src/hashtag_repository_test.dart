@@ -109,6 +109,7 @@ void main() {
           () => mockClient.searchHashtags(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenThrow(
           const FunnelcakeApiException(
@@ -133,6 +134,7 @@ void main() {
           () => mockClient.searchHashtags(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenThrow(const FunnelcakeTimeoutException());
 
@@ -151,6 +153,7 @@ void main() {
           () => mockClient.searchHashtags(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenThrow(const FunnelcakeNotConfiguredException());
 
@@ -184,6 +187,30 @@ void main() {
         final results = await repository.searchHashtags(query: 'zzzzz');
 
         expect(results, isEmpty);
+      });
+
+      test('passes offset to client', () async {
+        when(
+          () => mockClient.searchHashtags(
+            query: 'nostr',
+            limit: 20,
+            offset: 20,
+          ),
+        ).thenAnswer((_) async => ['nostr2']);
+
+        final results = await repository.searchHashtags(
+          query: 'nostr',
+          offset: 20,
+        );
+
+        expect(results, equals(['nostr2']));
+        verify(
+          () => mockClient.searchHashtags(
+            query: 'nostr',
+            limit: 20,
+            offset: 20,
+          ),
+        ).called(1);
       });
     });
 

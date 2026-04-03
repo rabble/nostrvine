@@ -1,14 +1,17 @@
-// ABOUTME: Widget for displaying hashtag search results
+// ABOUTME: Widget for displaying hashtag search results as chips
 // ABOUTME: Consumes HashtagSearchBloc from parent BlocProvider
+
+import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 
 /// Displays hashtag search results from HashtagSearchBloc.
 ///
@@ -30,10 +33,19 @@ class HashtagSearchView extends StatelessWidget {
       builder: (context, state) {
         return switch (state.status) {
           HashtagSearchStatus.initial => const _HashtagSearchEmptyState(),
+          HashtagSearchStatus.loading when state.results.isNotEmpty =>
+            _HashtagSearchResultsList(
+              results: state.results,
+              query: state.query,
+              hasMore: state.hasMore,
+              isLoadingMore: true,
+            ),
           HashtagSearchStatus.loading => const _HashtagSearchLoadingState(),
           HashtagSearchStatus.success => _HashtagSearchResultsList(
             results: state.results,
             query: state.query,
+            hasMore: state.hasMore,
+            isLoadingMore: state.isLoadingMore,
           ),
           HashtagSearchStatus.failure => const _HashtagSearchErrorState(),
         };
@@ -47,19 +59,23 @@ class _HashtagSearchEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
+          const DivineIcon(
+            icon: DivineIconName.search,
+            color: VineTheme.secondaryText,
+            size: 64,
+          ),
+          const SizedBox(height: 16),
           Text(
             'Search for hashtags',
-            style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
+            style: VineTheme.titleSmallFont(),
           ),
           Text(
             'Discover trending topics and content',
-            style: TextStyle(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           ),
         ],
       ),
@@ -78,58 +94,84 @@ class _HashtagSearchLoadingState extends StatelessWidget {
   }
 }
 
-class _HashtagSearchResultsList extends StatelessWidget {
-  const _HashtagSearchResultsList({required this.results, required this.query});
+class _HashtagSearchResultsList extends StatefulWidget {
+  const _HashtagSearchResultsList({
+    required this.results,
+    required this.query,
+    required this.hasMore,
+    required this.isLoadingMore,
+  });
 
   final List<String> results;
   final String query;
+  final bool hasMore;
+  final bool isLoadingMore;
 
   @override
-  Widget build(BuildContext context) {
-    if (results.isEmpty) {
-      return _HashtagSearchNoResultsState(query: query);
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final hashtag = results[index];
-        return _HashtagResultTile(hashtag: hashtag);
-      },
-    );
-  }
+  State<_HashtagSearchResultsList> createState() =>
+      _HashtagSearchResultsListState();
 }
 
-class _HashtagResultTile extends StatelessWidget {
-  const _HashtagResultTile({required this.hashtag});
+class _HashtagSearchResultsListState extends State<_HashtagSearchResultsList>
+    with ScrollPaginationMixin {
+  final _scrollController = ScrollController();
 
-  final String hashtag;
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() => widget.hasMore && !widget.isLoadingMore;
+
+  @override
+  FutureOr<void> onLoadMore() {
+    context.read<HashtagSearchBloc>().add(const HashtagSearchLoadMore());
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPagination();
+  }
+
+  @override
+  void dispose() {
+    disposePagination();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: VineTheme.cardBackground,
-      child: ListTile(
-        leading: const Icon(Icons.tag, color: VineTheme.vineGreen),
-        title: Text(
-          '#$hashtag',
-          style: const TextStyle(
-            color: VineTheme.primaryText,
-            fontWeight: FontWeight.bold,
+    if (widget.results.isEmpty) {
+      return _HashtagSearchNoResultsState(query: widget.query);
+    }
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final tag in widget.results)
+                SearchTagChip(
+                  tag: tag,
+                  onTap: () =>
+                      context.push(HashtagScreenRouter.pathForTag(tag)),
+                ),
+            ],
           ),
-        ),
-        subtitle: const Text(
-          'Tap to view videos with this hashtag',
-          style: TextStyle(color: VineTheme.secondaryText),
-        ),
-        onTap: () {
-          Log.info(
-            'HashtagSearchView: Tapped hashtag: $hashtag',
-            category: LogCategory.video,
-          );
-          context.push(HashtagScreenRouter.pathForTag(hashtag));
-        },
+          if (widget.isLoadingMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -146,15 +188,15 @@ class _HashtagSearchNoResultsState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.tag_outlined,
-            size: 64,
+          const DivineIcon(
+            icon: DivineIconName.search,
             color: VineTheme.secondaryText,
+            size: 64,
           ),
           const SizedBox(height: 16),
           Text(
             'No hashtags found for "$query"',
-            style: const TextStyle(color: VineTheme.primaryText, fontSize: 18),
+            style: VineTheme.titleSmallFont(),
           ),
         ],
       ),
@@ -167,13 +209,20 @@ class _HashtagSearchErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: VineTheme.error),
-          SizedBox(height: 16),
-          Text('Search failed', style: TextStyle(color: VineTheme.lightText)),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            color: VineTheme.error,
+            size: 64,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Search failed',
+            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+          ),
         ],
       ),
     );

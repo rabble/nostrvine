@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/widgets/hashtag_search_view.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -35,7 +36,7 @@ void main() {
     }
 
     group('initial state', () {
-      testWidgets('shows empty state with tag icon and message', (
+      testWidgets('shows empty state with search icon and message', (
         tester,
       ) async {
         when(() => mockBloc.state).thenReturn(const HashtagSearchState());
@@ -43,7 +44,6 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pump();
 
-        expect(find.byIcon(Icons.tag), findsOneWidget);
         expect(find.text('Search for hashtags'), findsOneWidget);
         expect(
           find.text('Discover trending topics and content'),
@@ -68,6 +68,24 @@ void main() {
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
+
+      testWidgets('shows results when loading with existing results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const HashtagSearchState(
+            status: HashtagSearchStatus.loading,
+            query: 'music',
+            results: ['music', 'musician'],
+            hasMore: true,
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
+
+        expect(find.byType(SearchTagChip), findsNWidgets(2));
+      });
     });
 
     group('success state', () {
@@ -84,11 +102,12 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pump();
 
-        expect(find.byIcon(Icons.tag_outlined), findsOneWidget);
         expect(find.text('No hashtags found for "xyz"'), findsOneWidget);
       });
 
-      testWidgets('shows $ListView when results are available', (tester) async {
+      testWidgets('shows $SearchTagChip widgets when results are available', (
+        tester,
+      ) async {
         when(() => mockBloc.state).thenReturn(
           const HashtagSearchState(
             status: HashtagSearchStatus.success,
@@ -100,17 +119,33 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pump();
 
-        expect(find.byType(ListView), findsOneWidget);
-        expect(find.text('#music'), findsOneWidget);
-        expect(find.text('#musician'), findsOneWidget);
-        expect(find.text('#musicvideo'), findsOneWidget);
+        expect(find.byType(SearchTagChip), findsNWidgets(3));
+        expect(find.byType(SingleChildScrollView), findsOneWidget);
+      });
+
+      testWidgets('shows loading indicator when isLoadingMore', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'music',
+            results: ['music'],
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
+
+        expect(find.byType(SearchTagChip), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
     });
 
     group('failure state', () {
-      testWidgets('shows error state with error icon and message', (
-        tester,
-      ) async {
+      testWidgets('shows error state with message', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const HashtagSearchState(
             status: HashtagSearchStatus.failure,
@@ -121,7 +156,6 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pump();
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
         expect(find.text('Search failed'), findsOneWidget);
       });
     });
@@ -143,7 +177,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
 
         // Initial state
-        expect(find.byIcon(Icons.tag), findsOneWidget);
+        expect(find.text('Search for hashtags'), findsOneWidget);
 
         // Trigger state change
         await tester.pump();
@@ -183,9 +217,7 @@ void main() {
         await tester.pump();
 
         // Verify success UI rendered (listener did not interfere)
-        expect(find.byType(ListView), findsOneWidget);
-        expect(find.text('#music'), findsOneWidget);
-        expect(find.text('#musician'), findsOneWidget);
+        expect(find.byType(SearchTagChip), findsNWidgets(2));
       });
     });
   });

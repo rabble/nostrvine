@@ -25,6 +25,9 @@ final class HashtagSearchState extends Equatable {
     this.query = '',
     this.results = const [],
     this.resultCount,
+    this.offset = 0,
+    this.hasMore = false,
+    this.isLoadingMore = false,
   });
 
   /// The current status of the search
@@ -39,12 +42,24 @@ final class HashtagSearchState extends Equatable {
   /// Lightweight count for tab badges when full results were not fetched.
   final int? resultCount;
 
+  /// Pagination offset for the next load-more request.
+  final int offset;
+
+  /// Whether more results are available from the server.
+  final bool hasMore;
+
+  /// Whether a load-more request is in flight.
+  final bool isLoadingMore;
+
   /// Create a copy with updated values
   HashtagSearchState copyWith({
     HashtagSearchStatus? status,
     String? query,
     List<String>? results,
     Object? resultCount = _unset,
+    int? offset,
+    bool? hasMore,
+    bool? isLoadingMore,
   }) {
     return HashtagSearchState(
       status: status ?? this.status,
@@ -53,11 +68,22 @@ final class HashtagSearchState extends Equatable {
       resultCount: identical(resultCount, _unset)
           ? this.resultCount
           : resultCount as int?,
+      offset: offset ?? this.offset,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 
   @override
-  List<Object> get props => [status, query, results, resultCount ?? -1];
+  List<Object> get props => [
+    status,
+    query,
+    results,
+    resultCount ?? -1,
+    offset,
+    hasMore,
+    isLoadingMore,
+  ];
 
   static const Object _unset = Object();
 }

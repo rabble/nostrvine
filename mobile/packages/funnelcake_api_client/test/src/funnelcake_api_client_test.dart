@@ -1614,6 +1614,38 @@ void main() {
           ),
         );
       });
+
+      test('constructs correct URL with offset parameter', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
+
+        await client.searchHashtags(query: 'test', offset: 10);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['offset'], equals('10'));
+      });
+
+      test('omits offset from URL when offset is zero', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
+
+        await client.searchHashtags(query: 'test');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters.containsKey('offset'), isFalse);
+      });
     });
 
     group('getVideosByLoops', () {

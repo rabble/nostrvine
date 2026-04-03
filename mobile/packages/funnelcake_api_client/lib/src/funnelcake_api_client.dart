@@ -542,13 +542,18 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails with a non-success status.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<List<String>> searchHashtags({String? query, int limit = 20}) async {
+  Future<List<String>> searchHashtags({
+    String? query,
+    int limit = 20,
+    int offset = 0,
+  }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
 
     final queryParams = <String, String>{
       'limit': limit.toString(),
+      if (offset > 0) 'offset': offset.toString(),
       if (query != null && query.isNotEmpty) 'q': query,
     };
 

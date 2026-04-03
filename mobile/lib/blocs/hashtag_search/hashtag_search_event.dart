@@ -25,6 +25,11 @@ final class HashtagSearchQueryChanged extends HashtagSearchEvent {
   List<Object?> get props => [query, fetchResults];
 }
 
+/// Request to load the next page of hashtag results.
+final class HashtagSearchLoadMore extends HashtagSearchEvent {
+  const HashtagSearchLoadMore();
+}
+
 /// Request to clear search results and reset to initial state
 final class HashtagSearchCleared extends HashtagSearchEvent {
   const HashtagSearchCleared();

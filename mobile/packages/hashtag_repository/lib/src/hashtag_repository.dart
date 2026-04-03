@@ -48,11 +48,16 @@ class HashtagRepository {
   /// 4. On any remote error, fall back to local hashtag sources.
   ///
   /// This method never throws. If all sources fail it returns an empty list.
-  Future<List<String>> searchHashtags({String? query, int limit = 20}) async {
+  Future<List<String>> searchHashtags({
+    String? query,
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
       final remoteResults = await _funnelcakeApiClient.searchHashtags(
         query: query,
         limit: limit,
+        offset: offset,
       );
 
       if (query == null || query.isEmpty) return remoteResults;
