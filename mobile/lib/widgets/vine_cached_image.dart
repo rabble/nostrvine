@@ -16,6 +16,8 @@ class VineCachedImage extends StatelessWidget {
     this.errorWidget,
     this.memCacheWidth,
     this.memCacheHeight,
+    this.fadeInDuration = const Duration(milliseconds: 500),
+    this.fadeOutDuration = const Duration(milliseconds: 1000),
   });
 
   final String imageUrl;
@@ -27,6 +29,8 @@ class VineCachedImage extends StatelessWidget {
   final LoadingErrorWidgetBuilder? errorWidget;
   final int? memCacheWidth;
   final int? memCacheHeight;
+  final Duration fadeInDuration;
+  final Duration fadeOutDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +45,8 @@ class VineCachedImage extends StatelessWidget {
       errorWidget: errorWidget,
       memCacheWidth: memCacheWidth,
       memCacheHeight: memCacheHeight,
+      fadeInDuration: fadeInDuration,
+      fadeOutDuration: fadeOutDuration,
     );
   }
 }
