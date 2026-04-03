@@ -144,12 +144,41 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Session Expired'), findsOneWidget);
-      // Should NOT show Secure Your Account when session expired
-      expect(find.text('Secure Your Account'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+
+    testWidgets(
+      'shows secure account tile instead of session expired for anonymous '
+      'users',
+      (tester) async {
+        when(() => mockAuthService.isAnonymous).thenReturn(true);
+        when(
+          () => mockAuthService.hasExpiredOAuthSession,
+        ).thenReturn(true);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              currentAuthStateProvider.overrideWithValue(
+                AuthState.authenticated,
+              ),
+            ],
+            child: const MaterialApp(home: SettingsScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Secure Your Account'), findsOneWidget);
+        expect(find.text('Session Expired'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
 
     testWidgets('hides Secure Your Account for non-anonymous users', (
       tester,

@@ -241,10 +241,7 @@ void main() {
             capturedLimit = limit;
             return [];
           },
-        ).searchHashtagsLocally(
-          query: '  music  ',
-          limit: 50,
-        );
+        ).searchHashtagsLocally(query: '  music  ', limit: 50);
 
         expect(capturedQuery, equals('music'));
         expect(capturedLimit, equals(50));

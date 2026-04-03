@@ -1365,6 +1365,7 @@ ProfileRepository? profileRepository(Ref ref) {
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
+    profileStatsDao: ref.watch(databaseProvider).profileStatsDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
     indexerRelays: env.indexerRelays,
