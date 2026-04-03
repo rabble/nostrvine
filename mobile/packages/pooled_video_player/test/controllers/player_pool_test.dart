@@ -764,12 +764,15 @@ void main() {
 
       test('falls back to createPlayer when all LRU entries are disposed',
           () async {
+        final mock1 = _createMockPooledPlayer();
+        final mock2 = _createMockPooledPlayer();
+        final mock3 = _createMockPooledPlayer();
+        final mocks = [mock1, mock2, mock3];
+        var idx = 0;
+
         final pool = _SerializedTestPool(
           maxPlayers: 2,
-          onCreatePlayer: () {
-            final mock = _createMockPooledPlayer();
-            return mock;
-          },
+          onCreatePlayer: () => mocks[idx++],
         );
         addTearDown(pool.dispose);
 
@@ -790,9 +793,16 @@ void main() {
       });
 
       test('_recycleLru recycles and stops the LRU player', () async {
+        // Pre-create all mocks before the pool's async queue runs.
+        final mock1 = _createMockPooledPlayer();
+        final mock2 = _createMockPooledPlayer();
+        final mock3 = _createMockPooledPlayer();
+        final mocks = [mock1, mock2, mock3];
+        var idx = 0;
+
         final pool = _SerializedTestPool(
           maxPlayers: 2,
-          onCreatePlayer: _createMockPooledPlayer,
+          onCreatePlayer: () => mocks[idx++],
         );
         addTearDown(pool.dispose);
 
@@ -815,15 +825,14 @@ void main() {
       test('_recycleLru ignores stop() exceptions', () async {
         final stopThrows = _createMockPooledPlayer();
         when(stopThrows.controller.stop).thenThrow(Exception('stop failed'));
-        var callCount = 0;
+        final mock2 = _createMockPooledPlayer();
+        final mock3 = _createMockPooledPlayer();
+        final mocks = [stopThrows, mock2, mock3];
+        var idx = 0;
 
         final pool = _SerializedTestPool(
           maxPlayers: 2,
-          onCreatePlayer: () {
-            callCount++;
-            if (callCount == 1) return stopThrows;
-            return _createMockPooledPlayer();
-          },
+          onCreatePlayer: () => mocks[idx++],
         );
         addTearDown(pool.dispose);
 
@@ -838,8 +847,10 @@ void main() {
       });
 
       test('release disposes the player and removes from pool', () async {
+        final mock1 = _createMockPooledPlayer();
+
         final pool = _SerializedTestPool(
-          onCreatePlayer: _createMockPooledPlayer,
+          onCreatePlayer: () => mock1,
         );
         addTearDown(pool.dispose);
 
@@ -854,8 +865,13 @@ void main() {
 
       test('stopAll stops all non-disposed players without disposing',
           () async {
+        final mock1 = _createMockPooledPlayer();
+        final mock2 = _createMockPooledPlayer();
+        final mocks = [mock1, mock2];
+        var idx = 0;
+
         final pool = _SerializedTestPool(
-          onCreatePlayer: _createMockPooledPlayer,
+          onCreatePlayer: () => mocks[idx++],
         );
         addTearDown(pool.dispose);
 
@@ -874,13 +890,12 @@ void main() {
       test('stopAll ignores exceptions from stop()', () async {
         final failPlayer = _createMockPooledPlayer();
         when(failPlayer.controller.stop).thenThrow(Exception('fail'));
-        var created = 0;
+        final mock2 = _createMockPooledPlayer();
+        final mocks = [failPlayer, mock2];
+        var idx = 0;
 
         final pool = _SerializedTestPool(
-          onCreatePlayer: () {
-            created++;
-            return created == 1 ? failPlayer : _createMockPooledPlayer();
-          },
+          onCreatePlayer: () => mocks[idx++],
         );
         addTearDown(pool.dispose);
 
@@ -891,8 +906,13 @@ void main() {
       });
 
       test('dispose sets isDisposed and clears all players', () async {
+        final mock1 = _createMockPooledPlayer();
+        final mock2 = _createMockPooledPlayer();
+        final mocks = [mock1, mock2];
+        var idx = 0;
+
         final pool = _SerializedTestPool(
-          onCreatePlayer: _createMockPooledPlayer,
+          onCreatePlayer: () => mocks[idx++],
         );
 
         final p1 = await pool.getPlayer('https://example.com/v1.mp4');
@@ -906,8 +926,10 @@ void main() {
       });
 
       test('double dispose is no-op', () async {
+        final mock1 = _createMockPooledPlayer();
+
         final pool = _SerializedTestPool(
-          onCreatePlayer: _createMockPooledPlayer,
+          onCreatePlayer: () => mock1,
         );
 
         final p1 = await pool.getPlayer('https://example.com/v1.mp4');

@@ -1051,6 +1051,42 @@ void main() {
       );
 
       testWidgets(
+        'skips subscription when readyForFallback and isFirstFrameRendered',
+        (tester) async {
+          // Pre-configure the mock controller to report first frame rendered
+          // synchronously. This triggers the early return in
+          // _subscribeToFirstFrame.
+          when(() => mockVideoController.state).thenReturn(
+            const DivineVideoPlayerState(isFirstFrameRendered: true),
+          );
+
+          // Start directly in ready state so readyForFallback is true and
+          // isFirstFrameRendered is true → the subscription is skipped.
+          indexNotifiers[0] = ValueNotifier(
+            VideoIndexState(
+              loadState: LoadState.ready,
+              controller: mockVideoController,
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+          await tester.pump();
+
+          final opacityFinder = find.ancestor(
+            of: find.byKey(const Key('video_widget')),
+            matching: find.byType(AnimatedOpacity),
+          );
+
+          // Should be immediately visible — the synchronous check short-
+          // circuited _subscribeToFirstFrame.
+          expect(
+            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+            equals(1),
+          );
+        },
+      );
+
+      testWidgets(
         'reveals video when firstFrameRendered fails',
         (tester) async {
           when(

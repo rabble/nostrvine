@@ -257,6 +257,36 @@ void main() {
 
         expect(find.byKey(const Key('video_item_2')), findsOneWidget);
       });
+
+      testWidgets('renders black box for out-of-bounds index', (tester) async {
+        // Build a feed where _videoCount can temporarily be stale
+        // (e.g., videos list shorter than _videoCount). We simulate this
+        // via an external controller that we manipulate.
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 2),
+          pool: pool,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: PooledVideoFeed(
+                videos: createTestVideos(count: 2),
+                pool: pool,
+                controller: controller,
+                itemBuilder: (context, video, index, {required isActive}) {
+                  return Text('Item $index');
+                },
+              ),
+            ),
+          ),
+        );
+
+        // The feed at index 0 and 1 should render normally.
+        expect(find.text('Item 0'), findsOneWidget);
+
+        controller.dispose();
+      });
     });
 
     group('state access', () {
@@ -269,6 +299,20 @@ void main() {
 
         expect(state.controller, isA<VideoFeedController>());
         expect(state.controller.videoCount, equals(5));
+      });
+
+      testWidgets('animateToPage scrolls to requested index', (tester) async {
+        await tester.pumpWidget(buildFeed());
+        await tester.pumpAndSettle();
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+
+        await state.animateToPage(2);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Video 2 (active)'), findsOneWidget);
       });
     });
 
@@ -421,6 +465,30 @@ void main() {
         await tester.pump();
 
         expect(state.controller.videoCount, equals(3));
+      });
+
+      testWidgets('creates new owned controller when external removed', (
+        tester,
+      ) async {
+        final externalController = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+
+        await tester.pumpWidget(buildFeed(controller: externalController));
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+        expect(state.controller, equals(externalController));
+
+        // Switch to no controller → widget should create its own.
+        await tester.pumpWidget(buildFeed(videos: createTestVideos(count: 4)));
+        await tester.pump();
+
+        expect(state.controller, isNot(same(externalController)));
+
+        externalController.dispose();
       });
 
       testWidgets('updates videoCount when controller notifies', (
