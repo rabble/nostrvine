@@ -69,8 +69,7 @@ void main() {
       });
 
       test('handles controller.stop() exception gracefully', () async {
-        when(() => mockController.stop())
-            .thenThrow(Exception('Stop failed'));
+        when(() => mockController.stop()).thenThrow(Exception('Stop failed'));
 
         final pooledPlayer = PooledPlayer(controller: mockController);
 
@@ -79,8 +78,9 @@ void main() {
       });
 
       test('handles controller.dispose() exception gracefully', () async {
-        when(() => mockController.dispose())
-            .thenThrow(Exception('Dispose failed'));
+        when(
+          () => mockController.dispose(),
+        ).thenThrow(Exception('Dispose failed'));
 
         final pooledPlayer = PooledPlayer(controller: mockController);
 

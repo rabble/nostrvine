@@ -146,41 +146,43 @@ class _PooledVideoMetricsTrackerState
         .map((s) => s.isPlaying)
         .distinct()
         .listen((isPlaying) {
-      if (isPlaying && !_isPlaying) {
-        // Started playing
-        _lastPlayStartTime = DateTime.now();
-      } else if (!isPlaying && _isPlaying && _lastPlayStartTime != null) {
-        // Stopped playing — accumulate watch time
-        _totalWatchDuration += DateTime.now().difference(_lastPlayStartTime!);
-        _lastPlayStartTime = null;
-      }
-      _isPlaying = isPlaying;
-    });
+          if (isPlaying && !_isPlaying) {
+            // Started playing
+            _lastPlayStartTime = DateTime.now();
+          } else if (!isPlaying && _isPlaying && _lastPlayStartTime != null) {
+            // Stopped playing — accumulate watch time
+            _totalWatchDuration += DateTime.now().difference(
+              _lastPlayStartTime!,
+            );
+            _lastPlayStartTime = null;
+          }
+          _isPlaying = isPlaying;
+        });
 
     // Track position for loop detection
     _positionSub = controller.stateStream
         .map((s) => s.position)
         .distinct()
         .listen((position) {
-      try {
-        final duration = controller.state.duration;
-        // Detect loop: position jumps back to near start after being near end
-        if (_lastPosition > const Duration(seconds: 1) &&
-            position < const Duration(seconds: 1) &&
-            duration > Duration.zero &&
-            _lastPosition.inMilliseconds > duration.inMilliseconds - 1000) {
-          _loopCount++;
-          Log.debug(
-            'Video looped (count: $_loopCount) for ${widget.video.id}',
-            name: 'PooledVideoMetricsTracker',
-            category: LogCategory.video,
-          );
-        }
-        _lastPosition = position;
-      } catch (_) {
-        // Player may be disposed during stream delivery
-      }
-    });
+          try {
+            final duration = controller.state.duration;
+            // Detect loop: position jumps back to near start after being near end
+            if (_lastPosition > const Duration(seconds: 1) &&
+                position < const Duration(seconds: 1) &&
+                duration > Duration.zero &&
+                _lastPosition.inMilliseconds > duration.inMilliseconds - 1000) {
+              _loopCount++;
+              Log.debug(
+                'Video looped (count: $_loopCount) for ${widget.video.id}',
+                name: 'PooledVideoMetricsTracker',
+                category: LogCategory.video,
+              );
+            }
+            _lastPosition = position;
+          } catch (_) {
+            // Player may be disposed during stream delivery
+          }
+        });
 
     // Check if already playing when we subscribe
     try {

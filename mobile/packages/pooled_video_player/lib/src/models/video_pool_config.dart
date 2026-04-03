@@ -9,10 +9,11 @@ import 'package:pooled_video_player/src/models/video_item.dart';
 typedef MediaSourceResolver = String? Function(VideoItem video);
 
 /// Called when a video becomes ready for playback.
-typedef VideoReadyCallback = void Function(
-  int index,
-  DivineVideoPlayerController controller,
-);
+typedef VideoReadyCallback =
+    void Function(
+      int index,
+      DivineVideoPlayerController controller,
+    );
 
 /// Called periodically with position updates for the active video.
 typedef PositionCallback = void Function(int index, Duration position);

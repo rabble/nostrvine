@@ -110,24 +110,25 @@ MockControllerSetup createMockControllerSetup({
   Duration duration = Duration.zero,
 }) {
   final mockController = _MockDivineVideoPlayerController();
-  final stateController =
-      StreamController<DivineVideoPlayerState>.broadcast();
+  final stateController = StreamController<DivineVideoPlayerState>.broadcast();
 
   final initialState = DivineVideoPlayerState(
     status: isPlaying
         ? PlaybackStatus.playing
         : isBuffering
-            ? PlaybackStatus.buffering
-            : PlaybackStatus.idle,
+        ? PlaybackStatus.buffering
+        : PlaybackStatus.idle,
     position: position,
     duration: duration,
   );
 
   when(() => mockController.state).thenReturn(initialState);
-  when(() => mockController.stateStream)
-      .thenAnswer((_) => stateController.stream);
-  when(() => mockController.firstFrameRendered)
-      .thenAnswer((_) => Future<bool>.value(true));
+  when(
+    () => mockController.stateStream,
+  ).thenAnswer((_) => stateController.stream);
+  when(
+    () => mockController.firstFrameRendered,
+  ).thenAnswer((_) => Future<bool>.value(true));
   when(() => mockController.isInitialized).thenReturn(true);
 
   // Configure common methods
