@@ -6,6 +6,7 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -314,7 +315,18 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       );
     }
 
-    await _videoPlayer!.setAudioTracks([track]);
+    try {
+      await _videoPlayer!.setAudioTracks([track]);
+    } catch (e, stackTrace) {
+      Log.error(
+        '🎵 Failed to load audio: $e',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return;
+    }
 
     Log.info(
       '🎵 Audio loaded via native overlay: ${sound.title} '
@@ -452,12 +464,18 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
 
     // Reinitialize the player when clip paths change.
+    // Uses a custom equality check because List uses reference equality by
+    // default, which would cause the listener to fire on every provider
+    // rebuild even when the paths haven't actually changed.
     ref.listen<List<String>>(
       clipManagerProvider.select(
         (s) =>
             s.clips.map((c) => c.video.file?.path).whereType<String>().toList(),
       ),
-      (_, clipPaths) => _onClipPathsChanged(clipPaths),
+      (previous, clipPaths) {
+        if (listEquals(previous, clipPaths)) return;
+        _onClipPathsChanged(clipPaths);
+      },
     );
 
     // Listen for playback control requests from BLoC
