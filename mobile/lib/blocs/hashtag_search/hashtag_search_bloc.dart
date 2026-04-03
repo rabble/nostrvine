@@ -127,7 +127,9 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
         offset: state.offset,
       );
 
-      final allResults = [...state.results, ...moreResults];
+      final existing = state.results.toSet();
+      final deduped = moreResults.where((r) => !existing.contains(r)).toList();
+      final allResults = [...state.results, ...deduped];
 
       emit(
         state.copyWith(
@@ -137,7 +139,8 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
           isLoadingMore: false,
         ),
       );
-    } on Exception {
+    } on Exception catch (e, stackTrace) {
+      addError(e, stackTrace);
       emit(state.copyWith(isLoadingMore: false));
     }
   }
