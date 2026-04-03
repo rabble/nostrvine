@@ -216,7 +216,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
             // didUpdateWidget would require duplicating the de-duplication
             // logic. This is an acceptable trade-off.
             if (isDuplicate) {
-              matchedTitles.add(video.title!);
+              if (video.title case final title?) {
+                matchedTitles.add(title);
+              }
               final url = video.thumbnailUrl;
               if (url != null &&
                   url.isNotEmpty &&
