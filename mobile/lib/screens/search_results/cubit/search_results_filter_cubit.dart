@@ -7,7 +7,4 @@ class SearchResultsFilterCubit extends Cubit<SearchResultsFilter> {
 
   /// Sets the filter to the given [filter].
   void setFilter(SearchResultsFilter filter) => emit(filter);
-
-  /// Resets the filter back to [SearchResultsFilter.all].
-  void resetFilter() => emit(SearchResultsFilter.all);
 }

@@ -19,10 +19,10 @@ void main() {
     );
 
     blocTest<SearchResultsFilterCubit, SearchResultsFilter>(
-      'emits [all] when resetFilter is called',
+      'emits [all] when setFilter is called with all from people',
       build: SearchResultsFilterCubit.new,
       seed: () => SearchResultsFilter.people,
-      act: (cubit) => cubit.resetFilter(),
+      act: (cubit) => cubit.setFilter(SearchResultsFilter.all),
       expect: () => const [SearchResultsFilter.all],
     );
 
@@ -30,8 +30,9 @@ void main() {
       'emits [people, all] for a full round-trip',
       build: SearchResultsFilterCubit.new,
       act: (cubit) {
-        cubit.setFilter(SearchResultsFilter.people);
-        cubit.resetFilter();
+        cubit
+          ..setFilter(SearchResultsFilter.people)
+          ..setFilter(SearchResultsFilter.all);
       },
       expect: () => const [
         SearchResultsFilter.people,

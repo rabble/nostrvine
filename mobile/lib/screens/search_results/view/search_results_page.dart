@@ -66,9 +66,9 @@ class _SearchResultsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filter = context.watch<SearchResultsFilterCubit>().state;
-    final cubit = context.read<SearchResultsFilterCubit>();
-
+    final filter = context.select(
+      (SearchResultsFilterCubit cubit) => cubit.state,
+    );
     return Column(
       children: [
         SearchResultsAppBar(
@@ -76,12 +76,14 @@ class _SearchResultsBody extends StatelessWidget {
           filterLabel: filter.label,
           onFilterTap: filter == SearchResultsFilter.all
               ? null
-              : cubit.resetFilter,
+              : () => context.read<SearchResultsFilterCubit>().setFilter(
+                  SearchResultsFilter.all,
+                ),
         ),
         Expanded(
           child: SearchResultsView(
             filter: filter,
-            onFilterChanged: cubit.setFilter,
+            onFilterChanged: context.read<SearchResultsFilterCubit>().setFilter,
           ),
         ),
       ],
