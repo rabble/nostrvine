@@ -717,9 +717,9 @@ void main() {
         // call inside stopRecording does not throw.
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('divine_video_player'),
-          (MethodCall call) async => null,
-        );
+              const MethodChannel('divine_video_player'),
+              (MethodCall call) async => null,
+            );
 
         final spyGallerySave = _SpyGallerySaveService();
 
@@ -763,9 +763,9 @@ void main() {
         // Clean up the platform channel stub.
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('divine_video_player'),
-          null,
-        );
+              const MethodChannel('divine_video_player'),
+              null,
+            );
       },
     );
   });
