@@ -3,7 +3,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -25,8 +24,6 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _FakeEvent extends Fake implements Event {}
 
-class _FakeFilter extends Fake implements Filter {}
-
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
 void main() {
@@ -42,9 +39,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
-    registerFallbackValue(_FakeFilter());
     registerFallbackValue(_FakeVideoEvent());
-    registerFallbackValue(<Filter>[]);
     registerFallbackValue(UploadStatus.pending);
   });
 
@@ -134,26 +129,13 @@ void main() {
     ).thenAnswer((_) async => event);
   }
 
-  group('VideoEventPublisher direct publish confirmation', () {
+  group('VideoEventPublisher direct publish', () {
     test(
-      'succeeds when relay accepts the event even if visibility '
-      'confirmation fails',
+      'succeeds when relay accepts the event',
       () async {
         final signedEvent = createSignedEvent();
         stubSigning(signedEvent);
         stubPublish(signedEvent);
-        // Relay accepts the event (publishEvent returns non-null) but
-        // the read-back query returns empty — should still succeed.
-        when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-            useCache: any(named: 'useCache'),
-          ),
-        ).thenAnswer((_) async => <Event>[]);
 
         final result = await publisher.publishDirectUpload(createUpload());
 
@@ -203,16 +185,6 @@ void main() {
         () => mockPersonalEventCache.getEventById(signedEvent.id),
       ).thenReturn(signedEvent);
       stubPublish(signedEvent);
-      when(
-        () => mockNostrClient.queryEvents(
-          any(),
-          subscriptionId: any(named: 'subscriptionId'),
-          tempRelays: any(named: 'tempRelays'),
-          relayTypes: any(named: 'relayTypes'),
-          sendAfterAuth: any(named: 'sendAfterAuth'),
-          useCache: any(named: 'useCache'),
-        ),
-      ).thenAnswer((_) async => <Event>[signedEvent]);
 
       final result = await publisher.publishDirectUpload(retryUpload);
 
@@ -226,36 +198,5 @@ void main() {
       );
       verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
     });
-
-    test(
-      'marks publish successful only after the event is queryable from relays',
-      () async {
-        final signedEvent = createSignedEvent();
-        stubSigning(signedEvent);
-        stubPublish(signedEvent);
-        when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-            useCache: any(named: 'useCache'),
-          ),
-        ).thenAnswer((_) async => <Event>[signedEvent]);
-
-        final result = await publisher.publishDirectUpload(createUpload());
-
-        expect(result, isTrue);
-        verify(
-          () => mockUploadManager.updateUploadStatus(
-            'test-upload-id',
-            UploadStatus.published,
-            nostrEventId: signedEvent.id,
-          ),
-        ).called(1);
-        verify(() => mockVideoEventService.addVideoEvent(any())).called(1);
-      },
-    );
   });
 }
