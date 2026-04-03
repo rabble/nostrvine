@@ -208,6 +208,13 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
             // Step 3: Mark the title as matched so only the first duplicate
             // per upload is filtered out. Pre-cache the network thumbnail
             // so it's instantly available when the upload tile disappears.
+            //
+            // NOTE: The [downloadFile] call is intentionally placed here
+            // inside build(). It is a fire-and-forget cache warm-up that
+            // is guarded by [_precachedThumbnailUrls] so it executes at
+            // most once per URL across rebuilds. Moving it to
+            // didUpdateWidget would require duplicating the de-duplication
+            // logic. This is an acceptable trade-off.
             if (isDuplicate) {
               matchedTitles.add(video.title!);
               final url = video.thumbnailUrl;
