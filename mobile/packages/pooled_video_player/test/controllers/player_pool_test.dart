@@ -11,28 +11,30 @@ import '../helpers/test_helpers.dart';
 
 class _MockPooledPlayer extends Mock implements PooledPlayer {}
 
-class _FakeMedia extends Fake implements Media {}
+class _MockDivineVideoPlayerController extends Mock
+    implements DivineVideoPlayerController {}
 
 void _setUpFallbacks() {
-  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(_MockDivineVideoPlayerController());
   registerFallbackValue(Duration.zero);
-  registerFallbackValue(PlaylistMode.single);
 }
 
 _MockPooledPlayer _createMockPooledPlayer() {
   final mockPooledPlayer = _MockPooledPlayer();
-  final mockPlayer = createMockPlayer();
-  final mockController = createMockVideoController();
+  final mockController = _MockDivineVideoPlayerController();
 
   var recycled = false;
 
-  when(() => mockPooledPlayer.player).thenReturn(mockPlayer);
-  when(() => mockPooledPlayer.videoController).thenReturn(mockController);
+  when(() => mockPooledPlayer.controller).thenReturn(mockController);
   when(() => mockPooledPlayer.isDisposed).thenReturn(false);
   when(() => mockPooledPlayer.wasRecycled).thenAnswer((_) => recycled);
   when(mockPooledPlayer.clearRecycled).thenAnswer((_) => recycled = false);
   when(mockPooledPlayer.recycle).thenAnswer((_) => recycled = true);
   when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+
+  // Stub controller methods that return Future<void>
+  when(() => mockController.setVolume(any())).thenAnswer((_) async {});
+  when(mockController.stop).thenAnswer((_) async {});
 
   return mockPooledPlayer;
 }
@@ -57,7 +59,7 @@ void main() {
         test('uses default config when not provided', () async {
           await PlayerPool.init();
 
-          expect(PlayerPool.instance.maxPlayers, equals(5));
+          expect(PlayerPool.instance.maxPlayers, equals(3));
         });
 
         test('uses provided config', () async {
@@ -67,13 +69,13 @@ void main() {
         });
 
         test('disposes existing instance when re-initializing', () async {
-          await PlayerPool.init(config: const VideoPoolConfig(maxPlayers: 3));
+          await PlayerPool.init();
           final oldInstance = PlayerPool.instance;
 
           await PlayerPool.init();
 
           expect(PlayerPool.instance, isNot(same(oldInstance)));
-          expect(PlayerPool.instance.maxPlayers, equals(5));
+          expect(PlayerPool.instance.maxPlayers, equals(3));
         });
       });
 
@@ -142,7 +144,7 @@ void main() {
         });
 
         test('allows re-initialization after reset', () async {
-          await PlayerPool.init(config: const VideoPoolConfig(maxPlayers: 3));
+          await PlayerPool.init();
           await PlayerPool.reset();
           await PlayerPool.init(config: const VideoPoolConfig(maxPlayers: 7));
 
@@ -167,7 +169,7 @@ void main() {
 
         test('setter replaces instance', () async {
           await PlayerPool.init();
-          final customPool = PlayerPool(maxPlayers: 3);
+          final customPool = PlayerPool();
 
           PlayerPool.instanceForTesting = customPool;
 
@@ -186,18 +188,18 @@ void main() {
 
     group('manual instantiation', () {
       test('creates isolated instance', () {
-        final pool1 = PlayerPool(maxPlayers: 3);
+        final pool1 = PlayerPool();
         final pool2 = PlayerPool();
 
         expect(identical(pool1, pool2), isFalse);
         expect(pool1.maxPlayers, equals(3));
-        expect(pool2.maxPlayers, equals(5));
+        expect(pool2.maxPlayers, equals(3));
       });
 
       test('uses default maxPlayers when not provided', () {
         final pool = PlayerPool();
 
-        expect(pool.maxPlayers, equals(5));
+        expect(pool.maxPlayers, equals(3));
       });
 
       test('uses provided maxPlayers', () {
@@ -210,7 +212,7 @@ void main() {
         await PlayerPool.init();
         final manualPool = PlayerPool(maxPlayers: 10);
 
-        expect(PlayerPool.instance.maxPlayers, equals(5));
+        expect(PlayerPool.instance.maxPlayers, equals(3));
         expect(manualPool.maxPlayers, equals(10));
         expect(identical(PlayerPool.instance, manualPool), isFalse);
       });
@@ -223,7 +225,6 @@ void main() {
       setUp(() {
         createdPlayers = [];
         pool = TestablePlayerPool(
-          maxPlayers: 3,
           mockPlayerFactory: (url) {
             final player = _createMockPooledPlayer();
             createdPlayers.add(player);
@@ -268,7 +269,7 @@ void main() {
           await pool.getPlayer('https://example.com/v1.mp4');
 
           // The cached player should have been muted before returning.
-          verify(() => createdPlayers[0].player.setVolume(0)).called(1);
+          verify(() => createdPlayers[0].controller.setVolume(0)).called(1);
         });
 
         test('evicts LRU player when at capacity', () async {
@@ -325,7 +326,7 @@ void main() {
             // cleared from the surface before the recycled player is exposed
             // to the UI — preventing a wrong-frame flash.
             // ignore: unnecessary_lambdas, chained mock calls need lambda for mocktail
-            verify(() => evictedPlayer.player.stop()).called(1);
+            verify(() => evictedPlayer.controller.stop()).called(1);
           },
         );
       });
@@ -519,7 +520,7 @@ void main() {
 
           for (final player in createdPlayers) {
             // ignore: unnecessary_lambdas, chained mock calls need lambda for mocktail
-            verify(() => player.player.stop()).called(1);
+            verify(() => player.controller.stop()).called(1);
           }
         });
 
@@ -531,8 +532,8 @@ void main() {
 
           pool.stopAll();
 
-          verifyNever(() => createdPlayers[0].player.stop());
-          verify(() => createdPlayers[1].player.stop()).called(1);
+          verifyNever(() => createdPlayers[0].controller.stop());
+          verify(() => createdPlayers[1].controller.stop()).called(1);
         });
 
         test('handles empty pool', () {
@@ -543,7 +544,7 @@ void main() {
           await pool.getPlayer('https://example.com/v1.mp4');
 
           when(
-            () => createdPlayers[0].player.stop(),
+            () => createdPlayers[0].controller.stop(),
           ).thenThrow(Exception('stop failed'));
 
           expect(() => pool.stopAll(), returnsNormally);
@@ -636,7 +637,6 @@ void main() {
       test('concurrent getPlayer calls do not over-evict', () async {
         final createdCount = <int>[0];
         final serializedPool = _SerializedTestPool(
-          maxPlayers: 3,
           onCreatePlayer: () {
             createdCount[0]++;
             return _createMockPooledPlayer();
@@ -663,7 +663,6 @@ void main() {
 
       test('serialization does not deadlock on same-URL calls', () async {
         final serializedPool = _SerializedTestPool(
-          maxPlayers: 3,
           onCreatePlayer: _createMockPooledPlayer,
         );
         addTearDown(serializedPool.dispose);
@@ -703,7 +702,7 @@ void main() {
               if (playerIndex == 0) {
                 // Capture the inner Player mock directly (before any
                 // when() call that could confuse mocktail's recording).
-                final innerPlayer = mock.player;
+                final innerPlayer = mock.controller;
                 // Override stop() on the first (LRU) player to block on
                 // stopCompleter — simulating a slow native surface clear.
                 when(innerPlayer.stop).thenAnswer((_) async {

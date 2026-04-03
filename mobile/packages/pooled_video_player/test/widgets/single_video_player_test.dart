@@ -22,21 +22,20 @@ void main() {
 
   group('SingleVideoPlayer', () {
     late TestablePlayerPool pool;
-    late Map<String, MockPlayerSetup> playerSetups;
+    late Map<String, MockControllerSetup> playerSetups;
 
     setUp(() {
       playerSetups = {};
       pool = TestablePlayerPool(
         maxPlayers: 10,
         mockPlayerFactory: (url) {
-          final setup = createMockPlayerSetup();
+          final setup = createMockControllerSetup();
           playerSetups[url] = setup;
 
           final mockPooledPlayer = _MockPooledPlayer();
-          when(() => mockPooledPlayer.player).thenReturn(setup.player);
           when(
-            () => mockPooledPlayer.videoController,
-          ).thenReturn(createMockVideoController());
+            () => mockPooledPlayer.controller,
+          ).thenReturn(setup.controller);
           when(() => mockPooledPlayer.isDisposed).thenReturn(false);
           when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 
@@ -67,7 +66,7 @@ void main() {
             loadingBuilder: loadingBuilder,
             errorBuilder: errorBuilder,
             autoPlay: autoPlay,
-            videoBuilder: (context, videoController, player) {
+            videoBuilder: (context, controller) {
               return Container(
                 key: const Key('video_widget'),
                 color: Colors.blue,
@@ -128,17 +127,17 @@ void main() {
         expect(pool.hasPlayer('https://example.com/test.mp4'), isTrue);
       });
 
-      testWidgets('opens media with correct URL', (tester) async {
+      testWidgets('sets source with correct URL', (tester) async {
         final video = createTestVideo(url: 'https://example.com/video.mp4');
 
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
         final setup = playerSetups['https://example.com/video.mp4'];
-        verify(() => setup.player.open(any(), play: false)).called(1);
+        verify(() => setup!.controller.setSource(any())).called(1);
       });
 
-      testWidgets('sets playlist mode to single', (tester) async {
+      testWidgets('sets looping to true', (tester) async {
         final video = createTestVideo(url: 'https://example.com/video.mp4');
 
         await tester.pumpWidget(buildWidget(video: video));
@@ -146,7 +145,7 @@ void main() {
 
         final setup = playerSetups['https://example.com/video.mp4'];
         verify(
-          () => setup.player.setPlaylistMode(PlaylistMode.single),
+          () => setup!.controller.setLooping(looping: true),
         ).called(1);
       });
 
@@ -157,8 +156,8 @@ void main() {
         await tester.pump();
 
         final setup = playerSetups['https://example.com/video.mp4'];
-        verify(() => setup.player.setVolume(0)).called(1);
-        verify(setup.player.play).called(1);
+        verify(() => setup!.controller.setVolume(0)).called(1);
+        verify(setup!.controller.play).called(1);
       });
     });
 
@@ -169,8 +168,9 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        playerSetups['https://example.com/video.mp4']!.emitState(
+          const DivineVideoPlayerState(status: PlaybackStatus.ready),
+        );
         await tester.pump();
 
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
@@ -182,25 +182,28 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        playerSetups['https://example.com/video.mp4']!.emitState(
+          const DivineVideoPlayerState(status: PlaybackStatus.ready),
+        );
         await tester.pump();
 
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
       });
 
-      testWidgets('sets volume to 100 when autoPlay is true', (tester) async {
+      testWidgets('sets volume to 1 when autoPlay is true', (tester) async {
         final video = createTestVideo(url: 'https://example.com/video.mp4');
 
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        final setup = playerSetups['https://example.com/video.mp4']!
+          ..emitState(
+            const DivineVideoPlayerState(status: PlaybackStatus.ready),
+          );
         await tester.pump();
 
-        verify(() => setup.player.setVolume(100)).called(1);
+        verify(() => setup.controller.setVolume(1)).called(1);
       });
 
       testWidgets('pauses when autoPlay is false', (tester) async {
@@ -209,11 +212,13 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video, autoPlay: false));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        final setup = playerSetups['https://example.com/video.mp4']!
+          ..emitState(
+            const DivineVideoPlayerState(status: PlaybackStatus.ready),
+          );
         await tester.pump();
 
-        verify(setup.player.pause).called(1);
+        verify(setup.controller.pause).called(1);
       });
     });
 
@@ -231,7 +236,7 @@ void main() {
               body: SingleVideoPlayer(
                 video: createTestVideo(),
                 pool: errorPool,
-                videoBuilder: (context, controller, player) {
+                videoBuilder: (context, controller) {
                   return const SizedBox();
                 },
               ),
@@ -267,7 +272,7 @@ void main() {
                     child: const Text('Custom Retry'),
                   );
                 },
-                videoBuilder: (context, controller, player) {
+                videoBuilder: (context, controller) {
                   return const SizedBox();
                 },
               ),
@@ -297,7 +302,7 @@ void main() {
               body: SingleVideoPlayer(
                 video: createTestVideo(),
                 pool: errorPool,
-                videoBuilder: (context, controller, player) {
+                videoBuilder: (context, controller) {
                   return const SizedBox();
                 },
               ),
@@ -343,8 +348,9 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        playerSetups['https://example.com/video.mp4']!.emitState(
+          const DivineVideoPlayerState(status: PlaybackStatus.ready),
+        );
         await tester.pump();
 
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
@@ -378,12 +384,14 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        final setup = playerSetups['https://example.com/video.mp4']!
+          ..emitState(
+            const DivineVideoPlayerState(status: PlaybackStatus.ready),
+          );
         await tester.pump();
 
-        verify(setup.player.play).called(1);
-        verify(() => setup.player.setVolume(100)).called(1);
+        verify(setup.controller.play).called(1);
+        verify(() => setup.controller.setVolume(1)).called(1);
       });
 
       testWidgets('video pauses when autoPlay is false', (tester) async {
@@ -392,12 +400,14 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video, autoPlay: false));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        final setup = playerSetups['https://example.com/video.mp4']!
+          ..emitState(
+            const DivineVideoPlayerState(status: PlaybackStatus.ready),
+          );
         await tester.pump();
 
-        verify(setup.player.pause).called(1);
-        verify(() => setup.player.setVolume(100)).called(1);
+        verify(setup.controller.pause).called(1);
+        verify(() => setup.controller.setVolume(1)).called(1);
       });
     });
 
@@ -410,9 +420,9 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4'];
-
-        setup.bufferingController.add(false);
+        playerSetups['https://example.com/video.mp4']!.emitState(
+          const DivineVideoPlayerState(status: PlaybackStatus.ready),
+        );
         await tester.pump();
 
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
@@ -421,18 +431,17 @@ void main() {
       testWidgets('buffer subscription callback transitions state', (
         tester,
       ) async {
-        final bufferingSetups = <String, MockPlayerSetup>{};
+        final bufferingSetups = <String, MockControllerSetup>{};
         final bufferingPool = TestablePlayerPool(
           maxPlayers: 10,
           mockPlayerFactory: (url) {
-            final setup = createMockPlayerSetup(isBuffering: true);
+            final setup = createMockControllerSetup(isBuffering: true);
             bufferingSetups[url] = setup;
 
             final mockPooledPlayer = _MockPooledPlayer();
-            when(() => mockPooledPlayer.player).thenReturn(setup.player);
             when(
-              () => mockPooledPlayer.videoController,
-            ).thenReturn(createMockVideoController());
+              () => mockPooledPlayer.controller,
+            ).thenReturn(setup.controller);
             when(() => mockPooledPlayer.isDisposed).thenReturn(false);
             when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 
@@ -448,7 +457,7 @@ void main() {
               body: SingleVideoPlayer(
                 video: video,
                 pool: bufferingPool,
-                videoBuilder: (context, videoController, player) {
+                videoBuilder: (context, controller) {
                   return Container(
                     key: const Key('video_widget'),
                     color: Colors.blue,
@@ -462,9 +471,9 @@ void main() {
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        final setup = bufferingSetups['https://example.com/video.mp4'];
-
-        setup.bufferingController.add(false);
+        bufferingSetups['https://example.com/video.mp4']!.emitState(
+          const DivineVideoPlayerState(status: PlaybackStatus.ready),
+        );
         await tester.pump();
 
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
@@ -484,8 +493,9 @@ void main() {
         await tester.pump();
 
         // Transition to ready state
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        playerSetups['https://example.com/video.mp4']!.emitState(
+          const DivineVideoPlayerState(status: PlaybackStatus.ready),
+        );
         await tester.pump();
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
 
@@ -512,8 +522,9 @@ void main() {
         await tester.pump();
 
         // Transition to ready state
-        final setup = playerSetups['https://example.com/video.mp4'];
-        setup.bufferingController.add(false);
+        playerSetups['https://example.com/video.mp4']!.emitState(
+          const DivineVideoPlayerState(status: PlaybackStatus.ready),
+        );
         await tester.pump();
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
 
@@ -568,7 +579,7 @@ void main() {
               body: SingleVideoPlayer(
                 video: createTestVideo(),
                 pool: errorPool,
-                videoBuilder: (context, controller, player) {
+                videoBuilder: (context, controller) {
                   return const SizedBox();
                 },
               ),

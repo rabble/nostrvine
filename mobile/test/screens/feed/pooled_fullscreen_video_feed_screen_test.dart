@@ -26,8 +26,6 @@ class MockFullscreenFeedBloc
 
 class MockVideoFeedController extends Mock implements VideoFeedController {}
 
-class MockPlayer extends Mock implements Player {}
-
 // Full 64-character test IDs
 const testVideoId1 =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
@@ -47,8 +45,6 @@ void stubVideoFeedController(
   when(() => controller.currentIndex).thenReturn(0);
   when(() => controller.isPaused).thenReturn(false);
   when(() => controller.isActive).thenReturn(true);
-  when(() => controller.getVideoController(any())).thenReturn(null);
-  when(() => controller.getPlayer(any())).thenReturn(null);
   when(() => controller.getLoadState(any())).thenReturn(LoadState.none);
   when(() => controller.isVideoReady(any())).thenReturn(false);
   when(() => controller.onPageChanged(any())).thenReturn(null);

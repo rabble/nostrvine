@@ -7,8 +7,8 @@ void main() {
       test('creates with default values', () {
         const config = VideoPoolConfig();
 
-        expect(config.maxPlayers, equals(5));
-        expect(config.preloadAhead, equals(2));
+        expect(config.maxPlayers, equals(3));
+        expect(config.preloadAhead, equals(1));
         expect(config.preloadBehind, equals(1));
         expect(config.mediaSourceResolver, isNull);
         expect(config.onVideoReady, isNull);
@@ -23,14 +23,14 @@ void main() {
         const config = VideoPoolConfig(maxPlayers: 10);
 
         expect(config.maxPlayers, equals(10));
-        expect(config.preloadAhead, equals(2));
+        expect(config.preloadAhead, equals(1));
         expect(config.preloadBehind, equals(1));
       });
 
       test('accepts custom preloadAhead', () {
         const config = VideoPoolConfig(preloadAhead: 5);
 
-        expect(config.maxPlayers, equals(5));
+        expect(config.maxPlayers, equals(3));
         expect(config.preloadAhead, equals(5));
         expect(config.preloadBehind, equals(1));
       });
@@ -38,8 +38,8 @@ void main() {
       test('accepts custom preloadBehind', () {
         const config = VideoPoolConfig(preloadBehind: 3);
 
-        expect(config.maxPlayers, equals(5));
-        expect(config.preloadAhead, equals(2));
+        expect(config.maxPlayers, equals(3));
+        expect(config.preloadAhead, equals(1));
         expect(config.preloadBehind, equals(3));
       });
 
@@ -316,8 +316,8 @@ void main() {
       test('is immutable', () {
         const config = VideoPoolConfig();
 
-        expect(config.maxPlayers, equals(5));
-        expect(config.preloadAhead, equals(2));
+        expect(config.maxPlayers, equals(3));
+        expect(config.preloadAhead, equals(1));
         expect(config.preloadBehind, equals(1));
       });
     });

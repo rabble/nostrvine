@@ -8,12 +8,11 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../helpers/test_helpers.dart';
 
-class _FakeMedia extends Fake implements Media {}
+class _FakeVideoClip extends Fake implements VideoClip {}
 
 void _setUpFallbacks() {
-  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(_FakeVideoClip());
   registerFallbackValue(Duration.zero);
-  registerFallbackValue(PlaylistMode.single);
 }
 
 void main() {

@@ -23,23 +23,18 @@ void _setUpFallbacks() {
 }
 
 _MockDivineVideoPlayerController _createMockController(
-  StreamController<Duration> positionCtrl,
+  StreamController<DivineVideoPlayerState> stateCtrl,
 ) {
   final mockController = _MockDivineVideoPlayerController();
 
   when(() => mockController.state).thenReturn(
     const DivineVideoPlayerState(),
   );
-  // Stub stateStream-derived position stream so _subscribeToPosition can
-  // emit decoded-frame events that drive the _hasDecodedFrames flag in
-  // PooledVideoPlayer.
   when(() => mockController.stateStream).thenAnswer(
-    (_) => positionCtrl.stream.map(
-      (pos) => DivineVideoPlayerState(position: pos),
-    ),
+    (_) => stateCtrl.stream,
   );
   when(() => mockController.firstFrameRendered).thenAnswer(
-    (_) => Future<void>.value(),
+    (_) => Future<bool>.value(true),
   );
 
   return mockController;
@@ -100,19 +95,20 @@ void main() {
     late _MockVideoFeedController mockController;
     late Map<int, ValueNotifier<VideoIndexState>> indexNotifiers;
     late _MockDivineVideoPlayerController mockVideoController;
-    late StreamController<Duration> positionController;
+    late StreamController<DivineVideoPlayerState> stateStreamController;
 
     setUp(() {
       final result = _createMockVideoFeedControllerWithNotifier();
       mockController = result.controller;
       indexNotifiers = result.notifiers;
       mockVideoController = _createMockController(
-        positionController = StreamController<Duration>.broadcast(),
+        stateStreamController =
+            StreamController<DivineVideoPlayerState>.broadcast(),
       );
     });
 
     tearDown(() async {
-      await positionController.close();
+      await stateStreamController.close();
     });
 
     Widget buildWidget({
@@ -244,7 +240,7 @@ void main() {
       testWidgets('renders video layer while loading when player exists', (
         tester,
       ) async {
-        final firstFrameCompleter = Completer<void>();
+        final firstFrameCompleter = Completer<bool>();
         when(
           () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstFrameCompleter.future);
@@ -274,7 +270,7 @@ void main() {
 
         // While still in loading state, readyForFallback is false, so the
         // video stays hidden even after the first frame renders.
-        firstFrameCompleter.complete();
+        firstFrameCompleter.complete(true);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -403,7 +399,7 @@ void main() {
       testWidgets('keeps video transparent until first frame renders', (
         tester,
       ) async {
-        final firstFrameCompleter = Completer<void>();
+        final firstFrameCompleter = Completer<bool>();
         when(
           () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstFrameCompleter.future);
@@ -422,11 +418,16 @@ void main() {
         );
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        firstFrameCompleter.complete();
+        firstFrameCompleter.complete(true);
         await tester.pump();
-        // Emit a non-zero position to set _hasDecodedFrames = true, which
-        // is required alongside _hasRenderedFirstFrame for shouldReveal.
-        positionController.add(const Duration(milliseconds: 100));
+        // Emit a state with first frame rendered and non-zero position so
+        // both _hasRenderedFirstFrame and _hasDecodedFrames become true.
+        stateStreamController.add(
+          const DivineVideoPlayerState(
+            isFirstFrameRendered: true,
+            position: Duration(milliseconds: 100),
+          ),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -439,7 +440,7 @@ void main() {
       testWidgets('does not reveal video from timeout while still loading', (
         tester,
       ) async {
-        final firstFrameCompleter = Completer<void>();
+        final firstFrameCompleter = Completer<bool>();
         when(
           () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstFrameCompleter.future);
@@ -475,7 +476,7 @@ void main() {
 
       testWidgets('reveals video after timeout when ready and first frame '
           'stalls', (tester) async {
-        final firstFrameCompleter = Completer<void>();
+        final firstFrameCompleter = Completer<bool>();
         when(
           () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstFrameCompleter.future);
@@ -493,6 +494,14 @@ void main() {
           equals(0),
         );
 
+        // Emit a non-zero position so _hasDecodedFrames becomes true,
+        // then let the timeout fire.
+        stateStreamController.add(
+          const DivineVideoPlayerState(
+            position: Duration(milliseconds: 100),
+          ),
+        );
+        await tester.pump();
         await tester.pump(const Duration(seconds: 2));
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -823,7 +832,7 @@ void main() {
       testWidgets('resets reveal state when videoController changes', (
         tester,
       ) async {
-        final firstCompleter = Completer<void>();
+        final firstCompleter = Completer<bool>();
         when(
           () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstCompleter.future);
@@ -839,10 +848,15 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         // Complete first frame
-        firstCompleter.complete();
+        firstCompleter.complete(true);
         await tester.pump();
-        // Emit a non-zero position so _hasDecodedFrames becomes true.
-        positionController.add(const Duration(milliseconds: 100));
+        // Emit a state with first frame rendered and non-zero position.
+        stateStreamController.add(
+          const DivineVideoPlayerState(
+            isFirstFrameRendered: true,
+            position: Duration(milliseconds: 100),
+          ),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -857,14 +871,12 @@ void main() {
 
         // Create a new mock video controller
         final newMockVideoController = _MockDivineVideoPlayerController();
-        final secondCompleter = Completer<void>();
+        final secondCompleter = Completer<bool>();
         when(() => newMockVideoController.state).thenReturn(
           const DivineVideoPlayerState(),
         );
         when(() => newMockVideoController.stateStream).thenAnswer(
-          (_) => positionController.stream.map(
-            (pos) => DivineVideoPlayerState(position: pos),
-          ),
+          (_) => stateStreamController.stream,
         );
         when(
           () => newMockVideoController.firstFrameRendered,
@@ -884,11 +896,16 @@ void main() {
         );
 
         // Complete second controller's first frame
-        secondCompleter.complete();
+        secondCompleter.complete(true);
         await tester.pump();
-        // Emit position again to satisfy _hasDecodedFrames for the new
+        // Emit state again to satisfy _hasDecodedFrames for the new
         // controller.
-        positionController.add(const Duration(milliseconds: 200));
+        stateStreamController.add(
+          const DivineVideoPlayerState(
+            isFirstFrameRendered: true,
+            position: Duration(milliseconds: 200),
+          ),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -901,7 +918,7 @@ void main() {
       testWidgets('syncs fallback timer when readyForFallback changes', (
         tester,
       ) async {
-        final neverCompleter = Completer<void>();
+        final neverCompleter = Completer<bool>();
         when(
           () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => neverCompleter.future);
@@ -936,6 +953,14 @@ void main() {
         );
         await tester.pump();
 
+        // Emit a non-zero position so _hasDecodedFrames becomes true
+        stateStreamController.add(
+          const DivineVideoPlayerState(
+            position: Duration(milliseconds: 100),
+          ),
+        );
+        await tester.pump();
+
         // Wait for new fallback timeout
         await tester.pump(const Duration(seconds: 2));
         await tester.pump(const Duration(milliseconds: 120));
@@ -950,7 +975,7 @@ void main() {
       testWidgets(
         'cancels fallback timer when readyForFallback becomes false',
         (tester) async {
-          final neverCompleter = Completer<void>();
+          final neverCompleter = Completer<bool>();
           when(
             () => mockVideoController.firstFrameRendered,
           ).thenAnswer((_) => neverCompleter.future);
@@ -1002,9 +1027,13 @@ void main() {
 
           await tester.pumpWidget(buildWidget());
           await tester.pump();
-          // Emit a non-zero position so _hasDecodedFrames becomes true,
-          // which is required alongside _hasRenderedFirstFrame.
-          positionController.add(const Duration(milliseconds: 100));
+          // Emit a state with first frame rendered and non-zero position.
+          stateStreamController.add(
+            const DivineVideoPlayerState(
+              isFirstFrameRendered: true,
+              position: Duration(milliseconds: 100),
+            ),
+          );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 120));
 
@@ -1026,7 +1055,7 @@ void main() {
         (tester) async {
           when(
             () => mockVideoController.firstFrameRendered,
-          ).thenAnswer((_) => Future<void>.error(Exception('surface lost')));
+          ).thenAnswer((_) => Future<bool>.error(Exception('surface lost')));
 
           indexNotifiers[0] = ValueNotifier(
             VideoIndexState(
@@ -1037,12 +1066,15 @@ void main() {
 
           await tester.pumpWidget(buildWidget());
           await tester.pump();
-          // catchError in _subscribeToFirstFrame sets
-          // _hasRenderedFirstFrame=true and cancels the timer, so we need a
-          // position event to satisfy _hasDecodedFrames for shouldReveal to
-          //be true.
-          positionController.add(const Duration(milliseconds: 100));
+          // Emit a non-zero position so _hasDecodedFrames is true, then
+          // wait for the fallback timeout to reveal the video.
+          stateStreamController.add(
+            const DivineVideoPlayerState(
+              position: Duration(milliseconds: 100),
+            ),
+          );
           await tester.pump();
+          await tester.pump(const Duration(seconds: 2));
           await tester.pump(const Duration(milliseconds: 120));
 
           final opacityFinder = find.ancestor(
