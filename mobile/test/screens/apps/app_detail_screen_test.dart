@@ -4,25 +4,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 
 import '../../helpers/go_router.dart';
 
+class _MockNostrAppDirectoryService extends Mock
+    implements NostrAppDirectoryService {}
+
 void main() {
   group('AppDetailScreen', () {
+    late _MockNostrAppDirectoryService mockDirectoryService;
+
+    setUp(() {
+      mockDirectoryService = _MockNostrAppDirectoryService();
+    });
+
     testWidgets(
       'shows approved integration messaging and opens the launch action',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final mockGoRouter = MockGoRouter();
         when(
-          () => mockGoRouter.push(any(), extra: any(named: 'extra')),
+          () => mockGoRouter.push(
+            any(),
+            extra: any(named: 'extra'),
+          ),
         ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(
           ProviderScope(
+            overrides: [
+              nostrAppDirectoryServiceProvider.overrideWithValue(
+                mockDirectoryService,
+              ),
+            ],
             child: MockGoRouterProvider(
               goRouter: mockGoRouter,
               child: MaterialApp(
@@ -43,18 +59,39 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.text('Primary origin'), findsOneWidget);
-        expect(find.text('https://primal.net'), findsWidgets);
-        expect(find.text('https://primal.net/app'), findsNothing);
-        expect(find.text('Approved origins'), findsOneWidget);
+        expect(
+          find.text('Primary origin'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('https://primal.net'),
+          findsWidgets,
+        );
+        expect(
+          find.text('https://primal.net/app'),
+          findsNothing,
+        );
+        expect(
+          find.text('Approved origins'),
+          findsOneWidget,
+        );
         await tester.scrollUntilVisible(
           find.text('Available capabilities'),
           300,
         );
-        expect(find.text('Available capabilities'), findsOneWidget);
+        expect(
+          find.text('Available capabilities'),
+          findsOneWidget,
+        );
         expect(find.text('Ask before'), findsOneWidget);
-        await tester.scrollUntilVisible(find.text('Open Integration'), 300);
-        expect(find.text('Open Integration'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('Open Integration'),
+          300,
+        );
+        expect(
+          find.text('Open Integration'),
+          findsOneWidget,
+        );
         await tester.tap(find.byType(DivineButton));
         await tester.pumpAndSettle();
 

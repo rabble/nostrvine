@@ -3,73 +3,56 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/blocs/sandbox_route/sandbox_route_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/widgets/missing_sandbox_app_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 
-class ResolvedSandboxRouteScreen extends ConsumerStatefulWidget {
+/// Resolves a [NostrAppDirectoryEntry] by ID and renders
+/// the sandbox screen once the entry is available.
+class ResolvedSandboxRouteScreen extends ConsumerWidget {
+  /// Creates a [ResolvedSandboxRouteScreen].
   const ResolvedSandboxRouteScreen({
     required this.appId,
     this.initialApp,
     super.key,
   });
 
+  /// The app ID to resolve.
   final String appId;
+
+  /// An optional pre-loaded entry to avoid a network call.
   final NostrAppDirectoryEntry? initialApp;
 
   @override
-  ConsumerState<ResolvedSandboxRouteScreen> createState() =>
-      _ResolvedSandboxRouteScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final service = ref.read(
+      nostrAppDirectoryServiceProvider,
+    );
+    return BlocProvider(
+      create: (_) => SandboxRouteCubit(
+        appId: appId,
+        directoryService: service,
+        initialApp: initialApp,
+      )..load(),
+      child: const _SandboxRouteContent(),
+    );
+  }
 }
 
-class _ResolvedSandboxRouteScreenState
-    extends ConsumerState<ResolvedSandboxRouteScreen> {
-  late Future<NostrAppDirectoryEntry?> _appFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _appFuture = _loadApp();
-  }
-
-  @override
-  void didUpdateWidget(
-    covariant ResolvedSandboxRouteScreen oldWidget,
-  ) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.appId != widget.appId ||
-        oldWidget.initialApp?.id != widget.initialApp?.id) {
-      _appFuture = _loadApp();
-    }
-  }
-
-  Future<NostrAppDirectoryEntry?> _loadApp() async {
-    final initialApp = widget.initialApp;
-    if (initialApp != null) {
-      return initialApp;
-    }
-
-    final apps = await ref
-        .read(nostrAppDirectoryServiceProvider)
-        .fetchApprovedApps();
-    for (final app in apps) {
-      if (app.id == widget.appId) {
-        return app;
-      }
-    }
-    return null;
-  }
+class _SandboxRouteContent extends StatelessWidget {
+  const _SandboxRouteContent();
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<NostrAppDirectoryEntry?>(
-      future: _appFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return Scaffold(
+    return BlocBuilder<SandboxRouteCubit, SandboxRouteState>(
+      builder: (context, state) {
+        return switch (state) {
+          SandboxRouteLoading() => Scaffold(
             appBar: DiVineAppBar(
               title: 'Loading integration',
               showBackButton: true,
@@ -79,14 +62,10 @@ class _ResolvedSandboxRouteScreenState
             body: const Center(
               child: CircularProgressIndicator(),
             ),
-          );
-        }
-
-        final app = snapshot.data;
-        if (app == null) {
-          return const MissingSandboxAppScreen();
-        }
-        return NostrAppSandboxScreen(app: app);
+          ),
+          SandboxRouteNotFound() => const MissingSandboxAppScreen(),
+          SandboxRouteResolved(:final app) => NostrAppSandboxScreen(app: app),
+        };
       },
     );
   }

@@ -5,36 +5,44 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
-import 'package:openvine/blocs/apps/apps_permissions_cubit.dart';
+import 'package:openvine/blocs/apps_permissions/apps_permissions_cubit.dart';
 
+/// Displays persisted permission grants and allows
+/// revocation.
 class AppsPermissionsScreen extends StatelessWidget {
+  /// Route name used by GoRouter.
   static const routeName = 'apps-permissions';
+
+  /// Route path used by GoRouter.
   static const path = '/apps/permissions';
 
+  /// Creates an [AppsPermissionsScreen].
   const AppsPermissionsScreen({
     required this.grantStore,
     required this.currentUserPubkey,
     super.key,
   });
 
+  /// The backing store for persisted grants.
   final NostrAppGrantStore grantStore;
+
+  /// Hex public key of the logged-in user.
   final String? currentUserPubkey;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      key: ValueKey(currentUserPubkey ?? ''),
       create: (_) => AppsPermissionsCubit(
         grantStore: grantStore,
         currentUserPubkey: currentUserPubkey,
-      )..load(),
-      child: const _AppsPermissionsView(),
+      )..loadGrants(),
+      child: const _AppsPermissionsContent(),
     );
   }
 }
 
-class _AppsPermissionsView extends StatelessWidget {
-  const _AppsPermissionsView();
+class _AppsPermissionsContent extends StatelessWidget {
+  const _AppsPermissionsContent();
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +60,9 @@ class _AppsPermissionsView extends StatelessWidget {
           child: BlocBuilder<AppsPermissionsCubit, AppsPermissionsState>(
             builder: (context, state) {
               if (state.status != AppsPermissionsStatus.loaded) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
               }
 
               if (state.grants.isEmpty) {
@@ -60,12 +70,12 @@ class _AppsPermissionsView extends StatelessWidget {
               }
 
               return RefreshIndicator(
-                onRefresh: context.read<AppsPermissionsCubit>().load,
+                onRefresh: () =>
+                    context.read<AppsPermissionsCubit>().loadGrants(),
                 child: ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: state.grants.length,
-                  separatorBuilder: (BuildContext context, int index) =>
-                      const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final grant = state.grants[index];
                     return _GrantCard(
@@ -105,7 +115,9 @@ class _AppsPermissionsEmptyState extends StatelessWidget {
             Text(
               'No saved integration permissions',
               textAlign: TextAlign.center,
-              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+              style: VineTheme.headlineSmallFont(
+                color: VineTheme.onSurface,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -145,17 +157,23 @@ class _GrantCard extends StatelessWidget {
         children: [
           Text(
             grant.appId,
-            style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+            style: VineTheme.headlineSmallFont(
+              color: VineTheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             grant.origin,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: VineTheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             grant.capability,
-            style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+            style: VineTheme.bodyMediumFont(
+              color: VineTheme.vineGreen,
+            ),
           ),
           const SizedBox(height: 16),
           Align(

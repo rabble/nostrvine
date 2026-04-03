@@ -7,20 +7,26 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
-import 'package:openvine/blocs/apps/apps_directory_cubit.dart';
+import 'package:openvine/blocs/apps_directory/apps_directory_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 
+/// Displays the directory of approved third-party apps.
 class AppsDirectoryScreen extends ConsumerWidget {
+  /// Route name used by GoRouter.
   static const routeName = 'apps-directory';
+
+  /// Route path used by GoRouter.
   static const path = '/apps';
 
+  /// Creates an [AppsDirectoryScreen].
   const AppsDirectoryScreen({
     super.key,
     this.embedded = false,
   });
 
+  /// When true the screen omits its own app bar.
   final bool embedded;
 
   @override
@@ -32,13 +38,78 @@ class AppsDirectoryScreen extends ConsumerWidget {
       );
     }
 
+    final service = ref.read(
+      nostrAppDirectoryServiceProvider,
+    );
     return BlocProvider(
-      create: (_) => AppsDirectoryCubit(
-        directoryService: ref.read(nostrAppDirectoryServiceProvider),
-      )..load(),
+      create: (_) => AppsDirectoryCubit(directoryService: service)..loadApps(),
       child: _AppsDirectoryFrame(
         embedded: embedded,
-        child: const _AppsDirectoryView(),
+        child: const _AppsDirectoryContent(),
+      ),
+    );
+  }
+}
+
+class _AppsDirectoryContent extends StatelessWidget {
+  const _AppsDirectoryContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: VineTheme.backgroundColor,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: BlocBuilder<AppsDirectoryCubit, AppsDirectoryState>(
+            builder: (context, state) {
+              return switch (state.status) {
+                AppsDirectoryStatus.initial ||
+                AppsDirectoryStatus.loading => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                AppsDirectoryStatus.error => _AppsDirectoryMessage(
+                  title: 'Could not load integrated apps',
+                  subtitle: 'Pull to try the approved integrations again.',
+                  actionLabel: 'Retry',
+                  onAction: () =>
+                      context.read<AppsDirectoryCubit>().refreshApps(),
+                ),
+                AppsDirectoryStatus.loaded when state.apps.isEmpty =>
+                  _AppsDirectoryMessage(
+                    title: 'No approved integrations yet',
+                    subtitle:
+                        'Approved third-party apps will appear here as Divine adds them.',
+                    actionLabel: 'Refresh',
+                    onAction: () =>
+                        context.read<AppsDirectoryCubit>().refreshApps(),
+                  ),
+                AppsDirectoryStatus.loaded => RefreshIndicator(
+                  onRefresh: () =>
+                      context.read<AppsDirectoryCubit>().refreshApps(),
+                  child: ListView.builder(
+                    itemCount: state.apps.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return const _AppsDirectoryIntro();
+                      }
+
+                      final app = state.apps[index - 1];
+                      return _AppsDirectoryRow(
+                        app: app,
+                        onTap: () => context.push(
+                          NostrAppSandboxScreen.pathForAppId(app.id),
+                          extra: app,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              };
+            },
+          ),
+        ),
       ),
     );
   }
@@ -71,80 +142,6 @@ class _AppsDirectoryFrame extends StatelessWidget {
   }
 }
 
-class _AppsDirectoryView extends StatelessWidget {
-  const _AppsDirectoryView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: VineTheme.backgroundColor,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: BlocBuilder<AppsDirectoryCubit, AppsDirectoryState>(
-            builder: (context, state) {
-              return switch (state.status) {
-                AppsDirectoryStatus.initial || AppsDirectoryStatus.loading =>
-                  const Center(child: CircularProgressIndicator()),
-                AppsDirectoryStatus.failure => _AppsDirectoryMessage(
-                  title: 'Could not load integrated apps',
-                  subtitle: 'Pull to try the approved integrations again.',
-                  actionLabel: 'Retry',
-                  onAction: context.read<AppsDirectoryCubit>().refresh,
-                ),
-                AppsDirectoryStatus.loaded => _AppsDirectoryLoadedView(
-                  apps: state.apps,
-                ),
-              };
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AppsDirectoryLoadedView extends StatelessWidget {
-  const _AppsDirectoryLoadedView({required this.apps});
-
-  final List<NostrAppDirectoryEntry> apps;
-
-  @override
-  Widget build(BuildContext context) {
-    if (apps.isEmpty) {
-      return _AppsDirectoryMessage(
-        title: 'No approved integrations yet',
-        subtitle:
-            'Approved third-party apps will appear here as Divine adds them.',
-        actionLabel: 'Refresh',
-        onAction: context.read<AppsDirectoryCubit>().refresh,
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: context.read<AppsDirectoryCubit>().refresh,
-      child: ListView.builder(
-        itemCount: apps.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return const _AppsDirectoryIntro();
-          }
-
-          final app = apps[index - 1];
-          return _AppsDirectoryRow(
-            app: app,
-            onTap: () => context.push(
-              NostrAppSandboxScreen.pathForAppId(app.id),
-              extra: app,
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class _AppsDirectoryRow extends StatelessWidget {
   const _AppsDirectoryRow({
     required this.app,
@@ -168,7 +165,9 @@ class _AppsDirectoryRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: VineTheme.cardBackground,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: VineTheme.outlineMuted),
+              border: Border.all(
+                color: VineTheme.outlineMuted,
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +240,10 @@ class _AppsDirectoryIcon extends StatelessWidget {
         color: VineTheme.backgroundColor,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Icon(Icons.apps, color: VineTheme.vineGreen),
+      child: const Icon(
+        Icons.apps,
+        color: VineTheme.vineGreen,
+      ),
     );
 
     if (iconUrl.isEmpty) {
@@ -272,7 +274,7 @@ class _AppsDirectoryMessage extends StatelessWidget {
   final String title;
   final String subtitle;
   final String actionLabel;
-  final Future<void> Function() onAction;
+  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -331,7 +333,9 @@ class _AppsDirectoryIntro extends StatelessWidget {
           children: [
             Text(
               'Approved third-party apps',
-              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+              style: VineTheme.headlineSmallFont(
+                color: VineTheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
