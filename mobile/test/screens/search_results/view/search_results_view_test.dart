@@ -201,5 +201,53 @@ void main() {
         expect(find.byType(VideosSection), findsNothing);
       });
     });
+
+    group('videos filter', () {
+      testWidgets('renders $VideoSearchView', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(filter: SearchResultsFilter.videos),
+        );
+        await tester.pump();
+
+        expect(find.byType(VideoSearchView), findsOneWidget);
+      });
+
+      testWidgets('does not render $PeopleSection', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(filter: SearchResultsFilter.videos),
+        );
+        await tester.pump();
+
+        expect(find.byType(PeopleSection), findsNothing);
+      });
+
+      testWidgets('does not render $VideosSection', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(filter: SearchResultsFilter.videos),
+        );
+        await tester.pump();
+
+        expect(find.byType(VideosSection), findsNothing);
+      });
+    });
+
+    group('all filter — see all videos', () {
+      testWidgets(
+        'calls onFilterChanged with videos when Videos header is tapped',
+        (tester) async {
+          SearchResultsFilter? changedFilter;
+
+          await tester.pumpWidget(
+            createTestWidget(onFilterChanged: (f) => changedFilter = f),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Videos'));
+          await tester.pump();
+
+          expect(changedFilter, equals(SearchResultsFilter.videos));
+        },
+      );
+    });
   });
 }

@@ -1,5 +1,5 @@
 // ABOUTME: State class for the VideoSearchBloc
-// ABOUTME: Represents search state with status, query, and results
+// ABOUTME: Represents search state with status, query, results, and pagination
 
 part of 'video_search_bloc.dart';
 
@@ -25,6 +25,10 @@ final class VideoSearchState extends Equatable {
     this.query = '',
     this.videos = const [],
     this.resultCount,
+    this.apiOffset = 0,
+    this.totalApiCount,
+    this.hasMore = false,
+    this.isLoadingMore = false,
   });
 
   /// The current status of the search
@@ -39,12 +43,28 @@ final class VideoSearchState extends Equatable {
   /// Lightweight count for tab badges when full results were not fetched.
   final int? resultCount;
 
+  /// Tracks how many results have been fetched from the API for pagination.
+  final int apiOffset;
+
+  /// Total API result count from `X-Total-Count` header (null until known).
+  final int? totalApiCount;
+
+  /// Whether more API pages are available.
+  final bool hasMore;
+
+  /// Whether a load-more request is currently in flight.
+  final bool isLoadingMore;
+
   /// Create a copy with updated values
   VideoSearchState copyWith({
     VideoSearchStatus? status,
     String? query,
     List<VideoEvent>? videos,
     Object? resultCount = _unset,
+    int? apiOffset,
+    Object? totalApiCount = _unset,
+    bool? hasMore,
+    bool? isLoadingMore,
   }) {
     return VideoSearchState(
       status: status ?? this.status,
@@ -53,11 +73,26 @@ final class VideoSearchState extends Equatable {
       resultCount: identical(resultCount, _unset)
           ? this.resultCount
           : resultCount as int?,
+      apiOffset: apiOffset ?? this.apiOffset,
+      totalApiCount: identical(totalApiCount, _unset)
+          ? this.totalApiCount
+          : totalApiCount as int?,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 
   @override
-  List<Object> get props => [status, query, videos, resultCount ?? -1];
+  List<Object> get props => [
+    status,
+    query,
+    videos,
+    resultCount ?? -1,
+    apiOffset,
+    totalApiCount ?? -1,
+    hasMore,
+    isLoadingMore,
+  ];
 
   static const Object _unset = Object();
 }

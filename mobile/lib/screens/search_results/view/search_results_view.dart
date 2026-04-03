@@ -14,6 +14,9 @@ enum SearchResultsFilter {
 
   /// Show only the full hashtag list.
   tags('Tags'),
+
+  /// Show only the full paginated video grid.
+  videos('Videos'),
   ;
 
   const SearchResultsFilter(this.label);
@@ -44,9 +47,11 @@ class SearchResultsView extends StatelessWidget {
         SearchResultsFilter.all => _AllSectionsView(
           onSeeAllPeople: () => onFilterChanged(SearchResultsFilter.people),
           onSeeAllTags: () => onFilterChanged(SearchResultsFilter.tags),
+          onSeeAllVideos: () => onFilterChanged(SearchResultsFilter.videos),
         ),
         SearchResultsFilter.people => const UserSearchView(),
         SearchResultsFilter.tags => const HashtagSearchView(),
+        SearchResultsFilter.videos => const VideoSearchView(),
       },
     );
   }
@@ -56,10 +61,12 @@ class _AllSectionsView extends StatelessWidget {
   const _AllSectionsView({
     required this.onSeeAllPeople,
     required this.onSeeAllTags,
+    required this.onSeeAllVideos,
   });
 
   final VoidCallback onSeeAllPeople;
   final VoidCallback onSeeAllTags;
+  final VoidCallback onSeeAllVideos;
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +74,7 @@ class _AllSectionsView extends StatelessWidget {
       slivers: [
         PeopleSection(onSeeAll: onSeeAllPeople),
         TagsSection(onSeeAll: onSeeAllTags),
-        const VideosSection(),
+        VideosSection(onSeeAll: onSeeAllVideos),
       ],
     );
   }

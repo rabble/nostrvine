@@ -795,9 +795,10 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<List<VideoStats>> searchVideos({
+  Future<VideoSearchResponse> searchVideos({
     required String query,
     int limit = 50,
+    int offset = 0,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -808,9 +809,17 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Search query cannot be empty');
     }
 
+    final queryParams = <String, String>{
+      'q': trimmedQuery,
+      'limit': limit.toString(),
+    };
+    if (offset > 0) {
+      queryParams['offset'] = offset.toString();
+    }
+
     final uri = Uri.parse(
       '$_baseUrl/api/search',
-    ).replace(queryParameters: {'q': trimmedQuery, 'limit': limit.toString()});
+    ).replace(queryParameters: queryParams);
 
     try {
       final response = await _get(uri);
@@ -818,10 +827,19 @@ class FunnelcakeApiClient {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List<dynamic>;
 
-        return data
+        final videos = data
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
+
+        final totalCount =
+            int.tryParse(response.headers['x-total-count'] ?? '') ??
+            videos.length;
+
+        return VideoSearchResponse(
+          videos: videos,
+          totalCount: totalCount,
+        );
       } else {
         throw FunnelcakeApiException(
           message: 'Failed to search videos',

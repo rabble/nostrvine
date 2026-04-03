@@ -2040,10 +2040,11 @@ void main() {
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
-        final videos = await client.searchVideos(query: 'flutter');
+        final result = await client.searchVideos(query: 'flutter');
 
-        expect(videos, hasLength(1));
-        expect(videos.first.id, equals('search123'));
+        expect(result, isA<VideoSearchResponse>());
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('search123'));
       });
 
       test('constructs correct URL', () async {
@@ -2158,6 +2159,52 @@ void main() {
           ),
         );
       });
+
+      test('includes offset query parameter when greater than 0', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
+
+        await client.searchVideos(query: 'flutter', offset: 20);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['offset'], equals('20'));
+      });
+
+      test('parses X-Total-Count header into totalCount', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            validResponseBody,
+            200,
+            headers: {'x-total-count': '42'},
+          ),
+        );
+
+        final result = await client.searchVideos(query: 'flutter');
+
+        expect(result.totalCount, equals(42));
+        expect(result.videos, hasLength(1));
+      });
+
+      test(
+        'defaults totalCount to videos length when header is missing',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(validResponseBody, 200));
+
+          final result = await client.searchVideos(query: 'flutter');
+
+          expect(result.totalCount, equals(result.videos.length));
+        },
+      );
     });
 
     group('getClassicVines', () {

@@ -29,3 +29,8 @@ final class VideoSearchQueryChanged extends VideoSearchEvent {
 final class VideoSearchCleared extends VideoSearchEvent {
   const VideoSearchCleared();
 }
+
+/// Request to load the next page of video search results from the API
+final class VideoSearchLoadMore extends VideoSearchEvent {
+  const VideoSearchLoadMore();
+}
