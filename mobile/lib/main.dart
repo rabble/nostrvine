@@ -5,8 +5,6 @@ import 'dart:io'
 
 import 'package:audio_session/audio_session.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:divine_video_player/divine_video_player.dart'
-    show DivineVideoPlayerController;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
