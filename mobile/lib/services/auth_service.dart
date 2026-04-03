@@ -12,6 +12,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show NostrKeyManager, SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -25,6 +26,8 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+export 'package:openvine/models/authentication_source.dart';
+
 // Key for persisted authentication source
 const _kAuthSourceKey = 'authentication_source';
 
@@ -37,28 +40,6 @@ const _kBunkerInfoKey = 'bunker_info';
 // Keys for Amber (NIP-55) connection persistence
 const _kAmberPubkeyKey = 'amber_pubkey';
 const _kAmberPackageKey = 'amber_package';
-
-/// Source of authentication used to restore session at startup
-enum AuthenticationSource {
-  none('none'),
-  divineOAuth('divineOAuth'),
-  importedKeys('imported_keys'),
-  automatic('automatic'),
-  bunker('bunker'),
-  amber('amber')
-  ;
-
-  const AuthenticationSource(this.code);
-
-  final String code;
-
-  static AuthenticationSource fromCode(String? code) {
-    return AuthenticationSource.values
-            .where((s) => s.code == code)
-            .firstOrNull ??
-        AuthenticationSource.none;
-  }
-}
 
 /// Authentication state for the user
 enum AuthState {
