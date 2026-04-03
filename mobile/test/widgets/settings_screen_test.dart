@@ -128,10 +128,27 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('renders Switch account button when authenticated', (
+    testWidgets('renders Switch account button when multiple accounts exist', (
       tester,
     ) async {
-      await tester.pumpWidget(buildSubject());
+      final twoAccounts = [
+        KnownAccount(
+          pubkeyHex:
+              'abc123pubkeyabc123pubkeyabc123pubkeyabc123pubkeyabc123pubkeyabc1',
+          authSource: AuthenticationSource.automatic,
+          addedAt: DateTime(2024),
+          lastUsedAt: DateTime(2024),
+        ),
+        KnownAccount(
+          pubkeyHex:
+              'def456pubkeydef456pubkeydef456pubkeydef456pubkeydef456pubkeydef4',
+          authSource: AuthenticationSource.automatic,
+          addedAt: DateTime(2024),
+          lastUsedAt: DateTime(2024),
+        ),
+      ];
+
+      await tester.pumpWidget(buildSubject(knownAccounts: twoAccounts));
       await tester.pumpAndSettle();
 
       expect(find.text('Switch account'), findsOneWidget);
