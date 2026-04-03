@@ -105,6 +105,18 @@ class ProfileHeaderWidget extends ConsumerWidget {
       userIdHex,
     );
 
+    // Show session expired bottom sheet for non-anonymous users
+    if (isOwnProfile &&
+        !isAnonymous &&
+        hasExpiredSession &&
+        !isDivineLoginBannerHidden) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          _showSessionExpiredSheet(context, ref, userIdHex);
+        }
+      });
+    }
+
     // Compute pending profile actions for the avatar badge
     final pendingActions = ProfileActionType.pending(
       isOwnProfile: isOwnProfile,
@@ -142,19 +154,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
                   profileColor: profileColor,
                   height: bannerHeight,
                 ),
-
-                // Session expired banner for divineOAuth users (only on own
-                // profile) — anonymous users see the action label pill instead.
-                if (isOwnProfile &&
-                    !isAnonymous &&
-                    hasExpiredSession &&
-                    !isDivineLoginBannerHidden)
-                  Positioned(
-                    top: 8,
-                    left: 16,
-                    right: 16,
-                    child: _SessionExpiredBanner(userIdHex: userIdHex),
-                  ),
 
                 // Centered avatar — top edge aligns with app bar bottom
                 Positioned(
@@ -208,6 +207,34 @@ class ProfileHeaderWidget extends ConsumerWidget {
     return profile?.profileBackgroundColor;
   }
 
+  static void _showSessionExpiredSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String userIdHex,
+  ) {
+    VineBottomSheetPrompt.show(
+      context: context,
+      sticker: DivineStickerName.skeletonKey,
+      title: 'Session Expired',
+      subtitle: 'Sign in again to restore full access to your account.',
+      primaryButtonText: 'Sign In',
+      onPrimaryPressed: () async {
+        Navigator.of(context).pop();
+        final authService = ref.read(authServiceProvider);
+        final refreshed = await authService.tryRefreshExpiredSession();
+        if (context.mounted && !refreshed) {
+          GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
+        }
+      },
+      secondaryButtonText: 'Maybe Later',
+      onSecondaryPressed: () async {
+        final prefs = ref.read(sharedPreferencesProvider);
+        await dismissDivineLoginBanner(prefs, userIdHex);
+        if (context.mounted) Navigator.of(context).pop();
+      },
+    );
+  }
+
   static void _showActionsSheet(
     BuildContext context,
     List<ProfileActionType> actions,
@@ -217,111 +244,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
       scrollable: false,
       showHeaderDivider: false,
       body: ProfileActionsSheetContent(actions: actions),
-    );
-  }
-}
-
-/// Banner shown when a divineOAuth user's session expired and refresh failed.
-/// Prompts the user to sign in again instead of showing "Secure Your Account".
-/// Attempts a silent token refresh first; navigates to login only if that fails.
-class _SessionExpiredBanner extends ConsumerStatefulWidget {
-  const _SessionExpiredBanner({required this.userIdHex});
-
-  final String userIdHex;
-
-  @override
-  ConsumerState<_SessionExpiredBanner> createState() =>
-      _SessionExpiredBannerState();
-}
-
-class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
-  bool _isRefreshing = false;
-  bool _isDismissed = false;
-
-  Future<void> _dismissBanner() async {
-    setState(() => _isDismissed = true);
-    final prefs = ref.read(sharedPreferencesProvider);
-    await dismissDivineLoginBanner(prefs, widget.userIdHex);
-  }
-
-  Future<void> _onSignIn() async {
-    setState(() => _isRefreshing = true);
-    try {
-      final authService = ref.read(authServiceProvider);
-      final refreshed = await authService.tryRefreshExpiredSession();
-      if (!mounted) return;
-      if (!refreshed) {
-        context.go(WelcomeScreen.loginOptionsPath);
-      }
-    } finally {
-      if (mounted) setState(() => _isRefreshing = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isDismissed) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [VineTheme.accentOrange, Color(0xFFCC5E33)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.refresh, color: VineTheme.whiteText, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Session Expired', style: VineTheme.titleSmallFont()),
-                const SizedBox(height: 4),
-                Text(
-                  'Sign in again to restore full access',
-                  style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _isRefreshing ? null : _onSignIn,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.whiteText,
-              foregroundColor: VineTheme.accentOrange,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: _isRefreshing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    'Sign in',
-                    style: VineTheme.labelMediumFont(
-                      color: VineTheme.accentOrange,
-                    ),
-                  ),
-          ),
-          IconButton(
-            onPressed: _dismissBanner,
-            icon: const Icon(Icons.close, color: VineTheme.whiteText, size: 20),
-            tooltip: 'Dismiss',
-          ),
-        ],
-      ),
     );
   }
 }

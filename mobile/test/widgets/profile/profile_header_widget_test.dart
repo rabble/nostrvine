@@ -701,84 +701,62 @@ void main() {
       });
     });
 
-    group('Session Expired Banner', () {
-      testWidgets('shows session expired banner when session is expired', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
+    group('Session Expired', () {
+      testWidgets(
+        'shows session expired bottom sheet when session is expired',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-            sharedPreferences: prefs,
-          ),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              hasExpiredSession: true,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        expect(find.text('Session Expired'), findsOneWidget);
-      });
-
-      testWidgets('session expired banner stays hidden within 30 days', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-        final dismissedAt = DateTime.now()
-            .subtract(const Duration(days: 29))
-            .millisecondsSinceEpoch;
-
-        SharedPreferences.setMockInitialValues({
-          '$_dismissedDivineLoginBannerPrefix$testUserHex': dismissedAt,
-        });
-        final prefs = await SharedPreferences.getInstance();
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-            sharedPreferences: prefs,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsNothing);
-      });
-
-      testWidgets('session expired banner returns after 30 days', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-        final dismissedAt = DateTime.now()
-            .subtract(const Duration(days: 31))
-            .millisecondsSinceEpoch;
-
-        SharedPreferences.setMockInitialValues({
-          '$_dismissedDivineLoginBannerPrefix$testUserHex': dismissedAt,
-        });
-        final prefs = await SharedPreferences.getInstance();
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-            sharedPreferences: prefs,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsOneWidget);
-      });
+          // Bottom sheet shows session expired prompt
+          expect(find.text('Session Expired'), findsOneWidget);
+          expect(find.text('Sign In'), findsOneWidget);
+          expect(find.text('Maybe Later'), findsOneWidget);
+        },
+      );
 
       testWidgets(
-        'shows secure account instead of session expired for anonymous users',
+        'does not show session expired sheet when dismissed within 30 days',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+          final dismissedAt = DateTime.now()
+              .subtract(const Duration(days: 29))
+              .millisecondsSinceEpoch;
+
+          SharedPreferences.setMockInitialValues({
+            '$_dismissedDivineLoginBannerPrefix$testUserHex': dismissedAt,
+          });
+          final prefs = await SharedPreferences.getInstance();
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              hasExpiredSession: true,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Session Expired'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows secure account label for anonymous users with expired session',
         (tester) async {
           final testProfile = createTestProfile(displayName: 'Test User');
           SharedPreferences.setMockInitialValues({});
@@ -796,38 +774,11 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          // Anonymous users see the action label pill instead of session
-          // expired banner
+          // Anonymous users see the action label pill, not session expired
           expect(find.text('Secure your account'), findsOneWidget);
           expect(find.text('Session Expired'), findsNothing);
         },
       );
-
-      testWidgets('dismiss button hides the session expired banner', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-            sharedPreferences: prefs,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsOneWidget);
-
-        await tester.tap(find.byTooltip('Dismiss'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsNothing);
-      });
     });
   });
 
