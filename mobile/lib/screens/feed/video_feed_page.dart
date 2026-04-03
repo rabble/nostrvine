@@ -159,7 +159,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Called from [didChangeDependencies] for eager setup and from
   /// [BlocListener] when videos arrive asynchronously.
   void handleVideoController([VideoFeedState? state]) {
-    if (kIsWeb) return; // Skip media_kit controller on web
+    if (kIsWeb) return; // Skip native controller on web
     if (!ownsController) return;
 
     final effectiveState = state ?? context.read<VideoFeedBloc>().state;
@@ -180,7 +180,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       videos: pooledVideos,
       pool: PlayerPool.instance,
       maxLoopDuration: VideoEditorConstants.maxDuration,
-      onVideoReady: (index, player) {
+      onVideoReady: (index, controller) {
         if (!_hasMarkedVideoReady && index == 0) {
           _hasMarkedVideoReady = true;
           StartupPerformanceService.instance.markVideoReady();
@@ -727,8 +727,8 @@ class _PooledVideoFeedItemContentState
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
         onDoubleTap: _handleDoubleTapLike,
-        videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
-          videoController: videoController,
+        videoBuilder: (context, controller) => _FittedVideoPlayer(
+          controller: controller,
           isPortrait: isPortrait,
         ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
@@ -738,15 +738,15 @@ class _PooledVideoFeedItemContentState
           feedMode: widget.contextTitle,
           index: widget.index,
         ),
-        overlayBuilder: (context, videoController, player) => Stack(
+        overlayBuilder: (context, controller) => Stack(
           children: [
             FeedVideoOverlay(
               video: video,
               isActive: widget.isActive,
               pagePosition: widget.pagePosition,
               index: widget.index,
-              player: player,
-              firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
+              controller: controller,
+              firstFrameFuture: controller?.firstFrameRendered,
               listSources: widget.listSources,
               onContentWarningRevealed: () {
                 _contentWarningRevealed = true;
@@ -766,25 +766,36 @@ class _PooledVideoFeedItemContentState
 
 class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
-    required this.videoController,
+    required this.controller,
     this.isPortrait = true,
   });
 
-  final VideoController videoController;
+  final DivineVideoPlayerController controller;
   final bool isPortrait;
 
   @override
   Widget build(BuildContext context) {
-    // Portrait: fill screen (cover), Landscape: fit entirely (contain)
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    final state = controller.state;
+    final w = state.videoWidth.toDouble();
+    final h = state.videoHeight.toDouble();
 
-    // Do not set filterQuality to high — on Android the bicubic
-    // interpolation causes visible blur on the Texture widget when
-    // the video resolution doesn't match the display size exactly.
-    return Video(
-      controller: videoController,
-      fit: boxFit,
-      controls: null,
+    // When dimensions are unknown, fill the available space without fitting.
+    if (w <= 0 || h <= 0) {
+      return SizedBox.expand(
+        child: DivineVideoPlayer(controller: controller),
+      );
+    }
+
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: boxFit,
+        child: SizedBox(
+          width: w,
+          height: h,
+          child: DivineVideoPlayer(controller: controller),
+        ),
+      ),
     );
   }
 }

@@ -10,12 +10,11 @@ import '../helpers/test_helpers.dart';
 
 class _MockPooledPlayer extends Mock implements PooledPlayer {}
 
-class _FakeMedia extends Fake implements Media {}
+class _FakeVideoClip extends Fake implements VideoClip {}
 
 void _setUpFallbacks() {
-  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(_FakeVideoClip());
   registerFallbackValue(Duration.zero);
-  registerFallbackValue(PlaylistMode.single);
 }
 
 void main() {
@@ -135,7 +134,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         verify(() => setup.player.open(any(), play: false)).called(1);
       });
 
@@ -145,7 +144,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         verify(
           () => setup.player.setPlaylistMode(PlaylistMode.single),
         ).called(1);
@@ -157,7 +156,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         verify(() => setup.player.setVolume(0)).called(1);
         verify(setup.player.play).called(1);
       });
@@ -170,7 +169,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
 
@@ -183,7 +182,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
 
@@ -197,7 +196,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
 
@@ -210,7 +209,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video, autoPlay: false));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
 
@@ -344,7 +343,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
 
@@ -379,7 +378,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
 
@@ -393,7 +392,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video, autoPlay: false));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
 
@@ -411,7 +410,7 @@ void main() {
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
 
         setup.bufferingController.add(false);
         await tester.pump();
@@ -463,7 +462,7 @@ void main() {
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        final setup = bufferingSetups['https://example.com/video.mp4']!;
+        final setup = bufferingSetups['https://example.com/video.mp4'];
 
         setup.bufferingController.add(false);
         await tester.pump();
@@ -485,7 +484,7 @@ void main() {
         await tester.pump();
 
         // Transition to ready state
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
@@ -513,7 +512,7 @@ void main() {
         await tester.pump();
 
         // Transition to ready state
-        final setup = playerSetups['https://example.com/video.mp4']!;
+        final setup = playerSetups['https://example.com/video.mp4'];
         setup.bufferingController.add(false);
         await tester.pump();
         expect(find.byKey(const Key('video_widget')), findsOneWidget);

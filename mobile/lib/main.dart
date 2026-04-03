@@ -669,7 +669,6 @@ Future<void> _configurePlaybackAudioSession() async {
 }
 
 Future<void> _initializeMediaPlayback() async {
-  MediaKit.ensureInitialized();
   await PlayerPool.init();
 }
 

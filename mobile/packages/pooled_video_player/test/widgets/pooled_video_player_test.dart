@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -13,13 +12,8 @@ import '../helpers/test_helpers.dart';
 
 class _MockVideoFeedController extends Mock implements VideoFeedController {}
 
-class _MockVideoController extends Mock implements VideoController {}
-
-class _MockPlayer extends Mock implements Player {}
-
-class _MockPlayerState extends Mock implements PlayerState {}
-
-class _MockPlayerStream extends Mock implements PlayerStream {}
+class _MockDivineVideoPlayerController extends Mock
+    implements DivineVideoPlayerController {}
 
 class _FakeVideoItem extends Fake implements VideoItem {}
 
@@ -28,23 +22,27 @@ void _setUpFallbacks() {
   registerFallbackValue(_FakeVideoItem());
 }
 
-_MockPlayer _createMockPlayer(StreamController<Duration> positionCtrl) {
-  final mockPlayer = _MockPlayer();
-  final mockState = _MockPlayerState();
-  final mockStream = _MockPlayerStream();
+_MockDivineVideoPlayerController _createMockController(
+  StreamController<Duration> positionCtrl,
+) {
+  final mockController = _MockDivineVideoPlayerController();
 
-  when(() => mockState.playing).thenReturn(false);
-  when(() => mockState.buffering).thenReturn(false);
-  when(() => mockState.position).thenReturn(Duration.zero);
-  when(() => mockPlayer.state).thenReturn(mockState);
-  when(() => mockPlayer.stream).thenReturn(mockStream);
-  // Stub position stream so _subscribeToPosition can emit decoded-frame
-  // events that drive the _hasDecodedFrames flag in PooledVideoPlayer.
-  when(() => mockStream.position).thenAnswer(
-    (_) => positionCtrl.stream,
+  when(() => mockController.state).thenReturn(
+    const DivineVideoPlayerState(),
+  );
+  // Stub stateStream-derived position stream so _subscribeToPosition can
+  // emit decoded-frame events that drive the _hasDecodedFrames flag in
+  // PooledVideoPlayer.
+  when(() => mockController.stateStream).thenAnswer(
+    (_) => positionCtrl.stream.map(
+      (pos) => DivineVideoPlayerState(position: pos),
+    ),
+  );
+  when(() => mockController.firstFrameRendered).thenAnswer(
+    (_) => Future<void>.value(),
   );
 
-  return mockPlayer;
+  return mockController;
 }
 
 /// Creates a mock controller with a real ValueNotifier for the given index.
@@ -65,8 +63,7 @@ _createMockVideoFeedControllerWithNotifier() {
   when(() => mockController.currentIndex).thenReturn(0);
   when(() => mockController.isPaused).thenReturn(false);
   when(() => mockController.isActive).thenReturn(true);
-  when(() => mockController.getVideoController(any())).thenReturn(null);
-  when(() => mockController.getPlayer(any())).thenReturn(null);
+  when(() => mockController.getController(any())).thenReturn(null);
   when(() => mockController.getLoadState(any())).thenReturn(LoadState.none);
   when(() => mockController.isVideoReady(any())).thenReturn(false);
   when(() => mockController.onPageChanged(any())).thenReturn(null);
@@ -102,29 +99,16 @@ void main() {
   group('PooledVideoPlayer', () {
     late _MockVideoFeedController mockController;
     late Map<int, ValueNotifier<VideoIndexState>> indexNotifiers;
-    late _MockVideoController mockVideoController;
-    late _MockPlayer mockPlayer;
-    late ValueNotifier<int?> textureIdNotifier;
-    late ValueNotifier<Rect?> textureRectNotifier;
+    late _MockDivineVideoPlayerController mockVideoController;
     late StreamController<Duration> positionController;
 
     setUp(() {
       final result = _createMockVideoFeedControllerWithNotifier();
       mockController = result.controller;
       indexNotifiers = result.notifiers;
-      mockVideoController = _MockVideoController();
-      textureIdNotifier = ValueNotifier<int?>(1);
-      textureRectNotifier = ValueNotifier<Rect?>(
-        const Rect.fromLTWH(0, 0, 1920, 1080),
+      mockVideoController = _createMockController(
+        positionController = StreamController<Duration>.broadcast(),
       );
-      when(() => mockVideoController.id).thenReturn(textureIdNotifier);
-      when(() => mockVideoController.rect).thenReturn(textureRectNotifier);
-      when(
-        () => mockVideoController.waitUntilFirstFrameRendered,
-      ).thenAnswer((_) => Future<void>.value());
-      positionController = StreamController<Duration>.broadcast();
-      mockPlayer = _createMockPlayer(positionController);
-      when(() => mockVideoController.player).thenReturn(mockPlayer);
     });
 
     tearDown(() async {
@@ -158,7 +142,7 @@ void main() {
               enableTapToPause: enableTapToPause,
               onTap: onTap,
               onDoubleTap: onDoubleTap,
-              videoBuilder: (context, videoController, player) {
+              videoBuilder: (context, controller) {
                 return Container(
                   key: const Key('video_widget'),
                   color: Colors.blue,
@@ -243,15 +227,13 @@ void main() {
         indexNotifiers[0] = ValueNotifier(
           VideoIndexState(
             loadState: LoadState.loading,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           ),
         );
 
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) =>
-                const Text('Overlay'),
+            overlayBuilder: (context, controller) => const Text('Overlay'),
           ),
         );
 
@@ -264,14 +246,13 @@ void main() {
       ) async {
         final firstFrameCompleter = Completer<void>();
         when(
-          () => mockVideoController.waitUntilFirstFrameRendered,
+          () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstFrameCompleter.future);
 
         indexNotifiers[0] = ValueNotifier(
           VideoIndexState(
             loadState: LoadState.loading,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           ),
         );
 
@@ -312,8 +293,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) =>
-                const Text('Overlay'),
+            overlayBuilder: (context, controller) => const Text('Overlay'),
           ),
         );
 
@@ -351,8 +331,7 @@ void main() {
         indexNotifiers[0] = ValueNotifier(
           VideoIndexState(
             loadState: LoadState.ready,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           ),
         );
       });
@@ -366,7 +345,7 @@ void main() {
       testWidgets('shows overlayBuilder when provided', (tester) async {
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) {
+            overlayBuilder: (context, controller) {
               return Container(
                 key: const Key('overlay_widget'),
                 color: Colors.red.withValues(alpha: 0.5),
@@ -382,7 +361,7 @@ void main() {
       testWidgets('stacks video and overlay correctly', (tester) async {
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) {
+            overlayBuilder: (context, controller) {
               return Container(key: const Key('overlay_widget'));
             },
           ),
@@ -426,7 +405,7 @@ void main() {
       ) async {
         final firstFrameCompleter = Completer<void>();
         when(
-          () => mockVideoController.waitUntilFirstFrameRendered,
+          () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstFrameCompleter.future);
 
         await tester.pumpWidget(buildWidget());
@@ -462,14 +441,13 @@ void main() {
       ) async {
         final firstFrameCompleter = Completer<void>();
         when(
-          () => mockVideoController.waitUntilFirstFrameRendered,
+          () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstFrameCompleter.future);
 
         indexNotifiers[0] = ValueNotifier(
           VideoIndexState(
             loadState: LoadState.loading,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           ),
         );
 
@@ -499,7 +477,7 @@ void main() {
           'stalls', (tester) async {
         final firstFrameCompleter = Completer<void>();
         when(
-          () => mockVideoController.waitUntilFirstFrameRendered,
+          () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstFrameCompleter.future);
 
         await tester.pumpWidget(buildWidget());
@@ -590,8 +568,7 @@ void main() {
         indexNotifiers[0] = ValueNotifier(
           VideoIndexState(
             loadState: LoadState.ready,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           ),
         );
       });
@@ -743,8 +720,7 @@ void main() {
         // Update notifier to ready state
         indexNotifiers[0]!.value = VideoIndexState(
           loadState: LoadState.ready,
-          videoController: mockVideoController,
-          player: mockPlayer,
+          controller: mockVideoController,
         );
         await tester.pump();
 
@@ -764,8 +740,7 @@ void main() {
         // Update notifier for index 1 (should NOT affect widget at index 0)
         indexNotifiers[1]!.value = VideoIndexState(
           loadState: LoadState.ready,
-          videoController: mockVideoController,
-          player: mockPlayer,
+          controller: mockVideoController,
         );
         await tester.pump();
 
@@ -775,8 +750,7 @@ void main() {
         // Now update notifier for index 0
         indexNotifiers[0]!.value = VideoIndexState(
           loadState: LoadState.ready,
-          videoController: mockVideoController,
-          player: mockPlayer,
+          controller: mockVideoController,
         );
         await tester.pump();
 
@@ -789,8 +763,7 @@ void main() {
         indexNotifiers[0] = ValueNotifier(
           VideoIndexState(
             loadState: LoadState.ready,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           ),
         );
       });
@@ -826,149 +799,6 @@ void main() {
       });
     });
 
-    group('surface recreation green frame prevention', () {
-      setUp(() {
-        indexNotifiers[0] = ValueNotifier(
-          VideoIndexState(
-            loadState: LoadState.ready,
-            videoController: mockVideoController,
-            player: mockPlayer,
-          ),
-        );
-      });
-
-      testWidgets('hides video when texture ID changes after first frame', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-        // Emit a non-zero position so _hasDecodedFrames becomes true.
-        positionController.add(const Duration(milliseconds: 100));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 120));
-
-        final opacityFinder = find.ancestor(
-          of: find.byKey(const Key('video_widget')),
-          matching: find.byType(AnimatedOpacity),
-        );
-
-        // Video should be visible after first frame
-        expect(
-          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-          equals(1),
-        );
-
-        // Simulate surface recreation: texture ID changes
-        textureIdNotifier.value = 2;
-        await tester.pump();
-
-        // Video should be hidden during surface recreation
-        expect(
-          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-          equals(0),
-        );
-      });
-
-      testWidgets(
-        'reveals video after rect update following surface recreation',
-        (tester) async {
-          await tester.pumpWidget(buildWidget());
-          await tester.pump();
-          // Emit a non-zero position so _hasDecodedFrames becomes true.
-          positionController.add(const Duration(milliseconds: 100));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 120));
-
-          final opacityFinder = find.ancestor(
-            of: find.byKey(const Key('video_widget')),
-            matching: find.byType(AnimatedOpacity),
-          );
-
-          // Simulate surface recreation
-          textureIdNotifier.value = 2;
-          await tester.pump();
-          expect(
-            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-            equals(0),
-          );
-
-          // Simulate new frame rendered: rect notifier fires with new value
-          textureRectNotifier.value = const Rect.fromLTWH(0, 0, 1280, 720);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 120));
-
-          // Video should be visible again
-          expect(
-            tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-            equals(1),
-          );
-        },
-      );
-
-      testWidgets('reveals video after timeout if no rect update arrives', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-        // Emit a non-zero position so _hasDecodedFrames becomes true.
-        positionController.add(const Duration(milliseconds: 100));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 120));
-
-        final opacityFinder = find.ancestor(
-          of: find.byKey(const Key('video_widget')),
-          matching: find.byType(AnimatedOpacity),
-        );
-
-        // Simulate surface recreation
-        textureIdNotifier.value = 2;
-        await tester.pump();
-        expect(
-          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-          equals(0),
-        );
-
-        // Wait for fallback timeout (500ms)
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pump(const Duration(milliseconds: 120));
-
-        // Video should be visible via timeout fallback
-        expect(
-          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-          equals(1),
-        );
-      });
-
-      testWidgets('does not hide video when initial texture ID is set', (
-        tester,
-      ) async {
-        // Start with null texture ID
-        textureIdNotifier.value = null;
-
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-        // Emit a non-zero position so _hasDecodedFrames becomes true.
-        positionController.add(const Duration(milliseconds: 100));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 120));
-
-        final opacityFinder = find.ancestor(
-          of: find.byKey(const Key('video_widget')),
-          matching: find.byType(AnimatedOpacity),
-        );
-
-        // First texture ID assignment should NOT trigger hiding
-        textureIdNotifier.value = 1;
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 120));
-
-        expect(
-          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
-          equals(1),
-        );
-      });
-    });
-
     group('error state with overlay', () {
       testWidgets('renders overlay in error state when overlayBuilder given', (
         tester,
@@ -979,7 +809,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) =>
+            overlayBuilder: (context, controller) =>
                 const Text('Error Overlay'),
           ),
         );
@@ -995,15 +825,14 @@ void main() {
       ) async {
         final firstCompleter = Completer<void>();
         when(
-          () => mockVideoController.waitUntilFirstFrameRendered,
+          () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => firstCompleter.future);
 
         // Start with first controller
         indexNotifiers[0] = ValueNotifier(
           VideoIndexState(
             loadState: LoadState.ready,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           ),
         );
 
@@ -1027,30 +856,24 @@ void main() {
         );
 
         // Create a new mock video controller
-        final newMockVideoController = _MockVideoController();
-        final newTextureIdNotifier = ValueNotifier<int?>(5);
-        final newTextureRectNotifier = ValueNotifier<Rect?>(
-          const Rect.fromLTWH(0, 0, 1920, 1080),
-        );
+        final newMockVideoController = _MockDivineVideoPlayerController();
         final secondCompleter = Completer<void>();
+        when(() => newMockVideoController.state).thenReturn(
+          const DivineVideoPlayerState(),
+        );
+        when(() => newMockVideoController.stateStream).thenAnswer(
+          (_) => positionController.stream.map(
+            (pos) => DivineVideoPlayerState(position: pos),
+          ),
+        );
         when(
-          () => newMockVideoController.id,
-        ).thenReturn(newTextureIdNotifier);
-        when(
-          () => newMockVideoController.rect,
-        ).thenReturn(newTextureRectNotifier);
-        when(
-          () => newMockVideoController.waitUntilFirstFrameRendered,
+          () => newMockVideoController.firstFrameRendered,
         ).thenAnswer((_) => secondCompleter.future);
-        when(
-          () => newMockVideoController.player,
-        ).thenReturn(mockPlayer);
 
         // Swap to new controller — should reset reveal state
         indexNotifiers[0]!.value = VideoIndexState(
           loadState: LoadState.ready,
-          videoController: newMockVideoController,
-          player: mockPlayer,
+          controller: newMockVideoController,
         );
         await tester.pump();
 
@@ -1080,15 +903,14 @@ void main() {
       ) async {
         final neverCompleter = Completer<void>();
         when(
-          () => mockVideoController.waitUntilFirstFrameRendered,
+          () => mockVideoController.firstFrameRendered,
         ).thenAnswer((_) => neverCompleter.future);
 
         // Start in loading state (readyForFallback = false)
         indexNotifiers[0] = ValueNotifier(
           VideoIndexState(
             loadState: LoadState.loading,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           ),
         );
 
@@ -1110,8 +932,7 @@ void main() {
         // Switch to ready state (readyForFallback = true)
         indexNotifiers[0]!.value = VideoIndexState(
           loadState: LoadState.ready,
-          videoController: mockVideoController,
-          player: mockPlayer,
+          controller: mockVideoController,
         );
         await tester.pump();
 
@@ -1131,15 +952,14 @@ void main() {
         (tester) async {
           final neverCompleter = Completer<void>();
           when(
-            () => mockVideoController.waitUntilFirstFrameRendered,
+            () => mockVideoController.firstFrameRendered,
           ).thenAnswer((_) => neverCompleter.future);
 
           // Start in ready state (readyForFallback = true)
           indexNotifiers[0] = ValueNotifier(
             VideoIndexState(
               loadState: LoadState.ready,
-              videoController: mockVideoController,
-              player: mockPlayer,
+              controller: mockVideoController,
             ),
           );
 
@@ -1148,8 +968,7 @@ void main() {
           // Switch back to loading before timeout fires
           indexNotifiers[0]!.value = VideoIndexState(
             loadState: LoadState.loading,
-            videoController: mockVideoController,
-            player: mockPlayer,
+            controller: mockVideoController,
           );
           await tester.pump();
 
@@ -1177,8 +996,7 @@ void main() {
           indexNotifiers[0] = ValueNotifier(
             VideoIndexState(
               loadState: LoadState.ready,
-              videoController: mockVideoController,
-              player: mockPlayer,
+              controller: mockVideoController,
             ),
           );
 
@@ -1204,17 +1022,16 @@ void main() {
       );
 
       testWidgets(
-        'reveals video when waitUntilFirstFrameRendered fails',
+        'reveals video when firstFrameRendered fails',
         (tester) async {
           when(
-            () => mockVideoController.waitUntilFirstFrameRendered,
+            () => mockVideoController.firstFrameRendered,
           ).thenAnswer((_) => Future<void>.error(Exception('surface lost')));
 
           indexNotifiers[0] = ValueNotifier(
             VideoIndexState(
               loadState: LoadState.ready,
-              videoController: mockVideoController,
-              player: mockPlayer,
+              controller: mockVideoController,
             ),
           );
 

@@ -5,10 +5,10 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -24,11 +24,8 @@ class _MockVideoInteractionsBloc
     extends MockBloc<VideoInteractionsEvent, VideoInteractionsState>
     implements VideoInteractionsBloc {}
 
-class _MockPlayer extends Mock implements Player {}
-
-class _MockPlayerStream extends Mock implements PlayerStream {}
-
-class _MockPlayerState extends Mock implements PlayerState {}
+class _MockDivineVideoPlayerController extends Mock
+    implements DivineVideoPlayerController {}
 
 class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
@@ -42,15 +39,12 @@ const _testPubkey =
 void main() {
   group(FeedVideoOverlay, () {
     late VideoInteractionsBloc mockInteractionsBloc;
-    late Player mockPlayer;
-    late PlayerStream mockStream;
-    late PlayerState mockPlayerState;
+    late DivineVideoPlayerController mockController;
     late CuratedListRepository mockCuratedListRepository;
     late MockProfileRepository mockProfileRepository;
     late MockNip05VerificationService mockNip05VerificationService;
     late VideoEvent testVideo;
-    late StreamController<bool> playingController;
-    late StreamController<bool> bufferingController;
+    late StreamController<DivineVideoPlayerState> stateStreamController;
     late ValueNotifier<double> pagePosition;
 
     setUpAll(() {
@@ -59,30 +53,22 @@ void main() {
 
     setUp(() {
       mockInteractionsBloc = _MockVideoInteractionsBloc();
-      mockPlayer = _MockPlayer();
-      mockStream = _MockPlayerStream();
-      mockPlayerState = _MockPlayerState();
+      mockController = _MockDivineVideoPlayerController();
       mockCuratedListRepository = _MockCuratedListRepository();
       mockProfileRepository = createMockProfileRepository();
       mockNip05VerificationService = createMockNip05VerificationService();
-      playingController = StreamController<bool>.broadcast();
-      bufferingController = StreamController<bool>.broadcast();
+      stateStreamController =
+          StreamController<DivineVideoPlayerState>.broadcast();
       pagePosition = ValueNotifier<double>(0);
 
-      // Stub Player.stream for subtitle layer and paused-play overlay.
-      when(() => mockPlayer.stream).thenReturn(mockStream);
-      when(() => mockPlayer.state).thenReturn(mockPlayerState);
-      when(
-        () => mockStream.position,
-      ).thenAnswer((_) => const Stream<Duration>.empty());
-      when(
-        () => mockStream.playing,
-      ).thenAnswer((_) => playingController.stream);
-      when(
-        () => mockStream.buffering,
-      ).thenAnswer((_) => bufferingController.stream);
-      when(() => mockPlayerState.playing).thenReturn(false);
-      when(() => mockPlayerState.buffering).thenReturn(false);
+      // Stub stateStream-derived streams for subtitle layer and
+      // paused-play overlay.
+      when(() => mockController.state).thenReturn(
+        const DivineVideoPlayerState(),
+      );
+      when(() => mockController.stateStream).thenAnswer(
+        (_) => stateStreamController.stream,
+      );
 
       // Stub interactions bloc state
       when(
@@ -100,8 +86,7 @@ void main() {
     });
 
     tearDown(() async {
-      await playingController.close();
-      await bufferingController.close();
+      await stateStreamController.close();
       pagePosition.dispose();
     });
 
@@ -109,8 +94,8 @@ void main() {
       Set<String>? listSources,
       Future<void>? firstFrameFuture,
       bool isActive = true,
-      Player? player,
-      bool includePlayer = true,
+      DivineVideoPlayerController? controller,
+      bool includeController = true,
       ValueNotifier<double>? pagePositionOverride,
       int index = 0,
     }) {
@@ -130,7 +115,9 @@ void main() {
               isActive: isActive,
               pagePosition: pagePositionOverride ?? pagePosition,
               index: index,
-              player: includePlayer ? (player ?? mockPlayer) : null,
+              controller: includeController
+                  ? (controller ?? mockController)
+                  : null,
               firstFrameFuture: firstFrameFuture,
               listSources: listSources,
             ),
@@ -163,9 +150,13 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pump();
 
-        playingController.add(true);
+        stateStreamController.add(
+          const DivineVideoPlayerState(status: PlaybackStatus.playing),
+        );
         await tester.pump();
-        playingController.add(false);
+        stateStreamController.add(
+          const DivineVideoPlayerState(status: PlaybackStatus.paused),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
@@ -175,7 +166,9 @@ void main() {
       testWidgets('hides the centered play affordance while playing', (
         tester,
       ) async {
-        when(() => mockPlayerState.playing).thenReturn(true);
+        when(() => mockController.state).thenReturn(
+          const DivineVideoPlayerState(status: PlaybackStatus.playing),
+        );
 
         await tester.pumpWidget(buildSubject());
         await tester.pump();
@@ -199,9 +192,13 @@ void main() {
           await tester.pump();
           expect(find.byKey(const ValueKey('paused-play')), findsNothing);
 
-          playingController.add(true);
+          stateStreamController.add(
+            const DivineVideoPlayerState(status: PlaybackStatus.playing),
+          );
           await tester.pump();
-          playingController.add(false);
+          stateStreamController.add(
+            const DivineVideoPlayerState(status: PlaybackStatus.paused),
+          );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 220));
 
@@ -213,7 +210,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildSubject(isActive: false, includePlayer: false),
+          buildSubject(isActive: false, includeController: false),
         );
         await tester.pump();
 

@@ -202,7 +202,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   @override
   void reassemble() {
     super.reassemble();
-    // During hot reload, media_kit native callbacks can fire on invalidated
+    // During hot reload, native callbacks can fire on invalidated
     // Dart FFI handles, causing "Callback invoked after it has been deleted".
     // Stop all native playback and recreate the controller to prevent this.
     _effectivePool.stopAll();

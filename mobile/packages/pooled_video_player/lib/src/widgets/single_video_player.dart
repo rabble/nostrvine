@@ -1,9 +1,7 @@
 import 'dart:async';
 
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-
 import 'package:pooled_video_player/src/controllers/player_pool.dart';
 import 'package:pooled_video_player/src/models/video_item.dart';
 
@@ -11,8 +9,7 @@ import 'package:pooled_video_player/src/models/video_item.dart';
 typedef SingleVideoBuilder =
     Widget Function(
       BuildContext context,
-      VideoController videoController,
-      Player player,
+      DivineVideoPlayerController controller,
     );
 
 /// Builder for the error state.
@@ -106,30 +103,30 @@ class _SingleVideoPlayerState extends State<SingleVideoPlayer> {
       _pooledPlayer = pooledPlayer;
 
       // Open media
-      await pooledPlayer.player.open(
-        Media(widget.video.url),
-        play: false,
+      await pooledPlayer.controller.setSource(
+        VideoClip.network(widget.video.url),
       );
-      await pooledPlayer.player.setPlaylistMode(PlaylistMode.single);
+      await pooledPlayer.controller.setLooping(looping: true);
 
       if (!mounted) return;
 
       // Set up buffer subscription
       unawaited(_bufferSubscription?.cancel());
-      _bufferSubscription = pooledPlayer.player.stream.buffering.listen((
-        isBuffering,
-      ) {
-        if (!isBuffering && _state == SingleVideoState.loading) {
-          _onBufferReady();
-        }
-      });
+      _bufferSubscription = pooledPlayer.controller.stateStream
+          .map((s) => s.status == PlaybackStatus.buffering)
+          .distinct()
+          .listen((isBuffering) {
+            if (!isBuffering && _state == SingleVideoState.loading) {
+              _onBufferReady();
+            }
+          });
 
       // Start buffering (muted initially)
-      await pooledPlayer.player.setVolume(0);
-      await pooledPlayer.player.play();
+      await pooledPlayer.controller.setVolume(0);
+      await pooledPlayer.controller.play();
 
       // Check if already buffered
-      if (!pooledPlayer.player.state.buffering) {
+      if (pooledPlayer.controller.state.status != PlaybackStatus.buffering) {
         _onBufferReady();
       }
     } on Exception {
@@ -143,17 +140,17 @@ class _SingleVideoPlayerState extends State<SingleVideoPlayer> {
     if (!mounted) return;
     if (_state == SingleVideoState.ready) return;
 
-    final player = _pooledPlayer?.player;
-    if (player == null) return;
+    final controller = _pooledPlayer?.controller;
+    if (controller == null) return;
 
     unawaited(_bufferSubscription?.cancel());
     _bufferSubscription = null;
 
     if (widget.autoPlay) {
-      unawaited(player.setVolume(100));
+      unawaited(controller.setVolume(1));
     } else {
-      unawaited(player.pause());
-      unawaited(player.setVolume(100));
+      unawaited(controller.pause());
+      unawaited(controller.setVolume(1));
     }
 
     setState(() => _state = SingleVideoState.ready);
@@ -203,8 +200,7 @@ class _SingleVideoPlayerState extends State<SingleVideoPlayer> {
         }
         return widget.videoBuilder(
           context,
-          pooledPlayer.videoController,
-          pooledPlayer.player,
+          pooledPlayer.controller,
         );
     }
   }

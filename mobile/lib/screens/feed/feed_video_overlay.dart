@@ -46,7 +46,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     required this.isActive,
     required this.pagePosition,
     required this.index,
-    this.player,
+    this.controller,
     this.firstFrameFuture,
     this.listSources,
     this.onContentWarningRevealed,
@@ -63,7 +63,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   /// The index of this item in the feed, used with [pagePosition] to compute
   /// the scroll distance for opacity.
   final int index;
-  final Player? player;
+  final DivineVideoPlayerController? controller;
   final Future<void>? firstFrameFuture;
   final Set<String>? listSources;
 
@@ -91,7 +91,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
 
     Log.debug(
       'Feed overlay build: eventId=${video.id}, pubkey=${video.pubkey}, '
-      'isActive=${widget.isActive}, hasPlayer=${widget.player != null}, '
+      'isActive=${widget.isActive}, hasPlayer=${widget.controller != null}, '
       'hasFirstFrameFuture=${widget.firstFrameFuture != null}, '
       'hasSubtitles=${video.hasSubtitles}, '
       'hasWarning=$showContentWarningOverlay, '
@@ -152,17 +152,17 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             ),
           ),
         ),
-        if (widget.player != null)
+        if (widget.controller != null)
           PausedVideoPlayOverlay(
-            player: widget.player!,
+            controller: widget.controller!,
             firstFrameFuture: widget.firstFrameFuture,
             isVisible: widget.isActive,
           ),
         // Subtitle overlay — Positioned.fill gives the inner Stack a size
         // so SubtitleOverlay's Positioned can resolve correctly.
-        if (video.hasSubtitles && widget.player != null)
+        if (video.hasSubtitles && widget.controller != null)
           Positioned.fill(
-            child: _SubtitleLayer(video: video, player: widget.player!),
+            child: _SubtitleLayer(video: video, controller: widget.controller!),
           ),
         // Scroll-faded overlay: author info, badges, and action buttons all
         // fade together as the user swipes to the next video.
@@ -449,17 +449,17 @@ class _ListAttribution extends ConsumerWidget {
 /// Uses [Positioned.fill] + inner [Stack] so the [SubtitleOverlay]'s
 /// own [Positioned] resolves against a proper [Stack] ancestor.
 class _SubtitleLayer extends ConsumerWidget {
-  const _SubtitleLayer({required this.video, required this.player});
+  const _SubtitleLayer({required this.video, required this.controller});
 
   final VideoEvent video;
-  final Player player;
+  final DivineVideoPlayerController controller;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
 
     return StreamBuilder<Duration>(
-      stream: player.stream.position,
+      stream: controller.stateStream.map((s) => s.position).distinct(),
       builder: (context, snapshot) {
         final positionMs = snapshot.data?.inMilliseconds ?? 0;
         return Stack(

@@ -187,6 +187,20 @@ class DivineVideoPlayerController {
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }
+    // Eagerly reset Dart-side state so that code reading `state` after
+    // this method returns sees correct values. The native side resets
+    // firstFrameRendered/position in handleSetClips and broadcasts via
+    // EventChannel, but that update arrives asynchronously. Without this
+    // eager reset, a recycled player's stale isFirstFrameRendered=true
+    // can cause the reveal widget to show the previous video's texture.
+    _state = DivineVideoPlayerState(
+      volume: _state.volume,
+      playbackSpeed: _state.playbackSpeed,
+      isLooping: _state.isLooping,
+    );
+    if (!_stateController.isClosed) {
+      _stateController.add(_state);
+    }
     await _methodChannel.invokeMethod<void>(
       'setClips',
       {'clips': clips.map((c) => c.toMap()).toList()},
@@ -212,6 +226,16 @@ class DivineVideoPlayerController {
   /// be reused by calling [setSource] or [setClips] again.
   Future<void> stop() async {
     _ensureInitialized();
+    // Eagerly reset Dart-side state before the native call so that any
+    // code checking `state` after this await sees idle/zero values
+    // instead of stale data from the previous media.
+    _state = DivineVideoPlayerState(
+      volume: _state.volume,
+      playbackSpeed: _state.playbackSpeed,
+    );
+    if (!_stateController.isClosed) {
+      _stateController.add(_state);
+    }
     await _methodChannel.invokeMethod<void>('stop');
   }
 

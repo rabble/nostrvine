@@ -1,10 +1,9 @@
 // ABOUTME: Test helpers and fixtures for pooled_video_player tests
-// ABOUTME: Provides factories for VideoItem, players, and widget wrappers
+// ABOUTME: Provides factories for VideoItem, controllers, and widget wrappers
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -12,19 +11,14 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 // Private Mock Classes
 // ---------------------------------------------------------------------------
 
-class _MockPlayer extends Mock implements Player {}
-
-class _MockVideoController extends Mock implements VideoController {}
+class _MockDivineVideoPlayerController extends Mock
+    implements DivineVideoPlayerController {}
 
 class _MockPlayerPool extends Mock implements PlayerPool {}
 
 class _MockVideoFeedController extends Mock implements VideoFeedController {}
 
 class _MockPooledPlayer extends Mock implements PooledPlayer {}
-
-class _MockPlayerState extends Mock implements PlayerState {}
-
-class _MockPlayerStream extends Mock implements PlayerStream {}
 
 // ---------------------------------------------------------------------------
 // Video Item Fixtures
@@ -75,135 +69,122 @@ VideoItem createHlsTestVideo({
 }
 
 // ---------------------------------------------------------------------------
-// Mock Player Setup
+// Mock Controller Setup
 // ---------------------------------------------------------------------------
 
-/// Container for a fully configured mock player with all dependencies.
+/// Container for a fully configured mock controller with all dependencies.
 ///
-/// Provides access to stream controllers for simulating async behavior.
-class MockPlayerSetup {
-  MockPlayerSetup({
-    required this.player,
-    required this.state,
-    required this.stream,
-    required this.bufferingController,
-    required this.playingController,
-    required this.positionController,
-    required this.errorController,
-  });
+/// Provides access to a stream controller for simulating async state updates.
+class MockControllerSetup {
+  MockControllerSetup({
+    required this.controller,
+    required this.stateController,
+    required DivineVideoPlayerState initialState,
+  }) : _currentState = initialState;
 
-  final Player player;
-  final PlayerState state;
-  final PlayerStream stream;
-  final StreamController<bool> bufferingController;
-  final StreamController<bool> playingController;
-  final StreamController<Duration> positionController;
-  final StreamController<String> errorController;
+  final DivineVideoPlayerController controller;
+  final StreamController<DivineVideoPlayerState> stateController;
+  DivineVideoPlayerState _currentState;
 
-  /// Disposes all stream controllers.
+  /// Emits a new state and updates the mock's `.state` return value.
+  void emitState(DivineVideoPlayerState newState) {
+    _currentState = newState;
+    when(() => controller.state).thenReturn(_currentState);
+    stateController.add(newState);
+  }
+
+  /// Disposes the stream controller.
   Future<void> dispose() async {
-    await bufferingController.close();
-    await playingController.close();
-    await positionController.close();
-    await errorController.close();
+    await stateController.close();
   }
 }
 
-/// Creates a fully configured [MockPlayerSetup] with streams.
+/// Creates a fully configured [MockControllerSetup] with stateStream.
 ///
 /// Use [isPlaying], [isBuffering], [position], and [duration] to set
 /// initial state.
-MockPlayerSetup createMockPlayerSetup({
+MockControllerSetup createMockControllerSetup({
   bool isPlaying = false,
   bool isBuffering = false,
   Duration position = Duration.zero,
   Duration duration = Duration.zero,
 }) {
-  final mockPlayer = _MockPlayer();
-  final mockState = _MockPlayerState();
-  final mockStream = _MockPlayerStream();
+  final mockController = _MockDivineVideoPlayerController();
+  final stateController =
+      StreamController<DivineVideoPlayerState>.broadcast();
 
-  final bufferingController = StreamController<bool>.broadcast();
-  final playingController = StreamController<bool>.broadcast();
-  final positionController = StreamController<Duration>.broadcast();
-  final errorController = StreamController<String>.broadcast();
+  final initialState = DivineVideoPlayerState(
+    status: isPlaying
+        ? PlaybackStatus.playing
+        : isBuffering
+            ? PlaybackStatus.buffering
+            : PlaybackStatus.idle,
+    position: position,
+    duration: duration,
+  );
 
-  // Configure state
-  when(() => mockState.playing).thenReturn(isPlaying);
-  when(() => mockState.buffering).thenReturn(isBuffering);
-  when(() => mockState.position).thenReturn(position);
-  when(() => mockState.duration).thenReturn(duration);
-  when(() => mockPlayer.state).thenReturn(mockState);
-
-  // Configure streams
-  when(
-    () => mockStream.buffering,
-  ).thenAnswer((_) => bufferingController.stream);
-  when(() => mockStream.playing).thenAnswer((_) => playingController.stream);
-  when(() => mockStream.position).thenAnswer((_) => positionController.stream);
-  when(() => mockStream.error).thenAnswer((_) => errorController.stream);
-  when(() => mockPlayer.stream).thenReturn(mockStream);
+  when(() => mockController.state).thenReturn(initialState);
+  when(() => mockController.stateStream)
+      .thenAnswer((_) => stateController.stream);
+  when(() => mockController.firstFrameRendered)
+      .thenAnswer((_) => Future<bool>.value(true));
+  when(() => mockController.isInitialized).thenReturn(true);
 
   // Configure common methods
+  when(() => mockController.setSource(any())).thenAnswer((_) async {});
+  when(() => mockController.setClips(any())).thenAnswer((_) async {});
+  when(mockController.play).thenAnswer((_) async {});
+  when(mockController.pause).thenAnswer((_) async {});
+  when(mockController.stop).thenAnswer((_) async {});
+  when(() => mockController.seekTo(any())).thenAnswer((_) async {});
+  when(() => mockController.setVolume(any())).thenAnswer((_) async {});
   when(
-    () => mockPlayer.open(any(), play: any(named: 'play')),
+    () => mockController.setPlaybackSpeed(any()),
   ).thenAnswer((_) async {});
-  when(mockPlayer.play).thenAnswer((_) async {});
-  when(mockPlayer.pause).thenAnswer((_) async {});
-  when(mockPlayer.stop).thenAnswer((_) async {});
-  when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
-  when(() => mockPlayer.setVolume(any())).thenAnswer((_) async {});
-  when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
-  when(() => mockPlayer.setPlaylistMode(any())).thenAnswer((_) async {});
-  when(mockPlayer.dispose).thenAnswer((_) async {});
+  when(
+    () => mockController.setLooping(looping: any(named: 'looping')),
+  ).thenAnswer((_) async {});
+  when(mockController.dispose).thenAnswer((_) async {});
 
-  return MockPlayerSetup(
-    player: mockPlayer,
-    state: mockState,
-    stream: mockStream,
-    bufferingController: bufferingController,
-    playingController: playingController,
-    positionController: positionController,
-    errorController: errorController,
+  return MockControllerSetup(
+    controller: mockController,
+    stateController: stateController,
+    initialState: initialState,
   );
 }
 
-/// Creates a simple mock [Player] without stream controllers.
+/// Creates a simple mock [DivineVideoPlayerController] without stream
+/// controllers.
 ///
 /// For tests that don't need stream simulation, use this instead of
-/// [createMockPlayerSetup].
-Player createMockPlayer({
+/// [createMockControllerSetup].
+DivineVideoPlayerController createMockController({
   bool isPlaying = false,
   bool isBuffering = false,
 }) {
-  final setup = createMockPlayerSetup(
+  final setup = createMockControllerSetup(
     isPlaying: isPlaying,
     isBuffering: isBuffering,
   );
-  return setup.player;
+  return setup.controller;
 }
 
-/// Creates a mock [VideoController].
-VideoController createMockVideoController() {
-  return _MockVideoController();
-}
-
-/// Creates a mock [PooledPlayer] with configured player and controller.
+/// Creates a mock [PooledPlayer] with configured controller.
 PooledPlayer createMockPooledPlayer({
   bool isDisposed = false,
   bool isPlaying = false,
   bool isBuffering = false,
-  Player? player,
-  VideoController? videoController,
+  DivineVideoPlayerController? controller,
 }) {
   final mockPooledPlayer = _MockPooledPlayer();
-  final mockPlayer =
-      player ??
-      createMockPlayer(isPlaying: isPlaying, isBuffering: isBuffering);
-  final mockController = videoController ?? createMockVideoController();
+  final mockController =
+      controller ??
+      createMockController(
+        isPlaying: isPlaying,
+        isBuffering: isBuffering,
+      );
 
-  when(() => mockPooledPlayer.player).thenReturn(mockPlayer);
-  when(() => mockPooledPlayer.videoController).thenReturn(mockController);
+  when(() => mockPooledPlayer.controller).thenReturn(mockController);
   when(() => mockPooledPlayer.isDisposed).thenReturn(isDisposed);
   when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
   when(mockPooledPlayer.clearRecycled).thenReturn(null);
@@ -213,20 +194,17 @@ PooledPlayer createMockPooledPlayer({
   return mockPooledPlayer;
 }
 
-/// Creates a mock [PooledPlayer] from an existing [MockPlayerSetup].
+/// Creates a mock [PooledPlayer] from an existing [MockControllerSetup].
 ///
 /// Wires up `addOnEvictedCallback`, `recycle`, and `dispose` so eviction
 /// callbacks fire correctly (matching real [PooledPlayer] behaviour).
-PooledPlayer createMockPooledPlayerFromSetup(MockPlayerSetup setup) {
+PooledPlayer createMockPooledPlayerFromSetup(MockControllerSetup setup) {
   final mockPooledPlayer = _MockPooledPlayer();
   final callbacks = <VoidCallback>[];
 
   var recycled = false;
 
-  when(() => mockPooledPlayer.player).thenReturn(setup.player);
-  when(
-    () => mockPooledPlayer.videoController,
-  ).thenReturn(createMockVideoController());
+  when(() => mockPooledPlayer.controller).thenReturn(setup.controller);
   when(() => mockPooledPlayer.isDisposed).thenReturn(false);
   when(() => mockPooledPlayer.wasRecycled).thenAnswer((_) => recycled);
   when(mockPooledPlayer.clearRecycled).thenAnswer((_) => recycled = false);
@@ -284,8 +262,7 @@ VideoFeedController createMockVideoFeedController({
   when(() => mockController.currentIndex).thenReturn(currentIndex);
   when(() => mockController.isPaused).thenReturn(isPaused);
   when(() => mockController.isActive).thenReturn(isActive);
-  when(() => mockController.getVideoController(any())).thenReturn(null);
-  when(() => mockController.getPlayer(any())).thenReturn(null);
+  when(() => mockController.getController(any())).thenReturn(null);
   when(() => mockController.getLoadState(any())).thenReturn(LoadState.none);
   when(() => mockController.isVideoReady(any())).thenReturn(false);
   when(() => mockController.onPageChanged(any())).thenReturn(null);
@@ -363,7 +340,7 @@ class TestablePlayerPool extends PlayerPool {
       // Mirror real PlayerPool: mute cached players to prevent audio leaks.
       // The caller (_loadPlayer) will set volume/play state as needed.
       final existing = _testPlayers[url]!;
-      unawaited(existing.player.setVolume(0));
+      unawaited(existing.controller.setVolume(0));
       return existing;
     }
 
@@ -376,7 +353,7 @@ class TestablePlayerPool extends PlayerPool {
         evicted.recycle();
         // Mirror real PlayerPool._recycleLru(): await stop() so the surface
         // is cleared before the recycled player is exposed to the UI.
-        await evicted.player.stop();
+        await evicted.controller.stop();
         recycled = evicted;
         break;
       }
@@ -425,7 +402,7 @@ class TestablePlayerPool extends PlayerPool {
     for (final player in _testPlayers.values) {
       if (!player.isDisposed) {
         try {
-          unawaited(player.player.stop());
+          unawaited(player.controller.stop());
         } on Exception {
           // Ignore errors during emergency stop
         }

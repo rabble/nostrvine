@@ -260,7 +260,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   /// Called from [didChangeDependencies] for initial setup and from
   /// [BlocListener] when videos become available asynchronously.
   void _initializeControllerIfNeeded({bool triggerRebuild = false}) {
-    if (kIsWeb) return; // Skip media_kit controller on web
+    if (kIsWeb) return; // Skip native controller on web
     if (_controller != null) return;
 
     final state = context.read<FullscreenFeedBloc>().state;
@@ -323,7 +323,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       pool: PlayerPool.instance,
       initialIndex: initialIndex,
       // Hook: Dispatch event for background caching when video is ready
-      onVideoReady: (index, player) {
+      onVideoReady: (index, controller) {
         if (!mounted) return;
         context.read<FullscreenFeedBloc>().add(
           FullscreenFeedVideoCacheStarted(index: index),
@@ -701,26 +701,25 @@ class _PooledFullscreenItemContentState
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
         onDoubleTap: _handleDoubleTapLike,
-        videoBuilder: (context, videoController, player) =>
-            PooledVideoMetricsTracker(
-              key: ValueKey('metrics-${video.id}'),
-              video: video,
-              player: player,
-              isActive: widget.isActive,
-              trafficSource: widget.trafficSource,
-              sourceDetail: widget.sourceDetail,
-              child: _FittedVideoPlayer(
-                videoController: videoController,
-                isPortrait: isPortrait,
-                videoWidth: video.width?.toDouble(),
-                videoHeight: video.height?.toDouble(),
-              ),
-            ),
+        videoBuilder: (context, controller) => PooledVideoMetricsTracker(
+          key: ValueKey('metrics-${video.id}'),
+          video: video,
+          controller: controller,
+          isActive: widget.isActive,
+          trafficSource: widget.trafficSource,
+          sourceDetail: widget.sourceDetail,
+          child: _FittedVideoPlayer(
+            controller: controller,
+            isPortrait: isPortrait,
+            videoWidth: video.width?.toDouble(),
+            videoHeight: video.height?.toDouble(),
+          ),
+        ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
         ),
-        overlayBuilder: (context, videoController, player) {
+        overlayBuilder: (context, controller) {
           if (showContentWarningOverlay && !_contentWarningRevealed) {
             return ContentWarningBlurOverlay(
               labels: overlayLabels,
@@ -740,17 +739,16 @@ class _PooledFullscreenItemContentState
             data: MediaQueryData.fromView(View.of(context)),
             child: Stack(
               children: [
-                if (player != null)
+                if (controller != null)
                   PausedVideoPlayOverlay(
-                    player: player,
-                    firstFrameFuture:
-                        videoController?.waitUntilFirstFrameRendered,
+                    controller: controller,
+                    firstFrameFuture: controller.firstFrameRendered,
                     isVisible: widget.isActive,
                   ),
                 // Subtitle overlay — needs player position stream
-                if (video.hasSubtitles && player != null)
+                if (video.hasSubtitles && controller != null)
                   Positioned.fill(
-                    child: _SubtitleLayer(video: video, player: player),
+                    child: _SubtitleLayer(video: video, controller: controller),
                   ),
                 ValueListenableBuilder<double>(
                   valueListenable: widget.pagePosition,
@@ -787,13 +785,13 @@ class _PooledFullscreenItemContentState
 
 class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
-    required this.videoController,
+    required this.controller,
     this.isPortrait = true,
     this.videoWidth,
     this.videoHeight,
   });
 
-  final VideoController videoController;
+  final DivineVideoPlayerController controller;
   final bool isPortrait;
   final double? videoWidth;
   final double? videoHeight;
@@ -801,17 +799,26 @@ class _FittedVideoPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    final state = controller.state;
+    final w = videoWidth ?? state.videoWidth.toDouble();
+    final h = videoHeight ?? state.videoHeight.toDouble();
 
-    // Do not set filterQuality to high — on Android the bicubic
-    // interpolation causes visible blur on the Texture widget when
-    // the video resolution doesn't match the display size exactly.
-    return Video(
-      controller: videoController,
-      fit: boxFit,
-      controls: null,
-      width: videoWidth,
-      height: videoHeight,
-      fill: const Color(0x00000000),
+    // When dimensions are unknown, fill the available space without fitting.
+    if (w <= 0 || h <= 0) {
+      return SizedBox.expand(
+        child: DivineVideoPlayer(controller: controller),
+      );
+    }
+
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: boxFit,
+        child: SizedBox(
+          width: w,
+          height: h,
+          child: DivineVideoPlayer(controller: controller),
+        ),
+      ),
     );
   }
 }
@@ -893,17 +900,17 @@ class _LoadingIndicatorState extends State<_LoadingIndicator> {
 
 /// Streams player position and renders subtitle text for fullscreen feed.
 class _SubtitleLayer extends ConsumerWidget {
-  const _SubtitleLayer({required this.video, required this.player});
+  const _SubtitleLayer({required this.video, required this.controller});
 
   final VideoEvent video;
-  final Player player;
+  final DivineVideoPlayerController controller;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
 
     return StreamBuilder<Duration>(
-      stream: player.stream.position,
+      stream: controller.stateStream.map((s) => s.position).distinct(),
       builder: (context, snapshot) {
         final positionMs = snapshot.data?.inMilliseconds ?? 0;
         return Stack(

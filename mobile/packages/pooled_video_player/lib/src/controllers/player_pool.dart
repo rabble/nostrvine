@@ -1,23 +1,19 @@
 import 'dart:async';
 
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/foundation.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:pooled_video_player/src/models/video_pool_config.dart';
 
-/// A pooled player instance containing both Player and VideoController.
+/// A pooled player instance containing a [DivineVideoPlayerController].
 ///
 /// Keeps native resources alive for reuse instead of expensive recreation.
 class PooledPlayer {
-  /// Creates a pooled player with the given player and video controller.
-  PooledPlayer({required this.player, required this.videoController});
+  /// Creates a pooled player with the given controller.
+  PooledPlayer({required this.controller});
 
-  /// The underlying media player instance.
-  final Player player;
-
-  /// The video controller for rendering.
-  final VideoController videoController;
+  /// The video player controller for playback and rendering.
+  final DivineVideoPlayerController controller;
 
   /// Tracks whether this player has been disposed.
   bool _isDisposed = false;
@@ -28,9 +24,10 @@ class PooledPlayer {
   /// Set to `true` by [recycle] to indicate this player was re-keyed from
   /// a previous URL.
   ///
-  /// Callers use this to defer publishing the [VideoController] to the UI
-  /// until after new media has been opened, preventing the previous video's
-  /// surface from flashing on the new index even after `stop()` has cleared it.
+  /// Callers use this to defer publishing the [DivineVideoPlayerController]
+  /// to the UI until after new media has been opened, preventing the previous
+  /// video's surface from flashing on the new index even after `stop()` has
+  /// cleared it.
   ///
   /// Reset to `false` automatically once the caller has consumed it.
   bool _wasRecycled = false;
@@ -67,8 +64,8 @@ class PooledPlayer {
   ///
   /// Called by [PlayerPool] when this player is recycled under a new URL.
   /// Consumers (e.g. `VideoFeedController`) react identically to a real
-  /// disposal — they null-out widget state — but the underlying [Player] and
-  /// [VideoController] remain valid for immediate reuse.
+  /// disposal — they null-out widget state — but the underlying
+  /// [DivineVideoPlayerController] remain valid for immediate reuse.
   ///
   /// Is a no-op if already disposed.
   void recycle() {
@@ -84,25 +81,24 @@ class PooledPlayer {
   ///
   /// Invokes all registered [_onEvictedCallbacks] synchronously before
   /// disposing native resources, allowing consumers to react (e.g., update
-  /// widget state) before the underlying [VideoController] becomes invalid.
+  /// widget state) before the underlying [DivineVideoPlayerController]
+  /// becomes invalid.
   Future<void> dispose() async {
     if (_isDisposed) return;
     _isDisposed = true;
 
     // Notify listeners synchronously so they can update UI state before
-    // native resources (including VideoController's ValueNotifier<int?>)
-    // are torn down.
+    // native resources are torn down.
     for (final callback in List<VoidCallback>.of(_onEvictedCallbacks)) {
       callback();
     }
     _onEvictedCallbacks.clear();
 
     try {
-      await player.stop();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      await player.dispose();
+      await controller.stop();
+      await controller.dispose();
     } on Exception {
-      // Ignore errors - player may already be disposed
+      // Ignore errors - controller may already be disposed
     }
   }
 }
@@ -118,7 +114,6 @@ class PooledPlayer {
 /// ```dart
 /// void main() async {
 ///   WidgetsFlutterBinding.ensureInitialized();
-///   MediaKit.ensureInitialized();
 ///
 ///   await PlayerPool.init(config: VideoPoolConfig(maxPlayers: 5));
 ///
@@ -144,10 +139,10 @@ class PlayerPool {
   /// (e.g., for testing or multiple isolated pools).
   ///
   /// For most use cases, prefer the singleton via [init] and [instance].
-  PlayerPool({this.maxPlayers = 5});
+  PlayerPool({this.maxPlayers = 3});
 
   /// Private constructor for singleton initialization.
-  PlayerPool._({this.maxPlayers = 5});
+  PlayerPool._({this.maxPlayers = 3});
 
   // ============================================
   // Singleton Pattern
@@ -173,8 +168,7 @@ class PlayerPool {
 
   /// Initializes the singleton with the given configuration.
   ///
-  /// Should be called once at app startup, after
-  /// `MediaKit.ensureInitialized()`.
+  /// Should be called once at app startup.
   ///
   /// If called when already initialized, the existing instance is disposed
   /// and a new one is created.
@@ -278,7 +272,7 @@ class PlayerPool {
       // The caller (_loadPlayer) will set volume/play state as needed.
       // Use unawaited to avoid introducing a yield point that could allow
       // concurrent getPlayer calls to interleave and cause race conditions.
-      unawaited(existing.player.setVolume(0));
+      unawaited(existing.controller.setVolume(0));
       return existing;
     }
 
@@ -334,7 +328,7 @@ class PlayerPool {
   /// Awaiting `player.stop()` before returning provides a hard ordering
   /// guarantee: the previous video's media surface is fully cleared before
   /// [getPlayer] resolves, so callers can safely expose the recycled
-  /// [VideoController] to the UI without risk of stale content.
+  /// [DivineVideoPlayerController] to the UI without risk of stale content.
   Future<PooledPlayer?> _recycleLru() async {
     if (_lruOrder.isEmpty) return null;
 
@@ -345,7 +339,7 @@ class PlayerPool {
     // Await stop() so the surface is cleared before this player is returned
     // to _loadPlayer(), stored in _loadedPlayers, and exposed via _notifyIndex.
     try {
-      await player.player.stop();
+      await player.controller.stop();
     } on Exception {
       // Ignore — mirrors the same pattern in dispose().
     }
@@ -362,15 +356,11 @@ class PlayerPool {
   }
 
   /// Stop all active player playback without disposing.
-  ///
-  /// Used during hot reload to prevent native mpv callbacks from firing
-  /// on invalidated Dart FFI handles, which causes a fatal crash:
-  /// "Callback invoked after it has been deleted."
   void stopAll() {
     for (final player in _players.values) {
       if (!player.isDisposed) {
         try {
-          unawaited(player.player.stop());
+          unawaited(player.controller.stop());
         } on Exception {
           // Ignore errors during emergency stop
         }
@@ -401,31 +391,8 @@ class PlayerPool {
   @visibleForTesting
   @visibleForOverriding
   Future<PooledPlayer> createPlayer() async {
-    final player = Player();
-
-    // Suppress FFmpeg codec warnings (e.g. smpte170m color transfer) that
-    // bypass MPV's API log callback and go directly to stderr. Skip on web,
-    // and use dynamic dispatch so Dart2JS does not type-check the missing
-    // setProperty member on the web NativePlayer stub.
-    if (!kIsWeb) {
-      try {
-        final nativePlayer = player.platform;
-        if (nativePlayer is NativePlayer) {
-          await (nativePlayer as dynamic).setProperty('msg-level', 'all=error');
-          // Start playback immediately without waiting for the cache to fill.
-          // Without this, fragmented MP4 (fMP4) takes ~3s to start because
-          // mpv parses all moof/mdat fragments before declaring cache ready.
-          await (nativePlayer as dynamic).setProperty(
-            'cache-pause-initial',
-            '0',
-          );
-        }
-      } on Object catch (_) {
-        // Ignore — some platforms or stubs don't support setProperty.
-      }
-    }
-
-    final videoController = VideoController(player);
-    return PooledPlayer(player: player, videoController: videoController);
+    final controller = DivineVideoPlayerController(useTexture: true);
+    await controller.initialize();
+    return PooledPlayer(controller: controller);
   }
 }

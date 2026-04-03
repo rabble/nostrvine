@@ -864,7 +864,7 @@ void main() {
             await Future<void>.delayed(const Duration(milliseconds: 100));
 
             final url = videos[0].url;
-            final currentPlayerSetup = playerSetups[url]!;
+            final currentPlayerSetup = playerSetups[url];
 
             // Deactivate with retainCurrentPlayer: true
             controller.setActive(active: false, retainCurrentPlayer: true);
@@ -1116,7 +1116,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        playerSetup = playerSetups[url]!;
+        playerSetup = playerSetups[url];
 
         playerSetup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -1289,7 +1289,7 @@ void main() {
 
           // The pool gets the original URL for keying
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           // But the player opens with the resolved source
           verify(
@@ -1318,7 +1318,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           verify(
             () => setup.player.open(
@@ -1339,7 +1339,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           verify(
             () => setup.player.open(
@@ -1367,7 +1367,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           // Simulate buffer ready
           setup.bufferingController.add(false);
@@ -1389,7 +1389,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           // Simulate buffer ready - should not throw
           setup.bufferingController.add(false);
@@ -1442,7 +1442,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           // Configure player as playing with a position
           when(() => setup.state.playing).thenReturn(true);
@@ -1477,7 +1477,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           // Player is not playing
           when(() => setup.state.playing).thenReturn(false);
@@ -1509,7 +1509,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           when(() => setup.state.playing).thenReturn(true);
           when(() => setup.state.position).thenReturn(Duration.zero);
@@ -1547,7 +1547,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           when(() => setup.state.playing).thenReturn(true);
 
@@ -1576,7 +1576,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           when(() => setup.state.playing).thenReturn(true);
           when(() => setup.state.position).thenReturn(Duration.zero);
@@ -1611,7 +1611,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos()[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           when(() => setup.state.playing).thenReturn(true);
           when(() => setup.state.position).thenReturn(Duration.zero);
@@ -1646,7 +1646,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           // Configure player as playing past the max duration
           when(() => setup.state.playing).thenReturn(true);
@@ -1679,7 +1679,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           // Configure player as playing within allowed duration
           when(() => setup.state.playing).thenReturn(true);
@@ -1693,7 +1693,9 @@ void main() {
 
           // Clear any seek calls from initial playback
           clearInteractions(setup.player);
-          when(() => setup.player.seek(any())).thenAnswer((_) async {});
+          when(() => setup.player.seek(any())).thenAnswer((_) async {
+            return null;
+          });
           when(
             () => setup.state.position,
           ).thenReturn(const Duration(milliseconds: 3000));
@@ -1716,7 +1718,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
           final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
+          final setup = playerSetups[url];
 
           // Configure player as playing past 6.3s
           when(() => setup.state.playing).thenReturn(true);
@@ -1730,7 +1732,9 @@ void main() {
 
           // Clear any seek calls from initial playback
           clearInteractions(setup.player);
-          when(() => setup.player.seek(any())).thenAnswer((_) async {});
+          when(() => setup.player.seek(any())).thenAnswer((_) async {
+            return null;
+          });
           when(
             () => setup.state.position,
           ).thenReturn(const Duration(milliseconds: 7000));
@@ -2285,7 +2289,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
           // Video 1 is a preloaded (non-current) video.
-          final setup1 = playerSetups[videos[1].url]!;
+          final setup1 = playerSetups[videos[1].url];
 
           // Non-current video should be paused and rewound to the beginning
           // so it shows frame 0 when the user scrolls to it.
@@ -2306,7 +2310,7 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        final setup0 = playerSetups[videos[0].url]!;
+        final setup0 = playerSetups[videos[0].url];
 
         // Current video should get volume 100 from _onBufferReady.
         verify(() => setup0.player.setVolume(100)).called(1);
@@ -2329,7 +2333,7 @@ void main() {
         // Wait for initial load (indices 0, 1).
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        final setup0 = playerSetups[videos[0].url]!;
+        final setup0 = playerSetups[videos[0].url];
 
         // Clear interactions so we can verify release-specific calls.
         clearInteractions(setup0.player);
@@ -2495,7 +2499,9 @@ void main() {
             any(that: isA<Media>().having((m) => m.uri, 'uri', hlsUrl)),
             play: false,
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async {
+          return null;
+        });
 
         final pooledPlayer = _MockPooledPlayer();
         when(() => pooledPlayer.player).thenReturn(setup.player);
@@ -2568,7 +2574,9 @@ void main() {
               any(that: isA<Media>().having((m) => m.uri, 'uri', hlsUrl)),
               play: false,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async {
+            return null;
+          });
 
           final pooledPlayer = _MockPooledPlayer();
           when(() => pooledPlayer.player).thenReturn(setup.player);
@@ -2738,7 +2746,7 @@ void main() {
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
-          final setup0 = playerSetups[videos[0].url]!;
+          final setup0 = playerSetups[videos[0].url];
           // Simulate mid-playback state: 5s into a 30s video.
           when(() => setup0.state.position).thenReturn(
             const Duration(seconds: 5),
@@ -2778,7 +2786,7 @@ void main() {
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
-          final setup0 = playerSetups[videos[0].url]!;
+          final setup0 = playerSetups[videos[0].url];
           const videoDuration = Duration(seconds: 30);
           // Simulate end-of-video state.
           when(() => setup0.state.position).thenReturn(videoDuration);
@@ -2817,7 +2825,7 @@ void main() {
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
-          final setup1 = playerSetups[videos[1].url]!;
+          final setup1 = playerSetups[videos[1].url];
           // Preloaded video is at position zero and duration is non-zero.
           when(() => setup1.state.position).thenReturn(Duration.zero);
           when(() => setup1.state.duration).thenReturn(
@@ -2848,7 +2856,7 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        final setup = playerSetups[videos[0].url]!;
+        final setup = playerSetups[videos[0].url];
 
         // Trigger initial buffer ready
         setup.bufferingController.add(false);
@@ -2879,7 +2887,7 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        final setup = playerSetups[videos[0].url]!;
+        final setup = playerSetups[videos[0].url];
 
         // Initial buffer ready for video 0 (current)
         setup.bufferingController.add(false);
@@ -2906,7 +2914,7 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        final setup = playerSetups[videos[0].url]!;
+        final setup = playerSetups[videos[0].url];
 
         // Initial buffer ready — video starts playing
         setup.bufferingController.add(false);
@@ -2937,7 +2945,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Make video 1 ready (non-current preloaded video)
-        final setup1 = playerSetups[videos[1].url]!;
+        final setup1 = playerSetups[videos[1].url];
         setup1.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
@@ -2962,7 +2970,7 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        final setup = playerSetups[videos[0].url]!;
+        final setup = playerSetups[videos[0].url];
 
         // Initial buffer ready
         setup.bufferingController.add(false);
@@ -2996,7 +3004,7 @@ void main() {
             const Duration(milliseconds: 50),
           );
 
-          final setup = playerSetups[videos[0].url]!;
+          final setup = playerSetups[videos[0].url];
 
           // Initial buffer ready
           setup.bufferingController.add(false);
@@ -3037,7 +3045,7 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        final setup0 = playerSetups[videos[0].url]!;
+        final setup0 = playerSetups[videos[0].url];
 
         // Buffer ready for video 0.
         setup0.bufferingController.add(false);
@@ -3085,7 +3093,7 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        final setup0 = playerSetups[videos[0].url]!;
+        final setup0 = playerSetups[videos[0].url];
 
         setup0.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -3125,8 +3133,8 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        final setup1 = playerSetups[videos[1].url]!;
-        final setup0 = playerSetups[videos[0].url]!;
+        final setup1 = playerSetups[videos[1].url];
+        final setup0 = playerSetups[videos[0].url];
 
         setup0.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -3178,7 +3186,7 @@ void main() {
 
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          final setup0 = playerSetups[videos[0].url]!;
+          final setup0 = playerSetups[videos[0].url];
 
           setup0.bufferingController.add(false);
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -3297,6 +3305,7 @@ void main() {
                 () => setup.player.open(any(), play: any(named: 'play')),
               ).thenAnswer((_) async {
                 openOrder.add(indexByUrl[url]!);
+                return null;
               });
               final mockPooledPlayer = _MockPooledPlayer();
               when(() => mockPooledPlayer.player).thenReturn(setup.player);
@@ -3352,6 +3361,7 @@ void main() {
                 () => setup.player.open(any(), play: any(named: 'play')),
               ).thenAnswer((_) async {
                 openOrder.add(indexByUrl[url]!);
+                return null;
               });
               final mockPooledPlayer = _MockPooledPlayer();
               when(() => mockPooledPlayer.player).thenReturn(setup.player);
@@ -3481,7 +3491,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         // Simulate: video is playing but position is frozen at 533ms
         when(() => setup.state.playing).thenReturn(true);
@@ -3518,7 +3528,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
         var currentPosition = 0;
 
         when(() => setup.state.playing).thenReturn(true);
@@ -3554,7 +3564,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         when(() => setup.state.playing).thenReturn(true);
         when(() => setup.state.buffering).thenReturn(true);
@@ -3583,7 +3593,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         when(() => setup.state.playing).thenReturn(true);
         when(() => setup.state.buffering).thenReturn(false);
@@ -3670,7 +3680,7 @@ void main() {
 
         // Preloaded video (index 1) should get pause then seek(0)
         final url1 = createTestVideos()[1].url;
-        final setup1 = playerSetups[url1]!;
+        final setup1 = playerSetups[url1];
 
         setup1.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -3772,7 +3782,7 @@ void main() {
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
-          final setup = setupByUrl[mp4Url]!;
+          final setup = setupByUrl[mp4Url];
           setup.bufferingController.add(false);
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
@@ -3822,7 +3832,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
           // Make video 1 (preloaded) buffer-ready.
-          final setup = setupByUrl[videos[1].url]!;
+          final setup = setupByUrl[videos[1].url];
           setup.bufferingController.add(false);
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
@@ -3866,7 +3876,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         // Simulate: video is playing but position is frozen at 533ms
         when(() => setup.state.playing).thenReturn(true);
@@ -3903,7 +3913,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
         var currentPosition = 0;
 
         when(() => setup.state.playing).thenReturn(true);
@@ -3939,7 +3949,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         when(() => setup.state.playing).thenReturn(true);
         when(() => setup.state.buffering).thenReturn(true);
@@ -3968,7 +3978,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         when(() => setup.state.playing).thenReturn(true);
         when(() => setup.state.buffering).thenReturn(false);
@@ -4055,7 +4065,7 @@ void main() {
 
         // Preloaded video (index 1) should get pause then seek(0)
         final url1 = createTestVideos()[1].url;
-        final setup1 = playerSetups[url1]!;
+        final setup1 = playerSetups[url1];
 
         setup1.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -4082,7 +4092,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         // Video becomes ready
         setup.bufferingController.add(false);
@@ -4119,7 +4129,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -4167,7 +4177,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = videos[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         // Emit an error while still in loading state
         setup.errorController.add('Stream error during load');
@@ -4189,7 +4199,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         // Become ready
         setup.bufferingController.add(false);
@@ -4225,7 +4235,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -4269,7 +4279,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+        final setup = playerSetups[url];
 
         // Video becomes ready first
         setup.bufferingController.add(false);

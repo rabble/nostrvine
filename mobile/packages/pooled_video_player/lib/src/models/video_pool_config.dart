@@ -1,5 +1,5 @@
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:equatable/equatable.dart';
-import 'package:media_kit/media_kit.dart';
 
 import 'package:pooled_video_player/src/models/video_item.dart';
 
@@ -9,7 +9,10 @@ import 'package:pooled_video_player/src/models/video_item.dart';
 typedef MediaSourceResolver = String? Function(VideoItem video);
 
 /// Called when a video becomes ready for playback.
-typedef VideoReadyCallback = void Function(int index, Player player);
+typedef VideoReadyCallback = void Function(
+  int index,
+  DivineVideoPlayerController controller,
+);
 
 /// Called periodically with position updates for the active video.
 typedef PositionCallback = void Function(int index, Duration position);
@@ -18,8 +21,8 @@ typedef PositionCallback = void Function(int index, Duration position);
 class VideoPoolConfig extends Equatable {
   /// Creates a video pool configuration.
   const VideoPoolConfig({
-    this.maxPlayers = 5,
-    this.preloadAhead = 2,
+    this.maxPlayers = 3,
+    this.preloadAhead = 1,
     this.preloadBehind = 1,
     this.mediaSourceResolver,
     this.onVideoReady,

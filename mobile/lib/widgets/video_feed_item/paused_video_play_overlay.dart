@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Large centered play affordance shown when a pooled video is paused.
 class PausedVideoPlayOverlay extends StatefulWidget {
   const PausedVideoPlayOverlay({
-    required this.player,
+    required this.controller,
     this.firstFrameFuture,
     this.isVisible = true,
     super.key,
   });
 
-  final Player player;
+  final DivineVideoPlayerController controller;
   final Future<void>? firstFrameFuture;
   final bool isVisible;
 
@@ -38,7 +38,7 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
   @override
   void didUpdateWidget(covariant PausedVideoPlayOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.player, widget.player)) {
+    if (!identical(oldWidget.controller, widget.controller)) {
       unawaited(_playingSubscription?.cancel());
       _hasStartedPlayback = false;
       _subscribeToPlayback();
@@ -51,14 +51,20 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
     // not set the latch, otherwise the pause indicator flashes briefly when
     // the user arrives at the preloaded video (isBuffering=false before
     // isPlaying=true, amplified by the 180ms AnimatedSwitcher).
-    _hasStartedPlayback = widget.isVisible && widget.player.state.playing;
-    _playingSubscription = widget.player.stream.playing.listen((isPlaying) {
-      if (isPlaying && !_hasStartedPlayback && widget.isVisible && mounted) {
-        setState(() {
-          _hasStartedPlayback = true;
+    _hasStartedPlayback = widget.isVisible && widget.controller.state.isPlaying;
+    _playingSubscription = widget.controller.stateStream
+        .map((s) => s.isPlaying)
+        .distinct()
+        .listen((isPlaying) {
+          if (isPlaying &&
+              !_hasStartedPlayback &&
+              widget.isVisible &&
+              mounted) {
+            setState(() {
+              _hasStartedPlayback = true;
+            });
+          }
         });
-      }
-    });
   }
 
   @override
@@ -85,14 +91,19 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
         }
 
         return StreamBuilder<bool>(
-          stream: widget.player.stream.buffering,
-          initialData: widget.player.state.buffering,
+          stream: widget.controller.stateStream
+              .map((s) => s.status == PlaybackStatus.buffering)
+              .distinct(),
+          initialData:
+              widget.controller.state.status == PlaybackStatus.buffering,
           builder: (context, bufferingSnapshot) {
             final isBuffering = bufferingSnapshot.data ?? false;
 
             return StreamBuilder<bool>(
-              stream: widget.player.stream.playing,
-              initialData: widget.player.state.playing,
+              stream: widget.controller.stateStream
+                  .map((s) => s.isPlaying)
+                  .distinct(),
+              initialData: widget.controller.state.isPlaying,
               builder: (context, playingSnapshot) {
                 final isPlaying = playingSnapshot.data ?? false;
                 final shouldShow =

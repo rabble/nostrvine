@@ -2,107 +2,55 @@
 // ABOUTME: Validates player wrapper lifecycle and dispose behavior
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-class _MockPlayer extends Mock implements Player {}
-
-class _MockVideoController extends Mock implements VideoController {}
-
-class _MockPlayerState extends Mock implements PlayerState {}
-
-class _MockPlayerStream extends Mock implements PlayerStream {}
-
-void _setUpFallbacks() {
-  registerFallbackValue(Duration.zero);
-  registerFallbackValue(PlaylistMode.single);
-}
-
-_MockPlayer _createMockPlayer() {
-  final mockPlayer = _MockPlayer();
-  final mockState = _MockPlayerState();
-  final mockStream = _MockPlayerStream();
-
-  when(() => mockState.playing).thenReturn(false);
-  when(() => mockState.buffering).thenReturn(false);
-  when(() => mockState.position).thenReturn(Duration.zero);
-  when(() => mockPlayer.state).thenReturn(mockState);
-  when(() => mockPlayer.stream).thenReturn(mockStream);
-
-  when(mockPlayer.play).thenAnswer((_) async {});
-  when(mockPlayer.pause).thenAnswer((_) async {});
-  when(mockPlayer.stop).thenAnswer((_) async {});
-  when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
-  when(() => mockPlayer.setVolume(any())).thenAnswer((_) async {});
-  when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
-  when(() => mockPlayer.setPlaylistMode(any())).thenAnswer((_) async {});
-  when(mockPlayer.dispose).thenAnswer((_) async {});
-
-  return mockPlayer;
-}
+class _MockDivineVideoPlayerController extends Mock
+    implements DivineVideoPlayerController {}
 
 void main() {
-  setUpAll(_setUpFallbacks);
-
   group('PooledPlayer', () {
-    late _MockPlayer mockPlayer;
-    late _MockVideoController mockVideoController;
+    late _MockDivineVideoPlayerController mockController;
 
     setUp(() {
-      mockPlayer = _createMockPlayer();
-      mockVideoController = _MockVideoController();
+      mockController = _MockDivineVideoPlayerController();
+      when(mockController.stop).thenAnswer((_) async {});
+      when(mockController.dispose).thenAnswer((_) async {});
     });
 
     group('constructor', () {
-      test('creates instance with player and videoController', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+      test('creates instance with controller', () {
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
-        expect(pooledPlayer.player, equals(mockPlayer));
-        expect(pooledPlayer.videoController, equals(mockVideoController));
+        expect(pooledPlayer.controller, equals(mockController));
       });
 
       test('isDisposed is false initially', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         expect(pooledPlayer.isDisposed, isFalse);
       });
     });
 
     group('dispose', () {
-      test('stops player before disposing', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+      test('stops controller before disposing', () async {
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         await pooledPlayer.dispose();
 
-        verify(() => mockPlayer.stop()).called(1);
+        verify(() => mockController.stop()).called(1);
       });
 
-      test('disposes player', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+      test('disposes controller', () async {
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         await pooledPlayer.dispose();
 
-        verify(() => mockPlayer.dispose()).called(1);
+        verify(() => mockController.dispose()).called(1);
       });
 
       test('sets isDisposed to true', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         await pooledPlayer.dispose();
 
@@ -110,38 +58,31 @@ void main() {
       });
 
       test('can be called multiple times safely', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         await pooledPlayer.dispose();
         await pooledPlayer.dispose();
         await pooledPlayer.dispose();
 
-        verify(() => mockPlayer.stop()).called(1);
-        verify(() => mockPlayer.dispose()).called(1);
+        verify(() => mockController.stop()).called(1);
+        verify(() => mockController.dispose()).called(1);
       });
 
-      test('handles player.stop() exception gracefully', () async {
-        when(() => mockPlayer.stop()).thenThrow(Exception('Stop failed'));
+      test('handles controller.stop() exception gracefully', () async {
+        when(() => mockController.stop())
+            .thenThrow(Exception('Stop failed'));
 
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         await expectLater(pooledPlayer.dispose(), completes);
         expect(pooledPlayer.isDisposed, isTrue);
       });
 
-      test('handles player.dispose() exception gracefully', () async {
-        when(() => mockPlayer.dispose()).thenThrow(Exception('Dispose failed'));
+      test('handles controller.dispose() exception gracefully', () async {
+        when(() => mockController.dispose())
+            .thenThrow(Exception('Dispose failed'));
 
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         await expectLater(pooledPlayer.dispose(), completes);
         expect(pooledPlayer.isDisposed, isTrue);
@@ -150,19 +91,13 @@ void main() {
 
     group('isDisposed', () {
       test('returns false before dispose', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         expect(pooledPlayer.isDisposed, isFalse);
       });
 
       test('returns true after dispose', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         await pooledPlayer.dispose();
 
@@ -172,10 +107,7 @@ void main() {
 
     group('onEvictedCallback', () {
       test('invokes callback on dispose', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         var callCount = 0;
         pooledPlayer.addOnEvictedCallback(() => callCount++);
@@ -186,10 +118,7 @@ void main() {
       });
 
       test('invokes multiple callbacks on dispose', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         final calls = <String>[];
         pooledPlayer
@@ -201,18 +130,13 @@ void main() {
         expect(calls, equals(['a', 'b']));
       });
 
-      test('invokes callbacks before stopping native player', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+      test('invokes callbacks before stopping native controller', () async {
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         var wasDisposedInCallback = false;
         pooledPlayer.addOnEvictedCallback(() {
-          // Callback fires BEFORE player.stop(), so isDisposed is true
-          // but native resources haven't been torn down yet.
           wasDisposedInCallback = pooledPlayer.isDisposed;
-          verifyNever(() => mockPlayer.stop());
+          verifyNever(() => mockController.stop());
         });
 
         await pooledPlayer.dispose();
@@ -221,10 +145,7 @@ void main() {
       });
 
       test('does not invoke callbacks on second dispose', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         var callCount = 0;
         pooledPlayer.addOnEvictedCallback(() => callCount++);
@@ -236,10 +157,7 @@ void main() {
       });
 
       test('removed callback is not invoked', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         var callCount = 0;
         void callback() => callCount++;
@@ -253,10 +171,7 @@ void main() {
       });
 
       test('clears callbacks after dispose', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         var callCount = 0;
         pooledPlayer.addOnEvictedCallback(() => callCount++);
@@ -264,16 +179,12 @@ void main() {
         await pooledPlayer.dispose();
 
         expect(callCount, equals(1));
-        // Callbacks are cleared — no lingering references.
       });
     });
 
     group('recycle', () {
       test('invokes callbacks synchronously', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         var callCount = 0;
         pooledPlayer
@@ -284,10 +195,7 @@ void main() {
       });
 
       test('invokes multiple callbacks in registration order', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         final calls = <String>[];
         pooledPlayer
@@ -299,51 +207,38 @@ void main() {
       });
 
       test('does not set isDisposed', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        )..recycle();
+        final pooledPlayer = PooledPlayer(controller: mockController)
+          ..recycle();
 
         expect(pooledPlayer.isDisposed, isFalse);
       });
 
-      test('does not call player.stop() or player.dispose()', () {
-        PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        ).recycle();
+      test('does not call controller.stop() or controller.dispose()', () {
+        PooledPlayer(controller: mockController).recycle();
 
-        verifyNever(() => mockPlayer.stop());
-        verifyNever(() => mockPlayer.dispose());
+        verifyNever(() => mockController.stop());
+        verifyNever(() => mockController.dispose());
       });
 
       test('clears callbacks after recycle', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         var callCount = 0;
         pooledPlayer
           ..addOnEvictedCallback(() => callCount++)
           ..recycle()
-          // Call recycle again — callbacks were cleared, so count stays at 1.
           ..recycle();
 
         expect(callCount, equals(1));
       });
 
       test('is a no-op if already disposed', () async {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         var callCount = 0;
         pooledPlayer.addOnEvictedCallback(() => callCount++);
 
         await pooledPlayer.dispose();
-        // Callbacks were already fired by dispose — recycle should be no-op.
         pooledPlayer.recycle();
 
         expect(callCount, equals(1));
@@ -351,10 +246,7 @@ void main() {
       });
 
       test('sets wasRecycled to true', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         expect(pooledPlayer.wasRecycled, isFalse);
         pooledPlayer.recycle();
@@ -362,10 +254,7 @@ void main() {
       });
 
       test('clearRecycled resets wasRecycled to false', () {
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
+        final pooledPlayer = PooledPlayer(controller: mockController);
 
         (pooledPlayer..recycle()).clearRecycled();
         expect(pooledPlayer.wasRecycled, isFalse);

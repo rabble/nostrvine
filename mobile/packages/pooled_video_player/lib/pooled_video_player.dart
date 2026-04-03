@@ -1,8 +1,11 @@
-// Re-export MediaKit for advanced usage
-export 'package:media_kit/media_kit.dart'
-    show Media, MediaKit, Player, PlaylistMode;
-export 'package:media_kit_video/media_kit_video.dart'
-    show NoVideoControls, Video, VideoController;
+// Re-export DivineVideoPlayer for advanced usage
+export 'package:divine_video_player/divine_video_player.dart'
+    show
+        DivineVideoPlayer,
+        DivineVideoPlayerController,
+        DivineVideoPlayerState,
+        PlaybackStatus,
+        VideoClip;
 
 // Controllers
 export 'src/controllers/player_pool.dart' show PlayerPool, PooledPlayer;

@@ -1,47 +1,34 @@
 import 'dart:async';
 
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 
-class _MockPlayer extends Mock implements Player {}
-
-class _MockPlayerState extends Mock implements PlayerState {}
-
-class _MockPlayerStream extends Mock implements PlayerStream {}
+class _MockDivineVideoPlayerController extends Mock
+    implements DivineVideoPlayerController {}
 
 void main() {
   group('PausedVideoPlayOverlay', () {
-    late Player mockPlayer;
-    late PlayerState mockPlayerState;
-    late PlayerStream mockPlayerStream;
-    late StreamController<bool> playingController;
-    late StreamController<bool> bufferingController;
+    late DivineVideoPlayerController mockController;
+    late StreamController<DivineVideoPlayerState> stateStreamController;
 
     setUp(() {
-      mockPlayer = _MockPlayer();
-      mockPlayerState = _MockPlayerState();
-      mockPlayerStream = _MockPlayerStream();
-      playingController = StreamController<bool>.broadcast();
-      bufferingController = StreamController<bool>.broadcast();
+      mockController = _MockDivineVideoPlayerController();
+      stateStreamController =
+          StreamController<DivineVideoPlayerState>.broadcast();
 
-      when(() => mockPlayer.state).thenReturn(mockPlayerState);
-      when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
-      when(() => mockPlayerState.playing).thenReturn(false);
-      when(() => mockPlayerState.buffering).thenReturn(false);
-      when(
-        () => mockPlayerStream.playing,
-      ).thenAnswer((_) => playingController.stream);
-      when(
-        () => mockPlayerStream.buffering,
-      ).thenAnswer((_) => bufferingController.stream);
+      when(() => mockController.state).thenReturn(
+        const DivineVideoPlayerState(),
+      );
+      when(() => mockController.stateStream).thenAnswer(
+        (_) => stateStreamController.stream,
+      );
     });
 
     tearDown(() async {
-      await playingController.close();
-      await bufferingController.close();
+      await stateStreamController.close();
     });
 
     Widget buildSubject({Key? key}) {
@@ -49,7 +36,7 @@ void main() {
         home: Scaffold(
           body: PausedVideoPlayOverlay(
             key: key,
-            player: mockPlayer,
+            controller: mockController,
             firstFrameFuture: Future<void>.value(),
           ),
         ),
@@ -62,9 +49,13 @@ void main() {
         await tester.pumpWidget(buildSubject(key: const ValueKey('first')));
         await tester.pump();
 
-        playingController.add(true);
+        stateStreamController.add(
+          const DivineVideoPlayerState(status: PlaybackStatus.playing),
+        );
         await tester.pump();
-        playingController.add(false);
+        stateStreamController.add(
+          const DivineVideoPlayerState(status: PlaybackStatus.paused),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
@@ -81,9 +72,13 @@ void main() {
         // until the player transitions through playing again.
         expect(find.bySemanticsLabel('Play video'), findsNothing);
 
-        playingController.add(true);
+        stateStreamController.add(
+          const DivineVideoPlayerState(status: PlaybackStatus.playing),
+        );
         await tester.pump();
-        playingController.add(false);
+        stateStreamController.add(
+          const DivineVideoPlayerState(status: PlaybackStatus.paused),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 

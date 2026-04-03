@@ -1,6 +1,5 @@
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:equatable/equatable.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
 
@@ -13,19 +12,16 @@ class VideoIndexState extends Equatable {
   /// Creates a video index state.
   const VideoIndexState({
     this.loadState = LoadState.none,
-    this.videoController,
-    this.player,
+    this.controller,
     this.isSlowLoad = false,
   });
 
   /// The loading state of the video.
   final LoadState loadState;
 
-  /// The video controller for rendering, or null if not loaded.
-  final VideoController? videoController;
-
-  /// The player for controlling playback, or null if not loaded.
-  final Player? player;
+  /// The video player controller for playback and rendering, or null if
+  /// not loaded.
+  final DivineVideoPlayerController? controller;
 
   /// Whether this video's load time has exceeded the slow-load threshold.
   ///
@@ -44,5 +40,5 @@ class VideoIndexState extends Equatable {
   bool get isLoading => loadState == LoadState.loading;
 
   @override
-  List<Object?> get props => [loadState, videoController, player, isSlowLoad];
+  List<Object?> get props => [loadState, controller, isSlowLoad];
 }

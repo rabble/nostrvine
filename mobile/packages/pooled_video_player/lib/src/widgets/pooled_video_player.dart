@@ -1,9 +1,7 @@
 import 'dart:async';
 
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-
 import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
 import 'package:pooled_video_player/src/models/video_index_state.dart';
 import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
@@ -14,16 +12,14 @@ const _firstFrameRevealTimeout = Duration(seconds: 2);
 typedef VideoBuilder =
     Widget Function(
       BuildContext context,
-      VideoController videoController,
-      Player player,
+      DivineVideoPlayerController controller,
     );
 
 /// Builder for the overlay layer rendered on top of the video.
 typedef OverlayBuilder =
     Widget Function(
       BuildContext context,
-      VideoController? videoController,
-      Player? player,
+      DivineVideoPlayerController? controller,
     );
 
 /// Builder for the error state.
@@ -55,7 +51,7 @@ class PooledVideoPlayer extends StatelessWidget {
   ///
   /// When `false` the native [Texture] is kept in the widget tree so that
   /// preloading continues, but it is hidden via [Opacity] to prevent
-  /// media_kit texture bleeding during PageView scroll transitions.
+  /// texture bleeding during PageView scroll transitions.
   final bool isActive;
 
   /// The index of this video in the feed.
@@ -100,12 +96,11 @@ class PooledVideoPlayer extends StatelessWidget {
     return ValueListenableBuilder<VideoIndexState>(
       valueListenable: feedController.getIndexNotifier(index),
       builder: (context, state, _) {
-        final videoController = state.videoController;
-        final player = state.player;
+        final controller = state.controller;
         final loadState = state.loadState;
-        final overlay = overlayBuilder?.call(context, videoController, player);
+        final overlay = overlayBuilder?.call(context, controller);
 
-        final isReady = videoController != null && loadState == .ready;
+        final isReady = controller != null && loadState == .ready;
 
         return GestureDetector(
           behavior: .translucent,
@@ -130,16 +125,12 @@ class PooledVideoPlayer extends StatelessWidget {
                 loadingBuilder?.call(context) ??
                     _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
 
-                /// Video texture, hidden when off-screen to avoid
-                /// media_kit texture bleeding during page transitions.
-                if (videoController != null && player != null)
-                  Opacity(
-                    opacity: isActive ? 1 : 0,
-                    child: _RevealVideoAfterFirstFrame(
-                      videoController: videoController,
-                      readyForFallback: loadState == LoadState.ready,
-                      child: videoBuilder(context, videoController, player),
-                    ),
+                /// Video texture revealed after the first frame is decoded.
+                if (controller != null)
+                  _RevealVideoAfterFirstFrame(
+                    controller: controller,
+                    readyForFallback: loadState == LoadState.ready,
+                    child: videoBuilder(context, controller),
                   ),
               ],
 
@@ -155,12 +146,12 @@ class PooledVideoPlayer extends StatelessWidget {
 
 class _RevealVideoAfterFirstFrame extends StatefulWidget {
   const _RevealVideoAfterFirstFrame({
-    required this.videoController,
+    required this.controller,
     required this.readyForFallback,
     required this.child,
   });
 
-  final VideoController videoController;
+  final DivineVideoPlayerController controller;
   final bool readyForFallback;
   final Widget child;
 
@@ -176,32 +167,11 @@ class _RevealVideoAfterFirstFrameState
 
   /// Latching flag: set to `true` once the player's position advances past
   /// zero, meaning the decoder has produced at least one frame.
-  ///
-  /// Unlike the previous `playing`-based latch, this is immune to stale
-  /// state during fallback retries: `player.open()` resets the position to
-  /// zero, so the latch only fires once the *new* source has decoded frames.
   bool _hasDecodedFrames = false;
   int _generation = 0;
   Timer? _firstFrameTimeout;
   StreamSubscription<Duration>? _positionSubscription;
-
-  /// Tracks the last known texture ID to detect Android surface recreation.
-  ///
-  /// On Android, when the app backgrounds/foregrounds or the GPU context is
-  /// lost, `SurfaceProducer` destroys and recreates the surface. The new
-  /// surface has uninitialized content (green in YUV color space). Since
-  /// `waitUntilFirstFrameRendered` is a one-shot `Completer`, it stays
-  /// completed after the initial load and never re-fires on surface
-  /// recreation. This means `_hasRenderedFirstFrame` stays `true` and the
-  /// green frame is visible.
-  ///
-  /// By tracking texture ID changes we can detect surface recreation and
-  /// temporarily re-hide the video until a new frame is rendered.
-  int? _lastTextureId;
-
-  /// Whether we're waiting for the first frame after a surface recreation.
-  bool _surfaceRecreating = false;
-  Timer? _surfaceRecoveryTimer;
+  StreamSubscription<bool>? _firstFrameSubscription;
 
   @override
   void initState() {
@@ -209,18 +179,15 @@ class _RevealVideoAfterFirstFrameState
     _subscribeToFirstFrame();
     _subscribeToPosition();
     _syncFallbackTimer();
-    _listenToTextureId();
   }
 
   @override
   void didUpdateWidget(covariant _RevealVideoAfterFirstFrame oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.videoController, widget.videoController)) {
-      _stopListeningToTextureId(oldWidget.videoController);
+    if (!identical(oldWidget.controller, widget.controller)) {
       _resetRevealState();
       _subscribeToFirstFrame();
       _subscribeToPosition();
-      _listenToTextureId();
     }
     if (oldWidget.readyForFallback != widget.readyForFallback) {
       _syncFallbackTimer();
@@ -229,25 +196,22 @@ class _RevealVideoAfterFirstFrameState
 
   void _resetRevealState() {
     _firstFrameTimeout?.cancel();
-    _surfaceRecoveryTimer?.cancel();
     unawaited(_positionSubscription?.cancel());
     _positionSubscription = null;
+    unawaited(_firstFrameSubscription?.cancel());
+    _firstFrameSubscription = null;
     _hasRenderedFirstFrame = false;
     _revealedByTimeout = false;
     _hasDecodedFrames = false;
-    _surfaceRecreating = false;
-    _lastTextureId = null;
   }
 
-  /// Subscribes to the player's position stream to detect when the decoder
-  /// has actually produced frames. `position > Duration.zero` is a reliable,
-  /// non-stale signal because `player.open()` resets position to zero.
   void _subscribeToPosition() {
     unawaited(_positionSubscription?.cancel());
-    _hasDecodedFrames =
-        widget.videoController.player.state.position > Duration.zero;
+    _hasDecodedFrames = widget.controller.state.position > Duration.zero;
     if (_hasDecodedFrames) return;
-    _positionSubscription = widget.videoController.player.stream.position
+    _positionSubscription = widget.controller.stateStream
+        .map((s) => s.position)
+        .distinct()
         .listen((pos) {
           if (!mounted || _hasDecodedFrames) return;
           if (pos > Duration.zero) {
@@ -258,72 +222,31 @@ class _RevealVideoAfterFirstFrameState
         });
   }
 
-  void _listenToTextureId() {
-    _lastTextureId = widget.videoController.id.value;
-    widget.videoController.id.addListener(_onTextureIdChanged);
-  }
-
-  void _stopListeningToTextureId(VideoController controller) {
-    controller.id.removeListener(_onTextureIdChanged);
-    _surfaceRecoveryTimer?.cancel();
-  }
-
-  void _onTextureIdChanged() {
-    final newId = widget.videoController.id.value;
-    if (_lastTextureId != null &&
-        newId != null &&
-        newId != _lastTextureId &&
-        _hasRenderedFirstFrame) {
-      // Surface was recreated — hide texture until a new frame renders.
-      // The `rect` notifier fires once mpv renders to the new surface,
-      // but since dimensions may not change we use a timer as fallback.
-      setState(() => _surfaceRecreating = true);
-      _surfaceRecoveryTimer?.cancel();
-
-      void reveal() {
-        if (!mounted) return;
-        setState(() => _surfaceRecreating = false);
-      }
-
-      // Listen for the next rect update as a "frame rendered" signal.
-      void onRect() {
-        _surfaceRecoveryTimer?.cancel();
-        widget.videoController.rect.removeListener(onRect);
-        reveal();
-      }
-
-      widget.videoController.rect.addListener(onRect);
-
-      // Fallback: reveal after 500ms even if no rect update arrives.
-      _surfaceRecoveryTimer = Timer(const Duration(milliseconds: 500), () {
-        widget.videoController.rect.removeListener(onRect);
-        reveal();
-      });
-    }
-    _lastTextureId = newId;
-  }
-
   void _subscribeToFirstFrame() {
-    final generation = ++_generation;
+    ++_generation;
     _firstFrameTimeout?.cancel();
+    unawaited(_firstFrameSubscription?.cancel());
 
-    unawaited(
-      widget.videoController.waitUntilFirstFrameRendered
-          .then((_) {
-            if (!mounted || generation != _generation) return;
-            _firstFrameTimeout?.cancel();
-            setState(() {
-              _hasRenderedFirstFrame = true;
-            });
-          })
-          .catchError((_) {
-            if (!mounted || generation != _generation) return;
-            _firstFrameTimeout?.cancel();
-            setState(() {
-              _hasRenderedFirstFrame = true;
-            });
-          }),
-    );
+    // Check if already rendered.
+    if (widget.controller.state.isFirstFrameRendered) {
+      _hasRenderedFirstFrame = true;
+      return;
+    }
+
+    // Listen on stateStream so we catch first-frame regardless of
+    // whether the Completer behind `firstFrameRendered` was reset
+    // by a concurrent setSource call.
+    final generation = _generation;
+    _firstFrameSubscription = widget.controller.stateStream
+        .map((s) => s.isFirstFrameRendered)
+        .distinct()
+        .listen((rendered) {
+          if (!mounted || generation != _generation || !rendered) return;
+          unawaited(_firstFrameSubscription?.cancel());
+          _firstFrameSubscription = null;
+          _firstFrameTimeout?.cancel();
+          setState(() => _hasRenderedFirstFrame = true);
+        });
   }
 
   void _syncFallbackTimer() {
@@ -345,30 +268,22 @@ class _RevealVideoAfterFirstFrameState
 
   @override
   void dispose() {
-    _stopListeningToTextureId(widget.videoController);
     _firstFrameTimeout?.cancel();
     unawaited(_positionSubscription?.cancel());
+    unawaited(_firstFrameSubscription?.cancel());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Require `readyForFallback` (LoadState.ready) AND decoded-frames gate
-    // before revealing the video surface.
-    //
-    // `readyForFallback` prevents reveal while the controller is still
-    // loading or retrying fallback sources.
-    //
-    // `_hasDecodedFrames` (position > 0) prevents the black-frame flash
-    // that occurs when the buffer is ready but the decoder has not yet
-    // produced a visible frame. Unlike the previous `playing`-based latch,
-    // this is immune to stale state during fallback retries because
-    // `player.open()` resets position to zero. Once set it stays true so
-    // that pausing the video does not hide the surface.
+    // Always require _hasDecodedFrames (position > 0) as a hard
+    // condition. This proves the *current* media has produced frames.
+    // Without it, the fallback timeout can reveal a recycled player's
+    // stale texture (last frame of the previous video) before the new
+    // content has decoded.
     final shouldReveal =
-        !_surfaceRecreating &&
         widget.readyForFallback &&
-        (_hasDecodedFrames || _revealedByTimeout) &&
+        _hasDecodedFrames &&
         (_hasRenderedFirstFrame || _revealedByTimeout);
 
     return AnimatedOpacity(

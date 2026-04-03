@@ -89,7 +89,7 @@ void main() {
       });
 
       test('accepts custom onVideoReady', () {
-        void callback(int index, Player player) {}
+        void callback(int index, DivineVideoPlayerController player) {}
 
         final config = VideoPoolConfig(onVideoReady: callback);
 
@@ -208,8 +208,8 @@ void main() {
       });
 
       test('configs with different onVideoReady are not equal', () {
-        void callbackA(int index, Player player) {}
-        void callbackB(int index, Player player) {}
+        void callbackA(int index, DivineVideoPlayerController player) {}
+        void callbackB(int index, DivineVideoPlayerController player) {}
 
         final config1 = VideoPoolConfig(onVideoReady: callbackA);
         final config2 = VideoPoolConfig(onVideoReady: callbackB);

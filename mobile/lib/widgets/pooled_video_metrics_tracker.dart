@@ -1,6 +1,6 @@
-// ABOUTME: Tracks video playback metrics for pooled video player (media_kit)
+// ABOUTME: Tracks video playback metrics for pooled video player
 // ABOUTME: Publishes Kind 22236 ephemeral view events for decentralized analytics
-// ABOUTME: Companion to VideoMetricsTracker, adapted for Player stream-based API
+// ABOUTME: Companion to VideoMetricsTracker, adapted for DivineVideoPlayerController stream-based API
 
 import 'dart:async';
 
@@ -13,15 +13,16 @@ import 'package:openvine/services/view_event_publisher.dart'
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-/// Tracks video playback metrics for pooled videos using media_kit Player.
+/// Tracks video playback metrics for pooled videos using
+/// DivineVideoPlayerController.
 ///
 /// This is the pooled video equivalent of [VideoMetricsTracker].
-/// It subscribes to the [Player]'s streams to track actual playback time
-/// and publishes Kind 22236 ephemeral view events on video end.
+/// It subscribes to the controller's state stream to track actual playback
+/// time and publishes Kind 22236 ephemeral view events on video end.
 class PooledVideoMetricsTracker extends ConsumerStatefulWidget {
   const PooledVideoMetricsTracker({
     required this.video,
-    required this.player,
+    required this.controller,
     required this.isActive,
     required this.child,
     this.trafficSource = ViewTrafficSource.unknown,
@@ -30,7 +31,7 @@ class PooledVideoMetricsTracker extends ConsumerStatefulWidget {
   });
 
   final VideoEvent video;
-  final Player player;
+  final DivineVideoPlayerController controller;
   final bool isActive;
   final Widget child;
 
@@ -100,7 +101,7 @@ class _PooledVideoMetricsTrackerState
     }
 
     // Player instance changed (pool reassigned)
-    if (oldWidget.player != widget.player) {
+    if (oldWidget.controller != widget.controller) {
       _cancelSubscriptions();
       if (widget.isActive) {
         _subscribeToPlayer();
@@ -138,10 +139,13 @@ class _PooledVideoMetricsTrackerState
   void _subscribeToPlayer() {
     _cancelSubscriptions();
 
-    final player = widget.player;
+    final controller = widget.controller;
 
     // Track playing state to accumulate actual watch time
-    _playingSub = player.stream.playing.listen((isPlaying) {
+    _playingSub = controller.stateStream
+        .map((s) => s.isPlaying)
+        .distinct()
+        .listen((isPlaying) {
       if (isPlaying && !_isPlaying) {
         // Started playing
         _lastPlayStartTime = DateTime.now();
@@ -154,9 +158,12 @@ class _PooledVideoMetricsTrackerState
     });
 
     // Track position for loop detection
-    _positionSub = player.stream.position.listen((position) {
+    _positionSub = controller.stateStream
+        .map((s) => s.position)
+        .distinct()
+        .listen((position) {
       try {
-        final duration = player.state.duration;
+        final duration = controller.state.duration;
         // Detect loop: position jumps back to near start after being near end
         if (_lastPosition > const Duration(seconds: 1) &&
             position < const Duration(seconds: 1) &&
@@ -177,7 +184,7 @@ class _PooledVideoMetricsTrackerState
 
     // Check if already playing when we subscribe
     try {
-      if (player.state.playing) {
+      if (controller.state.isPlaying) {
         _isPlaying = true;
         _lastPlayStartTime = DateTime.now();
       }
@@ -212,7 +219,7 @@ class _PooledVideoMetricsTrackerState
     try {
       Duration? videoDuration;
       try {
-        videoDuration = widget.player.state.duration;
+        videoDuration = widget.controller.state.duration;
       } catch (_) {
         // Player may be disposed
       }
