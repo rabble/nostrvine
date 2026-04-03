@@ -99,7 +99,6 @@ dependencies:
     path: packages/divine_camera
   divine_video_player:
     path: packages/divine_video_player
-  camera_macos_plus: ^0.0.4
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
   image: ^4.1.7 # Image processing for GIF generation

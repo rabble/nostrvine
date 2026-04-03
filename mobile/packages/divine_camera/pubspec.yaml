@@ -27,3 +27,5 @@ flutter:
         pluginClass: DivineCameraPlugin
       ios:
         pluginClass: DivineCameraPlugin
+      macos:
+        pluginClass: DivineCameraPlugin

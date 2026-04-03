@@ -47,6 +47,14 @@ class MockDivineCameraPlatform
   }
 
   @override
+  Future<List<AudioDevice>> listAudioDevices() async {
+    return const [
+      AudioDevice(id: 'mic-1', name: 'Built-in Microphone'),
+      AudioDevice(id: 'mic-2', name: 'External Microphone'),
+    ];
+  }
+
+  @override
   Future<String?> getPlatformVersion() => Future.value('42');
 
   @override
@@ -192,6 +200,13 @@ void main() {
       test('setVolumeKeysEnabled throws', () {
         expect(
           () => basePlatform.setVolumeKeysEnabled(enabled: true),
+          throwsUnimplementedError,
+        );
+      });
+
+      test('listAudioDevices throws', () {
+        expect(
+          () => basePlatform.listAudioDevices(),
           throwsUnimplementedError,
         );
       });
@@ -503,6 +518,18 @@ void main() {
       test('canRecord returns false when not initialized', () async {
         await DivineCamera.instance.dispose();
         expect(DivineCamera.instance.canRecord, isFalse);
+      });
+    });
+
+    group('listAudioDevices', () {
+      test('returns list of audio devices', () async {
+        final devices = await DivineCamera.instance.listAudioDevices();
+
+        expect(devices, hasLength(2));
+        expect(devices.first.id, equals('mic-1'));
+        expect(devices.first.name, equals('Built-in Microphone'));
+        expect(devices.last.id, equals('mic-2'));
+        expect(devices.last.name, equals('External Microphone'));
       });
     });
 
