@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -114,6 +115,29 @@ void main() {
         );
         expect(find.text(title), findsOneWidget);
       }
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('navigates to feature flags from the edge tile', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('Try Edgey Features'),
+        100,
+        scrollable: scrollable,
+      );
+      expect(find.text('Try Edgey Features'), findsOneWidget);
+
+      await tester.tap(find.text('Try Edgey Features'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FeatureFlagScreen), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
