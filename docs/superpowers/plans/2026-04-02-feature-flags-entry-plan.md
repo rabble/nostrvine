@@ -10,12 +10,13 @@
 
 ---
 
-## Chunk 1: Settings tile entry
+## Chunk 1: Settings entry relocation
 
 **Files:**
-- Modify: `mobile/lib/screens/settings/settings_screen.dart` (new tile insertion, layout adjustments near Nostr Settings/Legal)
-- Modify: `mobile/lib/features/feature_flags/screens/feature_flag_screen.dart` and README already exist; no change unless doc update required
+- Modify: `mobile/lib/screens/settings/settings_screen.dart` (remove the standalone tile so the main list stays uncluttered)
+- Modify: `mobile/lib/screens/settings/nostr_settings_screen.dart` (add a tile that pushes `FeatureFlagScreen` inside the Nostr section)
 
+&nbsp;
 - [ ] **Step 1: Add the new `ListTile`**
 
 ```dart
@@ -30,29 +31,27 @@ _SettingsTile(
 ),
 ```
 
-Ensure the tile sits between `Nostr Settings` and `Legal` and uses the same style as other `_SettingsTile`s.
+Ensure the new tile lives inside `Nostr Settings`, after the developer options row, and uses the same style as other `_SettingsTile`s.
 
 - [ ] **Step 2: Run the app to sanity-check the layout**
 
-Command: `cd mobile && flutter test --no-pub --update-goldens` *(no actual tests yet; run smoke `flutter test --no-pub test/screens/settings/settings_screen_test.dart` after step 2 instead, expecting the Settings tile count change to be reflected when we add the test).*
+Command: `cd mobile && flutter test --no-pub test/widgets/settings_screen_test.dart test/widgets/nostr_settings_screen_test.dart`
 
-Expected: Layout builds, new tile visible when running the screen test.
+Expected: Layout builds, the Settings screen stops drawing the tile, and the Nostr screen shows it.
 
 ## Chunk 2: Widget coverage
 
 **Files:**
-- Modify: `mobile/test/screens/settings/settings_screen_test.dart` (add assertions for new tile and navigation)
-- Create: `mobile/test/screens/feature_flag_screen_test.dart` already there; ensure no updates needed beyond verifying the tile triggers navigation.
+- Modify: `mobile/test/widgets/settings_screen_test.dart` (remove assertions that looked for the tile and keep coverage focused on non-Nostr tiles)
+- Create: `mobile/test/widgets/nostr_settings_screen_test.dart` (new test that asserts the Experimental Features row is present and navigates to `FeatureFlagScreen`)
 
-- [ ] **Step 1: Update the Settings screen test**
+- [ ] **Step 1: Retarget the Settings screen test**
 
-Add assertions to confirm the “Try Edgey Features” tile exists and tapping it pushes `FeatureFlagScreen`. If the test harness uses `TestNavigatorObserver`, verify it recorded the push.
+Ensure the Settings screen test no longer looks for Experimental Features, keeping the existing tile coverage focused on the other rows.
 
-- [ ] **Step 2: Run the updated test**
+- [ ] **Step 2: Create a Nostr settings widget test**
 
-Command: `cd mobile && flutter test --no-pub test/screens/settings/settings_screen_test.dart`
-
-Expected: PASS.
+Add `mobile/test/widgets/nostr_settings_screen_test.dart` so it asserts the Experimental Features tile appears inside Nostr Settings and pushes `FeatureFlagScreen` when tapped.
 
 ### Task 3: Manual verification
 
