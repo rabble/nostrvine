@@ -135,13 +135,10 @@ class PooledVideoPlayer extends StatelessWidget {
 
                 /// Video texture revealed after the first frame is decoded.
                 if (controller != null)
-                  Opacity(
-                    opacity: isActive ? 1 : 0,
-                    child: _RevealVideoAfterFirstFrame(
-                      controller: controller,
-                      readyForFallback: loadState == LoadState.ready,
-                      child: videoBuilder(context, controller),
-                    ),
+                  _RevealVideoAfterFirstFrame(
+                    controller: controller,
+                    readyForFallback: loadState == LoadState.ready,
+                    child: videoBuilder(context, controller),
                   ),
               ],
 
