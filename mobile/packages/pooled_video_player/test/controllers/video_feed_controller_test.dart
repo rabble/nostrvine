@@ -1256,46 +1256,48 @@ void main() {
     // -----------------------------------------------------------------------
 
     group('error stream retry with next source', () {
-      test('retries with next source when error occurs during playback',
-          () async {
-        final hash = 'c' * 64;
-        final divineUrl = 'https://media.divine.video/$hash';
-        final videos = [VideoItem(id: 'v', url: divineUrl)];
+      test(
+        'retries with next source when error occurs during playback',
+        () async {
+          final hash = 'c' * 64;
+          final divineUrl = 'https://media.divine.video/$hash';
+          final videos = [VideoItem(id: 'v', url: divineUrl)];
 
-        final setup = createMockControllerSetup();
-        setups[divineUrl] = setup;
+          final setup = createMockControllerSetup();
+          setups[divineUrl] = setup;
 
-        final controller = VideoFeedController(
-          videos: videos,
-          pool: pool,
-        );
-        addTearDown(controller.dispose);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+          );
+          addTearDown(controller.dispose);
 
-        // Let initial load complete.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          // Let initial load complete.
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(controller.getLoadState(0), equals(LoadState.ready));
+          expect(controller.getLoadState(0), equals(LoadState.ready));
 
-        // Simulate a playback error on the error stream.
-        setup.emitState(
-          const DivineVideoPlayerState(
-            status: PlaybackStatus.error,
-            errorMessage: 'Network error',
-          ),
-        );
+          // Simulate a playback error on the error stream.
+          setup.emitState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.error,
+              errorMessage: 'Network error',
+            ),
+          );
 
-        // Let the retry logic run.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          // Let the retry logic run.
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        // The controller should have attempted setSource again for fallback.
-        verify(
-          () => setup.controller.setSource(any()),
-        ).called(greaterThan(1));
-      });
+          // The controller should have attempted setSource again for fallback.
+          verify(
+            () => setup.controller.setSource(any()),
+          ).called(greaterThan(1));
+        },
+      );
 
       test('marks error when no more sources available', () async {
         final videos = createTestVideos(count: 1);
@@ -1338,8 +1340,7 @@ void main() {
     group('source resolution branches', () {
       test('resolves HLS divine URL to [hls, raw, originalUrl]', () async {
         final hash = 'd' * 64;
-        final hlsUrl =
-            'https://media.divine.video/$hash/hls/master.m3u8';
+        final hlsUrl = 'https://media.divine.video/$hash/hls/master.m3u8';
         const originalUrl = 'https://other-blossom.com/original.mp4';
         final videos = [
           VideoItem(id: 'v', url: hlsUrl, originalUrl: originalUrl),
@@ -1379,24 +1380,25 @@ void main() {
         expect(controller.getLoadState(0), equals(LoadState.ready));
       });
 
-      test('resolves divine progressive derivative to [source, raw, hls]',
-          () async {
-        final hash = 'f' * 64;
-        final progressiveUrl =
-            'https://media.divine.video/$hash/720p.mp4';
-        final videos = [VideoItem(id: 'v', url: progressiveUrl)];
+      test(
+        'resolves divine progressive derivative to [source, raw, hls]',
+        () async {
+          final hash = 'f' * 64;
+          final progressiveUrl = 'https://media.divine.video/$hash/720p.mp4';
+          final videos = [VideoItem(id: 'v', url: progressiveUrl)];
 
-        final controller = VideoFeedController(
-          videos: videos,
-          pool: pool,
-        );
-        addTearDown(controller.dispose);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+          );
+          addTearDown(controller.dispose);
 
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(controller.getLoadState(0), equals(LoadState.ready));
-      });
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+        },
+      );
 
       test('resolves non-divine URL to [source, originalUrl]', () async {
         const url = 'https://example.com/video.mp4';
@@ -1571,29 +1573,31 @@ void main() {
     // -----------------------------------------------------------------------
 
     group('cache preloading', () {
-      test('calls DivineVideoPlayerController.preload for ahead videos',
-          () async {
-        final videos = createTestVideos(count: 5);
+      test(
+        'calls DivineVideoPlayerController.preload for ahead videos',
+        () async {
+          final videos = createTestVideos(count: 5);
 
-        final controller = VideoFeedController(
-          videos: videos,
-          pool: pool,
-          preloadAhead: 1,
-          preloadBehind: 0,
-          cacheAhead: 2,
-        );
-        addTearDown(controller.dispose);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+            cacheAhead: 2,
+          );
+          addTearDown(controller.dispose);
 
-        // Let all loads and cache warms execute.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          // Let all loads and cache warms execute.
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        // Cache preloading is best-effort; test succeeds if no exception.
-        expect(controller.videoCount, equals(5));
-      });
+          // Cache preloading is best-effort; test succeeds if no exception.
+          expect(controller.videoCount, equals(5));
+        },
+      );
     });
 
     // -----------------------------------------------------------------------
@@ -1601,50 +1605,52 @@ void main() {
     // -----------------------------------------------------------------------
 
     group('recycled player handling', () {
-      test('defers notifyIndex for recycled players until after open',
-          () async {
-        final videos = createTestVideos();
+      test(
+        'defers notifyIndex for recycled players until after open',
+        () async {
+          final videos = createTestVideos();
 
-        // Small pool forces recycling.
-        await pool.dispose();
+          // Small pool forces recycling.
+          await pool.dispose();
 
-        pool = TestablePlayerPool(
-          mockPlayerFactory: playerFactory,
-          maxPlayers: 2,
-        );
+          pool = TestablePlayerPool(
+            mockPlayerFactory: playerFactory,
+            maxPlayers: 2,
+          );
 
-        final controller = VideoFeedController(
-          videos: videos,
-          pool: pool,
-          preloadAhead: 0,
-          preloadBehind: 0,
-          cacheAhead: 0,
-        );
-        addTearDown(controller.dispose);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadAhead: 0,
+            preloadBehind: 0,
+            cacheAhead: 0,
+          );
+          addTearDown(controller.dispose);
 
-        // Load first video.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          // Load first video.
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(controller.isVideoReady(0), isTrue);
+          expect(controller.isVideoReady(0), isTrue);
 
-        // Load second video to fill pool.
-        controller.onPageChanged(1);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          // Load second video to fill pool.
+          controller.onPageChanged(1);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(controller.isVideoReady(1), isTrue);
+          expect(controller.isVideoReady(1), isTrue);
 
-        // Load third video — forces recycle of video 0.
-        controller.onPageChanged(2);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          // Load third video — forces recycle of video 0.
+          controller.onPageChanged(2);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        // The recycled player should eventually be ready at index 2.
-        expect(controller.isVideoReady(2), isTrue);
-      });
+          // The recycled player should eventually be ready at index 2.
+          expect(controller.isVideoReady(2), isTrue);
+        },
+      );
     });
 
     // -----------------------------------------------------------------------
@@ -1683,7 +1689,6 @@ void main() {
           createTestVideo(id: 'new', url: 'https://example.com/new.mp4'),
         ]);
       });
-    });
     });
   });
 }

@@ -146,8 +146,21 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
 
   void _onScrollChanged() {
     final page = _pageController.page;
-    if (page != null) {
-      widget.onScrollOffsetChanged?.call(page);
+    if (page == null) return;
+    widget.onScrollOffsetChanged?.call(page);
+
+    // Update active index only when the page is fully visible
+    // (fractional part ≈ 0).
+    final rounded = page.round();
+    if ((page - rounded).abs() < 0.001 &&
+        rounded != _currentIndex &&
+        rounded >= 0 &&
+        rounded < _controller.videoCount) {
+      setState(() => _currentIndex = rounded);
+      widget.onActiveVideoChanged?.call(
+        _controller.videos[rounded],
+        rounded,
+      );
     }
   }
 
@@ -186,12 +199,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   }
 
   void _onPageChanged(int index) {
-    setState(() => _currentIndex = index);
     _controller.onPageChanged(index);
-
-    if (index < _controller.videoCount) {
-      widget.onActiveVideoChanged?.call(_controller.videos[index], index);
-    }
 
     final distanceFromEnd = _controller.videoCount - index - 1;
     if (distanceFromEnd <= widget.nearEndThreshold) {
@@ -247,33 +255,70 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
     return VideoPoolProvider(
       pool: _effectivePool,
       feedController: _controller,
-      child: PageView.builder(
-        // Builds ±1 off-screen pages so thumbnails in the loading
-        // placeholder are precached before the user swipes.
-        allowImplicitScrolling: true,
-        controller: _pageController,
-        scrollDirection: widget.scrollDirection,
-        onPageChanged: _onPageChanged,
-        itemCount: _videoCount,
-        itemBuilder: (context, index) {
-          final videos = _controller.videos;
-          if (index < 0 || index >= videos.length) {
-            debugPrint(
-              'PooledVideoFeed: INDEX OUT OF BOUNDS! '
-              'index=$index, videos.length=${videos.length}, '
-              '_videoCount=$_videoCount, '
-              'controller.videoCount=${_controller.videoCount}',
-            );
-            return const ColoredBox(color: Color(0xFF000000));
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification.depth == 0 &&
+              notification is ScrollUpdateNotification) {
+            final metrics = notification.metrics as PageMetrics;
+            final page = metrics.page!;
+            final nearest = page.round();
+            // Only trigger when the page is ≥99% visible.
+            if ((page - nearest).abs() < 0.01 && nearest != _currentIndex) {
+              _onPageChanged(nearest);
+            }
           }
-          return widget.itemBuilder(
-            context,
-            videos[index],
-            index,
-            isActive: index == _currentIndex,
-          );
+          return false;
         },
+        child: PageView.builder(
+          // Builds ±1 off-screen pages so thumbnails in the loading
+          // placeholder are precached before the user swipes.
+          allowImplicitScrolling: true,
+          physics: const _SnapScrollPhysics(),
+          controller: _pageController,
+          scrollDirection: widget.scrollDirection,
+          itemCount: _videoCount,
+          itemBuilder: (context, index) {
+            final videos = _controller.videos;
+            if (index < 0 || index >= videos.length) {
+              debugPrint(
+                'PooledVideoFeed: INDEX OUT OF BOUNDS! '
+                'index=$index, videos.length=${videos.length}, '
+                '_videoCount=$_videoCount, '
+                'controller.videoCount=${_controller.videoCount}',
+              );
+              return const ColoredBox(color: Color(0xFF000000));
+            }
+            return widget.itemBuilder(
+              context,
+              videos[index],
+              index,
+              isActive: index == _currentIndex,
+            );
+          },
+        ),
       ),
     );
   }
+}
+
+/// Page-snap physics with no edge bounce and a fast, tight spring.
+class _SnapScrollPhysics extends PageScrollPhysics {
+  const _SnapScrollPhysics() : super(parent: const ClampingScrollPhysics());
+
+  @override
+  _SnapScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return const _SnapScrollPhysics();
+  }
+
+  /// Minimal drag distance to trigger a fling (default is ~18px).
+  @override
+  double get minFlingDistance => 5;
+
+  /// Critically damped spring — no bounce, snappy settle.
+  @override
+  SpringDescription get spring => const SpringDescription(
+    mass: 0.3,
+    stiffness: 150,
+    damping: 13.5,
+  );
 }

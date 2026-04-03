@@ -132,20 +132,21 @@ MockControllerSetup createMockControllerSetup({
   when(() => mockController.isInitialized).thenReturn(true);
 
   // Configure common methods.
-  // setSource must emit a state on stateStream so that _openWithFallbacks
-  // (which awaits the first meaningful status) can proceed.
-  // The emission is deferred via Timer.run so that it fires AFTER the
-  // caller subscribes to stateStream.first (broadcast streams don't
-  // buffer events emitted before subscription).
+  // setSource updates the synchronous state immediately and also emits
+  // on the stateStream via Timer.run. This mirrors the real native
+  // player which sends a state update via the EventChannel BEFORE
+  // completing the MethodChannel result — platform-channel ordering
+  // guarantees that controller.state is already updated by the time
+  // setSource() returns in Dart.
   when(() => mockController.setSource(any())).thenAnswer((_) async {
+    final next = DivineVideoPlayerState(
+      status: PlaybackStatus.buffering,
+      position: position,
+      duration: duration,
+    );
+    when(() => mockController.state).thenReturn(next);
     Timer.run(() {
       if (stateController.isClosed) return;
-      final next = DivineVideoPlayerState(
-        status: PlaybackStatus.buffering,
-        position: position,
-        duration: duration,
-      );
-      when(() => mockController.state).thenReturn(next);
       stateController.add(next);
     });
   });
