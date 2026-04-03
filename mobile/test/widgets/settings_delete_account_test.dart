@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAccountDeletionService extends Mock
     implements AccountDeletionService {}
@@ -19,8 +21,11 @@ void main() {
   group('SettingsScreen - Delete Account', () {
     late _MockAccountDeletionService mockDeletionService;
     late _MockAuthService mockAuthService;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockDeletionService = _MockAccountDeletionService();
       mockAuthService = _MockAuthService();
     });
@@ -63,6 +68,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             accountDeletionServiceProvider.overrideWithValue(
               mockDeletionService,
             ),
