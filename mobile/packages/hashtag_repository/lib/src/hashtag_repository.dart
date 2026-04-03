@@ -1,5 +1,7 @@
-// ABOUTME: Repository for searching hashtags via the Funnelcake API.
-// ABOUTME: Delegates to FunnelcakeApiClient for server-side hashtag search.
+// ABOUTME: Repository for searching hashtags via Funnelcake API with local
+// ABOUTME: fallback. Owns source-selection and fallback strategy.
+
+import 'dart:developer' as developer;
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/src/hashtag_extractor.dart';
@@ -7,6 +9,9 @@ import 'package:models/models.dart';
 
 /// Callback for searching locally cached hashtags.
 typedef LocalHashtagSearch = List<String> Function(String query, int limit);
+
+/// Upper bound for counting local hashtag matches.
+const maxLocalHashtagCount = 1000;
 
 /// Repository for searching hashtags.
 ///
@@ -36,24 +41,42 @@ class HashtagRepository {
   /// When [query] is null or empty, returns popular hashtags without filtering.
   /// [limit] defaults to 20.
   ///
-  /// Throws:
-  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
-  /// - [FunnelcakeApiException] if the request fails with a non-success status.
-  /// - [FunnelcakeTimeoutException] if the request times out.
-  /// - [FunnelcakeException] for other errors.
-  Future<List<String>> searchHashtags({
-    String? query,
-    int limit = 20,
-  }) => _funnelcakeApiClient.searchHashtags(
-    query: query,
-    limit: limit,
-  );
+  /// The search strategy is:
+  /// 1. Try the remote API via [FunnelcakeApiClient].
+  /// 2. Filter remote results to those containing [query].
+  /// 3. If no matching remote results, fall back to local hashtag sources.
+  /// 4. On any remote error, fall back to local hashtag sources.
+  ///
+  /// This method never throws. If all sources fail it returns an empty list.
+  Future<List<String>> searchHashtags({String? query, int limit = 20}) async {
+    try {
+      final remoteResults = await _funnelcakeApiClient.searchHashtags(
+        query: query,
+        limit: limit,
+      );
+
+      if (query == null || query.isEmpty) return remoteResults;
+
+      final lowerQuery = query.toLowerCase();
+      final filtered = remoteResults
+          .where((tag) => tag.toLowerCase().contains(lowerQuery))
+          .toList();
+
+      if (filtered.isNotEmpty) return filtered;
+    } on Exception catch (e, stackTrace) {
+      developer.log(
+        'Remote hashtag search failed, falling back to local',
+        name: 'HashtagRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return searchHashtagsLocally(query: query ?? '', limit: limit);
+  }
 
   /// Searches locally cached hashtags without performing a network request.
-  List<String> searchHashtagsLocally({
-    required String query,
-    int limit = 20,
-  }) {
+  List<String> searchHashtagsLocally({required String query, int limit = 20}) {
     final trimmed = query.trim();
     if (trimmed.isEmpty || _localSearch == null) return const [];
     return _localSearch(trimmed, limit);
@@ -61,7 +84,10 @@ class HashtagRepository {
 
   /// Counts locally cached hashtag matches.
   int countHashtagsLocally({required String query}) {
-    return searchHashtagsLocally(query: query, limit: 1000).length;
+    return searchHashtagsLocally(
+      query: query,
+      limit: maxLocalHashtagCount,
+    ).length;
   }
 
   /// Fetches trending hashtags.
@@ -74,9 +100,8 @@ class HashtagRepository {
   /// - [FunnelcakeApiException] on server error.
   /// - [FunnelcakeTimeoutException] on timeout.
   /// - [FunnelcakeException] for other errors.
-  Future<List<TrendingHashtag>> fetchTrendingHashtags({
-    int limit = 20,
-  }) => _funnelcakeApiClient.fetchTrendingHashtags(limit: limit);
+  Future<List<TrendingHashtag>> fetchTrendingHashtags({int limit = 20}) =>
+      _funnelcakeApiClient.fetchTrendingHashtags(limit: limit);
 
   /// Returns trending hashtags, using an in-memory cache to avoid redundant
   /// network calls.

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Playback status of the video player.
 enum PlaybackStatus {
   /// Player is created but has no media loaded.
@@ -45,6 +47,7 @@ enum PlaybackStatus {
 }
 
 /// Immutable snapshot of the video player's current state.
+@immutable
 class DivineVideoPlayerState {
   /// Creates a player state.
   const DivineVideoPlayerState({
@@ -60,7 +63,6 @@ class DivineVideoPlayerState {
     this.isFirstFrameRendered = false,
     this.videoWidth = 0,
     this.videoHeight = 0,
-    this.errorMessage,
   });
 
   /// Current playback status.
@@ -112,12 +114,6 @@ class DivineVideoPlayerState {
   double get aspectRatio =>
       videoWidth > 0 && videoHeight > 0 ? videoWidth / videoHeight : 0;
 
-  /// Error description when [status] is [PlaybackStatus.error].
-  ///
-  /// Contains the native player's error message, for example when a
-  /// network URL returns invalid data or the file cannot be read.
-  final String? errorMessage;
-
   /// Whether the player is currently playing.
   bool get isPlaying => status.isPlaying;
 
@@ -135,7 +131,6 @@ class DivineVideoPlayerState {
     bool? isFirstFrameRendered,
     int? videoWidth,
     int? videoHeight,
-    String? errorMessage,
   }) {
     return DivineVideoPlayerState(
       status: status ?? this.status,
@@ -150,7 +145,6 @@ class DivineVideoPlayerState {
       isFirstFrameRendered: isFirstFrameRendered ?? this.isFirstFrameRendered,
       videoWidth: videoWidth ?? this.videoWidth,
       videoHeight: videoHeight ?? this.videoHeight,
-      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
@@ -172,7 +166,6 @@ class DivineVideoPlayerState {
       isFirstFrameRendered: (map['isFirstFrameRendered'] as bool?) ?? false,
       videoWidth: (map['videoWidth'] as int?) ?? 0,
       videoHeight: (map['videoHeight'] as int?) ?? 0,
-      errorMessage: map['errorMessage'] as String?,
     );
   }
 
@@ -190,11 +183,43 @@ class DivineVideoPlayerState {
   }
 
   @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DivineVideoPlayerState &&
+          status == other.status &&
+          position == other.position &&
+          duration == other.duration &&
+          bufferedPosition == other.bufferedPosition &&
+          currentClipIndex == other.currentClipIndex &&
+          clipCount == other.clipCount &&
+          isLooping == other.isLooping &&
+          volume == other.volume &&
+          playbackSpeed == other.playbackSpeed &&
+          isFirstFrameRendered == other.isFirstFrameRendered &&
+          videoWidth == other.videoWidth &&
+          videoHeight == other.videoHeight;
+
+  @override
+  int get hashCode => Object.hash(
+    status,
+    position,
+    duration,
+    bufferedPosition,
+    currentClipIndex,
+    clipCount,
+    isLooping,
+    volume,
+    playbackSpeed,
+    isFirstFrameRendered,
+    videoWidth,
+    videoHeight,
+  );
+
+  @override
   String toString() =>
       'DivineVideoPlayerState(status: $status, position: $position, '
       'duration: $duration, buffered: $bufferedPosition, '
       'clipIndex: $currentClipIndex/$clipCount, '
       'size: ${videoWidth}x$videoHeight, '
-      'firstFrame: $isFirstFrameRendered'
-      '${errorMessage != null ? ', error: $errorMessage' : ''})';
+      'firstFrame: $isFirstFrameRendered)';
 }

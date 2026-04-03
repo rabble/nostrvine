@@ -183,7 +183,14 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     // Guard: stop polling if user completed OAuth sign-in on this auth service.
     // Use isRegistered (not isAuthenticated) because anonymous users are
     // authenticated but still need polling to complete the secure-account flow.
-    if (_authService.isRegistered) {
+    //
+    // isAuthenticated is also required: isRegistered checks _authSource which
+    // persists across sign-outs and remains divineOAuth even when authState is
+    // unauthenticated. Without this gate, a new user registering on a device
+    // that previously had a signed-out OAuth session would have polling killed
+    // on the first tick — leaving them stuck on "Waiting for verification"
+    // even after clicking the email link.
+    if (_authService.isAuthenticated && _authService.isRegistered) {
       Log.info(
         'Auth already registered, stopping orphaned poll '
         '(cubit=$hashCode)',

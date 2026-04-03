@@ -6,12 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/apps_permissions_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/go_router.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -43,8 +48,9 @@ void main() {
 
     Widget buildSubject({
       AuthState authState = AuthState.authenticated,
+      MockGoRouter? goRouter,
     }) {
-      return ProviderScope(
+      final app = ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           authServiceProvider.overrideWithValue(mockAuthService),
@@ -55,6 +61,12 @@ void main() {
         ],
         child: const MaterialApp(home: SettingsScreen()),
       );
+
+      if (goRouter == null) {
+        return app;
+      }
+
+      return MockGoRouterProvider(goRouter: goRouter, child: app);
     }
 
     testWidgets('renders app bar with title', (tester) async {
@@ -106,6 +118,8 @@ void main() {
         'Content Preferences',
         'Moderation Controls',
         'Nostr Settings',
+        'Integrated Apps',
+        'Integration Permissions',
       ]) {
         await tester.scrollUntilVisible(
           find.text(title),
@@ -114,6 +128,83 @@ void main() {
         );
         expect(find.text(title), findsOneWidget);
       }
+
+      expect(
+        find.text('Approved third-party apps that run inside Divine'),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('tapping Integration Permissions opens the permissions route', (
+      tester,
+    ) async {
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('Integration Permissions'),
+        300,
+        scrollable: scrollable,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Integration Permissions'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockGoRouter.push(AppsPermissionsScreen.path)).called(1);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('tapping Integrated Apps opens the directory route', (
+      tester,
+    ) async {
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.go(any())).thenReturn(null);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          currentAuthStateProvider.overrideWith(
+            (ref) => AuthState.authenticated,
+          ),
+          userProfileReactiveProvider.overrideWith(
+            (ref, pubkey) => Stream.value(null),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: const MaterialApp(home: SettingsScreen()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('Integrated Apps'),
+        100,
+        scrollable: scrollable,
+      );
+      await tester.tap(find.text('Integrated Apps'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockGoRouter.go(ExploreScreen.path)).called(1);
+      expect(container.read(forceExploreTabNameProvider), 'apps');
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -144,12 +235,41 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Session Expired'), findsOneWidget);
-      // Should NOT show Secure Your Account when session expired
-      expect(find.text('Secure Your Account'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+
+    testWidgets(
+      'shows secure account tile instead of session expired for anonymous '
+      'users',
+      (tester) async {
+        when(() => mockAuthService.isAnonymous).thenReturn(true);
+        when(
+          () => mockAuthService.hasExpiredOAuthSession,
+        ).thenReturn(true);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              currentAuthStateProvider.overrideWithValue(
+                AuthState.authenticated,
+              ),
+            ],
+            child: const MaterialApp(home: SettingsScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Secure Your Account'), findsOneWidget);
+        expect(find.text('Session Expired'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
 
     testWidgets('hides Secure Your Account for non-anonymous users', (
       tester,

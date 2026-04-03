@@ -16,9 +16,11 @@ import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -105,6 +107,73 @@ import 'package:sound_service/sound_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';
+
+final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
+  ref,
+) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final client = Client();
+  ref.onDispose(client.close);
+  return NostrAppDirectoryService(
+    sharedPreferences: prefs,
+    client: client,
+    baseUrl: AppConfig.appsDirectoryBaseUrl,
+  );
+});
+
+final nostrAppGrantStoreProvider = Provider<NostrAppGrantStore>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return NostrAppGrantStore(sharedPreferences: prefs);
+});
+
+final nostrAppBridgePolicyProvider = Provider<NostrAppBridgePolicy>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final grantStore = ref.watch(nostrAppGrantStoreProvider);
+  return NostrAppBridgePolicy(
+    grantStore: grantStore,
+    currentUserPubkey: authService.currentPublicKeyHex,
+  );
+});
+
+final nostrAppAuditServiceProvider = Provider<NostrAppAuditService>((ref) {
+  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
+  final client = Client();
+  ref.onDispose(client.close);
+  return NostrAppAuditService(
+    workerBaseUri: Uri.parse(AppConfig.appsDirectoryBaseUrl),
+    authTokenProvider:
+        ({
+          required url,
+          required method,
+          required payload,
+        }) async {
+          final token = await nip98AuthService.createAuthToken(
+            url: url,
+            method: HttpMethod.post,
+            payload: payload,
+          );
+          if (token == null) return null;
+          return AuditAuthToken(
+            authorizationHeader: token.authorizationHeader,
+          );
+        },
+    httpClient: client,
+  );
+});
+
+final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final policy = ref.watch(nostrAppBridgePolicyProvider);
+  final auditService = ref.watch(nostrAppAuditServiceProvider);
+  return NostrAppBridgeService(
+    authProvider: _AuthServiceBridgeAdapter(authService),
+    policy: policy,
+    signerFactory: () =>
+        authService.rpcSigner ??
+        AuthServiceSigner(authService.currentKeyContainer),
+    auditService: auditService,
+  );
+});
 
 // =============================================================================
 // FOUNDATIONAL SERVICES (No dependencies)
@@ -555,6 +624,8 @@ SecureKeyStorage secureKeyStorage(Ref ref) {
 // =============================================================================
 
 /// OAuth configuration — uses local keycast when running in local environment
+const _productionLoginOrigin = 'https://login.divine.video';
+
 @Riverpod(keepAlive: true)
 OAuthConfig oauthConfig(Ref ref) {
   final env = ref.watch(currentEnvironmentProvider);
@@ -566,7 +637,7 @@ OAuthConfig oauthConfig(Ref ref) {
     );
   }
   return const OAuthConfig(
-    serverUrl: 'https://login.divine.video',
+    serverUrl: _productionLoginOrigin,
     clientId: 'divine-mobile',
     redirectUri: 'https://divine.video/app/callback',
   );
@@ -1299,6 +1370,11 @@ CuratedListRepository curatedListRepository(Ref ref) {
 HashtagRepository hashtagRepository(Ref ref) {
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
   final hashtagService = ref.watch(hashtagServiceProvider);
+
+  // Ensure static hashtags are loaded before any local search callback runs.
+  // loadTopHashtags is idempotent and no-ops if already loaded.
+  TopHashtagsService.instance.loadTopHashtags();
+
   return HashtagRepository(
     funnelcakeApiClient: funnelcakeClient,
     localSearch: (query, limit) {
@@ -1360,6 +1436,7 @@ ProfileRepository? profileRepository(Ref ref) {
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
+    profileStatsDao: ref.watch(databaseProvider).profileStatsDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
     indexerRelays: env.indexerRelays,
@@ -2153,4 +2230,39 @@ RepostsRepository repostsRepository(Ref ref) {
   ref.onDispose(repository.dispose);
 
   return repository;
+}
+
+/// Adapts the app-level [AuthService] to the package-level
+/// [BridgeAuthProvider] interface.
+class _AuthServiceBridgeAdapter implements BridgeAuthProvider {
+  const _AuthServiceBridgeAdapter(this._authService);
+
+  final AuthService _authService;
+
+  @override
+  String? get currentPublicKeyHex => _authService.currentPublicKeyHex;
+
+  @override
+  List<BridgeRelay> get userRelays => _authService.userRelays
+      .map(
+        (r) => BridgeRelay(url: r.url, read: r.read, write: r.write),
+      )
+      .toList();
+
+  @override
+  Future<BridgeSignedEvent?> createAndSignEvent({
+    required int kind,
+    required String content,
+    required List<List<String>> tags,
+    int? createdAt,
+  }) async {
+    final event = await _authService.createAndSignEvent(
+      kind: kind,
+      content: content,
+      tags: tags,
+      createdAt: createdAt,
+    );
+    if (event == null) return null;
+    return BridgeSignedEvent(json: event.toJson());
+  }
 }

@@ -12,11 +12,13 @@ import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
+import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
@@ -100,6 +102,11 @@ class ProfileHeaderWidget extends ConsumerWidget {
     ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
     final hasExpiredSession = authService.hasExpiredOAuthSession;
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final isDivineLoginBannerHidden = isDivineLoginBannerDismissed(
+      prefs,
+      userIdHex,
+    );
 
     // Use profile color as header background (like original Vine)
     // Color covers avatar/stats, then fades to dark for name/bio readability
@@ -137,14 +144,20 @@ class ProfileHeaderWidget extends ConsumerWidget {
                     onSetupProfile != null)
                   _SetupProfileBanner(onSetup: onSetupProfile!),
 
-                // Session expired banner for divineOAuth users (only on own
-                // profile) — prompts re-login instead of "Secure Your Account"
-                if (isOwnProfile && hasExpiredSession)
-                  const _SessionExpiredBanner()
                 // Secure account banner for anonymous users (only on own
                 // profile)
-                else if (isOwnProfile && isAnonymous)
+                if (isOwnProfile && isAnonymous)
                   const _IdentityNotRecoverableBanner(),
+                // Session expired banner for divineOAuth users (only on own
+                // profile) — anonymous users should still see the secure
+                // account prompt even if a stale expired-session flag leaked.
+                if (isOwnProfile &&
+                    !isAnonymous &&
+                    hasExpiredSession &&
+                    !isDivineLoginBannerHidden)
+                  _SessionExpiredBanner(
+                    userIdHex: userIdHex,
+                  ),
 
                 // Profile picture and stats row
                 Row(
@@ -439,7 +452,9 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
 /// Prompts the user to sign in again instead of showing "Secure Your Account".
 /// Attempts a silent token refresh first; navigates to login only if that fails.
 class _SessionExpiredBanner extends ConsumerStatefulWidget {
-  const _SessionExpiredBanner();
+  const _SessionExpiredBanner({required this.userIdHex});
+
+  final String userIdHex;
 
   @override
   ConsumerState<_SessionExpiredBanner> createState() =>
@@ -448,6 +463,13 @@ class _SessionExpiredBanner extends ConsumerStatefulWidget {
 
 class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
   bool _isRefreshing = false;
+  bool _isDismissed = false;
+
+  Future<void> _dismissBanner() async {
+    setState(() => _isDismissed = true);
+    final prefs = ref.read(sharedPreferencesProvider);
+    await dismissDivineLoginBanner(prefs, widget.userIdHex);
+  }
 
   Future<void> _onSignIn() async {
     setState(() => _isRefreshing = true);
@@ -465,6 +487,8 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isDismissed) return const SizedBox.shrink();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -517,6 +541,11 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
                       color: VineTheme.accentOrange,
                     ),
                   ),
+          ),
+          IconButton(
+            onPressed: _dismissBanner,
+            icon: const Icon(Icons.close, color: VineTheme.whiteText, size: 20),
+            tooltip: 'Dismiss',
           ),
         ],
       ),

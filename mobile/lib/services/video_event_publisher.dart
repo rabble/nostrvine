@@ -12,7 +12,6 @@ import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, PendingUpload, UploadStatus;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/filter.dart' as nostr;
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/pending_upload.dart';
@@ -271,44 +270,6 @@ class VideoEventPublisher {
       upload.status,
       nostrEventId: event.id,
     );
-  }
-
-  Future<bool> _confirmEventVisibleOnRelays(Event event) async {
-    try {
-      final results = await _nostrService
-          .queryEvents(
-            [
-              nostr.Filter(
-                ids: [event.id],
-                limit: 1,
-              ),
-            ],
-            subscriptionId:
-                'publish_verify_${event.id}_${DateTime.now().microsecondsSinceEpoch}',
-            useCache: false,
-          )
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => <Event>[],
-          );
-
-      final isVisible = results.any((candidate) => candidate.id == event.id);
-      if (!isVisible) {
-        Log.warning(
-          'Published event was not queryable from relays yet: ${event.id}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-      }
-      return isVisible;
-    } catch (e) {
-      Log.warning(
-        'Failed to verify relay visibility for ${event.id}: $e',
-        name: 'VideoEventPublisher',
-        category: LogCategory.video,
-      );
-      return false;
-    }
   }
 
   /// Get publishing statistics
@@ -934,20 +895,17 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      // Retry up to 3 times with exponential backoff
+      // Retry up to 3 times with exponential backoff.
+      // A successful send (relay accepted the event) is treated as success.
+      // We intentionally skip read-back verification because relay indexing
+      // lag can cause timeouts even though the event was accepted and is
+      // already being delivered via subscriptions.
       const maxRetries = 3;
       var publishResult = false;
 
       for (var attempt = 1; attempt <= maxRetries; attempt++) {
-        final sendResult = await _publishEventToNostr(event);
-
-        if (sendResult) {
-          publishResult = await _confirmEventVisibleOnRelays(event);
-        } else {
-          publishResult = false;
-        }
-
-        if (publishResult) {
+        if (await _publishEventToNostr(event)) {
+          publishResult = true;
           if (attempt > 1) {
             Log.info(
               '✅ Publish succeeded on attempt $attempt',

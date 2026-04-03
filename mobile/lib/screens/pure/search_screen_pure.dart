@@ -15,7 +15,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/hashtag_search_view.dart';
@@ -77,7 +76,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     );
     _hashtagSearchBloc = HashtagSearchBloc(
       hashtagRepository: ref.read(hashtagRepositoryProvider),
-      localHashtagSearch: _searchLocalHashtags,
     );
     _videoSearchBloc = VideoSearchBloc(
       videosRepository: ref.read(videosRepositoryProvider),
@@ -173,60 +171,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     };
   }
 
-  Future<List<String>> _searchLocalHashtags(
-    String query, {
-    int limit = 20,
-  }) async {
-    final normalizedQuery = query.trim().replaceFirst('#', '').toLowerCase();
-    if (normalizedQuery.isEmpty) {
-      return const [];
-    }
-
-    final results = <String>[];
-    final seen = <String>{};
-
-    void addResults(Iterable<String> hashtags) {
-      for (final hashtag in hashtags) {
-        final normalizedTag = hashtag.replaceFirst('#', '').trim();
-        final key = normalizedTag.toLowerCase();
-        if (key.isEmpty || seen.contains(key)) {
-          continue;
-        }
-        seen.add(key);
-        results.add(normalizedTag);
-        if (results.length >= limit) {
-          return;
-        }
-      }
-    }
-
-    try {
-      addResults(
-        ref.read(hashtagServiceProvider).searchHashtags(normalizedQuery),
-      );
-    } catch (_) {
-      // Ignore local feed lookup failures and continue with static hashtags.
-    }
-
-    if (results.length >= limit) {
-      return results;
-    }
-
-    try {
-      await TopHashtagsService.instance.loadTopHashtags();
-      addResults(
-        TopHashtagsService.instance.searchHashtags(
-          normalizedQuery,
-          limit: limit,
-        ),
-      );
-    } catch (_) {
-      // Ignore asset lookup failures - remote results have already failed.
-    }
-
-    return results;
-  }
-
   @override
   Widget build(BuildContext context) {
     // Derive feed mode from URL (single source of truth)
@@ -292,9 +236,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                           )
                         : null,
                   );
-                  final textScaler = MediaQuery.textScalerOf(context).clamp(
-                    maxScaleFactor: 1.35,
-                  );
+                  final textScaler = MediaQuery.textScalerOf(
+                    context,
+                  ).clamp(maxScaleFactor: 1.35);
                   final tabBar = MediaQuery(
                     data: MediaQuery.of(
                       context,

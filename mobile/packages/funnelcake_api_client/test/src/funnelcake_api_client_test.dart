@@ -2773,6 +2773,96 @@ void main() {
       });
 
       test(
+        'includes social, stats, and engagement in normal response',
+        () async {
+          const responseWithStats = '''
+{
+  "profile": {
+    "name": "testuser",
+    "display_name": "Test User"
+  },
+  "social": {
+    "follower_count": 42,
+    "following_count": 10
+  },
+  "stats": {
+    "video_count": 5,
+    "reaction_count": 20
+  },
+  "engagement": {
+    "total_reactions": 100,
+    "total_loops": 50.5,
+    "total_views": 200
+  }
+}
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(responseWithStats, 200));
+
+          final profile = await client.getUserProfile(testPubkey);
+
+          expect(profile, isNotNull);
+          expect(profile!['_noProfile'], isNull);
+          expect(profile['name'], equals('testuser'));
+
+          // Social
+          final social = profile['social'] as Map<String, dynamic>;
+          expect(social['follower_count'], equals(42));
+          expect(social['following_count'], equals(10));
+
+          // Stats
+          final stats = profile['stats'] as Map<String, dynamic>;
+          expect(stats['video_count'], equals(5));
+
+          // Engagement
+          final engagement = profile['engagement'] as Map<String, dynamic>;
+          expect(engagement['total_reactions'], equals(100));
+          expect(engagement['total_loops'], equals(50.5));
+        },
+      );
+
+      test(
+        'includes social, stats, and engagement in _noProfile sentinel',
+        () async {
+          const noProfileWithStats = '''
+{
+  "profile": null,
+  "social": {
+    "follower_count": 15,
+    "following_count": 3
+  },
+  "stats": {
+    "video_count": 8
+  },
+  "engagement": {
+    "total_reactions": 500,
+    "total_loops": 120.0,
+    "total_views": 300
+  }
+}
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(noProfileWithStats, 200));
+
+          final result = await client.getUserProfile(testPubkey);
+
+          expect(result, isNotNull);
+          expect(result!['_noProfile'], isTrue);
+          expect(result['pubkey'], equals(testPubkey));
+
+          // Stats should be preserved even on _noProfile sentinel
+          final social = result['social'] as Map<String, dynamic>;
+          expect(social['follower_count'], equals(15));
+
+          final engagement = result['engagement'] as Map<String, dynamic>;
+          expect(engagement['total_reactions'], equals(500));
+          expect(engagement['total_loops'], equals(120.0));
+        },
+      );
+
+      test(
         'returns _noProfile sentinel when profile has no name fields',
         () async {
           const noNameResponse = '''

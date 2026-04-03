@@ -27,8 +27,15 @@ typedef OverlayBuilder =
     );
 
 /// Builder for the error state.
+///
+/// [errorType] contains the classified error type from the controller when
+/// available. May be null for errors that occurred before classification.
 typedef ErrorBuilder =
-    Widget Function(BuildContext context, VoidCallback onRetry);
+    Widget Function(
+      BuildContext context,
+      VoidCallback onRetry,
+      VideoErrorType? errorType,
+    );
 
 /// Video player widget that displays a video from [VideoFeedController].
 class PooledVideoPlayer extends StatelessWidget {
@@ -120,9 +127,10 @@ class PooledVideoPlayer extends StatelessWidget {
               if (loadState == .error)
                 errorBuilder?.call(
                       context,
-                      () => feedController.onPageChanged(
+                      () => feedController.retryLoad(
                         feedController.currentIndex,
                       ),
+                      state.errorType,
                     ) ??
                     const _DefaultErrorState()
               else ...[

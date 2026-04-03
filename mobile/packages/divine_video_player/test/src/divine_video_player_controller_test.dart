@@ -16,6 +16,7 @@ void main() {
   late StreamController<Map<Object?, Object?>> eventController;
 
   setUp(() {
+    DivineVideoPlayerController.resetIdCounterForTesting();
     globalCalls = <MethodCall>[];
     playerCalls = <MethodCall>[];
     eventController = StreamController<Map<Object?, Object?>>.broadcast();
@@ -68,6 +69,10 @@ void main() {
     group('before initialize', () {
       test('isInitialized is false', () {
         expect(controller.isInitialized, isFalse);
+      });
+
+      test('nextId returns current counter value', () {
+        expect(DivineVideoPlayerController.nextId, isA<int>());
       });
 
       test('viewType is correct', () {
@@ -151,6 +156,12 @@ void main() {
         await initController();
 
         expect(controller.isInitialized, isTrue);
+      });
+
+      test('exposes playerId after initialization', () async {
+        await initController();
+
+        expect(controller.playerId, equals(0));
       });
 
       test("invokes 'create' on global channel", () async {
@@ -539,6 +550,31 @@ void main() {
         expect(states, hasLength(1));
         expect(states.first.status, equals(PlaybackStatus.error));
       });
+
+      test('logs native errorMessage via developer.log', () async {
+        final states = <DivineVideoPlayerState>[];
+        controller.stateStream.listen(states.add);
+
+        eventController.add(<Object?, Object?>{
+          'status': 'error',
+          'positionMs': 0,
+          'durationMs': 0,
+          'bufferedPositionMs': 0,
+          'currentClipIndex': 0,
+          'clipCount': 0,
+          'isLooping': false,
+          'volume': 1.0,
+          'playbackSpeed': 1.0,
+          'isFirstFrameRendered': false,
+          'videoWidth': 0,
+          'videoHeight': 0,
+          'errorMessage': 'AVPlayer failed: codec not supported',
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        expect(states, hasLength(1));
+        expect(states.first.status, equals(PlaybackStatus.error));
+      });
     });
 
     group('dispose', () {
@@ -610,7 +646,7 @@ void main() {
 
         expect(
           globalCalls.first.arguments,
-          containsPair('maxSizeBytes', 500 * 1024 * 1024),
+          containsPair('maxSizeBytes', kDefaultCacheMaxSizeBytes),
         );
       });
 

@@ -10,6 +10,7 @@ void main() {
   late DivineVideoPlayerController controller;
 
   setUp(() async {
+    DivineVideoPlayerController.resetIdCounterForTesting();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('divine_video_player'),

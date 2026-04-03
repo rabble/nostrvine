@@ -16,6 +16,7 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -66,6 +67,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   final _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
   final _scrollController = ScrollController();
+  final _precachedThumbnailUrls = <String>{};
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -165,14 +167,73 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     final backgroundPublish = context.watch<BackgroundPublishBloc>();
     final isOwnProfile = authService.currentPublicKeyHex == widget.userIdHex;
 
-    final allVideos = [
-      // Only show uploading tiles on own profile
-      if (isOwnProfile)
-        ...backgroundPublish.state.uploads
-            .where((upload) => upload.result == null)
-            .map(_GridUploadingVideoEntry.new),
+    // Uploads that are still in progress (no result yet).
+    final activeUploads = isOwnProfile
+        ? backgroundPublish.state.uploads
+              .where((upload) => upload.result == null)
+              .toList()
+        : <BackgroundUpload>[];
 
-      ...widget.videos.map(_GridVideoEventEntry.new),
+    // De-duplicate relay-delivered videos against active uploads.
+    //
+    // When a video is published, the relay may deliver it to the profile
+    // feed before the [BackgroundPublishBloc] removes the upload from its
+    // state. This causes a brief visual duplicate: the upload tile and
+    // the published video tile appear side-by-side.
+    //
+    // To prevent this we filter relay videos by:
+    //  1. Only inspecting videos created within the last 5 minutes —
+    //     older videos cannot be duplicates of an in-progress upload.
+    //  2. Matching by title against the active upload drafts.
+    //  3. Removing only the *first* match per title so that legitimate
+    //     older videos with the same title are not hidden.
+    final now = DateTime.now();
+    final matchedTitles = <String>{};
+    final filteredVideos = isOwnProfile
+        ? widget.videos.where((video) {
+            // Step 1: Skip de-duplication for videos older than 5 minutes.
+            final videoTime = DateTime.fromMillisecondsSinceEpoch(
+              video.createdAt * 1000,
+            );
+            if (now.difference(videoTime).inMinutes > 5) return true;
+
+            // Step 2: Check if this video's title matches an active upload
+            // that hasn't been matched yet.
+            final isDuplicate =
+                !matchedTitles.contains(video.title) &&
+                activeUploads.any(
+                  (upload) => upload.draft.title == video.title,
+                );
+
+            // Step 3: Mark the title as matched so only the first duplicate
+            // per upload is filtered out. Pre-cache the network thumbnail
+            // so it's instantly available when the upload tile disappears.
+            //
+            // NOTE: The [downloadFile] call is intentionally placed here
+            // inside build(). It is a fire-and-forget cache warm-up that
+            // is guarded by [_precachedThumbnailUrls] so it executes at
+            // most once per URL across rebuilds. Moving it to
+            // didUpdateWidget would require duplicating the de-duplication
+            // logic. This is an acceptable trade-off.
+            if (isDuplicate) {
+              if (video.title case final title?) {
+                matchedTitles.add(title);
+              }
+              final url = video.thumbnailUrl;
+              if (url != null &&
+                  url.isNotEmpty &&
+                  _precachedThumbnailUrls.add(url)) {
+                openVineImageCache.downloadFile(url);
+              }
+              return false;
+            }
+            return true;
+          }).toList()
+        : widget.videos;
+
+    final allVideos = [
+      ...activeUploads.map(_GridUploadingVideoEntry.new),
+      ...filteredVideos.map(_GridVideoEventEntry.new),
     ];
 
     if (widget.errorMessage != null && allVideos.isEmpty) {
@@ -191,9 +252,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     }
 
     // Count uploading videos to offset indices for published videos
-    final uploadingCount = backgroundPublish.state.uploads
-        .where((upload) => upload.result == null)
-        .length;
+    final uploadingCount = activeUploads.length;
 
     return CustomScrollView(
       controller: _scrollController,
@@ -222,6 +281,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                   videoEvent: eventEntry.videoEvent,
                   userIdHex: widget.userIdHex,
                   index: index,
+                  isPrecached: _precachedThumbnailUrls.contains(
+                    eventEntry.videoEvent.thumbnailUrl,
+                  ),
                   onTap: () {
                     // Adjust index to account for uploading videos at the top
                     final publishedIndex = index - uploadingCount;
@@ -351,12 +413,14 @@ class _VideoGridTile extends StatelessWidget {
     required this.userIdHex,
     required this.index,
     required this.onTap,
+    this.isPrecached = false,
   });
 
   final VideoEvent videoEvent;
   final String userIdHex;
   final int index;
   final VoidCallback onTap;
+  final bool isPrecached;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -369,7 +433,10 @@ class _VideoGridTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
           decoration: const BoxDecoration(color: VineTheme.cardBackground),
-          child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
+          child: _VideoThumbnail(
+            thumbnailUrl: videoEvent.thumbnailUrl,
+            isPrecached: isPrecached,
+          ),
         ),
       ),
     ),
@@ -378,15 +445,25 @@ class _VideoGridTile extends StatelessWidget {
 
 /// Video thumbnail with loading and error states
 class _VideoThumbnail extends StatelessWidget {
-  const _VideoThumbnail({required this.thumbnailUrl});
+  const _VideoThumbnail({
+    required this.thumbnailUrl,
+    this.isPrecached = false,
+  });
 
   final String? thumbnailUrl;
+  final bool isPrecached;
 
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
       return VineCachedImage(
         imageUrl: thumbnailUrl!,
+        fadeInDuration: isPrecached
+            ? Duration.zero
+            : const Duration(milliseconds: 500),
+        fadeOutDuration: isPrecached
+            ? Duration.zero
+            : const Duration(milliseconds: 1000),
         placeholder: (context, url) => const _ThumbnailPlaceholder(),
         errorWidget: (context, url, error) => const _ThumbnailPlaceholder(),
       );

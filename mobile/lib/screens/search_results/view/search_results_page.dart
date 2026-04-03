@@ -5,7 +5,6 @@ import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/search_results/local_hashtag_search.dart';
 import 'package:openvine/screens/search_results/view/search_results_view.dart';
 import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
 
@@ -40,29 +39,57 @@ class SearchResultsPage extends ConsumerWidget {
           ),
         ),
         BlocProvider(
-          create: (_) => UserSearchBloc(
-            profileRepository: profileRepository,
-          ),
+          create: (_) => UserSearchBloc(profileRepository: profileRepository),
         ),
         BlocProvider(
           create: (_) => HashtagSearchBloc(
             hashtagRepository: ref.read(hashtagRepositoryProvider),
-            // TODO(oscar): Move fallback logic into HashtagRepository
-            // https://github.com/divinevideo/divine-mobile/issues/2535
-            localHashtagSearch: (query, {limit = 20}) =>
-                searchLocalHashtags(ref, query, limit: limit),
           ),
         ),
       ],
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: Column(
-          children: [
-            SearchResultsAppBar(initialQuery: initialQuery ?? ''),
-            const Expanded(child: SearchResultsView()),
-          ],
-        ),
+        body: _SearchResultsBody(initialQuery: initialQuery ?? ''),
       ),
+    );
+  }
+}
+
+/// Owns the [SearchResultsFilter] state shared between the app bar and body.
+class _SearchResultsBody extends StatefulWidget {
+  const _SearchResultsBody({required this.initialQuery});
+
+  final String initialQuery;
+
+  @override
+  State<_SearchResultsBody> createState() => _SearchResultsBodyState();
+}
+
+class _SearchResultsBodyState extends State<_SearchResultsBody> {
+  SearchResultsFilter _filter = SearchResultsFilter.all;
+
+  void _onFilterChanged(SearchResultsFilter filter) {
+    setState(() => _filter = filter);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SearchResultsAppBar(
+          initialQuery: widget.initialQuery,
+          filterLabel: _filter.label,
+          onFilterTap: _filter == SearchResultsFilter.all
+              ? null
+              : () => _onFilterChanged(SearchResultsFilter.all),
+        ),
+        Expanded(
+          child: SearchResultsView(
+            filter: _filter,
+            onFilterChanged: _onFilterChanged,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -59,7 +59,14 @@ void main() {
       ).thenReturn(state ?? const VideoFeedState());
 
       return testMaterialApp(
-        additionalOverrides: additionalOverrides,
+        additionalOverrides: [
+          // Ensure pageContextProvider resolves to home so the overlay
+          // listener's _isOnHomeTab guard doesn't short-circuit.
+          routerLocationStreamProvider.overrideWith(
+            (ref) => Stream.value('/home'),
+          ),
+          ...?additionalOverrides,
+        ],
         home: BlocProvider<VideoFeedBloc>.value(
           value: videoFeedBloc,
           child: VideoFeedView(controller: videoFeedController),

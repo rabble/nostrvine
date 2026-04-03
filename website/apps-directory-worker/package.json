@@ -1,0 +1,13 @@
+{
+  "name": "divine-apps-directory-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260317.1",
+    "vitest": "^2.1.9"
+  }
+}
