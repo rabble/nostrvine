@@ -18,8 +18,10 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -180,6 +182,9 @@ class AuthService implements BackgroundAwareService {
   // NIP-46 nostrconnect:// session state (for client-initiated connections)
   NostrConnectSession? _nostrConnectSession;
 
+  // Atomic signing identity — couples pubkey with signing mechanism
+  NostrIdentity? _currentIdentity;
+
   // Relay discovery state (NIP-65)
   List<DiscoveredRelay> _userRelays = [];
   bool _hasExistingProfile = false;
@@ -191,6 +196,10 @@ class AuthService implements BackgroundAwareService {
 
   /// Returns the active remote signer (Amber > bunker > OAuth RPC)
   NostrSigner? get rpcSigner => _amberSigner ?? _bunkerSigner ?? _keycastSigner;
+
+  /// The current user's atomic signing identity, or null if not authenticated.
+  NostrIdentity? get currentIdentity => _currentIdentity;
+
   final OAuthConfig _oauthConfig;
 
   // Streaming controllers for reactive auth state
@@ -1511,6 +1520,8 @@ class AuthService implements BackgroundAwareService {
       }
 
       _currentKeyContainer = SecureKeyContainer.fromPublicKey(userPubkey);
+      _authSource = AuthenticationSource.bunker;
+      _currentIdentity = _buildIdentity();
 
       // Create a minimal profile for the bunker user
       final npub = NostrKeyUtils.encodePubKey(userPubkey);
@@ -1519,8 +1530,6 @@ class AuthService implements BackgroundAwareService {
         publicKeyHex: userPubkey,
         displayName: NostrKeyUtils.maskKey(npub),
       );
-
-      _authSource = AuthenticationSource.bunker;
 
       _setAuthState(AuthState.authenticated);
       _profileController.add(_currentProfile);
@@ -1738,6 +1747,8 @@ class AuthService implements BackgroundAwareService {
       _amberSigner = AndroidNostrSigner(pubkey: pubkey, package: package);
 
       _currentKeyContainer = SecureKeyContainer.fromPublicKey(pubkey);
+      _authSource = AuthenticationSource.amber;
+      _currentIdentity = _buildIdentity();
 
       // Create a minimal profile for the Amber user
       final npub = NostrKeyUtils.encodePubKey(pubkey);
@@ -1746,8 +1757,6 @@ class AuthService implements BackgroundAwareService {
         publicKeyHex: pubkey,
         displayName: NostrKeyUtils.maskKey(npub),
       );
-
-      _authSource = AuthenticationSource.amber;
 
       _setAuthState(AuthState.authenticated);
       _profileController.add(_currentProfile);
@@ -2561,6 +2570,7 @@ class AuthService implements BackgroundAwareService {
       }
 
       // Clear session
+      _currentIdentity = null;
       _currentKeyContainer?.dispose();
       _currentKeyContainer = null;
       _currentProfile = null;
@@ -2716,7 +2726,8 @@ class AuthService implements BackgroundAwareService {
     String? biometricPrompt,
     int? createdAt,
   }) async {
-    if (!isAuthenticated || _currentKeyContainer == null) {
+    final identity = _currentIdentity;
+    if (!isAuthenticated || identity == null) {
       Log.error(
         'Cannot sign event - user not authenticated',
         name: 'AuthService',
@@ -2739,10 +2750,12 @@ class AuthService implements BackgroundAwareService {
         eventTags.add(['expiration', expirationTimestamp.toString()]);
       }
 
-      // Create the unsigned event object
+      // Create the unsigned event with the identity's pubkey — both the
+      // pubkey and the signing key come from the same identity instance,
+      // structurally preventing the PRIMARY-slot desync bug (#2233).
       final driftTolerance = NostrTimestamp.getDriftToleranceForKind(kind);
       final event = Event(
-        _currentKeyContainer!.publicKeyHex,
+        identity.pubkey,
         kind,
         eventTags,
         content,
@@ -2750,48 +2763,31 @@ class AuthService implements BackgroundAwareService {
             createdAt ?? NostrTimestamp.now(driftTolerance: driftTolerance),
       );
 
-      // 2. Branch Signing Logic (Local vs RPC)
-      Event? signedEvent;
+      // 2. Sign via the identity — delegates to the correct signer
+      Log.info(
+        'Signing kind $kind via ${identity.runtimeType} '
+        '(authSource=${_authSource.name}, '
+        'eventPubkey=${event.pubkey})',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      final signedEvent = await identity.signEvent(event);
 
-      if (rpcSigner case final rpcSigner?) {
-        Log.info(
-          '🚀 Signing kind $kind via Remote RPC '
-          '(authSource=${_authSource.name}, '
-          'eventPubkey=${event.pubkey})',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        signedEvent = await rpcSigner.signEvent(event);
-      } else {
-        Log.info(
-          '🔐 Signing kind $kind via Local Secure Storage '
-          '(authSource=${_authSource.name}, '
-          'eventPubkey=${event.pubkey})',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        signedEvent = await _keyStorage.withPrivateKey<Event?>((privateKey) {
-          event.sign(privateKey);
-          return event;
-        }, biometricPrompt: biometricPrompt);
-      }
-
-      // 3. Post-Signing Validation and Debugging
+      // 3. Post-Signing Validation
       if (signedEvent == null) {
         Log.error(
-          '❌ Signing failed: Signer returned null',
+          'Signing failed: Signer returned null',
           name: 'AuthService',
         );
         return null;
       }
 
-      // CRITICAL: Verify signature is actually valid
       if (!signedEvent.isSigned) {
         Log.error(
-          '❌ Event signature validation FAILED! '
+          'Event signature validation FAILED! '
           'kind=$kind, eventPubkey=${signedEvent.pubkey}, '
           'authSource=${_authSource.name}, '
-          'currentPubkey=${_currentKeyContainer?.publicKeyHex}',
+          'identityPubkey=${identity.pubkey}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -2800,12 +2796,8 @@ class AuthService implements BackgroundAwareService {
 
       if (!signedEvent.isValid) {
         Log.error(
-          '❌ Event structure validation FAILED!',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.error(
-          '   Event ID does not match computed hash',
+          'Event structure validation FAILED! '
+          'Event ID does not match computed hash',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -2813,7 +2805,7 @@ class AuthService implements BackgroundAwareService {
       }
 
       Log.info(
-        '✅ Event signed and validated: ${signedEvent.id}',
+        'Event signed and validated: ${signedEvent.id}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -3058,6 +3050,43 @@ class AuthService implements BackgroundAwareService {
     await prefs.setBool('age_verified_16_plus', true);
   }
 
+  /// Builds a [NostrIdentity] from the current mutable signer fields.
+  ///
+  /// Must be called AFTER signer fields (_keycastSigner, _bunkerSigner,
+  /// _amberSigner) and _currentKeyContainer have been set for the session.
+  NostrIdentity? _buildIdentity() {
+    final keyContainer = _currentKeyContainer;
+    if (keyContainer == null) return null;
+
+    final pubkey = keyContainer.publicKeyHex;
+
+    // Priority matches rpcSigner: Amber > Bunker > Keycast > Local
+    if (_amberSigner case final signer?) {
+      return AmberNostrIdentity(pubkey: pubkey, amberSigner: signer);
+    }
+    if (_bunkerSigner case final signer?) {
+      return BunkerNostrIdentity(pubkey: pubkey, remoteSigner: signer);
+    }
+    if (_keycastSigner case final rpc?) {
+      // When a matching local nsec exists, sign locally for speed.
+      AuthServiceSigner? localSigner;
+      if (keyContainer.hasPrivateKey) {
+        localSigner = AuthServiceSigner(keyContainer);
+      }
+      return KeycastNostrIdentity(
+        pubkey: pubkey,
+        rpcSigner: rpc,
+        localSigner: localSigner,
+      );
+    }
+    // Local keys only — private key required.
+    if (keyContainer.hasPrivateKey) {
+      return LocalNostrIdentity(keyContainer: keyContainer);
+    }
+    // Pub-key-only container with no remote signer — cannot sign.
+    return null;
+  }
+
   /// Set up user session after successful authentication
   Future<void> _setupUserSession(
     SecureKeyContainer keyContainer,
@@ -3107,6 +3136,9 @@ class AuthService implements BackgroundAwareService {
       _amberSigner!.close();
       _amberSigner = null;
     }
+
+    // Build atomic identity AFTER stale signers are cleared.
+    _currentIdentity = _buildIdentity();
 
     // Create user profile
     _currentProfile = UserProfile(
