@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 
 /// Setup real integration test environment with minimal mocking
@@ -31,7 +32,9 @@ class RealIntegrationTestHelper {
     // Generate a test key container
     final keyContainer = await SecureKeyContainer.generate();
 
-    final nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
+    final nostrService = NostrServiceFactory.create(
+      signer: LocalNostrIdentity(keyContainer: keyContainer),
+    );
     await nostrService.initialize();
 
     // NostrClient handles relay connections internally
