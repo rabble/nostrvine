@@ -384,10 +384,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     // Watch For You availability (staging only)
     final newForYouAvailable = ref.watch(forYouAvailableProvider);
 
-    // Watch Integrated Apps feature flag
-    final newAppsAvailable = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.integratedApps),
-    );
+    // Watch Integrated Apps feature flag (also requires platform support)
+    final newAppsAvailable =
+        nostrAppsSandboxSupported &&
+        ref.watch(isFeatureEnabledProvider(FeatureFlag.integratedApps));
 
     // When availability changes, rebuild TabController synchronously
     final needsRebuild =
@@ -565,7 +565,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 const CategoriesTab(),
                 if (_forYouAvailable) const ForYouTab(),
                 _buildListsTab(),
-                if (_appsAvailable) const _IntegratedAppsPlaceholder(),
+                if (_appsAvailable) const AppsDirectoryScreen(embedded: true),
               ],
             ),
             // New videos banner (only show on New Videos and Trending tabs)
@@ -1116,22 +1116,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Placeholder for Integrated Apps tab while the full AppsDirectoryScreen
-/// dependencies are being completed.
-class _IntegratedAppsPlaceholder extends StatelessWidget {
-  const _IntegratedAppsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Integrated Apps coming soon',
-        style: TextStyle(color: Colors.white70),
       ),
     );
   }
