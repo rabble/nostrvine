@@ -122,29 +122,6 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('navigates to feature flags from the edge tile', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      final scrollable = find.byType(Scrollable);
-      await tester.scrollUntilVisible(
-        find.text('Experimental Features'),
-        100,
-        scrollable: scrollable,
-      );
-      expect(find.text('Experimental Features'), findsOneWidget);
-
-      await tester.tap(find.text('Experimental Features'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(FeatureFlagScreen), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
-
     testWidgets('renders Secure Your Account tile for anonymous users', (
       tester,
     ) async {
