@@ -288,6 +288,10 @@ class VideoFeedController extends ChangeNotifier {
     return _orderedUniqueSources([resolvedSource, originalUrl]);
   }
 
+  /// Timeout for waiting on the native player to report a meaningful
+  /// status after [DivineVideoPlayerController.setSource].
+  static const _sourceStatusTimeout = Duration(seconds: 10);
+
   Future<({String openedSource, int sourceIndex})> _openWithFallbacks({
     required int index,
     required DivineVideoPlayerController controller,
@@ -302,6 +306,34 @@ class VideoFeedController extends ChangeNotifier {
 
       try {
         await controller.setSource(VideoClip.network(source));
+
+        // setSource() returns as soon as the native side acknowledges the
+        // request; actual load success/failure arrives asynchronously via
+        // the event stream. Wait for a meaningful status so we can fall
+        // back to the next source synchronously within this loop.
+        final status = await controller.stateStream
+            .map((s) => s.status)
+            .where(
+              (s) =>
+                  s == PlaybackStatus.error ||
+                  s == PlaybackStatus.buffering ||
+                  s == PlaybackStatus.ready ||
+                  s == PlaybackStatus.playing,
+            )
+            .first
+            .timeout(_sourceStatusTimeout);
+
+        if (status == PlaybackStatus.error) {
+          throw Exception(
+            controller.state.errorMessage ?? 'Playback error',
+          );
+        }
+
+        return (openedSource: source, sourceIndex: attemptIndex);
+      } on TimeoutException {
+        // The native player is still loading after the timeout.
+        // Return this source optimistically — the error-subscription
+        // fallback will still handle a later failure.
         return (openedSource: source, sourceIndex: attemptIndex);
       } on Exception catch (error) {
         final nextAttempt = attemptIndex + 1;
@@ -401,9 +433,11 @@ class VideoFeedController extends ChangeNotifier {
       _openedSources[index] = reopened.openedSource;
       await controller.setLooping(looping: true);
 
-      if (controller.state.status != PlaybackStatus.buffering) {
-        _markReady(index, controller);
-      }
+      // _openWithFallbacks now waits for the native player to report a
+      // meaningful status (buffering/ready/playing). Reaching this point
+      // means the source was accepted, so always mark the player ready
+      // — the widget layer handles the buffering → first-frame transition.
+      _markReady(index, controller);
     } on Exception catch (error, stack) {
       debugPrint(
         '[POOLED] stuck_retry_failed ${_videoDebugDetails(index)} '
