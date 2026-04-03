@@ -813,6 +813,17 @@ class VideoFeedController extends ChangeNotifier {
         // render while the media is still buffering.
         _notifyIndex(index);
       }
+      final playbackSources = _resolvePlaybackSources(video);
+      _playbackSources[index] = playbackSources;
+      var sourceIndex = _playbackSourceIndices[index] ?? 0;
+      if (sourceIndex < 0 || sourceIndex >= playbackSources.length) {
+        sourceIndex = 0;
+      }
+      _logDebug(
+        'open_start ${_videoDebugDetails(index)} '
+        'resolvedSource=${playbackSources[sourceIndex]} '
+        'fallbackSources=${playbackSources.skip(sourceIndex + 1).join(',')}',
+      );
 
       // Fast path: reuse player that already has media loaded.
       // When a player was released from the controller but stayed in the
@@ -821,7 +832,8 @@ class VideoFeedController extends ChangeNotifier {
       // This path is never taken for recycled players: hadExistingPlayer is
       // false (the new URL was not in the pool before getPlayer() was called).
       if (hadExistingPlayer &&
-          pooledPlayer.controller.state.duration > Duration.zero) {
+          pooledPlayer.controller.state.duration > Duration.zero &&
+          !pooledPlayer.controller.state.status.hasError) {
         _logDebug(
           'reuse_fast_path ${_videoDebugDetails(index)} '
           'positionMs='
@@ -834,18 +846,6 @@ class VideoFeedController extends ChangeNotifier {
         _markReady(index, pooledPlayer.controller);
         return;
       }
-
-      final playbackSources = _resolvePlaybackSources(video);
-      _playbackSources[index] = playbackSources;
-      var sourceIndex = _playbackSourceIndices[index] ?? 0;
-      if (sourceIndex < 0 || sourceIndex >= playbackSources.length) {
-        sourceIndex = 0;
-      }
-      _logDebug(
-        'open_start ${_videoDebugDetails(index)} '
-        'resolvedSource=${playbackSources[sourceIndex]} '
-        'fallbackSources=${playbackSources.skip(sourceIndex + 1).join(',')}',
-      );
 
       final opened = await _openWithFallbacks(
         index: index,
