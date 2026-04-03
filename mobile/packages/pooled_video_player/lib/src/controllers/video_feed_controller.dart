@@ -1044,8 +1044,7 @@ class VideoFeedController extends ChangeNotifier {
         .distinct()
         .where((isError) => isError)
         .listen((_) {
-          final errorMsg =
-              controller.state.errorMessage ?? 'Unknown error';
+          final errorMsg = controller.state.errorMessage ?? 'Unknown error';
           _logDebug(
             'player_error ${_videoDebugDetails(index)} '
             'error=$errorMsg '
