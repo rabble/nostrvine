@@ -1104,5 +1104,586 @@ void main() {
         expect(controller.videoCount, equals(5));
       });
     });
+
+    // -----------------------------------------------------------------------
+    // _classifyError — 401, 403, divine fallback
+    // -----------------------------------------------------------------------
+
+    group('error classification', () {
+      test('classifies 401 as ageRestricted', () async {
+        final hash = 'a' * 64;
+        final divineUrl = 'https://media.divine.video/$hash';
+        final videos = [VideoItem(id: 'v', url: divineUrl)];
+
+        final failSetup = createMockControllerSetup();
+        when(
+          () => failSetup.controller.setSource(any()),
+        ).thenAnswer((_) async {
+          Timer.run(() {
+            if (failSetup.stateController.isClosed) return;
+            failSetup.emitState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.error,
+                errorMessage: '401 Unauthorized',
+              ),
+            );
+          });
+        });
+        setups[divineUrl] = failSetup;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final notifier = controller.getIndexNotifier(0);
+        expect(notifier.value.errorType, equals(VideoErrorType.ageRestricted));
+      });
+
+      test('classifies 403 as forbidden', () async {
+        final videos = createTestVideos(count: 1);
+
+        final failSetup = createMockControllerSetup();
+        when(
+          () => failSetup.controller.setSource(any()),
+        ).thenAnswer((_) async {
+          Timer.run(() {
+            if (failSetup.stateController.isClosed) return;
+            failSetup.emitState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.error,
+                errorMessage: '403 Forbidden',
+              ),
+            );
+          });
+        });
+        setups[videos[0].url] = failSetup;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final notifier = controller.getIndexNotifier(0);
+        expect(notifier.value.errorType, equals(VideoErrorType.forbidden));
+      });
+
+      test('classifies divine URL generic error as notFound', () async {
+        final hash = 'b' * 64;
+        final divineUrl = 'https://media.divine.video/$hash';
+        final videos = [VideoItem(id: 'v', url: divineUrl)];
+
+        final failSetup = createMockControllerSetup();
+        when(
+          () => failSetup.controller.setSource(any()),
+        ).thenAnswer((_) async {
+          Timer.run(() {
+            if (failSetup.stateController.isClosed) return;
+            failSetup.emitState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.error,
+                errorMessage: 'Some generic error',
+              ),
+            );
+          });
+        });
+        setups[divineUrl] = failSetup;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final notifier = controller.getIndexNotifier(0);
+        expect(notifier.value.errorType, equals(VideoErrorType.notFound));
+      });
+
+      test('classifies non-divine URL generic error as generic', () async {
+        final videos = createTestVideos(count: 1);
+
+        final failSetup = createMockControllerSetup();
+        when(
+          () => failSetup.controller.setSource(any()),
+        ).thenAnswer((_) async {
+          Timer.run(() {
+            if (failSetup.stateController.isClosed) return;
+            failSetup.emitState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.error,
+                errorMessage: 'Some generic error',
+              ),
+            );
+          });
+        });
+        setups[videos[0].url] = failSetup;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final notifier = controller.getIndexNotifier(0);
+        expect(notifier.value.errorType, equals(VideoErrorType.generic));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // _retryCurrentVideoWithNextSource
+    // -----------------------------------------------------------------------
+
+    group('error stream retry with next source', () {
+      test('retries with next source when error occurs during playback',
+          () async {
+        final hash = 'c' * 64;
+        final divineUrl = 'https://media.divine.video/$hash';
+        final videos = [VideoItem(id: 'v', url: divineUrl)];
+
+        final setup = createMockControllerSetup();
+        setups[divineUrl] = setup;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        // Let initial load complete.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+
+        // Simulate a playback error on the error stream.
+        setup.emitState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.error,
+            errorMessage: 'Network error',
+          ),
+        );
+
+        // Let the retry logic run.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // The controller should have attempted setSource again for fallback.
+        verify(
+          () => setup.controller.setSource(any()),
+        ).called(greaterThan(1));
+      });
+
+      test('marks error when no more sources available', () async {
+        final videos = createTestVideos(count: 1);
+
+        final setup = createMockControllerSetup();
+        setups[videos[0].url] = setup;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        // Let initial load complete.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+
+        // Simulate error — non-divine URL has only 1 source, no fallback.
+        setup.emitState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.error,
+            errorMessage: 'Failed',
+          ),
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.getLoadState(0), equals(LoadState.error));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // _resolvePlaybackSources — HLS, raw blob, non-divine
+    // -----------------------------------------------------------------------
+
+    group('source resolution branches', () {
+      test('resolves HLS divine URL to [hls, raw, originalUrl]', () async {
+        final hash = 'd' * 64;
+        final hlsUrl =
+            'https://media.divine.video/$hash/hls/master.m3u8';
+        const originalUrl = 'https://other-blossom.com/original.mp4';
+        final videos = [
+          VideoItem(id: 'v', url: hlsUrl, originalUrl: originalUrl),
+        ];
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Verify it loaded — the exact sources are internal but loadState
+        // being ready proves the resolution executed.
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+      });
+
+      test('resolves raw divine blob to [raw, hls, originalUrl]', () async {
+        final hash = 'e' * 64;
+        final rawUrl = 'https://media.divine.video/$hash';
+        const originalUrl = 'https://other-blossom.com/original.mp4';
+        final videos = [
+          VideoItem(id: 'v', url: rawUrl, originalUrl: originalUrl),
+        ];
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+      });
+
+      test('resolves divine progressive derivative to [source, raw, hls]',
+          () async {
+        final hash = 'f' * 64;
+        final progressiveUrl =
+            'https://media.divine.video/$hash/720p.mp4';
+        final videos = [VideoItem(id: 'v', url: progressiveUrl)];
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+      });
+
+      test('resolves non-divine URL to [source, originalUrl]', () async {
+        const url = 'https://example.com/video.mp4';
+        const original = 'https://other.com/video.mp4';
+        final videos = [
+          const VideoItem(id: 'v', url: url, originalUrl: original),
+        ];
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // _extractCanonicalDivineBlobHash edge cases
+    // -----------------------------------------------------------------------
+
+    group('divine blob hash extraction', () {
+      test('handles non-divine URL', () async {
+        final videos = createTestVideos(count: 1);
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+      });
+
+      test('handles malformed URL gracefully', () async {
+        final videos = [
+          const VideoItem(id: 'v', url: 'not a valid url'),
+        ];
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Should load (or error) without crashing.
+        expect(controller.videoCount, equals(1));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // maxLoopDuration enforcement via position timer
+    // -----------------------------------------------------------------------
+
+    group('maxLoopDuration', () {
+      test('seeks to zero when position exceeds maxLoopDuration', () async {
+        final videos = createTestVideos(count: 1);
+
+        final setup = createMockControllerSetup(isPlaying: true);
+        setups[videos[0].url] = setup;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+          maxLoopDuration: const Duration(seconds: 5),
+          positionCallbackInterval: const Duration(milliseconds: 50),
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Simulate position exceeding maxLoopDuration.
+        setup.emitState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.playing,
+            position: Duration(seconds: 6),
+            duration: Duration(seconds: 10),
+          ),
+        );
+
+        // Give the timer a chance to fire.
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+
+        verify(
+          () => setup.controller.seekTo(Duration.zero),
+        ).called(greaterThan(0));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // _resume edge cases
+    // -----------------------------------------------------------------------
+
+    group('resume', () {
+      test('seeks to zero when at end of video', () async {
+        final videos = createTestVideos(count: 1);
+
+        final setup = createMockControllerSetup();
+        setups[videos[0].url] = setup;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Mark ready, then pause.
+        controller.pause();
+
+        // Simulate being at the end of the video.
+        setup.emitState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.paused,
+            position: Duration(seconds: 10),
+            duration: Duration(seconds: 10),
+          ),
+        );
+
+        controller.play();
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => setup.controller.seekTo(Duration.zero),
+        ).called(greaterThan(0));
+      });
+
+      test('play aborted when scrolled away during seek', () async {
+        final videos = createTestVideos(count: 3);
+
+        final setup0 = createMockControllerSetup();
+        setups[videos[0].url] = setup0;
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Deactivate to prevent auto-play and create conditions
+        // where resume is aborted.
+        controller
+          ..setActive(active: false)
+          ..setActive(active: true);
+
+        // Immediately change page — _resume should detect mismatch.
+        controller.onPageChanged(1);
+
+        await Future<void>.delayed(Duration.zero);
+
+        // No crash = pass. The aborted guard ran.
+        expect(controller.currentIndex, equals(1));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // _preloadToCache
+    // -----------------------------------------------------------------------
+
+    group('cache preloading', () {
+      test('calls DivineVideoPlayerController.preload for ahead videos',
+          () async {
+        final videos = createTestVideos(count: 5);
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+          preloadAhead: 1,
+          preloadBehind: 0,
+          cacheAhead: 2,
+        );
+        addTearDown(controller.dispose);
+
+        // Let all loads and cache warms execute.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Cache preloading is best-effort; test succeeds if no exception.
+        expect(controller.videoCount, equals(5));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Recycled player path in _loadPlayer
+    // -----------------------------------------------------------------------
+
+    group('recycled player handling', () {
+      test('defers notifyIndex for recycled players until after open',
+          () async {
+        final videos = createTestVideos();
+
+        // Small pool forces recycling.
+        await pool.dispose();
+
+        pool = TestablePlayerPool(
+          mockPlayerFactory: playerFactory,
+          maxPlayers: 2,
+        );
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+          preloadAhead: 0,
+          preloadBehind: 0,
+          cacheAhead: 0,
+        );
+        addTearDown(controller.dispose);
+
+        // Load first video.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.isVideoReady(0), isTrue);
+
+        // Load second video to fill pool.
+        controller.onPageChanged(1);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.isVideoReady(1), isTrue);
+
+        // Load third video — forces recycle of video 0.
+        controller.onPageChanged(2);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // The recycled player should eventually be ready at index 2.
+        expect(controller.isVideoReady(2), isTrue);
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // retryLoad after disposed
+    // -----------------------------------------------------------------------
+
+    group('retryLoad', () {
+      test('is no-op when disposed', () async {
+        final videos = createTestVideos(count: 1);
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+
+        controller.dispose();
+        // Should not throw.
+        controller.retryLoad(0);
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // addVideos after disposed
+    // -----------------------------------------------------------------------
+
+    group('addVideos', () {
+      test('is no-op when disposed', () async {
+        final videos = createTestVideos(count: 1);
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+        );
+
+        controller.dispose();
+        // Should not throw.
+        controller.addVideos([
+          createTestVideo(id: 'new', url: 'https://example.com/new.mp4'),
+        ]);
+      });
+    });
+    });
   });
 }

@@ -741,6 +741,183 @@ void main() {
         },
       );
     });
+
+    group('real PlayerPool with mock createPlayer', () {
+      test('getPlayer throws StateError when disposed', () async {
+        final pool = _SerializedTestPool(
+          onCreatePlayer: _createMockPooledPlayer,
+        );
+
+        await pool.dispose();
+
+        await expectLater(
+          pool.getPlayer('https://example.com/v1.mp4'),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('PlayerPool has been disposed'),
+            ),
+          ),
+        );
+      });
+
+      test('falls back to createPlayer when all LRU entries are disposed',
+          () async {
+        final pool = _SerializedTestPool(
+          maxPlayers: 2,
+          onCreatePlayer: () {
+            final mock = _createMockPooledPlayer();
+            return mock;
+          },
+        );
+        addTearDown(pool.dispose);
+
+        await pool.getPlayer('https://example.com/v1.mp4');
+        await pool.getPlayer('https://example.com/v2.mp4');
+
+        // Simulate: mark the LRU player as disposed so _recycleLru
+        // returns null and the pool must allocate a fresh player.
+        final lruPlayer = pool.getExistingPlayer(
+          'https://example.com/v1.mp4',
+        )!;
+        when(() => lruPlayer.isDisposed).thenReturn(true);
+
+        final player3 = await pool.getPlayer('https://example.com/v3.mp4');
+
+        expect(player3, isNotNull);
+        expect(pool.hasPlayer('https://example.com/v3.mp4'), isTrue);
+      });
+
+      test('_recycleLru recycles and stops the LRU player', () async {
+        final pool = _SerializedTestPool(
+          maxPlayers: 2,
+          onCreatePlayer: _createMockPooledPlayer,
+        );
+        addTearDown(pool.dispose);
+
+        await pool.getPlayer('https://example.com/v1.mp4');
+        await pool.getPlayer('https://example.com/v2.mp4');
+
+        final lruPlayer = pool.getExistingPlayer(
+          'https://example.com/v1.mp4',
+        )!;
+
+        // Request a third player — triggers recycle of v1.
+        await pool.getPlayer('https://example.com/v3.mp4');
+
+        verify(lruPlayer.recycle).called(1);
+        verify(lruPlayer.controller.stop).called(greaterThan(0));
+        expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+        expect(pool.hasPlayer('https://example.com/v3.mp4'), isTrue);
+      });
+
+      test('_recycleLru ignores stop() exceptions', () async {
+        final stopThrows = _createMockPooledPlayer();
+        when(stopThrows.controller.stop).thenThrow(Exception('stop failed'));
+        var callCount = 0;
+
+        final pool = _SerializedTestPool(
+          maxPlayers: 2,
+          onCreatePlayer: () {
+            callCount++;
+            if (callCount == 1) return stopThrows;
+            return _createMockPooledPlayer();
+          },
+        );
+        addTearDown(pool.dispose);
+
+        await pool.getPlayer('https://example.com/v1.mp4');
+        await pool.getPlayer('https://example.com/v2.mp4');
+
+        // v1 (stopThrows) is LRU. Recycling should catch the stop exception.
+        await expectLater(
+          pool.getPlayer('https://example.com/v3.mp4'),
+          completes,
+        );
+      });
+
+      test('release disposes the player and removes from pool', () async {
+        final pool = _SerializedTestPool(
+          onCreatePlayer: _createMockPooledPlayer,
+        );
+        addTearDown(pool.dispose);
+
+        await pool.getPlayer('https://example.com/v1.mp4');
+        expect(pool.hasPlayer('https://example.com/v1.mp4'), isTrue);
+
+        await pool.release('https://example.com/v1.mp4');
+
+        expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+        expect(pool.playerCount, equals(0));
+      });
+
+      test('stopAll stops all non-disposed players without disposing',
+          () async {
+        final pool = _SerializedTestPool(
+          onCreatePlayer: _createMockPooledPlayer,
+        );
+        addTearDown(pool.dispose);
+
+        final p1 = await pool.getPlayer('https://example.com/v1.mp4');
+        final p2 = await pool.getPlayer('https://example.com/v2.mp4');
+
+        pool.stopAll();
+
+        verify(p1.controller.stop).called(1);
+        verify(p2.controller.stop).called(1);
+        // Not disposed, just stopped.
+        verifyNever(p1.dispose);
+        verifyNever(p2.dispose);
+      });
+
+      test('stopAll ignores exceptions from stop()', () async {
+        final failPlayer = _createMockPooledPlayer();
+        when(failPlayer.controller.stop).thenThrow(Exception('fail'));
+        var created = 0;
+
+        final pool = _SerializedTestPool(
+          onCreatePlayer: () {
+            created++;
+            return created == 1 ? failPlayer : _createMockPooledPlayer();
+          },
+        );
+        addTearDown(pool.dispose);
+
+        await pool.getPlayer('https://example.com/v1.mp4');
+        await pool.getPlayer('https://example.com/v2.mp4');
+
+        expect(() => pool.stopAll(), returnsNormally);
+      });
+
+      test('dispose sets isDisposed and clears all players', () async {
+        final pool = _SerializedTestPool(
+          onCreatePlayer: _createMockPooledPlayer,
+        );
+
+        final p1 = await pool.getPlayer('https://example.com/v1.mp4');
+        final p2 = await pool.getPlayer('https://example.com/v2.mp4');
+
+        await pool.dispose();
+
+        verify(p1.dispose).called(1);
+        verify(p2.dispose).called(1);
+        expect(pool.playerCount, equals(0));
+      });
+
+      test('double dispose is no-op', () async {
+        final pool = _SerializedTestPool(
+          onCreatePlayer: _createMockPooledPlayer,
+        );
+
+        final p1 = await pool.getPlayer('https://example.com/v1.mp4');
+
+        await pool.dispose();
+        await pool.dispose();
+
+        verify(p1.dispose).called(1);
+      });
+    });
   });
 }
 
