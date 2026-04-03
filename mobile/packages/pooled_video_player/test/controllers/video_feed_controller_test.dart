@@ -4374,5 +4374,268 @@ void main() {
         },
       );
     });
+
+    group('retryLoad', () {
+      test('releases player and re-triggers preload', () async {
+        final videos = createTestVideos(count: 3);
+
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+          preloadAhead: 0,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Video 0 should have a player loaded
+        expect(controller.getLoadState(0), isNot(LoadState.none));
+
+        // Retry releases and re-loads
+        controller.retryLoad(0);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // After retry, the preload window should be re-evaluated
+        // and the video should be loading again
+        expect(controller.getLoadState(0), isNot(LoadState.none));
+
+        controller.dispose();
+      });
+
+      test('clears error state on retry', () async {
+        // Use a failing pool so the video enters error state.
+        var shouldFail = true;
+        final retryPool = TestablePlayerPool(
+          maxPlayers: 10,
+          mockPlayerFactory: (url) {
+            final setup = createMockPlayerSetup();
+            final mock = _MockPooledPlayer();
+            when(() => mock.player).thenReturn(setup.player);
+            when(
+              () => mock.videoController,
+            ).thenReturn(createMockVideoController());
+            when(() => mock.isDisposed).thenReturn(false);
+            when(() => mock.wasRecycled).thenReturn(false);
+            when(mock.clearRecycled).thenReturn(null);
+            when(mock.dispose).thenAnswer((_) async {});
+            when(
+              () => setup.player.open(
+                any(),
+                play: any(named: 'play'),
+              ),
+            ).thenAnswer((_) async {
+              if (shouldFail) {
+                throw Exception('403 Forbidden');
+              }
+            });
+            return mock;
+          },
+        );
+
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 1),
+          pool: retryPool,
+          preloadAhead: 0,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        );
+
+        expect(
+          controller.getLoadState(0),
+          equals(LoadState.error),
+        );
+        expect(
+          controller.getIndexNotifier(0).value.errorType,
+          isNotNull,
+        );
+
+        // Allow retry to succeed
+        shouldFail = false;
+        controller.retryLoad(0);
+        await Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        );
+
+        expect(
+          controller.getLoadState(0),
+          isNot(LoadState.error),
+        );
+
+        controller.dispose();
+        await retryPool.dispose();
+      });
+    });
+
+    group('error type classification', () {
+      /// Creates a pool where open() always throws [errorMessage].
+      /// This triggers the _loadVideo catch block which calls
+      /// _markLoadError → _classifyError.
+      TestablePlayerPool failingPool(String errorMessage) {
+        return TestablePlayerPool(
+          maxPlayers: 10,
+          mockPlayerFactory: (url) {
+            final setup = createMockPlayerSetup();
+            final mock = _MockPooledPlayer();
+            when(() => mock.player).thenReturn(setup.player);
+            when(
+              () => mock.videoController,
+            ).thenReturn(createMockVideoController());
+            when(() => mock.isDisposed).thenReturn(false);
+            when(() => mock.wasRecycled).thenReturn(false);
+            when(mock.clearRecycled).thenReturn(null);
+            when(mock.dispose).thenAnswer((_) async {});
+            // Make open() throw so _loadVideo catch fires.
+            when(
+              () => setup.player.open(
+                any(),
+                play: any(named: 'play'),
+              ),
+            ).thenThrow(Exception(errorMessage));
+            return mock;
+          },
+        );
+      }
+
+      test('classifies 403 as forbidden', () async {
+        final fp = failingPool('403 Forbidden');
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 1),
+          pool: fp,
+          preloadAhead: 0,
+          preloadBehind: 0,
+        );
+        await Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        );
+
+        final state = controller.getIndexNotifier(0).value;
+        expect(state.loadState, equals(LoadState.error));
+        expect(
+          state.errorType,
+          equals(VideoErrorType.forbidden),
+        );
+
+        controller.dispose();
+        await fp.dispose();
+      });
+
+      test('classifies 401 as ageRestricted', () async {
+        final fp = failingPool('401 Unauthorized');
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 1),
+          pool: fp,
+          preloadAhead: 0,
+          preloadBehind: 0,
+        );
+        await Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        );
+
+        final state = controller.getIndexNotifier(0).value;
+        expect(state.loadState, equals(LoadState.error));
+        expect(
+          state.errorType,
+          equals(VideoErrorType.ageRestricted),
+        );
+
+        controller.dispose();
+        await fp.dispose();
+      });
+
+      test('classifies 404 as notFound', () async {
+        final fp = failingPool('404 Not Found');
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 1),
+          pool: fp,
+          preloadAhead: 0,
+          preloadBehind: 0,
+        );
+        await Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        );
+
+        final state = controller.getIndexNotifier(0).value;
+        expect(state.loadState, equals(LoadState.error));
+        expect(
+          state.errorType,
+          equals(VideoErrorType.notFound),
+        );
+
+        controller.dispose();
+        await fp.dispose();
+      });
+
+      test(
+        'classifies generic error on divine URL as notFound',
+        () async {
+          final fp = failingPool('Failed to open stream');
+          final videos = [
+            const VideoItem(
+              id: 'divine_video',
+              url:
+                  'https://media.divine.video/'
+                  'a1b2c3d4e5f6a1b2c3d4'
+                  'e5f6a1b2c3d4e5f6a1b2'
+                  'c3d4e5f6a1b2c3d4e5f6a1b2',
+            ),
+          ];
+
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: fp,
+            preloadAhead: 0,
+            preloadBehind: 0,
+          );
+          await Future<void>.delayed(
+            const Duration(milliseconds: 50),
+          );
+
+          final state = controller.getIndexNotifier(0).value;
+          expect(
+            state.loadState,
+            equals(LoadState.error),
+          );
+          expect(
+            state.errorType,
+            equals(VideoErrorType.notFound),
+          );
+
+          controller.dispose();
+          await fp.dispose();
+        },
+      );
+
+      test(
+        'classifies generic error on non-divine URL as generic',
+        () async {
+          final fp = failingPool('decode error');
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: fp,
+            preloadAhead: 0,
+            preloadBehind: 0,
+          );
+          await Future<void>.delayed(
+            const Duration(milliseconds: 50),
+          );
+
+          final state = controller.getIndexNotifier(0).value;
+          expect(
+            state.loadState,
+            equals(LoadState.error),
+          );
+          expect(
+            state.errorType,
+            equals(VideoErrorType.generic),
+          );
+
+          controller.dispose();
+          await fp.dispose();
+        },
+      );
+    });
   });
 }

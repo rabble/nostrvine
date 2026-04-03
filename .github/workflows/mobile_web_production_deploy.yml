@@ -1,0 +1,59 @@
+# ABOUTME: Builds and deploys Flutter web to Cloudflare Pages on every merge to main
+# ABOUTME: Production site at app.divine.video via the openvine-app Pages project
+
+name: Mobile Web Production Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy to app.divine.video
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Flutter web
+        run: |
+          flutter build web \
+            --release \
+            --tree-shake-icons \
+            --optimization-level=4 \
+            --pwa-strategy=none \
+            --dart-define=DEFAULT_ENV=PRODUCTION \
+            --no-source-maps
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy mobile/build/web
+            --project-name=openvine-app
+            --branch=main

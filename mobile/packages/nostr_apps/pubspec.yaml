@@ -1,0 +1,24 @@
+name: nostr_apps
+description: Shared services and policy for approved Nostr app integrations.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.5.0
+  meta: ^1.17.0
+  models:
+    path: ../models
+  shared_preferences: ^2.5.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0

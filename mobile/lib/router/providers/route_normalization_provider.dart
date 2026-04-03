@@ -24,6 +24,7 @@ final routeNormalizationProvider = Provider<void>((ref) {
     // Use contains() to handle both path-only and full URL formats (deep links include host)
     if (loc.startsWith(WelcomeScreen.path) ||
         loc.startsWith(NostrConnectScreen.path) ||
+        RegExp(r'^/apps/[^/]+/sandbox$').hasMatch(loc) ||
         loc.contains('${ResetPasswordScreen.path}?token=') ||
         loc.contains('${EmailVerificationScreen.path}?') ||
         loc.startsWith(SearchResultsPage.pathPrefix)) {

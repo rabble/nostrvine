@@ -126,5 +126,63 @@ void main() {
       expect(cached.memCacheWidth, equals(256));
       expect(cached.memCacheHeight, equals(512));
     });
+
+    testWidgets('defaults fadeInDuration to 500ms', (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: testUrl),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(
+        cached.fadeInDuration,
+        equals(const Duration(milliseconds: 500)),
+      );
+    });
+
+    testWidgets('defaults fadeOutDuration to 1000ms', (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: testUrl),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(
+        cached.fadeOutDuration,
+        equals(const Duration(milliseconds: 1000)),
+      );
+    });
+
+    testWidgets('passes fadeInDuration and fadeOutDuration through', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(
+            imageUrl: testUrl,
+            fadeInDuration: Duration.zero,
+            fadeOutDuration: Duration(milliseconds: 200),
+          ),
+        ),
+      );
+
+      final cached = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(cached.fadeInDuration, equals(Duration.zero));
+      expect(
+        cached.fadeOutDuration,
+        equals(const Duration(milliseconds: 200)),
+      );
+    });
   });
 }

@@ -49,13 +49,47 @@ class SearchResultsPage extends ConsumerWidget {
       ],
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: Column(
-          children: [
-            SearchResultsAppBar(initialQuery: initialQuery ?? ''),
-            const Expanded(child: SearchResultsView()),
-          ],
-        ),
+        body: _SearchResultsBody(initialQuery: initialQuery ?? ''),
       ),
+    );
+  }
+}
+
+/// Owns the [SearchResultsFilter] state shared between the app bar and body.
+class _SearchResultsBody extends StatefulWidget {
+  const _SearchResultsBody({required this.initialQuery});
+
+  final String initialQuery;
+
+  @override
+  State<_SearchResultsBody> createState() => _SearchResultsBodyState();
+}
+
+class _SearchResultsBodyState extends State<_SearchResultsBody> {
+  SearchResultsFilter _filter = SearchResultsFilter.all;
+
+  void _onFilterChanged(SearchResultsFilter filter) {
+    setState(() => _filter = filter);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SearchResultsAppBar(
+          initialQuery: widget.initialQuery,
+          filterLabel: _filter.label,
+          onFilterTap: _filter == SearchResultsFilter.all
+              ? null
+              : () => _onFilterChanged(SearchResultsFilter.all),
+        ),
+        Expanded(
+          child: SearchResultsView(
+            filter: _filter,
+            onFilterChanged: _onFilterChanged,
+          ),
+        ),
+      ],
     );
   }
 }

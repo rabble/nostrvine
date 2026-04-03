@@ -2,6 +2,7 @@
 // ABOUTME: Verifies polling lifecycle, state transitions, and error handling
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -105,45 +106,42 @@ void main() {
     group('invite activation', () {
       const testCode = 'auth-code-from-server';
 
-      test(
-        'consumes invite with exchanged session before sign in',
-        () async {
-          when(() => mockAuthService.isRegistered).thenReturn(false);
-          when(() => mockAuthService.isAuthenticated).thenReturn(false);
-          when(() => mockAuthService.isAnonymous).thenReturn(false);
-          when(() => mockAuthService.isRegistered).thenReturn(false);
-          when(() => mockOAuth.config).thenReturn(
-            const OAuthConfig(
-              serverUrl: 'https://login.divine.video',
-              clientId: 'client-id',
-              redirectUri: 'divine://auth',
-            ),
-          );
-          when(
-            () => mockOAuth.pollForCode(testDeviceCode),
-          ).thenAnswer((_) async => PollResult.complete(testCode));
-          when(
-            () =>
-                mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
-          ).thenAnswer(
-            (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
-          );
-          when(
-            () => mockInviteApiService.consumeInviteWithSession(
-              code: any(named: 'code'),
-              oauthConfig: any(named: 'oauthConfig'),
-              session: any(named: 'session'),
-            ),
-          ).thenAnswer(
-            (_) async => const InviteConsumeResult(
-              message: 'Welcome',
-              codesAllocated: 5,
-            ),
-          );
-          when(
-            () => mockAuthService.signInWithDivineOAuth(any()),
-          ).thenAnswer((_) async {});
+      test('consumes invite with exchanged session before sign in', () {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isAnonymous).thenReturn(false);
+        when(() => mockOAuth.config).thenReturn(
+          const OAuthConfig(
+            serverUrl: 'https://login.divine.video',
+            clientId: 'client-id',
+            redirectUri: 'divine://auth',
+          ),
+        );
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.complete(testCode));
+        when(
+          () => mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+        when(
+          () => mockInviteApiService.consumeInviteWithSession(
+            code: any(named: 'code'),
+            oauthConfig: any(named: 'oauthConfig'),
+            session: any(named: 'session'),
+          ),
+        ).thenAnswer(
+          (_) async => const InviteConsumeResult(
+            message: 'Welcome',
+            codesAllocated: 5,
+          ),
+        );
+        when(
+          () => mockAuthService.signInWithDivineOAuth(any()),
+        ).thenAnswer((_) async {});
 
+        fakeAsync((fake) {
           final cubit = buildCubit();
           cubit.startPolling(
             deviceCode: testDeviceCode,
@@ -152,7 +150,7 @@ void main() {
             inviteCode: 'ab12ef34',
           );
 
-          await Future<void>.delayed(const Duration(seconds: 4));
+          fake.elapse(const Duration(seconds: 4));
 
           expect(cubit.state.status, EmailVerificationStatus.success);
           verifyInOrder([
@@ -168,14 +166,14 @@ void main() {
             () => mockAuthService.signInWithDivineOAuth(any()),
           ]);
 
-          await cubit.close();
-        },
-      );
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
 
-      test('emits failure when invite activation fails', () async {
+      test('emits failure when invite activation fails', () {
         when(() => mockAuthService.isRegistered).thenReturn(false);
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
-        when(() => mockAuthService.isRegistered).thenReturn(false);
         when(() => mockOAuth.config).thenReturn(
           const OAuthConfig(
             serverUrl: 'https://login.divine.video',
@@ -199,27 +197,30 @@ void main() {
           ),
         ).thenThrow(const ApiException('Invite activation failed'));
 
-        final cubit = buildCubit();
-        cubit.startPolling(
-          deviceCode: testDeviceCode,
-          verifier: testVerifier,
-          email: testEmail,
-          inviteCode: 'ab12ef34',
-        );
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+            inviteCode: 'ab12ef34',
+          );
 
-        await Future<void>.delayed(const Duration(seconds: 4));
+          fake.elapse(const Duration(seconds: 4));
 
-        expect(cubit.state.status, EmailVerificationStatus.failure);
-        expect(
-          cubit.state.error,
-          "We couldn't activate your invite. "
-          'Go back to your invite code, join the waitlist, or contact support.',
-        );
-        expect(cubit.state.showInviteGateRecovery, isTrue);
-        expect(cubit.state.inviteRecoveryCode, 'AB12-EF34');
-        verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
+          expect(cubit.state.status, EmailVerificationStatus.failure);
+          expect(
+            cubit.state.error,
+            "We couldn't activate your invite. "
+            'Go back to your invite code, join the waitlist, or contact support.',
+          );
+          expect(cubit.state.showInviteGateRecovery, isTrue);
+          expect(cubit.state.inviteRecoveryCode, 'AB12-EF34');
+          verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
 
-        await cubit.close();
+          cubit.close();
+          fake.flushMicrotasks();
+        });
       });
     });
 
@@ -302,26 +303,24 @@ void main() {
     group('zombie cubit detection', () {
       const testCode = 'auth-code-from-server';
 
-      test(
-        'zombie cubit stops polling when device code already completed',
-        () async {
-          // Simulate cubit #1 (the one that completed verification)
-          when(() => mockAuthService.isAuthenticated).thenReturn(false);
-          when(() => mockAuthService.isAnonymous).thenReturn(false);
-          when(() => mockAuthService.isRegistered).thenReturn(false);
-          when(
-            () => mockOAuth.pollForCode(testDeviceCode),
-          ).thenAnswer((_) async => PollResult.complete(testCode));
-          when(
-            () =>
-                mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
-          ).thenAnswer(
-            (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
-          );
-          when(
-            () => mockAuthService.signInWithDivineOAuth(any()),
-          ).thenAnswer((_) async {});
+      test('zombie cubit stops polling when device code already completed', () {
+        // Simulate cubit #1 (the one that completed verification)
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isAnonymous).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.complete(testCode));
+        when(
+          () => mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+        when(
+          () => mockAuthService.signInWithDivineOAuth(any()),
+        ).thenAnswer((_) async {});
 
+        fakeAsync((fake) {
           final cubit1 = buildCubit();
           cubit1.startPolling(
             deviceCode: testDeviceCode,
@@ -330,7 +329,7 @@ void main() {
           );
 
           // Let the first poll cycle complete (exchange succeeds)
-          await Future<void>.delayed(const Duration(seconds: 4));
+          fake.elapse(const Duration(seconds: 4));
 
           // Cubit #1 should have completed and set the static field
           expect(cubit1.state.status, EmailVerificationStatus.success);
@@ -356,7 +355,7 @@ void main() {
           );
 
           // Let the zombie's first poll cycle run
-          await Future<void>.delayed(const Duration(seconds: 4));
+          fake.elapse(const Duration(seconds: 4));
 
           // Zombie should have emitted success (so the screen navigates)
           expect(cubit2.state.status, EmailVerificationStatus.success);
@@ -365,12 +364,13 @@ void main() {
           // because the static guard fires before the network call
           verifyNever(() => zombieOAuth.pollForCode(any()));
 
-          await cubit1.close();
-          await cubit2.close();
-        },
-      );
+          cubit1.close();
+          cubit2.close();
+          fake.flushMicrotasks();
+        });
+      });
 
-      test('different device code is not affected by completed code', () async {
+      test('different device code is not affected by completed code', () {
         // Simulate cubit #1 completing with one device code
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
         when(() => mockAuthService.isAnonymous).thenReturn(false);
@@ -387,41 +387,44 @@ void main() {
           () => mockAuthService.signInWithDivineOAuth(any()),
         ).thenAnswer((_) async {});
 
-        final cubit1 = buildCubit();
-        cubit1.startPolling(
-          deviceCode: testDeviceCode,
-          verifier: testVerifier,
-          email: testEmail,
-        );
-        await Future<void>.delayed(const Duration(seconds: 4));
+        fakeAsync((fake) {
+          final cubit1 = buildCubit();
+          cubit1.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+          fake.elapse(const Duration(seconds: 4));
 
-        // Now a NEW registration with a different device code should
-        // NOT be blocked
-        const newDeviceCode = 'new-device-code-different';
-        final newOAuth = _MockKeycastOAuth();
-        final newAuthService = _MockAuthService();
-        when(() => newAuthService.isAuthenticated).thenReturn(false);
-        when(() => newAuthService.isRegistered).thenReturn(false);
-        when(
-          () => newOAuth.pollForCode(newDeviceCode),
-        ).thenAnswer((_) async => PollResult.pending());
+          // Now a NEW registration with a different device code should
+          // NOT be blocked
+          const newDeviceCode = 'new-device-code-different';
+          final newOAuth = _MockKeycastOAuth();
+          final newAuthService = _MockAuthService();
+          when(() => newAuthService.isAuthenticated).thenReturn(false);
+          when(() => newAuthService.isRegistered).thenReturn(false);
+          when(
+            () => newOAuth.pollForCode(newDeviceCode),
+          ).thenAnswer((_) async => PollResult.pending());
 
-        final cubit2 = EmailVerificationCubit(
-          oauthClient: newOAuth,
-          authService: newAuthService,
-        );
-        cubit2.startPolling(
-          deviceCode: newDeviceCode,
-          verifier: testVerifier,
-          email: testEmail,
-        );
-        await Future<void>.delayed(const Duration(seconds: 4));
+          final cubit2 = EmailVerificationCubit(
+            oauthClient: newOAuth,
+            authService: newAuthService,
+          );
+          cubit2.startPolling(
+            deviceCode: newDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+          fake.elapse(const Duration(seconds: 4));
 
-        // pollForCode SHOULD have been called — different device code
-        verify(() => newOAuth.pollForCode(newDeviceCode)).called(1);
+          // pollForCode SHOULD have been called — different device code
+          verify(() => newOAuth.pollForCode(newDeviceCode)).called(1);
 
-        await cubit1.close();
-        await cubit2.close();
+          cubit1.close();
+          cubit2.close();
+          fake.flushMicrotasks();
+        });
       });
     });
 
@@ -433,7 +436,7 @@ void main() {
       // kills legitimate new-user registration polls on the first tick.
       test(
         'does not stop polling when isRegistered=true but isAuthenticated=false',
-        () async {
+        () {
           // Simulate stale authSource: device had a prior OAuth session (signed
           // out), so isRegistered=true but isAuthenticated=false.
           when(() => mockAuthService.isAuthenticated).thenReturn(false);
@@ -442,29 +445,33 @@ void main() {
             () => mockOAuth.pollForCode(testDeviceCode),
           ).thenAnswer((_) async => PollResult.pending());
 
-          final cubit = buildCubit();
-          cubit.startPolling(
-            deviceCode: testDeviceCode,
-            verifier: testVerifier,
-            email: testEmail,
-          );
+          fakeAsync((fake) {
+            final cubit = buildCubit();
+            cubit.startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
 
-          // Let two poll cycles run
-          await Future<void>.delayed(const Duration(seconds: 7));
+            // Advance past two poll cycles (fires at t=3s and t=6s)
+            fake.elapse(const Duration(seconds: 7));
 
-          // Polling should still be running — guard must NOT have fired
-          expect(cubit.state.status, EmailVerificationStatus.polling);
-          verify(() => mockOAuth.pollForCode(testDeviceCode)).called(
-            greaterThanOrEqualTo(2),
-          );
+            // Polling should still be running — guard must NOT have fired
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            verify(() => mockOAuth.pollForCode(testDeviceCode)).called(
+              greaterThanOrEqualTo(2),
+            );
 
-          await cubit.close();
+            // Cancel timers before fakeAsync exits
+            cubit.close();
+            fake.flushMicrotasks();
+          });
         },
       );
 
       test(
         'stops polling when both isAuthenticated=true and isRegistered=true',
-        () async {
+        () {
           // Guard should still fire for the legitimate zombie-cubit case:
           // user IS authenticated AND registered (completed sign-in elsewhere).
           when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -473,21 +480,24 @@ void main() {
             () => mockOAuth.pollForCode(testDeviceCode),
           ).thenAnswer((_) async => PollResult.pending());
 
-          final cubit = buildCubit();
-          cubit.startPolling(
-            deviceCode: testDeviceCode,
-            verifier: testVerifier,
-            email: testEmail,
-          );
+          fakeAsync((fake) {
+            final cubit = buildCubit();
+            cubit.startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
 
-          // Let the first poll cycle run
-          await Future<void>.delayed(const Duration(seconds: 4));
+            // Advance past first poll tick (fires at t=3s, guard cancels timers)
+            fake.elapse(const Duration(seconds: 4));
 
-          // Guard fires before the network call — pollForCode never called.
-          // (The cubit stops its timer silently without emitting a state change.)
-          verifyNever(() => mockOAuth.pollForCode(any()));
+            // Guard fires before the network call — pollForCode never called.
+            // (The cubit stops its timer silently without emitting a state change.)
+            verifyNever(() => mockOAuth.pollForCode(any()));
 
-          await cubit.close();
+            cubit.close();
+            fake.flushMicrotasks();
+          });
         },
       );
     });

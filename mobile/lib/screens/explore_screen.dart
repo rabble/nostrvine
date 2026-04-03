@@ -18,6 +18,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
@@ -28,6 +29,7 @@ import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
+import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -82,9 +84,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   /// Calculate tab count based on feature availability
   /// Base: New Videos, Trending, Categories, Lists = 4
-  /// +1 if Classics available, +1 if For You available
+  /// +1 if Apps are supported, +1 if Classics available, +1 if For You available
   int get _tabCount {
     int count = 4; // Base tabs: New Videos, Trending, Categories, Lists
+    if (nostrAppsSandboxSupported) count++;
     if (_classicsAvailable) count++;
     if (_forYouAvailable) count++;
     return count;
@@ -97,6 +100,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     names.addAll(['new', 'popular', 'categories']);
     if (_forYouAvailable) names.add('for_you');
     names.add('lists');
+    if (nostrAppsSandboxSupported) names.add('apps');
     return names;
   }
 
@@ -476,6 +480,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               const Tab(text: 'Categories'),
               if (_forYouAvailable) const Tab(text: 'For You'),
               const Tab(text: 'Lists'),
+              if (nostrAppsSandboxSupported) const Tab(text: 'Integrated Apps'),
             ],
           ),
         ),
@@ -548,6 +553,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 const CategoriesTab(),
                 if (_forYouAvailable) const ForYouTab(),
                 _buildListsTab(),
+                if (nostrAppsSandboxSupported)
+                  const AppsDirectoryScreen(embedded: true),
               ],
             ),
             // New videos banner (only show on New Videos and Trending tabs)

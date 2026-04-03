@@ -234,19 +234,14 @@ void main() {
       test('passes trimmed query and limit to callback', () {
         String? capturedQuery;
         int? capturedLimit;
-        final repoWithLocal = HashtagRepository(
+        HashtagRepository(
           funnelcakeApiClient: mockClient,
           localSearch: (query, limit) {
             capturedQuery = query;
             capturedLimit = limit;
             return [];
           },
-        );
-
-        repoWithLocal.searchHashtagsLocally(
-          query: '  music  ',
-          limit: 50,
-        );
+        ).searchHashtagsLocally(query: '  music  ', limit: 50);
 
         expect(capturedQuery, equals('music'));
         expect(capturedLimit, equals(50));
@@ -273,15 +268,13 @@ void main() {
 
       test('passes maxLocalHashtagCount as limit', () {
         int? capturedLimit;
-        final repoWithLocal = HashtagRepository(
+        HashtagRepository(
           funnelcakeApiClient: mockClient,
           localSearch: (query, limit) {
             capturedLimit = limit;
             return [];
           },
-        );
-
-        repoWithLocal.countHashtagsLocally(query: 'test');
+        ).countHashtagsLocally(query: 'test');
 
         expect(capturedLimit, equals(maxLocalHashtagCount));
       });

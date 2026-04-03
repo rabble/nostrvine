@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/apps/app_detail_screen.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -287,6 +289,50 @@ void main() {
       expect(
         router.routeInformationProvider.value.uri.toString(),
         SettingsScreen.path,
+      );
+    });
+
+    testWidgets('${AppsDirectoryScreen.path} route works', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+      router.go(AppsDirectoryScreen.path);
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        AppsDirectoryScreen.path,
+      );
+    });
+
+    testWidgets('${AppDetailScreen.path} route works', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+      router.go(AppDetailScreen.pathForSlug('primal'));
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        AppDetailScreen.pathForSlug('primal'),
       );
     });
 

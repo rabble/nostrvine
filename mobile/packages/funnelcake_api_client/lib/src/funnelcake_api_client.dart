@@ -1157,7 +1157,7 @@ class FunnelcakeApiClient {
 
         if (profile != null &&
             (profile['name'] != null || profile['display_name'] != null)) {
-          return {
+          final result = <String, dynamic>{
             'pubkey': pubkey,
             'name': profile['name'],
             'display_name': profile['display_name'],
@@ -1167,12 +1167,34 @@ class FunnelcakeApiClient {
             'nip05': profile['nip05'],
             'lud16': profile['lud16'],
           };
+
+          // Include social/stats/engagement when present so callers
+          // can populate ProfileStats without a second request.
+          final social = data['social'] as Map<String, dynamic>?;
+          final stats = data['stats'] as Map<String, dynamic>?;
+          final engagement = data['engagement'] as Map<String, dynamic>?;
+          if (social != null) result['social'] = social;
+          if (stats != null) result['stats'] = stats;
+          if (engagement != null) result['engagement'] = engagement;
+
+          return result;
         }
 
         // User exists in FunnelCake but has never published a
         // Kind 0 profile event — return sentinel so callers can
-        // skip expensive relay/indexer fallback.
-        return {'_noProfile': true, 'pubkey': pubkey};
+        // skip expensive relay/indexer fallback. Include stats so
+        // callers can still cache engagement data.
+        final sentinel = <String, dynamic>{
+          '_noProfile': true,
+          'pubkey': pubkey,
+        };
+        final social = data['social'] as Map<String, dynamic>?;
+        final stats = data['stats'] as Map<String, dynamic>?;
+        final engagement = data['engagement'] as Map<String, dynamic>?;
+        if (social != null) sentinel['social'] = social;
+        if (stats != null) sentinel['stats'] = stats;
+        if (engagement != null) sentinel['engagement'] = engagement;
+        return sentinel;
       } else if (response.statusCode == 404) {
         return null;
       } else {
