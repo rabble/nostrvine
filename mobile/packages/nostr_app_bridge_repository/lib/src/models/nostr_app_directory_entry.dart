@@ -1,8 +1,10 @@
+import 'package:equatable/equatable.dart';
+
 /// A single entry from the Nostr app directory.
 ///
 /// Represents a vetted third-party Nostr app that can be surfaced
 /// inside the host application.
-class NostrAppDirectoryEntry {
+class NostrAppDirectoryEntry extends Equatable {
   /// Creates a directory entry.
   const NostrAppDirectoryEntry({
     required this.id,
@@ -95,6 +97,36 @@ class NostrAppDirectoryEntry {
 
   /// The key used to persist grants (prefers slug over id).
   String get grantKey => slug.isNotEmpty ? slug : id;
+
+  /// The origin portion of [launchUrl].
+  ///
+  /// Returns the full [launchUrl] when it cannot be parsed.
+  String get primaryOrigin {
+    final uri = Uri.tryParse(launchUrl);
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+      return launchUrl;
+    }
+    return uri.origin;
+  }
+
+  @override
+  List<Object?> get props => [
+    id,
+    slug,
+    name,
+    tagline,
+    description,
+    iconUrl,
+    launchUrl,
+    allowedOrigins,
+    allowedMethods,
+    allowedSignEventKinds,
+    promptRequiredFor,
+    status,
+    sortOrder,
+    createdAt,
+    updatedAt,
+  ];
 
   /// Serializes to JSON.
   Map<String, dynamic> toJson() {

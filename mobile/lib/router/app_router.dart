@@ -18,7 +18,6 @@ import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
-import 'package:openvine/screens/apps/resolved_sandbox_route_screen.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';

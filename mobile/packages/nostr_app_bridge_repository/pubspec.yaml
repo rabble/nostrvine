@@ -11,6 +11,7 @@ environment:
 resolution: workspace
 
 dependencies:
+  equatable: ^2.0.7
   http: ^1.2.2
   meta: ^1.16.0
   nostr_sdk:

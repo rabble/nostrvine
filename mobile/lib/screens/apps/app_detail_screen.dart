@@ -55,14 +55,6 @@ class AppDetailScreen extends ConsumerWidget {
 class _AppDetailContent extends StatelessWidget {
   const _AppDetailContent();
 
-  String _displayPrimaryOrigin(String launchUrl) {
-    final uri = Uri.tryParse(launchUrl);
-    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-      return launchUrl;
-    }
-    return uri.origin;
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppDetailCubit, AppDetailState>(
@@ -146,9 +138,7 @@ class _AppDetailContent extends StatelessWidget {
                     _AppDetailSection(
                       title: 'Primary origin',
                       child: Text(
-                        _displayPrimaryOrigin(
-                          app.launchUrl,
-                        ),
+                        app.primaryOrigin,
                         style: const TextStyle(
                           color: VineTheme.vineGreen,
                           fontSize: 15,
