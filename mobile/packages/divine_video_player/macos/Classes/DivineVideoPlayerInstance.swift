@@ -126,17 +126,43 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                let (composition, offsets, durations) = try await self.buildComposition(from: clipsRaw)
-                self.clipOffsets = offsets
-                self.clipDurations = durations
+                let result_ = try await self.buildComposition(from: clipsRaw)
+                let composition = result_.composition
+                let videoTrack = result_.videoTrack
+                let transform = result_.transform
+                self.clipOffsets = result_.offsets
+                self.clipDurations = result_.durations
                 self.clipCount = clipsRaw.count
-                self.totalDuration = offsets.last.map { $0 + (durations.last ?? 0) } ?? 0
+                self.totalDuration = result_.offsets.last.map {
+                    $0 + (result_.durations.last ?? 0)
+                } ?? 0
                 self.firstFrameRendered = false
 
                 let playerItem = AVPlayerItem(asset: composition)
-                playerItem.videoComposition = AVVideoComposition(
+
+                // AVVideoComposition(propertiesOf:) generates correct
+                // layer instructions but sets renderSize to the track's
+                // un-rotated naturalSize, which leaves black bars for
+                // rotated (e.g. portrait) videos. We let it generate
+                // instructions, then create a mutable copy with the
+                // corrected renderSize that accounts for the transform.
+                let autoVC = AVVideoComposition(
                     propertiesOf: composition
                 )
+                let naturalSize = result_.sourceNaturalSize
+                let transformedRect = CGRect(
+                    origin: .zero, size: naturalSize
+                ).applying(transform)
+                let correctedRenderSize = CGSize(
+                    width: abs(transformedRect.size.width),
+                    height: abs(transformedRect.size.height)
+                )
+
+                let fixedVC = AVMutableVideoComposition()
+                fixedVC.renderSize = correctedRenderSize
+                fixedVC.frameDuration = autoVC.frameDuration
+                fixedVC.instructions = autoVC.instructions
+                playerItem.videoComposition = fixedVC
                 self.textureOutput?.attach(to: playerItem)
 
                 // Reset dimensions so stale values from the previous video
@@ -180,7 +206,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private func buildComposition(
         from clipsRaw: [[String: Any]]
-    ) async throws -> (AVMutableComposition, [Double], [Double]) {
+    ) async throws -> (
+        composition: AVMutableComposition,
+        videoTrack: AVMutableCompositionTrack,
+        offsets: [Double],
+        durations: [Double],
+        transform: CGAffineTransform,
+        sourceNaturalSize: CGSize
+    ) {
         let composition = AVMutableComposition()
         guard let videoTrack = composition.addMutableTrack(
             withMediaType: .video,
@@ -239,6 +272,12 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             insertTime = CMTimeAdd(insertTime, clipDuration)
         }
 
+        // Load the preferredTransform and naturalSize from the first
+        // source track. Set preferredTransform on the composition track
+        // so AVVideoComposition(propertiesOf:) generates correct layer
+        // instructions. The caller will fix the renderSize separately.
+        var transform = CGAffineTransform.identity
+        var sourceNaturalSize = CGSize.zero
         if let firstClipUri = clipsRaw.first?["uri"] as? String {
             let firstURL: URL
             if firstClipUri.hasPrefix("/") {
@@ -248,12 +287,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             }
             let firstAsset = AVURLAsset(url: firstURL)
             if let firstTrack = try? await firstAsset.loadTracks(withMediaType: .video).first {
-                let transform = try await firstTrack.load(.preferredTransform)
+                transform = try await firstTrack.load(.preferredTransform)
+                sourceNaturalSize = try await firstTrack.load(.naturalSize)
                 videoTrack.preferredTransform = transform
             }
         }
 
-        return (composition, offsets, durations)
+        return (composition, videoTrack, offsets, durations, transform, sourceNaturalSize)
     }
 
     // MARK: - Seek
@@ -515,6 +555,22 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     // MARK: - Video size
 
     private func updateVideoSize(from item: AVPlayerItem) {
+        // When an AVVideoComposition is set on the player item,
+        // AVPlayerItemVideoOutput delivers pixel buffers at the
+        // composition's renderSize (which already accounts for the
+        // preferredTransform). Use that render size directly so the
+        // reported dimensions always match the actual texture frames.
+        if let vc = item.videoComposition {
+            let rs = vc.renderSize
+            let w = rs.width
+            let h = rs.height
+            videoWidth = w.isFinite ? Int(abs(w)) : 0
+            videoHeight = h.isFinite ? Int(abs(h)) : 0
+            sendStateUpdate()
+            return
+        }
+
+        // Fallback: no video composition — read from the track directly.
         Task { @MainActor [weak self] in
             guard let self else { return }
             guard let track = try? await item.asset.loadTracks(

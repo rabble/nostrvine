@@ -35,13 +35,15 @@ class FittedVideoPlayer extends StatelessWidget {
     final mh = metadataHeight ?? 0;
 
     if (mw > 0 && mh > 0) {
-      return SizedBox.expand(
-        child: FittedBox(
-          fit: boxFit,
-          child: SizedBox(
-            width: mw.toDouble(),
-            height: mh.toDouble(),
-            child: DivineVideoPlayer(controller: controller),
+      return ClipRRect(
+        child: SizedBox.expand(
+          child: FittedBox(
+            fit: boxFit,
+            child: SizedBox(
+              width: mw.toDouble(),
+              height: mh.toDouble(),
+              child: DivineVideoPlayer(controller: controller),
+            ),
           ),
         ),
       );
@@ -49,31 +51,31 @@ class FittedVideoPlayer extends StatelessWidget {
 
     // No metadata dimensions — wait for the native player to report them,
     // ignoring transient 0×0 resets from source switches.
-    return StreamBuilder<({int w, int h})>(
-      stream: controller.stateStream
-          .map((s) => (w: s.videoWidth, h: s.videoHeight))
-          .where((d) => d.w > 0 && d.h > 0)
-          .distinct(),
-      builder: (context, snapshot) {
-        final dims = snapshot.data;
+    return ClipRRect(
+      child: StreamBuilder<({int w, int h})>(
+        stream: controller.stateStream
+            .map((s) => (w: s.videoWidth, h: s.videoHeight))
+            .where((d) => d.w > 0 && d.h > 0)
+            .distinct(),
+        builder: (context, snapshot) {
+          final dims = snapshot.data;
 
-        if (dims == null) {
-          return SizedBox.expand(
-            child: DivineVideoPlayer(controller: controller),
+          final size = Size(
+            dims?.w.toDouble() ?? 1080,
+            dims?.h.toDouble() ?? (isPortrait ? 1920 : 1080),
           );
-        }
 
-        return SizedBox.expand(
-          child: FittedBox(
-            fit: boxFit,
-            child: SizedBox(
-              width: dims.w.toDouble(),
-              height: dims.h.toDouble(),
-              child: DivineVideoPlayer(controller: controller),
+          return SizedBox.expand(
+            child: FittedBox(
+              fit: boxFit,
+              child: SizedBox.fromSize(
+                size: size,
+                child: DivineVideoPlayer(controller: controller),
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
