@@ -307,27 +307,28 @@ class VideoFeedController extends ChangeNotifier {
       try {
         await controller.setSource(VideoClip.network(source));
 
-        // setSource() returns as soon as the native side acknowledges the
-        // request; actual load success/failure arrives asynchronously via
-        // the event stream. Wait for a meaningful status so we can fall
-        // back to the next source synchronously within this loop.
+        // The native side emits a state update just before completing
+        // the setSource method call. Because platform-channel messages
+        // are delivered in order, that update has already been applied
+        // to [controller.state] by the time we reach this line.
         //
-        // "paused" is included because on iOS the player can transition
-        // directly to paused (rate == 0 with buffer filled) without
-        // passing through buffering first — unlike Android's ExoPlayer
-        // which always emits STATE_BUFFERING initially.
-        final status = await controller.stateStream
-            .map((s) => s.status)
-            .where(
-              (s) =>
-                  s == PlaybackStatus.error ||
-                  s == PlaybackStatus.buffering ||
-                  s == PlaybackStatus.ready ||
-                  s == PlaybackStatus.playing ||
-                  s == PlaybackStatus.paused,
-            )
-            .first
-            .timeout(_sourceStatusTimeout);
+        // Check the synchronous state first — the broadcast
+        // stateStream may have already dropped the event before we
+        // can subscribe.
+        final immediateStatus = controller.state.status;
+
+        final PlaybackStatus status;
+        if (_isActionableStatus(immediateStatus)) {
+          status = immediateStatus;
+        } else {
+          // Fallback: the synchronous state is still "idle" (e.g. a
+          // very slow composition build). Wait for the stream.
+          status = await controller.stateStream
+              .map((s) => s.status)
+              .where(_isActionableStatus)
+              .first
+              .timeout(_sourceStatusTimeout);
+        }
 
         if (status == PlaybackStatus.error) {
           throw Exception(
@@ -355,6 +356,15 @@ class VideoFeedController extends ChangeNotifier {
       }
     }
   }
+
+  /// Whether this [PlaybackStatus] indicates the native player has
+  /// finished processing the source (success, error, or buffering).
+  static bool _isActionableStatus(PlaybackStatus s) =>
+      s == PlaybackStatus.error ||
+      s == PlaybackStatus.buffering ||
+      s == PlaybackStatus.ready ||
+      s == PlaybackStatus.playing ||
+      s == PlaybackStatus.paused;
 
   /// Classifies a raw error string into a [VideoErrorType].
   ///
