@@ -542,18 +542,9 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
     );
   }
 
-  String _formatAudioDeviceName(String deviceId) {
-    if (deviceId.toLowerCase().contains('builtinmicrophone')) {
-      return 'Built-in Microphone';
-    }
-    if (deviceId.toLowerCase().contains('zoom')) {
-      return 'Zoom Audio Device';
-    }
-    return deviceId
-        .replaceAll('Device', '')
-        .replaceAll('device', '')
-        .replaceAll(RegExp('[0-9a-f]{8}-[0-9a-f]{4}-.*'), '')
-        .trim();
+  String _formatAudioDeviceName(String name) {
+    if (name.isEmpty) return 'Unknown Microphone';
+    return name;
   }
 
   Future<void> _showAudioDevicePicker(

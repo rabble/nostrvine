@@ -472,11 +472,12 @@ class CameraController: NSObject {
     private func disableScreenFlash() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            let hadWindows = !self.screenFlashWindows.isEmpty
             for window in self.screenFlashWindows {
                 window.orderOut(nil)
             }
             self.screenFlashWindows.removeAll()
-            if !self.screenFlashWindows.isEmpty {
+            if hadWindows {
                 print("DivineCamera macOS: Screen flash disabled")
             }
         }
