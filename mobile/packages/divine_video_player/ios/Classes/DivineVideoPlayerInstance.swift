@@ -22,6 +22,18 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// a platform view.
     private var textureOutput: VideoTextureOutput?
 
+    /// Invisible player layer added to the Flutter root view.
+    ///
+    /// On iOS, `AVPlayerItemVideoOutput` refuses to deliver decoded
+    /// pixel buffers for many streams (HLS, FairPlay, and even some
+    /// progressive MP4s) unless an `AVPlayerLayer` is attached to the
+    /// player.  The layer does not need to be visible — its mere
+    /// presence tells AVFoundation that the app intends to display
+    /// the video, which disables the pixel-buffer copy-protection.
+    ///
+    /// See: https://github.com/flutter/flutter/issues/111457
+    private var workaroundPlayerLayer: AVPlayerLayer?
+
     /// Offsets of each clip on the global timeline (seconds).
     private var clipOffsets: [Double] = []
     /// Clip durations on the global timeline (seconds).
@@ -165,6 +177,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 fixedVC.renderSize = correctedRenderSize
                 fixedVC.frameDuration = autoVC.frameDuration
                 fixedVC.instructions = autoVC.instructions
+                fixedVC.sourceTrackIDForFrameTiming = videoTrack.trackID
                 playerItem.videoComposition = fixedVC
                 self.textureOutput?.attach(to: playerItem)
 
@@ -180,6 +193,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     let newPlayer = AVPlayer(playerItem: playerItem)
                     self.player = newPlayer
                     self.textureOutput?.attachPlayer(newPlayer)
+                    self.attachWorkaroundPlayerLayer(to: newPlayer)
                     self.addTimeObserver()
                 }
 
@@ -652,6 +666,32 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
     }
 
+    // MARK: - Workaround player layer
+
+    /// Attaches an invisible `AVPlayerLayer` to the Flutter root view.
+    ///
+    /// On iOS, `AVPlayerItemVideoOutput` refuses to deliver decoded
+    /// pixel buffers unless an `AVPlayerLayer` is attached to the
+    /// player.  The layer is zero-sized and hidden so it never draws;
+    /// its only purpose is to convince AVFoundation that the video
+    /// surface is "live".
+    private func attachWorkaroundPlayerLayer(to player: AVPlayer) {
+        guard textureOutput != nil else { return }
+        let layer = AVPlayerLayer(player: player)
+        layer.frame = .zero
+        layer.isHidden = true
+        if let rootLayer = UIApplication.shared
+            .connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow })?
+            .rootViewController?.view.layer
+        {
+            rootLayer.addSublayer(layer)
+        }
+        workaroundPlayerLayer = layer
+    }
+
     // MARK: - Dispose
 
     func dispose() {
@@ -662,6 +702,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         statusObservation?.invalidate()
         statusObservation = nil
         NotificationCenter.default.removeObserver(self)
+        workaroundPlayerLayer?.removeFromSuperlayer()
+        workaroundPlayerLayer = nil
         textureOutput?.dispose()
         textureOutput = nil
         player?.pause()
