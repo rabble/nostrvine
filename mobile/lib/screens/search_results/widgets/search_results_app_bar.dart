@@ -120,15 +120,21 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          label,
-          style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            widthFactor: 1,
+            child: Text(
+              label,
+              style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+            ),
+          ),
         ),
       ),
     );
