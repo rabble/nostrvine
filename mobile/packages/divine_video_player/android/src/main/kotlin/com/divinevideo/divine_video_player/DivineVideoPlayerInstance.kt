@@ -3,7 +3,8 @@ package com.divinevideo.divine_video_player
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.view.Surface
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -44,8 +45,8 @@ internal class DivineVideoPlayerInstance(
     private val mainHandler = Handler(Looper.getMainLooper())
 
     // Texture rendering (non-null when useTexture is enabled).
-    private var textureEntry: TextureRegistry.SurfaceTextureEntry? = null
-    private var textureSurface: Surface? = null
+    private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
+    private var needsSurface = true
 
     /** Accumulated clip durations for global timeline calculation. */
     private var clipOffsets = listOf<Long>()
@@ -79,10 +80,22 @@ internal class DivineVideoPlayerInstance(
      * ID that Dart should pass to the `Texture` widget.
      */
     fun enableTextureOutput(registry: TextureRegistry): Long {
-        val entry = registry.createSurfaceTexture()
-        textureEntry = entry
-        textureSurface = Surface(entry.surfaceTexture())
-        return entry.id()
+        val producer = registry.createSurfaceProducer()
+        producer.setCallback(object : TextureRegistry.SurfaceProducer.Callback {
+            override fun onSurfaceAvailable() {
+                if (needsSurface) {
+                    player?.setVideoSurface(producer.surface)
+                    needsSurface = false
+                }
+            }
+
+            override fun onSurfaceCleanup() {
+                player?.setVideoSurface(null)
+                needsSurface = true
+            }
+        })
+        surfaceProducer = producer
+        return producer.id()
     }
 
     private fun ensurePlayer(): ExoPlayer {
@@ -102,8 +115,18 @@ internal class DivineVideoPlayerInstance(
             )
             .build().also { newPlayer ->
                 player = newPlayer
+                newPlayer.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                        .build(),
+                    /* handleAudioFocus= */ true,
+                )
                 newPlayer.addListener(playerListener)
-                textureSurface?.let { newPlayer.setVideoSurface(it) }
+                surfaceProducer?.let { producer ->
+                    val surface = producer.surface
+                    newPlayer.setVideoSurface(surface)
+                    needsSurface = surface == null
+                }
             }
     }
 
@@ -457,6 +480,13 @@ internal class DivineVideoPlayerInstance(
         }
 
         override fun onPlayerError(error: PlaybackException) {
+            if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
+                // The player has fallen behind the live window. Seek to
+                // the default position and re-prepare so playback can
+                // resume instead of staying in an error state.
+                player?.seekToDefaultPosition()
+                player?.prepare()
+            }
             sendStateUpdate()
         }
 
@@ -513,10 +543,8 @@ internal class DivineVideoPlayerInstance(
         player?.setVideoSurface(null)
         player?.release()
         player = null
-        textureSurface?.release()
-        textureSurface = null
-        textureEntry?.release()
-        textureEntry = null
+        surfaceProducer?.release()
+        surfaceProducer = null
         audioOverlayManager.releaseAll()
         eventSink = null
     }
