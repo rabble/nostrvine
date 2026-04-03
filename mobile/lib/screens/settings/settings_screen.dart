@@ -266,17 +266,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     'DMCA, Open Source Licenses',
                 onTap: () => context.push(LegalScreen.path),
               ),
-              _SettingsTile(
-                icon: Icons.bolt,
-                title: 'Try Edgey Features',
-                subtitle: 'These toggles might hiccup—proceed with curiosity.',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const FeatureFlagScreen(),
-                  ),
-                ),
-              ),
 
               const SizedBox(height: 24),
               _VersionTile(appVersion: _appVersion),
