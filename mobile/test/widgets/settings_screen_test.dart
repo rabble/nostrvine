@@ -130,13 +130,13 @@ void main() {
 
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
-        find.text('Try Edgey Features'),
+        find.text('Experimental Features'),
         100,
         scrollable: scrollable,
       );
-      expect(find.text('Try Edgey Features'), findsOneWidget);
+      expect(find.text('Experimental Features'), findsOneWidget);
 
-      await tester.tap(find.text('Try Edgey Features'));
+      await tester.tap(find.text('Experimental Features'));
       await tester.pumpAndSettle();
 
       expect(find.byType(FeatureFlagScreen), findsOneWidget);
