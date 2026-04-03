@@ -112,6 +112,10 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
 class _FilterChip extends StatelessWidget {
   const _FilterChip({required this.label, this.onTap});
 
+  static const _padding = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+  static const _borderRadius = BorderRadius.all(Radius.circular(16));
+  static const _minTouchTarget = BoxConstraints(minHeight: 48);
+
   final String label;
   final VoidCallback? onTap;
 
@@ -121,12 +125,12 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 48),
+        constraints: _minTouchTarget,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
+          padding: _padding,
+          decoration: const BoxDecoration(
             color: VineTheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: _borderRadius,
           ),
           child: Center(
             widthFactor: 1,
