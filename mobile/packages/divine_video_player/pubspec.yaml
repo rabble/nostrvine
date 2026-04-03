@@ -1,0 +1,35 @@
+name: divine_video_player
+description: >-
+  Seamless multi-clip video player using native platform APIs.
+  Supports Android (Media3/ExoPlayer), iOS (AVFoundation), and
+  macOS (AVFoundation).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  path_provider_platform_interface: ^2.1.2
+  plugin_platform_interface: ^2.1.0
+  very_good_analysis: ^10.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.divinevideo.divine_video_player
+        pluginClass: DivineVideoPlayerPlugin
+      ios:
+        pluginClass: DivineVideoPlayerPlugin
+      macos:
+        pluginClass: DivineVideoPlayerPlugin

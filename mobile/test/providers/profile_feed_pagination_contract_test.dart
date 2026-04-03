@@ -26,6 +26,11 @@ class _AlwaysAvailableFunnelcake extends FunnelcakeAvailable {
   Future<bool> build() async => true;
 }
 
+class _NeverAvailableFunnelcake extends FunnelcakeAvailable {
+  @override
+  Future<bool> build() async => false;
+}
+
 void main() {
   const userId =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -131,6 +136,8 @@ void main() {
       ).thenReturn(
         () {},
       );
+      when(() => mockVideoEventService.addListener(any())).thenReturn(null);
+      when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
       when(() => mockVideoEventService.addNewVideoListener(any())).thenReturn(
         () {},
       );
@@ -141,14 +148,16 @@ void main() {
       });
     });
 
-    ProviderContainer createContainer() {
+    ProviderContainer createContainer({bool funnelcakeAvailable = true}) {
       final container = ProviderContainer(
         overrides: [
           funnelcakeApiClientProvider.overrideWithValue(
             mockFunnelcakeApiClient,
           ),
           funnelcakeAvailableProvider.overrideWith(
-            _AlwaysAvailableFunnelcake.new,
+            funnelcakeAvailable
+                ? _AlwaysAvailableFunnelcake.new
+                : _NeverAvailableFunnelcake.new,
           ),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
@@ -184,6 +193,35 @@ void main() {
 
         expect(state.videos.length, 9);
         expect(state.hasMoreContent, isTrue);
+      },
+    );
+
+    test(
+      'nostr fallback resolves initial state even when subscribe startup hangs',
+      () async {
+        final subscribeCompleter = Completer<void>();
+        addTearDown(() {
+          if (!subscribeCompleter.isCompleted) {
+            subscribeCompleter.complete();
+          }
+        });
+
+        when(
+          () => mockVideoEventService.subscribeToUserVideos(userId),
+        ).thenAnswer((_) => subscribeCompleter.future);
+        when(() => mockVideoEventService.authorVideos(userId)).thenReturn([]);
+
+        final container = createContainer(funnelcakeAvailable: false);
+
+        final state = await container
+            .read(profileFeedProvider(userId).future)
+            .timeout(const Duration(milliseconds: 100));
+
+        expect(state.videos, isEmpty);
+        expect(state.hasMoreContent, isFalse);
+        verify(
+          () => mockVideoEventService.subscribeToUserVideos(userId),
+        ).called(1);
       },
     );
 

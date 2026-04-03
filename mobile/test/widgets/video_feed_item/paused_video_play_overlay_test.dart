@@ -77,6 +77,16 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
+        // After remount _hasStartedPlayback resets, so the overlay is hidden
+        // until the player transitions through playing again.
+        expect(find.bySemanticsLabel('Play video'), findsNothing);
+
+        playingController.add(true);
+        await tester.pump();
+        playingController.add(false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 220));
+
         expect(find.bySemanticsLabel('Play video'), findsOneWidget);
       },
     );

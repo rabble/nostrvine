@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for displaying another user's followers list
 // ABOUTME: Fetches Kind 3 events that mention target user in 'p' tags
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:equatable/equatable.dart';
@@ -32,6 +33,7 @@ class OthersFollowersBloc
     on<OthersFollowersIncrementRequested>(_onIncrementRequested);
     on<OthersFollowersDecrementRequested>(_onDecrementRequested);
     on<OthersFollowersBlocklistChanged>(_onBlocklistChanged);
+    on<OthersFollowersCountLoaded>(_onCountLoaded);
   }
 
   final FollowRepository _followRepository;
@@ -75,33 +77,57 @@ class OthersFollowersBloc
       state.copyWith(
         status: OthersFollowersStatus.loading,
         targetPubkey: event.targetPubkey,
-        followersPubkeys: [],
+        followersPubkeys: state.targetPubkey == event.targetPubkey
+            ? state.followersPubkeys
+            : const [],
+        followerCount: state.targetPubkey == event.targetPubkey
+            ? state.followerCount
+            : 0,
       ),
     );
 
     try {
-      // Fetch the follower list and accurate count in parallel.
-      // The list is limited by relay result caps, so the count
-      // (from COUNT queries) is more accurate for display.
-      final results = await Future.wait([
-        _followRepository.getFollowers(event.targetPubkey),
-        _followRepository.getFollowerCount(event.targetPubkey),
-      ]);
-      final followers = results[0] as List<String>;
-      final countFromService = results[1] as int;
-      final followerCount = max(followers.length, countFromService);
+      // Start the authoritative count immediately, but do not block
+      // the list render on it. The list is enough to leave the loading state.
+      final followerCountFuture = _followRepository.getFollowerCount(
+        event.targetPubkey,
+      );
+      final followers = await _followRepository.getFollowers(
+        event.targetPubkey,
+      );
 
       _isFollowingTarget = _followRepository.isFollowing(event.targetPubkey);
       _rawFollowersPubkeys = followers;
       final filtered = _filterPubkeys(followers);
+      final provisionalCount = max(followers.length, state.followerCount);
 
       emit(
         state.copyWith(
           status: OthersFollowersStatus.success,
           followersPubkeys: filtered,
-          followerCount: followerCount,
+          followerCount: provisionalCount,
           lastFetchedAt: DateTime.now(),
         ),
+      );
+
+      unawaited(
+        followerCountFuture
+            .then((countFromService) {
+              if (isClosed) return;
+              add(
+                OthersFollowersCountLoaded(
+                  event.targetPubkey,
+                  countFromService,
+                ),
+              );
+            })
+            .catchError((Object error, StackTrace stackTrace) {
+              Log.error(
+                'Failed to load follower count for ${event.targetPubkey}: $error',
+                name: 'OthersFollowersBloc',
+                category: LogCategory.system,
+              );
+            }),
       );
     } catch (e) {
       Log.error(
@@ -111,6 +137,22 @@ class OthersFollowersBloc
       );
       emit(state.copyWith(status: OthersFollowersStatus.failure));
     }
+  }
+
+  void _onCountLoaded(
+    OthersFollowersCountLoaded event,
+    Emitter<OthersFollowersState> emit,
+  ) {
+    if (state.targetPubkey != event.targetPubkey ||
+        state.status != OthersFollowersStatus.success) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        followerCount: max(state.followerCount, event.followerCount),
+      ),
+    );
   }
 
   /// Optimistically add a follower to the list

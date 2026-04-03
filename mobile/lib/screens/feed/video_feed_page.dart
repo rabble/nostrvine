@@ -22,6 +22,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -737,6 +738,11 @@ class _PooledVideoFeedItemContentState
           videoId: video.id,
           feedMode: widget.contextTitle,
           index: widget.index,
+        ),
+        errorBuilder: (context, onRetry, errorType) => PooledVideoErrorOverlay(
+          video: video,
+          onRetry: onRetry,
+          errorType: errorType,
         ),
         overlayBuilder: (context, videoController, player) => Stack(
           children: [

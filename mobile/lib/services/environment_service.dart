@@ -26,10 +26,10 @@ class EnvironmentService extends ChangeNotifier {
   bool get isInitialized => _initialized;
 
   /// Initialize the service and load persisted state
-  Future<void> initialize() async {
+  Future<void> initialize({SharedPreferences? sharedPreferences}) async {
     if (_initialized) return;
 
-    _prefs = await SharedPreferences.getInstance();
+    _prefs = sharedPreferences ?? await SharedPreferences.getInstance();
     _developerModeEnabled = _prefs!.getBool(_keyDeveloperMode) ?? false;
 
     final envString = _prefs!.getString(_keyEnvironment);

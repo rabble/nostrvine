@@ -10,12 +10,14 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/widgets/followers_screen_router.dart';
 import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
+import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
@@ -97,6 +99,11 @@ class ProfileHeaderWidget extends ConsumerWidget {
     ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
     final hasExpiredSession = authService.hasExpiredOAuthSession;
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final isDivineLoginBannerHidden = isDivineLoginBannerDismissed(
+      prefs,
+      userIdHex,
+    );
 
     // Compute pending profile actions for the avatar badge
     final pendingActions = ProfileActionType.pending(
@@ -136,13 +143,17 @@ class ProfileHeaderWidget extends ConsumerWidget {
                   height: bannerHeight,
                 ),
 
-                // Session expired banner (floats at top of banner area)
-                if (isOwnProfile && hasExpiredSession)
-                  const Positioned(
+                // Session expired banner for divineOAuth users (only on own
+                // profile) — anonymous users see the action label pill instead.
+                if (isOwnProfile &&
+                    !isAnonymous &&
+                    hasExpiredSession &&
+                    !isDivineLoginBannerHidden)
+                  Positioned(
                     top: 8,
                     left: 16,
                     right: 16,
-                    child: _SessionExpiredBanner(),
+                    child: _SessionExpiredBanner(userIdHex: userIdHex),
                   ),
 
                 // Centered avatar — top edge aligns with app bar bottom
@@ -214,7 +225,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
 /// Prompts the user to sign in again instead of showing "Secure Your Account".
 /// Attempts a silent token refresh first; navigates to login only if that fails.
 class _SessionExpiredBanner extends ConsumerStatefulWidget {
-  const _SessionExpiredBanner();
+  const _SessionExpiredBanner({required this.userIdHex});
+
+  final String userIdHex;
 
   @override
   ConsumerState<_SessionExpiredBanner> createState() =>
@@ -223,6 +236,13 @@ class _SessionExpiredBanner extends ConsumerStatefulWidget {
 
 class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
   bool _isRefreshing = false;
+  bool _isDismissed = false;
+
+  Future<void> _dismissBanner() async {
+    setState(() => _isDismissed = true);
+    final prefs = ref.read(sharedPreferencesProvider);
+    await dismissDivineLoginBanner(prefs, widget.userIdHex);
+  }
 
   Future<void> _onSignIn() async {
     setState(() => _isRefreshing = true);
@@ -240,6 +260,8 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isDismissed) return const SizedBox.shrink();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -292,6 +314,11 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
                       color: VineTheme.accentOrange,
                     ),
                   ),
+          ),
+          IconButton(
+            onPressed: _dismissBanner,
+            icon: const Icon(Icons.close, color: VineTheme.whiteText, size: 20),
+            tooltip: 'Dismiss',
           ),
         ],
       ),

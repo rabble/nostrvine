@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -80,6 +81,17 @@ class NostrSettingsScreen extends ConsumerWidget {
                   onTap: () => context.push(DeveloperOptionsScreen.path),
                   iconColor: VineTheme.warning,
                 ),
+              _SettingsTile(
+                icon: Icons.science,
+                title: 'Experimental Features',
+                subtitle: 'Toggle feature flags that may hiccup.',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FeatureFlagScreen(),
+                  ),
+                ),
+              ),
 
               // Account section
               if (isAuthenticated) ...[

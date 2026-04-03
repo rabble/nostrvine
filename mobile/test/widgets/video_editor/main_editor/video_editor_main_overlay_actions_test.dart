@@ -52,7 +52,6 @@ void main() {
                 removeAreaKey: GlobalKey(),
                 originalClipAspectRatio: 9 / 16,
                 bodySizeNotifier: ValueNotifier(const Size(400, 600)),
-                videoOutputPathNotifier: ValueNotifier('temp/video.mp4'),
                 fromLibrary: false,
                 onOpenClipsEditor: () {},
                 onAddStickers: () {},
@@ -139,11 +138,19 @@ void main() {
       });
 
       testWidgets(
-        'renders $PartialCircleSpinner when player is not ready',
+        'does not render play/pause icon when player is not ready',
         (tester) async {
           await tester.pumpWidget(buildWidget());
 
-          expect(find.byType(PartialCircleSpinner), findsOneWidget);
+          expect(
+            find.byWidgetPredicate(
+              (w) =>
+                  w is DivineIcon &&
+                  (w.icon == DivineIconName.playFill ||
+                      w.icon == DivineIconName.pauseFill),
+            ),
+            findsNothing,
+          );
         },
       );
     });

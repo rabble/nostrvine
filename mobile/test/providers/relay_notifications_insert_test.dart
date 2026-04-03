@@ -72,6 +72,7 @@ void main() {
           authServiceProvider.overrideWithValue(mockAuthService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nip98AuthServiceProvider.overrideWithValue(mockNip98AuthService),
+          profileRepositoryProvider.overrideWithValue(null),
         ],
       );
     }
@@ -86,6 +87,11 @@ void main() {
         (previous, next) {
           next.whenData((state) {
             if (!state.isInitialLoad && !completer.isCompleted) {
+              expect(
+                state.error,
+                isNull,
+                reason: 'Initial load should not complete with provider errors',
+              );
               completer.complete(state);
             }
           });

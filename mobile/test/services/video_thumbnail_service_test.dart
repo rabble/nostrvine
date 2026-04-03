@@ -263,4 +263,248 @@ void main() {
       });
     });
   });
+
+  group('VideoThumbnailService.extractLastFrame', () {
+    const channel = MethodChannel('pro_video_editor');
+    late Directory tempDir;
+    late String testVideoPath;
+
+    /// Tracks whether the channel mock should return valid bytes or
+    /// empty lists.  The mock checks [getThumbnailsReturnsBytes] and
+    /// [getMetadataSucceeds] on every invocation so individual tests
+    /// can toggle behaviour mid-test.
+    late bool getThumbnailsReturnsBytes;
+    late bool getMetadataSucceeds;
+
+    /// Dummy JPEG-like bytes produced by the mock.
+    final fakeJpegBytes = Uint8List.fromList(
+      List<int>.generate(128, (i) => i),
+    );
+
+    setUpAll(() async {
+      tempDir = await Directory.systemTemp.createTemp('ghost_frame_test');
+    });
+
+    tearDownAll(() async {
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    setUp(() {
+      getThumbnailsReturnsBytes = false;
+      getMetadataSucceeds = true;
+
+      testVideoPath = '${tempDir.path}/test_video.mp4';
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            if (call.method == 'getThumbnails') {
+              if (getThumbnailsReturnsBytes) {
+                return <Uint8List>[fakeJpegBytes];
+              }
+              return <Uint8List>[];
+            }
+            if (call.method == 'getMetadata') {
+              if (!getMetadataSucceeds) {
+                throw PlatformException(
+                  code: 'ERROR',
+                  message: 'cannot open',
+                );
+              }
+              return <String, dynamic>{
+                'duration': 3000000, // microseconds
+                'extension': 'mp4',
+                'fileSize': 1024000,
+                'width': 1920,
+                'height': 1080,
+                'rotation': 0,
+                'bitrate': 3000000,
+              };
+            }
+            return null;
+          });
+    });
+
+    test('returns path when getSingleThumbnail succeeds', () async {
+      getThumbnailsReturnsBytes = true;
+      final videoFile = File(testVideoPath);
+      await videoFile.writeAsBytes(Uint8List.fromList([1, 2, 3, 4]));
+
+      final result = await VideoThumbnailService.extractLastFrame(
+        videoPath: testVideoPath,
+        videoDuration: const Duration(seconds: 3),
+      );
+
+      expect(result, isNotNull);
+      expect(result, contains('ghost_'));
+      expect(File(result!).existsSync(), isTrue);
+
+      await videoFile.delete();
+    });
+
+    test(
+      'falls back to timestamp extraction when position-based fails',
+      () async {
+        // First call (position-based) fails, second call (timestamp) succeeds.
+        var callCount = 0;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              if (call.method == 'getThumbnails') {
+                callCount++;
+                // First call → empty (position-based fails)
+                // Second call → bytes (timestamp fallback succeeds)
+                if (callCount >= 2) {
+                  return <Uint8List>[fakeJpegBytes];
+                }
+                return <Uint8List>[];
+              }
+              if (call.method == 'getMetadata') {
+                return <String, dynamic>{
+                  'duration': 3000000,
+                  'extension': 'mp4',
+                  'fileSize': 1024000,
+                  'width': 1920,
+                  'height': 1080,
+                  'rotation': 0,
+                  'bitrate': 3000000,
+                };
+              }
+              return null;
+            });
+
+        final videoFile = File(testVideoPath);
+        await videoFile.writeAsBytes(Uint8List.fromList([1, 2, 3, 4]));
+
+        final result = await VideoThumbnailService.extractLastFrame(
+          videoPath: testVideoPath,
+          videoDuration: const Duration(seconds: 3),
+        );
+
+        expect(result, isNotNull);
+        // At least 2 calls: position-based + timestamp fallback attempt(s)
+        expect(callCount, greaterThanOrEqualTo(2));
+
+        await videoFile.delete();
+      },
+    );
+
+    test('returns null when both strategies fail', () async {
+      getThumbnailsReturnsBytes = false;
+      final videoFile = File(testVideoPath);
+      await videoFile.writeAsBytes(Uint8List.fromList([1, 2, 3, 4]));
+
+      final result = await VideoThumbnailService.extractLastFrame(
+        videoPath: testVideoPath,
+        videoDuration: const Duration(seconds: 3),
+      );
+
+      expect(result, isNull);
+
+      await videoFile.delete();
+    });
+
+    test('returns null when getSingleThumbnail throws', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            if (call.method == 'getThumbnails') {
+              throw PlatformException(
+                code: 'ERROR',
+                message: 'Cannot Open',
+              );
+            }
+            if (call.method == 'getMetadata') {
+              return <String, dynamic>{
+                'duration': 3000000,
+                'extension': 'mp4',
+                'fileSize': 1024000,
+                'width': 1920,
+                'height': 1080,
+                'rotation': 0,
+                'bitrate': 3000000,
+              };
+            }
+            return null;
+          });
+
+      final videoFile = File(testVideoPath);
+      await videoFile.writeAsBytes(Uint8List.fromList([1, 2, 3, 4]));
+
+      final result = await VideoThumbnailService.extractLastFrame(
+        videoPath: testVideoPath,
+        videoDuration: const Duration(seconds: 3),
+      );
+
+      // Falls back to timestamp extraction which also throws → null
+      expect(result, isNull);
+
+      await videoFile.delete();
+    });
+
+    test('uses provided videoDuration to avoid metadata lookup', () async {
+      getThumbnailsReturnsBytes = true;
+      getMetadataSucceeds = false; // Would fail if called
+
+      final videoFile = File(testVideoPath);
+      await videoFile.writeAsBytes(Uint8List.fromList([1, 2, 3, 4]));
+
+      final result = await VideoThumbnailService.extractLastFrame(
+        videoPath: testVideoPath,
+        videoDuration: const Duration(seconds: 3),
+      );
+
+      // Should succeed without needing getMetadata
+      expect(result, isNotNull);
+
+      await videoFile.delete();
+    });
+
+    test('fallback computes timestamp as duration minus 50ms', () async {
+      // Track the timestamps sent to getThumbnails
+      final timestamps = <int>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            if (call.method == 'getThumbnails') {
+              final args = call.arguments as Map;
+              final ts = (args['timestamps'] as List).cast<int>();
+              timestamps.addAll(ts);
+              // Fail first call, succeed on subsequent
+              if (timestamps.length == 1) {
+                return <Uint8List>[];
+              }
+              return <Uint8List>[fakeJpegBytes];
+            }
+            if (call.method == 'getMetadata') {
+              return <String, dynamic>{
+                'duration': 3000000,
+                'extension': 'mp4',
+                'fileSize': 1024000,
+                'width': 1920,
+                'height': 1080,
+                'rotation': 0,
+                'bitrate': 3000000,
+              };
+            }
+            return null;
+          });
+
+      final videoFile = File(testVideoPath);
+      await videoFile.writeAsBytes(Uint8List.fromList([1, 2, 3, 4]));
+
+      await VideoThumbnailService.extractLastFrame(
+        videoPath: testVideoPath,
+        videoDuration: const Duration(seconds: 3),
+      );
+
+      // First call: position-based (duration = 3000000 microseconds)
+      expect(timestamps.first, equals(3000000));
+      // Fallback timestamp should be duration - 50ms = 2950000 microseconds
+      // (may appear in a later element depending on retry logic)
+      expect(timestamps, contains(2950000));
+
+      await videoFile.delete();
+    });
+  });
 }

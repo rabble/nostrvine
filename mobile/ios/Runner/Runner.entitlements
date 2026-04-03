@@ -4,6 +4,7 @@
 <dict>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<!-- divine.video plus the canonical login hostname -->
 		<string>applinks:divine.video</string>
 		<string>applinks:login.divine.video</string>
 	</array>

@@ -67,7 +67,7 @@ void main() {
         expect(actions, isEmpty);
       });
 
-      test('excludes secureAccount when session is expired', () {
+      test('shows secureAccount for anonymous even with expired session', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
@@ -75,19 +75,24 @@ void main() {
           hasAnyProfileInfo: false,
         );
 
-        expect(actions, equals([ProfileActionType.completeProfile]));
+        expect(actions, hasLength(2));
+        expect(actions[0], equals(ProfileActionType.secureAccount));
+        expect(actions[1], equals(ProfileActionType.completeProfile));
       });
 
-      test('returns empty when session expired and has profile info', () {
-        final actions = ProfileActionType.pending(
-          isOwnProfile: true,
-          isAnonymous: true,
-          hasExpiredSession: true,
-          hasAnyProfileInfo: true,
-        );
+      test(
+        'returns only secureAccount when session expired and has profile info',
+        () {
+          final actions = ProfileActionType.pending(
+            isOwnProfile: true,
+            isAnonymous: true,
+            hasExpiredSession: true,
+            hasAnyProfileInfo: true,
+          );
 
-        expect(actions, isEmpty);
-      });
+          expect(actions, equals([ProfileActionType.secureAccount]));
+        },
+      );
     });
   });
 }

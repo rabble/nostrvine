@@ -13,6 +13,11 @@ class AppConfig {
     defaultValue: 'https://invite.divine.video',
   );
 
+  static const String appsDirectoryBaseUrl = String.fromEnvironment(
+    'APPS_DIRECTORY_URL',
+    defaultValue: 'https://apps.divine.video',
+  );
+
   // Environment detection
   static const String environment = String.fromEnvironment(
     'ENVIRONMENT',
@@ -88,6 +93,7 @@ class AppConfig {
     'environment': environment,
     'backendUrl': backendBaseUrl,
     'inviteServerUrl': inviteServerBaseUrl,
+    'appsDirectoryUrl': appsDirectoryBaseUrl,
     'isDevelopment': isDevelopment,
     'isProduction': isProduction,
     'isGhActionsPrPreviewBuild': isGhActionsPrPreviewBuild,

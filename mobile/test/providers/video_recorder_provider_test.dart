@@ -713,6 +713,14 @@ void main() {
         final mockEditor = _MockProVideoEditor();
         ProVideoEditor.instance = mockEditor;
 
+        // Stub the divine_video_player platform channel so the preload
+        // call inside stopRecording does not throw.
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (MethodCall call) async => null,
+            );
+
         final spyGallerySave = _SpyGallerySaveService();
 
         SharedPreferences.setMockInitialValues({});
@@ -751,6 +759,13 @@ void main() {
         );
 
         expect(spyGallerySave.saveVideoToGalleryCalled, isFalse);
+
+        // Clean up the platform channel stub.
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              null,
+            );
       },
     );
   });

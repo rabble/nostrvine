@@ -584,6 +584,12 @@ class _ProfileSetupScreenViewState
                                 decoration: const InputDecoration(
                                   isCollapsed: true,
                                   hintText: 'How should people know you?',
+                                  helperText:
+                                      "Any name or label you want. Doesn't have to be unique.",
+                                  helperStyle: TextStyle(
+                                    color: VineTheme.onSurfaceMuted,
+                                    fontSize: 12,
+                                  ),
                                   hintStyle: TextStyle(
                                     color: VineTheme.lightText,
                                   ),
@@ -800,6 +806,12 @@ class _ProfileSetupScreenViewState
                                         decoration: InputDecoration(
                                           isCollapsed: true,
                                           hintText: 'username',
+                                          helperText:
+                                              'Your unique identity on Divine',
+                                          helperStyle: const TextStyle(
+                                            color: VineTheme.onSurfaceMuted,
+                                            fontSize: 12,
+                                          ),
                                           hintStyle: const TextStyle(
                                             color: VineTheme.onSurfaceMuted,
                                           ),
@@ -979,10 +991,20 @@ class _ProfileSetupScreenViewState
                     if (pubkey != null)
                       Expanded(
                         child: _SaveButton(
-                          canSave:
-                              _nameController.text.trim().isNotEmpty &&
-                              profileEditorState.isSaveReady,
+                          canSave: profileEditorState.isSaveReady,
                           onSave: () {
+                            if (_nameController.text.trim().isEmpty) {
+                              _nameFocusNode.requestFocus();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Please enter a display name',
+                                  ),
+                                  backgroundColor: VineTheme.error,
+                                ),
+                              );
+                              return;
+                            }
                             context.read<ProfileEditorBloc>().add(
                               ProfileSaved(
                                 pubkey: pubkey,

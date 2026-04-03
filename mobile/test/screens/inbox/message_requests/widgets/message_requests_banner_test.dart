@@ -40,6 +40,22 @@ void main() {
         expect(find.text('42'), findsOneWidget);
       });
 
+      testWidgets('hides count badge when requestCount is 0', (tester) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(
+              body: MessageRequestsBanner(
+                requestCount: 0,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Message requests'), findsOneWidget);
+        expect(find.text('0'), findsNothing);
+      });
+
       testWidgets('renders "99+" when count exceeds 99', (tester) async {
         await tester.pumpWidget(
           testMaterialApp(

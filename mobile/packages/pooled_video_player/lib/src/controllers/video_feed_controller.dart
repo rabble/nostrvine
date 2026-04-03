@@ -162,6 +162,7 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, StreamSubscription<bool>> _bufferSubscriptions = {};
   final Map<int, StreamSubscription<bool>> _playingSubscriptions = {};
   final Map<int, StreamSubscription<String>> _errorSubscriptions = {};
+  final Map<int, VideoErrorType> _errorTypes = {};
   final Set<int> _loadingIndices = {};
   final Map<int, Timer> _positionTimers = {};
   final Map<int, Timer> _loadWatchdogTimers = {};
@@ -180,6 +181,10 @@ class VideoFeedController extends ChangeNotifier {
   int _staleHeartbeatCount = 0;
   int _staleRecoveryAttempts = 0;
 
+  /// Remaining heartbeats to skip after a play/resume before stale-position
+  /// detection activates. Gives the decoder time to start producing frames.
+  int _staleGraceHeartbeats = 0;
+
   /// Number of consecutive stale heartbeats before triggering recovery.
   /// With a 100ms heartbeat interval, this means ~300ms of confirmed
   /// frozen video before recovery kicks in. False positives cause only
@@ -190,6 +195,10 @@ class VideoFeedController extends ChangeNotifier {
   /// After this many failed seek-recovery attempts with no position progress,
   /// give up and mark the video as error.
   static const _maxStaleRecoveryAttempts = 2;
+
+  /// Number of heartbeats to skip after play/resume before stale detection
+  /// kicks in. With 100ms intervals this is ~500ms grace.
+  static const _staleGraceAfterPlay = 5;
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -231,6 +240,7 @@ class VideoFeedController extends ChangeNotifier {
           loadState: _loadStates[index] ?? LoadState.none,
           videoController: _loadedPlayers[index]?.videoController,
           player: _loadedPlayers[index]?.player,
+          errorType: _errorTypes[index],
         ),
       ),
     );
@@ -260,6 +270,7 @@ class VideoFeedController extends ChangeNotifier {
         videoController: isAlive ? pooledPlayer.videoController : null,
         player: isAlive ? pooledPlayer.player : null,
         isSlowLoad: _slowLoadIndices.contains(index),
+        errorType: _errorTypes[index],
       );
     }
   }
@@ -418,9 +429,44 @@ class VideoFeedController extends ChangeNotifier {
     }
   }
 
-  void _markLoadError(int index) {
+  /// Classifies a raw error string into a [VideoErrorType].
+  ///
+  /// Checks for HTTP status code patterns (401, 403, 404) in the error
+  /// message. For divine-hosted URLs where the error string is unparseable,
+  /// falls back to [VideoErrorType.notFound] since missing content is the
+  /// most common failure mode.
+  VideoErrorType _classifyError(String? errorMessage, int index) {
+    if (errorMessage != null) {
+      final lower = errorMessage.toLowerCase();
+      if (lower.contains('401') || lower.contains('unauthorized')) {
+        return VideoErrorType.ageRestricted;
+      }
+      if (lower.contains('403') || lower.contains('forbidden')) {
+        return VideoErrorType.forbidden;
+      }
+      if (lower.contains('404') || lower.contains('not found')) {
+        return VideoErrorType.notFound;
+      }
+    }
+    // For divine-hosted URLs, generic errors most likely mean missing
+    // content (hash not on blossom, transcode pending). Non-divine URLs
+    // keep the generic classification.
+    if (index >= 0 && index < _videos.length) {
+      final hash = _extractCanonicalDivineBlobHash(_videos[index].url);
+      if (hash != null) return VideoErrorType.notFound;
+    }
+    return VideoErrorType.generic;
+  }
+
+  void _markLoadError(int index, [String? errorMessage]) {
     if (_isDisposed) return;
     _loadStates[index] = LoadState.error;
+    if (errorMessage != null) {
+      _errorTypes[index] = _classifyError(errorMessage, index);
+    }
+    // If no message, _errorTypes[index] may already be set from the
+    // error stream handler. Fall back to generic if nothing was stored.
+    _errorTypes[index] ??= VideoErrorType.generic;
     _notifyIndex(index);
   }
 
@@ -481,8 +527,17 @@ class VideoFeedController extends ChangeNotifier {
         '[POOLED] stuck_retry_failed ${_videoDebugDetails(index)} '
         'error=$error\n$stack',
       );
-      _markLoadError(index);
+      _markLoadError(index, error.toString());
     }
+  }
+
+  /// Retries loading the video at [index] by releasing its player state
+  /// and re-triggering the preload window.
+  void retryLoad(int index) {
+    if (_isDisposed) return;
+    _logDebug('retry_load ${_videoDebugDetails(index)}');
+    _releasePlayer(index);
+    _updatePreloadWindow(_currentIndex);
   }
 
   /// Called when the visible page changes.
@@ -873,7 +928,7 @@ class VideoFeedController extends ChangeNotifier {
         'error=$e\n$stack',
       );
       _stopLoadWatchdog(index);
-      _markLoadError(index);
+      _markLoadError(index, e.toString());
     } finally {
       _loadingIndices.remove(index);
     }
@@ -1028,6 +1083,9 @@ class VideoFeedController extends ChangeNotifier {
         'source=${_openedSources[index]} '
         'loadState=${_loadStates[index]}',
       );
+      // Classify the error immediately so the type is available if retry
+      // exhausts all sources and _markLoadError is called without a message.
+      _errorTypes[index] = _classifyError(error, index);
       // Only act on errors during initial load. Once the video is playing
       // successfully (LoadState.ready), mpv may emit non-critical errors
       // (e.g. on loop seeks, transient network hiccups) that should not
@@ -1147,6 +1205,7 @@ class VideoFeedController extends ChangeNotifier {
     _lastHeartbeatPositionMs = null;
     _staleHeartbeatCount = 0;
     _staleRecoveryAttempts = 0;
+    _staleGraceHeartbeats = _staleGraceAfterPlay;
 
     // Use the shorter of the caller's interval and the stale-detection
     // interval so both position callbacks and recovery work correctly.
@@ -1195,6 +1254,14 @@ class VideoFeedController extends ChangeNotifier {
   /// the player reports `playing=true` and `buffering=false`, we assume
   /// media_kit's decoder is stuck and attempt recovery.
   void _checkStalePosition(int index, Player player, int positionMs) {
+    // Grace period after play/resume — decoder needs time to start.
+    if (_staleGraceHeartbeats > 0) {
+      _staleGraceHeartbeats--;
+      _lastHeartbeatPositionMs = null;
+      _staleHeartbeatCount = 0;
+      return;
+    }
+
     if (!player.state.playing || player.state.buffering) {
       // Not in a state where we'd expect position to advance.
       _staleHeartbeatCount = 0;
@@ -1224,8 +1291,7 @@ class VideoFeedController extends ChangeNotifier {
           '${_videoDebugDetails(index)}',
         );
         _staleRecoveryAttempts = 0;
-        _loadStates[index] = LoadState.error;
-        _notifyIndex(index);
+        _markLoadError(index, 'stale_playback');
         return;
       }
 
@@ -1321,6 +1387,7 @@ class VideoFeedController extends ChangeNotifier {
     _slowLoadIndices.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
+    _errorTypes.remove(index);
     _loadingIndices.remove(index);
     _notifyIndex(index);
   }

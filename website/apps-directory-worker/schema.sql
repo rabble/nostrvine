@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS sandbox_apps (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'draft',
+  manifest_json TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  approved_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS sandbox_audit_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  app_id INTEGER NOT NULL,
+  origin TEXT NOT NULL,
+  user_pubkey TEXT NOT NULL,
+  method TEXT NOT NULL,
+  event_kind INTEGER,
+  decision TEXT NOT NULL,
+  error_code TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (app_id) REFERENCES sandbox_apps (id)
+);

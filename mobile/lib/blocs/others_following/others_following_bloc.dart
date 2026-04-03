@@ -69,7 +69,9 @@ class OthersFollowingBloc
       state.copyWith(
         status: OthersFollowingStatus.loading,
         targetPubkey: event.targetPubkey,
-        followingPubkeys: [],
+        followingPubkeys: state.targetPubkey == event.targetPubkey
+            ? state.followingPubkeys
+            : const [],
       ),
     );
 

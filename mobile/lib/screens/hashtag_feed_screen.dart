@@ -12,7 +12,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -65,9 +64,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     super.dispose();
   }
 
-  /// Load videos from both Funnelcake REST API and WebSocket in parallel.
-  /// Funnelcake is fast and provides complete video data - show immediately.
-  /// WebSocket provides real-time updates and additional videos.
+  /// Load the fast initial hashtag results first, then detach realtime updates.
+  /// This keeps the first paint honest: no empty-state flash before the
+  /// initial source has answered, while the websocket subscription still starts
+  /// in the background.
   Future<void> _loadHashtagVideos() async {
     if (!mounted) return;
 
@@ -78,17 +78,14 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
     final hashtagService = ref.read(hashtagServiceProvider);
 
-    // Run both fetches in parallel for speed
-    // Always try Funnelcake - it will fail fast if unavailable
-    final futures = <Future<void>>[
-      _fetchFromFunnelcake(),
-      _subscribeViaWebSocket(hashtagService),
-    ];
-
-    // Both run in parallel - Funnelcake shows results immediately via setState
-    await Future.wait(futures);
-
+    // Wait for the fast initial source before leaving the loading gate.
+    // The websocket can continue in the background once the first pass has
+    // answered.
+    await _fetchFromFunnelcake();
     if (!mounted) return;
+
+    unawaited(_subscribeViaWebSocket(hashtagService));
+
     setState(() => _subscriptionAttempted = true);
   }
 
@@ -284,7 +281,6 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           '🏷️ Building HashtagFeedScreen for #${widget.hashtag}',
           category: LogCategory.video,
         );
-        final videoService = ref.watch(videoEventServiceProvider);
         final hashtagService = ref.watch(hashtagServiceProvider);
 
         // Combine Funnelcake videos (fast, pre-sorted) with WebSocket videos
@@ -305,15 +301,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           category: LogCategory.video,
         );
 
-        // Use per-subscription loading state for hashtag feed
-        final isLoadingHashtag = videoService.isLoadingForSubscription(
-          SubscriptionType.hashtag,
-        );
-
-        // Show loading if:
-        // 1. We haven't attempted subscription yet (initial state), OR
-        // 2. Subscription is actively loading
-        final shouldShowLoading = !_subscriptionAttempted || isLoadingHashtag;
+        // Show a full-screen loader only before the initial startup attempt.
+        // Once background loading has started, render empty or cached state
+        // instead of blocking on relay subscription setup.
+        final shouldShowLoading = !_subscriptionAttempted;
 
         if (shouldShowLoading && videos.isEmpty) {
           return Center(

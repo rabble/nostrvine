@@ -33,7 +33,7 @@ enum ProfileActionType {
     if (!isOwnProfile) return const [];
 
     return [
-      if (isAnonymous && !hasExpiredSession) secureAccount,
+      if (isAnonymous) secureAccount,
       if (!hasAnyProfileInfo) completeProfile,
     ];
   }

@@ -29,6 +29,7 @@ import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -712,11 +713,18 @@ class _PooledFullscreenItemContentState
               child: _FittedVideoPlayer(
                 videoController: videoController,
                 isPortrait: isPortrait,
+                videoWidth: video.width?.toDouble(),
+                videoHeight: video.height?.toDouble(),
               ),
             ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
+        ),
+        errorBuilder: (context, onRetry, errorType) => PooledVideoErrorOverlay(
+          video: video,
+          onRetry: onRetry,
+          errorType: errorType,
         ),
         overlayBuilder: (context, videoController, player) {
           if (showContentWarningOverlay && !_contentWarningRevealed) {
@@ -787,10 +795,14 @@ class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
     required this.videoController,
     this.isPortrait = true,
+    this.videoWidth,
+    this.videoHeight,
   });
 
   final VideoController videoController;
   final bool isPortrait;
+  final double? videoWidth;
+  final double? videoHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -803,6 +815,9 @@ class _FittedVideoPlayer extends StatelessWidget {
       controller: videoController,
       fit: boxFit,
       controls: null,
+      width: videoWidth,
+      height: videoHeight,
+      fill: const Color(0x00000000),
     );
   }
 }

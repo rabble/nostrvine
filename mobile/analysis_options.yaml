@@ -9,6 +9,7 @@ analyzer:
     - "**/generated/**"
     - "**/l10n/**"
     - "**/packages/**"
+    - "build/**"
   errors:
     avoid_catches_without_on_clauses: ignore
     avoid_equals_and_hash_code_on_mutable_classes: ignore

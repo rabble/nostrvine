@@ -211,7 +211,8 @@ class VideoEventPublisher {
       // Check if publish was successful
       if (sentEvent != null) {
         Log.info(
-          '✅ Event successfully published to relays: ${event.id}',
+          '📡 Event sent to relays, awaiting visibility confirmation: '
+          '${event.id}',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
@@ -233,6 +234,42 @@ class VideoEventPublisher {
       );
       return false;
     }
+  }
+
+  Event? _loadRetryableSignedEvent(PendingUpload upload) {
+    final cachedEventId = upload.nostrEventId;
+    if (cachedEventId == null || cachedEventId.isEmpty) {
+      return null;
+    }
+
+    final cachedEvent = _personalEventCache?.getEventById(cachedEventId);
+    if (cachedEvent == null) {
+      Log.warning(
+        'Stored retry event $cachedEventId was missing from personal cache',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    Log.info(
+      'Reusing cached signed video event for retry: ${cachedEvent.id}',
+      name: 'VideoEventPublisher',
+      category: LogCategory.video,
+    );
+    return cachedEvent;
+  }
+
+  Future<void> _persistRetryableSignedEvent(
+    PendingUpload upload,
+    Event event,
+  ) async {
+    _personalEventCache?.cacheUserEvent(event);
+    await _uploadManager.updateUploadStatus(
+      upload.id,
+      upload.status,
+      nostrEventId: event.id,
+    );
   }
 
   /// Get publishing statistics
@@ -823,12 +860,14 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      final event = await _authService.createAndSignEvent(
-        kind:
-            NIP71VideoKinds.getPreferredAddressableKind(), // NIP-71 addressable short video
-        content: content,
-        tags: tags,
-      );
+      final event =
+          _loadRetryableSignedEvent(upload) ??
+          await _authService.createAndSignEvent(
+            kind:
+                NIP71VideoKinds.getPreferredAddressableKind(), // NIP-71 addressable short video
+            content: content,
+            tags: tags,
+          );
 
       if (event == null) {
         Log.error(
@@ -839,28 +878,8 @@ class VideoEventPublisher {
         return false;
       }
 
-      // Cache the video event immediately after creation
-      _personalEventCache?.cacheUserEvent(event);
-
-      // Add to discovery cache immediately for instant local UI feedback
-      // This ensures the video appears in the user's feed even before relay
-      // confirmation
-      if (_videoEventService != null) {
-        try {
-          final videoEvent = VideoEvent.fromNostrEvent(event);
-          _videoEventService.addVideoEvent(videoEvent);
-          Log.info(
-            'Added video to discovery cache immediately: ${event.id}',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-        } catch (e) {
-          Log.warning(
-            'Failed to add video to discovery cache: $e',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-        }
+      if (upload.nostrEventId != event.id) {
+        await _persistRetryableSignedEvent(upload, event);
       }
 
       Log.info(
@@ -876,14 +895,17 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      // Retry up to 3 times with exponential backoff
+      // Retry up to 3 times with exponential backoff.
+      // A successful send (relay accepted the event) is treated as success.
+      // We intentionally skip read-back verification because relay indexing
+      // lag can cause timeouts even though the event was accepted and is
+      // already being delivered via subscriptions.
       const maxRetries = 3;
       var publishResult = false;
 
       for (var attempt = 1; attempt <= maxRetries; attempt++) {
-        publishResult = await _publishEventToNostr(event);
-
-        if (publishResult) {
+        if (await _publishEventToNostr(event)) {
+          publishResult = true;
           if (attempt > 1) {
             Log.info(
               '✅ Publish succeeded on attempt $attempt',
@@ -912,6 +934,24 @@ class VideoEventPublisher {
       }
 
       if (publishResult) {
+        if (_videoEventService != null) {
+          try {
+            final videoEvent = VideoEvent.fromNostrEvent(event);
+            _videoEventService.addVideoEvent(videoEvent);
+            Log.info(
+              'Added confirmed video to discovery cache: ${event.id}',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          } catch (e) {
+            Log.warning(
+              'Failed to add confirmed video to discovery cache: $e',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          }
+        }
+
         // Update upload status
         await _uploadManager.updateUploadStatus(
           upload.id,

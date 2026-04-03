@@ -47,7 +47,7 @@ class MessageRequestsBanner extends StatelessWidget {
                     style: VineTheme.titleMediumFont(),
                   ),
                 ),
-                _RequestCountBadge(count: requestCount),
+                if (requestCount > 0) _RequestCountBadge(count: requestCount),
                 const SizedBox(width: 8),
                 const DivineIcon(
                   icon: DivineIconName.caretRight,

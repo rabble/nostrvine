@@ -2,6 +2,8 @@
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/apps/app_detail_screen.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -32,6 +34,7 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -86,6 +89,7 @@ enum RouteType {
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
   legal, // Legal screen (ToS, Privacy, Safety, DMCA, Licenses)
   nostrSettings, // Nostr settings (relays, media servers, keys, account)
+  blueskySettings, // Bluesky crosspost publishing settings
   secureAccount,
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
   videoDetail, // Video detail screen (deep link to specific video)
@@ -99,6 +103,7 @@ class RouteContext {
   const RouteContext({
     required this.type,
     this.videoIndex,
+    this.appSlug,
     this.npub,
     this.hashtag,
     this.categoryName,
@@ -112,6 +117,7 @@ class RouteContext {
 
   final RouteType type;
   final int? videoIndex;
+  final String? appSlug;
   final String? npub;
   final String? hashtag;
   final String? categoryName;
@@ -274,6 +280,15 @@ RouteContext parseRoute(String path) {
     case 'settings':
       return const RouteContext(type: RouteType.settings);
 
+    case 'apps':
+      if (segments.length > 1) {
+        return RouteContext(
+          type: RouteType.settings,
+          appSlug: Uri.decodeComponent(segments[1]),
+        );
+      }
+      return const RouteContext(type: RouteType.settings, appSlug: '');
+
     case 'creator-analytics':
       return const RouteContext(type: RouteType.creatorAnalytics);
 
@@ -309,6 +324,9 @@ RouteContext parseRoute(String path) {
 
     case 'nostr-settings':
       return const RouteContext(type: RouteType.nostrSettings);
+
+    case 'bluesky-settings':
+      return const RouteContext(type: RouteType.blueskySettings);
 
     case 'edit-profile':
     case 'setup-profile':
@@ -488,6 +506,14 @@ String buildRoute(RouteContext context) {
       return VideoMetadataScreen.path;
 
     case RouteType.settings:
+      if (context.appSlug != null) {
+        if (context.appSlug!.isEmpty) {
+          return AppsDirectoryScreen.path;
+        }
+        return AppDetailScreen.pathForSlug(
+          Uri.encodeComponent(context.appSlug!),
+        );
+      }
       return SettingsScreen.path;
 
     case RouteType.relaySettings:
@@ -522,6 +548,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.nostrSettings:
       return NostrSettingsScreen.path;
+
+    case RouteType.blueskySettings:
+      return BlueskySettingsScreen.path;
 
     case RouteType.editProfile:
       return ProfileSetupScreen.editPath;
