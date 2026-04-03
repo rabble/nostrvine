@@ -42,7 +42,6 @@ import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
@@ -171,9 +170,7 @@ final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
   return NostrAppBridgeService(
     authProvider: _AuthServiceBridgeAdapter(authService),
     policy: policy,
-    signerFactory: () =>
-        authService.rpcSigner ??
-        AuthServiceSigner(authService.currentKeyContainer),
+    signerFactory: () => authService.currentIdentity!,
     auditService: auditService,
   );
 });
@@ -954,18 +951,12 @@ Future<List<KnownAccount>> knownAccounts(Ref ref) {
   return authService.getKnownAccounts();
 }
 
-/// Provider for the local auth-backed signer used by creator-binding flows.
-final authServiceSignerProvider = Provider<AuthServiceSigner>((ref) {
-  ref.watch(currentAuthStateProvider);
-  final authService = ref.watch(authServiceProvider);
-  return AuthServiceSigner(authService.currentKeyContainer);
-});
-
 /// Provider for user-signed creator-binding assertions.
 final nostrCreatorBindingServiceProvider = Provider<NostrCreatorBindingService>(
   (ref) {
-    final signer = ref.watch(authServiceSignerProvider);
-    return NostrCreatorBindingService(signer: signer);
+    ref.watch(currentAuthStateProvider);
+    final authService = ref.watch(authServiceProvider);
+    return NostrCreatorBindingService(identity: authService.currentIdentity);
   },
 );
 

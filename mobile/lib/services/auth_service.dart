@@ -194,9 +194,6 @@ class AuthService implements BackgroundAwareService {
   /// when discovery completes (avoids race where client is built before discovery).
   UserRelaysDiscoveredCallback? _onUserRelaysDiscovered;
 
-  /// Returns the active remote signer (Amber > bunker > OAuth RPC)
-  NostrSigner? get rpcSigner => _amberSigner ?? _bunkerSigner ?? _keycastSigner;
-
   /// The current user's atomic signing identity, or null if not authenticated.
   NostrIdentity? get currentIdentity => _currentIdentity;
 
@@ -228,10 +225,11 @@ class AuthService implements BackgroundAwareService {
   String? get currentPublicKeyHex =>
       _currentKeyContainer?.publicKeyHex ?? _currentProfile?.publicKeyHex;
 
-  /// Current secure key container (null if not authenticated)
+  /// Current secure key container (null if not authenticated).
   ///
-  /// Used by NostrClientProvider to create AuthServiceSigner.
-  /// The container provides secure access to private key operations.
+  /// Production code should use [currentIdentity] instead. This getter
+  /// exists for tests that need direct access to the key container.
+  @visibleForTesting
   SecureKeyContainer? get currentKeyContainer => _currentKeyContainer;
 
   /// Check if user is authenticated

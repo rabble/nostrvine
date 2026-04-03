@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -50,7 +51,9 @@ void main() {
     setUp(() async {
       // Create real services
       final keyContainer = await SecureKeyContainer.generate();
-      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
+      nostrService = NostrServiceFactory.create(
+        signer: LocalNostrIdentity(keyContainer: keyContainer),
+      );
       subscriptionManager = SubscriptionManager(nostrService);
       videoEventService = VideoEventService(
         nostrService,
