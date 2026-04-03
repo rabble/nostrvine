@@ -150,9 +150,10 @@ void main() {
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
         find.text('Integration Permissions'),
-        100,
+        300,
         scrollable: scrollable,
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Integration Permissions'));
       await tester.pumpAndSettle();
 
