@@ -3455,6 +3455,59 @@ final class ApiServiceProvider
 
 String _$apiServiceHash() => r'a114c5e161b816881b395a10c90d043ef94c8de7';
 
+/// Crosspost API client for Bluesky toggle settings
+
+@ProviderFor(crosspostApiClient)
+const crosspostApiClientProvider = CrosspostApiClientProvider._();
+
+/// Crosspost API client for Bluesky toggle settings
+
+final class CrosspostApiClientProvider
+    extends
+        $FunctionalProvider<
+          CrosspostApiClient,
+          CrosspostApiClient,
+          CrosspostApiClient
+        >
+    with $Provider<CrosspostApiClient> {
+  /// Crosspost API client for Bluesky toggle settings
+  const CrosspostApiClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'crosspostApiClientProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$crosspostApiClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<CrosspostApiClient> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CrosspostApiClient create(Ref ref) {
+    return crosspostApiClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CrosspostApiClient value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CrosspostApiClient>(value),
+    );
+  }
+}
+
+String _$crosspostApiClientHash() =>
+    r'b1bd6e7666b565c069cd7eaf6c24108366887124';
+
 /// Video event publisher depends on multiple services
 
 @ProviderFor(videoEventPublisher)

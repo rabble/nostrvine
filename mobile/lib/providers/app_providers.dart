@@ -53,6 +53,7 @@ import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
@@ -1521,6 +1522,17 @@ UploadManager uploadManager(Ref ref) {
 ApiService apiService(Ref ref) {
   final authService = ref.watch(nip98AuthServiceProvider);
   return ApiService(authService: authService);
+}
+
+/// Crosspost API client for Bluesky toggle settings
+@riverpod
+CrosspostApiClient crosspostApiClient(Ref ref) {
+  final oauthClient = ref.watch(oauthClientProvider);
+  final config = ref.watch(oauthConfigProvider);
+  return CrosspostApiClient(
+    oauthClient: oauthClient,
+    serverUrl: config.serverUrl,
+  );
 }
 
 /// Video event publisher depends on multiple services

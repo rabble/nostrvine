@@ -18,6 +18,7 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -226,6 +227,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Moderation Controls',
                 subtitle: 'Blocked users, muted content, and reports',
                 onTap: () => context.push(SafetySettingsScreen.path),
+              ),
+              _SettingsTile(
+                icon: Icons.cloud_upload,
+                title: 'Bluesky Publishing',
+                subtitle: 'Manage crossposting to Bluesky',
+                onTap: () => context.push(BlueskySettingsScreen.path),
               ),
               _SettingsTile(
                 icon: Icons.hub,

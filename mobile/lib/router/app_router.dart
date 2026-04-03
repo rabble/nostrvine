@@ -52,6 +52,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
+import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -619,6 +620,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const ContentPreferencesScreen(),
       ),
       GoRoute(
+        path: BlueskySettingsScreen.path,
+        name: BlueskySettingsScreen.routeName,
+        builder: (_, _) => const BlueskySettingsScreen(),
+      ),
+      GoRoute(
         path: NostrSettingsScreen.path,
         name: NostrSettingsScreen.routeName,
         builder: (_, _) => const NostrSettingsScreen(),
@@ -982,6 +988,7 @@ int tabIndexFromLocation(String loc) {
     case 'support-center':
     case 'legal':
     case 'nostr-settings':
+    case 'bluesky-settings':
     case 'developer-options':
     case 'edit-profile':
     case 'setup-profile':
