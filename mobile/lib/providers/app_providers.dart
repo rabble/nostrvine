@@ -555,6 +555,8 @@ SecureKeyStorage secureKeyStorage(Ref ref) {
 // =============================================================================
 
 /// OAuth configuration — uses local keycast when running in local environment
+const _productionLoginOrigin = 'https://login.divine.video';
+
 @Riverpod(keepAlive: true)
 OAuthConfig oauthConfig(Ref ref) {
   final env = ref.watch(currentEnvironmentProvider);
@@ -566,7 +568,7 @@ OAuthConfig oauthConfig(Ref ref) {
     );
   }
   return const OAuthConfig(
-    serverUrl: 'https://login.divine.video',
+    serverUrl: _productionLoginOrigin,
     clientId: 'divine-mobile',
     redirectUri: 'https://divine.video/app/callback',
   );
