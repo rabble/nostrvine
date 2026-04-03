@@ -5,9 +5,11 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
@@ -16,10 +18,13 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
@@ -29,6 +34,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/nip05_verification_service.dart';
+import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -46,11 +52,22 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _appVersion = '';
+  late final SettingsAccountCubit _accountCubit;
 
   @override
   void initState() {
     super.initState();
     unawaited(_loadAppVersion());
+    _accountCubit = SettingsAccountCubit(
+      authService: ref.read(authServiceProvider),
+      draftStorageService: ref.read(draftStorageServiceProvider),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _accountCubit.close();
+    super.dispose();
   }
 
   Future<void> _loadAppVersion() async {
@@ -71,12 +88,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _handleSwitchAccount() async {
-    final draftService = ref.read(draftStorageServiceProvider);
-    final draftCount = await draftService.getDraftCount();
+    final accountState = _accountCubit.state;
 
-    if (!mounted) return;
-
-    if (draftCount > 0) {
+    if (accountState.hasDrafts) {
+      final draftCount = accountState.draftCount;
       final draftWord = draftCount == 1 ? 'draft' : 'drafts';
       final proceedWithWarning = await VineBottomSheet.show<bool>(
         context: context,
@@ -127,33 +142,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (!mounted) return;
 
-    final authService = ref.read(authServiceProvider);
-    final currentPubkey = authService.currentPublicKeyHex;
-    final accounts = await ref.read(knownAccountsProvider.future);
-
-    if (!mounted) return;
-
     await VineBottomSheet.show<void>(
       context: context,
       children: [
-        ...accounts.map(
+        ...accountState.accounts.map(
           (account) => _AccountSwitchTile(
             account: account,
-            isCurrentAccount: account.pubkeyHex == currentPubkey,
+            isCurrentAccount: account.pubkeyHex == accountState.currentPubkey,
             onTap: () {
               Navigator.of(context).pop();
-              if (account.pubkeyHex == currentPubkey) return;
-              // Store the target pubkey on the auth service so WelcomeBloc
-              // can pre-select it regardless of router redirect timing.
-              authService.pendingAccountSwitchPubkey = account.pubkeyHex;
-              authService.signOut();
+              _accountCubit.switchToAccount(account.pubkeyHex);
             },
           ),
         ),
         _AddAccountTile(
           onTap: () {
             Navigator.of(context).pop();
-            authService.signOut();
+            _accountCubit.addNewAccount();
           },
         ),
       ],
@@ -168,98 +173,120 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final showBluesky = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.blueskyPublishing),
     );
+    return BlocProvider.value(
+      value: _accountCubit,
+      child: Scaffold(
+        appBar: DiVineAppBar(
+          title: 'Settings',
+          showBackButton: true,
+          onBackPressed: context.pop,
+        ),
+        backgroundColor: VineTheme.navGreen,
+        body: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: ListView(
+              children: [
+                // Account header
+                if (isAuthenticated) ...[
+                  _AccountHeader(onSwitchAccount: _handleSwitchAccount),
+                  if (authService.isAnonymous)
+                    _SettingsTile(
+                      icon: Icons.security,
+                      title: 'Secure Your Account',
+                      onTap: () => context.push(SecureAccountScreen.path),
+                    ),
+                  if (!authService.isAnonymous &&
+                      authService.hasExpiredOAuthSession)
+                    _SettingsTile(
+                      icon: Icons.refresh,
+                      title: 'Session Expired',
+                      subtitle: 'Sign in again to restore full access',
+                      onTap: _handleSessionExpired,
+                      iconColor: VineTheme.accentOrange,
+                    ),
+                ],
 
-    return Scaffold(
-      appBar: DiVineAppBar(
-        title: 'Settings',
-        showBackButton: true,
-        onBackPressed: context.pop,
-      ),
-      backgroundColor: VineTheme.navGreen,
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: ListView(
-            children: [
-              // Account header
-              if (isAuthenticated) ...[
-                _AccountHeader(onSwitchAccount: _handleSwitchAccount),
-                if (authService.isAnonymous)
-                  _SettingsTile(
-                    icon: Icons.security,
-                    title: 'Secure Your Account',
-                    onTap: () => context.push(SecureAccountScreen.path),
-                  ),
-                if (!authService.isAnonymous &&
-                    authService.hasExpiredOAuthSession)
-                  _SettingsTile(
-                    icon: Icons.refresh,
-                    title: 'Session Expired',
-                    subtitle: 'Sign in again to restore full access',
-                    onTap: _handleSessionExpired,
-                    iconColor: VineTheme.accentOrange,
-                  ),
-              ],
-
-              _SettingsTile(
-                title: 'Creator Analytics',
-                divineIcon: DivineIconName.trendUp,
-                onTap: () => context.push(CreatorAnalyticsScreen.path),
-              ),
-              _SettingsTile(
-                title: 'Support Center',
-                icon: Icons.support_agent,
-                onTap: () => context.push(SupportCenterScreen.path),
-              ),
-
-              _SettingsTile(
-                title: 'Notifications',
-                divineIcon: DivineIconName.bellSimple,
-                onTap: () => context.push(NotificationSettingsScreen.path),
-              ),
-              _SettingsTile(
-                title: 'Content Preferences',
-                divineIcon: DivineIconName.globe,
-                onTap: () => context.push(ContentPreferencesScreen.path),
-              ),
-              _SettingsTile(
-                title: 'Moderation Controls',
-                divineIcon: DivineIconName.faders,
-                onTap: () => context.push(SafetySettingsScreen.path),
-              ),
-              if (showBluesky)
                 _SettingsTile(
-                  icon: Icons.cloud_upload,
-                  title: 'Bluesky Publishing',
-                  subtitle: 'Manage crossposting to Bluesky',
-                  onTap: () => context.push(BlueskySettingsScreen.path),
+                  title: 'Creator Analytics',
+                  divineIcon: DivineIconName.trendUp,
+                  onTap: () => context.push(CreatorAnalyticsScreen.path),
                 ),
-              _SettingsTile(
-                title: 'Nostr Settings',
-                divineIcon: DivineIconName.graph,
-                onTap: () => context.push(NostrSettingsScreen.path),
-              ),
-              _SettingsTile(
-                icon: Icons.science,
-                title: 'Experimental Features',
-                subtitle: 'Tweaks that may hiccup—try them if you are curious.',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const FeatureFlagScreen(),
+                _SettingsTile(
+                  title: 'Support Center',
+                  icon: Icons.support_agent,
+                  onTap: () => context.push(SupportCenterScreen.path),
+                ),
+
+                _SettingsTile(
+                  title: 'Notifications',
+                  divineIcon: DivineIconName.bellSimple,
+                  onTap: () => context.push(NotificationSettingsScreen.path),
+                ),
+                _SettingsTile(
+                  title: 'Content Preferences',
+                  divineIcon: DivineIconName.globe,
+                  onTap: () => context.push(ContentPreferencesScreen.path),
+                ),
+                _SettingsTile(
+                  title: 'Moderation Controls',
+                  divineIcon: DivineIconName.faders,
+                  onTap: () => context.push(SafetySettingsScreen.path),
+                ),
+                if (showBluesky)
+                  _SettingsTile(
+                    icon: Icons.cloud_upload,
+                    title: 'Bluesky Publishing',
+                    subtitle: 'Manage crossposting to Bluesky',
+                    onTap: () => context.push(BlueskySettingsScreen.path),
+                  ),
+                _SettingsTile(
+                  title: 'Nostr Settings',
+                  divineIcon: DivineIconName.graph,
+                  onTap: () => context.push(NostrSettingsScreen.path),
+                ),
+                if (nostrAppsSandboxSupported)
+                  _SettingsTile(
+                    icon: Icons.apps,
+                    title: 'Integrated Apps',
+                    subtitle:
+                        'Approved third-party apps that run inside Divine',
+                    onTap: () {
+                      ref.read(forceExploreTabNameProvider.notifier).state =
+                          'apps';
+                      context.go(ExploreScreen.path);
+                    },
+                  ),
+                _SettingsTile(
+                  icon: Icons.science,
+                  title: 'Experimental Features',
+                  subtitle:
+                      'Tweaks that may hiccup—try them if you are curious.',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FeatureFlagScreen(),
+                    ),
                   ),
                 ),
-              ),
-              _SettingsTile(
-                title: 'Legal',
-                icon: Icons.gavel,
-                onTap: () => context.push(LegalScreen.path),
-              ),
+                _SettingsTile(
+                  title: 'Legal',
+                  icon: Icons.gavel,
+                  onTap: () => context.push(LegalScreen.path),
+                ),
+                _SettingsTile(
+                  icon: Icons.lock_open,
+                  title: 'Integration Permissions',
+                  subtitle:
+                      'Review and revoke remembered integration approvals',
+                  onTap: () => context.push(AppsPermissionsScreen.path),
+                ),
 
-              const SizedBox(height: 24),
-              _VersionTile(appVersion: _appVersion),
-            ],
+                const SizedBox(height: 24),
+                _VersionTile(appVersion: _appVersion),
+              ],
+            ),
           ),
         ),
       ),
@@ -267,17 +294,92 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-class _AccountHeader extends ConsumerWidget {
+class _AccountHeader extends StatelessWidget {
   const _AccountHeader({required this.onSwitchAccount});
 
   final VoidCallback onSwitchAccount;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authService = ref.watch(authServiceProvider);
-    final pubkey = authService.currentPublicKeyHex;
-    if (pubkey == null) return const SizedBox.shrink();
+  Widget build(BuildContext context) {
+    return BlocBuilder<SettingsAccountCubit, SettingsAccountState>(
+      builder: (context, accountState) {
+        final pubkey = accountState.currentPubkey;
+        if (pubkey == null) return const SizedBox.shrink();
 
+        final hasMultipleAccounts = accountState.hasMultipleAccounts;
+        final buttonLabel = hasMultipleAccounts
+            ? 'Switch account'
+            : 'Add another account';
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          child: Column(
+            spacing: 16,
+            children: [
+              _AccountHeaderProfile(pubkey: pubkey),
+              Semantics(
+                button: true,
+                label: buttonLabel,
+                child: InkWell(
+                  onTap: onSwitchAccount,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: VineTheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: VineTheme.outlineMuted,
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 8,
+                      children: [
+                        if (!hasMultipleAccounts)
+                          const DivineIcon(
+                            icon: DivineIconName.userPlus,
+                            color: VineTheme.vineGreen,
+                          ),
+                        Text(
+                          buttonLabel,
+                          style: VineTheme.titleMediumFont(
+                            color: VineTheme.vineGreen,
+                          ),
+                        ),
+                        if (hasMultipleAccounts)
+                          const DivineIcon(
+                            icon: DivineIconName.caretDown,
+                            color: VineTheme.vineGreen,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Profile avatar, name, and identifier for the account header.
+///
+/// Uses Riverpod providers for reactive profile data while the parent
+/// [_AccountHeader] reads account state from the Cubit.
+class _AccountHeaderProfile extends ConsumerWidget {
+  const _AccountHeaderProfile({required this.pubkey});
+
+  final String pubkey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
     final displayName =
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
@@ -295,90 +397,33 @@ class _AccountHeader extends ConsumerWidget {
         ? claimedNip05
         : truncatedNpub;
 
-    final accounts =
-        ref.watch(knownAccountsProvider).whenOrNull(data: (v) => v) ?? [];
-    final hasMultipleAccounts = accounts.length > 1;
-    final buttonLabel = hasMultipleAccounts
-        ? 'Switch account'
-        : 'Add another account';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Column(
-        spacing: 16,
-        children: [
-          UserAvatar(
-            imageUrl: profile?.picture,
-            name: displayName,
-            size: 96,
+    return Column(
+      children: [
+        UserAvatar(
+          imageUrl: profile?.picture,
+          name: displayName,
+          size: 96,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          displayName,
+          style: VineTheme.headlineSmallFont(
+            color: VineTheme.onSurface,
           ),
-          Column(
-            children: [
-              Text(
-                displayName,
-                style: VineTheme.headlineSmallFont(
-                  color: VineTheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                uniqueIdentifier,
-                style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          uniqueIdentifier,
+          style: VineTheme.bodyMediumFont(
+            color: VineTheme.onSurfaceVariant,
           ),
-          Semantics(
-            button: true,
-            label: buttonLabel,
-            child: InkWell(
-              onTap: onSwitchAccount,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: VineTheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: VineTheme.outlineMuted,
-                    width: 2,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 8,
-                  children: [
-                    if (!hasMultipleAccounts)
-                      const DivineIcon(
-                        icon: DivineIconName.userPlus,
-                        color: VineTheme.vineGreen,
-                      ),
-                    Text(
-                      buttonLabel,
-                      style: VineTheme.titleMediumFont(
-                        color: VineTheme.vineGreen,
-                      ),
-                    ),
-                    if (hasMultipleAccounts)
-                      const DivineIcon(
-                        icon: DivineIconName.caretDown,
-                        color: VineTheme.vineGreen,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }
@@ -542,51 +587,53 @@ class _AccountSwitchTile extends ConsumerWidget {
       label: displayName,
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          height: 84,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: isCurrentAccount
-                ? VineTheme.vineGreen.withValues(alpha: 0.1)
-                : VineTheme.transparent,
-          ),
-          child: Row(
-            spacing: 12,
-            children: [
-              UserAvatar(
-                imageUrl: profile?.picture,
-                name: displayName,
-                size: 40,
-              ),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      style: VineTheme.titleMediumFont(
-                        color: VineTheme.onSurface,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      identifier,
-                      style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 84),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isCurrentAccount
+                  ? VineTheme.vineGreen.withValues(alpha: 0.1)
+                  : VineTheme.transparent,
+            ),
+            child: Row(
+              spacing: 12,
+              children: [
+                UserAvatar(
+                  imageUrl: profile?.picture,
+                  name: displayName,
+                  size: 40,
                 ),
-              ),
-              if (isCurrentAccount)
-                const DivineIcon(
-                  icon: DivineIconName.check,
-                  color: VineTheme.vineGreen,
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName,
+                        style: VineTheme.titleMediumFont(
+                          color: VineTheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        identifier,
+                        style: VineTheme.bodyMediumFont(
+                          color: VineTheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
-            ],
+                if (isCurrentAccount)
+                  const DivineIcon(
+                    icon: DivineIconName.check,
+                    color: VineTheme.vineGreen,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -607,27 +654,31 @@ class _AddAccountTile extends StatelessWidget {
       label: 'Add another account',
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          height: 84,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            spacing: 12,
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.userPlus,
-                color: VineTheme.onSurfaceVariant,
-              ),
-              Expanded(
-                child: Text(
-                  'Add another account',
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 84),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              spacing: 12,
+              children: [
+                const DivineIcon(
+                  icon: DivineIconName.userPlus,
+                  color: VineTheme.onSurfaceVariant,
                 ),
-              ),
-              const DivineIcon(
-                icon: DivineIconName.caretRight,
-                color: VineTheme.primary,
-              ),
-            ],
+                Expanded(
+                  child: Text(
+                    'Add another account',
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.onSurface,
+                    ),
+                  ),
+                ),
+                const DivineIcon(
+                  icon: DivineIconName.caretRight,
+                  color: VineTheme.primary,
+                ),
+              ],
+            ),
           ),
         ),
       ),
