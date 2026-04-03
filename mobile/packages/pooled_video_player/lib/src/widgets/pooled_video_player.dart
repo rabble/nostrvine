@@ -28,14 +28,13 @@ typedef OverlayBuilder =
 
 /// Builder for the error state.
 ///
-/// [errorMessage] contains the raw error string from the player (e.g. HTTP
-/// status codes like "403", "forbidden") when available. May be null for
-/// errors without a message (e.g. stale playback timeout).
+/// [errorType] contains the classified error type from the controller when
+/// available. May be null for errors that occurred before classification.
 typedef ErrorBuilder =
     Widget Function(
       BuildContext context,
       VoidCallback onRetry,
-      String? errorMessage,
+      VideoErrorType? errorType,
     );
 
 /// Video player widget that displays a video from [VideoFeedController].
@@ -131,7 +130,7 @@ class PooledVideoPlayer extends StatelessWidget {
                       () => feedController.retryLoad(
                         feedController.currentIndex,
                       ),
-                      state.errorMessage,
+                      state.errorType,
                     ) ??
                     const _DefaultErrorState()
               else ...[

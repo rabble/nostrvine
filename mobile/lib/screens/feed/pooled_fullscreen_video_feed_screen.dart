@@ -721,12 +721,11 @@ class _PooledFullscreenItemContentState
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
         ),
-        errorBuilder: (context, onRetry, errorMessage) =>
-            PooledVideoErrorOverlay(
-              video: video,
-              onRetry: onRetry,
-              errorMessage: errorMessage,
-            ),
+        errorBuilder: (context, onRetry, errorType) => PooledVideoErrorOverlay(
+          video: video,
+          onRetry: onRetry,
+          errorType: errorType,
+        ),
         overlayBuilder: (context, videoController, player) {
           if (showContentWarningOverlay && !_contentWarningRevealed) {
             return ContentWarningBlurOverlay(

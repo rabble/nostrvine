@@ -162,7 +162,7 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, StreamSubscription<bool>> _bufferSubscriptions = {};
   final Map<int, StreamSubscription<bool>> _playingSubscriptions = {};
   final Map<int, StreamSubscription<String>> _errorSubscriptions = {};
-  final Map<int, String> _errorMessages = {};
+  final Map<int, VideoErrorType> _errorTypes = {};
   final Set<int> _loadingIndices = {};
   final Map<int, Timer> _positionTimers = {};
   final Map<int, Timer> _loadWatchdogTimers = {};
@@ -240,6 +240,7 @@ class VideoFeedController extends ChangeNotifier {
           loadState: _loadStates[index] ?? LoadState.none,
           videoController: _loadedPlayers[index]?.videoController,
           player: _loadedPlayers[index]?.player,
+          errorType: _errorTypes[index],
         ),
       ),
     );
@@ -269,7 +270,7 @@ class VideoFeedController extends ChangeNotifier {
         videoController: isAlive ? pooledPlayer.videoController : null,
         player: isAlive ? pooledPlayer.player : null,
         isSlowLoad: _slowLoadIndices.contains(index),
-        errorMessage: _errorMessages[index],
+        errorType: _errorTypes[index],
       );
     }
   }
@@ -428,12 +429,44 @@ class VideoFeedController extends ChangeNotifier {
     }
   }
 
+  /// Classifies a raw error string into a [VideoErrorType].
+  ///
+  /// Checks for HTTP status code patterns (401, 403, 404) in the error
+  /// message. For divine-hosted URLs where the error string is unparseable,
+  /// falls back to [VideoErrorType.notFound] since missing content is the
+  /// most common failure mode.
+  VideoErrorType _classifyError(String? errorMessage, int index) {
+    if (errorMessage != null) {
+      final lower = errorMessage.toLowerCase();
+      if (lower.contains('401') || lower.contains('unauthorized')) {
+        return VideoErrorType.ageRestricted;
+      }
+      if (lower.contains('403') || lower.contains('forbidden')) {
+        return VideoErrorType.forbidden;
+      }
+      if (lower.contains('404') || lower.contains('not found')) {
+        return VideoErrorType.notFound;
+      }
+    }
+    // For divine-hosted URLs, generic errors most likely mean missing
+    // content (hash not on blossom, transcode pending). Non-divine URLs
+    // keep the generic classification.
+    if (index >= 0 && index < _videos.length) {
+      final hash = _extractCanonicalDivineBlobHash(_videos[index].url);
+      if (hash != null) return VideoErrorType.notFound;
+    }
+    return VideoErrorType.generic;
+  }
+
   void _markLoadError(int index, [String? errorMessage]) {
     if (_isDisposed) return;
     _loadStates[index] = LoadState.error;
     if (errorMessage != null) {
-      _errorMessages[index] = errorMessage;
+      _errorTypes[index] = _classifyError(errorMessage, index);
     }
+    // If no message, _errorTypes[index] may already be set from the
+    // error stream handler. Fall back to generic if nothing was stored.
+    _errorTypes[index] ??= VideoErrorType.generic;
     _notifyIndex(index);
   }
 
@@ -442,7 +475,7 @@ class VideoFeedController extends ChangeNotifier {
     final player = pooledPlayer?.player;
     if (player == null) {
       _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
-      _markLoadError(index, _errorMessages[index] ?? 'player_unavailable');
+      _markLoadError(index);
       return;
     }
 
@@ -452,7 +485,7 @@ class VideoFeedController extends ChangeNotifier {
 
     if (playbackSources == null || nextSourceIndex >= playbackSources.length) {
       _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
-      _markLoadError(index, _errorMessages[index] ?? 'sources_exhausted');
+      _markLoadError(index);
       return;
     }
 
@@ -1050,9 +1083,9 @@ class VideoFeedController extends ChangeNotifier {
         'source=${_openedSources[index]} '
         'loadState=${_loadStates[index]}',
       );
-      // Store the latest error message so the UI can differentiate error
-      // types (e.g. 401/403/404 HTTP status codes from blossom servers).
-      _errorMessages[index] = error;
+      // Classify the error immediately so the type is available if retry
+      // exhausts all sources and _markLoadError is called without a message.
+      _errorTypes[index] = _classifyError(error, index);
       // Only act on errors during initial load. Once the video is playing
       // successfully (LoadState.ready), mpv may emit non-critical errors
       // (e.g. on loop seeks, transient network hiccups) that should not
@@ -1354,7 +1387,7 @@ class VideoFeedController extends ChangeNotifier {
     _slowLoadIndices.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
-    _errorMessages.remove(index);
+    _errorTypes.remove(index);
     _loadingIndices.remove(index);
     _notifyIndex(index);
   }

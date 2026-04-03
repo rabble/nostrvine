@@ -544,7 +544,7 @@ void main() {
       testWidgets('shows custom errorBuilder when provided', (tester) async {
         await tester.pumpWidget(
           buildWidget(
-            errorBuilder: (context, onRetry, errorMessage) {
+            errorBuilder: (context, onRetry, errorType) {
               return TextButton(
                 key: const Key('retry_button'),
                 onPressed: onRetry,
@@ -565,7 +565,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            errorBuilder: (context, onRetry, errorMessage) {
+            errorBuilder: (context, onRetry, errorType) {
               return TextButton(
                 key: const Key('retry_button'),
                 onPressed: () {

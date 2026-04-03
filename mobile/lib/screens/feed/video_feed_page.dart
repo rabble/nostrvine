@@ -739,12 +739,11 @@ class _PooledVideoFeedItemContentState
           feedMode: widget.contextTitle,
           index: widget.index,
         ),
-        errorBuilder: (context, onRetry, errorMessage) =>
-            PooledVideoErrorOverlay(
-              video: video,
-              onRetry: onRetry,
-              errorMessage: errorMessage,
-            ),
+        errorBuilder: (context, onRetry, errorType) => PooledVideoErrorOverlay(
+          video: video,
+          onRetry: onRetry,
+          errorType: errorType,
+        ),
         overlayBuilder: (context, videoController, player) => Stack(
           children: [
             FeedVideoOverlay(
