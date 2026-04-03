@@ -762,35 +762,37 @@ void main() {
         );
       });
 
-      test('falls back to createPlayer when all LRU entries are disposed',
-          () async {
-        final mock1 = _createMockPooledPlayer();
-        final mock2 = _createMockPooledPlayer();
-        final mock3 = _createMockPooledPlayer();
-        final mocks = [mock1, mock2, mock3];
-        var idx = 0;
+      test(
+        'falls back to createPlayer when all LRU entries are disposed',
+        () async {
+          final mock1 = _createMockPooledPlayer();
+          final mock2 = _createMockPooledPlayer();
+          final mock3 = _createMockPooledPlayer();
+          final mocks = [mock1, mock2, mock3];
+          var idx = 0;
 
-        final pool = _SerializedTestPool(
-          maxPlayers: 2,
-          onCreatePlayer: () => mocks[idx++],
-        );
-        addTearDown(pool.dispose);
+          final pool = _SerializedTestPool(
+            maxPlayers: 2,
+            onCreatePlayer: () => mocks[idx++],
+          );
+          addTearDown(pool.dispose);
 
-        await pool.getPlayer('https://example.com/v1.mp4');
-        await pool.getPlayer('https://example.com/v2.mp4');
+          await pool.getPlayer('https://example.com/v1.mp4');
+          await pool.getPlayer('https://example.com/v2.mp4');
 
-        // Simulate: mark the LRU player as disposed so _recycleLru
-        // returns null and the pool must allocate a fresh player.
-        final lruPlayer = pool.getExistingPlayer(
-          'https://example.com/v1.mp4',
-        )!;
-        when(() => lruPlayer.isDisposed).thenReturn(true);
+          // Simulate: mark the LRU player as disposed so _recycleLru
+          // returns null and the pool must allocate a fresh player.
+          final lruPlayer = pool.getExistingPlayer(
+            'https://example.com/v1.mp4',
+          )!;
+          when(() => lruPlayer.isDisposed).thenReturn(true);
 
-        final player3 = await pool.getPlayer('https://example.com/v3.mp4');
+          final player3 = await pool.getPlayer('https://example.com/v3.mp4');
 
-        expect(player3, isNotNull);
-        expect(pool.hasPlayer('https://example.com/v3.mp4'), isTrue);
-      });
+          expect(player3, isNotNull);
+          expect(pool.hasPlayer('https://example.com/v3.mp4'), isTrue);
+        },
+      );
 
       test('_recycleLru recycles and stops the LRU player', () async {
         // Pre-create all mocks before the pool's async queue runs.
@@ -863,29 +865,31 @@ void main() {
         expect(pool.playerCount, equals(0));
       });
 
-      test('stopAll stops all non-disposed players without disposing',
-          () async {
-        final mock1 = _createMockPooledPlayer();
-        final mock2 = _createMockPooledPlayer();
-        final mocks = [mock1, mock2];
-        var idx = 0;
+      test(
+        'stopAll stops all non-disposed players without disposing',
+        () async {
+          final mock1 = _createMockPooledPlayer();
+          final mock2 = _createMockPooledPlayer();
+          final mocks = [mock1, mock2];
+          var idx = 0;
 
-        final pool = _SerializedTestPool(
-          onCreatePlayer: () => mocks[idx++],
-        );
-        addTearDown(pool.dispose);
+          final pool = _SerializedTestPool(
+            onCreatePlayer: () => mocks[idx++],
+          );
+          addTearDown(pool.dispose);
 
-        final p1 = await pool.getPlayer('https://example.com/v1.mp4');
-        final p2 = await pool.getPlayer('https://example.com/v2.mp4');
+          final p1 = await pool.getPlayer('https://example.com/v1.mp4');
+          final p2 = await pool.getPlayer('https://example.com/v2.mp4');
 
-        pool.stopAll();
+          pool.stopAll();
 
-        verify(p1.controller.stop).called(1);
-        verify(p2.controller.stop).called(1);
-        // Not disposed, just stopped.
-        verifyNever(p1.dispose);
-        verifyNever(p2.dispose);
-      });
+          verify(p1.controller.stop).called(1);
+          verify(p2.controller.stop).called(1);
+          // Not disposed, just stopped.
+          verifyNever(p1.dispose);
+          verifyNever(p2.dispose);
+        },
+      );
 
       test('stopAll ignores exceptions from stop()', () async {
         final failPlayer = _createMockPooledPlayer();

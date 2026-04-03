@@ -626,8 +626,9 @@ void main() {
                 final setup = createMockControllerSetup();
                 playerSetups[url] = setup;
                 final mockPooledPlayer = _MockPooledPlayer();
-                when(() => mockPooledPlayer.controller)
-                    .thenReturn(setup.controller);
+                when(
+                  () => mockPooledPlayer.controller,
+                ).thenReturn(setup.controller);
                 when(() => mockPooledPlayer.isDisposed).thenReturn(false);
                 when(mockPooledPlayer.dispose).thenAnswer((_) async {});
                 return mockPooledPlayer;
@@ -636,8 +637,9 @@ void main() {
               final setup = createMockControllerSetup();
               playerSetups[url] = setup;
               final mockPooledPlayer = _MockPooledPlayer();
-              when(() => mockPooledPlayer.controller)
-                  .thenReturn(setup.controller);
+              when(
+                () => mockPooledPlayer.controller,
+              ).thenReturn(setup.controller);
               when(() => mockPooledPlayer.isDisposed).thenReturn(false);
               when(mockPooledPlayer.dispose).thenAnswer((_) async {});
               return mockPooledPlayer;
