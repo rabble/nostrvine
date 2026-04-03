@@ -3,6 +3,7 @@ package com.divinevideo.divine_video_player
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.view.Surface
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -45,8 +46,7 @@ internal class DivineVideoPlayerInstance(
     private val mainHandler = Handler(Looper.getMainLooper())
 
     // Texture rendering (non-null when useTexture is enabled).
-    private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
-    private var needsSurface = true
+    private var surfaceTextureEntry: TextureRegistry.SurfaceTextureEntry? = null
 
     /** Accumulated clip durations for global timeline calculation. */
     private var clipOffsets = listOf<Long>()
@@ -80,22 +80,9 @@ internal class DivineVideoPlayerInstance(
      * ID that Dart should pass to the `Texture` widget.
      */
     fun enableTextureOutput(registry: TextureRegistry): Long {
-        val producer = registry.createSurfaceProducer()
-        producer.setCallback(object : TextureRegistry.SurfaceProducer.Callback {
-            override fun onSurfaceAvailable() {
-                if (needsSurface) {
-                    player?.setVideoSurface(producer.surface)
-                    needsSurface = false
-                }
-            }
-
-            override fun onSurfaceCleanup() {
-                player?.setVideoSurface(null)
-                needsSurface = true
-            }
-        })
-        surfaceProducer = producer
-        return producer.id()
+        val entry = registry.createSurfaceTexture()
+        surfaceTextureEntry = entry
+        return entry.id()
     }
 
     private fun ensurePlayer(): ExoPlayer {
@@ -122,10 +109,8 @@ internal class DivineVideoPlayerInstance(
                     /* handleAudioFocus= */ true,
                 )
                 newPlayer.addListener(playerListener)
-                surfaceProducer?.let { producer ->
-                    val surface = producer.surface
-                    newPlayer.setVideoSurface(surface)
-                    needsSurface = surface == null
+                surfaceTextureEntry?.let { entry ->
+                    newPlayer.setVideoSurface(Surface(entry.surfaceTexture()))
                 }
             }
     }
@@ -543,8 +528,8 @@ internal class DivineVideoPlayerInstance(
         player?.setVideoSurface(null)
         player?.release()
         player = null
-        surfaceProducer?.release()
-        surfaceProducer = null
+        surfaceTextureEntry?.release()
+        surfaceTextureEntry = null
         audioOverlayManager.releaseAll()
         eventSink = null
     }
