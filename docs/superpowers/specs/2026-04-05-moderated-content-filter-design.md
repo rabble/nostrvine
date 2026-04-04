@@ -205,3 +205,20 @@ UI (PooledVideoFeed)
 | `lib/screens/feed/pooled_fullscreen_video_feed_screen.dart` | Same, for fullscreen feed |
 | `lib/screens/feed/video_feed_page.dart` | Provide `VideoPlaybackStatusCubit` |
 | `integration_test/moderated_content_test.dart` | NEW: end-to-end |
+
+## Follow-ups (captured during implementation)
+
+- **Namespacing for non-safety ML labels.** Task B2 makes every unknown
+  `video.moderationLabels` entry a hide signal. This is correct for safety
+  labels but will force-hide videos if the server ever emits
+  discovery/taxonomy labels (e.g. `topic:music`, `lang:en`) in the same
+  field. Before shipping any such label, coordinate with Funnelcake to
+  either split the fields or adopt a namespace prefix convention the
+  client can allowlist.
+
+- **Label string sanity bounds.** `VideoStats._normalizeModerationLabel`
+  (Task B1) now passes unknown label strings through verbatim. A misbehaving
+  or compromised relay could inject pathological labels (very long, control
+  characters, etc.). Current behavior is defense-by-conservative-hide,
+  which is safe, but a length cap and printable-character filter would be
+  good defense in depth.
