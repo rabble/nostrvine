@@ -965,9 +965,11 @@ class RelayNotifications extends _$RelayNotifications {
 RelayNotificationApiService relayNotificationApiService(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
   final nostrService = ref.watch(nostrServiceProvider);
+  // Fallback must use the relay URL, not apiBaseUrl (Fastly CDN).
+  // The notification API is served by the relay server itself.
   final baseUrl = resolvePinnedApiBaseUrlFromRelays(
     configuredRelays: nostrService.configuredRelays,
-    fallbackBaseUrl: environmentConfig.apiBaseUrl,
+    fallbackBaseUrl: relayWsToHttpBase(environmentConfig.relayUrl),
   );
   final nip98AuthService = ref.watch(nip98AuthServiceProvider);
 
