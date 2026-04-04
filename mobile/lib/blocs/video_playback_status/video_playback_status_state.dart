@@ -37,10 +37,9 @@ class VideoPlaybackStatusState extends Equatable {
   VideoPlaybackStatusState({
     this.maxEntries = _defaultMaxEntries,
     LinkedHashMap<String, PlaybackStatus>? statuses,
-  }) : _statuses =
-           statuses ??
-           // ignore: prefer_collection_literals
-           LinkedHashMap<String, PlaybackStatus>();
+  }) : _statuses = statuses == null
+           ? LinkedHashMap<String, PlaybackStatus>()
+           : LinkedHashMap<String, PlaybackStatus>.from(statuses);
 
   static const int _defaultMaxEntries = 100;
 
@@ -77,5 +76,15 @@ class VideoPlaybackStatusState extends Equatable {
       VideoPlaybackStatusState(maxEntries: maxEntries);
 
   @override
-  List<Object?> get props => [_statuses, maxEntries];
+  List<Object?> get props {
+    // Both entries are required.
+    //
+    // Equatable's default map comparison is structural (unordered), so
+    // `_statuses` alone catches value changes but NOT pure LRU reorders
+    // where the key/value set is unchanged.
+    // `_statuses.keys.toList()` catches those insertion-order changes.
+    // Removing either would silently suppress a whole class of state
+    // updates — do not "simplify" this.
+    return [_statuses, _statuses.keys.toList(), maxEntries];
+  }
 }
