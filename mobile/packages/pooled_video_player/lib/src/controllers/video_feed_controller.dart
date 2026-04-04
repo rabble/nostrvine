@@ -1014,6 +1014,11 @@ class VideoFeedController extends ChangeNotifier {
 
     if (index == _currentIndex && _isActive && !_isPaused) {
       // This is the current video - play it with audio
+      _logDebug(
+        'STUTTER_DEBUG buffer_ready_play index=$index '
+        'positionMs=${player.state.position.inMilliseconds} '
+        '${_videoDebugDetails(index)}',
+      );
       unawaited(player.setVolume(100));
 
       // Start position callback timer for current video
@@ -1108,6 +1113,13 @@ class VideoFeedController extends ChangeNotifier {
             }
           }
 
+          _logDebug(
+            'STUTTER_DEBUG rebuffer_auto_play index=$index '
+            'positionMs=${player.state.position.inMilliseconds} '
+            'playing=${player.state.playing} '
+            'wasRecovering=$wasRecovering '
+            '${_videoDebugDetails(index)}',
+          );
           unawaited(player.play());
         }
       }
@@ -1329,7 +1341,21 @@ class VideoFeedController extends ChangeNotifier {
     if (_lastHeartbeatPositionMs != null &&
         positionMs == _lastHeartbeatPositionMs) {
       _staleHeartbeatCount++;
+      _logDebug(
+        'STUTTER_DEBUG stale_heartbeat index=$index '
+        'count=$_staleHeartbeatCount/$_staleHeartbeatThreshold '
+        'positionMs=$positionMs '
+        'playing=${player.state.playing} '
+        'buffering=${player.state.buffering}',
+      );
     } else {
+      if (_staleHeartbeatCount > 0) {
+        _logDebug(
+          'STUTTER_DEBUG stale_cleared index=$index '
+          'wasCount=$_staleHeartbeatCount '
+          'prevMs=$_lastHeartbeatPositionMs newMs=$positionMs',
+        );
+      }
       _staleHeartbeatCount = 0;
     }
     _lastHeartbeatPositionMs = positionMs;
@@ -1378,7 +1404,13 @@ class VideoFeedController extends ChangeNotifier {
 
     unawaited(() async {
       try {
+        _logDebug(
+          'STUTTER_DEBUG recovery_pause index=$index positionMs=$positionMs',
+        );
         await player.pause();
+        _logDebug(
+          'STUTTER_DEBUG recovery_seek index=$index positionMs=$positionMs',
+        );
         await player.seek(Duration(milliseconds: positionMs));
 
         // Guard: user may have swiped away during the seek.
@@ -1392,6 +1424,10 @@ class VideoFeedController extends ChangeNotifier {
         }
 
         await player.setVolume(100);
+        _logDebug(
+          'STUTTER_DEBUG recovery_play index=$index '
+          'positionMs=${player.state.position.inMilliseconds}',
+        );
         await player.play();
         _logDebug(
           'stale_recovery_complete index=$index '
