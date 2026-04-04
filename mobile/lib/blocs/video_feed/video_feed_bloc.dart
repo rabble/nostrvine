@@ -435,9 +435,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       _cacheServed = true;
       final cached = _homeFeedCache.read(_sharedPreferences);
       if (cached != null) {
-        final cachedValid = cached.videos
-            .where((v) => v.videoUrl != null)
-            .toList();
+        final filtered = _videosRepository.applyContentPreferences(
+          cached.videos,
+        );
+        final cachedValid = filtered.where((v) => v.videoUrl != null).toList();
         if (cachedValid.isNotEmpty) {
           _feedTracker?.markFirstVideosReceived(mode.name, cachedValid.length);
           emit(
