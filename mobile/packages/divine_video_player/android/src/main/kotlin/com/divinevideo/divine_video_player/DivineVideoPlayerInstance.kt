@@ -373,15 +373,18 @@ internal class DivineVideoPlayerInstance(
 
     private fun computeTotalDuration(exoPlayer: ExoPlayer): Long {
         var total = 0L
+        val timeline = exoPlayer.currentTimeline
         for (i in 0 until exoPlayer.mediaItemCount) {
-            val windowDuration = exoPlayer.currentTimeline
-                .let { timeline ->
-                    if (timeline.isEmpty) return@let 0L
-                    val window = Player.Commands.Builder().build()
-                    val w = androidx.media3.common.Timeline.Window()
-                    timeline.getWindow(i, w)
-                    w.durationMs
-                }
+            val windowDuration = if (timeline.isEmpty) {
+                0L
+            } else {
+                val w = androidx.media3.common.Timeline.Window()
+                timeline.getWindow(i, w)
+                val durationMs = w.durationMs
+                // Return 0 for unknown durations to avoid Long overflow when
+                // accumulating C.TIME_UNSET across an even number of clips.
+                if (durationMs < 0) 0L else durationMs
+            }
             total += windowDuration
         }
         // Update offsets with real durations once media is prepared.
@@ -405,7 +408,16 @@ internal class DivineVideoPlayerInstance(
             newOffsets.add(accum)
             val w = androidx.media3.common.Timeline.Window()
             timeline.getWindow(i, w)
-            accum += w.durationMs
+            val durationMs = w.durationMs
+            // C.TIME_UNSET (Long.MIN_VALUE + 1) and any other negative value
+            // means the duration is not yet resolved. With an even number of
+            // clips, summing C.TIME_UNSET values overflows back to a small
+            // positive number (e.g. 2 for two clips), which passes the
+            // accum > 0 guard and corrupts clipOffsets with invalid values.
+            // Bail out early so clipOffsets stays all-zeros and the safety
+            // check in resolveGlobalPosition keeps playback on clip 0.
+            if (durationMs < 0) return
+            accum += durationMs
         }
         if (accum > 0) clipOffsets = newOffsets
     }
