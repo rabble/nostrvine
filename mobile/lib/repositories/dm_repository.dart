@@ -148,6 +148,9 @@ class DmRepository {
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
     startListening();
+
+    // Merge duplicate conversations created by extra p-tags (idempotent).
+    unawaited(_mergeDuplicateConversations());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
@@ -433,10 +436,16 @@ class DmRepository {
       // Accept kind 14 (text) and kind 15 (file)
       if (!_supportedDmKinds.contains(rumorEvent.kind)) return;
 
-      // Extract conversation participants from pubkey + p tags
-      final participants = _extractParticipants(rumorEvent);
-      if (participants.length < 2) return;
+      // Extract conversation participants from pubkey + p tags, then
+      // resolve against existing conversations to prevent duplicates
+      // from non-compliant clients that add extra p-tags.
+      final rawParticipants = _extractParticipants(rumorEvent);
+      if (rawParticipants.length < 2) return;
 
+      final participants = await _resolveConversationParticipants(
+        rawParticipants,
+        rumorEvent.pubkey,
+      );
       final conversationId = computeConversationId(participants);
 
       // Extract common tags
@@ -1386,6 +1395,89 @@ class DmRepository {
   // Helpers
   // -------------------------------------------------------------------------
 
+  /// Merges duplicate conversations where the same 1:1 peer appears as
+  /// multiple conversations due to extra p-tags in NIP-17 events.
+  ///
+  /// For each peer that has more than one conversation with the current user,
+  /// keeps the canonical 1:1 conversation and merges the rest into it.
+  /// Idempotent and safe to run on every startup.
+  Future<void> _mergeDuplicateConversations() async {
+    try {
+      final allConversations = await _conversationsDao.getAllConversations(
+        ownerPubkey: _ownerPubkey,
+      );
+
+      // Group conversations by peer pubkey to find duplicates.
+      final peerGroups = <String, List<ConversationRow>>{};
+      for (final conv in allConversations) {
+        final participants = (jsonDecode(conv.participantPubkeys) as List)
+            .cast<String>();
+        final peers = participants.where((pk) => pk != _userPubkey).toList()
+          ..sort();
+        if (peers.isEmpty) continue;
+
+        // Use the first peer as the grouping key.
+        final peerKey = peers.first;
+        peerGroups.putIfAbsent(peerKey, () => []).add(conv);
+      }
+
+      for (final entry in peerGroups.entries) {
+        if (entry.value.length <= 1) continue;
+
+        final canonical1to1Participants = [_userPubkey, entry.key]..sort();
+        final canonicalId = computeConversationId(canonical1to1Participants);
+
+        // Check if the canonical 1:1 row already exists.
+        final hasCanonicalRow = entry.value.any((c) => c.id == canonicalId);
+
+        // Merge all conversations into the canonical 1:1 ID.
+        await _conversationsDao.runInTransaction(() async {
+          for (final conv in entry.value) {
+            if (conv.id == canonicalId) continue;
+
+            await _directMessagesDao.reassignConversation(
+              fromConversationId: conv.id,
+              toConversationId: canonicalId,
+              ownerPubkey: _userPubkey,
+            );
+            await _conversationsDao.deleteConversation(
+              conv.id,
+              ownerPubkey: _ownerPubkey,
+            );
+          }
+
+          // If the canonical 1:1 row didn't exist, create it from the
+          // most recent duplicate's metadata.
+          if (!hasCanonicalRow) {
+            final source = entry.value.first;
+            await _conversationsDao.upsertConversation(
+              id: canonicalId,
+              participantPubkeys: jsonEncode(canonical1to1Participants),
+              isGroup: false,
+              createdAt: source.createdAt,
+              lastMessageContent: source.lastMessageContent,
+              lastMessageTimestamp: source.lastMessageTimestamp,
+              lastMessageSenderPubkey: source.lastMessageSenderPubkey,
+              currentUserHasSent: source.currentUserHasSent,
+              ownerPubkey: source.ownerPubkey,
+              dmProtocol: source.dmProtocol,
+            );
+          }
+        });
+
+        // Refresh preview from actual messages.
+        await _refreshConversationPreview(canonicalId);
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to merge duplicate conversations: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Compute a deterministic conversation ID from sorted participant pubkeys.
   static String computeConversationId(List<String> participants) {
     final sorted = List<String>.from(participants)..sort();
@@ -1415,6 +1507,48 @@ class DmRepository {
       }
     }
     return pubkeys.toList()..sort();
+  }
+
+  /// Resolves the participant list for conversation routing.
+  ///
+  /// When a rumor has more p-tags than a standard 1:1 (sender + us),
+  /// determines whether to route to the full participant group (if one
+  /// already exists) or to the canonical 1:1 pair.
+  ///
+  /// Priority: existing group → existing 1:1 → default to 1:1.
+  ///
+  /// Defaulting to 1:1 when no conversation exists prevents phantom
+  /// groups caused by non-compliant clients adding extra p-tags to
+  /// what should be a 1:1 DM.
+  Future<List<String>> _resolveConversationParticipants(
+    List<String> extractedParticipants,
+    String senderPubkey,
+  ) async {
+    final canonical1to1 = [_userPubkey, senderPubkey]..sort();
+
+    // Standard 1:1 message — no ambiguity.
+    if (extractedParticipants.length <= 2) return canonical1to1;
+
+    // Extra p-tags present. Check if a group conversation with the
+    // full participant set already exists — if so, it's a genuine group.
+    final fullId = computeConversationId(extractedParticipants);
+    final existingFull = await _conversationsDao.getConversation(
+      fullId,
+      ownerPubkey: _ownerPubkey,
+    );
+    if (existingFull != null) return extractedParticipants;
+
+    // No existing group. Check if a 1:1 conversation exists.
+    final canonical1to1Id = computeConversationId(canonical1to1);
+    final existing1to1 = await _conversationsDao.getConversation(
+      canonical1to1Id,
+      ownerPubkey: _ownerPubkey,
+    );
+    if (existing1to1 != null) return canonical1to1;
+
+    // Neither exists. Default to 1:1 — prevents phantom groups from
+    // non-compliant clients that add extra p-tags to 1:1 DMs.
+    return canonical1to1;
   }
 
   /// Extracts Kind 15 file metadata from event tags.
