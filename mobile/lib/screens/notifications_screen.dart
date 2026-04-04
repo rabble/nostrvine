@@ -378,32 +378,35 @@ class _NotificationTabContentState
     final current = notifications[index];
     final previous = notifications[index - 1];
 
+    final currentLocal = current.timestamp.toLocal();
     final currentDate = DateTime(
-      current.timestamp.year,
-      current.timestamp.month,
-      current.timestamp.day,
+      currentLocal.year,
+      currentLocal.month,
+      currentLocal.day,
     );
 
+    final previousLocal = previous.timestamp.toLocal();
     final previousDate = DateTime(
-      previous.timestamp.year,
-      previous.timestamp.month,
-      previous.timestamp.day,
+      previousLocal.year,
+      previousLocal.month,
+      previousLocal.day,
     );
 
     return currentDate != previousDate;
   }
 
   String _getDateHeader(DateTime date) {
+    final local = date.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
+    final dateOnly = DateTime(local.year, local.month, local.day);
 
     if (dateOnly == today) {
       return 'Today';
     } else if (dateOnly == yesterday) {
       return 'Yesterday';
-    } else if (now.difference(date).inDays < 7) {
+    } else if (now.difference(local).inDays < 7) {
       final weekdays = [
         'Monday',
         'Tuesday',
@@ -413,9 +416,9 @@ class _NotificationTabContentState
         'Saturday',
         'Sunday',
       ];
-      return weekdays[date.weekday - 1];
+      return weekdays[local.weekday - 1];
     } else {
-      return DateFormat.yMd().format(date);
+      return DateFormat.yMd().format(local);
     }
   }
 
