@@ -23,6 +23,7 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
@@ -331,6 +332,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         );
       },
       maxLoopDuration: VideoEditorConstants.maxDuration,
+      onLog: pooledPlayerLogCallback(),
     );
   }
 

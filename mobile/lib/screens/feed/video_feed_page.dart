@@ -20,6 +20,7 @@ import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
@@ -206,6 +207,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
         if (!mounted) return;
         _skipToNextVideoIfPossible();
       },
+      onLog: pooledPlayerLogCallback(),
     );
 
     controllerMode = effectiveState.mode;

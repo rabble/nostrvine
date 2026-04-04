@@ -85,6 +85,7 @@ class VideoFeedController extends ChangeNotifier {
     this.positionCallbackInterval = const Duration(milliseconds: 250),
     this.slowLoadThreshold = const Duration(seconds: 8),
     this.maxLoopDuration,
+    this.onLog,
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
        _currentIndex = initialIndex.clamp(
@@ -148,6 +149,13 @@ class VideoFeedController extends ChangeNotifier {
   /// When `null`, no loop enforcement is applied (the player's own
   /// [PlaylistMode] controls looping).
   final Duration? maxLoopDuration;
+
+  /// Optional structured logging callback.
+  ///
+  /// When provided, log messages are forwarded to this callback in addition
+  /// to `debugPrint`. Use this to pipe pooled player diagnostics into the
+  /// app's structured logging system (e.g., for production log exports).
+  final void Function(String level, String message)? onLog;
 
   /// Unmodifiable list of videos.
   List<VideoItem> get videos => List.unmodifiable(_videos);
@@ -299,6 +307,17 @@ class VideoFeedController extends ChangeNotifier {
 
   void _logDebug(String message) {
     debugPrint('[POOLED] $message');
+    onLog?.call('debug', message);
+  }
+
+  void _logWarning(String message) {
+    debugPrint('[POOLED] ⚠️ $message');
+    onLog?.call('warning', message);
+  }
+
+  void _logError(String message) {
+    debugPrint('[POOLED] ❌ $message');
+    onLog?.call('error', message);
   }
 
   void _logLoadingSnapshot(int index, {required String reason}) {
@@ -344,7 +363,7 @@ class VideoFeedController extends ChangeNotifier {
         // Current video stuck in buffering too long — try next source
         // before giving up completely.
         if (index == _currentIndex) {
-          _logDebug(
+          _logWarning(
             'load_gave_up ${_videoDebugDetails(index)} '
             'elapsedMs=$elapsedMs',
           );
@@ -482,6 +501,12 @@ class VideoFeedController extends ChangeNotifier {
     // If no message, _errorTypes[index] may already be set from the
     // error stream handler. Fall back to generic if nothing was stored.
     _errorTypes[index] ??= VideoErrorType.generic;
+    _logError(
+      'mark_load_error ${_videoDebugDetails(index)} '
+      'errorMessage=$errorMessage '
+      'errorType=${_errorTypes[index]} '
+      'openedSource=${_openedSources[index]}',
+    );
     _notifyIndex(index);
     if (notifyStalled) {
       onVideoStalled?.call(index);
@@ -492,7 +517,7 @@ class VideoFeedController extends ChangeNotifier {
     final pooledPlayer = _loadedPlayers[index];
     final player = pooledPlayer?.player;
     if (player == null) {
-      _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
+      _logError('stuck_playback ${_videoDebugDetails(index)} giving up');
       _markLoadError(index: index, notifyStalled: true);
       return;
     }
@@ -502,12 +527,12 @@ class VideoFeedController extends ChangeNotifier {
     final nextSourceIndex = currentSourceIndex + 1;
 
     if (playbackSources == null || nextSourceIndex >= playbackSources.length) {
-      _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
+      _logError('stuck_playback ${_videoDebugDetails(index)} giving up');
       _markLoadError(index: index, notifyStalled: true);
       return;
     }
 
-    _logDebug(
+    _logWarning(
       'stuck_failover ${_videoDebugDetails(index)} '
       'failedSource=${_openedSources[index]} '
       'retrySource=${playbackSources[nextSourceIndex]}',
@@ -540,10 +565,10 @@ class VideoFeedController extends ChangeNotifier {
       if (!player.state.buffering) {
         _onBufferReady(index);
       }
-    } on Exception catch (error, stack) {
-      debugPrint(
-        '[POOLED] stuck_retry_failed ${_videoDebugDetails(index)} '
-        'error=$error\n$stack',
+    } on Exception catch (error) {
+      _logError(
+        'stuck_retry_failed ${_videoDebugDetails(index)} '
+        'error=$error',
       );
       _markLoadError(
         index: index,
@@ -943,8 +968,8 @@ class VideoFeedController extends ChangeNotifier {
         _onBufferReady(index);
       }
     } on Exception catch (e, stack) {
-      debugPrint(
-        '[POOLED] load_failed ${_videoDebugDetails(index)} '
+      _logError(
+        'load_failed ${_videoDebugDetails(index)} '
         'videoCount=${_videos.length} '
         'elapsedMs=${_loadStopwatches[index]?.elapsedMilliseconds} '
         'error=$e\n$stack',
@@ -1131,11 +1156,12 @@ class VideoFeedController extends ChangeNotifier {
     _errorSubscriptions[index] = pooledPlayer.player.stream.error.listen((
       error,
     ) {
-      _logDebug(
+      final loadState = _loadStates[index];
+      _logWarning(
         'player_error ${_videoDebugDetails(index)} '
         'error=$error '
         'source=${_openedSources[index]} '
-        'loadState=${_loadStates[index]}',
+        'loadState=$loadState',
       );
       // Classify the error immediately so the type is available if retry
       // exhausts all sources and _markLoadError is called without a message.
@@ -1144,7 +1170,7 @@ class VideoFeedController extends ChangeNotifier {
       // successfully (LoadState.ready), mpv may emit non-critical errors
       // (e.g. on loop seeks, transient network hiccups) that should not
       // trigger a source failover.
-      if (_loadStates[index] == LoadState.loading) {
+      if (loadState == LoadState.loading) {
         unawaited(_retryCurrentVideoWithNextSource(index));
       }
     });
@@ -1342,9 +1368,10 @@ class VideoFeedController extends ChangeNotifier {
       // After repeated failed recoveries, the stream is likely corrupt
       // (e.g. missing h264 PPS headers). Give up so the user can swipe past.
       if (_staleRecoveryAttempts > _maxStaleRecoveryAttempts) {
-        _logDebug(
+        _logError(
           'stale_gave_up index=$index '
           'attempts=$_staleRecoveryAttempts '
+          'positionMs=$positionMs '
           '${_videoDebugDetails(index)}',
         );
         _staleRecoveryAttempts = 0;
