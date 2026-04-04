@@ -14,6 +14,28 @@ void main() {
     });
   });
 
+  group('resolvePinnedApiBaseUrlFromRelays', () {
+    test('maps relay.divine.video to api.divine.video for REST', () {
+      expect(
+        resolvePinnedApiBaseUrlFromRelays(
+          configuredRelays: const ['wss://relay.divine.video'],
+          fallbackBaseUrl: 'https://fallback.example.com',
+        ),
+        'https://api.divine.video',
+      );
+    });
+
+    test('returns fallback when divine relay is absent', () {
+      expect(
+        resolvePinnedApiBaseUrlFromRelays(
+          configuredRelays: const ['wss://relay.damus.io'],
+          fallbackBaseUrl: 'https://relay.staging.dvines.org',
+        ),
+        'https://relay.staging.dvines.org',
+      );
+    });
+  });
+
   group('resolveApiBaseUrlFromRelays', () {
     test('maps relay.divine.video to api.divine.video for REST', () {
       expect(

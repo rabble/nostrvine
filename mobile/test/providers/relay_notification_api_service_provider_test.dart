@@ -73,7 +73,7 @@ void main() {
       expect(
         requestedUrl,
         startsWith(
-          'https://relay.divine.video/api/users/$testPubkey/notifications',
+          'https://api.divine.video/api/users/$testPubkey/notifications',
         ),
       );
 
