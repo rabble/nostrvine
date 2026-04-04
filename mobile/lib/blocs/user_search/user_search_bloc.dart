@@ -58,15 +58,6 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       return;
     }
 
-    if (!event.fetchResults) {
-      if (query == state.query && state.status != UserSearchStatus.initial) {
-        return; // preserve existing state including resultCount
-      }
-      final count = await _profileRepository.countUsersLocally(query: query);
-      emit(UserSearchState(query: query, resultCount: count));
-      return;
-    }
-
     // No dedup guard here — the restartable() transformer already cancels the
     // previous in-flight handler via switchMap. Adding a same-query skip caused
     // the search to get stuck in loading/empty-success states with no recovery

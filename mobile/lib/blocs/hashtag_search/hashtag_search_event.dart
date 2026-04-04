@@ -13,16 +13,13 @@ sealed class HashtagSearchEvent extends Equatable {
 
 /// Request to search for hashtags with a query
 final class HashtagSearchQueryChanged extends HashtagSearchEvent {
-  const HashtagSearchQueryChanged(this.query, {this.fetchResults = true});
+  const HashtagSearchQueryChanged(this.query);
 
   /// The search query string
   final String query;
 
-  /// Whether to fetch full results instead of only a local count.
-  final bool fetchResults;
-
   @override
-  List<Object?> get props => [query, fetchResults];
+  List<Object?> get props => [query];
 }
 
 /// Request to load the next page of hashtag results.

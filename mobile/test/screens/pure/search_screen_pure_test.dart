@@ -216,10 +216,6 @@ void main() {
           () => mockHashtagRepository.searchHashtags(query: 'flutter'),
         ).thenAnswer((_) async => ['flutter']);
 
-        when(
-          () => mockHashtagRepository.countHashtagsLocally(query: 'flutter'),
-        ).thenReturn(1);
-
         await tester.pumpWidget(createTestWidget(searchResults: testVideos));
 
         final textField = find.byType(TextField);

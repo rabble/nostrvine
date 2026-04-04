@@ -64,20 +64,6 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
       return;
     }
 
-    if (!event.fetchResults) {
-      if (query == state.query && state.status != VideoSearchStatus.initial) {
-        return; // preserve existing state including resultCount
-      }
-      final count = await _videosRepository.countVideosLocally(query: query);
-      emit(
-        VideoSearchState(
-          query: query,
-          resultCount: count,
-        ),
-      );
-      return;
-    }
-
     if (query == state.query && state.status != VideoSearchStatus.initial) {
       return;
     }
