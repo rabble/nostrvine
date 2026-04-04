@@ -299,7 +299,14 @@ Future<void> _startOpenVineApp() async {
   // in web/index.html (already added).
 
   // Configure the native video player disk cache (500 MB, LRU eviction).
-  await DivineVideoPlayerController.configureCache();
+  // divine_video_player has no web implementation, so calling its method
+  // channel on web throws MissingPluginException. That exception is caught by
+  // runZonedGuarded in main() and silently swallowed by the non-web Crashlytics
+  // handler, which means runApp() is never reached and the app hangs on the
+  // initial loading spinner forever. Skip on web.
+  if (!kIsWeb) {
+    await DivineVideoPlayerController.configureCache();
+  }
 
   StartupPerformanceService.instance.completePhase('bindings');
 
