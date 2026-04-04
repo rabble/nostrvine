@@ -17,6 +17,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../../helpers/test_provider_overrides.dart';
+import '../../test_data/video_test_data.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
     implements VideoFeedBloc {}
@@ -478,6 +479,90 @@ void main() {
         verify(
           () => videoFeedController.setActive(active: true),
         ).called(1);
+      },
+    );
+  });
+
+  group('VideoFeedView native feed wiring', () {
+    late VideoFeedBloc videoFeedBloc;
+    late VideoFeedController videoFeedController;
+
+    setUp(() async {
+      await PlayerPool.init();
+      videoFeedBloc = _MockVideoFeedBloc();
+      videoFeedController = _MockVideoFeedController();
+
+      when(() => videoFeedController.videoCount).thenReturn(1);
+      when(
+        () => videoFeedController.videos,
+      ).thenReturn([
+        const VideoItem(id: 'video-1', url: 'https://example.com/video.mp4'),
+      ]);
+      when(() => videoFeedController.addListener(any())).thenReturn(null);
+      when(() => videoFeedController.removeListener(any())).thenReturn(null);
+      when(() => videoFeedController.dispose()).thenReturn(null);
+      when(
+        () => videoFeedController.setActive(
+          active: any(named: 'active'),
+          retainCurrentPlayer: any(named: 'retainCurrentPlayer'),
+        ),
+      ).thenReturn(null);
+    });
+
+    tearDown(() async {
+      await PlayerPool.reset();
+    });
+
+    setUpAll(() {
+      registerFallbackValue(const VideoFeedStarted());
+    });
+
+    Widget buildSubject(VideoFeedState state) {
+      when(() => videoFeedBloc.state).thenReturn(state);
+
+      return testMaterialApp(
+        additionalOverrides: [
+          routerLocationStreamProvider.overrideWith(
+            (ref) => Stream.value('/home'),
+          ),
+        ],
+        home: BlocProvider<VideoFeedBloc>.value(
+          value: videoFeedBloc,
+          child: VideoFeedView(controller: videoFeedController),
+        ),
+      );
+    }
+
+    testWidgets(
+      'renders native pooled feed with a GlobalKey for programmatic control',
+      (tester) async {
+        final testVideo = createTestVideoEvent();
+        final state = VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: [testVideo],
+        );
+
+        when(() => videoFeedController.videoCount).thenReturn(1);
+        when(() => videoFeedController.videos).thenReturn([
+          VideoItem(id: testVideo.id, url: testVideo.videoUrl!),
+        ]);
+        when(() => videoFeedController.currentIndex).thenReturn(0);
+        when(() => videoFeedController.onPageChanged(any())).thenReturn(null);
+        when(
+          () => videoFeedController.getIndexNotifier(any()),
+        ).thenReturn(ValueNotifier(const VideoIndexState()));
+
+        await tester.pumpWidget(buildSubject(state));
+        await tester.pump();
+
+        final pooledVideoFeed = tester.widget<PooledVideoFeed>(
+          find.byType(PooledVideoFeed),
+        );
+
+        expect(
+          pooledVideoFeed.key,
+          isA<GlobalKey<PooledVideoFeedState>>(),
+        );
       },
     );
   });

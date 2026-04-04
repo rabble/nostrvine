@@ -2871,6 +2871,48 @@ void main() {
         verify(setup.player.play).called(greaterThanOrEqualTo(1));
       });
 
+      test(
+        'allows the first real zero-duration rebuffer recovery before '
+        'marking error on the second',
+        () async {
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(videos: videos, pool: pool);
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup = playerSetups[videos[0].url]!;
+
+          // Initial ready transition.
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+
+          clearInteractions(setup.player);
+
+          // First real rebuffer cycle: should still attempt recovery.
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+          verify(setup.player.play).called(greaterThanOrEqualTo(1));
+
+          clearInteractions(setup.player);
+
+          // Second real rebuffer cycle with no media metadata: give up.
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.error));
+          verifyNever(setup.player.play);
+        },
+      );
+
       test('rebuffer after seek calls player.play() '
           'for current active video', () async {
         final videos = createTestVideos(count: 3);
