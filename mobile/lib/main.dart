@@ -299,7 +299,15 @@ Future<void> _startOpenVineApp() async {
   // in web/index.html (already added).
 
   // Configure the native video player disk cache (500 MB, LRU eviction).
-  await DivineVideoPlayerController.configureCache();
+  // divine_video_player only ships android/ios/macos plugin platforms, so
+  // invoking configureCache() on web throws MissingPluginException. That
+  // exception gets swallowed by the runZonedGuarded + CrashReportingService
+  // chain below (Firebase Crashlytics has no web impl), and runApp() is
+  // never reached — the HTML loading spinner stays up forever with no JS
+  // errors. Skip the call on web to unblock startup.
+  if (!kIsWeb) {
+    await DivineVideoPlayerController.configureCache();
+  }
 
   StartupPerformanceService.instance.completePhase('bindings');
 
