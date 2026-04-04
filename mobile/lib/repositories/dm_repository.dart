@@ -117,10 +117,12 @@ class DmRepository {
   /// subscription require initialization.
   bool get isInitialized => _signer != null && _userPubkey.isNotEmpty;
 
-  /// Set auth credentials and start the relay subscription.
+  /// Set auth credentials on the repository.
   ///
-  /// Called by the provider when the user's keys become available.
-  /// Read methods work before this; send/subscribe require it.
+  /// Called by the provider when the user's keys become available. Read
+  /// methods work before this; send requires it. The relay subscription
+  /// is NOT started here — callers (the inbox screen) are responsible for
+  /// invoking [startListening] when they need live gift-wrap delivery.
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
   /// no-ops. If called with a different user, resets and re-initializes.
@@ -147,7 +149,10 @@ class DmRepository {
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
-    startListening();
+    // Subscription is started by the inbox screen via startListening().
+    // Do NOT start it here — doing so would replay the full gift-wrap
+    // backlog onto the UI isolate at app launch and scale linearly with
+    // lifetime DM count. See docs/plans/2026-04-05-dm-scaling-fix-design.md.
   }
 
   /// Reset internal state so the repository can be re-initialized for a

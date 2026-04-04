@@ -1209,6 +1209,37 @@ void main() {
 
         await controller.close();
       });
+
+      test('initialize does not open a subscription (lazy inbox)', () async {
+        // New behavior: initialize() only wires credentials. The gift-wrap
+        // subscription is started by the inbox screen via startListening().
+        // This keeps cold start off the UI isolate until the user visits
+        // the messages tab. Regression guard for
+        // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+        final repository = DmRepository(
+          nostrClient: mockNostrClient,
+          messageService: mockMessageService,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+          // Intentionally no userPubkey/signer — initialize() provides them.
+        );
+
+        repository.initialize(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        // The relay client must not have been asked to subscribe.
+        verifyNever(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        );
+        // But the repository should still be initialized so send() works.
+        expect(repository.isInitialized, isTrue);
+      });
     });
 
     // -----------------------------------------------------------------
