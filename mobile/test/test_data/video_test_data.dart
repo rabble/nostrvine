@@ -35,7 +35,10 @@ VideoEvent createTestVideoEvent({
     pubkey: pubkey,
     createdAt: createdAt,
     content: content,
-    timestamp: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
+    timestamp: DateTime.fromMillisecondsSinceEpoch(
+      createdAt * 1000,
+      isUtc: true,
+    ),
     title: title,
     videoUrl: videoUrl,
     thumbnailUrl: thumbnailUrl,

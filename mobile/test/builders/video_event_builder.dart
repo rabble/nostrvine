@@ -43,7 +43,10 @@ class VideoEventBuilder {
     pubkey: pubkey,
     createdAt: createdAt,
     content: title ?? 'Test video content',
-    timestamp: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
+    timestamp: DateTime.fromMillisecondsSinceEpoch(
+      createdAt * 1000,
+      isUtc: true,
+    ),
     title: title,
     videoUrl: videoUrl,
     thumbnailUrl: thumbnailUrl,

@@ -45,7 +45,10 @@ class UserProfileBuilder {
       'nip05': nip05,
       'lud16': lud16,
     },
-    createdAt: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(
+      createdAt * 1000,
+      isUtc: true,
+    ),
     name: name,
     displayName: displayName,
     picture: picture,
