@@ -1120,27 +1120,19 @@ class VideoFeedController extends ChangeNotifier {
             }
           }
 
-          // Skip redundant play() if the player is already playing. On iOS
-          // the buffering stream occasionally emits false→true→false edges
-          // during normal playback; calling play() on an already-playing
-          // player was a no-op at best and caused an audible glitch at worst.
-          if (player.state.playing) {
-            _logDebug(
-              'rebuffer_auto_play_skipped index=$index '
-              'already_playing=true '
-              'positionMs=${player.state.position.inMilliseconds} '
-              'wasRecovering=$wasRecovering '
-              '${_videoDebugDetails(index)}',
-            );
-          } else {
-            _logDebug(
-              'rebuffer_auto_play index=$index '
-              'positionMs=${player.state.position.inMilliseconds} '
-              'wasRecovering=$wasRecovering '
-              '${_videoDebugDetails(index)}',
-            );
-            unawaited(player.play());
-          }
+          // Always call play() on rebuffer completion — even when
+          // player.state.playing reports true. mpv can report
+          // playing=true while the decoder is actually stalled with no
+          // frame output, especially after a seek or network hiccup.
+          // The play() call nudges the decoder to resume frame output.
+          _logDebug(
+            'rebuffer_auto_play index=$index '
+            'positionMs=${player.state.position.inMilliseconds} '
+            'playing=${player.state.playing} '
+            'wasRecovering=$wasRecovering '
+            '${_videoDebugDetails(index)}',
+          );
+          unawaited(player.play());
         }
       }
     });

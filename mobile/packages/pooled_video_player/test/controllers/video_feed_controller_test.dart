@@ -3537,8 +3537,8 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Wait for stale detection:
-        // 5 grace ticks (500ms) + 3 stale ticks (300ms) + async buffer
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        // 5 grace ticks (500ms) + 8 stale ticks (800ms) + async buffer
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery should have called pause + seek + play
         verify(setup.player.pause).called(greaterThanOrEqualTo(1));
@@ -3574,7 +3574,7 @@ void main() {
 
         // Let heartbeat run through grace + threshold — position always
         // advances
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // seek should only be called for the initial _resume seek-to-zero
         // check, not for stale recovery
@@ -3606,7 +3606,7 @@ void main() {
 
         setup.bufferingController.add(false);
         // Wait through grace + threshold — buffering prevents recovery
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery seek should NOT be called — buffering resets stale count
         verifyNever(
@@ -3639,7 +3639,7 @@ void main() {
 
         // Swipe away before threshold is reached — resets stale tracking
         controller.onPageChanged(1);
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery seek to 533ms should NOT have been called on index 0
         verifyNever(
@@ -3922,8 +3922,8 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Wait for stale detection:
-        // 5 grace ticks (500ms) + 3 stale ticks (300ms) + async buffer
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        // 5 grace ticks (500ms) + 8 stale ticks (800ms) + async buffer
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery should have called pause + seek + play
         verify(setup.player.pause).called(greaterThanOrEqualTo(1));
@@ -3959,7 +3959,7 @@ void main() {
 
         // Let heartbeat run through grace + threshold — position always
         // advances
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // seek should only be called for the initial _resume seek-to-zero
         // check, not for stale recovery
@@ -3991,7 +3991,7 @@ void main() {
 
         setup.bufferingController.add(false);
         // Wait through grace + threshold — buffering prevents recovery
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery seek should NOT be called — buffering resets stale count
         verifyNever(
@@ -4024,7 +4024,7 @@ void main() {
 
         // Swipe away before threshold is reached — resets stale tracking
         controller.onPageChanged(1);
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery seek to 533ms should NOT have been called on index 0
         verifyNever(
@@ -4325,10 +4325,10 @@ void main() {
         );
 
         // Wait for stale detection cycles.
-        // Heartbeat interval = 100ms, threshold = 3, max attempts = 2.
-        // Each cycle: 3 heartbeats (300ms). Need 3 cycles for
-        // attempts to exceed 2. Total ~900ms + processing.
-        await Future<void>.delayed(const Duration(seconds: 4));
+        // Heartbeat interval = 100ms, threshold = 8, max attempts = 2.
+        // Each cycle: 8 heartbeats (800ms). Need 3 cycles for
+        // attempts to exceed 2. Total ~2400ms + processing + grace.
+        await Future<void>.delayed(const Duration(seconds: 5));
 
         expect(
           controller.getLoadState(0),
