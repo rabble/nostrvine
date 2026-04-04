@@ -1,5 +1,5 @@
-// ABOUTME: Tests Funnelcake REST URL resolution from configured relay URLs.
-// ABOUTME: Keeps divine websocket relay host separate from the Fastly REST host.
+// ABOUTME: Tests REST URL resolution from configured relay URLs.
+// ABOUTME: Covers both Funnelcake (api.divine.video) and notification (relay.divine.video) paths.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
@@ -15,13 +15,13 @@ void main() {
   });
 
   group('resolvePinnedApiBaseUrlFromRelays', () {
-    test('maps relay.divine.video to api.divine.video for REST', () {
+    test('resolves relay.divine.video to its HTTP base for notifications', () {
       expect(
         resolvePinnedApiBaseUrlFromRelays(
           configuredRelays: const ['wss://relay.divine.video'],
           fallbackBaseUrl: 'https://fallback.example.com',
         ),
-        'https://api.divine.video',
+        'https://relay.divine.video',
       );
     });
 

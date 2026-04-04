@@ -68,11 +68,5 @@ String resolvePinnedApiBaseUrlFromRelays({
     return fallbackBaseUrl;
   }
 
-  // Map divine relay to its Fastly-backed REST API host
-  final selectedHost = Uri.tryParse(pinnedRelay.first)?.host.toLowerCase();
-  if (selectedHost == _divineRelayHost) {
-    return _divineApiBaseUrl;
-  }
-
   return relayWsToHttpBase(pinnedRelay.first);
 }
