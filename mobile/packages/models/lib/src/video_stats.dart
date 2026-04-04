@@ -509,9 +509,13 @@ List<String> _parseModerationLabels(dynamic value) {
 }
 
 String? _normalizeModerationLabel(String value) {
-  if (value.isEmpty) return null;
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return null;
 
-  final normalized = value.toLowerCase().replaceAll('_', '-');
+  final normalized = trimmed
+      .toLowerCase()
+      .replaceAll('_', '-')
+      .replaceAll(RegExp(r'\s+'), '-');
 
   switch (normalized) {
     case 'pornography':
@@ -531,30 +535,8 @@ String? _normalizeModerationLabel(String value) {
       return 'violence';
   }
 
-  return _recognizedModerationLabels.contains(normalized) ? normalized : null;
+  return normalized;
 }
-
-const Set<String> _recognizedModerationLabels = {
-  'nudity',
-  'sexual',
-  'porn',
-  'graphic-media',
-  'violence',
-  'self-harm',
-  'drugs',
-  'alcohol',
-  'tobacco',
-  'gambling',
-  'profanity',
-  'hate',
-  'harassment',
-  'flashing-lights',
-  'ai-generated',
-  'deepfake',
-  'misleading',
-  'spam',
-  'scam',
-};
 
 /// Safely parses a dynamic value to double.
 double? _parseDouble(dynamic value) {
