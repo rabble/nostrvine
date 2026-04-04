@@ -1976,6 +1976,11 @@ DmRepository dmRepository(Ref ref) {
       // NIP-44 operations (signing, encrypting, decrypting).
       final signer = nostrService.signer;
 
+      // initialize() wires credentials only — it does NOT open the
+      // gift-wrap subscription. The inbox screen (InboxPage) starts the
+      // subscription via startListening() on mount and tears it down on
+      // dispose so cold start does no DM network/decrypt work.
+      // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
       repository.initialize(
         userPubkey: publicKey,
         signer: signer,
