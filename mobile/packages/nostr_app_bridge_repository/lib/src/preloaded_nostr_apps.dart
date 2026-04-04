@@ -173,6 +173,17 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     launchUrl: 'https://jumble.social/',
     sortOrder: 13,
   ),
+  _buildPreloadedApp(
+    id: 'bundled-divine-space',
+    slug: 'divine-space',
+    name: 'divine.space',
+    tagline: 'A spatial Nostr experience.',
+    description:
+        'A curated third-party Nostr app offering a spatial take '
+        'on social browsing and conversations.',
+    launchUrl: 'https://divine.space/',
+    sortOrder: 14,
+  ),
 ]);
 
 /// Per-app localStorage seeding scripts keyed by slug.
