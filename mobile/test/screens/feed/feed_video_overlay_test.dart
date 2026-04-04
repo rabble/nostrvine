@@ -12,6 +12,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
@@ -123,8 +124,15 @@ void main() {
         mockProfileRepository: mockProfileRepository,
         mockNip05VerificationService: mockNip05VerificationService,
         home: Scaffold(
-          body: BlocProvider<VideoInteractionsBloc>.value(
-            value: mockInteractionsBloc,
+          body: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+              ),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+            ],
             child: FeedVideoOverlay(
               video: testVideo,
               isActive: isActive,

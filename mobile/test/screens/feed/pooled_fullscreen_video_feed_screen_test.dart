@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -156,8 +157,13 @@ void main() {
         additionalOverrides: additionalOverrides,
         mockProfileRepository: mockProfileRepository,
         mockNip05VerificationService: mockNip05VerificationService,
-        home: BlocProvider<FullscreenFeedBloc>.value(
-          value: mockBloc,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+            BlocProvider<VideoPlaybackStatusCubit>(
+              create: (_) => VideoPlaybackStatusCubit(),
+            ),
+          ],
           child: FullscreenFeedContent(
             contextTitle: contextTitle,
             controllerFactory:
@@ -373,8 +379,13 @@ void main() {
 
         await tester.pumpWidget(
           testMaterialApp(
-            home: BlocProvider<FullscreenFeedBloc>.value(
-              value: mockBloc,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+              ],
               child: FullscreenFeedContent(
                 controllerFactory: (videos, initialIndex) {
                   factoryVideos = videos;
@@ -412,8 +423,13 @@ void main() {
 
           await tester.pumpWidget(
             testMaterialApp(
-              home: BlocProvider<FullscreenFeedBloc>.value(
-                value: mockBloc,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+                  BlocProvider<VideoPlaybackStatusCubit>(
+                    create: (_) => VideoPlaybackStatusCubit(),
+                  ),
+                ],
                 child: FullscreenFeedContent(
                   controllerFactory: (videos, initialIndex) => mockController,
                 ),
@@ -444,8 +460,13 @@ void main() {
 
           await tester.pumpWidget(
             testMaterialApp(
-              home: BlocProvider<FullscreenFeedBloc>.value(
-                value: mockBloc,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+                  BlocProvider<VideoPlaybackStatusCubit>(
+                    create: (_) => VideoPlaybackStatusCubit(),
+                  ),
+                ],
                 child: FullscreenFeedContent(
                   controllerFactory: (videos, initialIndex) => mockController,
                 ),

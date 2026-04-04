@@ -4,6 +4,7 @@
 import 'dart:collection';
 
 import 'package:equatable/equatable.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Per-video playback status reported by the pooled video player.
 enum PlaybackStatus {
@@ -87,4 +88,20 @@ class VideoPlaybackStatusState extends Equatable {
     // updates — do not "simplify" this.
     return [_statuses, _statuses.keys.toList(), maxEntries];
   }
+}
+
+/// Maps a [VideoErrorType] from the pooled video player to the
+/// corresponding [PlaybackStatus] the cubit should track.
+///
+/// Null defaults to [PlaybackStatus.generic] because a missing error type
+/// still represents a non-ready state that should replace the normal
+/// overlay.
+PlaybackStatus playbackStatusFromError(VideoErrorType? errorType) {
+  return switch (errorType) {
+    VideoErrorType.ageRestricted => PlaybackStatus.ageRestricted,
+    VideoErrorType.forbidden => PlaybackStatus.forbidden,
+    VideoErrorType.notFound => PlaybackStatus.notFound,
+    VideoErrorType.generic => PlaybackStatus.generic,
+    null => PlaybackStatus.generic,
+  };
 }

@@ -20,7 +20,13 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
       );
 
   /// Reports [status] for the video with [eventId].
+  ///
+  /// Short-circuits when the reported status matches the current status for
+  /// [eventId]. Without this guard, repeated reports (e.g. the feed
+  /// `errorBuilder` firing every frame during a video retry loop) would
+  /// allocate a new LinkedHashMap and emit on every frame.
   void report(String eventId, PlaybackStatus status) {
+    if (state.statusFor(eventId) == status) return;
     emit(state.withStatus(eventId, status));
   }
 
