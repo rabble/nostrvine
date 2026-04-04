@@ -467,11 +467,11 @@ class VideoFeedController extends ChangeNotifier {
     return VideoErrorType.generic;
   }
 
-  void _markLoadError(
-    int index, [
+  void _markLoadError({
+    required int index,
     String? errorMessage,
     bool notifyStalled = false,
-  ]) {
+  }) {
     if (_isDisposed) return;
     _stallRetryCount.remove(index);
     _readyVideosAwaitingRecovery.remove(index);
@@ -493,7 +493,7 @@ class VideoFeedController extends ChangeNotifier {
     final player = pooledPlayer?.player;
     if (player == null) {
       _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
-      _markLoadError(index, null, true);
+      _markLoadError(index: index, notifyStalled: true);
       return;
     }
 
@@ -503,7 +503,7 @@ class VideoFeedController extends ChangeNotifier {
 
     if (playbackSources == null || nextSourceIndex >= playbackSources.length) {
       _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
-      _markLoadError(index, null, true);
+      _markLoadError(index: index, notifyStalled: true);
       return;
     }
 
@@ -545,7 +545,11 @@ class VideoFeedController extends ChangeNotifier {
         '[POOLED] stuck_retry_failed ${_videoDebugDetails(index)} '
         'error=$error\n$stack',
       );
-      _markLoadError(index, error.toString(), true);
+      _markLoadError(
+        index: index,
+        errorMessage: error.toString(),
+        notifyStalled: true,
+      );
     }
   }
 
@@ -946,7 +950,11 @@ class VideoFeedController extends ChangeNotifier {
         'error=$e\n$stack',
       );
       _stopLoadWatchdog(index);
-      _markLoadError(index, e.toString(), index == _currentIndex);
+      _markLoadError(
+        index: index,
+        errorMessage: e.toString(),
+        notifyStalled: index == _currentIndex,
+      );
     } finally {
       _loadingIndices.remove(index);
     }
@@ -1092,7 +1100,7 @@ class VideoFeedController extends ChangeNotifier {
                   'stall_circuit_breaker ${_videoDebugDetails(index)} '
                   'retries=$retries — giving up',
                 );
-                _markLoadError(index, null, true);
+                _markLoadError(index: index, notifyStalled: true);
                 return;
               }
             } else {
@@ -1340,7 +1348,11 @@ class VideoFeedController extends ChangeNotifier {
           '${_videoDebugDetails(index)}',
         );
         _staleRecoveryAttempts = 0;
-        _markLoadError(index, 'stale_playback', true);
+        _markLoadError(
+          index: index,
+          errorMessage: 'stale_playback',
+          notifyStalled: true,
+        );
         return;
       }
 
