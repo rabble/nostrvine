@@ -195,11 +195,18 @@ class VideoFeedController extends ChangeNotifier {
   int _staleGraceHeartbeats = 0;
 
   /// Number of consecutive stale heartbeats before triggering recovery.
-  /// With a 100ms heartbeat interval, this means ~300ms of confirmed
-  /// frozen video before recovery kicks in. False positives cause only
-  /// a brief ~200ms micro-stutter (pause+seek+play at same position),
-  /// which is far less disruptive than a multi-second visible freeze.
-  static const _staleHeartbeatThreshold = 3;
+  /// With a 100ms heartbeat interval, this means ~800ms of confirmed
+  /// frozen video before recovery kicks in.
+  ///
+  /// Raised from 3 (300ms) to 8 (800ms) because iOS AVFoundation/media_kit
+  /// decoders can legitimately pause position updates for 300-500ms during
+  /// normal playback (B-frame reordering, keyframe seeks) without being
+  /// actually stuck. The shorter threshold caused visible pause-seek-play
+  /// stutter on healthy videos. Since PR #2746 added robust buffer-based
+  /// stall recovery via `_readyVideosAwaitingRecovery`, this heartbeat
+  /// watchdog is now a last-resort safety net for decoder freezes where
+  /// buffering events never fire — so a longer window is safe.
+  static const _staleHeartbeatThreshold = 8;
 
   /// After this many failed seek-recovery attempts with no position progress,
   /// give up and mark the video as error.
@@ -1113,14 +1120,27 @@ class VideoFeedController extends ChangeNotifier {
             }
           }
 
-          _logDebug(
-            'STUTTER_DEBUG rebuffer_auto_play index=$index '
-            'positionMs=${player.state.position.inMilliseconds} '
-            'playing=${player.state.playing} '
-            'wasRecovering=$wasRecovering '
-            '${_videoDebugDetails(index)}',
-          );
-          unawaited(player.play());
+          // Skip redundant play() if the player is already playing. On iOS
+          // the buffering stream occasionally emits false→true→false edges
+          // during normal playback; calling play() on an already-playing
+          // player was a no-op at best and caused an audible glitch at worst.
+          if (player.state.playing) {
+            _logDebug(
+              'rebuffer_auto_play_skipped index=$index '
+              'already_playing=true '
+              'positionMs=${player.state.position.inMilliseconds} '
+              'wasRecovering=$wasRecovering '
+              '${_videoDebugDetails(index)}',
+            );
+          } else {
+            _logDebug(
+              'rebuffer_auto_play index=$index '
+              'positionMs=${player.state.position.inMilliseconds} '
+              'wasRecovering=$wasRecovering '
+              '${_videoDebugDetails(index)}',
+            );
+            unawaited(player.play());
+          }
         }
       }
     });
