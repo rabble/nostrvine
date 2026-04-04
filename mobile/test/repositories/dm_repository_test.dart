@@ -1210,6 +1210,44 @@ void main() {
         await controller.close();
       });
 
+      test('startListening after stopListening re-subscribes '
+          '(inbox can be re-opened)', () async {
+        // Return a fresh stream per subscribe call so both listens succeed.
+        final controllers = <StreamController<Event>>[];
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) {
+          final controller = StreamController<Event>();
+          controllers.add(controller);
+          return controller.stream;
+        });
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+
+        repository.startListening();
+        await repository.stopListening();
+        repository.startListening();
+
+        // Both opens should have produced a subscribe call on the client.
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(2);
+
+        await repository.stopListening();
+        for (final c in controllers) {
+          await c.close();
+        }
+      });
+
       test('initialize does not open a subscription (lazy inbox)', () async {
         // New behavior: initialize() only wires credentials. The gift-wrap
         // subscription is started by the inbox screen via startListening().

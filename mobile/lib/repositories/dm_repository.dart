@@ -266,7 +266,10 @@ class DmRepository {
 
   /// Stop listening for incoming DMs and clean up resources.
   Future<void> stopListening() async {
-    _disposed = true;
+    // Don't set _disposed = true here — _disposed is reserved for
+    // _resetState() (user switch). Setting it would make a subsequent
+    // startListening() call a silent no-op, breaking re-open flows like
+    // "user leaves the inbox tab and comes back later".
     _pollTimer?.cancel();
     _pollTimer = null;
     _eventLock = null;
