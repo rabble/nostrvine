@@ -1,5 +1,5 @@
-// ABOUTME: Tests for VideoClipPreview widget
-// ABOUTME: Verifies rendering, DivineVideoPlayer integration, and button layout
+// ABOUTME: Tests for VideoMetadataPreviewScreen widget
+// ABOUTME: Verifies rendering, DivineVideoPlayer integration, and layout
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
@@ -7,17 +7,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as models;
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
+import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-import '../../helpers/go_router.dart';
+class _MockVideoPublishNotifier extends VideoPublishNotifier {
+  _MockVideoPublishNotifier(this._initialState);
+
+  final VideoPublishProviderState _initialState;
+
+  @override
+  VideoPublishProviderState build() => _initialState;
+}
+
+DivineVideoClip _createTestClip({String id = 'test-clip'}) {
+  return DivineVideoClip(
+    id: id,
+    video: EditorVideo.file('test.mp4'),
+    duration: const Duration(seconds: 10),
+    recordedAt: DateTime.now(),
+    targetAspectRatio: models.AspectRatio.square,
+    originalAspectRatio: 9 / 16,
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  late MockGoRouter mockGoRouter;
 
   setUp(() {
     DivineVideoPlayerController.resetIdCounterForTesting();
@@ -31,10 +49,6 @@ void main() {
             return null;
           },
         );
-
-    mockGoRouter = MockGoRouter();
-    when(() => mockGoRouter.pop<Object?>(any())).thenReturn(null);
-    when(() => mockGoRouter.canPop()).thenReturn(true);
   });
 
   tearDown(() {
@@ -45,24 +59,23 @@ void main() {
         );
   });
 
-  group(VideoClipPreview, () {
-    final testClip = DivineVideoClip(
-      id: 'test-clip-1',
-      video: EditorVideo.file('/path/to/video.mp4'),
-      duration: const Duration(seconds: 5),
-      recordedAt: DateTime(2026),
-      targetAspectRatio: .vertical,
-      originalAspectRatio: 9 / 16,
-    );
-
-    Widget buildTestWidget({VoidCallback? onDelete}) {
+  group(VideoMetadataPreviewScreen, () {
+    Widget buildTestWidget({DivineVideoClip? clip}) {
+      // Use previewOnly to avoid deep Riverpod dependency chain from
+      // the overlay's VideoOverlayActions widget. The overlay is unrelated
+      // to the video_player → DivineVideoPlayer migration.
       return ProviderScope(
-        child: MockGoRouterProvider(
-          goRouter: mockGoRouter,
-          child: MaterialApp(
-            home: Scaffold(
-              body: VideoClipPreview(clip: testClip, onDelete: onDelete),
+        overrides: [
+          videoPublishProvider.overrideWith(
+            () => _MockVideoPublishNotifier(
+              const VideoPublishProviderState(),
             ),
+          ),
+        ],
+        child: MaterialApp(
+          home: VideoMetadataPreviewScreen(
+            clip: clip ?? _createTestClip(),
+            previewOnly: true,
           ),
         ),
       );
@@ -70,19 +83,12 @@ void main() {
 
     test('can be instantiated', () {
       expect(
-        VideoClipPreview(clip: testClip),
-        isA<VideoClipPreview>(),
+        VideoMetadataPreviewScreen(clip: _createTestClip()),
+        isA<VideoMetadataPreviewScreen>(),
       );
     });
 
-    test('accepts onDelete callback', () {
-      expect(
-        VideoClipPreview(clip: testClip, onDelete: () {}),
-        isA<VideoClipPreview>(),
-      );
-    });
-
-    testWidgets('renders $DivineVideoPlayer and save button', (
+    testWidgets('renders $VideoMetadataPreviewScreen with scaffold', (
       tester,
     ) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -92,15 +98,30 @@ void main() {
           );
 
       await tester.pumpWidget(buildTestWidget());
-      await tester.pump(const Duration(milliseconds: 100));
+      // Pump past the 350ms hero animation timer in initState
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byType(VideoMetadataPreviewScreen), findsOneWidget);
+      expect(find.byType(Scaffold), findsOneWidget);
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            null,
+          );
+    });
+
+    testWidgets('renders $DivineVideoPlayer widget', (tester) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            (call) async => null,
+          );
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(DivineVideoPlayer), findsOneWidget);
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is DivineIcon && w.icon == DivineIconName.downloadSimple,
-        ),
-        findsOneWidget,
-      );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
@@ -109,24 +130,17 @@ void main() {
           );
     });
 
-    testWidgets('renders delete button when onDelete is provided', (
-      tester,
-    ) async {
+    testWidgets('renders close button', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             const MethodChannel('divine_video_player/player_0'),
             (call) async => null,
           );
 
-      await tester.pumpWidget(buildTestWidget(onDelete: () {}));
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(milliseconds: 400));
 
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is DivineIcon && w.icon == DivineIconName.trash,
-        ),
-        findsOneWidget,
-      );
+      expect(find.byType(DivineIconButton), findsOneWidget);
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
@@ -135,7 +149,7 @@ void main() {
           );
     });
 
-    testWidgets('hides delete button when onDelete is null', (
+    testWidgets('hides bottom bar and overlay in preview-only mode', (
       tester,
     ) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -145,35 +159,10 @@ void main() {
           );
 
       await tester.pumpWidget(buildTestWidget());
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 400));
 
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is DivineIcon && w.icon == DivineIconName.trash,
-        ),
-        findsNothing,
-      );
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('divine_video_player/player_0'),
-            null,
-          );
-    });
-
-    testWidgets('renders placeholder with progress indicator', (
-      tester,
-    ) async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('divine_video_player/player_0'),
-            (call) async => null,
-          );
-
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Post button and overlay should not be present in previewOnly mode
+      expect(find.text('Post'), findsNothing);
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
