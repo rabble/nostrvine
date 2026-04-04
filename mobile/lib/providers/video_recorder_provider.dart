@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -87,7 +88,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
                   : null,
             );
           },
-          onAutoStopped: stopRecording,
+          onAutoStopped: (video) {
+            if (state.recorderMode.hasRecordingLimit) {
+              stopRecording(video);
+            }
+          },
         );
 
     // Setup cleanup when provider is disposed
@@ -559,7 +564,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         state.isRecording ||
         _isStartingRecording ||
         _isStoppingRecording ||
-        remainingDuration < const Duration(milliseconds: 30)) {
+        (remainingDuration < const Duration(milliseconds: 30) &&
+            state.recorderMode.hasRecordingLimit)) {
       return;
     }
 
@@ -653,7 +659,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     // Sound is already loaded — just hit play
     unawaited(_playSoundPlayback());
     final success = await _cameraService.startRecording(
-      maxDuration: remainingDuration,
+      maxDuration: state.recorderMode.hasRecordingLimit
+          ? remainingDuration
+          : null,
     );
 
     _isStartingRecording = false;
@@ -738,6 +746,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       originalAspectRatio: _cameraService.cameraAspectRatio,
       targetAspectRatio: state.aspectRatio,
       lensMetadata: _cameraService.currentLensMetadata,
+      limitClipDuration: state.recorderMode.hasRecordingLimit,
     );
 
     Log.debug(
@@ -1014,6 +1023,19 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       hasFlash: _cameraService.hasFlash,
       canSwitchCamera: _cameraService.canSwitchCamera,
       showLastClipOverlay: state.showLastClipOverlay,
+    );
+  }
+
+  /// Set the recorder mode (capture / classic).
+  void setRecorderMode(VideoRecorderMode mode) {
+    state = state.copyWith(
+      recorderMode: mode,
+      aspectRatio: mode.defaultAspectRatio,
+    );
+    Log.debug(
+      '🎬 Recorder mode changed to: ${mode.name}',
+      name: 'VideoRecorderNotifier',
+      category: .video,
     );
   }
 

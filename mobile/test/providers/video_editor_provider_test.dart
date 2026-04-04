@@ -401,6 +401,7 @@ void main() {
       container
           .read(clipManagerProvider.notifier)
           .addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/docs/original.mp4'),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -425,6 +426,7 @@ void main() {
       container
           .read(clipManagerProvider.notifier)
           .addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/docs/original.mp4'),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -515,6 +517,7 @@ void main() {
       container
           .read(clipManagerProvider.notifier)
           .addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/docs/original.mp4'),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -539,6 +542,7 @@ void main() {
       container
           .read(clipManagerProvider.notifier)
           .addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/docs/original.mp4'),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,

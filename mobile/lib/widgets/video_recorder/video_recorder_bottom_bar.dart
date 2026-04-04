@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_library_button.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_mode_selector.dart';
 
 /// Bottom bar with record button and camera controls.
 class VideoRecorderBottomBar extends ConsumerWidget {
@@ -137,16 +139,6 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     videoRecorderNotifier.resumeRemoteRecordControl();
   }
 
-  void _removeLastClip(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    final clipsNotifier = ref.read(clipManagerProvider.notifier);
-    unawaited(clipsNotifier.removeLastClip());
-    // TODO(l10n): Replace with context.l10n when localization is added.
-    _showSnackBar(context: context, message: 'Clip removed');
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(videoRecorderProvider.notifier);
@@ -154,114 +146,34 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     final state = ref.watch(
       videoRecorderProvider.select(
         (p) => (
-          flashMode: p.flashMode,
-          timer: p.timerDuration,
-          aspectRatio: p.aspectRatio,
-          canSwitchCamera: p.canSwitchCamera,
-          hasFlash: p.hasFlash,
           isRecording: p.isRecording,
+          recorderMode: p.recorderMode,
         ),
       ),
     );
-
-    final hasClips = ref.watch(clipManagerProvider.select((p) => p.hasClips));
 
     return SafeArea(
       top: false,
-      child: IgnorePointer(
-        ignoring: state.isRecording,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 220),
+        opacity: state.isRecording ? 0 : 1,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 4),
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 120),
-            opacity: state.isRecording ? 0 : 1,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                // Flash toggle
-                _ActionButton(
-                  icon: state.flashMode.icon,
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  tooltip: 'Toggle flash',
-                  onPressed: state.hasFlash ? notifier.toggleFlash : null,
+          child: Stack(
+            children: [
+              const Align(
+                alignment: .centerLeft,
+                child: VideoRecorderLibraryButton(),
+              ),
+              Align(
+                alignment: .center,
+                child: VideoRecorderModeSelectorWheel(
+                  selectedMode: state.recorderMode,
+                  onModeChanged: notifier.setRecorderMode,
                 ),
-
-                // Timer toggle
-                _ActionButton(
-                  icon: state.timer.icon,
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  tooltip: 'Cycle timer',
-                  onPressed: notifier.cycleTimer,
-                ),
-
-                // Aspect-Ratio
-                _ActionButton(
-                  icon: state.aspectRatio == .square
-                      ? .cropSquare
-                      : .cropPortrait,
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  tooltip: 'Toggle aspect ratio',
-                  onPressed: !hasClips ? notifier.toggleAspectRatio : null,
-                ),
-
-                // Flip camera
-                _ActionButton(
-                  icon: .arrowsClockwise,
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  tooltip: 'Switch camera',
-                  onPressed: state.canSwitchCamera
-                      ? notifier.switchCamera
-                      : null,
-                ),
-
-                // Undo last clip
-                _ActionButton(
-                  icon: .removeLastClip,
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  tooltip: 'Remove last clip',
-                  onPressed: hasClips
-                      ? () => _removeLastClip(context, ref)
-                      : null,
-                ),
-
-                // More options
-                _ActionButton(
-                  icon: .moreHoriz,
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  tooltip: 'More options',
-                  onPressed: () => _showMoreOptions(context, ref, notifier),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.onPressed,
-    required this.tooltip,
-    required this.icon,
-  });
-  final VoidCallback? onPressed;
-  final String tooltip;
-  final DivineIconName icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final isEnabled = onPressed != null;
-
-    return Tooltip(
-      message: tooltip,
-      preferBelow: false,
-      child: IconButton(
-        onPressed: onPressed,
-        icon: DivineIcon(
-          icon: icon,
-          color: VineTheme.whiteText.withAlpha(isEnabled ? 255 : 80),
         ),
       ),
     );

@@ -20,13 +20,9 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
-import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
+import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
+import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _kWhySixSecondsShownKey = 'why_six_seconds_shown';
@@ -318,8 +314,6 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
   @override
   Widget build(BuildContext context) {
-    const backgroundColor = VineTheme.surfaceContainerHigh;
-
     return BlocProvider<SoundWaveformBloc>(
       create: (context) {
         final bloc = SoundWaveformBloc();
@@ -335,12 +329,31 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
                 .clearAll(keepAutosavedDraft: true);
           }
         },
-        child: const AnnotatedRegion<SystemUiOverlayStyle>(
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
           value: VideoEditorConstants.uiOverlayStyle,
           child: Scaffold(
-            backgroundColor: backgroundColor,
+            backgroundColor: VineTheme.backgroundCamera,
             resizeToAvoidBottomInset: false,
-            body: Stack(
+            body: Column(
+              children: [
+                Expanded(
+                  child: switch (ref
+                      .watch(videoRecorderProvider)
+                      .recorderMode) {
+                    .capture => const VideoRecorderCaptureStack(),
+                    .classic => const VideoRecorderClassicStack(),
+                  },
+                ),
+
+                const Padding(
+                  padding: .symmetric(vertical: 22),
+                  child: VideoRecorderBottomBar(),
+                ),
+              ],
+            ),
+            // FIXME: TODO:
+
+            /*  Stack(
               fit: .expand,
               children: [
                 Column(
@@ -375,7 +388,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
                 // Countdown overlay
                 VideoRecorderCountdownOverlay(),
               ],
-            ),
+            ), */
           ),
         ),
       ),

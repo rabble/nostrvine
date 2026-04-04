@@ -7,7 +7,9 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 
 /// Camera preview widget for macOS with gesture and lifecycle handling.
 class VideoRecorderMacosPreview extends ConsumerStatefulWidget {
-  const VideoRecorderMacosPreview({super.key});
+  const VideoRecorderMacosPreview({required this.enableTapToFocus, super.key});
+
+  final bool enableTapToFocus;
 
   @override
   ConsumerState<VideoRecorderMacosPreview> createState() =>
@@ -80,12 +82,16 @@ class _VideoRecorderMacosPreviewState
           behavior: .opaque,
           onScaleStart: notifier.handleScaleStart,
           onScaleUpdate: notifier.handleScaleUpdate,
-          onTapDown: (details) => _tapDownDetails = details,
-          onTap: () {
-            if (_tapDownDetails != null) {
-              _handleTapDown(_tapDownDetails!, constraints);
-            }
-          },
+          onTapDown: widget.enableTapToFocus
+              ? (details) => _tapDownDetails = details
+              : null,
+          onTap: widget.enableTapToFocus
+              ? () {
+                  if (_tapDownDetails != null) {
+                    _handleTapDown(_tapDownDetails!, constraints);
+                  }
+                }
+              : null,
           child: ValueListenableBuilder(
             valueListenable: _isInBackgroundNotifier,
             builder: (_, isInBackground, _) {

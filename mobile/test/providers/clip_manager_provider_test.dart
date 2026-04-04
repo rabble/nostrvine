@@ -46,6 +46,7 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
         targetAspectRatio: .vertical,
@@ -61,12 +62,14 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video1.mp4'),
         duration: const Duration(seconds: 2),
         targetAspectRatio: .vertical,
         originalAspectRatio: 9 / 16,
       );
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video2.mp4'),
         duration: const Duration(seconds: 1),
         targetAspectRatio: .vertical,
@@ -84,6 +87,7 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
         targetAspectRatio: .vertical,
@@ -100,6 +104,7 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
         targetAspectRatio: .vertical,
@@ -124,6 +129,7 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
         targetAspectRatio: .vertical,
@@ -141,12 +147,14 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video1.mp4'),
         duration: const Duration(seconds: 1),
         targetAspectRatio: .vertical,
         originalAspectRatio: 9 / 16,
       );
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video2.mp4'),
         duration: const Duration(seconds: 2),
         targetAspectRatio: .vertical,
@@ -165,12 +173,14 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video1.mp4'),
         duration: const Duration(seconds: 1),
         targetAspectRatio: .vertical,
         originalAspectRatio: 9 / 16,
       );
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video2.mp4'),
         duration: const Duration(seconds: 2),
         targetAspectRatio: .vertical,
@@ -191,6 +201,7 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
         targetAspectRatio: .vertical,
@@ -205,6 +216,7 @@ void main() {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: VideoEditorConstants.maxDuration,
         targetAspectRatio: .vertical,
@@ -223,6 +235,7 @@ void main() {
       const clipDuration = Duration(seconds: 2);
 
       final clip1 = notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file(sharedFilePath),
         duration: clipDuration,
         targetAspectRatio: .vertical,
@@ -231,6 +244,7 @@ void main() {
       );
 
       final clip2 = notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file(sharedFilePath),
         duration: clipDuration,
         targetAspectRatio: .vertical,
@@ -239,6 +253,7 @@ void main() {
       );
 
       final clip3 = notifier.addClip(
+        limitClipDuration: false,
         video: EditorVideo.file(sharedFilePath),
         duration: clipDuration,
         targetAspectRatio: .vertical,
@@ -265,12 +280,14 @@ void main() {
         final notifier = container.read(clipManagerProvider.notifier);
 
         notifier.addClip(
+          limitClipDuration: false,
           video: EditorVideo.file('/path/to/video1.mp4'),
           duration: const Duration(seconds: 2),
           targetAspectRatio: .vertical,
           originalAspectRatio: 9 / 16,
         );
         notifier.addClip(
+          limitClipDuration: false,
           video: EditorVideo.file('/path/to/video2.mp4'),
           duration: const Duration(seconds: 3),
           targetAspectRatio: .vertical,
@@ -293,12 +310,14 @@ void main() {
 
           // Simulate initial clips already in manager
           notifier.addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/path/to/existing1.mp4'),
             duration: const Duration(seconds: 2),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
           );
           notifier.addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/path/to/existing2.mp4'),
             duration: const Duration(seconds: 3),
             targetAspectRatio: .vertical,
@@ -313,12 +332,14 @@ void main() {
 
           // 2. Add clips from draft
           final draftClip1 = notifier.addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/path/to/draft1.mp4'),
             duration: const Duration(seconds: 1),
             targetAspectRatio: .square,
             originalAspectRatio: 1,
           );
           final draftClip2 = notifier.addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/path/to/draft2.mp4'),
             duration: const Duration(seconds: 2),
             targetAspectRatio: .square,
@@ -346,6 +367,7 @@ void main() {
 
         // Add initial clips
         notifier.addClip(
+          limitClipDuration: false,
           video: EditorVideo.file('/path/to/existing.mp4'),
           duration: const Duration(seconds: 2),
           targetAspectRatio: .vertical,
@@ -356,6 +378,7 @@ void main() {
 
         // Create clips to add (simulating draft clips)
         notifier.addClip(
+          limitClipDuration: false,
           video: EditorVideo.file('/path/to/draft.mp4'),
           duration: const Duration(seconds: 1),
           targetAspectRatio: .square,
@@ -377,6 +400,7 @@ void main() {
         final notifier = container.read(clipManagerProvider.notifier);
 
         notifier.addClip(
+          limitClipDuration: false,
           video: EditorVideo.file('/path/to/video.mp4'),
           duration: const Duration(seconds: 2),
           targetAspectRatio: .vertical,
@@ -410,6 +434,7 @@ void main() {
         final notifier = container.read(clipManagerProvider.notifier);
 
         notifier.addClip(
+          limitClipDuration: false,
           video: EditorVideo.file('/path/to/video.mp4'),
           duration: const Duration(seconds: 2),
           targetAspectRatio: .vertical,

@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 
@@ -12,6 +13,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 class VideoRecorderProviderState {
   /// Creates a video recorder UI state.
   const VideoRecorderProviderState({
+    this.recorderMode = .capture,
     this.recordingState = .idle,
     this.zoomLevel = 1.0,
     this.cameraSensorAspectRatio = 1.0,
@@ -28,6 +30,9 @@ class VideoRecorderProviderState {
     this.initializationErrorMessage,
     this.showLastClipOverlay = false,
   });
+
+  /// Recorder mode from the camera.
+  final VideoRecorderMode recorderMode;
 
   /// Camera focus point in normalized coordinates (0.0-1.0).
   final Offset focusPoint;
@@ -96,6 +101,7 @@ class VideoRecorderProviderState {
 
   /// Creates a copy of this state with updated values.
   VideoRecorderProviderState copyWith({
+    VideoRecorderMode? recorderMode,
     VideoRecorderState? recordingState,
     double? zoomLevel,
     double? cameraSensorAspectRatio,
@@ -114,6 +120,7 @@ class VideoRecorderProviderState {
     bool? showLastClipOverlay,
   }) {
     return VideoRecorderProviderState(
+      recorderMode: recorderMode ?? this.recorderMode,
       recordingState: recordingState ?? this.recordingState,
       zoomLevel: zoomLevel ?? this.zoomLevel,
       cameraSensorAspectRatio:
