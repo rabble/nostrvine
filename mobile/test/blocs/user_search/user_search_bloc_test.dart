@@ -113,7 +113,6 @@ void main() {
               query: 'alice',
               limit: 50,
               sortBy: 'followers',
-              hasVideos: true,
             ),
           ).called(1);
         },
@@ -403,7 +402,6 @@ void main() {
               query: 'bob',
               limit: 50,
               sortBy: 'followers',
-              hasVideos: true,
             ),
           ).called(1);
         },
@@ -477,7 +475,6 @@ void main() {
               query: 'final',
               limit: 50,
               sortBy: 'followers',
-              hasVideos: true,
             ),
           ).called(1);
           verifyNever(
@@ -605,7 +602,6 @@ void main() {
               limit: 50,
               offset: 50,
               sortBy: 'followers',
-              hasVideos: true,
             ),
           ).thenAnswer((_) => Stream.value(createTestProfiles(10)));
         },
@@ -641,7 +637,6 @@ void main() {
               limit: 50,
               offset: 50,
               sortBy: 'followers',
-              hasVideos: true,
             ),
           ).thenAnswer((_) => Stream.fromIterable([partial, full]));
         },
@@ -677,7 +672,6 @@ void main() {
               limit: 50,
               offset: 50,
               sortBy: 'followers',
-              hasVideos: true,
             ),
           ).thenAnswer((_) => Stream.value(createTestProfiles(50)));
         },
@@ -748,7 +742,6 @@ void main() {
               limit: 50,
               offset: 50,
               sortBy: 'followers',
-              hasVideos: true,
             ),
           ).thenAnswer(
             (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
@@ -795,7 +788,7 @@ void main() {
       const debounceDuration = Duration(milliseconds: 400);
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'passes hasVideos: false to profileRepository when configured',
+        'passes hasVideos: true to profileRepository when configured',
         setUp: () {
           when(
             () => mockProfileRepository.searchUsersProgressive(
@@ -808,7 +801,7 @@ void main() {
         },
         build: () => UserSearchBloc(
           profileRepository: mockProfileRepository,
-          hasVideos: false,
+          hasVideos: true,
         ),
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
         wait: debounceDuration,
@@ -818,13 +811,14 @@ void main() {
               query: 'test',
               limit: 50,
               sortBy: 'followers',
+              hasVideos: true,
             ),
           ).called(1);
         },
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'passes hasVideos: false to profileRepository on load more',
+        'passes hasVideos: true to profileRepository on load more',
         setUp: () {
           when(
             () => mockProfileRepository.searchUsersProgressive(
@@ -832,12 +826,13 @@ void main() {
               limit: 50,
               offset: 50,
               sortBy: 'followers',
+              hasVideos: true,
             ),
           ).thenAnswer((_) => Stream.value(createTestProfiles(10)));
         },
         build: () => UserSearchBloc(
           profileRepository: mockProfileRepository,
-          hasVideos: false,
+          hasVideos: true,
         ),
         seed: () => UserSearchState(
           status: UserSearchStatus.success,
@@ -854,13 +849,14 @@ void main() {
               limit: 50,
               offset: 50,
               sortBy: 'followers',
+              hasVideos: true,
             ),
           ).called(1);
         },
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'defaults hasVideos to true when not specified',
+        'defaults hasVideos to false when not specified',
         setUp: () {
           when(
             () => mockProfileRepository.searchUsersProgressive(
@@ -875,14 +871,14 @@ void main() {
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
         wait: debounceDuration,
         verify: (_) {
-          verify(
+          verifyNever(
             () => mockProfileRepository.searchUsersProgressive(
               query: 'test',
               limit: 50,
               sortBy: 'followers',
               hasVideos: true,
             ),
-          ).called(1);
+          );
         },
       );
     });

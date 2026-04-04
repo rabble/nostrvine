@@ -20,7 +20,7 @@ const _pageSize = 50;
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
     required ProfileRepository profileRepository,
-    this.hasVideos = true,
+    this.hasVideos = false,
     this.searchTimeout = const Duration(seconds: 20),
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
