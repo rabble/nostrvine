@@ -374,8 +374,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     final result = await scope.editor!.exportStateHistory(
       configs: const ExportEditorConfigs(
         historySpan: .currentAndBackward,
-        // We didn’t minify the state history so it remains readable for
-        // proofMode.
+        // We don't minify the state history so it remains readable for
+        // ProofMode.
         enableMinify: false,
       ),
     );
