@@ -37,7 +37,6 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                   icon: .caretRight,
                   size: .small,
                   type: .ghostSecondary,
-                  // FIXME: navigate directly to metadata screen
                   onPressed: () => notifier.openVideoEditor(context),
                 ),
               ],
@@ -93,16 +92,14 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                         type: .ghostSecondary,
                         onPressed: notifier.switchCamera,
                       ),
-                      // FIXME: add grid toggler
                       DivineIconButton(
-                        icon: .arrowsCounterClockwise,
+                        icon: .gridNine,
                         size: .small,
                         type: .ghostSecondary,
                         onPressed: notifier.switchCamera,
                       ),
-                      // FIXME: add ghost frame
                       DivineIconButton(
-                        icon: .arrowsCounterClockwise,
+                        icon: .ghost,
                         size: .small,
                         type: .ghostSecondary,
                         onPressed: notifier.toggleShowLastClipOverlay,

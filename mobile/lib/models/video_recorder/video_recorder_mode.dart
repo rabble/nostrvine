@@ -15,6 +15,11 @@ enum VideoRecorderMode {
     .classic => true,
   };
 
+  bool get hasVideoEditor => switch (this) {
+    .capture => true,
+    .classic => false,
+  };
+
   model.AspectRatio get defaultAspectRatio => switch (this) {
     .capture => .vertical,
     .classic => .square,

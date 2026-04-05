@@ -21,6 +21,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -981,7 +982,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
 
     await Future.wait([
-      context.push(VideoEditorScreen.path),
+      if (state.recorderMode.hasVideoEditor)
+        context.push(VideoEditorScreen.path)
+      else
+        context.push(VideoMetadataScreen.path),
       // We delay camera dispose so that the screen animation can finish
       // before the editor open. Without that it will look weird to the user
       // because the initialization screen will show up quickly.
