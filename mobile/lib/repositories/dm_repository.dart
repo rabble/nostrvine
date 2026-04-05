@@ -262,6 +262,44 @@ class DmRepository {
     // docs/plans/2026-04-05-dm-scaling-fix-design.md.
   }
 
+  /// Fetches an older page of DM events (gift wraps, NIP-04, deletions)
+  /// from the relay, bounded above by [DmSyncState.oldestSyncedAt]. The
+  /// filter uses `until:` so the relay returns events *older* than the
+  /// current pagination boundary, capped to 50 by `limit`.
+  ///
+  /// No-op if [DmSyncState] is unset or no sync has happened yet — in
+  /// that case the caller should invoke [startListening] instead to
+  /// establish a baseline.
+  ///
+  /// Events flow through [_handleIncomingEvent] so dedup, transaction
+  /// integrity, and sync-boundary tracking apply automatically.
+  Future<void> loadOlderMessages() async {
+    if (!isInitialized) return;
+    final oldest = _syncState?.oldestSyncedAt(_userPubkey);
+    if (oldest == null) return;
+
+    final filter = nostr_filter.Filter(
+      kinds: [
+        EventKind.giftWrap,
+        EventKind.directMessage,
+        EventKind.eventDeletion,
+      ],
+      p: [_userPubkey],
+      until: oldest,
+      limit: 50,
+    );
+
+    final events = await _nostrClient.queryEvents(
+      [filter],
+      subscriptionId: 'dm_older_${DateTime.now().millisecondsSinceEpoch}',
+      useCache: false,
+    );
+
+    for (final event in events) {
+      await _handleIncomingEvent(event);
+    }
+  }
+
   /// Stop listening for incoming DMs and clean up resources.
   Future<void> stopListening() async {
     // Don't set _disposed = true here — _disposed is reserved for

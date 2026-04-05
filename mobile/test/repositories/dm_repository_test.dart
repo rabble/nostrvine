@@ -1502,6 +1502,56 @@ void main() {
     });
 
     // -----------------------------------------------------------------
+    // loadOlderMessages pagination
+    // -----------------------------------------------------------------
+
+    group('loadOlderMessages', () {
+      test('queries until:oldest with limit 50', () async {
+        const oldest = 1699000000;
+        final syncState = _FakeDmSyncState()..oldestOverride = oldest;
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+
+        final repository = createRepository(syncState: syncState);
+
+        await repository.loadOlderMessages();
+
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(
+                    captureAny(),
+                    subscriptionId: any(named: 'subscriptionId'),
+                    useCache: any(named: 'useCache'),
+                  ),
+                ).captured.single
+                as List<nostr_filter.Filter>;
+        expect(captured, hasLength(1));
+        expect(captured.single.until, oldest);
+        expect(captured.single.limit, 50);
+      });
+
+      test('is a no-op when oldest is null', () async {
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(syncState: syncState);
+
+        await repository.loadOlderMessages();
+
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------
     // Query methods
     // -----------------------------------------------------------------
 
