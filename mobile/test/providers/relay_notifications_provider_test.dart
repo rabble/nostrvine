@@ -1243,6 +1243,104 @@ void main() {
       );
     });
 
+    group('Cross-batch follow consolidation (loadMore)', () {
+      test(
+        'loadMore replaces follow with earlier timestamp from later batch',
+        () async {
+          // Batch 1 must have >= 10 items so _fetchRawNotifications auto-fetch
+          // does NOT pull batch 2 early.  Batch 2 contains an older follow
+          // from the same actor — loadMore should swap to the earlier one.
+          var callCount = 0;
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return NotificationsResponse(
+                notifications: [
+                  createMockRelayNotification(
+                    id: 'follow_new',
+                    sourcePubkey: 'follower_abc',
+                    notificationType: 'follow',
+                    createdAtSeconds: 1700000200, // T2 — latest
+                  ),
+                  for (var i = 0; i < 9; i++)
+                    createMockRelayNotification(
+                      id: 'like_$i',
+                      createdAtSeconds: 1700000100 + i,
+                    ),
+                ],
+                unreadCount: 10,
+                nextCursor: 'cursor_1',
+                hasMore: true,
+              );
+            } else {
+              return NotificationsResponse(
+                notifications: [
+                  createMockRelayNotification(
+                    id: 'follow_original',
+                    sourcePubkey: 'follower_abc',
+                    notificationType: 'follow',
+                    createdAtSeconds: 1700000050, // T1 — original (earlier)
+                  ),
+                ],
+                unreadCount: 10,
+              );
+            }
+          });
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // Verify batch 1 has the T2 follow
+          var state = container.read(relayNotificationsProvider).value!;
+          var follows = state.notifications
+              .where((n) => n.type == NotificationType.follow)
+              .toList();
+          expect(follows.length, 1);
+          expect(
+            follows.first.timestamp,
+            DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+          );
+
+          // Load more — should get the older follow from batch 2
+          await container.read(relayNotificationsProvider.notifier).loadMore();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          state = container.read(relayNotificationsProvider).value!;
+          follows = state.notifications
+              .where((n) => n.type == NotificationType.follow)
+              .toList();
+
+          // Should have exactly 1 follow for follower_abc — with the earliest
+          // timestamp (T1), not the latest (T2)
+          expect(
+            follows.length,
+            1,
+            reason:
+                'Cross-batch consolidation should keep one follow per '
+                'actor',
+          );
+          expect(
+            follows.first.timestamp,
+            DateTime.fromMillisecondsSinceEpoch(1700000050 * 1000),
+            reason: 'Should keep earliest follow timestamp across batches',
+          );
+
+          // 9 likes + 1 consolidated follow = 10
+          expect(state.notifications.length, 10);
+
+          container.dispose();
+        },
+      );
+    });
+
     group('NotificationFeedState', () {
       test('copyWith creates correct copy', () {
         const original = NotificationFeedState(
