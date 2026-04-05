@@ -168,7 +168,7 @@ class VideoFeedController extends ChangeNotifier {
   bool _isActive = true;
   bool _isPaused = false;
   bool _isDisposed = false;
-  double _desiredPlaybackVolume = 1.0;
+  double _desiredPlaybackVolume = 1;
 
   // Loaded players by index
   final Map<int, PooledPlayer> _loadedPlayers = {};
@@ -725,7 +725,7 @@ class VideoFeedController extends ChangeNotifier {
 
   /// Set volume (0.0 to 1.0) for current video.
   void setVolume(double volume) {
-    _desiredPlaybackVolume = volume.clamp(0.0, 1.0).toDouble();
+    _desiredPlaybackVolume = volume.clamp(0.0, 1.0);
     final player = _loadedPlayers[_currentIndex]?.player;
     if (player != null) {
       unawaited(player.setVolume(_desiredPlayerVolume));
@@ -733,7 +733,7 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   double get _desiredPlayerVolume =>
-      (_desiredPlaybackVolume * 100).clamp(0.0, 100.0).toDouble();
+      (_desiredPlaybackVolume * 100).clamp(0.0, 100.0);
 
   /// Set playback speed for current video.
   void setPlaybackSpeed(double speed) {

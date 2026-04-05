@@ -2367,7 +2367,8 @@ void main() {
       );
 
       test(
-        'current video resumes at the controller volume when initial buffering ends',
+        'current video resumes at the controller volume '
+        'when initial buffering ends',
         () async {
           final bufferingSetups = <String, MockPlayerSetup>{};
           final bufferingPool = TestablePlayerPool(
