@@ -201,6 +201,13 @@ class DmRepository {
   void startListening() {
     if (_giftWrapSubscription != null || _disposed || !isInitialized) return;
 
+    // Count-based windowing: first open fetches a bounded backlog
+    // (limit:50), later opens fetch only recent events via a `since:`
+    // filter. The 2-day overlap absorbs NIP-17 randomized created_at
+    // jitter (gift wraps tweak their outer created_at within a ~2 day
+    // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+    final newest = _syncState?.newestSyncedAt(_userPubkey);
+    final isFirstOpen = newest == null;
     final filter = nostr_filter.Filter(
       kinds: [
         EventKind.giftWrap,
@@ -208,6 +215,8 @@ class DmRepository {
         EventKind.eventDeletion,
       ],
       p: [_userPubkey],
+      limit: isFirstOpen ? 50 : null,
+      since: isFirstOpen ? null : (newest - 2 * 86400),
     );
 
     Log.info(

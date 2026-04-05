@@ -13,8 +13,10 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/dm_sync_state.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 
@@ -27,6 +29,38 @@ class _MockDirectMessagesDao extends Mock implements DirectMessagesDao {}
 class _MockConversationsDao extends Mock implements ConversationsDao {}
 
 class _FakeEvent extends Fake implements Event {}
+
+/// Test double for [DmSyncState] that stores values in memory and captures
+/// [recordSeen] calls for assertions.
+class _FakeDmSyncState implements DmSyncState {
+  int? newestOverride;
+  int? oldestOverride;
+  final List<({String pubkey, int createdAt})> recorded =
+      <({String pubkey, int createdAt})>[];
+
+  @override
+  int? newestSyncedAt(String pubkey) => newestOverride;
+
+  @override
+  int? oldestSyncedAt(String pubkey) => oldestOverride;
+
+  @override
+  Future<void> recordSeen(String pubkey, {required int createdAt}) async {
+    recorded.add((pubkey: pubkey, createdAt: createdAt));
+    if (newestOverride == null || createdAt > newestOverride!) {
+      newestOverride = createdAt;
+    }
+    if (oldestOverride == null || createdAt < oldestOverride!) {
+      oldestOverride = createdAt;
+    }
+  }
+
+  @override
+  Future<void> clear(String pubkey) async {
+    newestOverride = null;
+    oldestOverride = null;
+  }
+}
 
 // Valid 64-character hex pubkeys for testing
 const _validPubkeyA =
@@ -87,6 +121,7 @@ void main() {
       String? userPubkey,
       RumorDecryptor? rumorDecryptor,
       Nip04Decryptor? nip04Decryptor,
+      DmSyncState? syncState,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -97,6 +132,7 @@ void main() {
         signer: LocalNostrSigner(_validPrivateKey),
         rumorDecryptor: rumorDecryptor,
         nip04Decryptor: nip04Decryptor,
+        syncState: syncState,
       );
     }
 
@@ -1315,6 +1351,71 @@ void main() {
         await repository.stopListening();
         await controller.close();
       });
+
+      test(
+        'startListening on first ever open uses limit:50 and no since',
+        () async {
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+          repository.startListening();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured, hasLength(1));
+          expect(captured.single.limit, 50);
+          expect(captured.single.since, isNull);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
+
+      test(
+        'startListening on subsequent open uses since = newest - 2d',
+        () async {
+          const newest = 1700000000;
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState()..newestOverride = newest;
+          final repository = createRepository(syncState: syncState);
+          repository.startListening();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured, hasLength(1));
+          expect(captured.single.since, newest - 2 * 86400);
+          expect(captured.single.limit, isNull);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
     });
 
     // -----------------------------------------------------------------
