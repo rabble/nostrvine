@@ -10,6 +10,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -18,7 +19,9 @@ import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:openvine/repositories/dm_decryption_worker.dart';
 import 'package:openvine/repositories/dm_sync_state.dart';
+import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -408,7 +411,7 @@ class DmRepository {
       final nostr = Nostr(signer, [], _dummyRelay);
       await nostr.refreshPublicKey();
 
-      final rumorEvent = await _rumorDecryptor(nostr, giftWrapEvent);
+      final rumorEvent = await _decryptRumor(nostr, giftWrapEvent);
       if (rumorEvent == null) {
         Log.debug(
           'Failed to decrypt gift wrap event ${giftWrapEvent.id}',
@@ -533,6 +536,50 @@ class DmRepository {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Decrypts a single gift-wrap rumor, routing through a [compute]
+  /// isolate for local signers that can safely expose their private key
+  /// bytes, and falling back to the injected [_rumorDecryptor] on the
+  /// main isolate for remote signers (Amber, Keycast RPC, NIP-46) and
+  /// test-injected decryptors.
+  ///
+  /// Single-element isolate batches are intentional for v1: the
+  /// subscription pipeline processes gift wraps one at a time, and the
+  /// goal is to keep the expensive NIP-44 crypto off the UI thread.
+  /// Real backlog batching can come later.
+  Future<Event?> _decryptRumor(Nostr nostr, Event giftWrapEvent) async {
+    final signer = _signer;
+    if (signer is AuthServiceSigner && signer.canDecryptInIsolate) {
+      try {
+        final hex = signer.withPrivateKeyHex((k) => k);
+        final results = await compute(
+          decryptGiftWrapBatch,
+          DecryptBatchRequest(
+            events: [giftWrapEvent.toJson()],
+            privateKeyHex: hex,
+          ),
+        );
+        final result = results.single;
+        if (result.isSuccess) {
+          return Event.fromJson(result.rumor!);
+        }
+        Log.debug(
+          'Isolate decrypt returned failure for ${giftWrapEvent.id}: '
+          '${result.error}; falling back to main-isolate decryptor',
+          category: LogCategory.system,
+        );
+      } on Object catch (e, stackTrace) {
+        Log.error(
+          'Isolate decrypt threw for ${giftWrapEvent.id}: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Fall through to main-isolate decryptor.
+      }
+    }
+    return _rumorDecryptor(nostr, giftWrapEvent);
   }
 
   Future<void> _handleNip04Event(Event nip04Event) async {
