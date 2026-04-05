@@ -408,18 +408,8 @@ class DmRepository {
 
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
     try {
-      Log.debug(
-        'Received gift wrap event ${giftWrapEvent.id} '
-        'from ${giftWrapEvent.pubkey}',
-        category: LogCategory.system,
-      );
-
       // Dedup: skip if already processed
       if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
-        Log.debug(
-          'Skipping duplicate gift wrap ${giftWrapEvent.id}',
-          category: LogCategory.system,
-        );
         return;
       }
 
@@ -472,11 +462,6 @@ class DmRepository {
         ownerPubkey: _userPubkey,
       );
       if (isDuplicate) {
-        Log.debug(
-          'Skipping NIP-17 duplicate (NIP-04 copy already stored) '
-          '${giftWrapEvent.id}',
-          category: LogCategory.system,
-        );
         return;
       }
 
