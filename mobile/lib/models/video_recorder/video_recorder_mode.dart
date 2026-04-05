@@ -20,6 +20,11 @@ enum VideoRecorderMode {
     .classic => false,
   };
 
+  bool get supportGridLines => switch (this) {
+    .capture => false,
+    .classic => true,
+  };
+
   model.AspectRatio get defaultAspectRatio => switch (this) {
     .capture => .vertical,
     .classic => .square,

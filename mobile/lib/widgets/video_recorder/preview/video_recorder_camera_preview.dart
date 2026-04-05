@@ -20,14 +20,12 @@ import 'package:openvine/widgets/video_recorder/video_recorder_ghost_frame.dart'
 class VideoRecorderCameraPreview extends ConsumerStatefulWidget {
   /// Creates a camera preview widget.
   const VideoRecorderCameraPreview({
-    this.enableGridLines = false,
     this.enableTapToFocus = true,
     this.borderRadius = .zero,
     super.key,
   });
 
   final BorderRadius borderRadius;
-  final bool enableGridLines;
   final bool enableTapToFocus;
 
   @override
@@ -64,7 +62,6 @@ class _VideoRecorderCameraPreviewState
                   clipBehavior: .hardEdge,
                   borderRadius: widget.borderRadius,
                   child: _StackItems(
-                    enableGridLines: widget.enableGridLines,
                     enableTapToFocus: widget.enableTapToFocus,
                   ),
                 ),
@@ -78,12 +75,8 @@ class _VideoRecorderCameraPreviewState
 }
 
 class _StackItems extends ConsumerWidget {
-  const _StackItems({
-    required this.enableTapToFocus,
-    required this.enableGridLines,
-  });
+  const _StackItems({required this.enableTapToFocus});
 
-  final bool enableGridLines;
   final bool enableTapToFocus;
 
   @override
@@ -108,7 +101,7 @@ class _StackItems extends ConsumerWidget {
             errorMessage: state.initializationErrorMessage,
           ),
         const VideoRecorderGhostFrame(),
-        if (enableGridLines) const _OverlayGrid(),
+        const _OverlayGrid(),
         if (enableTapToFocus) const VideoRecorderFocusPoint(),
       ],
     );
@@ -158,13 +151,15 @@ class _OverlayGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isRecording = ref.watch(
-      videoRecorderProvider.select((s) => s.isRecording),
+    final (:isRecording, :showGridLines) = ref.watch(
+      videoRecorderProvider.select(
+        (s) => (isRecording: s.isRecording, showGridLines: s.showGridLines),
+      ),
     );
 
     return IgnorePointer(
       child: AnimatedOpacity(
-        opacity: isRecording ? 0.0 : 1.0,
+        opacity: (isRecording || !showGridLines) ? 0.0 : 1.0,
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeInOut,
         child: CustomPaint(painter: _GridPainter()),

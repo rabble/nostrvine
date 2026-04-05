@@ -337,12 +337,15 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
             body: Column(
               children: [
                 Expanded(
-                  child: switch (ref
-                      .watch(videoRecorderProvider)
-                      .recorderMode) {
-                    .capture => const VideoRecorderCaptureStack(),
-                    .classic => const VideoRecorderClassicStack(),
-                  },
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: switch (ref
+                        .watch(videoRecorderProvider)
+                        .recorderMode) {
+                      .capture => const VideoRecorderCaptureStack(),
+                      .classic => const VideoRecorderClassicStack(),
+                    },
+                  ),
                 ),
 
                 const Padding(

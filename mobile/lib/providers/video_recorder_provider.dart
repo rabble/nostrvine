@@ -1027,6 +1027,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       hasFlash: _cameraService.hasFlash,
       canSwitchCamera: _cameraService.canSwitchCamera,
       showLastClipOverlay: state.showLastClipOverlay,
+      recorderMode: state.recorderMode,
+      showGridLines: state.showGridLines,
     );
   }
 
@@ -1035,6 +1037,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     state = state.copyWith(
       recorderMode: mode,
       aspectRatio: mode.defaultAspectRatio,
+      showGridLines: mode.supportGridLines,
     );
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
@@ -1073,6 +1076,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     state = state.copyWith(
       showLastClipOverlay: !state.showLastClipOverlay,
     );
+  }
+
+  /// Toggle the rule-of-thirds grid overlay on the camera preview.
+  void toggleGridLines() {
+    state = state.copyWith(showGridLines: !state.showGridLines);
   }
 
   // === SOUND PLAYBACK DURING RECORDING ===

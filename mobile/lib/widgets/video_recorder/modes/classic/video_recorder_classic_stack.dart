@@ -3,45 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_bottom.dart';
+import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_top.dart';
+import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_top_bar.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 
 class VideoRecorderClassicStack extends ConsumerWidget {
   const VideoRecorderClassicStack({super.key});
 
-  static const _animationDuration = Duration(milliseconds: 220);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(videoRecorderProvider.notifier);
-    final isRecording = ref.watch(
-      videoRecorderProvider.select((p) => p.isRecording),
-    );
-    final hasClips = ref.watch(clipManagerProvider.select((p) => p.hasClips));
-
     return SafeArea(
       bottom: false,
       child: Column(
         children: [
-          Padding(
-            padding: const .all(16),
-            child: Row(
-              mainAxisAlignment: .spaceBetween,
-              children: [
-                DivineIconButton(
-                  icon: .x,
-                  size: .small,
-                  type: .ghostSecondary,
-                  onPressed: () => notifier.closeVideoRecorder(context),
-                ),
-                DivineIconButton(
-                  icon: .caretRight,
-                  size: .small,
-                  type: .ghostSecondary,
-                  onPressed: () => notifier.openVideoEditor(context),
-                ),
-              ],
-            ),
-          ),
+          const VideoRecorderClassicTopBar(),
 
           Expanded(
             child: Column(
@@ -49,64 +25,20 @@ class VideoRecorderClassicStack extends ConsumerWidget {
               mainAxisAlignment: .center,
               spacing: 30,
               children: [
-                AnimatedOpacity(
-                  duration: _animationDuration,
-                  opacity: isRecording || !hasClips ? 0 : 1,
-                  child: Row(
-                    mainAxisAlignment: .center,
-                    children: [
-                      DivineIconButton(
-                        icon: .arrowCounterClockwise,
-                        size: .small,
-                        type: .ghostSecondary,
-                        onPressed: ref
-                            .read(clipManagerProvider.notifier)
-                            .removeLastClip,
-                      ),
-                    ],
-                  ),
-                ),
+                const VideoRecorderClassicActionsTop(),
 
                 // Camera preview (includes ghost frame)
                 GestureDetector(
                   behavior: .opaque,
-                  onTap: notifier.toggleRecording,
+                  onTap: ref
+                      .read(videoRecorderProvider.notifier)
+                      .toggleRecording,
                   child: const IgnorePointer(
-                    child: VideoRecorderCameraPreview(
-                      enableGridLines: true,
-                      enableTapToFocus: false,
-                    ),
+                    child: VideoRecorderCameraPreview(enableTapToFocus: false),
                   ),
                 ),
 
-                AnimatedOpacity(
-                  duration: _animationDuration,
-                  opacity: isRecording ? 0 : 1,
-                  child: Row(
-                    spacing: 24,
-                    mainAxisAlignment: .center,
-                    children: [
-                      DivineIconButton(
-                        icon: .arrowsCounterClockwise,
-                        size: .small,
-                        type: .ghostSecondary,
-                        onPressed: notifier.switchCamera,
-                      ),
-                      DivineIconButton(
-                        icon: .gridNine,
-                        size: .small,
-                        type: .ghostSecondary,
-                        onPressed: notifier.switchCamera,
-                      ),
-                      DivineIconButton(
-                        icon: .ghost,
-                        size: .small,
-                        type: .ghostSecondary,
-                        onPressed: notifier.toggleShowLastClipOverlay,
-                      ),
-                    ],
-                  ),
-                ),
+                const VideoRecorderClassicActionsBottom(),
               ],
             ),
           ),

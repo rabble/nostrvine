@@ -29,6 +29,7 @@ class VideoRecorderProviderState {
     this.timerDuration = .off,
     this.initializationErrorMessage,
     this.showLastClipOverlay = false,
+    this.showGridLines = false,
   });
 
   /// Recorder mode from the camera.
@@ -84,6 +85,9 @@ class VideoRecorderProviderState {
   /// on the camera preview (ghost frame).
   final bool showLastClipOverlay;
 
+  /// Whether to show the rule-of-thirds grid overlay on the camera preview.
+  final bool showGridLines;
+
   // Convenience getters used by UI
   /// Whether currently recording.
   bool get isRecording => recordingState == .recording;
@@ -118,6 +122,7 @@ class VideoRecorderProviderState {
     TimerDuration? timerDuration,
     String? initializationErrorMessage,
     bool? showLastClipOverlay,
+    bool? showGridLines,
   }) {
     return VideoRecorderProviderState(
       recorderMode: recorderMode ?? this.recorderMode,
@@ -138,6 +143,7 @@ class VideoRecorderProviderState {
       initializationErrorMessage:
           initializationErrorMessage ?? this.initializationErrorMessage,
       showLastClipOverlay: showLastClipOverlay ?? this.showLastClipOverlay,
+      showGridLines: showGridLines ?? this.showGridLines,
     );
   }
 }
