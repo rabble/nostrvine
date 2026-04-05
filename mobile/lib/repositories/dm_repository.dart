@@ -198,7 +198,12 @@ class DmRepository {
   /// If the relay stream closes unexpectedly (e.g. relay disconnect,
   /// NostrClient rebuild), automatically re-subscribes after a brief delay.
   Future<void> startListening() async {
-    if (_giftWrapSubscription != null || _disposed || !isInitialized) return;
+    // Reset _disposed so that the subscription can restart after a prior
+    // stopListening() call (e.g. tab switch away and back). The flag is
+    // only meant to suppress the onDone reconnect during intentional stop;
+    // a new explicit startListening() should always be honored.
+    _disposed = false;
+    if (_giftWrapSubscription != null || !isInitialized) return;
 
     // Merge duplicate conversations on first listen (idempotent).
     if (!_hasMergedConversations) {
@@ -279,11 +284,6 @@ class DmRepository {
       // Ignore if subscription doesn't exist
     }
   }
-
-  // NOTE: The periodic poller (_startPolling / _pollTimer) was removed in
-  // #2766. The WebSocket subscription is now the sole event source while
-  // the inbox is visible. Windowed `since` filters on re-subscribe catch
-  // any events missed between inbox visits.
 
   // -------------------------------------------------------------------------
   // Receive pipeline

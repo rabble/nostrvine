@@ -292,5 +292,74 @@ void main() {
         await repository.stopListening();
       });
     });
+
+    // -----------------------------------------------------------------
+    // Subscription restart after stop (tab switch cycle)
+    // -----------------------------------------------------------------
+
+    group('subscription restart after stopListening', () {
+      test('startListening works after stopListening (tab switch)', () async {
+        final controller1 = StreamController<Event>();
+        final controller2 = StreamController<Event>();
+        var callCount = 0;
+
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) {
+          callCount++;
+          return callCount == 1 ? controller1.stream : controller2.stream;
+        });
+
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        when(
+          () => mockConversationsDao.getNewestMessageTimestamp(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockConversationsDao.getAllConversations(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final repository = createBareRepository();
+        repository.setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        // First open: subscription starts.
+        await repository.startListening();
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(1);
+
+        // Tab switch away: subscription stops.
+        await repository.stopListening();
+
+        // Tab switch back: subscription must restart.
+        await repository.startListening();
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(1);
+
+        await controller1.close();
+        await controller2.close();
+      });
+    });
   });
 }
