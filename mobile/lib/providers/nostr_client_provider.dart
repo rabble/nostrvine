@@ -40,7 +40,7 @@ class NostrService extends _$NostrService {
 
     // Create initial NostrClient using the atomic identity as signer
     final client = NostrServiceFactory.create(
-      signer: authService.currentIdentity!,
+      signer: authService.requireIdentity,
       statisticsService: statisticsService,
       environmentConfig: environmentConfig,
       dbClient: dbClient,
@@ -133,7 +133,7 @@ class NostrService extends _$NostrService {
           .toList();
 
       final newClient = NostrServiceFactory.create(
-        signer: authService.currentIdentity!,
+        signer: authService.requireIdentity,
         statisticsService: statisticsService,
         environmentConfig: environmentConfig,
         dbClient: dbClient,

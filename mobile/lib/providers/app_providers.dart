@@ -170,7 +170,7 @@ final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
   return NostrAppBridgeService(
     authProvider: _AuthServiceBridgeAdapter(authService),
     policy: policy,
-    signerFactory: () => authService.currentIdentity!,
+    signerFactory: () => authService.requireIdentity,
     auditService: auditService,
   );
 });
