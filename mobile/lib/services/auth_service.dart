@@ -3080,9 +3080,18 @@ class AuthService implements BackgroundAwareService {
   ///
   /// Must be called AFTER signer fields (_keycastSigner, _bunkerSigner,
   /// _amberSigner) and _currentKeyContainer have been set for the session.
-  NostrIdentity? _buildIdentity() {
+  ///
+  /// Throws [StateError] if no valid identity can be constructed — this
+  /// indicates a programming error in the auth flow, not a user-facing
+  /// condition.
+  NostrIdentity _buildIdentity() {
     final keyContainer = _currentKeyContainer;
-    if (keyContainer == null) return null;
+    if (keyContainer == null) {
+      throw StateError(
+        '_buildIdentity called with no key container. '
+        'Auth flow must set _currentKeyContainer before building identity.',
+      );
+    }
 
     final pubkey = keyContainer.publicKeyHex;
 
@@ -3107,10 +3116,21 @@ class AuthService implements BackgroundAwareService {
     }
     // Local keys only — private key required.
     if (keyContainer.hasPrivateKey) {
+      if (_authSource == AuthenticationSource.divineOAuth) {
+        Log.warning(
+          '_buildIdentity: falling back to LocalNostrIdentity for '
+          'divineOAuth source — OAuth session likely expired',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
       return LocalNostrIdentity(keyContainer: keyContainer);
     }
     // Pub-key-only container with no remote signer — cannot sign.
-    return null;
+    throw StateError(
+      '_buildIdentity: pub-key-only container with no remote signer. '
+      'source=${_authSource.name}, pubkey=$pubkey',
+    );
   }
 
   /// Set up user session after successful authentication
