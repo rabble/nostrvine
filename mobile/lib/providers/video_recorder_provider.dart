@@ -32,6 +32,9 @@ import 'package:sound_service/sound_service.dart';
 /// SharedPreferences key for storing the last used camera lens.
 const _kLastUsedCameraLensKey = 'camera_last_used_lens';
 
+/// SharedPreferences key for storing the last used recorder mode.
+const _kLastUsedRecorderModeKey = 'camera_last_used_recorder_mode';
+
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
 ///
 /// Manages camera lifecycle, recording state, and UI interactions including:
@@ -139,6 +142,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     // Load the last used camera lens from preferences
     final prefs = ref.read(sharedPreferencesProvider);
+
+    // Restore last used recorder mode
+    final savedModeName = prefs.getString(_kLastUsedRecorderModeKey);
+    final savedMode = savedModeName != null
+        ? VideoRecorderMode.values.firstWhere(
+            (m) => m.name == savedModeName,
+            orElse: () => VideoRecorderMode.capture,
+          )
+        : VideoRecorderMode.capture;
+    if (savedMode != state.recorderMode) {
+      setRecorderMode(savedMode);
+    }
     final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
     final initialLens = savedLensString != null
         ? DivineCameraLens.fromNativeString(savedLensString)
@@ -1039,6 +1054,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       aspectRatio: mode.defaultAspectRatio,
       showGridLines: mode.supportGridLines,
     );
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setString(_kLastUsedRecorderModeKey, mode.name);
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
       name: 'VideoRecorderNotifier',
