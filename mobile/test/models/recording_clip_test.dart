@@ -435,6 +435,119 @@ void main() {
           equals(clip.proofManifestJson),
         );
       });
+
+      test('roundtrip with complex JSON structure', () {
+        const complexJson =
+            '{"manifest":{"alg":"sha256","hash":"abc123"},'
+            '"assertions":[{"label":"c2pa.actions","data":{"actions":'
+            '[{"action":"c2pa.created"}]}}],'
+            '"claim_generator":"divine/1.0"}';
+
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(milliseconds: 2500),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: complexJson,
+        );
+
+        final json = clip.toJson();
+        final restored = DivineVideoClip.fromJson(json, '/path/to');
+
+        expect(restored.proofManifestJson, equals(complexJson));
+      });
+
+      test(
+        'copyWith updates proofManifestJson independently of other fields',
+        () {
+          final clip = DivineVideoClip(
+            id: 'clip_001',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime(2025, 12, 13, 10),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            thumbnailPath: '/path/to/thumb.jpg',
+          );
+
+          final updated = clip.copyWith(
+            proofManifestJson: '{"hash":"abc123"}',
+            thumbnailPath: '/path/to/new_thumb.jpg',
+            duration: const Duration(seconds: 5),
+          );
+
+          expect(updated.proofManifestJson, equals('{"hash":"abc123"}'));
+          expect(updated.thumbnailPath, equals('/path/to/new_thumb.jpg'));
+          expect(updated.duration, equals(const Duration(seconds: 5)));
+          expect(updated.id, equals(clip.id));
+        },
+      );
+
+      test('copyWith replaces existing proofManifestJson with new value', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: '{"hash":"old"}',
+        );
+
+        final updated = clip.copyWith(
+          proofManifestJson: '{"hash":"new"}',
+        );
+
+        expect(updated.proofManifestJson, equals('{"hash":"new"}'));
+      });
+
+      test(
+        'clearProofManifestJson does nothing when proof is already null',
+        () {
+          final clip = DivineVideoClip(
+            id: 'clip_001',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime(2025, 12, 13, 10),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          final updated = clip.copyWith(clearProofManifestJson: true);
+
+          expect(updated.proofManifestJson, isNull);
+        },
+      );
+
+      test('toJson conditional inclusion: only adds key when non-null', () {
+        final clipWithProof = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(milliseconds: 2500),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: '{"hash":"abc123"}',
+        );
+
+        final clipWithoutProof = DivineVideoClip(
+          id: 'clip_002',
+          video: EditorVideo.file('/path/to/video2.mp4'),
+          duration: const Duration(milliseconds: 2500),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final jsonWith = clipWithProof.toJson();
+        final jsonWithout = clipWithoutProof.toJson();
+
+        expect(jsonWith.containsKey('proofManifestJson'), isTrue);
+        expect(jsonWithout.containsKey('proofManifestJson'), isFalse);
+        expect(jsonWith.length, greaterThan(jsonWithout.length));
+      });
     });
 
     group('path round-trip for rendered videos', () {

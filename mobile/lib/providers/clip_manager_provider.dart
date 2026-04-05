@@ -275,10 +275,14 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       if (!ref.mounted) return;
 
       if (proofData != null) {
-        // Merge with latest clip state (thumbnail may have been updated)
+        // Merge with latest clip state (thumbnail may have been updated).
+        // If the clip was deleted while proof generation was in progress,
+        // skip the update entirely.
         final current = getClipById(clip.id);
-        final base = current ?? clip;
-        refreshClip(base.copyWith(proofManifestJson: jsonEncode(proofData)));
+        if (current == null) return;
+        refreshClip(
+          current.copyWith(proofManifestJson: jsonEncode(proofData)),
+        );
         _triggerAutosave();
 
         Log.info(
