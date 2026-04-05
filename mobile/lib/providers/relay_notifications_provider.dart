@@ -422,8 +422,18 @@ class RelayNotifications extends _$RelayNotifications {
     final currentState = await future;
     if (!ref.mounted) return;
 
-    // Deduplicate
+    // Deduplicate by ID
     if (currentState.notifications.any((n) => n.id == notification.id)) return;
+
+    // For follows, deduplicate by actor pubkey (Kind 3 republishes entire list)
+    if (notification.type == NotificationType.follow &&
+        currentState.notifications.any(
+          (n) =>
+              n.type == NotificationType.follow &&
+              n.actorPubkey == notification.actorPubkey,
+        )) {
+      return;
+    }
 
     // Insert at correct position (sorted by timestamp, newest first)
     final updated = [notification, ...currentState.notifications];
@@ -696,11 +706,12 @@ class RelayNotifications extends _$RelayNotifications {
       final id = n.dedupeKey.toLowerCase();
       if (mutableExcludeIds.contains(id)) continue;
 
-      // Skip follow notifications from pubkeys we already have
+      // Skip follow notifications from pubkeys already loaded in a prior call
+      // (e.g. loadMore). Do NOT track new pubkeys here — let
+      // _consolidateFollowNotifications pick the earliest per pubkey.
       if (n.notificationType.toLowerCase() == 'follow') {
         final pk = n.sourcePubkey.toLowerCase();
         if (mutableExcludeFollowPubkeys.contains(pk)) continue;
-        mutableExcludeFollowPubkeys.add(pk);
       }
 
       mutableExcludeIds.add(id);
@@ -746,7 +757,6 @@ class RelayNotifications extends _$RelayNotifications {
         if (n.notificationType.toLowerCase() == 'follow') {
           final pk = n.sourcePubkey.toLowerCase();
           if (mutableExcludeFollowPubkeys.contains(pk)) continue;
-          mutableExcludeFollowPubkeys.add(pk);
         }
 
         mutableExcludeIds.add(id);
@@ -928,16 +938,19 @@ class RelayNotifications extends _$RelayNotifications {
       category: LogCategory.system,
     );
 
-    // Keep only the most recent follow notification per source pubkey
-    final latestFollowByPubkey = <String, RelayNotification>{};
+    // Keep the earliest (original) follow notification per source pubkey.
+    // Kind 3 republishes the full contact list on every change, so the latest
+    // event timestamp reflects when the follower's list last changed, NOT when
+    // they originally followed this user.
+    final earliestFollowByPubkey = <String, RelayNotification>{};
     for (final follow in followNotifications) {
-      final existing = latestFollowByPubkey[follow.sourcePubkey];
-      if (existing == null || follow.createdAt.isAfter(existing.createdAt)) {
-        latestFollowByPubkey[follow.sourcePubkey] = follow;
+      final existing = earliestFollowByPubkey[follow.sourcePubkey];
+      if (existing == null || follow.createdAt.isBefore(existing.createdAt)) {
+        earliestFollowByPubkey[follow.sourcePubkey] = follow;
       }
     }
 
-    final consolidatedFollows = latestFollowByPubkey.values.toList();
+    final consolidatedFollows = earliestFollowByPubkey.values.toList();
 
     if (followNotifications.length != consolidatedFollows.length) {
       Log.info(

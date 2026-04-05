@@ -327,6 +327,126 @@ void main() {
       },
     );
 
+    test(
+      'follow notifications with different IDs but same actor are deduplicated',
+      () async {
+        await service.initialize(
+          nostrService: mockNostrService,
+          profileRepository: mockProfileRepository,
+          videoService: mockVideoService,
+        );
+
+        // Simulate two Kind 3 events from the same actor (different event IDs)
+        // This happens when the actor follows someone else, republishing their
+        // entire contact list with a new event ID.
+        final firstFollow = NotificationModel(
+          id: 'kind3-event-aaa',
+          type: NotificationType.follow,
+          actorPubkey: 'follower-pubkey-123',
+          actorName: 'Follower',
+          message: 'Follower started following you',
+          timestamp: DateTime(2024),
+        );
+
+        final duplicateFollow = NotificationModel(
+          id: 'kind3-event-bbb', // Different event ID
+          type: NotificationType.follow,
+          actorPubkey: 'follower-pubkey-123', // Same actor
+          actorName: 'Follower',
+          message: 'Follower started following you',
+          timestamp: DateTime(2024, 1, 2), // Later timestamp
+        );
+
+        await service.addNotificationForTesting(firstFollow);
+        await service.addNotificationForTesting(duplicateFollow);
+
+        expect(
+          service.notifications.length,
+          equals(1),
+          reason: 'Second follow from same actor should be deduplicated',
+        );
+        expect(service.notifications.first.id, equals('kind3-event-aaa'));
+      },
+    );
+
+    test(
+      'follow notifications from different actors are not deduplicated',
+      () async {
+        await service.initialize(
+          nostrService: mockNostrService,
+          profileRepository: mockProfileRepository,
+          videoService: mockVideoService,
+        );
+
+        final follow1 = NotificationModel(
+          id: 'kind3-event-aaa',
+          type: NotificationType.follow,
+          actorPubkey: 'follower-1',
+          actorName: 'Follower 1',
+          message: 'Follower 1 started following you',
+          timestamp: DateTime(2024),
+        );
+
+        final follow2 = NotificationModel(
+          id: 'kind3-event-bbb',
+          type: NotificationType.follow,
+          actorPubkey: 'follower-2', // Different actor
+          actorName: 'Follower 2',
+          message: 'Follower 2 started following you',
+          timestamp: DateTime(2024, 1, 2),
+        );
+
+        await service.addNotificationForTesting(follow1);
+        await service.addNotificationForTesting(follow2);
+
+        expect(
+          service.notifications.length,
+          equals(2),
+          reason: 'Follows from different actors should both be kept',
+        );
+      },
+    );
+
+    test(
+      'non-follow notifications with same actor are not deduplicated',
+      () async {
+        await service.initialize(
+          nostrService: mockNostrService,
+          profileRepository: mockProfileRepository,
+          videoService: mockVideoService,
+        );
+
+        final like1 = NotificationModel(
+          id: 'like-event-aaa',
+          type: NotificationType.like,
+          actorPubkey: 'actor-pubkey-123',
+          actorName: 'User',
+          message: 'User liked your video',
+          timestamp: DateTime(2024),
+        );
+
+        final like2 = NotificationModel(
+          id: 'like-event-bbb',
+          type: NotificationType.like,
+          actorPubkey: 'actor-pubkey-123', // Same actor, different like
+          actorName: 'User',
+          message: 'User liked your video',
+          timestamp: DateTime(2024, 1, 2),
+        );
+
+        await service.addNotificationForTesting(like1);
+        await service.addNotificationForTesting(like2);
+
+        expect(
+          service.notifications.length,
+          equals(2),
+          reason:
+              'Non-follow notifications from same actor should not be '
+              'deduplicated',
+        );
+      },
+    );
+
     test('notifications with same timestamp are stable-sorted by ID', () async {
       await service.initialize(
         nostrService: mockNostrService,
