@@ -19,7 +19,12 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
+import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Internal class that represents a video entry in the grid
@@ -248,22 +253,33 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     ];
 
     if (widget.errorMessage != null && allVideos.isEmpty) {
-      return _ProfileVideosErrorState(errorMessage: widget.errorMessage!);
+      return ProfileTabErrorState(message: widget.errorMessage!);
     }
 
     if (allVideos.isEmpty) {
       if (widget.isLoading) {
-        return const _ProfileVideosLoadingState();
+        return const ProfileTabLoadingState(message: 'Loading videos...');
       }
-      return _ProfileVideosEmptyState(
-        userIdHex: widget.userIdHex,
-        isOwnProfile: isOwnProfile,
+      return ProfileTabEmptyState(
+        icon: DivineIconName.videoCamera,
+        title: 'No Videos Yet',
+        subtitle: isOwnProfile
+            ? 'Share your first video to see it here'
+            : "This user hasn't shared any videos yet",
         onRefresh: loadMoreProfileVideos,
       );
     }
 
     // Count uploading videos to offset indices for published videos
     final uploadingCount = activeUploads.length;
+
+    final isLoadingMore =
+        ref
+            .watch(profileFeedProvider(widget.userIdHex))
+            .asData
+            ?.value
+            .isLoadingMore ??
+        false;
 
     return CustomScrollView(
       slivers: [
@@ -309,78 +325,10 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
             }, childCount: allVideos.length),
           ),
         ),
+        if (isLoadingMore) const ProfileTabLoadingMoreSliver(),
       ],
     );
   }
-}
-
-/// Empty state shown when user has no videos
-class _ProfileVideosEmptyState extends StatelessWidget {
-  const _ProfileVideosEmptyState({
-    required this.userIdHex,
-    required this.isOwnProfile,
-    required this.onRefresh,
-  });
-
-  final String userIdHex;
-  final bool isOwnProfile;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) => CustomScrollView(
-    slivers: [
-      SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.videocam_outlined,
-                  color: VineTheme.lightText,
-                  size: 64,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Videos Yet',
-                  textAlign: .center,
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  isOwnProfile
-                      ? 'Share your first video to see it here'
-                      : "This user hasn't shared any videos yet",
-                  textAlign: .center,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                IconButton(
-                  onPressed: onRefresh,
-                  icon: const Icon(
-                    Icons.refresh,
-                    color: VineTheme.vineGreen,
-                    size: 28,
-                  ),
-                  tooltip: 'Refresh',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
 }
 
 class _VideoGridUploadingTile extends StatelessWidget {
@@ -402,10 +350,10 @@ class _VideoGridUploadingTile extends StatelessWidget {
             Image.file(
               File(thumbnailPath),
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const _ThumbnailPlaceholder(),
+              errorBuilder: (_, _, _) => const ProfileTabThumbnailPlaceholder(),
             )
           else
-            const _ThumbnailPlaceholder(),
+            const ProfileTabThumbnailPlaceholder(),
           const ColoredBox(color: Color(0x66000000)),
           Center(
             child: PartialCircleSpinner(progress: backgroundUpload.progress),
@@ -443,120 +391,12 @@ class _VideoGridTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
           decoration: const BoxDecoration(color: VineTheme.cardBackground),
-          child: _VideoThumbnail(
+          child: ProfileTabThumbnail(
             thumbnailUrl: videoEvent.thumbnailUrl,
             isPrecached: isPrecached,
           ),
         ),
       ),
-    ),
-  );
-}
-
-/// Video thumbnail with loading and error states
-class _VideoThumbnail extends StatelessWidget {
-  const _VideoThumbnail({
-    required this.thumbnailUrl,
-    this.isPrecached = false,
-  });
-
-  final String? thumbnailUrl;
-  final bool isPrecached;
-
-  @override
-  Widget build(BuildContext context) {
-    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return VineCachedImage(
-        imageUrl: thumbnailUrl!,
-        fadeInDuration: isPrecached
-            ? Duration.zero
-            : const Duration(milliseconds: 500),
-        fadeOutDuration: isPrecached
-            ? Duration.zero
-            : const Duration(milliseconds: 1000),
-        placeholder: (context, url) => const _ThumbnailPlaceholder(),
-        errorWidget: (context, url, error) => const _ThumbnailPlaceholder(),
-      );
-    }
-    return const _ThumbnailPlaceholder();
-  }
-}
-
-/// Loading state shown while videos are being fetched.
-class _ProfileVideosLoadingState extends StatelessWidget {
-  const _ProfileVideosLoadingState();
-
-  @override
-  Widget build(BuildContext context) => const CustomScrollView(
-    slivers: [
-      SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: VineTheme.vineGreen),
-              SizedBox(height: 16),
-              Text(
-                'Loading videos...',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
-/// Error state shown when video loading fails.
-class _ProfileVideosErrorState extends StatelessWidget {
-  const _ProfileVideosErrorState({required this.errorMessage});
-
-  final String errorMessage;
-
-  @override
-  Widget build(BuildContext context) => CustomScrollView(
-    slivers: [
-      SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.error_outline,
-                color: VineTheme.secondaryText,
-                size: 48,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Error: $errorMessage',
-                style: const TextStyle(
-                  color: VineTheme.primaryText,
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
-/// Flat color placeholder for thumbnails
-class _ThumbnailPlaceholder extends StatelessWidget {
-  const _ThumbnailPlaceholder();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(4),
-      color: VineTheme.surfaceContainer,
     ),
   );
 }
