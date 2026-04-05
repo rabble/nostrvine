@@ -654,6 +654,89 @@ void main() {
         await repository.stopListening();
       });
 
+      test('successful gift-wrap persist advances sync boundaries', () async {
+        const rumorCreatedAt = 1700000500;
+        final giftWrap = createGiftWrapEvent();
+        final rumor = createRumorEvent(createdAt: rumorCreatedAt);
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+        ).thenAnswer((_) async => false);
+        stubDaoInserts();
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(
+          rumorDecryptor: (_, _) async => rumor,
+          syncState: syncState,
+        );
+
+        repository.startListening();
+        controller.add(giftWrap);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(syncState.recorded, hasLength(1));
+        expect(syncState.recorded.single.pubkey, _validPubkeyA);
+        expect(syncState.recorded.single.createdAt, rumorCreatedAt);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
+      test('successful NIP-04 persist advances sync boundaries', () async {
+        const nip04CreatedAt = 1700000600;
+        final nip04Event = Event.fromJson({
+          'id':
+              'aaaa00000000000000000000000000000000000000'
+              '0000000000000000000000',
+          'pubkey': _validPubkeyB,
+          'created_at': nip04CreatedAt,
+          'kind': EventKind.directMessage,
+          'tags': [
+            ['p', _validPubkeyA],
+          ],
+          'content': 'nip04-ciphertext',
+          'sig': '',
+        });
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer((_) async => false);
+        stubDaoInserts();
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(
+          nip04Decryptor: (_, _) async => 'Hello over NIP-04',
+          syncState: syncState,
+        );
+
+        repository.startListening();
+        controller.add(nip04Event);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(syncState.recorded, hasLength(1));
+        expect(syncState.recorded.single.pubkey, _validPubkeyA);
+        expect(syncState.recorded.single.createdAt, nip04CreatedAt);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
       test('marks conversation as read for own messages', () async {
         final giftWrap = createGiftWrapEvent();
         // Sender is the current user

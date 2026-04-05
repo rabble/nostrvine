@@ -86,7 +86,6 @@ class DmRepository {
   final NostrClient _nostrClient;
   final DirectMessagesDao _directMessagesDao;
   final ConversationsDao _conversationsDao;
-  // ignore: unused_field
   final DmSyncState? _syncState;
   NIP17MessageService? _messageService;
   String _userPubkey;
@@ -475,6 +474,14 @@ class DmRepository {
         );
       });
 
+      // Advance sync boundaries using the rumor's REAL created_at. The
+      // outer gift wrap randomizes its own created_at within a ~2 day
+      // window (NIP-17) so it must not be used for boundary tracking.
+      await _syncState?.recordSeen(
+        _userPubkey,
+        createdAt: rumorEvent.createdAt,
+      );
+
       Log.debug(
         'Persisted DM (kind ${rumorEvent.kind}) in conversation '
         '$conversationId',
@@ -600,6 +607,13 @@ class DmRepository {
           dmProtocol: existing?.dmProtocol ?? 'nip04',
         );
       });
+
+      // NIP-04 created_at values are not randomized (unlike NIP-17 gift
+      // wraps) so the event timestamp is safe to use directly.
+      await _syncState?.recordSeen(
+        _userPubkey,
+        createdAt: nip04Event.createdAt,
+      );
 
       Log.debug(
         'Persisted NIP-04 DM in conversation $conversationId',
