@@ -2366,6 +2366,59 @@ void main() {
         },
       );
 
+      test(
+        'current video resumes at the controller volume when initial buffering ends',
+        () async {
+          final bufferingSetups = <String, MockPlayerSetup>{};
+          final bufferingPool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup(isBuffering: true);
+              bufferingSetups[url] = setup;
+
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              return mockPooledPlayer;
+            },
+          );
+
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: bufferingPool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup0 = bufferingSetups[videos[0].url]!;
+
+          controller.setVolume(0.4);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          clearInteractions(setup0.player);
+
+          setup0.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(() => setup0.player.setVolume(40)).called(1);
+          verify(setup0.player.play).called(1);
+          verifyNever(() => setup0.player.setVolume(100));
+
+          controller.dispose();
+          for (final setup in bufferingSetups.values) {
+            await setup.dispose();
+          }
+          await bufferingPool.dispose();
+        },
+      );
+
       test('_releasePlayer mutes and pauses player before releasing', () async {
         final videos = createTestVideos(count: 10);
         final controller = VideoFeedController(
@@ -4225,6 +4278,39 @@ void main() {
         // setVolume should be called but not play (already playing)
         verify(() => setup.player.setVolume(100)).called(greaterThan(0));
         verifyNever(setup.player.play);
+
+        controller.dispose();
+      });
+
+      test('play() resumes at the controller volume', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+          preloadAhead: 0,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        controller.setVolume(0.4);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        controller.pause();
+        clearInteractions(setup.player);
+        when(() => setup.state.playing).thenReturn(false);
+
+        controller.play();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(() => setup.player.setVolume(40)).called(greaterThan(0));
+        verifyNever(() => setup.player.setVolume(100));
+        verify(setup.player.play).called(greaterThan(0));
 
         controller.dispose();
       });

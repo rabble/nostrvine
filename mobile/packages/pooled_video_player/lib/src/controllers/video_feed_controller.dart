@@ -168,6 +168,7 @@ class VideoFeedController extends ChangeNotifier {
   bool _isActive = true;
   bool _isPaused = false;
   bool _isDisposed = false;
+  double _desiredPlaybackVolume = 1.0;
 
   // Loaded players by index
   final Map<int, PooledPlayer> _loadedPlayers = {};
@@ -682,7 +683,7 @@ class VideoFeedController extends ChangeNotifier {
     _isPaused = false;
     final player = _loadedPlayers[_currentIndex]?.player;
     if (player != null) {
-      unawaited(player.setVolume(100));
+      unawaited(player.setVolume(_desiredPlayerVolume));
       if (!player.state.playing) {
         unawaited(player.play());
       }
@@ -724,11 +725,15 @@ class VideoFeedController extends ChangeNotifier {
 
   /// Set volume (0.0 to 1.0) for current video.
   void setVolume(double volume) {
+    _desiredPlaybackVolume = volume.clamp(0.0, 1.0).toDouble();
     final player = _loadedPlayers[_currentIndex]?.player;
     if (player != null) {
-      unawaited(player.setVolume((volume * 100).clamp(0, 100)));
+      unawaited(player.setVolume(_desiredPlayerVolume));
     }
   }
+
+  double get _desiredPlayerVolume =>
+      (_desiredPlaybackVolume * 100).clamp(0.0, 100.0).toDouble();
 
   /// Set playback speed for current video.
   void setPlaybackSpeed(double speed) {
@@ -1280,7 +1285,7 @@ class VideoFeedController extends ChangeNotifier {
       }
       if (_loadedPlayers[index]?.player != player) return;
 
-      await player.setVolume(100);
+      await player.setVolume(_desiredPlayerVolume);
       await player.play();
       _logDebug(
         'play_started ${_videoDebugDetails(index)} '
@@ -1463,7 +1468,7 @@ class VideoFeedController extends ChangeNotifier {
           return;
         }
 
-        await player.setVolume(100);
+        await player.setVolume(_desiredPlayerVolume);
         _logDebug(
           'STUTTER_DEBUG recovery_play index=$index '
           'positionMs=${player.state.position.inMilliseconds}',
