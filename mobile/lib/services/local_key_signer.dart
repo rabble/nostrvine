@@ -1,5 +1,5 @@
-// ABOUTME: NostrSigner implementation that bridges AuthService's SecureKeyContainer
-// ABOUTME: Provides secure event signing and encryption using the auth service's keys
+// ABOUTME: NostrSigner implementation backed by a local SecureKeyContainer
+// ABOUTME: Provides secure event signing and encryption using locally stored keys
 
 import 'dart:typed_data';
 
@@ -13,14 +13,13 @@ const _canonicalPayloadAux =
     '00000000000000000000000000000000'
     '00000000000000000000000000000000';
 
-/// NostrSigner implementation that uses SecureKeyContainer from AuthService
+/// NostrSigner implementation backed by a local [SecureKeyContainer].
 ///
-/// This signer holds a reference to the key container provided at construction.
-/// Since the nostrServiceProvider rebuilds when auth state changes, the signer
-/// always has the current key container.
-class AuthServiceSigner implements NostrSigner {
-  /// Creates an AuthServiceSigner with the current key container
-  AuthServiceSigner(this._keyContainer);
+/// Used internally by [LocalNostrIdentity] and [KeycastNostrIdentity]'s
+/// local signing optimization. Not used directly by consumers.
+class LocalKeySigner implements NostrSigner {
+  /// Creates a [LocalKeySigner] with the given key container.
+  LocalKeySigner(this._keyContainer);
 
   final SecureKeyContainer? _keyContainer;
 
@@ -65,7 +64,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'Failed to sign canonical payload: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -83,7 +82,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'Failed to sign event: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -104,7 +103,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'NIP-04 encryption failed: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -122,7 +121,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'NIP-04 decryption failed: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -142,7 +141,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'NIP-44 encryption failed: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -162,7 +161,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'NIP-44 decryption failed: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;

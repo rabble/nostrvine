@@ -4,14 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/auth_service_signer.dart';
+import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nostr_identity.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 
 class _MockNostrSigner extends Mock implements NostrSigner {}
 
-class _MockAuthServiceSigner extends Mock implements AuthServiceSigner {}
+class _MockLocalKeySigner extends Mock implements LocalKeySigner {}
 
 void main() {
   const testPrivateKey =
@@ -45,7 +45,7 @@ void main() {
       expect(await identity.getPublicKey(), equals(testPublicKey));
     });
 
-    test('signEvent signs via AuthServiceSigner', () async {
+    test('signEvent signs via LocalKeySigner', () async {
       when(() => mockKeyContainer.withPrivateKey<Event>(any())).thenAnswer((
         invocation,
       ) {
@@ -115,7 +115,7 @@ void main() {
 
     test('signEvent prefers local signer when available', () async {
       final event = Event(testPublicKey, EventKind.textNote, [], 'test');
-      final mockLocal = _MockAuthServiceSigner();
+      final mockLocal = _MockLocalKeySigner();
       when(() => mockLocal.signEvent(any())).thenAnswer((_) async => event);
 
       final identity = KeycastNostrIdentity(
@@ -135,7 +135,7 @@ void main() {
       'signEvent falls back to RPC when local signer returns null',
       () async {
         final event = Event(testPublicKey, EventKind.textNote, [], 'test');
-        final mockLocal = _MockAuthServiceSigner();
+        final mockLocal = _MockLocalKeySigner();
         when(() => mockLocal.signEvent(any())).thenAnswer((_) async => null);
         when(() => mockRpc.signEvent(any())).thenAnswer((_) async => event);
 
@@ -167,7 +167,7 @@ void main() {
     });
 
     test('signCanonicalPayload delegates to local signer', () async {
-      final mockLocal = _MockAuthServiceSigner();
+      final mockLocal = _MockLocalKeySigner();
       when(
         () => mockLocal.signCanonicalPayload(any()),
       ).thenAnswer((_) async => 'sig_hex');

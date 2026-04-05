@@ -18,9 +18,9 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
-import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
@@ -3104,9 +3104,9 @@ class AuthService implements BackgroundAwareService {
     }
     if (_keycastSigner case final rpc?) {
       // When a matching local nsec exists, sign locally for speed.
-      AuthServiceSigner? localSigner;
+      LocalKeySigner? localSigner;
       if (keyContainer.hasPrivateKey) {
-        localSigner = AuthServiceSigner(keyContainer);
+        localSigner = LocalKeySigner(keyContainer);
       }
       return KeycastNostrIdentity(
         pubkey: pubkey,

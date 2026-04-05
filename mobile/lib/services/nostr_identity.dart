@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/auth_service_signer.dart';
+import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -29,10 +29,10 @@ sealed class NostrIdentity implements NostrSigner {
 /// Identity backed by a local [SecureKeyContainer] with a private key.
 class LocalNostrIdentity extends NostrIdentity {
   LocalNostrIdentity({required SecureKeyContainer keyContainer})
-    : _signer = AuthServiceSigner(keyContainer),
+    : _signer = LocalKeySigner(keyContainer),
       pubkey = keyContainer.publicKeyHex;
 
-  final AuthServiceSigner _signer;
+  final LocalKeySigner _signer;
 
   @override
   final String pubkey;
@@ -87,12 +87,12 @@ class KeycastNostrIdentity extends NostrIdentity {
   KeycastNostrIdentity({
     required this.pubkey,
     required NostrSigner rpcSigner,
-    AuthServiceSigner? localSigner,
+    LocalKeySigner? localSigner,
   }) : _rpcSigner = rpcSigner,
        _localSigner = localSigner;
 
   final NostrSigner _rpcSigner;
-  final AuthServiceSigner? _localSigner;
+  final LocalKeySigner? _localSigner;
 
   @override
   final String pubkey;
