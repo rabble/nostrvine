@@ -1278,6 +1278,43 @@ void main() {
         // But the repository should still be initialized so send() works.
         expect(repository.isInitialized, isTrue);
       });
+
+      test('startListening does not poll the relay', () async {
+        // Regression guard: the 10s gift-wrap poll timer was removed
+        // because it re-fetched the last 20 events forever on the UI
+        // isolate, producing constant dedup skips and log spam. The
+        // live subscription is now the sole event source while the
+        // inbox is open. See
+        // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        repository.startListening();
+
+        // Wait well beyond any former poll interval.
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // queryEvents must never be called — no background poller.
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+
+        await repository.stopListening();
+        await controller.close();
+      });
     });
 
     // -----------------------------------------------------------------

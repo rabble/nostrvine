@@ -90,14 +90,10 @@ class DmRepository {
   Nip04Decryptor? _nip04Decryptor;
 
   StreamSubscription<Event>? _giftWrapSubscription;
-  Timer? _pollTimer;
   bool _disposed = false;
 
-  /// Whether a poll is currently in progress (prevents overlap).
-  bool _pollInProgress = false;
-
-  /// Serializes event processing so poll and subscription events
-  /// never race into the dedup/insert path concurrently.
+  /// Serializes event processing so concurrent subscription events
+  /// never race into the dedup/insert path.
   Future<void>? _eventLock;
 
   /// User-scoped subscription ID to prevent collision when the provider
@@ -163,8 +159,6 @@ class DmRepository {
   /// so any late arrivals are harmless (dedup rejects them).
   void _resetState() {
     _disposed = true;
-    _pollTimer?.cancel();
-    _pollTimer = null;
     _eventLock = null;
     unawaited(_giftWrapSubscription?.cancel());
     _giftWrapSubscription = null;
@@ -178,20 +172,11 @@ class DmRepository {
     _signer = null;
     _messageService = null;
     _disposed = false;
-    _pollInProgress = false;
     _subscriptionId = 'dm_inbox';
   }
 
   /// Delay before attempting to re-subscribe after stream closure.
   static const _reconnectDelay = Duration(seconds: 2);
-
-  /// Interval for polling the relay for new kind 1059 events.
-  ///
-  /// Some relays deliver stored events on subscription but don't push new
-  /// real-time events for `#p`-filtered kind 1059 subscriptions (possibly
-  /// due to AUTH requirements or relay implementation). This poll ensures
-  /// messages arrive within a bounded delay regardless of relay behavior.
-  static const _pollInterval = Duration(seconds: 10);
 
   // -------------------------------------------------------------------------
   // Subscription lifecycle
@@ -258,10 +243,10 @@ class DmRepository {
       },
     );
 
-    // Start periodic polling for new events.
-    // Some relays don't push real-time events for kind 1059 #p
-    // subscriptions, so polling ensures messages arrive reliably.
-    _startPolling();
+    // No poll timer: the live subscription is the sole event source while
+    // the inbox is open. Poller was removed because it re-fetched duplicate
+    // events every 10s forever on the UI isolate. See
+    // docs/plans/2026-04-05-dm-scaling-fix-design.md.
   }
 
   /// Stop listening for incoming DMs and clean up resources.
@@ -270,8 +255,6 @@ class DmRepository {
     // _resetState() (user switch). Setting it would make a subsequent
     // startListening() call a silent no-op, breaking re-open flows like
     // "user leaves the inbox tab and comes back later".
-    _pollTimer?.cancel();
-    _pollTimer = null;
     _eventLock = null;
     await _giftWrapSubscription?.cancel();
     _giftWrapSubscription = null;
@@ -280,51 +263,6 @@ class DmRepository {
     } on Object {
       // Ignore if subscription doesn't exist
     }
-  }
-
-  /// Periodically poll the relay for new kind 1059 events.
-  ///
-  /// Workaround for relays that accept subscriptions and deliver stored
-  /// events but don't push new real-time events for `#p`-filtered kind 1059.
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(_pollInterval, (_) async {
-      if (_disposed || _pollInProgress) return;
-      _pollInProgress = true;
-
-      try {
-        // NIP-17 gift wraps use randomized created_at (up to 2 days in the
-        // past) so a `since` filter based on wall-clock time won't work.
-        // Instead, fetch the most recent events and rely on dedup to skip
-        // already-processed ones.
-        final filter = nostr_filter.Filter(
-          kinds: [
-            EventKind.giftWrap,
-            EventKind.directMessage,
-            EventKind.eventDeletion,
-          ],
-          p: [_userPubkey],
-          limit: 20,
-        );
-
-        final events = await _nostrClient.queryEvents(
-          [filter],
-          subscriptionId: 'dm_poll_${DateTime.now().millisecondsSinceEpoch}',
-          useCache: false,
-        );
-
-        for (final event in events) {
-          await _handleIncomingEvent(event);
-        }
-      } on Object catch (e) {
-        Log.error(
-          'DM poll error: $e',
-          category: LogCategory.system,
-        );
-      } finally {
-        _pollInProgress = false;
-      }
-    });
   }
 
   // -------------------------------------------------------------------------
