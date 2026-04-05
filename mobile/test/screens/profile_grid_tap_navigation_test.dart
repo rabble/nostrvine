@@ -450,8 +450,7 @@ void main() {
                   body: NestedScrollView(
                     headerSliverBuilder: (context, innerBoxIsScrolled) => [
                       const SliverToBoxAdapter(
-                        child:
-                            SizedBox(height: 200, child: Placeholder()),
+                        child: SizedBox(height: 200, child: Placeholder()),
                       ),
                     ],
                     body: ProfileVideosGrid(
@@ -521,8 +520,7 @@ void main() {
                   body: NestedScrollView(
                     headerSliverBuilder: (context, innerBoxIsScrolled) => [
                       const SliverToBoxAdapter(
-                        child:
-                            SizedBox(height: 200, child: Placeholder()),
+                        child: SizedBox(height: 200, child: Placeholder()),
                       ),
                     ],
                     body: ProfileVideosGrid(
