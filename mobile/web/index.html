@@ -124,12 +124,10 @@
     <div class="loading-spinner"></div>
   </div>
   
-  <script>
-    // Register service worker early
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW registration failed:', e));
-    }
-  </script>
+  <!-- No service worker: build uses --pwa-strategy=none (Flutter's PWA is deprecated,
+       see flutter/flutter#156910). A self-unregister stub remains at /sw.js so any
+       browser that previously registered the old cache-first SW will auto-clean on
+       its next update check. -->
 
   <!-- sql.js for drift/web IndexedDB-backed persistence -->
   <script

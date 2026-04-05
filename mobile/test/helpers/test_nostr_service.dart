@@ -177,6 +177,7 @@ class TestNostrService implements NostrClient {
     List<int> relayTypes = const [],
     bool sendAfterAuth = false,
     bool useCache = true,
+    Duration? timeout,
   }) async {
     final matchingEvents = <Event>[];
 

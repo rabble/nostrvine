@@ -80,10 +80,12 @@ class VideoFeedController extends ChangeNotifier {
     this.preloadBehind = 1,
     this.mediaSourceResolver,
     this.onVideoReady,
+    this.onVideoStalled,
     this.positionCallback,
     this.positionCallbackInterval = const Duration(milliseconds: 250),
     this.slowLoadThreshold = const Duration(seconds: 8),
     this.maxLoopDuration,
+    this.onLog,
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
        _currentIndex = initialIndex.clamp(
@@ -116,6 +118,10 @@ class VideoFeedController extends ChangeNotifier {
   /// Used for triggering background caching, analytics, etc.
   final VideoReadyCallback? onVideoReady;
 
+  /// Hook: Called when the current video repeatedly stalls and should be
+  /// skipped.
+  final VideoStalledCallback? onVideoStalled;
+
   /// Hook: Called periodically with position updates.
   ///
   /// Used for loop enforcement, progress tracking, etc.
@@ -144,6 +150,13 @@ class VideoFeedController extends ChangeNotifier {
   /// [PlaylistMode] controls looping).
   final Duration? maxLoopDuration;
 
+  /// Optional structured logging callback.
+  ///
+  /// When provided, log messages are forwarded to this callback in addition
+  /// to `debugPrint`. Use this to pipe pooled player diagnostics into the
+  /// app's structured logging system (e.g., for production log exports).
+  final void Function(String level, String message)? onLog;
+
   /// Unmodifiable list of videos.
   List<VideoItem> get videos => List.unmodifiable(_videos);
 
@@ -170,9 +183,13 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, String> _openedSources = {};
   final Map<int, List<String>> _playbackSources = {};
   final Map<int, int> _playbackSourceIndices = {};
+  final Map<int, int> _stallRetryCount = {};
+  final Set<int> _readyVideosAwaitingRecovery = {};
   final Set<int> _slowLoadIndices = {};
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
+
+  static const _maxStallRetries = 1;
 
   /// Stale-position recovery: tracks the last observed position and how many
   /// consecutive heartbeats it has remained unchanged while the player reports
@@ -186,11 +203,18 @@ class VideoFeedController extends ChangeNotifier {
   int _staleGraceHeartbeats = 0;
 
   /// Number of consecutive stale heartbeats before triggering recovery.
-  /// With a 100ms heartbeat interval, this means ~300ms of confirmed
-  /// frozen video before recovery kicks in. False positives cause only
-  /// a brief ~200ms micro-stutter (pause+seek+play at same position),
-  /// which is far less disruptive than a multi-second visible freeze.
-  static const _staleHeartbeatThreshold = 3;
+  /// With a 100ms heartbeat interval, this means ~800ms of confirmed
+  /// frozen video before recovery kicks in.
+  ///
+  /// Raised from 3 (300ms) to 8 (800ms) because iOS AVFoundation/media_kit
+  /// decoders can legitimately pause position updates for 300-500ms during
+  /// normal playback (B-frame reordering, keyframe seeks) without being
+  /// actually stuck. The shorter threshold caused visible pause-seek-play
+  /// stutter on healthy videos. Since PR #2746 added robust buffer-based
+  /// stall recovery via `_readyVideosAwaitingRecovery`, this heartbeat
+  /// watchdog is now a last-resort safety net for decoder freezes where
+  /// buffering events never fire — so a longer window is safe.
+  static const _staleHeartbeatThreshold = 8;
 
   /// After this many failed seek-recovery attempts with no position progress,
   /// give up and mark the video as error.
@@ -290,6 +314,17 @@ class VideoFeedController extends ChangeNotifier {
 
   void _logDebug(String message) {
     debugPrint('[POOLED] $message');
+    onLog?.call('debug', message);
+  }
+
+  void _logWarning(String message) {
+    debugPrint('[POOLED] ⚠️ $message');
+    onLog?.call('warning', message);
+  }
+
+  void _logError(String message) {
+    debugPrint('[POOLED] ❌ $message');
+    onLog?.call('error', message);
   }
 
   void _logLoadingSnapshot(int index, {required String reason}) {
@@ -335,7 +370,7 @@ class VideoFeedController extends ChangeNotifier {
         // Current video stuck in buffering too long — try next source
         // before giving up completely.
         if (index == _currentIndex) {
-          _logDebug(
+          _logWarning(
             'load_gave_up ${_videoDebugDetails(index)} '
             'elapsedMs=$elapsedMs',
           );
@@ -458,8 +493,14 @@ class VideoFeedController extends ChangeNotifier {
     return VideoErrorType.generic;
   }
 
-  void _markLoadError(int index, [String? errorMessage]) {
+  void _markLoadError({
+    required int index,
+    String? errorMessage,
+    bool notifyStalled = false,
+  }) {
     if (_isDisposed) return;
+    _stallRetryCount.remove(index);
+    _readyVideosAwaitingRecovery.remove(index);
     _loadStates[index] = LoadState.error;
     if (errorMessage != null) {
       _errorTypes[index] = _classifyError(errorMessage, index);
@@ -467,15 +508,24 @@ class VideoFeedController extends ChangeNotifier {
     // If no message, _errorTypes[index] may already be set from the
     // error stream handler. Fall back to generic if nothing was stored.
     _errorTypes[index] ??= VideoErrorType.generic;
+    _logError(
+      'mark_load_error ${_videoDebugDetails(index)} '
+      'errorMessage=$errorMessage '
+      'errorType=${_errorTypes[index]} '
+      'openedSource=${_openedSources[index]}',
+    );
     _notifyIndex(index);
+    if (notifyStalled) {
+      onVideoStalled?.call(index);
+    }
   }
 
   Future<void> _retryCurrentVideoWithNextSource(int index) async {
     final pooledPlayer = _loadedPlayers[index];
     final player = pooledPlayer?.player;
     if (player == null) {
-      _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
-      _markLoadError(index);
+      _logError('stuck_playback ${_videoDebugDetails(index)} giving up');
+      _markLoadError(index: index, notifyStalled: true);
       return;
     }
 
@@ -484,12 +534,12 @@ class VideoFeedController extends ChangeNotifier {
     final nextSourceIndex = currentSourceIndex + 1;
 
     if (playbackSources == null || nextSourceIndex >= playbackSources.length) {
-      _logDebug('stuck_playback ${_videoDebugDetails(index)} giving up');
-      _markLoadError(index);
+      _logError('stuck_playback ${_videoDebugDetails(index)} giving up');
+      _markLoadError(index: index, notifyStalled: true);
       return;
     }
 
-    _logDebug(
+    _logWarning(
       'stuck_failover ${_videoDebugDetails(index)} '
       'failedSource=${_openedSources[index]} '
       'retrySource=${playbackSources[nextSourceIndex]}',
@@ -522,12 +572,16 @@ class VideoFeedController extends ChangeNotifier {
       if (!player.state.buffering) {
         _onBufferReady(index);
       }
-    } on Exception catch (error, stack) {
-      debugPrint(
-        '[POOLED] stuck_retry_failed ${_videoDebugDetails(index)} '
-        'error=$error\n$stack',
+    } on Exception catch (error) {
+      _logError(
+        'stuck_retry_failed ${_videoDebugDetails(index)} '
+        'error=$error',
       );
-      _markLoadError(index, error.toString());
+      _markLoadError(
+        index: index,
+        errorMessage: error.toString(),
+        notifyStalled: true,
+      );
     }
   }
 
@@ -921,14 +975,18 @@ class VideoFeedController extends ChangeNotifier {
         _onBufferReady(index);
       }
     } on Exception catch (e, stack) {
-      debugPrint(
-        '[POOLED] load_failed ${_videoDebugDetails(index)} '
+      _logError(
+        'load_failed ${_videoDebugDetails(index)} '
         'videoCount=${_videos.length} '
         'elapsedMs=${_loadStopwatches[index]?.elapsedMilliseconds} '
         'error=$e\n$stack',
       );
       _stopLoadWatchdog(index);
-      _markLoadError(index, e.toString());
+      _markLoadError(
+        index: index,
+        errorMessage: e.toString(),
+        notifyStalled: index == _currentIndex,
+      );
     } finally {
       _loadingIndices.remove(index);
     }
@@ -988,6 +1046,11 @@ class VideoFeedController extends ChangeNotifier {
 
     if (index == _currentIndex && _isActive && !_isPaused) {
       // This is the current video - play it with audio
+      _logDebug(
+        'STUTTER_DEBUG buffer_ready_play index=$index '
+        'positionMs=${player.state.position.inMilliseconds} '
+        '${_videoDebugDetails(index)}',
+      );
       unawaited(player.setVolume(100));
 
       // Start position callback timer for current video
@@ -1044,17 +1107,57 @@ class VideoFeedController extends ChangeNotifier {
         'positionMs='
         '${pooledPlayer.player.state.position.inMilliseconds}',
       );
-      if (!isBuffering) {
-        if (_loadStates[index] == LoadState.loading) {
-          _onBufferReady(index);
-        } else if (_loadStates[index] == LoadState.ready &&
-            index == _currentIndex &&
-            _isActive &&
-            !_isPaused) {
-          final player = _loadedPlayers[index]?.player;
-          if (player != null) {
-            unawaited(player.play());
+      if (isBuffering) {
+        if (_loadStates[index] == LoadState.ready) {
+          _readyVideosAwaitingRecovery.add(index);
+        }
+        return;
+      }
+
+      if (_loadStates[index] == LoadState.loading) {
+        _onBufferReady(index);
+      } else if (_loadStates[index] == LoadState.ready &&
+          index == _currentIndex &&
+          _isActive &&
+          !_isPaused) {
+        final player = _loadedPlayers[index]?.player;
+        if (player != null) {
+          final wasRecovering = _readyVideosAwaitingRecovery.remove(index);
+          if (wasRecovering) {
+            final positionMs =
+                pooledPlayer.player.state.position.inMilliseconds;
+            final durationMs =
+                pooledPlayer.player.state.duration.inMilliseconds;
+
+            if (positionMs == 0 && durationMs == 0) {
+              final retries = _stallRetryCount[index] =
+                  (_stallRetryCount[index] ?? 0) + 1;
+              if (retries > _maxStallRetries) {
+                _logDebug(
+                  'stall_circuit_breaker ${_videoDebugDetails(index)} '
+                  'retries=$retries — giving up',
+                );
+                _markLoadError(index: index, notifyStalled: true);
+                return;
+              }
+            } else {
+              _stallRetryCount.remove(index);
+            }
           }
+
+          // Always call play() on rebuffer completion — even when
+          // player.state.playing reports true. mpv can report
+          // playing=true while the decoder is actually stalled with no
+          // frame output, especially after a seek or network hiccup.
+          // The play() call nudges the decoder to resume frame output.
+          _logDebug(
+            'rebuffer_auto_play index=$index '
+            'positionMs=${player.state.position.inMilliseconds} '
+            'playing=${player.state.playing} '
+            'wasRecovering=$wasRecovering '
+            '${_videoDebugDetails(index)}',
+          );
+          unawaited(player.play());
         }
       }
     });
@@ -1077,11 +1180,12 @@ class VideoFeedController extends ChangeNotifier {
     _errorSubscriptions[index] = pooledPlayer.player.stream.error.listen((
       error,
     ) {
-      _logDebug(
+      final loadState = _loadStates[index];
+      _logWarning(
         'player_error ${_videoDebugDetails(index)} '
         'error=$error '
         'source=${_openedSources[index]} '
-        'loadState=${_loadStates[index]}',
+        'loadState=$loadState',
       );
       // Classify the error immediately so the type is available if retry
       // exhausts all sources and _markLoadError is called without a message.
@@ -1090,7 +1194,7 @@ class VideoFeedController extends ChangeNotifier {
       // successfully (LoadState.ready), mpv may emit non-critical errors
       // (e.g. on loop seeks, transient network hiccups) that should not
       // trigger a source failover.
-      if (_loadStates[index] == LoadState.loading) {
+      if (loadState == LoadState.loading) {
         unawaited(_retryCurrentVideoWithNextSource(index));
       }
     });
@@ -1099,6 +1203,9 @@ class VideoFeedController extends ChangeNotifier {
   void _playVideo(int index) {
     final player = _loadedPlayers[index]?.player;
     if (player == null) return;
+
+    _stallRetryCount.remove(index);
+    _readyVideosAwaitingRecovery.remove(index);
 
     // The player is paused (from _onBufferReady or _pauseVideo).
     // Unmute and play, seeking to zero only if the video reached the end
@@ -1272,7 +1379,21 @@ class VideoFeedController extends ChangeNotifier {
     if (_lastHeartbeatPositionMs != null &&
         positionMs == _lastHeartbeatPositionMs) {
       _staleHeartbeatCount++;
+      _logDebug(
+        'STUTTER_DEBUG stale_heartbeat index=$index '
+        'count=$_staleHeartbeatCount/$_staleHeartbeatThreshold '
+        'positionMs=$positionMs '
+        'playing=${player.state.playing} '
+        'buffering=${player.state.buffering}',
+      );
     } else {
+      if (_staleHeartbeatCount > 0) {
+        _logDebug(
+          'STUTTER_DEBUG stale_cleared index=$index '
+          'wasCount=$_staleHeartbeatCount '
+          'prevMs=$_lastHeartbeatPositionMs newMs=$positionMs',
+        );
+      }
       _staleHeartbeatCount = 0;
     }
     _lastHeartbeatPositionMs = positionMs;
@@ -1285,13 +1406,18 @@ class VideoFeedController extends ChangeNotifier {
       // After repeated failed recoveries, the stream is likely corrupt
       // (e.g. missing h264 PPS headers). Give up so the user can swipe past.
       if (_staleRecoveryAttempts > _maxStaleRecoveryAttempts) {
-        _logDebug(
+        _logError(
           'stale_gave_up index=$index '
           'attempts=$_staleRecoveryAttempts '
+          'positionMs=$positionMs '
           '${_videoDebugDetails(index)}',
         );
         _staleRecoveryAttempts = 0;
-        _markLoadError(index, 'stale_playback');
+        _markLoadError(
+          index: index,
+          errorMessage: 'stale_playback',
+          notifyStalled: true,
+        );
         return;
       }
 
@@ -1317,7 +1443,13 @@ class VideoFeedController extends ChangeNotifier {
 
     unawaited(() async {
       try {
+        _logDebug(
+          'STUTTER_DEBUG recovery_pause index=$index positionMs=$positionMs',
+        );
         await player.pause();
+        _logDebug(
+          'STUTTER_DEBUG recovery_seek index=$index positionMs=$positionMs',
+        );
         await player.seek(Duration(milliseconds: positionMs));
 
         // Guard: user may have swiped away during the seek.
@@ -1331,6 +1463,10 @@ class VideoFeedController extends ChangeNotifier {
         }
 
         await player.setVolume(100);
+        _logDebug(
+          'STUTTER_DEBUG recovery_play index=$index '
+          'positionMs=${player.state.position.inMilliseconds}',
+        );
         await player.play();
         _logDebug(
           'stale_recovery_complete index=$index '
@@ -1384,6 +1520,8 @@ class VideoFeedController extends ChangeNotifier {
     _stopLoadWatchdog(index);
     _loadStopwatches.remove(index)?.stop();
     _openedSources.remove(index);
+    _stallRetryCount.remove(index);
+    _readyVideosAwaitingRecovery.remove(index);
     _slowLoadIndices.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
@@ -1451,6 +1589,8 @@ class VideoFeedController extends ChangeNotifier {
     }
     _loadStopwatches.clear();
     _openedSources.clear();
+    _stallRetryCount.clear();
+    _readyVideosAwaitingRecovery.clear();
     _playbackSources.clear();
     _playbackSourceIndices.clear();
 

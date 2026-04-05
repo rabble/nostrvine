@@ -127,12 +127,12 @@ class PooledVideoPlayer extends StatelessWidget {
               if (loadState == .error)
                 errorBuilder?.call(
                       context,
-                      () => feedController.retryLoad(
-                        feedController.currentIndex,
-                      ),
+                      () => feedController.retryLoad(index),
                       state.errorType,
                     ) ??
-                    const _DefaultErrorState()
+                    _DefaultErrorState(
+                      onRetry: () => feedController.retryLoad(index),
+                    )
               else ...[
                 /// Thumbnail / spinner shown until the first frame.
                 loadingBuilder?.call(context) ??
@@ -419,22 +419,39 @@ class _DefaultLoadingState extends StatelessWidget {
 
 /// Default error state.
 class _DefaultErrorState extends StatelessWidget {
-  const _DefaultErrorState();
+  const _DefaultErrorState({this.onRetry});
+
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: Color(0xFF000000),
+    return ColoredBox(
+      color: const Color(0xFF000000),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, color: Color(0xB3FFFFFF), size: 48),
-            SizedBox(height: 16),
-            Text(
+            const Icon(
+              Icons.error_outline,
+              color: Color(0xB3FFFFFF),
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            const Text(
               'Failed to load video',
               style: TextStyle(color: Color(0xB3FFFFFF), fontSize: 16),
             ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, color: Color(0xFFFFFFFF)),
+                label: const Text(
+                  'Tap to retry',
+                  style: TextStyle(color: Color(0xFFFFFFFF)),
+                ),
+              ),
+            ],
           ],
         ),
       ),
