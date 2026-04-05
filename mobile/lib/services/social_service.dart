@@ -4,6 +4,7 @@
 // ABOUTME: Note: NIP-18 reposts are handled by RepostsRepository
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -15,6 +16,7 @@ import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Represents a follow set (NIP-51 Kind 30000)
 class FollowSet {
@@ -90,10 +92,12 @@ class SocialService {
     PersonalEventCacheService? personalEventCache,
     ProfileRepository? profileRepository,
     List<String>? indexerRelayUrls,
+    SharedPreferences? sharedPreferences,
   }) : _personalEventCache = personalEventCache,
        _profileRepository = profileRepository,
        _indexerRelayUrls =
-           indexerRelayUrls ?? IndexerRelayConfig.defaultIndexers {
+           indexerRelayUrls ?? IndexerRelayConfig.defaultIndexers,
+       _sharedPreferences = sharedPreferences {
     _initialize();
   }
   final NostrClient _nostrService;
@@ -101,8 +105,21 @@ class SocialService {
   final PersonalEventCacheService? _personalEventCache;
   final ProfileRepository? _profileRepository;
   final List<String> _indexerRelayUrls;
+  final SharedPreferences? _sharedPreferences;
 
-  // Cache for follower/following counts
+  /// SharedPreferences key prefix for persisted follower stats.
+  static const _statsKeyPrefix = 'follower_stats_';
+
+  /// Counts older than this are considered stale and will be replaced
+  /// even if the new value is lower.
+  static const _staleDuration = Duration(hours: 1);
+
+  /// A new count must drop below this fraction of the persisted count
+  /// before being treated as a genuine decrease (when not stale).
+  /// Drops within this threshold are assumed to be relay query variance.
+  static const _hysteresisThreshold = 0.8;
+
+  // In-memory cache for follower/following counts
   final Map<String, Map<String, int>> _followerStats =
       <String, Map<String, int>>{};
 
@@ -112,7 +129,7 @@ class SocialService {
   /// Initialize the service
   Future<void> _initialize() async {
     Log.debug(
-      '🤝 Initializing SocialService',
+      'Initializing SocialService',
       name: 'SocialService',
       category: LogCategory.system,
     );
@@ -122,6 +139,81 @@ class SocialService {
       name: 'SocialService',
       category: LogCategory.system,
     );
+  }
+
+  // === PERSISTENT COUNT CACHE ===
+
+  /// Load persisted follower stats from SharedPreferences.
+  ///
+  /// Returns null if no persisted data exists for this pubkey.
+  ({int followers, int following, DateTime timestamp})? _loadPersistedStats(
+    String pubkey,
+  ) {
+    final prefs = _sharedPreferences;
+    if (prefs == null) return null;
+
+    final json = prefs.getString('$_statsKeyPrefix$pubkey');
+    if (json == null) return null;
+
+    try {
+      final map = jsonDecode(json) as Map<String, dynamic>;
+      return (
+        followers: map['followers'] as int? ?? 0,
+        following: map['following'] as int? ?? 0,
+        timestamp: DateTime.fromMillisecondsSinceEpoch(
+          map['timestamp'] as int? ?? 0,
+        ),
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to parse persisted stats for $pubkey: $e',
+        name: 'SocialService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
+  /// Persist follower stats to SharedPreferences.
+  void _persistStats(String pubkey, Map<String, int> stats) {
+    final prefs = _sharedPreferences;
+    if (prefs == null) return;
+
+    final json = jsonEncode({
+      'followers': stats['followers'],
+      'following': stats['following'],
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+    prefs.setString('$_statsKeyPrefix$pubkey', json);
+  }
+
+  /// Apply hysteresis: keep the persisted (higher) count when the fresh
+  /// count is lower but within the threshold, unless the persisted value
+  /// is stale.
+  ///
+  /// Returns the stabilized count.
+  int _applyHysteresis({
+    required int freshCount,
+    required int persistedCount,
+    required DateTime persistedTimestamp,
+  }) {
+    // Fresh count is higher → always accept
+    if (freshCount >= persistedCount) return freshCount;
+
+    // Persisted count is stale → accept the fresh count
+    if (DateTime.now().difference(persistedTimestamp) > _staleDuration) {
+      return freshCount;
+    }
+
+    // Fresh count is lower — if the drop is within the threshold, keep
+    // the persisted count (assumed relay variance). If it dropped below
+    // the threshold, accept the new count as a genuine change.
+    final threshold = (persistedCount * _hysteresisThreshold).ceil();
+    if (freshCount >= threshold) {
+      return persistedCount;
+    }
+
+    return freshCount;
   }
 
   // === FOLLOWER STATS ===
@@ -152,7 +244,11 @@ class SocialService {
 
   // === FOLLOWER STATS ===
 
-  /// Get follower and following counts for a specific pubkey
+  /// Get follower and following counts for a specific pubkey.
+  ///
+  /// Returns in-memory cached data when available, otherwise fetches from
+  /// the network and stabilizes the result against a persistent cache using
+  /// hysteresis to avoid visible count fluctuations across app restarts.
   Future<Map<String, int>> getFollowerStats(String pubkey) async {
     Log.debug(
       'Fetching follower stats for: $pubkey',
@@ -161,11 +257,11 @@ class SocialService {
     );
 
     try {
-      // Check cache first
+      // Check in-memory cache first
       final cachedStats = _followerStats[pubkey];
       if (cachedStats != null) {
         Log.debug(
-          '📱 Using cached follower stats: $cachedStats',
+          'Using cached follower stats: $cachedStats',
           name: 'SocialService',
           category: LogCategory.system,
         );
@@ -173,13 +269,31 @@ class SocialService {
       }
 
       // Fetch from network
-      final stats = await _fetchFollowerStats(pubkey);
+      final freshStats = await _fetchFollowerStats(pubkey);
 
-      // Cache the result only if we got real data — avoid persisting
-      // zeros from failed relay queries so the next call retries.
-      if (stats['followers']! > 0 || stats['following']! > 0) {
-        _followerStats[pubkey] = stats;
+      // When all sources returned zero, treat it as a network failure
+      // and fall back to persisted data rather than showing 0.
+      if (freshStats['followers'] == 0 && freshStats['following'] == 0) {
+        final persisted = _loadPersistedStats(pubkey);
+        if (persisted != null &&
+            (persisted.followers > 0 || persisted.following > 0)) {
+          final fallback = {
+            'followers': persisted.followers,
+            'following': persisted.following,
+          };
+          _followerStats[pubkey] = fallback;
+          return fallback;
+        }
+        return freshStats;
       }
+
+      // Apply hysteresis against the persistent cache so counts don't
+      // visibly fluctuate across app restarts due to relay variance.
+      final stats = _stabilizeStats(pubkey, freshStats);
+
+      // Cache in memory and persist.
+      _followerStats[pubkey] = stats;
+      _persistStats(pubkey, stats);
 
       Log.debug(
         'Follower stats fetched: $stats',
@@ -193,8 +307,56 @@ class SocialService {
         name: 'SocialService',
         category: LogCategory.system,
       );
+
+      // On network failure, try returning persisted data so the UI
+      // shows the last known count instead of zero.
+      final persisted = _loadPersistedStats(pubkey);
+      if (persisted != null) {
+        final fallback = {
+          'followers': persisted.followers,
+          'following': persisted.following,
+        };
+        _followerStats[pubkey] = fallback;
+        return fallback;
+      }
+
       return {'followers': 0, 'following': 0};
     }
+  }
+
+  /// Compare fresh network counts against the persistent cache and apply
+  /// hysteresis to each counter independently.
+  Map<String, int> _stabilizeStats(
+    String pubkey,
+    Map<String, int> freshStats,
+  ) {
+    final persisted = _loadPersistedStats(pubkey);
+    if (persisted == null) return freshStats;
+
+    final stableFollowers = _applyHysteresis(
+      freshCount: freshStats['followers']!,
+      persistedCount: persisted.followers,
+      persistedTimestamp: persisted.timestamp,
+    );
+    final stableFollowing = _applyHysteresis(
+      freshCount: freshStats['following']!,
+      persistedCount: persisted.following,
+      persistedTimestamp: persisted.timestamp,
+    );
+
+    if (stableFollowers != freshStats['followers'] ||
+        stableFollowing != freshStats['following']) {
+      Log.info(
+        'Hysteresis stabilized stats for $pubkey: '
+        'fresh=${freshStats["followers"]}/${freshStats["following"]} '
+        '-> stable=$stableFollowers/$stableFollowing '
+        '(persisted=${persisted.followers}/${persisted.following})',
+        name: 'SocialService',
+        category: LogCategory.system,
+      );
+    }
+
+    return {'followers': stableFollowers, 'following': stableFollowing};
   }
 
   /// Fetch follower stats from the network.
@@ -412,7 +574,7 @@ class SocialService {
       }
 
       final result = await completer.future.timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 8),
         onTimeout: () => followerPubkeys.length,
       );
 

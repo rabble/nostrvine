@@ -1230,6 +1230,7 @@ SocialService socialService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
   final profileRepository = ref.watch(profileRepositoryProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
 
   final env = ref.watch(currentEnvironmentProvider);
 
@@ -1239,6 +1240,7 @@ SocialService socialService(Ref ref) {
     personalEventCache: personalEventCache,
     profileRepository: profileRepository,
     indexerRelayUrls: env.indexerRelays,
+    sharedPreferences: prefs,
   );
 }
 

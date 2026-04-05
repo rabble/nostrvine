@@ -285,7 +285,7 @@ class FollowRepository {
   }
 
   /// Timeout for fetching followers from relays
-  static const _fetchFollowersTimeout = Duration(seconds: 5);
+  static const _fetchFollowersTimeout = Duration(seconds: 8);
 
   /// Fetch followers for a given pubkey.
   ///
@@ -450,7 +450,7 @@ class FollowRepository {
       }
 
       final result = await completer.future.timeout(
-        const Duration(seconds: 5),
+        _fetchFollowersTimeout,
         onTimeout: followerPubkeys.toList,
       );
 
