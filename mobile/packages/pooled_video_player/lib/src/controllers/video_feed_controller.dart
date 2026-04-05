@@ -1045,13 +1045,14 @@ class VideoFeedController extends ChangeNotifier {
     onVideoReady?.call(index, player);
 
     if (index == _currentIndex && _isActive && !_isPaused) {
-      // This is the current video - play it with audio
+      // This is the current video - complete the initial handoff from
+      // muted buffering into normal audible playback.
       _logDebug(
         'STUTTER_DEBUG buffer_ready_play index=$index '
         'positionMs=${player.state.position.inMilliseconds} '
         '${_videoDebugDetails(index)}',
       );
-      unawaited(player.setVolume(100));
+      unawaited(_resume(index, player));
 
       // Start position callback timer for current video
       _startPositionTimer(index);
