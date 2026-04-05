@@ -66,6 +66,20 @@ void main() {
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
 
+      // Stub getNewestMessageTimestamp for startListening() windowing.
+      when(
+        () => mockConversationsDao.getNewestMessageTimestamp(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Stub getAllConversations for _mergeDuplicateConversations().
+      when(
+        () => mockConversationsDao.getAllConversations(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => []);
+
       // Global stub for runInTransaction — executes the callback directly.
       // Stub both <void> and <Null> since Dart infers different type args
       // depending on whether the callback returns or is void-typed.
@@ -570,7 +584,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
 
         // Allow async processing
@@ -647,7 +661,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -692,7 +706,7 @@ void main() {
           rumorDecryptor: (_, _) async => createRumorEvent(),
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -746,7 +760,7 @@ void main() {
           rumorDecryptor: (_, _) async => null,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -802,7 +816,7 @@ void main() {
           rumorDecryptor: (_, _) async => wrongKindRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -858,7 +872,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -920,7 +934,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -985,7 +999,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -1052,7 +1066,7 @@ void main() {
           },
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap1);
         await Future<void>.delayed(Duration.zero);
         controller.add(giftWrap2);
@@ -1133,7 +1147,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         // Should not throw — error is caught internally
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
@@ -1148,7 +1162,7 @@ void main() {
     // -----------------------------------------------------------------
 
     group('subscription lifecycle', () {
-      test('startListening subscribes to kind 1059 events', () {
+      test('startListening subscribes to kind 1059 events', () async {
         final controller = StreamController<Event>();
         when(
           () => mockNostrClient.subscribe(
@@ -1158,7 +1172,7 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final repository = createRepository();
-        repository.startListening();
+        await repository.startListening();
 
         verify(
           () => mockNostrClient.subscribe(
@@ -1170,7 +1184,7 @@ void main() {
         controller.close();
       });
 
-      test('startListening is idempotent', () {
+      test('startListening is idempotent', () async {
         final controller = StreamController<Event>();
         when(
           () => mockNostrClient.subscribe(
@@ -1180,8 +1194,8 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final repository = createRepository();
-        repository.startListening();
-        repository.startListening(); // Second call is no-op
+        await repository.startListening();
+        await repository.startListening(); // Second call is no-op
 
         verify(
           () => mockNostrClient.subscribe(
@@ -1206,7 +1220,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final repository = createRepository();
-        repository.startListening();
+        await repository.startListening();
         await repository.stopListening();
 
         verify(
@@ -1714,7 +1728,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -1865,7 +1879,7 @@ void main() {
           rumorDecryptor: (_, _) async => fileRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -1955,7 +1969,7 @@ void main() {
           rumorDecryptor: (_, _) async => incompleteRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -2452,7 +2466,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumorFromMod,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -2732,7 +2746,7 @@ void main() {
           nip04Decryptor: (pubkey, ciphertext) async => 'Hello!',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2786,7 +2800,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'Decrypted NIP-04 text',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2850,7 +2864,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'My sent message',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2893,7 +2907,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'should not reach',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2945,7 +2959,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'should not reach',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2997,7 +3011,7 @@ void main() {
           nip04Decryptor: (_, _) async => null,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3079,7 +3093,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'NIP-04 message',
         );
 
-        repository.startListening();
+        await repository.startListening();
 
         // Send both event types
         controller.add(giftWrap);
@@ -3258,7 +3272,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'Legacy message',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3807,7 +3821,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -3940,7 +3954,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -4104,7 +4118,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -4228,7 +4242,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 

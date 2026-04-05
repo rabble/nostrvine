@@ -90,14 +90,13 @@ class DmRepository {
   Nip04Decryptor? _nip04Decryptor;
 
   StreamSubscription<Event>? _giftWrapSubscription;
-  Timer? _pollTimer;
   bool _disposed = false;
 
-  /// Whether a poll is currently in progress (prevents overlap).
-  bool _pollInProgress = false;
+  /// Whether duplicate conversation merge has run at least once.
+  bool _hasMergedConversations = false;
 
-  /// Serializes event processing so poll and subscription events
-  /// never race into the dedup/insert path concurrently.
+  /// Serializes event processing so subscription events never race
+  /// into the dedup/insert path concurrently.
   Future<void>? _eventLock;
 
   /// User-scoped subscription ID to prevent collision when the provider
@@ -117,14 +116,16 @@ class DmRepository {
   /// subscription require initialization.
   bool get isInitialized => _signer != null && _userPubkey.isNotEmpty;
 
-  /// Set auth credentials and start the relay subscription.
+  /// Set auth credentials without starting the relay subscription.
   ///
   /// Called by the provider when the user's keys become available.
-  /// Read methods work before this; send/subscribe require it.
+  /// Read methods work before this; send requires it.
+  /// The relay subscription is started separately by [startListening()],
+  /// which should be driven by the inbox UI lifecycle.
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
   /// no-ops. If called with a different user, resets and re-initializes.
-  void initialize({
+  void setCredentials({
     required String userPubkey,
     required NostrSigner signer,
     required NIP17MessageService messageService,
@@ -147,22 +148,16 @@ class DmRepository {
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
-    startListening();
-
-    // Merge duplicate conversations created by extra p-tags (idempotent).
-    unawaited(_mergeDuplicateConversations());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
   /// different user. Stops the relay subscription and clears credentials.
   ///
-  /// Synchronous so [initialize] can call it inline. Subscription cancel
+  /// Synchronous so [setCredentials] can call it inline. Subscription cancel
   /// is fire-and-forget — the old subscription filtered by the old pubkey
   /// so any late arrivals are harmless (dedup rejects them).
   void _resetState() {
     _disposed = true;
-    _pollTimer?.cancel();
-    _pollTimer = null;
     _eventLock = null;
     unawaited(_giftWrapSubscription?.cancel());
     _giftWrapSubscription = null;
@@ -176,20 +171,15 @@ class DmRepository {
     _signer = null;
     _messageService = null;
     _disposed = false;
-    _pollInProgress = false;
+    _hasMergedConversations = false;
     _subscriptionId = 'dm_inbox';
   }
 
   /// Delay before attempting to re-subscribe after stream closure.
   static const _reconnectDelay = Duration(seconds: 2);
 
-  /// Interval for polling the relay for new kind 1059 events.
-  ///
-  /// Some relays deliver stored events on subscription but don't push new
-  /// real-time events for `#p`-filtered kind 1059 subscriptions (possibly
-  /// due to AUTH requirements or relay implementation). This poll ensures
-  /// messages arrive within a bounded delay regardless of relay behavior.
-  static const _pollInterval = Duration(seconds: 10);
+  /// Maximum events to fetch on the first inbox open (no prior sync).
+  static const _initialFetchLimit = 50;
 
   // -------------------------------------------------------------------------
   // Subscription lifecycle
@@ -200,14 +190,30 @@ class DmRepository {
   /// Subscribes to kind 1059 events p-tagged to the current user.
   /// Each received event is decrypted and persisted automatically.
   ///
+  /// Uses count-based windowing to avoid replaying the full event history:
+  /// - First open (no messages in DB): fetches the most recent 50 events.
+  /// - Subsequent opens: fetches events since the newest synced timestamp
+  ///   minus a 2-day overlap (absorbs NIP-17 randomized timestamps).
+  ///
   /// If the relay stream closes unexpectedly (e.g. relay disconnect,
   /// NostrClient rebuild), automatically re-subscribes after a brief delay.
-  ///
-  /// Also starts a periodic health check that reconnects relays when they
-  /// become disconnected (e.g. from WebSocket idle timeout). This is
-  /// critical on iOS where connections are dropped more aggressively.
-  void startListening() {
+  Future<void> startListening() async {
     if (_giftWrapSubscription != null || _disposed || !isInitialized) return;
+
+    // Merge duplicate conversations on first listen (idempotent).
+    if (!_hasMergedConversations) {
+      _hasMergedConversations = true;
+      unawaited(_mergeDuplicateConversations());
+    }
+
+    // Determine sync window: use newest message timestamp with 2-day
+    // overlap, or fall back to a count-limited initial fetch.
+    final newestTimestamp = await _conversationsDao.getNewestMessageTimestamp(
+      ownerPubkey: _ownerPubkey,
+    );
+
+    // 2-day overlap in seconds absorbs NIP-17 randomized created_at.
+    const twoDaysInSeconds = 2 * 24 * 60 * 60; // 172 800
 
     final filter = nostr_filter.Filter(
       kinds: [
@@ -216,6 +222,10 @@ class DmRepository {
         EventKind.eventDeletion,
       ],
       p: [_userPubkey],
+      limit: newestTimestamp == null ? _initialFetchLimit : null,
+      since: newestTimestamp != null
+          ? newestTimestamp - twoDaysInSeconds
+          : null,
     );
 
     Log.info(
@@ -255,18 +265,11 @@ class DmRepository {
         }
       },
     );
-
-    // Start periodic polling for new events.
-    // Some relays don't push real-time events for kind 1059 #p
-    // subscriptions, so polling ensures messages arrive reliably.
-    _startPolling();
   }
 
   /// Stop listening for incoming DMs and clean up resources.
   Future<void> stopListening() async {
     _disposed = true;
-    _pollTimer?.cancel();
-    _pollTimer = null;
     _eventLock = null;
     await _giftWrapSubscription?.cancel();
     _giftWrapSubscription = null;
@@ -277,50 +280,10 @@ class DmRepository {
     }
   }
 
-  /// Periodically poll the relay for new kind 1059 events.
-  ///
-  /// Workaround for relays that accept subscriptions and deliver stored
-  /// events but don't push new real-time events for `#p`-filtered kind 1059.
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(_pollInterval, (_) async {
-      if (_disposed || _pollInProgress) return;
-      _pollInProgress = true;
-
-      try {
-        // NIP-17 gift wraps use randomized created_at (up to 2 days in the
-        // past) so a `since` filter based on wall-clock time won't work.
-        // Instead, fetch the most recent events and rely on dedup to skip
-        // already-processed ones.
-        final filter = nostr_filter.Filter(
-          kinds: [
-            EventKind.giftWrap,
-            EventKind.directMessage,
-            EventKind.eventDeletion,
-          ],
-          p: [_userPubkey],
-          limit: 20,
-        );
-
-        final events = await _nostrClient.queryEvents(
-          [filter],
-          subscriptionId: 'dm_poll_${DateTime.now().millisecondsSinceEpoch}',
-          useCache: false,
-        );
-
-        for (final event in events) {
-          await _handleIncomingEvent(event);
-        }
-      } on Object catch (e) {
-        Log.error(
-          'DM poll error: $e',
-          category: LogCategory.system,
-        );
-      } finally {
-        _pollInProgress = false;
-      }
-    });
-  }
+  // NOTE: The periodic poller (_startPolling / _pollTimer) was removed in
+  // #2766. The WebSocket subscription is now the sole event source while
+  // the inbox is visible. Windowed `since` filters on re-subscribe catch
+  // any events missed between inbox visits.
 
   // -------------------------------------------------------------------------
   // Receive pipeline
@@ -328,8 +291,8 @@ class DmRepository {
 
   /// Routes an incoming event to the correct handler based on kind.
   ///
-  /// Serialized via [_eventLock] so that poll events and subscription
-  /// events never race into the dedup/insert path concurrently.
+  /// Serialized via [_eventLock] so that subscription events never race
+  /// into the dedup/insert path concurrently.
   Future<void> _handleIncomingEvent(Event event) async {
     // Wait for any in-flight event processing to complete.
     while (_eventLock != null) {
@@ -403,20 +366,8 @@ class DmRepository {
 
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
     try {
-      Log.debug(
-        'Received gift wrap event ${giftWrapEvent.id} '
-        'from ${giftWrapEvent.pubkey}',
-        category: LogCategory.system,
-      );
-
-      // Dedup: skip if already processed
-      if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
-        Log.debug(
-          'Skipping duplicate gift wrap ${giftWrapEvent.id}',
-          category: LogCategory.system,
-        );
-        return;
-      }
+      // Dedup: skip if already processed.
+      if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) return;
 
       // Decrypt: gift wrap → seal → rumor
       final signer = _signer;
@@ -472,14 +423,7 @@ class DmRepository {
         createdAt: rumorEvent.createdAt,
         ownerPubkey: _userPubkey,
       );
-      if (isDuplicate) {
-        Log.debug(
-          'Skipping NIP-17 duplicate (NIP-04 copy already stored) '
-          '${giftWrapEvent.id}',
-          category: LogCategory.system,
-        );
-        return;
-      }
+      if (isDuplicate) return;
 
       // Persist message + conversation atomically inside a transaction.
       // The inner hasGiftWrap re-check guards against TOCTOU races where
@@ -538,12 +482,6 @@ class DmRepository {
           dmProtocol: 'nip17',
         );
       });
-
-      Log.debug(
-        'Persisted DM (kind ${rumorEvent.kind}) in conversation '
-        '$conversationId',
-        category: LogCategory.system,
-      );
     } catch (e, stackTrace) {
       Log.error(
         'Failed to process gift wrap event: $e',
@@ -556,20 +494,8 @@ class DmRepository {
 
   Future<void> _handleNip04Event(Event nip04Event) async {
     try {
-      Log.debug(
-        'Received NIP-04 event ${nip04Event.id} '
-        'from ${nip04Event.pubkey}',
-        category: LogCategory.system,
-      );
-
-      // Dedup: use event ID as giftWrapId for the unique index
-      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
-        Log.debug(
-          'Skipping duplicate NIP-04 event ${nip04Event.id}',
-          category: LogCategory.system,
-        );
-        return;
-      }
+      // Dedup: use event ID as giftWrapId for the unique index.
+      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) return;
 
       // Extract recipient from p tag
       String? recipientPubkey;

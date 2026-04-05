@@ -4335,14 +4335,13 @@ String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -4356,14 +4355,13 @@ const dmRepositoryProvider = DmRepositoryProvider._();
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -4377,14 +4375,13 @@ final class DmRepositoryProvider
   /// and sending encrypted direct messages. Works with any [NostrSigner]
   /// (local keys, Keycast RPC, Amber, etc.).
   ///
-  /// Automatically starts listening for incoming gift-wrapped messages and
-  /// stops when disposed.
+  /// Sets auth credentials eagerly so read/send operations work immediately.
+  /// The relay subscription is NOT started here — it is driven by the inbox
+  /// UI lifecycle via [ConversationListBloc] (#2766).
   ///
-  /// Uses `keepAlive: true` because the relay subscription must survive
-  /// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-  /// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-  /// provider auto-disposes during rebuild gaps, killing the subscription
-  /// and causing incoming DMs to be silently dropped.
+  /// Uses `keepAlive: true` because the repository must survive transient
+  /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+  /// `nostrServiceProvider` auth-state changes).
   ///
   /// Non-nullable: the repository works without keys at construction time.
   /// Read operations return cached/empty data; write operations check keys.
@@ -4421,7 +4418,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'9c7cab6895add408bb3d0a0c93f96ffbbd076525';
+String _$dmRepositoryHash() => r'08af65fc8a53541c552a91ac525ea9cdc00f8e1d';
 
 /// Provider for CommentsRepository instance
 ///

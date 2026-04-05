@@ -1939,14 +1939,13 @@ BugReportService bugReportService(Ref ref) {
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -1963,20 +1962,14 @@ DmRepository dmRepository(Ref ref) {
 
   ref.onDispose(repository.stopListening);
 
-  // Initialize when the signer's public key is available.
+  // Set credentials when the signer's public key is available.
+  // This does NOT start the relay subscription — that is lazy (#2766).
   if (ref.watch(isNostrReadyProvider)) {
-    // Use the signer's public key as the single source of truth.
-    // This is populated by Nostr.refreshPublicKey() during initialization
-    // (guarded by isNostrReadyProvider above) and always reflects the
-    // active signer — whether local keys, Keycast RPC, Amber, or bunker.
     final publicKey = nostrService.publicKey;
     if (publicKey.isNotEmpty) {
-      // Reuse the signer from the main NostrClient. This is the same signer
-      // created by NostrServiceFactory.create() and is guaranteed to work for
-      // NIP-44 operations (signing, encrypting, decrypting).
       final signer = nostrService.signer;
 
-      repository.initialize(
+      repository.setCredentials(
         userPubkey: publicKey,
         signer: signer,
         messageService: NIP17MessageService(
