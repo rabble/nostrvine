@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -62,19 +64,24 @@ class VideoFeedPage extends ConsumerWidget {
 
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
-    return BlocProvider(
+    return MultiBlocProvider(
       key: ValueKey('video-feed-$showDivineHostedOnly'),
-      create: (_) => VideoFeedBloc(
-        videosRepository: videosRepository,
-        followRepository: followRepository,
-        curatedListRepository: curatedListRepository,
-        profileRepository: profileRepository,
-        contentBlocklistService: blocklistService,
-        userPubkey: authService.currentPublicKeyHex,
-        sharedPreferences: sharedPreferences,
-        serveCachedHomeFeed: !showDivineHostedOnly,
-        feedTracker: FeedPerformanceTracker(),
-      )..add(VideoFeedStarted(mode: initialMode)),
+      providers: [
+        BlocProvider(
+          create: (_) => VideoFeedBloc(
+            videosRepository: videosRepository,
+            followRepository: followRepository,
+            curatedListRepository: curatedListRepository,
+            profileRepository: profileRepository,
+            contentBlocklistService: blocklistService,
+            userPubkey: authService.currentPublicKeyHex,
+            sharedPreferences: sharedPreferences,
+            serveCachedHomeFeed: !showDivineHostedOnly,
+            feedTracker: FeedPerformanceTracker(),
+          )..add(VideoFeedStarted(mode: initialMode)),
+        ),
+        BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
+      ],
       child: const VideoFeedView(),
     );
   }
@@ -764,11 +771,19 @@ class _PooledVideoFeedItemContentState
           feedMode: widget.contextTitle,
           index: widget.index,
         ),
-        errorBuilder: (context, onRetry, errorType) => PooledVideoErrorOverlay(
-          video: video,
-          onRetry: onRetry,
-          errorType: errorType,
-        ),
+        errorBuilder: (context, onRetry, errorType) {
+          // Capture the cubit eagerly so the post-frame callback doesn't
+          // walk the ancestor tree on a potentially-deactivated element.
+          final cubit = context.read<VideoPlaybackStatusCubit>();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cubit.report(video.id, playbackStatusFromError(errorType));
+          });
+          return PooledVideoErrorOverlay(
+            video: video,
+            onRetry: onRetry,
+            errorType: errorType,
+          );
+        },
         overlayBuilder: (context, videoController, player) => Stack(
           children: [
             FeedVideoOverlay(

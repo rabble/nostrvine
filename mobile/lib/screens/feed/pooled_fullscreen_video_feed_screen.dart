@@ -14,6 +14,8 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -29,6 +31,7 @@ import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -147,14 +150,19 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     final mediaCache = kIsWeb ? null : ref.read(mediaCacheProvider);
     final blossomAuthService = ref.read(blossomAuthServiceProvider);
 
-    return BlocProvider(
-      create: (_) => FullscreenFeedBloc(
-        videosStream: videosStream,
-        initialIndex: initialIndex,
-        onLoadMore: onLoadMore,
-        mediaCache: mediaCache,
-        blossomAuthService: blossomAuthService,
-      )..add(const FullscreenFeedStarted()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => FullscreenFeedBloc(
+            videosStream: videosStream,
+            initialIndex: initialIndex,
+            onLoadMore: onLoadMore,
+            mediaCache: mediaCache,
+            blossomAuthService: blossomAuthService,
+          )..add(const FullscreenFeedStarted()),
+        ),
+        BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
+      ],
       child: FullscreenFeedContent(
         contextTitle: contextTitle,
         trafficSource: trafficSource,
@@ -683,6 +691,38 @@ class _PooledFullscreenItemContentState
     super.dispose();
   }
 
+  /// Advances the feed to the next page by finding the nearest
+  /// [PooledVideoFeedState] ancestor and calling its public
+  /// [PooledVideoFeedState.animateToPage].
+  void _skipToNextVideo(BuildContext context) {
+    final feedState = context.findAncestorStateOfType<PooledVideoFeedState>();
+    assert(
+      feedState != null,
+      'ModeratedContentOverlay must be mounted inside PooledVideoFeed',
+    );
+    if (feedState == null) return;
+    unawaited(feedState.animateToPage(widget.index + 1));
+  }
+
+  /// Triggers the existing age verification flow. Matches the pattern used
+  /// by the legacy [VideoErrorOverlay].
+  Future<void> _verifyAgeForVideo(
+    BuildContext context,
+    VideoEvent video,
+  ) async {
+    final ageVerificationService = ref.read(ageVerificationServiceProvider);
+    final verified = await ageVerificationService.verifyAdultContentAccess(
+      context,
+    );
+    if (!verified || !context.mounted) return;
+    // Clear the cached moderated status so a retry can re-classify the
+    // video if the auth cookie now unlocks it.
+    context.read<VideoPlaybackStatusCubit>().report(
+      video.id,
+      PlaybackStatus.ready,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
@@ -723,12 +763,33 @@ class _PooledFullscreenItemContentState
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
         ),
-        errorBuilder: (context, onRetry, errorType) => PooledVideoErrorOverlay(
-          video: video,
-          onRetry: onRetry,
-          errorType: errorType,
-        ),
+        errorBuilder: (context, onRetry, errorType) {
+          // Capture the cubit eagerly so the post-frame callback doesn't
+          // walk the ancestor tree on a potentially-deactivated element.
+          final cubit = context.read<VideoPlaybackStatusCubit>();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cubit.report(video.id, playbackStatusFromError(errorType));
+          });
+          return PooledVideoErrorOverlay(
+            video: video,
+            onRetry: onRetry,
+            errorType: errorType,
+          );
+        },
         overlayBuilder: (context, videoController, player) {
+          final playbackStatus = context.select(
+            (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
+          );
+          if (playbackStatus == PlaybackStatus.forbidden ||
+              playbackStatus == PlaybackStatus.ageRestricted) {
+            return ModeratedContentOverlay(
+              status: playbackStatus,
+              onSkip: () => _skipToNextVideo(context),
+              onVerifyAge: playbackStatus == PlaybackStatus.ageRestricted
+                  ? () => _verifyAgeForVideo(context, video)
+                  : null,
+            );
+          }
           if (showContentWarningOverlay && !_contentWarningRevealed) {
             return ContentWarningBlurOverlay(
               labels: overlayLabels,

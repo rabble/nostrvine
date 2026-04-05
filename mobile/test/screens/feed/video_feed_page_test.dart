@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -68,8 +69,13 @@ void main() {
           ),
           ...?additionalOverrides,
         ],
-        home: BlocProvider<VideoFeedBloc>.value(
-          value: videoFeedBloc,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoPlaybackStatusCubit>(
+              create: (_) => VideoPlaybackStatusCubit(),
+            ),
+          ],
           child: VideoFeedView(controller: videoFeedController),
         ),
       );
@@ -253,8 +259,13 @@ void main() {
             (ref) => locationController.stream,
           ),
         ],
-        home: BlocProvider<VideoFeedBloc>.value(
-          value: videoFeedBloc,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoPlaybackStatusCubit>(
+              create: (_) => VideoPlaybackStatusCubit(),
+            ),
+          ],
           child: VideoFeedView(controller: videoFeedController),
         ),
       );
@@ -271,8 +282,13 @@ void main() {
             (ref) => Stream.value(location),
           ),
         ],
-        home: BlocProvider<VideoFeedBloc>.value(
-          value: videoFeedBloc,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoPlaybackStatusCubit>(
+              create: (_) => VideoPlaybackStatusCubit(),
+            ),
+          ],
           child: VideoFeedView(controller: videoFeedController),
         ),
       );
@@ -313,8 +329,13 @@ void main() {
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp(
-              home: BlocProvider<VideoFeedBloc>.value(
-                value: videoFeedBloc,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                  BlocProvider<VideoPlaybackStatusCubit>(
+                    create: (_) => VideoPlaybackStatusCubit(),
+                  ),
+                ],
                 child: VideoFeedView(controller: videoFeedController),
               ),
             ),

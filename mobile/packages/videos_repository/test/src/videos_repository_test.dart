@@ -6124,6 +6124,118 @@ void main() {
         ).called(2);
       });
     });
+
+    group('applyContentPreferences', () {
+      const goodPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const blockedPubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const cleanId =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      const nsfwId =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+      const violenceId =
+          'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+      VideoEvent buildVideo({
+        required String id,
+        required String pubkey,
+        List<String> moderationLabels = const [],
+        List<String> contentWarningLabels = const [],
+        List<String> warnLabels = const [],
+      }) {
+        return VideoEvent(
+          id: id,
+          pubkey: pubkey,
+          createdAt: 1704067200,
+          content: '',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+          videoUrl: 'https://example.com/video.mp4',
+          moderationLabels: moderationLabels,
+          contentWarningLabels: contentWarningLabels,
+          warnLabels: warnLabels,
+        );
+      }
+
+      test('returns videos unchanged when no filters are injected', () {
+        final repo = VideosRepository(nostrClient: mockNostrClient);
+        final videos = [
+          buildVideo(id: cleanId, pubkey: goodPubkey),
+          buildVideo(id: nsfwId, pubkey: blockedPubkey),
+        ];
+
+        final result = repo.applyContentPreferences(videos);
+
+        expect(result, equals(videos));
+      });
+
+      test('removes videos whose pubkey is blocked', () {
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+        final good = buildVideo(id: cleanId, pubkey: goodPubkey);
+        final bad = buildVideo(id: nsfwId, pubkey: blockedPubkey);
+
+        final result = repo.applyContentPreferences([good, bad]);
+
+        expect(result, equals([good]));
+      });
+
+      test('removes videos whose content filter returns true', () {
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          contentFilter: (video) => video.moderationLabels.contains('nudity'),
+        );
+        final clean = buildVideo(id: cleanId, pubkey: goodPubkey);
+        final nsfw = buildVideo(
+          id: nsfwId,
+          pubkey: goodPubkey,
+          moderationLabels: const ['nudity'],
+        );
+
+        final result = repo.applyContentPreferences([clean, nsfw]);
+
+        expect(result, equals([clean]));
+      });
+
+      test('applies warn labels from the resolver', () {
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          warningLabelsResolver: (video) =>
+              video.contentWarningLabels.contains('violence')
+              ? const ['violence']
+              : const [],
+        );
+        final video = buildVideo(
+          id: violenceId,
+          pubkey: goodPubkey,
+          contentWarningLabels: const ['violence'],
+        );
+
+        final result = repo.applyContentPreferences([video]);
+
+        expect(result, hasLength(1));
+        expect(result.single.warnLabels, equals(const ['violence']));
+      });
+
+      test('clears stale warnLabels when resolver returns empty', () {
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          warningLabelsResolver: (_) => const [],
+        );
+        final video = buildVideo(
+          id: violenceId,
+          pubkey: goodPubkey,
+          warnLabels: const ['violence'],
+        );
+
+        final result = repo.applyContentPreferences([video]);
+
+        expect(result, hasLength(1));
+        expect(result.single.warnLabels, isEmpty);
+      });
+    });
   });
 }
 
