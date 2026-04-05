@@ -57,11 +57,6 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
   }
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final primary = PrimaryScrollController.of(context);

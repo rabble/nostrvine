@@ -53,11 +53,6 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
   }
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final primary = PrimaryScrollController.of(context);
