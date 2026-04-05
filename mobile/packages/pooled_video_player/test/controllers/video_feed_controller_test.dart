@@ -2318,6 +2318,59 @@ void main() {
       });
 
       test(
+        'current video restores volume without replaying '
+        'when initial buffering ends and playback is already running',
+        () async {
+          final bufferingSetups = <String, MockPlayerSetup>{};
+          final bufferingPool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup(
+                isPlaying: true,
+                isBuffering: true,
+              );
+              bufferingSetups[url] = setup;
+
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              return mockPooledPlayer;
+            },
+          );
+
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: bufferingPool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup0 = bufferingSetups[videos[0].url]!;
+
+          clearInteractions(setup0.player);
+
+          setup0.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(() => setup0.player.setVolume(100)).called(1);
+          verifyNever(setup0.player.play);
+
+          controller.dispose();
+          for (final setup in bufferingSetups.values) {
+            await setup.dispose();
+          }
+          await bufferingPool.dispose();
+        },
+      );
+
+      test(
         'current video explicitly resumes playback when initial buffering ends',
         () async {
           final bufferingSetups = <String, MockPlayerSetup>{};
