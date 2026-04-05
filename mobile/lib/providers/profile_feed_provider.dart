@@ -38,6 +38,7 @@ class ProfileFeed extends _$ProfileFeed {
   // REST API mode state
   bool _usingRestApi = false;
   int? _nextOffset; // Offset for REST API pagination
+  int? _totalVideoCount; // Total count from X-Total-Count header
   // Cache of video metadata from REST API (preserves loops, likes, etc.)
   // Key: video ID, Value: metadata fields
   final Map<String, _VideoMetadataCache> _metadataCache = {};
@@ -100,9 +101,12 @@ class ProfileFeed extends _$ProfileFeed {
       );
 
       try {
-        final stats = await funnelcakeClient.getVideosByAuthor(pubkey: userId);
-        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
+        final (:videos, :totalCount) = await funnelcakeClient.getVideosByAuthor(
+          pubkey: userId,
+        );
+        final apiVideos = videos.map((v) => v.toVideoEvent()).toList();
         restPageCount = apiVideos.length;
+        _totalVideoCount = totalCount;
 
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
@@ -263,6 +267,7 @@ class ProfileFeed extends _$ProfileFeed {
           : authorVideos.length >= AppConstants.hasMoreContentThreshold,
       isInitialLoad: authorVideos.isEmpty && !_usingRestApi,
       lastUpdated: DateTime.now(),
+      totalVideoCount: _totalVideoCount,
     );
     _cacheSnapshot(initialState);
     return initialState;
@@ -455,10 +460,14 @@ class ProfileFeed extends _$ProfileFeed {
   Future<void> _refreshFromRestApi() async {
     try {
       final client = ref.read(funnelcakeApiClientProvider);
-      final stats = await client.getVideosByAuthor(pubkey: userId);
-      final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
+      final (:videos, :totalCount) = await client.getVideosByAuthor(
+        pubkey: userId,
+      );
+      final apiVideos = videos.map((v) => v.toVideoEvent()).toList();
 
       if (!ref.mounted) return;
+
+      _totalVideoCount = totalCount;
 
       if (apiVideos.isNotEmpty) {
         // Filter out reposts
@@ -486,6 +495,7 @@ class ProfileFeed extends _$ProfileFeed {
             hasMoreContent:
                 apiVideos.length >= AppConstants.paginationBatchSize,
             lastUpdated: DateTime.now(),
+            totalVideoCount: _totalVideoCount,
           ),
         );
 
@@ -502,6 +512,7 @@ class ProfileFeed extends _$ProfileFeed {
             videos: [],
             hasMoreContent: false,
             lastUpdated: DateTime.now(),
+            totalVideoCount: _totalVideoCount,
           ),
         );
 
@@ -569,11 +580,11 @@ class ProfileFeed extends _$ProfileFeed {
           category: LogCategory.video,
         );
 
-        final stats = await client.getVideosByAuthor(
+        final (:videos, totalCount: _) = await client.getVideosByAuthor(
           pubkey: userId,
           offset: offset,
         );
-        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = videos.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
         _nextOffset = offset + apiVideos.length;
@@ -616,6 +627,7 @@ class ProfileFeed extends _$ProfileFeed {
                 hasMoreContent:
                     apiVideos.length >= AppConstants.paginationBatchSize,
                 lastUpdated: DateTime.now(),
+                totalVideoCount: _totalVideoCount,
               ),
             );
           } else {
@@ -750,10 +762,14 @@ class ProfileFeed extends _$ProfileFeed {
     if (funnelcakeAvailable) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
-        final stats = await client.getVideosByAuthor(pubkey: userId);
-        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
+        final (:videos, :totalCount) = await client.getVideosByAuthor(
+          pubkey: userId,
+        );
+        final apiVideos = videos.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
+
+        _totalVideoCount = totalCount;
 
         if (apiVideos.isNotEmpty) {
           // Reset offset-based pagination
@@ -784,6 +800,7 @@ class ProfileFeed extends _$ProfileFeed {
               hasMoreContent:
                   apiVideos.length >= AppConstants.paginationBatchSize,
               lastUpdated: DateTime.now(),
+              totalVideoCount: _totalVideoCount,
             ),
           );
 
@@ -801,6 +818,7 @@ class ProfileFeed extends _$ProfileFeed {
               videos: [],
               hasMoreContent: false,
               lastUpdated: DateTime.now(),
+              totalVideoCount: _totalVideoCount,
             ),
           );
 

@@ -769,12 +769,13 @@ class VideosRepository {
 
       try {
         // Fetch videos by author from Funnelcake API
-        final authorVideoStats = await _funnelcakeApiClient!.getVideosByAuthor(
-          pubkey: pubkey,
-        );
+        final (:videos, totalCount: _) = await _funnelcakeApiClient!
+            .getVideosByAuthor(
+              pubkey: pubkey,
+            );
 
         // Find videos matching our d-tags and convert to VideoEvent
-        for (final videoStats in authorVideoStats) {
+        for (final videoStats in videos) {
           final video = videoStats.toVideoEvent();
           if (video.vineId != null && dTags.contains(video.vineId)) {
             final videoAddressableId = AId(
@@ -1284,12 +1285,13 @@ class VideosRepository {
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
       return [];
     }
-    final stats = await _funnelcakeApiClient.getVideosByAuthor(
-      pubkey: pubkey,
-      limit: limit,
-      before: before,
-    );
-    return _transformVideoStats(stats);
+    final (:videos, totalCount: _) = await _funnelcakeApiClient
+        .getVideosByAuthor(
+          pubkey: pubkey,
+          limit: limit,
+          before: before,
+        );
+    return _transformVideoStats(videos);
   }
 
   /// Fetches stats for a single video.

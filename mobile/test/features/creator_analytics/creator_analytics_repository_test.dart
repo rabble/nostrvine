@@ -107,9 +107,12 @@ void main() {
           before: any(named: 'before'),
         ),
       ).thenAnswer(
-        (_) async => [
-          _videoStats(id: 'a', pubkey: pubkey),
-        ],
+        (_) async => (
+          videos: [
+            _videoStats(id: 'a', pubkey: pubkey),
+          ],
+          totalCount: null,
+        ),
       );
 
       final repo = FunnelcakeCreatorAnalyticsRepository(api);
@@ -147,9 +150,12 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => [
-            _videoStats(id: 'b', pubkey: pubkey),
-          ],
+          (_) async => (
+            videos: [
+              _videoStats(id: 'b', pubkey: pubkey),
+            ],
+            totalCount: null,
+          ),
         );
 
         final repo = FunnelcakeCreatorAnalyticsRepository(api);
@@ -188,9 +194,12 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => [
-            _videoStats(id: 'c', pubkey: pubkey),
-          ],
+          (_) async => (
+            videos: [
+              _videoStats(id: 'c', pubkey: pubkey),
+            ],
+            totalCount: null,
+          ),
         );
 
         final repo = FunnelcakeCreatorAnalyticsRepository(api);

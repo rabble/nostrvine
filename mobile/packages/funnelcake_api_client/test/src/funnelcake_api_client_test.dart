@@ -709,15 +709,22 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
+        ).thenAnswer(
+          (_) async => http.Response(
+            validResponseBody,
+            200,
+            headers: {'x-total-count': '42'},
+          ),
+        );
 
-        final videos = await client.getVideosByAuthor(pubkey: testPubkey);
+        final result = await client.getVideosByAuthor(pubkey: testPubkey);
 
-        expect(videos, hasLength(1));
-        expect(videos.first.id, equals('abc123def456'));
-        expect(videos.first.pubkey, equals(testPubkey));
-        expect(videos.first.title, equals('Test Video'));
-        expect(videos.first.reactions, equals(100));
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('abc123def456'));
+        expect(result.videos.first.pubkey, equals(testPubkey));
+        expect(result.videos.first.title, equals('Test Video'));
+        expect(result.videos.first.reactions, equals(100));
+        expect(result.totalCount, equals(42));
       });
 
       test('constructs correct URL with default limit', () async {
@@ -816,9 +823,9 @@ void main() {
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(responseWithEmptyId, 200));
 
-        final videos = await client.getVideosByAuthor(pubkey: testPubkey);
+        final result = await client.getVideosByAuthor(pubkey: testPubkey);
 
-        expect(videos, isEmpty);
+        expect(result.videos, isEmpty);
       });
 
       test('filters out videos with empty videoUrl', () async {
@@ -845,9 +852,9 @@ void main() {
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(responseWithEmptyUrl, 200));
 
-        final videos = await client.getVideosByAuthor(pubkey: testPubkey);
+        final result = await client.getVideosByAuthor(pubkey: testPubkey);
 
-        expect(videos, isEmpty);
+        expect(result.videos, isEmpty);
       });
 
       test('throws FunnelcakeNotConfiguredException when not available', () {

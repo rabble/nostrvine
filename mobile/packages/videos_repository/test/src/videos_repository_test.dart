@@ -3254,7 +3254,9 @@ void main() {
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
-            ).thenAnswer((_) async => [videoStats]);
+            ).thenAnswer(
+              (_) async => (videos: [videoStats], totalCount: null),
+            );
 
             final result = await repositoryWithFunnelcake
                 .getVideosByAddressableIds([
@@ -3309,7 +3311,9 @@ void main() {
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
-            ).thenAnswer((_) async => [videoStats]);
+            ).thenAnswer(
+              (_) async => (videos: [videoStats], totalCount: null),
+            );
 
             final result = await repositoryWithFunnelcake
                 .getVideosByAddressableIds([
@@ -3363,7 +3367,9 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenAnswer((_) async => [videoStats1]);
+          ).thenAnswer(
+            (_) async => (videos: [videoStats1], totalCount: null),
+          );
 
           when(
             () => mockFunnelcakeClient.getVideosByAuthor(
@@ -3371,7 +3377,9 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenAnswer((_) async => [videoStats3]);
+          ).thenAnswer(
+            (_) async => (videos: [videoStats3], totalCount: null),
+          );
 
           final result = await repositoryWithFunnelcake
               .getVideosByAddressableIds([
@@ -3458,7 +3466,9 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenAnswer((_) async => [videoStats]);
+          ).thenAnswer(
+            (_) async => (videos: [videoStats], totalCount: null),
+          );
 
           final result = await repositoryWithFilter.getVideosByAddressableIds([
             '${EventKind.videoVertical}:$blockedPubkey:dtag1',
@@ -3495,7 +3505,9 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenAnswer((_) async => [videoStats]);
+          ).thenAnswer(
+            (_) async => (videos: [videoStats], totalCount: null),
+          );
 
           final result = await repositoryWithFunnelcake
               .getVideosByAddressableIds([
@@ -3538,7 +3550,9 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenAnswer((_) async => [videoStats1, videoStats2]);
+          ).thenAnswer(
+            (_) async => (videos: [videoStats1, videoStats2], totalCount: null),
+          );
 
           final result = await repositoryWithFunnelcake
               .getVideosByAddressableIds([
@@ -5603,14 +5617,17 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => [
-            _createVideoStats(
-              id: 'event-1',
-              pubkey: 'author-pubkey',
-              dTag: 'dtag-1',
-              videoUrl: 'https://example.com/video.mp4',
-            ),
-          ],
+          (_) async => (
+            videos: [
+              _createVideoStats(
+                id: 'event-1',
+                pubkey: 'author-pubkey',
+                dTag: 'dtag-1',
+                videoUrl: 'https://example.com/video.mp4',
+              ),
+            ],
+            totalCount: null,
+          ),
         );
 
         final repo = VideosRepository(
@@ -5673,7 +5690,9 @@ void main() {
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer(
+          (_) async => (videos: <VideoStats>[], totalCount: null),
+        );
 
         final repo = VideosRepository(
           nostrClient: mockNostrClient,
