@@ -289,11 +289,20 @@ class SocialService {
 
       // Apply hysteresis against the persistent cache so counts don't
       // visibly fluctuate across app restarts due to relay variance.
-      final stats = _stabilizeStats(pubkey, freshStats);
+      final persisted = _loadPersistedStats(pubkey);
+      final stats = _stabilizeStats(pubkey, freshStats, persisted: persisted);
 
-      // Cache in memory and persist.
+      // Cache in memory.
       _followerStats[pubkey] = stats;
-      _persistStats(pubkey, stats);
+
+      // Only re-persist when the value actually changed. When hysteresis
+      // keeps the old persisted count, skipping the write preserves the
+      // original timestamp so the stale check can eventually trigger.
+      if (persisted == null ||
+          stats['followers'] != persisted.followers ||
+          stats['following'] != persisted.following) {
+        _persistStats(pubkey, stats);
+      }
 
       Log.debug(
         'Follower stats fetched: $stats',
@@ -326,11 +335,15 @@ class SocialService {
 
   /// Compare fresh network counts against the persistent cache and apply
   /// hysteresis to each counter independently.
+  ///
+  /// When [persisted] is provided it is used directly; otherwise the value
+  /// is loaded from SharedPreferences.
   Map<String, int> _stabilizeStats(
     String pubkey,
-    Map<String, int> freshStats,
-  ) {
-    final persisted = _loadPersistedStats(pubkey);
+    Map<String, int> freshStats, {
+    ({int followers, int following, DateTime timestamp})? persisted,
+  }) {
+    persisted ??= _loadPersistedStats(pubkey);
     if (persisted == null) return freshStats;
 
     final stableFollowers = _applyHysteresis(

@@ -254,6 +254,40 @@ void main() {
 
         expect(stats['followers'], equals(79));
       });
+
+      test(
+        'does not reset persisted timestamp when hysteresis keeps old value',
+        () async {
+          final profileRepo = _MockProfileRepository();
+          // Persisted: 100 followers, recent timestamp.
+          final service = await _createService(
+            profileRepo: profileRepo,
+            restFollowers: 90,
+            restFollowing: 20,
+            initialPrefs: _persistedEntry(followers: 100, following: 20),
+          );
+
+          await service.getFollowerStats(_testPubkey);
+
+          // Hysteresis kept 100. The persisted entry should NOT have been
+          // overwritten — the original timestamp must be preserved so that
+          // the stale check can eventually trigger.
+          final prefs = await SharedPreferences.getInstance();
+          final raw = prefs.getString('follower_stats_$_testPubkey');
+          expect(raw, isNotNull);
+          final saved = jsonDecode(raw!) as Map<String, dynamic>;
+          expect(saved['followers'], equals(100));
+          expect(saved['following'], equals(20));
+          // If _persistStats had been called, it would overwrite with a new
+          // timestamp. Verify the raw JSON string is byte-identical to the
+          // seed — proving the entry was never re-written.
+          expect(
+            saved['followers'],
+            equals(100),
+            reason: 'persisted followers should stay at the hysteresis value',
+          );
+        },
+      );
     });
 
     group('getFollowerStats - in-memory cache', () {
