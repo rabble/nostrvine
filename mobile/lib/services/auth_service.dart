@@ -236,13 +236,22 @@ class AuthService implements BackgroundAwareService {
   /// Stream of profile changes
   Stream<UserProfile?> get profileStream => _profileController.stream;
 
-  /// Current public key (npub format)
-  String? get currentNpub => _currentKeyContainer?.npub;
+  /// Current public key (npub format).
+  ///
+  /// Reads from [currentIdentity] when available (post-authentication),
+  /// falls back to [_currentKeyContainer] during the auth-screen lifecycle.
+  String? get currentNpub =>
+      _currentIdentity?.npub ?? _currentKeyContainer?.npub;
 
-  /// Current public key (hex format)
-  /// Works for both local keys (via keyContainer) and bunker auth (via profile)
+  /// Current public key (hex format).
+  ///
+  /// Reads from [currentIdentity] when available (post-authentication),
+  /// falls back to [_currentKeyContainer] or [_currentProfile] during the
+  /// auth-screen lifecycle.
   String? get currentPublicKeyHex =>
-      _currentKeyContainer?.publicKeyHex ?? _currentProfile?.publicKeyHex;
+      _currentIdentity?.pubkey ??
+      _currentKeyContainer?.publicKeyHex ??
+      _currentProfile?.publicKeyHex;
 
   /// Current secure key container (null if not authenticated).
   ///
