@@ -97,7 +97,8 @@ class DmRepository {
   Nip04Decryptor? _nip04Decryptor;
 
   StreamSubscription<Event>? _giftWrapSubscription;
-  bool _disposed = false;
+  Timer? _reconnectTimer;
+  late bool _disposed = false;
 
   /// Serializes event processing so concurrent subscription events
   /// never race into the dedup/insert path.
@@ -170,6 +171,8 @@ class DmRepository {
   void _resetState() {
     _disposed = true;
     _eventLock = null;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     unawaited(_giftWrapSubscription?.cancel());
     _giftWrapSubscription = null;
     final subId = _subscriptionId;
@@ -257,7 +260,7 @@ class DmRepository {
             'in ${_reconnectDelay.inSeconds}s',
             category: LogCategory.system,
           );
-          Future<void>.delayed(_reconnectDelay, startListening);
+          _reconnectTimer = Timer(_reconnectDelay, startListening);
         }
       },
     );
@@ -312,6 +315,8 @@ class DmRepository {
     // _resetState() (user switch). Setting it would make a subsequent
     // startListening() call a silent no-op, breaking re-open flows like
     // "user leaves the inbox tab and comes back later".
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _eventLock = null;
     await _giftWrapSubscription?.cancel();
     _giftWrapSubscription = null;
