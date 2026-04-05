@@ -547,8 +547,13 @@ void main() {
             (ref) => Stream.value('/home'),
           ),
         ],
-        home: BlocProvider<VideoFeedBloc>.value(
-          value: videoFeedBloc,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoPlaybackStatusCubit>(
+              create: (_) => VideoPlaybackStatusCubit(),
+            ),
+          ],
           child: VideoFeedView(controller: videoFeedController),
         ),
       );
