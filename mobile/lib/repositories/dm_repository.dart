@@ -181,6 +181,13 @@ class DmRepository {
   /// Maximum events to fetch on the first inbox open (no prior sync).
   static const _initialFetchLimit = 50;
 
+  /// Overlap window (in seconds) for the `since` filter.
+  ///
+  /// NIP-17 gift wraps randomize `created_at` up to 2 days in the past for
+  /// metadata privacy. Subtracting this from the newest synced timestamp
+  /// ensures no messages are missed across inbox visits.
+  static const int _nip17SyncOverlap = 2 * 24 * 60 * 60; // 172 800 s
+
   // -------------------------------------------------------------------------
   // Subscription lifecycle
   // -------------------------------------------------------------------------
@@ -217,8 +224,9 @@ class DmRepository {
       ownerPubkey: _ownerPubkey,
     );
 
-    // 2-day overlap in seconds absorbs NIP-17 randomized created_at.
-    const twoDaysInSeconds = 2 * 24 * 60 * 60; // 172 800
+    // Re-check after await: stopListening() may have been called while
+    // the timestamp query was in flight (e.g. rapid tab switch).
+    if (_disposed || _giftWrapSubscription != null) return;
 
     final filter = nostr_filter.Filter(
       kinds: [
@@ -229,7 +237,7 @@ class DmRepository {
       p: [_userPubkey],
       limit: newestTimestamp == null ? _initialFetchLimit : null,
       since: newestTimestamp != null
-          ? newestTimestamp - twoDaysInSeconds
+          ? newestTimestamp - _nip17SyncOverlap
           : null,
     );
 
@@ -255,6 +263,12 @@ class DmRepository {
           'DM subscription error: $error',
           category: LogCategory.system,
         );
+        // Reset subscription state so a subsequent startListening() can
+        // open a fresh connection instead of seeing a stale reference.
+        _giftWrapSubscription = null;
+        if (!_disposed) {
+          Future<void>.delayed(_reconnectDelay, startListening);
+        }
       },
       onDone: () {
         // Stream closed (relay disconnect, NostrClient rebuild, etc.)
