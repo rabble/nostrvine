@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service_signer.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// The current user's signing identity, coupling pubkey and signing mechanism
@@ -15,6 +16,9 @@ sealed class NostrIdentity implements NostrSigner {
   /// The hex-encoded public key of this identity.
   String get pubkey;
 
+  /// The bech32-encoded public key (npub format) of this identity.
+  String get npub => NostrKeyUtils.encodePubKey(pubkey);
+
   /// Signs an arbitrary canonical payload (SHA-256 + schnorr with fixed aux).
   ///
   /// Returns the signature hex string, or null if this identity does not
@@ -23,7 +27,7 @@ sealed class NostrIdentity implements NostrSigner {
 }
 
 /// Identity backed by a local [SecureKeyContainer] with a private key.
-class LocalNostrIdentity implements NostrIdentity {
+class LocalNostrIdentity extends NostrIdentity {
   LocalNostrIdentity({required SecureKeyContainer keyContainer})
     : _signer = AuthServiceSigner(keyContainer),
       pubkey = keyContainer.publicKeyHex;
@@ -72,7 +76,7 @@ class LocalNostrIdentity implements NostrIdentity {
 ///
 /// When a matching local private key is available, signs locally for speed.
 /// Otherwise delegates to the remote [KeycastRpc] signer.
-class KeycastNostrIdentity implements NostrIdentity {
+class KeycastNostrIdentity extends NostrIdentity {
   /// Creates a Keycast identity.
   ///
   /// [rpcSigner] is the remote Keycast RPC signer.
@@ -163,7 +167,7 @@ class KeycastNostrIdentity implements NostrIdentity {
 }
 
 /// Identity backed by a NIP-46 bunker remote signer.
-class BunkerNostrIdentity implements NostrIdentity {
+class BunkerNostrIdentity extends NostrIdentity {
   BunkerNostrIdentity({
     required this.pubkey,
     required NostrSigner remoteSigner,
@@ -209,7 +213,7 @@ class BunkerNostrIdentity implements NostrIdentity {
 }
 
 /// Identity backed by a NIP-55 Amber Android signer.
-class AmberNostrIdentity implements NostrIdentity {
+class AmberNostrIdentity extends NostrIdentity {
   AmberNostrIdentity({
     required this.pubkey,
     required NostrSigner amberSigner,

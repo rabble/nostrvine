@@ -195,7 +195,26 @@ class AuthService implements BackgroundAwareService {
   UserRelaysDiscoveredCallback? _onUserRelaysDiscovered;
 
   /// The current user's atomic signing identity, or null if not authenticated.
+  ///
+  /// Use [requireIdentity] in code that runs only when authenticated
+  /// (post-router-gate) to get a guaranteed non-null value.
   NostrIdentity? get currentIdentity => _currentIdentity;
+
+  /// The current user's signing identity, guaranteed non-null.
+  ///
+  /// Throws [StateError] if called when no identity is set. This should only
+  /// happen if the caller bypasses the router's authentication gate.
+  /// Use this in post-authentication code instead of [currentIdentity]!.
+  NostrIdentity get requireIdentity {
+    final identity = _currentIdentity;
+    if (identity == null) {
+      throw StateError(
+        'requireIdentity called with no active NostrIdentity. '
+        'This code path should only execute when authenticated.',
+      );
+    }
+    return identity;
+  }
 
   final OAuthConfig _oauthConfig;
 
