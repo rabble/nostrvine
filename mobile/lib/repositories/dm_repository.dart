@@ -18,6 +18,7 @@ import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:openvine/repositories/dm_sync_state.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -66,6 +67,7 @@ class DmRepository {
     required NostrClient nostrClient,
     required DirectMessagesDao directMessagesDao,
     required ConversationsDao conversationsDao,
+    DmSyncState? syncState,
     NIP17MessageService? messageService,
     String? userPubkey,
     NostrSigner? signer,
@@ -74,6 +76,7 @@ class DmRepository {
   }) : _nostrClient = nostrClient,
        _directMessagesDao = directMessagesDao,
        _conversationsDao = conversationsDao,
+       _syncState = syncState,
        _messageService = messageService,
        _userPubkey = userPubkey ?? '',
        _signer = signer,
@@ -83,6 +86,8 @@ class DmRepository {
   final NostrClient _nostrClient;
   final DirectMessagesDao _directMessagesDao;
   final ConversationsDao _conversationsDao;
+  // ignore: unused_field
+  final DmSyncState? _syncState;
   NIP17MessageService? _messageService;
   String _userPubkey;
   NostrSigner? _signer;
