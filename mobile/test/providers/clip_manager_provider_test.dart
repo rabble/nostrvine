@@ -372,6 +372,35 @@ void main() {
       });
     });
 
+    group('addClip proof generation', () {
+      test('newly added clip has no proofManifestJson initially', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(clip.proofManifestJson, isNull);
+      });
+
+      test('clip without trimming has no processingCompleter', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(clip.processingCompleter, isNull);
+        expect(clip.isProcessing, isFalse);
+      });
+    });
+
     group('updateGhostFrame', () {
       test('updates ghost frame path for existing clip', () {
         final notifier = container.read(clipManagerProvider.notifier);

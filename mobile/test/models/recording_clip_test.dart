@@ -257,6 +257,186 @@ void main() {
       expect(clip.targetAspectRatio, equals(model.AspectRatio.square));
     });
 
+    group('proofManifestJson', () {
+      test('defaults to null', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(clip.proofManifestJson, isNull);
+      });
+
+      test('can be set via constructor', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: '{"hash":"abc123"}',
+        );
+
+        expect(clip.proofManifestJson, equals('{"hash":"abc123"}'));
+      });
+
+      test('copyWith updates proofManifestJson', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final updated = clip.copyWith(
+          proofManifestJson: '{"hash":"abc123"}',
+        );
+
+        expect(updated.proofManifestJson, equals('{"hash":"abc123"}'));
+        expect(updated.id, equals(clip.id));
+      });
+
+      test('copyWith preserves proofManifestJson when not specified', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: '{"hash":"abc123"}',
+        );
+
+        final updated = clip.copyWith(
+          thumbnailPath: '/path/to/thumb.jpg',
+        );
+
+        expect(updated.proofManifestJson, equals('{"hash":"abc123"}'));
+      });
+
+      test('copyWith clears proofManifestJson with clearProofManifestJson', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: '{"hash":"abc123"}',
+        );
+
+        final updated = clip.copyWith(clearProofManifestJson: true);
+
+        expect(updated.proofManifestJson, isNull);
+      });
+
+      test('clearProofManifestJson takes precedence over new value', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: '{"hash":"abc123"}',
+        );
+
+        final updated = clip.copyWith(
+          proofManifestJson: '{"hash":"new"}',
+          clearProofManifestJson: true,
+        );
+
+        expect(updated.proofManifestJson, isNull);
+      });
+
+      test('toJson includes proofManifestJson when present', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(milliseconds: 2500),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: '{"hash":"abc123"}',
+        );
+
+        final json = clip.toJson();
+
+        expect(json['proofManifestJson'], equals('{"hash":"abc123"}'));
+      });
+
+      test('toJson omits proofManifestJson when null', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(milliseconds: 2500),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final json = clip.toJson();
+
+        expect(json.containsKey('proofManifestJson'), isFalse);
+      });
+
+      test('fromJson deserializes proofManifestJson', () {
+        final json = {
+          'id': 'clip_001',
+          'filePath': 'video.mp4',
+          'durationMs': 2500,
+          'recordedAt': '2025-12-13T10:00:00.000',
+          'targetAspectRatio': 'vertical',
+          'proofManifestJson': '{"hash":"abc123"}',
+        };
+
+        final clip = DivineVideoClip.fromJson(json, '/path/to');
+
+        expect(clip.proofManifestJson, equals('{"hash":"abc123"}'));
+      });
+
+      test('fromJson handles missing proofManifestJson', () {
+        final json = {
+          'id': 'clip_001',
+          'filePath': 'video.mp4',
+          'durationMs': 2500,
+          'recordedAt': '2025-12-13T10:00:00.000',
+          'targetAspectRatio': 'vertical',
+        };
+
+        final clip = DivineVideoClip.fromJson(json, '/path/to');
+
+        expect(clip.proofManifestJson, isNull);
+      });
+
+      test('toJson and fromJson roundtrip preserves proofManifestJson', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(milliseconds: 2500),
+          recordedAt: DateTime(2025, 12, 13, 10),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          proofManifestJson: '{"hash":"abc123","level":"verified"}',
+        );
+
+        final json = clip.toJson();
+        final restored = DivineVideoClip.fromJson(json, '/path/to');
+
+        expect(
+          restored.proofManifestJson,
+          equals(clip.proofManifestJson),
+        );
+      });
+    });
+
     group('path round-trip for rendered videos', () {
       test('round-trip resolves to documents directory '
           'when video is in documents directory', () async {
