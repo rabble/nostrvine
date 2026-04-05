@@ -372,7 +372,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
     _syncMainCapabilities(scope, bloc);
     final result = await scope.editor!.exportStateHistory(
-      configs: const ExportEditorConfigs(historySpan: .currentAndBackward),
+      configs: const ExportEditorConfigs(
+        historySpan: .currentAndBackward,
+        // We didn’t minify the state history so it remains readable for
+        // proofMode.
+        enableMinify: false,
+      ),
     );
     final history = await result.toMap();
 
