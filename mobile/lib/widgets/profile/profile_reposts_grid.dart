@@ -50,11 +50,6 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
   }
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final primary = PrimaryScrollController.of(context);
