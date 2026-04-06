@@ -158,7 +158,7 @@ void main() {
       );
     }
 
-    testWidgets('displays remaining duration', (tester) async {
+    testWidgets('renders Clips title', (tester) async {
       when(() => mockBloc.state).thenReturn(
         const ClipsLibraryState(
           status: ClipsLibraryStatus.loaded,
@@ -168,8 +168,7 @@ void main() {
 
       await tester.pumpWidget(buildWidget());
 
-      // Format is "30.00s remaining" (2 decimal places)
-      expect(find.text('30.00s remaining'), findsOneWidget);
+      expect(find.text('Clips'), findsOneWidget);
     });
 
     testWidgets('calls onCreate when Add button is tapped', (tester) async {

@@ -102,6 +102,63 @@ void main() {
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'pre-selects clips matching preSelectedIds',
+        setUp: () {
+          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
+            (_) async => [createClip(id: 'c1'), createClip(id: 'c2')],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ClipsLibraryLoadRequested(preSelectedIds: {'c1'}),
+        ),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.loading),
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.loaded)
+              .having(
+                (s) => s.selectedClipIds,
+                'selectedClipIds',
+                equals({'c1'}),
+              )
+              .having(
+                (s) => s.selectedDuration,
+                'selectedDuration',
+                const Duration(seconds: 5),
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'ignores preSelectedIds that do not exist in loaded clips',
+        setUp: () {
+          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
+            (_) async => [createClip(id: 'c1')],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ClipsLibraryLoadRequested(
+            preSelectedIds: {'c1', 'nonexistent'},
+          ),
+        ),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.loading),
+          isA<ClipsLibraryState>()
+              .having(
+                (s) => s.selectedClipIds,
+                'selectedClipIds',
+                equals({'c1'}),
+              )
+              .having(
+                (s) => s.selectedDuration,
+                'selectedDuration',
+                const Duration(seconds: 5),
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'emits [loading, error] when service throws',
         setUp: () {
           when(
@@ -570,6 +627,21 @@ void main() {
           );
 
         expect(bloc.state.selectedClips, [clip1]);
+        bloc.close();
+      });
+
+      test('returns selected clips in selection order not list order', () {
+        // selectedClipIds iteration order is clip2 then clip1
+        final bloc = createBloc()
+          ..emit(
+            ClipsLibraryState(
+              status: ClipsLibraryStatus.loaded,
+              clips: [clip1, clip2],
+              selectedClipIds: const {'clip2', 'clip1'},
+            ),
+          );
+
+        expect(bloc.state.selectedClips, [clip2, clip1]);
         bloc.close();
       });
     });
