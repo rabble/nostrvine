@@ -160,6 +160,9 @@ class DmRepository {
 
     // Merge duplicate conversations created by extra p-tags (idempotent).
     unawaited(_mergeDuplicateConversations());
+
+    // Remove phantom self-conversations created by the self-wrap bug.
+    unawaited(_cleanupSelfConversations());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
@@ -441,6 +444,12 @@ class DmRepository {
         rawParticipants,
         rumorEvent.pubkey,
       );
+
+      // Reject self-conversations (all participants are the same pubkey).
+      // Defense-in-depth: should not happen after the self-wrap fix above,
+      // but guards against any future code path producing degenerate lists.
+      if (participants.toSet().length < 2) return;
+
       final conversationId = computeConversationId(participants);
 
       // Extract common tags
@@ -1527,6 +1536,44 @@ class DmRepository {
     }
   }
 
+  /// Removes phantom self-conversations created by the self-wrap bug where
+  /// `_resolveConversationParticipants` produced `[self, self]`.
+  ///
+  /// Idempotent — safe to call on every init.
+  Future<void> _cleanupSelfConversations() async {
+    try {
+      final selfConvId = computeConversationId([_userPubkey, _userPubkey]);
+      final existing = await _conversationsDao.getConversation(
+        selfConvId,
+        ownerPubkey: _ownerPubkey,
+      );
+      if (existing == null) return;
+
+      await _conversationsDao.runInTransaction(() async {
+        await _directMessagesDao.deleteConversationMessages(
+          selfConvId,
+          ownerPubkey: _ownerPubkey,
+        );
+        await _conversationsDao.deleteConversation(
+          selfConvId,
+          ownerPubkey: _ownerPubkey,
+        );
+      });
+
+      Log.info(
+        'Cleaned up phantom self-conversation',
+        category: LogCategory.system,
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to clean up self-conversation: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Compute a deterministic conversation ID from sorted participant pubkeys.
   static String computeConversationId(List<String> participants) {
     final sorted = List<String>.from(participants)..sort();
@@ -1576,7 +1623,13 @@ class DmRepository {
     final canonical1to1 = [_userPubkey, senderPubkey]..sort();
 
     // Standard 1:1 message — no ambiguity.
-    if (extractedParticipants.length <= 2) return canonical1to1;
+    if (extractedParticipants.length <= 2) {
+      // Self-wrap: sender is the current user, so canonical1to1 would be
+      // [self, self]. Use extracted participants which contain the actual
+      // recipient from the rumor's p-tags.
+      if (_userPubkey == senderPubkey) return extractedParticipants;
+      return canonical1to1;
+    }
 
     // Extra p-tags present. Check if a group conversation with the
     // full participant set already exists — if so, it's a genuine group.
