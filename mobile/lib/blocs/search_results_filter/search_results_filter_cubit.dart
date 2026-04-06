@@ -12,7 +12,8 @@ enum SearchResultsFilter {
   // TODO(#2474): Add lists filter when the API is available.
   // lists('Lists'),
   tags('Tags'),
-  videos('Videos');
+  videos('Videos')
+  ;
 
   const SearchResultsFilter(this.label);
 
