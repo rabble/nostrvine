@@ -47,19 +47,30 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _activeTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(_handleTabChanged);
     // Mark all notifications as read when the screen is opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(relayNotificationsProvider.notifier).markAllAsRead();
     });
   }
 
+  void _handleTabChanged() {
+    if (_tabController.indexIsChanging) return;
+    if (_activeTabIndex == _tabController.index) return;
+    setState(() {
+      _activeTabIndex = _tabController.index;
+    });
+  }
+
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -101,12 +112,27 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: const [
-              _NotificationTabContent(filter: null),
-              _NotificationTabContent(filter: NotificationType.like),
-              _NotificationTabContent(filter: NotificationType.comment),
-              _NotificationTabContent(filter: NotificationType.follow),
-              _NotificationTabContent(filter: NotificationType.repost),
+            children: [
+              _NotificationTabContent(
+                filter: null,
+                isActive: _activeTabIndex == 0,
+              ),
+              _NotificationTabContent(
+                filter: NotificationType.like,
+                isActive: _activeTabIndex == 1,
+              ),
+              _NotificationTabContent(
+                filter: NotificationType.comment,
+                isActive: _activeTabIndex == 2,
+              ),
+              _NotificationTabContent(
+                filter: NotificationType.follow,
+                isActive: _activeTabIndex == 3,
+              ),
+              _NotificationTabContent(
+                filter: NotificationType.repost,
+                isActive: _activeTabIndex == 4,
+              ),
             ],
           ),
         ),
@@ -118,9 +144,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 /// Content for a single notification tab. Each tab has its own scroll
 /// controller so scroll positions are preserved when switching tabs.
 class _NotificationTabContent extends ConsumerStatefulWidget {
-  const _NotificationTabContent({required this.filter});
+  const _NotificationTabContent({
+    required this.filter,
+    required this.isActive,
+  });
 
   final NotificationType? filter;
+  final bool isActive;
 
   @override
   ConsumerState<_NotificationTabContent> createState() =>
@@ -375,6 +405,7 @@ class _NotificationTabContentState
     List<NotificationModel> notifications,
   ) {
     final needsTopUp =
+        widget.isActive &&
         widget.filter != null &&
         notifications.isEmpty &&
         feedState.hasMoreContent &&
@@ -407,6 +438,7 @@ class _NotificationTabContentState
     List<NotificationModel> notifications,
   ) {
     return widget.filter != null &&
+        widget.isActive &&
         notifications.isEmpty &&
         (feedState.isLoadingMore || _isRequestingFilteredTopUp) &&
         feedState.hasMoreContent;
