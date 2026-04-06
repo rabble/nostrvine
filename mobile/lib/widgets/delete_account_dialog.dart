@@ -305,13 +305,10 @@ Future<void> executeAccountDeletion({
         dismissDialog();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Could not delete your account from the server. '
-                'Please check your connection and try again.',
-                style: TextStyle(color: VineTheme.whiteText),
-              ),
-              backgroundColor: VineTheme.error,
+            DivineSnackbarContainer.snackBar(
+              'Could not delete your account from the server. '
+              'Please check your connection and try again.',
+              error: true,
             ),
           );
         }
@@ -337,13 +334,7 @@ Future<void> executeAccountDeletion({
       dismissDialog();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Your account has been deleted',
-              style: TextStyle(color: VineTheme.backgroundColor),
-            ),
-            backgroundColor: VineTheme.vineGreen,
-          ),
+          DivineSnackbarContainer.snackBar('Your account has been deleted'),
         );
       }
     } else {
@@ -351,12 +342,9 @@ Future<void> executeAccountDeletion({
       dismissDialog();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result.error ?? 'Failed to delete content from relays',
-              style: const TextStyle(color: VineTheme.whiteText),
-            ),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            result.error ?? 'Failed to delete content from relays',
+            error: true,
           ),
         );
       }
