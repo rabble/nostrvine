@@ -124,14 +124,79 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('has semantic label', (tester) async {
+      testWidgets('has no-clips semantic label when empty', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
         expect(
-          find.bySemanticsLabel('Open the clip library'),
+          find.bySemanticsLabel('Clip library, no clips'),
           findsOneWidget,
         );
+      });
+
+      testWidgets('has clip count semantic label with clips', (
+        tester,
+      ) async {
+        final clips = [
+          DivineVideoClip(
+            id: 'clip1',
+            video: EditorVideo.file('/test/clip1.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            thumbnailPath: '/test/thumb1.jpg',
+          ),
+          DivineVideoClip(
+            id: 'clip2',
+            video: EditorVideo.file('/test/clip2.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            thumbnailPath: '/test/thumb2.jpg',
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips));
+        await tester.pump();
+
+        final semantics = tester.widget<Semantics>(
+          find.descendant(
+            of: find.byType(VideoRecorderLibraryButton),
+            matching: find.byType(Semantics),
+          ).first,
+        );
+        expect(semantics.properties.label, equals(
+          'Open clip library, 2 clips',
+        ));
+      });
+
+      testWidgets('singular label for single clip', (tester) async {
+        final clips = [
+          DivineVideoClip(
+            id: 'clip1',
+            video: EditorVideo.file('/test/clip1.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            thumbnailPath: '/test/thumb1.jpg',
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips));
+        await tester.pump();
+
+        final semantics = tester.widget<Semantics>(
+          find.descendant(
+            of: find.byType(VideoRecorderLibraryButton),
+            matching: find.byType(Semantics),
+          ).first,
+        );
+        expect(semantics.properties.label, equals(
+          'Open clip library, 1 clip',
+        ));
       });
 
       testWidgets('is marked as button in semantics', (tester) async {
@@ -139,9 +204,19 @@ void main() {
         await tester.pumpAndSettle();
 
         final semantics = tester.getSemantics(
-          find.bySemanticsLabel('Open the clip library'),
+          find.bySemanticsLabel('Clip library, no clips'),
         );
         expect(semantics.flagsCollection.isButton, isTrue);
+      });
+    });
+
+    group('disabled state', () {
+      testWidgets('InkWell onTap is null when no clips', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+        expect(inkWell.onTap, isNull);
       });
     });
 

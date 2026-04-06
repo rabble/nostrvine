@@ -56,7 +56,7 @@ void main() {
             body: BlocProvider<DraftsLibraryBloc>.value(
               value: mockBloc,
               child: DraftsTab(
-                isSelectionMode: isSelectionMode,
+                showRecordButton: isSelectionMode,
                 showAutosavedDraft: showAutosavedDraft,
               ),
             ),

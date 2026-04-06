@@ -19,13 +19,13 @@ import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 class ClipsTab extends StatelessWidget {
   /// Creates a clips tab.
   const ClipsTab({
-    required this.isSelectionMode,
+    required this.showRecordButton,
     this.targetAspectRatio,
     super.key,
   });
 
   /// Whether in selection mode (adding to existing project).
-  final bool isSelectionMode;
+  final bool showRecordButton;
 
   /// Target aspect ratio for filtering compatible clips.
   final double? targetAspectRatio;
@@ -47,7 +47,7 @@ class ClipsTab extends StatelessWidget {
             title: 'No Clips Yet',
             // TODO(l10n): Replace with context.l10n when localization is added.
             subtitle: 'Your recorded video clips will appear here',
-            showRecordButton: !isSelectionMode,
+            showRecordButton: showRecordButton,
           );
         }
 

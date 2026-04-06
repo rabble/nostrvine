@@ -397,7 +397,7 @@ class _SelectionBody extends StatelessWidget {
         Expanded(
           child: ClipsTab(
             targetAspectRatio: targetAspectRatio,
-            isSelectionMode: true,
+            showRecordButton: true,
           ),
         ),
       ],
@@ -420,12 +420,12 @@ class _TabBody extends StatelessWidget {
       controller: tabController,
       children: [
         const DraftsTab(
-          isSelectionMode: true,
+          showRecordButton: false,
           showAutosavedDraft: false,
         ),
         ClipsTab(
           targetAspectRatio: targetAspectRatio,
-          isSelectionMode: true,
+          showRecordButton: false,
         ),
       ],
     );

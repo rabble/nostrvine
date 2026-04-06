@@ -26,12 +26,12 @@ import 'package:openvine/widgets/library/empty_library_state.dart';
 class DraftsTab extends ConsumerWidget {
   /// Creates a drafts tab.
   const DraftsTab({
-    required this.isSelectionMode,
+    required this.showRecordButton,
     this.showAutosavedDraft = true,
     super.key,
   });
 
-  final bool isSelectionMode;
+  final bool showRecordButton;
 
   /// Whether to include the autosaved draft in the list.
   final bool showAutosavedDraft;
@@ -78,7 +78,7 @@ class DraftsTab extends ConsumerWidget {
                       .toList();
             if (filtered.isEmpty) {
               return EmptyLibraryState(
-                showRecordButton: !isSelectionMode,
+                showRecordButton: showRecordButton,
                 icon: DivineIconName.pencilSimple,
                 // TODO(l10n): Replace with context.l10n when
                 // localization is added.

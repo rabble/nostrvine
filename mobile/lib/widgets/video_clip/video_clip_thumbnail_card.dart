@@ -192,11 +192,10 @@ class _DurationBadge extends StatelessWidget {
   }
 }
 
-/// Builds the selection overlay with green border and check icon.
+/// Builds the selection overlay with a numbered circle indicator.
 ///
-/// Returns a list containing:
-/// - A [DecoratedBox] for the 4px green border
-/// - A positioned check icon in a circular green background
+/// Shows a circular badge in the top-right corner. When selected, displays
+/// the selection index number; when unselected, shows an empty circle.
 class _SelectionOverlay extends StatelessWidget {
   const _SelectionOverlay({required this.selectionIndex});
 

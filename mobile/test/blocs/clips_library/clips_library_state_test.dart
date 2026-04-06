@@ -41,7 +41,6 @@ void main() {
       expect(state.clips, isEmpty);
       expect(state.selectedClipIds, isEmpty);
       expect(state.selectedDuration, Duration.zero);
-      expect(state.errorMessage, isNull);
       expect(state.lastGallerySaveResult, isNull);
       expect(state.lastDeletedCount, isNull);
     });
@@ -109,12 +108,6 @@ void main() {
         expect(updated.selectedDuration, const Duration(seconds: 10));
       });
 
-      test('clears error when clearError is true', () {
-        const state = ClipsLibraryState(errorMessage: 'Some error');
-        final updated = state.copyWith(clearError: true);
-        expect(updated.errorMessage, isNull);
-      });
-
       test(
         'clears gallery save result when clearGallerySaveResult is true',
         () {
@@ -171,7 +164,6 @@ void main() {
         clips: [clip1],
         selectedClipIds: const {'clip1'},
         selectedDuration: const Duration(seconds: 5),
-        errorMessage: 'error',
         lastGallerySaveResult: const GallerySaveResultSuccess(
           successCount: 1,
           failureCount: 0,
@@ -184,7 +176,6 @@ void main() {
         [clip1],
         {'clip1'},
         const Duration(seconds: 5),
-        'error',
         const GallerySaveResultSuccess(successCount: 1, failureCount: 0),
         1,
       ]);

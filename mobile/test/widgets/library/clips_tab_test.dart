@@ -54,7 +54,7 @@ void main() {
           body: BlocProvider<ClipsLibraryBloc>.value(
             value: mockBloc,
             child: ClipsTab(
-              isSelectionMode: isSelectionMode,
+              showRecordButton: isSelectionMode,
               targetAspectRatio: targetAspectRatio,
             ),
           ),

@@ -67,11 +67,11 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets('screen with tabs', (tester) async {
+      testWidgets('screen with tabs and My library title', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
 
-        // Should find tab bar with Drafts and Clips
+        expect(find.text('My library'), findsOneWidget);
         expect(find.text('Drafts'), findsOneWidget);
         expect(find.text('Clips'), findsOneWidget);
       });
@@ -98,6 +98,21 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ClipSelectionHeader), findsOneWidget);
+      });
+
+      testWidgets('no app bar in selection mode', (tester) async {
+        await tester.pumpWidget(buildWidget(selectionMode: true));
+        await tester.pump();
+
+        // In selection mode, appBar is null
+        expect(find.text('My library'), findsNothing);
+      });
+
+      testWidgets('no FloatingActionButton', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
+
+        expect(find.byType(FloatingActionButton), findsNothing);
       });
     });
 
