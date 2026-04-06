@@ -383,6 +383,34 @@ void main() {
         },
       );
     });
+
+    group('cancelRenderVideo', () {
+      test(
+        'resets isProcessing to false when clips are already empty',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/original.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          notifier.setProcessing(true);
+          container.read(clipManagerProvider.notifier).clearClips();
+
+          await notifier.cancelRenderVideo();
+
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isFalse,
+          );
+        },
+      );
+    });
   });
 
   group('getActiveDraft', () {

@@ -886,6 +886,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: .video,
       );
+      state = state.copyWith(isProcessing: false);
       return;
     }
 
