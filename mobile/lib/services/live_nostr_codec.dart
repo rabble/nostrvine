@@ -31,10 +31,10 @@ class LiveNostrCodec {
   }
 
   Future<Event> buildRoomEvent(LiveRoom room, NostrSigner signer) async {
-    final pubkey = await signer.getPublicKey();
-    if (pubkey == null || pubkey.isEmpty) {
-      throw StateError('Signer did not provide a public key for room event');
-    }
+    final pubkey = await _requiredSignerPubkey(
+      signer,
+      label: 'room event',
+    );
     if (pubkey != room.hostPubkey) {
       throw StateError('Signer pubkey does not match the room host pubkey');
     }
@@ -59,6 +59,106 @@ class LiveNostrCodec {
       throw StateError('Signer returned null while signing the room event');
     }
     return signedEvent;
+  }
+
+  Future<Event> buildSessionEvent({
+    required LiveSession session,
+    required String roomAddress,
+    required String hostPubkey,
+    required NostrSigner signer,
+  }) async {
+    final pubkey = await _requiredSignerPubkey(
+      signer,
+      label: 'session event',
+    );
+    if (pubkey != hostPubkey) {
+      throw StateError('Signer pubkey does not match the session host pubkey');
+    }
+
+    final tags = <List<String>>[
+      ['d', session.id],
+      ['a', roomAddress],
+      ['status', session.status.tagValue],
+      ['starts', _unixSeconds(session.startedAt)],
+      ['current_participants', session.audienceCount.toString()],
+    ];
+
+    if (session.endedAt != null) {
+      tags.add(['ends', _unixSeconds(session.endedAt!)]);
+    }
+
+    for (final speakerPubkey in session.speakerPubkeys) {
+      final role = speakerPubkey == hostPubkey
+          ? LiveRole.host
+          : LiveRole.speaker;
+      tags.add(['p', speakerPubkey, '', role.name]);
+    }
+
+    return _signEvent(
+      signer: signer,
+      pubkey: pubkey,
+      kind: 30313,
+      tags: tags,
+      content: '',
+      label: 'session event',
+    );
+  }
+
+  Future<Event> buildPresenceEvent({
+    required String sessionAddress,
+    required LiveRole role,
+    required bool handRaised,
+    required NostrSigner signer,
+  }) async {
+    final pubkey = await _requiredSignerPubkey(
+      signer,
+      label: 'presence event',
+    );
+    final handValue = handRaised ? '1' : '0';
+
+    return _signEvent(
+      signer: signer,
+      pubkey: pubkey,
+      kind: 10312,
+      tags: <List<String>>[
+        ['a', sessionAddress],
+        ['role', role.name],
+        ['hand', handValue],
+      ],
+      content: '',
+      label: 'presence event',
+    );
+  }
+
+  Future<Event> buildChatMessageEvent({
+    required String sessionAddress,
+    required String content,
+    required NostrSigner signer,
+  }) async {
+    final trimmedContent = content.trim();
+    if (trimmedContent.isEmpty) {
+      throw ArgumentError.value(
+        content,
+        'content',
+        'Chat message cannot be empty',
+      );
+    }
+
+    final pubkey = await _requiredSignerPubkey(
+      signer,
+      label: 'chat message event',
+    );
+
+    return _signEvent(
+      signer: signer,
+      pubkey: pubkey,
+      kind: 1311,
+      tags: <List<String>>[
+        ['a', sessionAddress],
+      ],
+      content: trimmedContent,
+      label: 'chat message event',
+    );
   }
 
   LiveSession parseSession(Event event) {
@@ -199,6 +299,10 @@ class LiveNostrCodec {
 
   int? _parseInt(String? rawValue) => int.tryParse(rawValue ?? '');
 
+  String _unixSeconds(DateTime value) {
+    return (value.toUtc().millisecondsSinceEpoch ~/ 1000).toString();
+  }
+
   String _dTagFromAddress(String address) {
     final parts = address.split(':');
     return parts.length > 2 ? parts[2] : '';
@@ -213,5 +317,33 @@ class LiveNostrCodec {
       default:
         return false;
     }
+  }
+
+  Future<String> _requiredSignerPubkey(
+    NostrSigner signer, {
+    required String label,
+  }) async {
+    final pubkey = await signer.getPublicKey();
+    if (pubkey == null || pubkey.isEmpty) {
+      throw StateError('Signer did not provide a public key for $label');
+    }
+    return pubkey;
+  }
+
+  Future<Event> _signEvent({
+    required NostrSigner signer,
+    required String pubkey,
+    required int kind,
+    required List<List<String>> tags,
+    required String content,
+    required String label,
+  }) async {
+    final signedEvent = await signer.signEvent(
+      Event(pubkey, kind, tags, content),
+    );
+    if (signedEvent == null) {
+      throw StateError('Signer returned null while signing the $label');
+    }
+    return signedEvent;
   }
 }

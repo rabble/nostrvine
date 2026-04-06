@@ -1,0 +1,274 @@
+import 'dart:async';
+
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/models/live/live_presence.dart';
+import 'package:openvine/models/live/live_role.dart';
+import 'package:openvine/models/live/live_room.dart';
+import 'package:openvine/models/live/live_session.dart';
+import 'package:openvine/services/live_nostr_codec.dart';
+
+class LiveRepository {
+  LiveRepository({
+    required NostrClient nostrClient,
+    required LiveNostrCodec codec,
+  }) : _nostrClient = nostrClient,
+       _codec = codec;
+
+  final NostrClient _nostrClient;
+  final LiveNostrCodec _codec;
+
+  Future<List<LiveRoom>> fetchPublicRooms({int limit = 50}) async {
+    final events = await _nostrClient.queryEvents([
+      Filter(kinds: const <int>[30312], limit: limit),
+    ]);
+
+    final rooms = <String, LiveRoom>{};
+    for (final event in events) {
+      final room = _tryParseRoom(event);
+      if (room == null) {
+        continue;
+      }
+      if (room.visibility == LiveRoomVisibility.public) {
+        rooms[room.id] = room;
+      }
+    }
+
+    return _sortedRooms(rooms.values);
+  }
+
+  Stream<List<LiveRoom>> watchPublicRooms({int limit = 50}) {
+    return _watchCollection<LiveRoom>(
+      queryFilters: <Filter>[
+        Filter(kinds: const <int>[30312], limit: limit),
+      ],
+      subscribeFilters: <Filter>[
+        Filter(kinds: const <int>[30312], limit: limit),
+      ],
+      parse: _tryParseRoom,
+      keyOf: (room) => room.id,
+      shouldInclude: (room) => room.visibility == LiveRoomVisibility.public,
+      sort: _sortedRooms,
+      subscriptionPrefix: 'live_rooms',
+    );
+  }
+
+  Future<List<LiveSession>> fetchSessions({
+    String? roomAddress,
+    int limit = 50,
+  }) async {
+    final events = await _nostrClient.queryEvents([
+      Filter(
+        kinds: const <int>[30313],
+        a: roomAddress == null ? null : <String>[roomAddress],
+        limit: limit,
+      ),
+    ]);
+
+    final sessions = <String, LiveSession>{};
+    for (final event in events) {
+      final session = _tryParseSession(event);
+      if (session != null) {
+        sessions[session.id] = session;
+      }
+    }
+
+    return _sortedSessions(sessions.values);
+  }
+
+  Stream<List<LiveSession>> watchSessions({
+    String? roomAddress,
+    int limit = 50,
+  }) {
+    final filters = <Filter>[
+      Filter(
+        kinds: const <int>[30313],
+        a: roomAddress == null ? null : <String>[roomAddress],
+        limit: limit,
+      ),
+    ];
+
+    return _watchCollection<LiveSession>(
+      queryFilters: filters,
+      subscribeFilters: filters,
+      parse: _tryParseSession,
+      keyOf: (session) => session.id,
+      sort: _sortedSessions,
+      subscriptionPrefix: 'live_sessions',
+    );
+  }
+
+  Stream<List<LivePresence>> watchPresence({
+    required String sessionAddress,
+    int limit = 50,
+  }) {
+    final filters = <Filter>[
+      Filter(
+        kinds: const <int>[10312],
+        a: <String>[sessionAddress],
+        limit: limit,
+      ),
+    ];
+
+    return _watchCollection<LivePresence>(
+      queryFilters: filters,
+      subscribeFilters: filters,
+      parse: _tryParsePresence,
+      keyOf: (presence) => '${presence.sessionId}:${presence.pubkey}',
+      sort: _sortedPresence,
+      subscriptionPrefix: 'live_presence',
+    );
+  }
+
+  Future<Event?> publishRoom(LiveRoom room) async {
+    final signedEvent = await _codec.buildRoomEvent(room, _nostrClient.signer);
+    return _nostrClient.publishEvent(
+      signedEvent,
+      targetRelays: room.relays.isEmpty ? null : room.relays,
+    );
+  }
+
+  Future<Event?> publishSession({
+    required LiveSession session,
+    required String roomAddress,
+    required String hostPubkey,
+  }) async {
+    final signedEvent = await _codec.buildSessionEvent(
+      session: session,
+      roomAddress: roomAddress,
+      hostPubkey: hostPubkey,
+      signer: _nostrClient.signer,
+    );
+    return _nostrClient.publishEvent(signedEvent);
+  }
+
+  Future<Event?> publishPresence({
+    required String sessionAddress,
+    required LiveRole role,
+    required bool handRaised,
+  }) async {
+    final signedEvent = await _codec.buildPresenceEvent(
+      sessionAddress: sessionAddress,
+      role: role,
+      handRaised: handRaised,
+      signer: _nostrClient.signer,
+    );
+    return _nostrClient.publishEvent(signedEvent);
+  }
+
+  Stream<List<T>> _watchCollection<T>({
+    required List<Filter> queryFilters,
+    required List<Filter> subscribeFilters,
+    required T? Function(Event event) parse,
+    required String Function(T item) keyOf,
+    required List<T> Function(Iterable<T> items) sort,
+    required String subscriptionPrefix,
+    bool Function(T item)? shouldInclude,
+  }) {
+    final cache = <String, T>{};
+    final subscriptionId =
+        '$subscriptionPrefix-${DateTime.now().microsecondsSinceEpoch}';
+    late final StreamController<List<T>> controller;
+    StreamSubscription<Event>? subscription;
+
+    Future<void> loadInitial() async {
+      final events = await _nostrClient.queryEvents(
+        queryFilters,
+        subscriptionId: '${subscriptionId}_initial',
+      );
+      for (final event in events) {
+        final item = parse(event);
+        if (item == null) {
+          continue;
+        }
+        if (shouldInclude != null && !shouldInclude(item)) {
+          cache.remove(keyOf(item));
+          continue;
+        }
+        cache[keyOf(item)] = item;
+      }
+      if (!controller.isClosed) {
+        controller.add(sort(cache.values));
+      }
+    }
+
+    void handleEvent(Event event) {
+      final item = parse(event);
+      if (item == null) {
+        return;
+      }
+
+      if (shouldInclude != null && !shouldInclude(item)) {
+        cache.remove(keyOf(item));
+      } else {
+        cache[keyOf(item)] = item;
+      }
+
+      if (!controller.isClosed) {
+        controller.add(sort(cache.values));
+      }
+    }
+
+    controller = StreamController<List<T>>(
+      onListen: () {
+        unawaited(loadInitial());
+        subscription = _nostrClient
+            .subscribe(
+              subscribeFilters,
+              subscriptionId: subscriptionId,
+            )
+            .listen(handleEvent);
+      },
+      onCancel: () async {
+        await subscription?.cancel();
+        await _nostrClient.unsubscribe(subscriptionId);
+      },
+    );
+
+    return controller.stream;
+  }
+
+  LiveRoom? _tryParseRoom(Event event) {
+    try {
+      return _codec.parseRoom(event);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  LiveSession? _tryParseSession(Event event) {
+    try {
+      return _codec.parseSession(event);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  LivePresence? _tryParsePresence(Event event) {
+    try {
+      return _codec.parsePresence(event);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  List<LiveRoom> _sortedRooms(Iterable<LiveRoom> items) {
+    final rooms = items.toList(growable: false);
+    rooms.sort(
+      (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+    );
+    return rooms;
+  }
+
+  List<LiveSession> _sortedSessions(Iterable<LiveSession> items) {
+    final sessions = items.toList(growable: false);
+    sessions.sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    return sessions;
+  }
+
+  List<LivePresence> _sortedPresence(Iterable<LivePresence> items) {
+    final presence = items.toList(growable: false);
+    presence.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return presence;
+  }
+}
