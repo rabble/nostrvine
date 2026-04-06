@@ -102,6 +102,27 @@ class FunnelcakeApiClient {
     };
   }
 
+  /// Builds the notifications endpoint URI for a user.
+  ///
+  /// The returned URI includes the same query parameters used by
+  /// [getNotifications] so callers can sign the exact request URL.
+  Uri notificationsUri({
+    required String pubkey,
+    int limit = 50,
+    String? cursor,
+  }) {
+    final effectiveBefore =
+        cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
+    final queryParams = <String, String>{
+      'limit': '$limit',
+      'before': effectiveBefore,
+    };
+
+    return Uri.parse(
+      '$_baseUrl/api/users/$pubkey/notifications',
+    ).replace(queryParameters: queryParams);
+  }
+
   /// Fetches videos by a specific author.
   ///
   /// [pubkey] is the author's public key (hex format).
@@ -1782,14 +1803,11 @@ class FunnelcakeApiClient {
     String? cursor,
     Map<String, String>? authHeaders,
   }) async {
-    final queryParams = <String, String>{
-      'limit': '$limit',
-      'before': ?cursor,
-    };
-
-    final url = Uri.parse(
-      '$_baseUrl/api/users/$pubkey/notifications',
-    ).replace(queryParameters: queryParams);
+    final url = notificationsUri(
+      pubkey: pubkey,
+      limit: limit,
+      cursor: cursor,
+    );
 
     try {
       final response = await _httpClient

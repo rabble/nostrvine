@@ -65,10 +65,16 @@ class NotificationRepository {
   Future<NotificationPage> getNotifications({String? cursor}) async {
     try {
       final effectiveCursor = cursor ?? _lastCursor;
+      final requestUrl = _funnelcakeApiClient
+          .notificationsUri(
+            pubkey: _userPubkey,
+            cursor: effectiveCursor,
+          )
+          .toString();
 
       final authHeaders = _authHeadersProvider != null
           ? await _authHeadersProvider(
-              '/api/users/$_userPubkey/notifications',
+              requestUrl,
               'GET',
             )
           : <String, String>{};

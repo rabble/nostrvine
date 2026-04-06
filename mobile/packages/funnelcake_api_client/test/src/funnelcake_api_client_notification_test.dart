@@ -68,6 +68,12 @@ void main() {
           url.path,
           contains('/api/users/$testPubkey/notifications'),
         );
+        expect(url.queryParameters['limit'], equals('50'));
+        expect(url.queryParameters['before'], isNotNull);
+        expect(
+          int.tryParse(url.queryParameters['before']!),
+          isNotNull,
+        );
       });
 
       test('passes cursor as before parameter', () async {

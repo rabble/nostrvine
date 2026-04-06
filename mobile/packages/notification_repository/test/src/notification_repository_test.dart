@@ -32,6 +32,27 @@ void main() {
     profileRepository = _MockProfileRepository();
     notificationsDao = _MockNotificationsDao();
     nostrClient = _MockNostrClient();
+    when(
+      () => funnelcakeApiClient.notificationsUri(
+        pubkey: any(named: 'pubkey'),
+        limit: any(named: 'limit'),
+        cursor: any(named: 'cursor'),
+      ),
+    ).thenAnswer((invocation) {
+      final pubkey = invocation.namedArguments[#pubkey] as String;
+      final limit = invocation.namedArguments[#limit] as int? ?? 50;
+      final cursor = invocation.namedArguments[#cursor] as String?;
+      final effectiveBefore =
+          cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
+      return Uri.parse(
+        'https://api.example.com/api/users/$pubkey/notifications',
+      ).replace(
+        queryParameters: <String, String>{
+          'limit': '$limit',
+          'before': effectiveBefore,
+        },
+      );
+    });
     repository = NotificationRepository(
       funnelcakeApiClient: funnelcakeApiClient,
       profileRepository: profileRepository,
@@ -117,6 +138,72 @@ void main() {
 
   group(NotificationRepository, () {
     group('getNotifications', () {
+      test('signs the full first-page notifications URL', () async {
+        var signedUrl = '';
+        var signedMethod = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          nostrClient: nostrClient,
+          authHeadersProvider: (url, method) async {
+            signedUrl = url;
+            signedMethod = method;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([]);
+        stubProfiles({});
+
+        await repository.getNotifications();
+
+        final signedUri = Uri.parse(signedUrl);
+        expect(
+          '${signedUri.scheme}://${signedUri.host}${signedUri.path}',
+          equals(
+            'https://api.example.com/api/users/$userPubkey/notifications',
+          ),
+        );
+        expect(signedUri.queryParameters['limit'], equals('50'));
+        expect(signedUri.queryParameters['before'], isNotNull);
+        expect(
+          int.tryParse(signedUri.queryParameters['before']!),
+          isNotNull,
+        );
+        expect(signedMethod, equals('GET'));
+      });
+
+      test('signs the full paginated notifications URL with cursor', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          nostrClient: nostrClient,
+          authHeadersProvider: (url, method) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([], nextCursor: 'cursor_abc', hasMore: true);
+        stubProfiles({});
+
+        await repository.getNotifications();
+        stubNotifications([], nextCursor: 'cursor_def');
+
+        await repository.getNotifications();
+
+        expect(
+          signedUrl,
+          equals(
+            'https://api.example.com/api/users/$userPubkey/notifications'
+            '?limit=50&before=cursor_abc',
+          ),
+        );
+      });
+
       test('returns enriched items with real profile data', () async {
         stubNotifications([
           makeNotification(
