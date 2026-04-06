@@ -411,6 +411,50 @@ void main() {
         },
       );
     });
+
+    group('resolveRenderTaskId', () {
+      test('prefers the active render task id when clips are empty', () {
+        expect(
+          resolveRenderTaskId(
+            activeRenderTaskId: 'render-123',
+            clips: const [],
+          ),
+          'render-123',
+        );
+      });
+
+      test(
+        'falls back to the first clip id when no active task is tracked',
+        () {
+          final clip = DivineVideoClip(
+            id: 'clip-123',
+            video: EditorVideo.file('/docs/original.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          expect(
+            resolveRenderTaskId(
+              activeRenderTaskId: null,
+              clips: [clip],
+            ),
+            'clip-123',
+          );
+        },
+      );
+
+      test('returns null when there is no active task and no clips', () {
+        expect(
+          resolveRenderTaskId(
+            activeRenderTaskId: null,
+            clips: const [],
+          ),
+          isNull,
+        );
+      });
+    });
   });
 
   group('getActiveDraft', () {

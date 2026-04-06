@@ -193,6 +193,7 @@ class VideoEditorRenderService {
     double customAudioVolume = 1.0,
     bool aiTrainingOptOut = true,
     CompleteParameters? parameters,
+    String? taskId,
   }) async {
     if (clips.isEmpty) return null;
 
@@ -212,6 +213,7 @@ class VideoEditorRenderService {
       customAudioVolume: customAudioVolume,
       usePersistentStorage: true,
       parameters: parameters,
+      taskId: taskId,
     );
 
     if (outputPath == null) return null;

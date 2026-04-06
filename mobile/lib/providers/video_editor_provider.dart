@@ -34,6 +34,18 @@ final videoEditorProvider =
       VideoEditorNotifier.new,
     );
 
+@visibleForTesting
+String? resolveRenderTaskId({
+  required String? activeRenderTaskId,
+  required List<DivineVideoClip> clips,
+}) {
+  if (activeRenderTaskId != null && activeRenderTaskId.isNotEmpty) {
+    return activeRenderTaskId;
+  }
+  if (clips.isEmpty) return null;
+  return clips.first.id;
+}
+
 /// Manages video editor state and operations.
 ///
 /// Handles:
@@ -67,6 +79,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       ref.read(draftStorageServiceProvider);
 
   bool get isAutosavedDraft => draftId == VideoEditorConstants.autoSaveId;
+
+  String? _activeRenderTaskId;
 
   // === LIFECYCLE ===
 
@@ -840,6 +854,21 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     setProcessing(true);
 
     final renderParameters = _buildRenderParameters();
+    final taskId = resolveRenderTaskId(
+      activeRenderTaskId: _activeRenderTaskId,
+      clips: _clips,
+    );
+    if (taskId == null) {
+      Log.warning(
+        '⚠️ Skipping render start - no clips available',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+      setProcessing(false);
+      return;
+    }
+
+    _activeRenderTaskId = taskId;
 
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
@@ -849,7 +878,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       parameters: renderParameters,
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
-    );
+      taskId: taskId,
+    ).whenComplete(() => _activeRenderTaskId = null);
 
     if (result == null) {
       Log.warning(
@@ -880,9 +910,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Cancel an ongoing video render operation.
   Future<void> cancelRenderVideo() async {
-    if (_clips.isEmpty) {
+    final taskId = resolveRenderTaskId(
+      activeRenderTaskId: _activeRenderTaskId,
+      clips: _clips,
+    );
+    if (taskId == null) {
       Log.debug(
-        '⚠️ Skipping render cancel - no clips available',
+        '⚠️ Skipping render cancel - no active task available',
         name: 'VideoEditorNotifier',
         category: .video,
       );
@@ -890,7 +924,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       return;
     }
 
-    await VideoEditorRenderService.cancelTask(_clips.first.id);
+    await VideoEditorRenderService.cancelTask(taskId);
 
     state = state.copyWith(isProcessing: false);
   }
