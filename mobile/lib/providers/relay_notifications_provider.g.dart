@@ -73,7 +73,7 @@ final class RelayNotificationsProvider
 }
 
 String _$relayNotificationsHash() =>
-    r'1f5585f9aa47e676c24763b6dec4248c2f47c840';
+    r'eb065f1687fbaeada9edf46ba2f9f9663e814fb3';
 
 /// Provider for relay-based notifications with REST API pagination
 ///
@@ -166,7 +166,7 @@ final class RelayNotificationApiServiceProvider
 }
 
 String _$relayNotificationApiServiceHash() =>
-    r'173d70a683aaddef8c8e3b1be8b85facfb247cfa';
+    r'8a7a6103fecbdfe08649ef6869a43fd27aa4f410';
 
 /// Provider to get current unread notification count
 

@@ -110,9 +110,7 @@ void main() {
         httpClient: MockClient(
           (_) async => http.Response('Server error', 500),
         ),
-      );
-
-      service.record(_auditEvent());
+      )..record(_auditEvent());
 
       final uploaded = await service.uploadQueuedEvents();
 
@@ -137,9 +135,7 @@ void main() {
           requestCount += 1;
           return responseCompleter.future;
         }),
-      );
-
-      service.record(_auditEvent());
+      )..record(_auditEvent());
 
       final firstUpload = service.uploadQueuedEvents();
       await Future<void>.delayed(Duration.zero);

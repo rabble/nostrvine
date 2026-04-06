@@ -39,6 +39,25 @@ VideoContentFilter createNsfwFilter(
     // are noisy and would otherwise block autoplay on ordinary videos.
     final modLabels = video.moderationLabels;
     if (modLabels.isNotEmpty) {
+      // TODO(moderation-labels): Coordinate with Funnelcake server on
+      // namespacing conventions for non-safety labels (e.g. topic:*, lang:*,
+      // quality:*) so they can bypass this hide gate. Today any new ML label
+      // the mobile client has not been updated to recognize will force-hide
+      // every video carrying it, regardless of user preference. The
+      // conservative default is correct for safety labels but is too broad
+      // if the server starts emitting discovery/taxonomy labels in the same
+      // field. Track at: TBD (open an issue when this PR lands).
+      //
+      // Conservative default: if the server tagged a video with a label
+      // we don't recognize, treat it as a hide signal. The alternative —
+      // silently showing the video — defeats the safety system whenever
+      // the relay introduces a new label the client has not been updated
+      // to understand.
+      final hasUnknown = modLabels.any(
+        (l) => ContentLabel.fromValue(l) == null,
+      );
+      if (hasUnknown) return true;
+
       final pref = contentFilterService.getPreferenceForLabels(modLabels);
       if (pref == ContentFilterPreference.hide) return true;
     }

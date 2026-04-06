@@ -2317,6 +2317,162 @@ void main() {
         controller.dispose();
       });
 
+      test(
+        'current video restores volume without replaying '
+        'when initial buffering ends and playback is already running',
+        () async {
+          final bufferingSetups = <String, MockPlayerSetup>{};
+          final bufferingPool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup(
+                isPlaying: true,
+                isBuffering: true,
+              );
+              bufferingSetups[url] = setup;
+
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              return mockPooledPlayer;
+            },
+          );
+
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: bufferingPool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup0 = bufferingSetups[videos[0].url]!;
+
+          clearInteractions(setup0.player);
+
+          setup0.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(() => setup0.player.setVolume(100)).called(1);
+          verifyNever(setup0.player.play);
+
+          controller.dispose();
+          for (final setup in bufferingSetups.values) {
+            await setup.dispose();
+          }
+          await bufferingPool.dispose();
+        },
+      );
+
+      test(
+        'current video explicitly resumes playback when initial buffering ends',
+        () async {
+          final bufferingSetups = <String, MockPlayerSetup>{};
+          final bufferingPool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup(isBuffering: true);
+              bufferingSetups[url] = setup;
+
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              return mockPooledPlayer;
+            },
+          );
+
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: bufferingPool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup0 = bufferingSetups[videos[0].url]!;
+
+          clearInteractions(setup0.player);
+
+          setup0.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(() => setup0.player.setVolume(100)).called(1);
+          verify(setup0.player.play).called(1);
+
+          controller.dispose();
+          for (final setup in bufferingSetups.values) {
+            await setup.dispose();
+          }
+          await bufferingPool.dispose();
+        },
+      );
+
+      test(
+        'current video resumes at the controller volume '
+        'when initial buffering ends',
+        () async {
+          final bufferingSetups = <String, MockPlayerSetup>{};
+          final bufferingPool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup(isBuffering: true);
+              bufferingSetups[url] = setup;
+
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              return mockPooledPlayer;
+            },
+          );
+
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: bufferingPool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup0 = bufferingSetups[videos[0].url]!;
+
+          controller.setVolume(0.4);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          clearInteractions(setup0.player);
+
+          setup0.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(() => setup0.player.setVolume(40)).called(1);
+          verify(setup0.player.play).called(1);
+          verifyNever(() => setup0.player.setVolume(100));
+
+          controller.dispose();
+          for (final setup in bufferingSetups.values) {
+            await setup.dispose();
+          }
+          await bufferingPool.dispose();
+        },
+      );
+
       test('_releasePlayer mutes and pauses player before releasing', () async {
         final videos = createTestVideos(count: 10);
         final controller = VideoFeedController(
@@ -2870,6 +3026,59 @@ void main() {
 
         verify(setup.player.play).called(greaterThanOrEqualTo(1));
       });
+
+      test(
+        'allows two zero-duration rebuffer recoveries before '
+        'marking error on the third',
+        () async {
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(videos: videos, pool: pool);
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup = playerSetups[videos[0].url]!;
+
+          // Initial ready transition.
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+
+          clearInteractions(setup.player);
+
+          // First real rebuffer cycle: should still attempt recovery.
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+          verify(setup.player.play).called(greaterThanOrEqualTo(1));
+
+          clearInteractions(setup.player);
+
+          // Second real rebuffer cycle: still recovers (maxStallRetries = 2).
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+          verify(setup.player.play).called(greaterThanOrEqualTo(1));
+
+          clearInteractions(setup.player);
+
+          // Third real rebuffer cycle with no media metadata: give up.
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.error));
+          verifyNever(setup.player.play);
+        },
+      );
 
       test('rebuffer after seek calls player.play() '
           'for current active video', () async {
@@ -3495,8 +3704,8 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Wait for stale detection:
-        // 5 grace ticks (500ms) + 3 stale ticks (300ms) + async buffer
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        // 5 grace ticks (500ms) + 8 stale ticks (800ms) + async buffer
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery should have called pause + seek + play
         verify(setup.player.pause).called(greaterThanOrEqualTo(1));
@@ -3532,7 +3741,7 @@ void main() {
 
         // Let heartbeat run through grace + threshold — position always
         // advances
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // seek should only be called for the initial _resume seek-to-zero
         // check, not for stale recovery
@@ -3564,7 +3773,7 @@ void main() {
 
         setup.bufferingController.add(false);
         // Wait through grace + threshold — buffering prevents recovery
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery seek should NOT be called — buffering resets stale count
         verifyNever(
@@ -3597,7 +3806,7 @@ void main() {
 
         // Swipe away before threshold is reached — resets stale tracking
         controller.onPageChanged(1);
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery seek to 533ms should NOT have been called on index 0
         verifyNever(
@@ -3880,8 +4089,8 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Wait for stale detection:
-        // 5 grace ticks (500ms) + 3 stale ticks (300ms) + async buffer
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        // 5 grace ticks (500ms) + 8 stale ticks (800ms) + async buffer
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery should have called pause + seek + play
         verify(setup.player.pause).called(greaterThanOrEqualTo(1));
@@ -3917,7 +4126,7 @@ void main() {
 
         // Let heartbeat run through grace + threshold — position always
         // advances
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // seek should only be called for the initial _resume seek-to-zero
         // check, not for stale recovery
@@ -3949,7 +4158,7 @@ void main() {
 
         setup.bufferingController.add(false);
         // Wait through grace + threshold — buffering prevents recovery
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery seek should NOT be called — buffering resets stale count
         verifyNever(
@@ -3982,7 +4191,7 @@ void main() {
 
         // Swipe away before threshold is reached — resets stale tracking
         controller.onPageChanged(1);
-        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await Future<void>.delayed(const Duration(milliseconds: 1700));
 
         // Recovery seek to 533ms should NOT have been called on index 0
         verifyNever(
@@ -4137,6 +4346,39 @@ void main() {
 
         controller.dispose();
       });
+
+      test('play() resumes at the controller volume', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+          preloadAhead: 0,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        controller.setVolume(0.4);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        controller.pause();
+        clearInteractions(setup.player);
+        when(() => setup.state.playing).thenReturn(false);
+
+        controller.play();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(() => setup.player.setVolume(40)).called(greaterThan(0));
+        verifyNever(() => setup.player.setVolume(100));
+        verify(setup.player.play).called(greaterThan(0));
+
+        controller.dispose();
+      });
     });
 
     group('constructor edge cases', () {
@@ -4283,10 +4525,10 @@ void main() {
         );
 
         // Wait for stale detection cycles.
-        // Heartbeat interval = 100ms, threshold = 3, max attempts = 2.
-        // Each cycle: 3 heartbeats (300ms). Need 3 cycles for
-        // attempts to exceed 2. Total ~900ms + processing.
-        await Future<void>.delayed(const Duration(seconds: 4));
+        // Heartbeat interval = 100ms, threshold = 8, max attempts = 2.
+        // Each cycle: 8 heartbeats (800ms). Need 3 cycles for
+        // attempts to exceed 2. Total ~2400ms + processing + grace.
+        await Future<void>.delayed(const Duration(seconds: 5));
 
         expect(
           controller.getLoadState(0),

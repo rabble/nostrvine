@@ -19,6 +19,7 @@ class TestRelay extends Relay {
     List<dynamic> message, {
     bool? forceSend,
     bool queueIfFailed = true,
+    bool skipReconnect = false,
   }) async => true;
 }
 

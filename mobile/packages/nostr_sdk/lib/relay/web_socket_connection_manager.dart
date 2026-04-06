@@ -43,7 +43,7 @@ class WebSocketConfig {
     this.maxReconnectAttempts = 10,
     this.baseReconnectDelay = const Duration(seconds: 2),
     this.maxReconnectDelay = const Duration(minutes: 5),
-    this.connectionTimeout = const Duration(seconds: 30),
+    this.connectionTimeout = const Duration(seconds: 10),
     this.heartbeatInterval = const Duration(seconds: 30),
     this.idleTimeout = const Duration(seconds: 90),
   });
@@ -193,6 +193,12 @@ class WebSocketConnectionManager {
       log('Connecting to $url');
       _channel = _channelFactory.create(uri);
 
+      // Wait for the WebSocket handshake to complete. Without this,
+      // IOWebSocketChannel.connect() returns immediately and DNS/TLS
+      // failures surface as unhandled async errors in the zone instead
+      // of being caught here.
+      await _channel!.ready.timeout(config.connectionTimeout);
+
       // Set up message listener
       _channelSubscription = _channel!.stream.listen(
         _onMessage,
@@ -215,9 +221,26 @@ class WebSocketConnectionManager {
       log('Connected to $url');
 
       return true;
+    } on WebSocketChannelException catch (e) {
+      log('Connection failed (WebSocket): $e');
+      _errorController.add('Connection failed: $e');
+      _channel = null;
+      _setState(ConnectionState.disconnected);
+      return false;
+    } on TimeoutException {
+      log('Connection timed out after ${config.connectionTimeout}');
+      _errorController.add('Connection timed out');
+      // Clean up the channel that never finished connecting
+      try {
+        await _channel?.sink.close();
+      } catch (_) {}
+      _channel = null;
+      _setState(ConnectionState.disconnected);
+      return false;
     } catch (e) {
       log('Connection failed: $e');
       _errorController.add('Connection failed: $e');
+      _channel = null;
       _setState(ConnectionState.disconnected);
       return false;
     }
@@ -284,11 +307,17 @@ class WebSocketConnectionManager {
 
   /// Send a message through the WebSocket.
   ///
-  /// If disconnected, attempts to reconnect first.
+  /// If disconnected, attempts to reconnect first (unless [skipReconnect]
+  /// is true). Set [skipReconnect] to true for query fan-out paths where
+  /// blocking on reconnection would delay all other relay queries.
   /// Returns true if message was sent, false if send failed.
-  Future<bool> send(String message) async {
+  Future<bool> send(String message, {bool skipReconnect = false}) async {
     // Try to reconnect if disconnected
     if (_state == ConnectionState.disconnected) {
+      if (skipReconnect) {
+        log('Disconnected, skipping reconnect (skipReconnect=true)');
+        return false;
+      }
       log('Disconnected, attempting reconnect before send');
       final connected = await _tryReconnect();
       if (!connected) {
@@ -329,10 +358,10 @@ class WebSocketConnectionManager {
   }
 
   /// Send a JSON-encodable message asynchronously (with reconnection)
-  Future<bool> sendJson(dynamic data) async {
+  Future<bool> sendJson(dynamic data, {bool skipReconnect = false}) async {
     try {
       final encoded = jsonEncode(data);
-      return send(encoded);
+      return send(encoded, skipReconnect: skipReconnect);
     } catch (e) {
       log('JSON encode error: $e');
       _errorController.add('JSON encode error: $e');

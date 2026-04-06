@@ -366,7 +366,7 @@ const List<String> _starterSlugs = [
 ];
 
 void _expectBundledApp({
-  required Iterable<dynamic> apps,
+  required Iterable<NostrAppDirectoryEntry> apps,
   required String slug,
   required String name,
   required String launchUrl,

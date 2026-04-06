@@ -60,15 +60,6 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
       return;
     }
 
-    if (!event.fetchResults) {
-      if (query == state.query && state.status != HashtagSearchStatus.initial) {
-        return; // preserve existing state including resultCount
-      }
-      final count = _hashtagRepository.countHashtagsLocally(query: query);
-      emit(HashtagSearchState(query: query, resultCount: count));
-      return;
-    }
-
     if (query == state.query && state.status != HashtagSearchStatus.initial) {
       return;
     }

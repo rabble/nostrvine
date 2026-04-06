@@ -31,6 +31,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/categories_repository.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/dm_sync_state.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
@@ -1954,11 +1955,13 @@ BugReportService bugReportService(Ref ref) {
 DmRepository dmRepository(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final db = ref.watch(databaseProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
 
   final repository = DmRepository(
     nostrClient: nostrService,
     directMessagesDao: db.directMessagesDao,
     conversationsDao: db.conversationsDao,
+    syncState: DmSyncState(prefs),
   );
 
   ref.onDispose(repository.stopListening);
@@ -1976,6 +1979,11 @@ DmRepository dmRepository(Ref ref) {
       // NIP-44 operations (signing, encrypting, decrypting).
       final signer = nostrService.signer;
 
+      // initialize() wires credentials only — it does NOT open the
+      // gift-wrap subscription. The inbox screen (InboxPage) starts the
+      // subscription via startListening() on mount and tears it down on
+      // dispose so cold start does no DM network/decrypt work.
+      // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
       repository.initialize(
         userPubkey: publicKey,
         signer: signer,

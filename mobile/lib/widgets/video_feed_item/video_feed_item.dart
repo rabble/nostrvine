@@ -251,8 +251,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       if (hasOverlay) return;
 
       Log.info(
-        '🔄 Playback watchdog: auto-resuming ${widget.video.id} '
-        '(native player stopped unexpectedly)',
+        'STUTTER_DEBUG widget_watchdog_resume '
+        'videoId=${widget.video.id} '
+        'positionMs=${value.position.inMilliseconds} '
+        'isPlaying=${value.isPlaying} '
+        'isBuffering=${value.isBuffering}',
         name: 'VideoFeedItem',
         category: LogCategory.video,
       );

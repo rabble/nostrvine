@@ -1697,6 +1697,7 @@ void main() {
 
       setUpAll(() {
         registerFallbackValue(_FakeSharedPreferences());
+        registerFallbackValue(<VideoEvent>[]);
       });
 
       setUp(() async {
@@ -1717,6 +1718,15 @@ void main() {
         when(
           () => mockCuratedListRepository.getSubscribedListVideoRefs(),
         ).thenReturn({});
+
+        // Default passthrough so existing cache tests keep working. Individual
+        // tests can override this stub to exercise the filter behavior.
+        when(
+          () => mockVideosRepository.applyContentPreferences(any()),
+        ).thenAnswer(
+          (invocation) =>
+              invocation.positionalArguments.first as List<VideoEvent>,
+        );
       });
 
       tearDown(() {
@@ -2004,6 +2014,104 @@ void main() {
         verify: (_) {
           // Cache read should only be called once (on first load)
           verify(() => mockCache.read(sharedPreferences)).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'filters cached videos through '
+        'VideosRepository.applyContentPreferences before emitting them',
+        setUp: () {
+          final hidden = VideoEvent(
+            id: '1111111111111111111111111111111111111111111111111111111111111111',
+            pubkey: '0' * 64,
+            createdAt: 1704067200,
+            content: '',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(
+              1704067200 * 1000,
+            ),
+            title: 'Hidden',
+            videoUrl: 'https://example.com/hidden.mp4',
+            moderationLabels: const ['nudity'],
+          );
+          final visible = VideoEvent(
+            id: '2222222222222222222222222222222222222222222222222222222222222222',
+            pubkey: '0' * 64,
+            createdAt: 1704067200,
+            content: '',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(
+              1704067200 * 1000,
+            ),
+            title: 'Visible',
+            videoUrl: 'https://example.com/visible.mp4',
+          );
+
+          when(
+            () => mockCache.read(sharedPreferences),
+          ).thenReturn(HomeFeedResult(videos: [hidden, visible]));
+          when(() => mockCache.write(any(), any())).thenAnswer((_) async {});
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
+          // Override the default passthrough: drop the hidden video.
+          when(
+            () => mockVideosRepository.applyContentPreferences(any()),
+          ).thenReturn([visible]);
+
+          // Fresh fetch returns the raw, unfiltered pair. This mirrors the
+          // behavior if the cache-path filter were bypassed: the fresh fetch
+          // would still surface the hidden video. The cache-path filter is
+          // the only thing that should drop `hidden` from the emitted state.
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: [hidden, visible]));
+        },
+        build: createBlocWithCache,
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
+        expect: () => [
+          // 1. Loading state from _onStarted
+          const VideoFeedState(mode: FeedMode.following),
+          // 2. Cached emission: hidden filtered out via applyContentPreferences
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'cached count', 1)
+              .having(
+                (s) => s.videos.first.id,
+                'cached visible id',
+                '2222222222222222222222222222222222222222222222222222222222222222',
+              ),
+          // 3. Fresh fetch result replaces cached state (unfiltered on the
+          //    fresh path — only the cache path is under test here).
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'fresh count', 2),
+        ],
+        verify: (_) {
+          // Secondary guardrail: confirm the filter was called with the raw,
+          // unfiltered cached list (both hidden and visible).
+          final captured = verify(
+            () => mockVideosRepository.applyContentPreferences(captureAny()),
+          ).captured;
+          expect(captured, isNotEmpty);
+          final list = captured.first as List<VideoEvent>;
+          expect(
+            list.map((v) => v.id),
+            contains(
+              '1111111111111111111111111111111111111111111111111111111111111111',
+            ),
+          );
+          expect(
+            list.map((v) => v.id),
+            contains(
+              '2222222222222222222222222222222222222222222222222222222222222222',
+            ),
+          );
         },
       );
     });

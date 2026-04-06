@@ -22,7 +22,11 @@ class VideoEditorFilterBottomBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
+    final clip = ref.watch(
+      clipManagerProvider.select((s) => s.firstClipOrNull),
+    );
+    if (clip == null) return const SizedBox.shrink();
+
     final (filters, selectedFilter) = context.select(
       (VideoEditorFilterBloc b) => (b.state.filters, b.state.selectedFilter),
     );

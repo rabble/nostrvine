@@ -743,7 +743,7 @@ void main() {
       });
 
       test(
-        'promotes only recognized moderation_labels from REST responses',
+        'preserves moderation_labels from REST responses including unknowns',
         () {
           final json = {
             'id': 'test-id',
@@ -761,7 +761,11 @@ void main() {
             'moderation_labels': [
               'nudity',
               'violence',
-              'topic:music', // ignored - discovery metadata belongs elsewhere
+              // Behavior change: unknown labels (including discovery metadata
+              // like 'topic:music') are now preserved rather than dropped.
+              // Downstream filters treat unknown labels as a conservative
+              // hide signal so the relay's labeling is never silently ignored.
+              'topic:music',
               'spam',
             ],
           };
@@ -771,14 +775,14 @@ void main() {
 
           expect(
             stats.moderationLabels,
-            equals(['nudity', 'violence', 'spam']),
+            equals(['nudity', 'violence', 'topic:music', 'spam']),
           );
           // Moderation labels go to VideoEvent.moderationLabels (ML-generated),
           // NOT contentWarningLabels (which are for author self-labels only)
           expect(event.contentWarningLabels, isEmpty);
           expect(
             event.moderationLabels,
-            equals(['nudity', 'violence', 'spam']),
+            equals(['nudity', 'violence', 'topic:music', 'spam']),
           );
         },
       );
@@ -805,6 +809,65 @@ void main() {
 
         expect(event.textTrackRef, equals('39307:abc123:subtitles:test-dtag'));
         expect(event.textTrackContent, contains('WEBVTT'));
+      });
+    });
+
+    group('moderation labels', () {
+      final hexId = 'a' * 64;
+      final hexPubkey = 'b' * 64;
+
+      Map<String, dynamic> buildJson(List<String> labels) => {
+        'id': hexId,
+        'pubkey': hexPubkey,
+        'created_at': 1700000000,
+        'kind': 34236,
+        'd_tag': 'video-1',
+        'title': 'Test',
+        'thumbnail': 'https://example.com/thumb.jpg',
+        'video_url': 'https://example.com/video.mp4',
+        'reactions': 0,
+        'comments': 0,
+        'reposts': 0,
+        'engagement_score': 0,
+        'moderation_labels': labels,
+      };
+
+      test('normalizes whitespace in labels to hyphens', () {
+        final stats = VideoStats.fromJson(
+          buildJson(['sexual content', 'graphic media']),
+        );
+
+        expect(stats.moderationLabels, contains('sexual-content'));
+        expect(stats.moderationLabels, contains('graphic-media'));
+      });
+
+      test(
+        'preserves unknown moderation labels instead of dropping them',
+        () {
+          final stats = VideoStats.fromJson(
+            buildJson(['some-new-server-label']),
+          );
+
+          expect(stats.moderationLabels, equals(['some-new-server-label']));
+        },
+      );
+
+      test('still applies known aliases', () {
+        final stats = VideoStats.fromJson(
+          buildJson(['pornography', 'nsfw', 'gore']),
+        );
+
+        expect(stats.moderationLabels, contains('porn'));
+        expect(stats.moderationLabels, contains('nudity'));
+        expect(stats.moderationLabels, contains('graphic-media'));
+      });
+
+      test('drops empty strings', () {
+        final stats = VideoStats.fromJson(
+          buildJson(['', '   ', 'nudity']),
+        );
+
+        expect(stats.moderationLabels, equals(['nudity']));
       });
     });
 

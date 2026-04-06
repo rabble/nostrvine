@@ -10,6 +10,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -18,6 +19,9 @@ import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:openvine/repositories/dm_decryption_worker.dart';
+import 'package:openvine/repositories/dm_sync_state.dart';
+import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -66,6 +70,7 @@ class DmRepository {
     required NostrClient nostrClient,
     required DirectMessagesDao directMessagesDao,
     required ConversationsDao conversationsDao,
+    DmSyncState? syncState,
     NIP17MessageService? messageService,
     String? userPubkey,
     NostrSigner? signer,
@@ -74,6 +79,7 @@ class DmRepository {
   }) : _nostrClient = nostrClient,
        _directMessagesDao = directMessagesDao,
        _conversationsDao = conversationsDao,
+       _syncState = syncState,
        _messageService = messageService,
        _userPubkey = userPubkey ?? '',
        _signer = signer,
@@ -83,6 +89,7 @@ class DmRepository {
   final NostrClient _nostrClient;
   final DirectMessagesDao _directMessagesDao;
   final ConversationsDao _conversationsDao;
+  final DmSyncState? _syncState;
   NIP17MessageService? _messageService;
   String _userPubkey;
   NostrSigner? _signer;
@@ -90,14 +97,11 @@ class DmRepository {
   Nip04Decryptor? _nip04Decryptor;
 
   StreamSubscription<Event>? _giftWrapSubscription;
-  Timer? _pollTimer;
-  bool _disposed = false;
+  Timer? _reconnectTimer;
+  late bool _disposed = false;
 
-  /// Whether a poll is currently in progress (prevents overlap).
-  bool _pollInProgress = false;
-
-  /// Serializes event processing so poll and subscription events
-  /// never race into the dedup/insert path concurrently.
+  /// Serializes event processing so concurrent subscription events
+  /// never race into the dedup/insert path.
   Future<void>? _eventLock;
 
   /// User-scoped subscription ID to prevent collision when the provider
@@ -117,10 +121,12 @@ class DmRepository {
   /// subscription require initialization.
   bool get isInitialized => _signer != null && _userPubkey.isNotEmpty;
 
-  /// Set auth credentials and start the relay subscription.
+  /// Set auth credentials on the repository.
   ///
-  /// Called by the provider when the user's keys become available.
-  /// Read methods work before this; send/subscribe require it.
+  /// Called by the provider when the user's keys become available. Read
+  /// methods work before this; send requires it. The relay subscription
+  /// is NOT started here — callers (the inbox screen) are responsible for
+  /// invoking [startListening] when they need live gift-wrap delivery.
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
   /// no-ops. If called with a different user, resets and re-initializes.
@@ -147,7 +153,13 @@ class DmRepository {
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
-    startListening();
+    // Subscription is started by the inbox screen via startListening().
+    // Do NOT start it here — doing so would replay the full gift-wrap
+    // backlog onto the UI isolate at app launch and scale linearly with
+    // lifetime DM count. See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+
+    // Merge duplicate conversations created by extra p-tags (idempotent).
+    unawaited(_mergeDuplicateConversations());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
@@ -158,9 +170,9 @@ class DmRepository {
   /// so any late arrivals are harmless (dedup rejects them).
   void _resetState() {
     _disposed = true;
-    _pollTimer?.cancel();
-    _pollTimer = null;
     _eventLock = null;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     unawaited(_giftWrapSubscription?.cancel());
     _giftWrapSubscription = null;
     final subId = _subscriptionId;
@@ -173,20 +185,11 @@ class DmRepository {
     _signer = null;
     _messageService = null;
     _disposed = false;
-    _pollInProgress = false;
     _subscriptionId = 'dm_inbox';
   }
 
   /// Delay before attempting to re-subscribe after stream closure.
   static const _reconnectDelay = Duration(seconds: 2);
-
-  /// Interval for polling the relay for new kind 1059 events.
-  ///
-  /// Some relays deliver stored events on subscription but don't push new
-  /// real-time events for `#p`-filtered kind 1059 subscriptions (possibly
-  /// due to AUTH requirements or relay implementation). This poll ensures
-  /// messages arrive within a bounded delay regardless of relay behavior.
-  static const _pollInterval = Duration(seconds: 10);
 
   // -------------------------------------------------------------------------
   // Subscription lifecycle
@@ -206,6 +209,13 @@ class DmRepository {
   void startListening() {
     if (_giftWrapSubscription != null || _disposed || !isInitialized) return;
 
+    // Count-based windowing: first open fetches a bounded backlog
+    // (limit:50), later opens fetch only recent events via a `since:`
+    // filter. The 2-day overlap absorbs NIP-17 randomized created_at
+    // jitter (gift wraps tweak their outer created_at within a ~2 day
+    // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+    final newest = _syncState?.newestSyncedAt(_userPubkey);
+    final isFirstOpen = newest == null;
     final filter = nostr_filter.Filter(
       kinds: [
         EventKind.giftWrap,
@@ -213,6 +223,8 @@ class DmRepository {
         EventKind.eventDeletion,
       ],
       p: [_userPubkey],
+      limit: isFirstOpen ? 50 : null,
+      since: isFirstOpen ? null : (newest - 2 * 86400),
     );
 
     Log.info(
@@ -248,22 +260,63 @@ class DmRepository {
             'in ${_reconnectDelay.inSeconds}s',
             category: LogCategory.system,
           );
-          Future<void>.delayed(_reconnectDelay, startListening);
+          _reconnectTimer = Timer(_reconnectDelay, startListening);
         }
       },
     );
 
-    // Start periodic polling for new events.
-    // Some relays don't push real-time events for kind 1059 #p
-    // subscriptions, so polling ensures messages arrive reliably.
-    _startPolling();
+    // No poll timer: the live subscription is the sole event source while
+    // the inbox is open. Poller was removed because it re-fetched duplicate
+    // events every 10s forever on the UI isolate. See
+    // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+  }
+
+  /// Fetches an older page of DM events (gift wraps, NIP-04, deletions)
+  /// from the relay, bounded above by [DmSyncState.oldestSyncedAt]. The
+  /// filter uses `until:` so the relay returns events *older* than the
+  /// current pagination boundary, capped to 50 by `limit`.
+  ///
+  /// No-op if [DmSyncState] is unset or no sync has happened yet — in
+  /// that case the caller should invoke [startListening] instead to
+  /// establish a baseline.
+  ///
+  /// Events flow through [_handleIncomingEvent] so dedup, transaction
+  /// integrity, and sync-boundary tracking apply automatically.
+  Future<void> loadOlderMessages() async {
+    if (!isInitialized) return;
+    final oldest = _syncState?.oldestSyncedAt(_userPubkey);
+    if (oldest == null) return;
+
+    final filter = nostr_filter.Filter(
+      kinds: [
+        EventKind.giftWrap,
+        EventKind.directMessage,
+        EventKind.eventDeletion,
+      ],
+      p: [_userPubkey],
+      until: oldest,
+      limit: 50,
+    );
+
+    final events = await _nostrClient.queryEvents(
+      [filter],
+      subscriptionId: 'dm_older_${DateTime.now().millisecondsSinceEpoch}',
+      useCache: false,
+    );
+
+    for (final event in events) {
+      await _handleIncomingEvent(event);
+    }
   }
 
   /// Stop listening for incoming DMs and clean up resources.
   Future<void> stopListening() async {
-    _disposed = true;
-    _pollTimer?.cancel();
-    _pollTimer = null;
+    // Don't set _disposed = true here — _disposed is reserved for
+    // _resetState() (user switch). Setting it would make a subsequent
+    // startListening() call a silent no-op, breaking re-open flows like
+    // "user leaves the inbox tab and comes back later".
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _eventLock = null;
     await _giftWrapSubscription?.cancel();
     _giftWrapSubscription = null;
@@ -272,51 +325,6 @@ class DmRepository {
     } on Object {
       // Ignore if subscription doesn't exist
     }
-  }
-
-  /// Periodically poll the relay for new kind 1059 events.
-  ///
-  /// Workaround for relays that accept subscriptions and deliver stored
-  /// events but don't push new real-time events for `#p`-filtered kind 1059.
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(_pollInterval, (_) async {
-      if (_disposed || _pollInProgress) return;
-      _pollInProgress = true;
-
-      try {
-        // NIP-17 gift wraps use randomized created_at (up to 2 days in the
-        // past) so a `since` filter based on wall-clock time won't work.
-        // Instead, fetch the most recent events and rely on dedup to skip
-        // already-processed ones.
-        final filter = nostr_filter.Filter(
-          kinds: [
-            EventKind.giftWrap,
-            EventKind.directMessage,
-            EventKind.eventDeletion,
-          ],
-          p: [_userPubkey],
-          limit: 20,
-        );
-
-        final events = await _nostrClient.queryEvents(
-          [filter],
-          subscriptionId: 'dm_poll_${DateTime.now().millisecondsSinceEpoch}',
-          useCache: false,
-        );
-
-        for (final event in events) {
-          await _handleIncomingEvent(event);
-        }
-      } on Object catch (e) {
-        Log.error(
-          'DM poll error: $e',
-          category: LogCategory.system,
-        );
-      } finally {
-        _pollInProgress = false;
-      }
-    });
   }
 
   // -------------------------------------------------------------------------
@@ -400,18 +408,8 @@ class DmRepository {
 
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
     try {
-      Log.debug(
-        'Received gift wrap event ${giftWrapEvent.id} '
-        'from ${giftWrapEvent.pubkey}',
-        category: LogCategory.system,
-      );
-
       // Dedup: skip if already processed
       if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
-        Log.debug(
-          'Skipping duplicate gift wrap ${giftWrapEvent.id}',
-          category: LogCategory.system,
-        );
         return;
       }
 
@@ -421,7 +419,7 @@ class DmRepository {
       final nostr = Nostr(signer, [], _dummyRelay);
       await nostr.refreshPublicKey();
 
-      final rumorEvent = await _rumorDecryptor(nostr, giftWrapEvent);
+      final rumorEvent = await _decryptRumor(nostr, giftWrapEvent);
       if (rumorEvent == null) {
         Log.debug(
           'Failed to decrypt gift wrap event ${giftWrapEvent.id}',
@@ -433,10 +431,16 @@ class DmRepository {
       // Accept kind 14 (text) and kind 15 (file)
       if (!_supportedDmKinds.contains(rumorEvent.kind)) return;
 
-      // Extract conversation participants from pubkey + p tags
-      final participants = _extractParticipants(rumorEvent);
-      if (participants.length < 2) return;
+      // Extract conversation participants from pubkey + p tags, then
+      // resolve against existing conversations to prevent duplicates
+      // from non-compliant clients that add extra p-tags.
+      final rawParticipants = _extractParticipants(rumorEvent);
+      if (rawParticipants.length < 2) return;
 
+      final participants = await _resolveConversationParticipants(
+        rawParticipants,
+        rumorEvent.pubkey,
+      );
       final conversationId = computeConversationId(participants);
 
       // Extract common tags
@@ -464,11 +468,6 @@ class DmRepository {
         ownerPubkey: _userPubkey,
       );
       if (isDuplicate) {
-        Log.debug(
-          'Skipping NIP-17 duplicate (NIP-04 copy already stored) '
-          '${giftWrapEvent.id}',
-          category: LogCategory.system,
-        );
         return;
       }
 
@@ -530,6 +529,14 @@ class DmRepository {
         );
       });
 
+      // Advance sync boundaries using the rumor's REAL created_at. The
+      // outer gift wrap randomizes its own created_at within a ~2 day
+      // window (NIP-17) so it must not be used for boundary tracking.
+      await _syncState?.recordSeen(
+        _userPubkey,
+        createdAt: rumorEvent.createdAt,
+      );
+
       Log.debug(
         'Persisted DM (kind ${rumorEvent.kind}) in conversation '
         '$conversationId',
@@ -543,6 +550,50 @@ class DmRepository {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Decrypts a single gift-wrap rumor, routing through a [compute]
+  /// isolate for local signers that can safely expose their private key
+  /// bytes, and falling back to the injected [_rumorDecryptor] on the
+  /// main isolate for remote signers (Amber, Keycast RPC, NIP-46) and
+  /// test-injected decryptors.
+  ///
+  /// Single-element isolate batches are intentional for v1: the
+  /// subscription pipeline processes gift wraps one at a time, and the
+  /// goal is to keep the expensive NIP-44 crypto off the UI thread.
+  /// Real backlog batching can come later.
+  Future<Event?> _decryptRumor(Nostr nostr, Event giftWrapEvent) async {
+    final signer = _signer;
+    if (signer is AuthServiceSigner && signer.canDecryptInIsolate) {
+      try {
+        final hex = signer.withPrivateKeyHex((k) => k);
+        final results = await compute(
+          decryptGiftWrapBatch,
+          DecryptBatchRequest(
+            events: [giftWrapEvent.toJson()],
+            privateKeyHex: hex,
+          ),
+        );
+        final result = results.single;
+        if (result.isSuccess) {
+          return Event.fromJson(result.rumor!);
+        }
+        Log.debug(
+          'Isolate decrypt returned failure for ${giftWrapEvent.id}: '
+          '${result.error}; falling back to main-isolate decryptor',
+          category: LogCategory.system,
+        );
+      } on Object catch (e, stackTrace) {
+        Log.error(
+          'Isolate decrypt threw for ${giftWrapEvent.id}: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Fall through to main-isolate decryptor.
+      }
+    }
+    return _rumorDecryptor(nostr, giftWrapEvent);
   }
 
   Future<void> _handleNip04Event(Event nip04Event) async {
@@ -655,6 +706,13 @@ class DmRepository {
           dmProtocol: existing?.dmProtocol ?? 'nip04',
         );
       });
+
+      // NIP-04 created_at values are not randomized (unlike NIP-17 gift
+      // wraps) so the event timestamp is safe to use directly.
+      await _syncState?.recordSeen(
+        _userPubkey,
+        createdAt: nip04Event.createdAt,
+      );
 
       Log.debug(
         'Persisted NIP-04 DM in conversation $conversationId',
@@ -1386,6 +1444,89 @@ class DmRepository {
   // Helpers
   // -------------------------------------------------------------------------
 
+  /// Merges duplicate conversations where the same 1:1 peer appears as
+  /// multiple conversations due to extra p-tags in NIP-17 events.
+  ///
+  /// For each peer that has more than one conversation with the current user,
+  /// keeps the canonical 1:1 conversation and merges the rest into it.
+  /// Idempotent and safe to run on every startup.
+  Future<void> _mergeDuplicateConversations() async {
+    try {
+      final allConversations = await _conversationsDao.getAllConversations(
+        ownerPubkey: _ownerPubkey,
+      );
+
+      // Group conversations by peer pubkey to find duplicates.
+      final peerGroups = <String, List<ConversationRow>>{};
+      for (final conv in allConversations) {
+        final participants = (jsonDecode(conv.participantPubkeys) as List)
+            .cast<String>();
+        final peers = participants.where((pk) => pk != _userPubkey).toList()
+          ..sort();
+        if (peers.isEmpty) continue;
+
+        // Use the first peer as the grouping key.
+        final peerKey = peers.first;
+        peerGroups.putIfAbsent(peerKey, () => []).add(conv);
+      }
+
+      for (final entry in peerGroups.entries) {
+        if (entry.value.length <= 1) continue;
+
+        final canonical1to1Participants = [_userPubkey, entry.key]..sort();
+        final canonicalId = computeConversationId(canonical1to1Participants);
+
+        // Check if the canonical 1:1 row already exists.
+        final hasCanonicalRow = entry.value.any((c) => c.id == canonicalId);
+
+        // Merge all conversations into the canonical 1:1 ID.
+        await _conversationsDao.runInTransaction(() async {
+          for (final conv in entry.value) {
+            if (conv.id == canonicalId) continue;
+
+            await _directMessagesDao.reassignConversation(
+              fromConversationId: conv.id,
+              toConversationId: canonicalId,
+              ownerPubkey: _userPubkey,
+            );
+            await _conversationsDao.deleteConversation(
+              conv.id,
+              ownerPubkey: _ownerPubkey,
+            );
+          }
+
+          // If the canonical 1:1 row didn't exist, create it from the
+          // most recent duplicate's metadata.
+          if (!hasCanonicalRow) {
+            final source = entry.value.first;
+            await _conversationsDao.upsertConversation(
+              id: canonicalId,
+              participantPubkeys: jsonEncode(canonical1to1Participants),
+              isGroup: false,
+              createdAt: source.createdAt,
+              lastMessageContent: source.lastMessageContent,
+              lastMessageTimestamp: source.lastMessageTimestamp,
+              lastMessageSenderPubkey: source.lastMessageSenderPubkey,
+              currentUserHasSent: source.currentUserHasSent,
+              ownerPubkey: source.ownerPubkey,
+              dmProtocol: source.dmProtocol,
+            );
+          }
+        });
+
+        // Refresh preview from actual messages.
+        await _refreshConversationPreview(canonicalId);
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to merge duplicate conversations: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Compute a deterministic conversation ID from sorted participant pubkeys.
   static String computeConversationId(List<String> participants) {
     final sorted = List<String>.from(participants)..sort();
@@ -1415,6 +1556,48 @@ class DmRepository {
       }
     }
     return pubkeys.toList()..sort();
+  }
+
+  /// Resolves the participant list for conversation routing.
+  ///
+  /// When a rumor has more p-tags than a standard 1:1 (sender + us),
+  /// determines whether to route to the full participant group (if one
+  /// already exists) or to the canonical 1:1 pair.
+  ///
+  /// Priority: existing group → existing 1:1 → default to 1:1.
+  ///
+  /// Defaulting to 1:1 when no conversation exists prevents phantom
+  /// groups caused by non-compliant clients adding extra p-tags to
+  /// what should be a 1:1 DM.
+  Future<List<String>> _resolveConversationParticipants(
+    List<String> extractedParticipants,
+    String senderPubkey,
+  ) async {
+    final canonical1to1 = [_userPubkey, senderPubkey]..sort();
+
+    // Standard 1:1 message — no ambiguity.
+    if (extractedParticipants.length <= 2) return canonical1to1;
+
+    // Extra p-tags present. Check if a group conversation with the
+    // full participant set already exists — if so, it's a genuine group.
+    final fullId = computeConversationId(extractedParticipants);
+    final existingFull = await _conversationsDao.getConversation(
+      fullId,
+      ownerPubkey: _ownerPubkey,
+    );
+    if (existingFull != null) return extractedParticipants;
+
+    // No existing group. Check if a 1:1 conversation exists.
+    final canonical1to1Id = computeConversationId(canonical1to1);
+    final existing1to1 = await _conversationsDao.getConversation(
+      canonical1to1Id,
+      ownerPubkey: _ownerPubkey,
+    );
+    if (existing1to1 != null) return canonical1to1;
+
+    // Neither exists. Default to 1:1 — prevents phantom groups from
+    // non-compliant clients that add extra p-tags to 1:1 DMs.
+    return canonical1to1;
   }
 
   /// Extracts Kind 15 file metadata from event tags.
