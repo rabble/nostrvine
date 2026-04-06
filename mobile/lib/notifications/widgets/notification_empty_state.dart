@@ -27,7 +27,7 @@ class NotificationEmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No activity yet',
-              style: VineTheme.titleMediumFont(color: VineTheme.primaryText),
+              style: VineTheme.titleMediumFont(),
             ),
             const SizedBox(height: 8),
             Text(

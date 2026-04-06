@@ -307,10 +307,7 @@ class _TypeIconBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: _iconBackgroundColor,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: VineTheme.backgroundColor,
-          width: 2,
-        ),
+        border: Border.all(width: 2),
       ),
       child: Center(
         child: Text(

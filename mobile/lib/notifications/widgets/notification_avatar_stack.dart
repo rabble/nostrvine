@@ -70,10 +70,7 @@ class _Avatar extends StatelessWidget {
       height: NotificationAvatarStack._avatarSize,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: VineTheme.backgroundColor,
-          width: 2,
-        ),
+        border: Border.all(width: 2),
       ),
       child: ClipOval(
         child: actor.pictureUrl != null
@@ -122,10 +119,7 @@ class _OverflowCircle extends StatelessWidget {
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: VineTheme.backgroundColor,
-          width: 2,
-        ),
+        border: Border.all(width: 2),
       ),
       child: Center(
         child: Text(
