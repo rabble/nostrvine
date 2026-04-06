@@ -178,7 +178,7 @@ final class LiveRepositoryProvider
   }
 }
 
-String _$liveRepositoryHash() => r'f9a55c30c42f7fe3967f221385f3686775e42371';
+String _$liveRepositoryHash() => r'7cd238964675e702e1c0fe0b0117c5070b9bad39';
 
 @ProviderFor(liveChatRepository)
 const liveChatRepositoryProvider = LiveChatRepositoryProvider._();
