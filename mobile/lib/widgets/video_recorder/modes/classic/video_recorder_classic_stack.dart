@@ -1,7 +1,5 @@
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_bottom.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_top.dart';
@@ -28,13 +26,30 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                 const VideoRecorderClassicActionsTop(),
 
                 // Camera preview (includes ghost frame)
-                GestureDetector(
-                  behavior: .opaque,
-                  onTap: ref
-                      .read(videoRecorderProvider.notifier)
-                      .toggleRecording,
-                  child: const IgnorePointer(
-                    child: VideoRecorderCameraPreview(enableTapToFocus: false),
+                Flexible(
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Semantics(
+                      button: true,
+                      liveRegion: true,
+                      label: ref.watch(
+                        videoRecorderProvider
+                            .select((s) => s.isRecording),
+                      )
+                          ? 'Recording. Tap anywhere to stop'
+                          : 'Tap anywhere to start recording',
+                      child: GestureDetector(
+                        behavior: .opaque,
+                        onTap: ref
+                            .read(videoRecorderProvider.notifier)
+                            .toggleRecording,
+                        child: const IgnorePointer(
+                          child: VideoRecorderCameraPreview(
+                            enableTapToFocus: false,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
 
