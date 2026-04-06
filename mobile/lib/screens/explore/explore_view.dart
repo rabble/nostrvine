@@ -19,6 +19,8 @@ import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/explore/widgets/explore_feed_content.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_bar.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_view.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
+import 'package:openvine/screens/live/widgets/live_explore_entry_card.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -205,6 +207,9 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     final appsAvailable =
         nostrAppsSandboxSupported &&
         ref.watch(isFeatureEnabledProvider(FeatureFlag.integratedApps));
+    final liveEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.livestreamingBeta),
+    );
 
     final previousState = _tabsState;
     _tabs.updateAvailability(
@@ -255,6 +260,10 @@ class _ExploreViewState extends ConsumerState<ExploreView>
               ),
             ),
           ),
+          if (liveEnabled)
+            LiveExploreEntryCard(
+              onTap: () => context.push(LiveDiscoveryPage.path),
+            ),
           // Inner top radius is 2 px larger than the outer shell corners (30)
           // so the tabs container visibly sits inside the nav-rounded shell.
           Expanded(

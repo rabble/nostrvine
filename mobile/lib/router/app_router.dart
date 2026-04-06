@@ -6,6 +6,8 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -32,6 +34,11 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
+import 'package:openvine/screens/live/go_live_page.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
+import 'package:openvine/screens/live/live_room_detail_page.dart';
+import 'package:openvine/screens/live/live_room_page.dart';
+import 'package:openvine/screens/live/live_route_data.dart';
 import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
@@ -57,6 +64,9 @@ final routeObserver = RouteObserver<ModalRoute<dynamic>>();
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   final authService = ref.read(authServiceProvider);
+  final liveEnabled = ref.watch(
+    isFeatureEnabledProvider(FeatureFlag.livestreamingBeta),
+  );
 
   // Keep one router instance alive; drive redirect reevaluation through a
   // dedicated listenable instead of rebuilding GoRouter when app state changes.
@@ -101,6 +111,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ...settingsRoutes(),
       ...profileRoutes(),
       ...libraryRoutes(),
+      ...buildLiveRoutes(liveEnabled: liveEnabled),
     ],
   );
 
@@ -117,4 +128,57 @@ List<NavigatorObserver> _buildRouterObservers() {
   ];
 
   return observers;
+}
+
+List<RouteBase> buildLiveRoutes({
+  required bool liveEnabled,
+}) {
+  if (!liveEnabled) {
+    return const <RouteBase>[];
+  }
+
+  return <RouteBase>[
+    GoRoute(
+      path: LiveDiscoveryPage.path,
+      name: LiveDiscoveryPage.routeName,
+      builder: (context, state) => const LiveDiscoveryPage(),
+    ),
+    GoRoute(
+      path: LiveRoomDetailPage.pathPattern,
+      name: LiveRoomDetailPage.routeName,
+      builder: (context, state) {
+        final detailData = state.extra is LiveRoomDetailRouteData
+            ? state.extra! as LiveRoomDetailRouteData
+            : null;
+
+        return LiveRoomDetailPage(
+          roomId: state.pathParameters['roomId'] ?? '',
+          initialRoom: detailData?.room,
+          initialSession: detailData?.session,
+        );
+      },
+    ),
+    GoRoute(
+      path: LiveRoomPage.pathPattern,
+      name: LiveRoomPage.routeName,
+      builder: (context, state) {
+        final roomData = state.extra is LiveRoomRouteData
+            ? state.extra! as LiveRoomRouteData
+            : null;
+
+        return LiveRoomPage(
+          roomId: state.pathParameters['roomId'] ?? '',
+          sessionId: state.pathParameters['sessionId'] ?? '',
+          initialRoom: roomData?.room,
+          initialSession: roomData?.session,
+          initialRole: roomData?.role,
+        );
+      },
+    ),
+    GoRoute(
+      path: GoLivePage.path,
+      name: GoLivePage.routeName,
+      builder: (context, state) => const GoLivePage(),
+    ),
+  ];
 }
