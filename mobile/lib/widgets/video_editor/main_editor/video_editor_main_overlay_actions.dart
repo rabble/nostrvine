@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_layer_reorder_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -78,11 +77,7 @@ class _TopActions extends ConsumerWidget {
         } else {
           // If came from library, go to recorder (not in stack)
           // Otherwise pop back to recorder
-          if (scope.fromLibrary) {
-            context.pushReplacement(VideoRecorderScreen.path);
-          } else {
-            context.pop();
-          }
+          context.pop();
         }
       },
       onDone: () => scope.editor?.doneEditing(),

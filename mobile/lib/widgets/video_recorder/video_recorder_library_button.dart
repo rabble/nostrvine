@@ -3,10 +3,9 @@ import 'dart:io';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/providers/video_recorder_provider.dart';
 
 class VideoRecorderLibraryButton extends ConsumerStatefulWidget {
   const VideoRecorderLibraryButton({super.key});
@@ -66,14 +65,23 @@ class _VideoRecorderLibraryButtonState
 
     return Semantics(
       button: true,
-      label: 'Open the clip library',
+      label: thumbnailPath == null
+          ? 'Clip library, no clips'
+          : 'Open clip library, ${clips.length} '
+                'clip${clips.length == 1 ? '' : 's'}',
+      enabled: clips.isNotEmpty,
       child: InkWell(
-        onTap: () async {
-          await context.push(LibraryScreen.clipsPath);
-          // Refresh library thumbnail after returning — user may have
-          // deleted clips or new thumbnails may have been recovered.
-          _loadLibraryThumbnail();
-        },
+        onTap: thumbnailPath == null
+            ? null
+            : () async {
+                await ref
+                    .read(videoRecorderProvider.notifier)
+                    .openLibrary(context);
+
+                // Refresh library thumbnail after returning — user may have
+                // deleted clips or new thumbnails may have been recovered.
+                _loadLibraryThumbnail();
+              },
         child: Container(
           margin: const .only(left: 16),
           width: 40,
@@ -149,11 +157,11 @@ class _SelectionCountBadge extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: VineTheme.error,
-                    shape: .circle,
                     border: Border.all(
                       width: 2,
                       color: VineTheme.backgroundCamera,
                     ),
+                    borderRadius: .circular(999),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -162,6 +170,8 @@ class _SelectionCountBadge extends StatelessWidget {
                       Text(
                         count.toString(),
                         textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: .visible,
                         style: VineTheme.labelSmallFont().copyWith(
                           fontFeatures: [
                             const .tabularFigures(),

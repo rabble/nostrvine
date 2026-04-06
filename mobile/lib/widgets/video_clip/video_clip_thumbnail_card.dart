@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
@@ -20,6 +19,7 @@ class VideoClipThumbnailCard extends StatefulWidget {
     required this.clip,
     required this.onTap,
     required this.onLongPress,
+    this.selectionIndex = 0,
     this.isSelected = false,
     this.disabled = false,
     this.showDurationBadge = true,
@@ -29,6 +29,11 @@ class VideoClipThumbnailCard extends StatefulWidget {
   /// The clip data to display, including thumbnail path, duration, and
   /// aspect ratio.
   final DivineVideoClip clip;
+
+  /// The 1-based position of this clip in the current selection order.
+  ///
+  /// Displayed inside the selection circle when the card is selected.
+  final int selectionIndex;
 
   /// Callback invoked when the card is tapped.
   final VoidCallback onTap;
@@ -99,11 +104,8 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                       _DurationBadge(clip: widget.clip),
 
                     /// Selection check circle - top right
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 120),
-                      child: widget.isSelected
-                          ? const _SelectionOverlay()
-                          : const SizedBox.shrink(),
+                    _SelectionOverlay(
+                      selectionIndex: widget.selectionIndex,
                     ),
                   ],
                 ),
@@ -171,24 +173,18 @@ class _DurationBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      left: 12,
-      bottom: 12,
+      left: 8,
+      bottom: 8,
       child: Container(
-        padding: const .symmetric(horizontal: 8, vertical: 4),
+        padding: const .symmetric(horizontal: 4),
         decoration: BoxDecoration(
           color: VineTheme.scrim65,
           borderRadius: .circular(4),
         ),
         child: Text(
           clip.durationInSeconds.toStringAsFixed(2),
-          style: const TextStyle(
-            color: VineTheme.whiteText,
-            fontSize: 14,
-            fontFamily: VineTheme.fontFamilyBricolage,
-            fontWeight: .w800,
-            height: 1.43,
-            letterSpacing: 0.10,
-            fontFeatures: [.tabularFigures()],
+          style: VineTheme.labelSmallFont().copyWith(
+            fontFeatures: [const .tabularFigures()],
           ),
         ),
       ),
@@ -202,36 +198,47 @@ class _DurationBadge extends StatelessWidget {
 /// - A [DecoratedBox] for the 4px green border
 /// - A positioned check icon in a circular green background
 class _SelectionOverlay extends StatelessWidget {
-  const _SelectionOverlay();
+  const _SelectionOverlay({required this.selectionIndex});
+
+  final int selectionIndex;
+
+  bool get _isSelected => selectionIndex >= 0;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: .circular(4),
-              border: .all(color: VineTheme.tabIndicatorGreen, width: 4),
-            ),
-          ),
-        ),
         Positioned(
-          right: 14,
-          top: 14,
+          right: 8,
+          top: 6,
           child: Container(
-            width: 32,
-            height: 32,
+            constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
             padding: const .all(5),
-            decoration: const BoxDecoration(
-              shape: .circle,
-              color: VineTheme.tabIndicatorGreen,
+            decoration: BoxDecoration(
+              color: _isSelected
+                  ? VineTheme.surfaceBackground
+                  : VineTheme.onSurfaceDisabled,
+              border: Border.all(
+                color: _isSelected ? VineTheme.primary : VineTheme.onSurface,
+                width: 3,
+              ),
+              borderRadius: .circular(999),
             ),
-            child: SvgPicture.asset(
-              DivineIconName.check.assetPath,
-              colorFilter: const .mode(VineTheme.surfaceContainer, .srcIn),
-            ),
+            child: _isSelected
+                ? Center(
+                    child: MediaQuery.withNoTextScaling(
+                      child: Text(
+                        selectionIndex.toString(),
+                        maxLines: 1,
+                        style: VineTheme.labelLargeFont().copyWith(
+                          fontFeatures: [const .tabularFigures()],
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  )
+                : null,
           ),
         ),
       ],

@@ -50,7 +50,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<DraftsLibraryBloc>.value(
               value: mockBloc,
-              child: const DraftsTab(),
+              child: const DraftsTab(isSelectionMode: true),
             ),
           ),
         ),

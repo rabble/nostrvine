@@ -20,6 +20,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
@@ -1024,6 +1025,32 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     Log.info(
       '📹 Returned from editor - reinitializing camera',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+    await initialize();
+  }
+
+  Future<void> openLibrary(BuildContext context) async {
+    Log.info(
+      '📹 Opening library - disposing camera',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+
+    await Future.wait([
+      context.push(LibraryScreen.clipsPath),
+      // We delay camera dispose so that the screen animation can finish
+      // before the editor open. Without that it will look weird to the user
+      // because the initialization screen will show up quickly.
+      Future.delayed(const Duration(milliseconds: 300), () {
+        return _cameraService.dispose();
+      }),
+    ]);
+    if (!context.mounted) return;
+
+    Log.info(
+      '📹 Returned from library - reinitializing camera',
       name: 'VideoRecorderNotifier',
       category: .video,
     );

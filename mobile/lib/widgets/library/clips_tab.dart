@@ -4,12 +4,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
-import 'package:openvine/widgets/masonary_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 
@@ -20,14 +19,10 @@ import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 class ClipsTab extends StatelessWidget {
   /// Creates a clips tab.
   const ClipsTab({
-    required this.remainingDuration,
     required this.isSelectionMode,
     this.targetAspectRatio,
     super.key,
   });
-
-  /// Remaining duration available for selection.
-  final Duration remainingDuration;
 
   /// Whether in selection mode (adding to existing project).
   final bool isSelectionMode;
@@ -59,7 +54,6 @@ class ClipsTab extends StatelessWidget {
         return _MasonryLayout(
           clips: state.clips,
           selectedClipIds: state.selectedClipIds,
-          remainingDuration: remainingDuration,
           targetAspectRatio: targetAspectRatio,
           onTapClip: (clip) => context.read<ClipsLibraryBloc>().add(
             ClipsLibraryToggleSelection(clip),
@@ -144,15 +138,11 @@ class ClipSelectionHeader extends StatelessWidget {
   /// Creates a selection header.
   const ClipSelectionHeader({
     required this.onCreate,
-    required this.remainingDuration,
     super.key,
   });
 
   /// Callback when create button is tapped.
   final VoidCallback onCreate;
-
-  /// Remaining duration available for selection.
-  final Duration remainingDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -178,15 +168,6 @@ class ClipSelectionHeader extends StatelessWidget {
                         'Clips',
                         style: VineTheme.titleMediumFont(
                           color: VineTheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        '${remainingDuration.toFormattedSeconds()}s remaining',
-                        style: VineTheme.bodySmallFont(
-                          color: VineTheme.onSurfaceVariant,
-                          fontFeatures: [
-                            const FontFeature.tabularFigures(),
-                          ],
                         ),
                       ),
                     ],
@@ -221,7 +202,6 @@ class _MasonryLayout extends StatelessWidget {
   const _MasonryLayout({
     required this.clips,
     required this.selectedClipIds,
-    required this.remainingDuration,
     required this.onTapClip,
     required this.onLongPressClip,
     this.targetAspectRatio,
@@ -229,36 +209,46 @@ class _MasonryLayout extends StatelessWidget {
 
   final List<DivineVideoClip> clips;
   final Set<String> selectedClipIds;
-  final Duration remainingDuration;
   final ValueChanged<DivineVideoClip> onTapClip;
   final ValueChanged<DivineVideoClip> onLongPressClip;
   final double? targetAspectRatio;
 
+  static const _columnCount = 3;
+  static const _radius = Radius.circular(32);
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: MasonryGrid(
-        columnCount: 2,
-        rowGap: 4,
-        columnGap: 4,
-        itemAspectRatios: clips
-            .map((clip) => clip.targetAspectRatio.value)
-            .toList(),
-        children: clips.map((clip) {
-          final isSelected = selectedClipIds.contains(clip.id);
-          return VideoClipThumbnailCard(
+    return MasonryGridView.count(
+      padding: .fromSTEB(8, 0, 8, MediaQuery.viewPaddingOf(context).bottom),
+      crossAxisCount: _columnCount,
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
+      cacheExtent: MediaQuery.sizeOf(context).height * 2,
+      itemCount: clips.length,
+      itemBuilder: (context, index) {
+        final clip = clips[index];
+        final isSelected = selectedClipIds.contains(clip.id);
+        final selectionIndex = isSelected
+            ? selectedClipIds.toList().indexOf(clip.id) + 1
+            : -1;
+        final borderRadius = BorderRadius.only(
+          topLeft: index == 0 ? _radius : Radius.zero,
+          topRight: index == _columnCount - 1 ? _radius : Radius.zero,
+        );
+        return ClipRRect(
+          borderRadius: borderRadius,
+          child: VideoClipThumbnailCard(
             clip: clip,
             isSelected: isSelected,
+            selectionIndex: selectionIndex,
             disabled:
-                (targetAspectRatio != null &&
-                    targetAspectRatio != clip.targetAspectRatio.value) ||
-                (!isSelected && clip.duration > remainingDuration),
+                targetAspectRatio != null &&
+                targetAspectRatio != clip.targetAspectRatio.value,
             onTap: () => onTapClip(clip),
             onLongPress: () => onLongPressClip(clip),
-          );
-        }).toList(),
-      ),
+          ),
+        );
+      },
     );
   }
 }

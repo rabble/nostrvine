@@ -45,7 +45,6 @@ void main() {
     });
 
     Widget buildWidget({
-      Duration remainingDuration = const Duration(seconds: 30),
       bool isSelectionMode = false,
       double? targetAspectRatio,
     }) {
@@ -55,7 +54,6 @@ void main() {
           body: BlocProvider<ClipsLibraryBloc>.value(
             value: mockBloc,
             child: ClipsTab(
-              remainingDuration: remainingDuration,
               isSelectionMode: isSelectionMode,
               targetAspectRatio: targetAspectRatio,
             ),
@@ -154,10 +152,7 @@ void main() {
         home: Scaffold(
           body: BlocProvider<ClipsLibraryBloc>.value(
             value: mockBloc,
-            child: ClipSelectionHeader(
-              remainingDuration: remainingDuration,
-              onCreate: onCreate ?? () {},
-            ),
+            child: ClipSelectionHeader(onCreate: onCreate ?? () {}),
           ),
         ),
       );
