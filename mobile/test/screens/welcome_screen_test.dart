@@ -224,6 +224,7 @@ void main() {
         );
         await tester.pump();
 
+        expect(find.byType(AuthHeroSection), findsOneWidget);
         expect(find.text('Create a new Divine account'), findsNothing);
         expect(find.text('Sign in with a different account'), findsNothing);
       });
