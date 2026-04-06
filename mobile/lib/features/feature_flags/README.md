@@ -20,6 +20,7 @@ The feature flag system follows clean architecture principles with clear separat
 - `enhancedVideoPlayer` - Improved video playback engine with better performance
 - `enhancedAnalytics` - Detailed usage tracking and insights
 - `newProfileLayout` - Redesigned user profile screen
+- `livestreamingBeta` - Enable livestream discovery, joining, and hosting
 - `debugTools` - Developer debugging utilities and diagnostics
 
 ## Quick Start

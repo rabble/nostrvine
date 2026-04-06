@@ -28,10 +28,6 @@ void main() {
       expect(config.getDefault(FeatureFlag.enhancedAnalytics), isFalse);
       expect(config.getDefault(FeatureFlag.newProfileLayout), isFalse);
       expect(config.getDefault(FeatureFlag.livestreamingBeta), isFalse);
-      expect(config.getDefault(FeatureFlag.liveDiscovery), isFalse);
-      expect(config.getDefault(FeatureFlag.liveAudience), isFalse);
-      expect(config.getDefault(FeatureFlag.liveHost), isFalse);
-      expect(config.getDefault(FeatureFlag.liveSpeakerPublishing), isFalse);
     });
 
     test('should have debug tools enabled by default in debug builds', () {
@@ -91,20 +87,8 @@ void main() {
         equals('FF_VIDEO_REPLIES'),
       );
       expect(
-        config.getEnvironmentKey(FeatureFlag.liveDiscovery),
-        equals('FF_LIVE_DISCOVERY'),
-      );
-      expect(
-        config.getEnvironmentKey(FeatureFlag.liveAudience),
-        equals('FF_LIVE_AUDIENCE'),
-      );
-      expect(
-        config.getEnvironmentKey(FeatureFlag.liveHost),
-        equals('FF_LIVE_HOST'),
-      );
-      expect(
-        config.getEnvironmentKey(FeatureFlag.liveSpeakerPublishing),
-        equals('FF_LIVE_SPEAKER_PUBLISHING'),
+        config.getEnvironmentKey(FeatureFlag.livestreamingBeta),
+        equals('FF_LIVESTREAMING_BETA'),
       );
     });
 

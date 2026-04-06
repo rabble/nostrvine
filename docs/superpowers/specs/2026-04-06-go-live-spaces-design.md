@@ -32,7 +32,7 @@ These decisions were explicitly approved during brainstorming:
 - Fully Divine-owned ingest/transcoding infrastructure
 - Large egalitarian many-video rooms with unlimited active publishers
 - Full replay/archive product beyond recording handoff
-- Reusing the current `livestreamingBeta` flag as the sole gate
+- Splitting livestream behind multiple separate rollout flags
 
 ## Recommended Architecture
 
@@ -267,16 +267,11 @@ This should be a dedicated feature module. Do not spread live-room logic across 
 
 ## Feature Flags
 
-Do not rely on the existing `livestreamingBeta` flag alone.
+Use a single live gate for this rollout:
 
-Recommended flags:
+- `livestreamingBeta`
 
-- `liveDiscovery`
-- `liveAudience`
-- `liveHost`
-- `liveSpeakerPublishing`
-
-This allows the team to expose discovery before enabling unfinished host or speaker flows.
+This keeps livestream clearly on or off instead of scattering one feature across multiple rollout toggles.
 
 ## Rollout Plan
 

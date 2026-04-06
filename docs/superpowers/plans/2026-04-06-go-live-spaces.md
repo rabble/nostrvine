@@ -40,19 +40,13 @@ This repo does not contain the Divine backend. The plan therefore includes:
 - Test: `mobile/test/core/feature_flag_test.dart`
 - Test: `mobile/test/services/build_config_test.dart`
 
-- [ ] **Step 1: Add failing feature-flag tests for the new gates**
+- [ ] **Step 1: Add failing feature-flag tests for the single live gate**
 
 Add expectations for:
-- `FeatureFlag.liveDiscovery`
-- `FeatureFlag.liveAudience`
-- `FeatureFlag.liveHost`
-- `FeatureFlag.liveSpeakerPublishing`
+- `FeatureFlag.livestreamingBeta`
 
 Add matching environment key expectations:
-- `FF_LIVE_DISCOVERY`
-- `FF_LIVE_AUDIENCE`
-- `FF_LIVE_HOST`
-- `FF_LIVE_SPEAKER_PUBLISHING`
+- `FF_LIVESTREAMING_BETA`
 
 - [ ] **Step 2: Run the targeted tests and verify they fail**
 
@@ -64,16 +58,13 @@ flutter test test/core/feature_flag_test.dart test/services/build_config_test.da
 
 Expected: FAIL because the new flags and env keys do not exist yet.
 
-- [ ] **Step 3: Add the new feature flags and build configuration mappings**
+- [ ] **Step 3: Keep the live feature behind one clear flag**
 
 Update `FeatureFlag`:
 ```dart
-liveDiscovery('Live Discovery', 'Enable public live room discovery surfaces'),
-liveAudience('Live Audience', 'Enable native room join and audience playback'),
-liveHost('Live Host', 'Enable room creation and host controls'),
-liveSpeakerPublishing(
-  'Live Speaker Publishing',
-  'Enable invited speakers to publish camera and microphone in live rooms',
+livestreamingBeta(
+  'Livestream',
+  'Enable livestream discovery, joining, and hosting',
 ),
 ```
 
@@ -515,10 +506,10 @@ git commit -m "feat(live): add discovery, room, chat, and host blocs"
 - [ ] **Step 1: Write failing widget/router tests**
 
 Cover:
-- Explore shows a `Live` entry when `liveDiscovery` is enabled
+- Explore shows a `Live` entry when `livestreamingBeta` is enabled
 - tapping a room card opens room detail
-- room detail join button opens room page when `liveAudience` is enabled
-- `Go Live` route is available only when `liveHost` is enabled
+- room detail join button opens room page when `livestreamingBeta` is enabled
+- `Go Live` route is available only when `livestreamingBeta` is enabled
 - host controls appear for hosts, not audience members
 
 - [ ] **Step 2: Run the screen tests and verify they fail**
@@ -551,7 +542,7 @@ Start with a clear Explore entry point rather than a brand-new tab shell.
 
 Gate it with:
 ```dart
-FeatureFlag.liveDiscovery
+FeatureFlag.livestreamingBeta
 ```
 
 - [ ] **Step 5: Build `LiveDiscoveryPage` and `LiveRoomDetailPage`**
@@ -905,7 +896,7 @@ git commit -m "feat(live): harden mobile hosting and add replay handoff"
 - Keep the feature module isolated. Do not splice live chat into the existing comments stack.
 - Keep repositories free of Flutter UI types.
 - Prefer page/view splits for live screens with non-trivial wiring.
-- Use the explicit live feature flags for rollout. Do not gate all slices behind the old `livestreamingBeta` flag.
+- Use `FeatureFlag.livestreamingBeta` as the single on or off gate for the live rollout.
 - If the backend contract is missing, implement the mobile client boundary first with fakes/mocks and stop before wiring end-to-end token exchange.
 - If LiveKit package constraints create platform issues, isolate the package behind `LiveKitRoomService` and keep bloc/screen code unchanged.
 
