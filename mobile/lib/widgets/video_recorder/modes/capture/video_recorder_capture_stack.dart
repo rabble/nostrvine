@@ -27,7 +27,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
         backgroundColor: VineTheme.transparent,
         elevation: 0,
         behavior: .floating,
-        margin: const .fromLTRB(16, 0, 16, 68),
+        margin: .fromLTRB(16, 0, 16, 68),
         content: DivineSnackbarContainer(label: 'Clip removed'),
       ),
     );

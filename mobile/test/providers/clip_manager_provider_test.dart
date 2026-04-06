@@ -405,6 +405,7 @@ void main() {
             duration: const Duration(seconds: 2),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
+            limitClipDuration: false,
           );
 
           final replacementClip = DivineVideoClip(

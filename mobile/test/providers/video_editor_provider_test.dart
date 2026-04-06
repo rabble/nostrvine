@@ -397,6 +397,7 @@ void main() {
                 targetAspectRatio: .vertical,
                 originalAspectRatio: 9 / 16,
                 duration: const Duration(seconds: 2),
+                limitClipDuration: false,
               );
 
           notifier.setProcessing(true);
