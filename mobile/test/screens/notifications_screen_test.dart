@@ -12,15 +12,19 @@ import 'package:openvine/widgets/notification_list_item.dart';
 /// Mock notifier that returns test notifications
 class _MockRelayNotifications extends RelayNotifications {
   final List<NotificationModel> _notifications;
+  final bool _hasMoreContent;
   final List<String> markedAsReadIds = [];
   bool markAllAsReadCalled = false;
+  int loadMoreCalls = 0;
 
-  _MockRelayNotifications(this._notifications);
+  _MockRelayNotifications(this._notifications, {bool hasMoreContent = false})
+    : _hasMoreContent = hasMoreContent;
 
   @override
   Future<NotificationFeedState> build() async {
     return NotificationFeedState(
       notifications: _notifications,
+      hasMoreContent: _hasMoreContent,
       isInitialLoad: false,
       lastUpdated: DateTime.now(),
     );
@@ -37,7 +41,9 @@ class _MockRelayNotifications extends RelayNotifications {
   }
 
   @override
-  Future<void> loadMore() async {}
+  Future<void> loadMore() async {
+    loadMoreCalls++;
+  }
 
   @override
   Future<void> refresh() async {}
@@ -46,6 +52,7 @@ class _MockRelayNotifications extends RelayNotifications {
 /// Mock notifier that returns empty list
 class _MockEmptyRelayNotifications extends RelayNotifications {
   bool markAllAsReadCalled = false;
+  int loadMoreCalls = 0;
 
   @override
   Future<NotificationFeedState> build() async {
@@ -65,7 +72,9 @@ class _MockEmptyRelayNotifications extends RelayNotifications {
   }
 
   @override
-  Future<void> loadMore() async {}
+  Future<void> loadMore() async {
+    loadMoreCalls++;
+  }
 
   @override
   Future<void> refresh() async {}
@@ -342,7 +351,10 @@ void main() {
             ),
           ];
 
-          final mockNotifier = _MockRelayNotifications(notifications);
+          final mockNotifier = _MockRelayNotifications(
+            notifications,
+            hasMoreContent: true,
+          );
           await tester.pumpWidget(buildScreenWidget(() => mockNotifier));
           await tester.pumpAndSettle();
 
@@ -352,6 +364,33 @@ void main() {
 
           expect(find.text('No follow notifications'), findsOneWidget);
           expect(find.byType(NotificationListItem), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'requests more pages when a filtered tab is empty but more content exists',
+        (WidgetTester tester) async {
+          final now = DateTime.now();
+          final notifications = [
+            NotificationModel(
+              id: 'follow-1',
+              type: NotificationType.follow,
+              actorPubkey: pubkeyBob,
+              actorName: 'Bob',
+              message: 'Bob started following you',
+              timestamp: now.subtract(const Duration(minutes: 1)),
+            ),
+          ];
+
+          final mockNotifier = _MockRelayNotifications(notifications);
+          await tester.pumpWidget(buildScreenWidget(() => mockNotifier));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Likes'));
+          await tester.pump();
+          await tester.pump();
+
+          expect(mockNotifier.loadMoreCalls, greaterThanOrEqualTo(1));
         },
       );
     });

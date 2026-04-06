@@ -131,6 +131,7 @@ class _NotificationTabContentState
     extends ConsumerState<_NotificationTabContent>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
+  bool _isRequestingFilteredTopUp = false;
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -210,6 +211,8 @@ class _NotificationTabContentState
         final notifications = ref.watch(
           relayNotificationsByTypeProvider(widget.filter),
         );
+
+        _maybeLoadMoreForFilteredTab(feedState, notifications);
 
         if (notifications.isEmpty) {
           return ColoredBox(
@@ -357,6 +360,31 @@ class _NotificationTabContentState
         );
       },
     );
+  }
+
+  void _maybeLoadMoreForFilteredTab(
+    NotificationFeedState feedState,
+    List<NotificationModel> notifications,
+  ) {
+    final needsTopUp =
+        widget.filter != null &&
+        notifications.isEmpty &&
+        feedState.hasMoreContent &&
+        !feedState.isLoadingMore &&
+        !feedState.isRefreshing &&
+        !_isRequestingFilteredTopUp;
+
+    if (!needsTopUp) return;
+
+    _isRequestingFilteredTopUp = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await ref.read(relayNotificationsProvider.notifier).loadMore();
+      if (!mounted) return;
+      setState(() {
+        _isRequestingFilteredTopUp = false;
+      });
+    });
   }
 
   String _getFilterName(NotificationType type) {
