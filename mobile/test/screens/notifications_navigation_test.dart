@@ -72,8 +72,14 @@ void main() {
     'd' * 64,
     1111,
     [
-      ['e', rootVideoId, '', 'root'],
-      ['e', 'parent_comment', '', 'reply'],
+      // NIP-22: uppercase = root scope (video)
+      ['E', rootVideoId, '', 'video_author_pubkey'],
+      ['K', '34236'],
+      ['P', 'video_author_pubkey'],
+      // NIP-22: lowercase = parent item (comment being replied to)
+      ['e', 'parent_comment', '', 'parent_author_pubkey'],
+      ['k', '1111'],
+      ['p', 'parent_author_pubkey'],
     ],
     'comment body',
   );
