@@ -1,14 +1,10 @@
 package co.openvine.app
 
-import android.os.Handler
-import android.os.Looper
 import io.flutter.plugin.common.MethodChannel
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkConstructor
-import io.mockk.mockkStatic
-import io.mockk.slot
 import io.mockk.verify
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
@@ -168,5 +164,63 @@ class FlutterJNILifecycleGuardTest {
         // Second call is dropped
         guard.postResult(result, "second")
         verify(exactly = 0) { result.success("second") }
+    }
+
+    @Test
+    fun `back navigation invokes flutter method channel when activity stays alive`() {
+        val channel = mockk<MethodChannel>()
+        every { channel.invokeMethod("onBackPressed", null, any()) } answers {
+            @Suppress("UNCHECKED_CAST")
+            (args[2] as MethodChannel.Result).success(true)
+        }
+
+        var fallbackCount = 0
+
+        dispatchBackPressToFlutter(
+            channelProvider = { channel },
+            isActivityDestroyed = { false },
+            isFinishing = { false },
+            onFallback = { fallbackCount++ },
+        )
+
+        verify(exactly = 1) { channel.invokeMethod("onBackPressed", null, any()) }
+        assertEquals(0, fallbackCount)
+    }
+
+    @Test
+    fun `back navigation skips invoke when lifecycle changes before invokeMethod`() {
+        val channel = mockk<MethodChannel>(relaxed = true)
+        var destroyedChecks = 0
+        var fallbackCount = 0
+
+        dispatchBackPressToFlutter(
+            channelProvider = { channel },
+            isActivityDestroyed = { destroyedChecks++ > 0 },
+            isFinishing = { false },
+            onFallback = { fallbackCount++ },
+        )
+
+        verify(exactly = 0) { channel.invokeMethod(any(), any(), any()) }
+        assertEquals(1, fallbackCount)
+    }
+
+    @Test
+    fun `back navigation falls back when invokeMethod throws after detach`() {
+        val channel = mockk<MethodChannel>()
+        every { channel.invokeMethod(any(), any(), any()) } throws RuntimeException(
+            "Cannot execute operation because FlutterJNI is not attached to native",
+        )
+
+        var fallbackCount = 0
+
+        dispatchBackPressToFlutter(
+            channelProvider = { channel },
+            isActivityDestroyed = { false },
+            isFinishing = { false },
+            onFallback = { fallbackCount++ },
+        )
+
+        verify(exactly = 1) { channel.invokeMethod("onBackPressed", null, any()) }
+        assertEquals(1, fallbackCount)
     }
 }
