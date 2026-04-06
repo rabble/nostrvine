@@ -1,3 +1,4 @@
+// TODO(notifications-refactor): Remove after migration is verified
 // ABOUTME: Riverpod provider for Divine Relay notifications API with pagination
 // ABOUTME: Combines REST API for initial load/pagination with profile enrichment
 

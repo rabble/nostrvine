@@ -49,7 +49,7 @@ import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
-import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -241,16 +241,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // NOTIFICATIONS tab subtree
           GoRoute(
-            path: NotificationsScreen.pathWithIndex,
-            name: NotificationsScreen.routeName,
+            path: NotificationsPage.pathWithIndex,
+            name: NotificationsPage.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
                 key: NavigatorKeys.notifications,
                 onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const NotificationsScreen(),
+                  builder: (_) => const NotificationsPage(),
                   settings: const RouteSettings(
-                    name: NotificationsScreen.routeName,
+                    name: NotificationsPage.routeName,
                   ),
                 ),
               ),

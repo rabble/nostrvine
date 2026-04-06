@@ -1,3 +1,4 @@
+// TODO(notifications-refactor): Remove after migration is verified
 // ABOUTME: Notifications screen displaying user's social interactions and system updates
 // ABOUTME: Shows likes, comments, follows, mentions, reposts with filtering and read state
 

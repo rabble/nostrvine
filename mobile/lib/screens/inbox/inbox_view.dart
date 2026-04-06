@@ -28,7 +28,7 @@ import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
-import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
@@ -77,7 +77,7 @@ class _InboxViewState extends ConsumerState<InboxView> {
                   color: VineTheme.surfaceContainerHigh,
                   child: _selectedTab == InboxTab.messages
                       ? const _MessagesContent()
-                      : const NotificationsScreen(),
+                      : const NotificationsPage(),
                 ),
               ),
             ),
