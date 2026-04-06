@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_role.dart';
+import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/services/live_nostr_codec.dart';
 
