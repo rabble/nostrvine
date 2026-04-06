@@ -17,7 +17,10 @@ class VideoEditorThumbnail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
+    final clip = ref.watch(
+      clipManagerProvider.select((s) => s.firstClipOrNull),
+    );
+    if (clip == null) return const SizedBox.shrink();
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 100),

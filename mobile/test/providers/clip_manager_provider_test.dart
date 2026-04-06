@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -370,6 +371,36 @@ void main() {
           reason: 'Without clearClips, clips are appended',
         );
       });
+
+      test(
+        'replaceClips swaps clips atomically without empty intermediate state',
+        () {
+          final notifier = container.read(clipManagerProvider.notifier);
+
+          notifier.addClip(
+            video: EditorVideo.file('/path/to/existing.mp4'),
+            duration: const Duration(seconds: 2),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          final replacementClip = DivineVideoClip(
+            id: 'replacement-clip',
+            video: EditorVideo.file('/path/to/replacement.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .square,
+            originalAspectRatio: 1,
+          );
+
+          notifier.replaceClips([replacementClip]);
+
+          final state = container.read(clipManagerProvider);
+          expect(state.clips, hasLength(1));
+          expect(state.clips.single.id, equals('replacement-clip'));
+          expect(state.firstClipOrNull, equals(replacementClip));
+        },
+      );
     });
 
     group('updateGhostFrame', () {

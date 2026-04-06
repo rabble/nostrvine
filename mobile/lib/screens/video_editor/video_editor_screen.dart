@@ -74,13 +74,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   ProImageEditorState? get _editor => _editorKey.currentState;
 
-  DivineVideoClip get _clip =>
-      ref.watch(clipManagerProvider.select((s) => s.clips.first));
+  DivineVideoClip? get _clip => ref.read(clipManagerProvider).firstClipOrNull;
 
   /// FittedBox scale factor between bodySize and renderSize.
   double get _fittedBoxScale => VideoEditorScope.calculateFittedBoxScale(
     _bodySizeNotifier.value,
-    _clip.originalAspectRatio,
+    _clip?.originalAspectRatio ?? 9 / 16,
   );
 
   @override
@@ -185,9 +184,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       );
 
       final clipManager = ref.read(clipManagerProvider.notifier);
-      clipManager
-        ..clearClips()
-        ..addMultipleClips(clips);
+      clipManager.replaceClips(clips);
     }
   }
 
@@ -328,10 +325,13 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       ],
       child: Builder(
         builder: (context) {
+          final clip = ref.watch(
+            clipManagerProvider.select((s) => s.firstClipOrNull),
+          );
           return VideoEditorScope(
             editorKey: _editorKey,
             removeAreaKey: _removeAreaKey,
-            originalClipAspectRatio: _clip.originalAspectRatio,
+            originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
             bodySizeNotifier: _bodySizeNotifier,
             fromLibrary: widget.fromLibrary,
             onOpenClipsEditor: () {

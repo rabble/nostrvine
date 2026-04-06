@@ -726,9 +726,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       }
     }
 
-    // Clear existing clips before restoring to prevent duplication
-    _clipManager.clearClips();
-
     // Validate finalRenderedClip - only restore if file still exists
     DivineVideoClip? validFinalRenderedClip;
     final finalClip = draft.finalRenderedClip;
@@ -770,7 +767,17 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       originalAudioVolume: draft.originalAudioVolume,
       customAudioVolume: draft.customAudioVolume,
     );
-    _clipManager.addMultipleClips(clipsWithThumbnails);
+
+    _clipManager.replaceClips(clipsWithThumbnails);
+    if (clipsWithThumbnails.isEmpty) {
+      Log.warning(
+        '⚠️ Draft restored with no clips',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
     // We set the aspect ratio in the video recorder to match the clips,
     // so the user can't mix them up.
     ref
@@ -873,6 +880,15 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Cancel an ongoing video render operation.
   Future<void> cancelRenderVideo() async {
+    if (_clips.isEmpty) {
+      Log.debug(
+        '⚠️ Skipping render cancel - no clips available',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+      return;
+    }
+
     await VideoEditorRenderService.cancelTask(_clips.first.id);
 
     state = state.copyWith(isProcessing: false);
