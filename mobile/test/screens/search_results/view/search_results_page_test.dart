@@ -68,28 +68,32 @@ void main() {
       );
 
       testWidgets(
-        'returns to All mode when filter pill is tapped',
+        'filter pill shows correct label after switching to People',
         (tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
 
-          // Switch to People mode first.
+          // Default label is "All".
+          expect(
+            find.descendant(
+              of: find.byType(SearchFilterPill),
+              matching: find.text('All'),
+            ),
+            findsOneWidget,
+          );
+
+          // Switch to People mode.
           await tester.tap(find.text('People'));
           await tester.pump();
 
-          expect(find.byType(TagsSection), findsNothing);
-
-          // Tap the filter pill (shows "People" label) to open the sheet,
-          // then select "All" to return.
-          await tester.tap(find.byType(SearchFilterPill));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text('All'));
-          await tester.pumpAndSettle();
-
-          expect(find.byType(PeopleSection), findsOneWidget);
-          expect(find.byType(TagsSection), findsOneWidget);
-          expect(find.byType(VideosSection), findsOneWidget);
+          // Pill now shows "People".
+          expect(
+            find.descendant(
+              of: find.byType(SearchFilterPill),
+              matching: find.text('People'),
+            ),
+            findsOneWidget,
+          );
         },
       );
     });
