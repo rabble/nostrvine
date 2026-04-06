@@ -10,7 +10,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
-    show NostrKeyManager, SecureKeyContainer, SecureKeyStorage;
+    show
+        NostrKeyManager,
+        SecureKeyContainer,
+        SecureKeyStorage,
+        SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -2445,6 +2449,8 @@ class AuthService implements BackgroundAwareService {
       category: LogCategory.auth,
     );
 
+    Object? keyDeletionError;
+
     try {
       // Clear TOS acceptance on any logout - user must re-accept when logging
       // back in
@@ -2470,7 +2476,9 @@ class AuthService implements BackgroundAwareService {
 
       // Clear relay discovery cache so next login re-queries indexers
       // (even for same-user re-login, relays may have changed)
-      await _relayDiscoveryService.clearCache(_currentKeyContainer?.npub ?? '');
+      await _relayDiscoveryService.clearCache(
+        _currentKeyContainer?.npub ?? '',
+      );
 
       // Clear the stored pubkey tracking so next login is treated as new
       await prefs.remove('current_user_pubkey_hex');
@@ -2489,7 +2497,19 @@ class AuthService implements BackgroundAwareService {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        await _keyStorage.deleteKeys();
+        // Isolate key deletion so that a failure does not short-circuit
+        // the remaining cleanup (session, signers, auth state). The error
+        // is rethrown after cleanup completes so callers can warn the user.
+        try {
+          await _keyStorage.deleteKeys();
+        } catch (e) {
+          keyDeletionError = e;
+          Log.error(
+            'Key deletion failed during signOut: $e',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
       } else {
         // Non-destructive sign-out: archive signer info for later restoration
         if (currentPubkey != null) {
@@ -2544,7 +2564,8 @@ class AuthService implements BackgroundAwareService {
       _currentProfile = null;
       _lastError = null;
 
-      // Unregister relay-discovery callback so we don't hold a client reference
+      // Unregister relay-discovery callback so we don't hold a client
+      // reference
       _onUserRelaysDiscovered = null;
       _userRelays = [];
 
@@ -2613,6 +2634,14 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
       _lastError = 'Sign out failed: $e';
+    }
+
+    // After all cleanup, propagate key deletion failure so callers can
+    // warn the user that keys may still be on the device.
+    if (keyDeletionError != null) {
+      throw SecureKeyStorageException(
+        'Signed out but key deletion failed: $keyDeletionError',
+      );
     }
   }
 

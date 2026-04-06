@@ -8,6 +8,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart'
+    show SecureKeyStorageException;
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -304,20 +306,41 @@ Future<void> executeAccountDeletion({
 
       // Step 3: Sign out and delete local keys
       // Router will automatically redirect to /welcome when auth state
-      // becomes unauthenticated
-      await authService.signOut(deleteKeys: true);
+      // becomes unauthenticated.
+      // signOut may throw SecureKeyStorageException if platform key
+      // deletion failed — the user IS signed out but keys may remain.
+      String? keyDeletionWarning;
+      try {
+        await authService.signOut(deleteKeys: true);
+      } on SecureKeyStorageException catch (e) {
+        Log.warning(
+          'Key deletion failed during account deletion: $e',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+        keyDeletionWarning =
+            'Account deleted, but your keys may '
+            'not have been fully removed from this device. '
+            'Go to Settings → Nostr Keys → Remove Keys to retry.';
+      }
 
-      // Close loading indicator and show success snackbar
+      // Close loading indicator and show result snackbar
       // Router will automatically redirect to /welcome after sign out
       dismissDialog();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Your account has been deleted',
-              style: TextStyle(color: VineTheme.backgroundColor),
+              keyDeletionWarning ?? 'Your account has been deleted',
+              style: TextStyle(
+                color: keyDeletionWarning != null
+                    ? VineTheme.whiteText
+                    : VineTheme.backgroundColor,
+              ),
             ),
-            backgroundColor: VineTheme.vineGreen,
+            backgroundColor: keyDeletionWarning != null
+                ? VineTheme.error
+                : VineTheme.vineGreen,
           ),
         );
       }

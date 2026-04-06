@@ -7,6 +7,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart'
+    show SecureKeyStorageException;
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -154,6 +156,24 @@ class _RemoveKeysTile extends StatelessWidget {
 
         try {
           await authService.signOut(deleteKeys: true);
+        } on SecureKeyStorageException {
+          // Signed out but platform key deletion failed — warn the user.
+          if (!context.mounted) return;
+          context.pop();
+
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Signed out, but your keys may not have been '
+                'fully removed from this device. '
+                'Try removing keys again.',
+                style: TextStyle(color: VineTheme.whiteText),
+              ),
+              backgroundColor: VineTheme.error,
+            ),
+          );
+          return;
         } catch (e) {
           if (!context.mounted) return;
           context.pop();
