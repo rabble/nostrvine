@@ -1580,6 +1580,103 @@ void main() {
         container.dispose();
       });
 
+      test(
+        'enrichment merges correctly when notification ids are empty',
+        () async {
+          // Regression: when relay returns empty id, _mergeEnrichedNotifications
+          // used to put all enriched entries under the same '' key, so every
+          // notification got the last actor's name/avatar.
+          const pubkey1 = 'pubkey_alice_aaa';
+          const pubkey2 = 'pubkey_bob_bbb';
+
+          final profileA = UserProfile(
+            pubkey: pubkey1,
+            displayName: 'Alice',
+            picture: 'https://example.com/alice.jpg',
+            rawData: const {},
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+            eventId: 'event_a',
+          );
+          final profileB = UserProfile(
+            pubkey: pubkey2,
+            displayName: 'Bob',
+            picture: 'https://example.com/bob.jpg',
+            rawData: const {},
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+            eventId: 'event_b',
+          );
+
+          // Both notifications have empty id — the bug scenario
+          final mockNotifications = [
+            RelayNotification(
+              id: '',
+              sourcePubkey: pubkey1,
+              sourceEventId: 'event_1',
+              sourceKind: 7,
+              notificationType: 'reaction',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+              read: false,
+              referencedEventId: 'video_1',
+            ),
+            RelayNotification(
+              id: '',
+              sourcePubkey: pubkey2,
+              sourceEventId: 'event_2',
+              sourceKind: 7,
+              notificationType: 'reaction',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000100 * 1000),
+              read: false,
+              referencedEventId: 'video_2',
+            ),
+          ];
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: mockNotifications,
+              unreadCount: 2,
+            ),
+          );
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => {pubkey1: profileA, pubkey2: profileB},
+          );
+
+          final container = createTestContainer(
+            profileRepository: mockProfileRepository,
+          );
+
+          await waitForLoadComplete(container);
+          final enriched = await waitForEnrichment(container);
+
+          expect(enriched.notifications, hasLength(2));
+          // Each notification must have its own actor — not both "Bob"
+          expect(enriched.notifications[0].actorName, equals('Alice'));
+          expect(
+            enriched.notifications[0].actorPictureUrl,
+            equals('https://example.com/alice.jpg'),
+          );
+          expect(enriched.notifications[1].actorName, equals('Bob'));
+          expect(
+            enriched.notifications[1].actorPictureUrl,
+            equals('https://example.com/bob.jpg'),
+          );
+
+          container.dispose();
+        },
+      );
+
       test('loadMore notifications are enriched', () async {
         const pubkey1 = 'pubkey_initial';
         const pubkey2 = 'pubkey_loadmore';
