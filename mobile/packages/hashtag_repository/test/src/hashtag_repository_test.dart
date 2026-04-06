@@ -193,7 +193,6 @@ void main() {
         when(
           () => mockClient.searchHashtags(
             query: 'nostr',
-            limit: 20,
             offset: 20,
           ),
         ).thenAnswer((_) async => ['nostr2']);
@@ -207,7 +206,6 @@ void main() {
         verify(
           () => mockClient.searchHashtags(
             query: 'nostr',
-            limit: 20,
             offset: 20,
           ),
         ).called(1);

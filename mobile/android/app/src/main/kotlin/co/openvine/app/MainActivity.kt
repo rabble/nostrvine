@@ -110,31 +110,15 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        // Notify Flutter about back button press via MethodChannel
-        navigationChannel?.invokeMethod("onBackPressed", null, object : MethodChannel.Result {
-            override fun success(result: Any?) {
-                val handled = result as? Boolean ?: false
-                Log.d(NAV_TAG, "Flutter handled back: $handled")
-
-                if (!handled) {
-                    // Flutter didn't handle it, use default behavior (exit app)
-                    Log.d(NAV_TAG, "Flutter didn't handle back, calling super.onBackPressed()")
-                    super@MainActivity.onBackPressed()
-                }
-            }
-
-            override fun error(error: String, message: String?, details: Any?) {
-                Log.e(NAV_TAG, "Error from Flutter: $error - $message")
-                // On error, use default behavior
+        dispatchBackPressToFlutter(
+            channelProvider = { navigationChannel },
+            isActivityDestroyed = { isActivityDestroyed },
+            isFinishing = { isFinishing },
+            onFallback = {
+                Log.d(NAV_TAG, "Back handling fell through to default behavior")
                 super@MainActivity.onBackPressed()
-            }
-
-            override fun notImplemented() {
-                Log.w(NAV_TAG, "Back handling not implemented in Flutter")
-                // If not implemented, use default behavior
-                super@MainActivity.onBackPressed()
-            }
-        })
+            },
+        )
     }
 
     private fun setupNavigationChannel(flutterEngine: FlutterEngine) {
@@ -160,27 +144,12 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        // Notify Flutter about back button press via MethodChannel
-        navigationChannel?.invokeMethod("onBackPressed", null, object : MethodChannel.Result {
-            override fun success(result: Any?) {
-                val handled = result as? Boolean ?: false
-
-                if (!handled) {
-                    // Flutter didn't handle it, finish activity (exit app)
-                    finish()
-                }
-            }
-
-            override fun error(error: String, message: String?, details: Any?) {
-                // On error, finish activity
-                finish()
-            }
-
-            override fun notImplemented() {
-                // If not implemented, finish activity
-                finish()
-            }
-        })
+        dispatchBackPressToFlutter(
+            channelProvider = { navigationChannel },
+            isActivityDestroyed = { isActivityDestroyed },
+            isFinishing = { isFinishing },
+            onFallback = { finish() },
+        )
     }
 
     override fun onDestroy() {
@@ -557,5 +526,53 @@ class MainActivity : FlutterActivity() {
         }
 
         Log.d(ZENDESK_TAG, "Zendesk platform channel registered")
+    }
+}
+
+internal fun dispatchBackPressToFlutter(
+    channelProvider: () -> MethodChannel?,
+    isActivityDestroyed: () -> Boolean,
+    isFinishing: () -> Boolean,
+    onFallback: () -> Unit,
+) {
+    if (isActivityDestroyed() || isFinishing()) {
+        onFallback()
+        return
+    }
+
+    val channel = channelProvider() ?: run {
+        onFallback()
+        return
+    }
+
+    // Re-check immediately before invoking Flutter so we degrade safely if the
+    // engine detaches between the initial back-navigation pre-check and the call.
+    if (isActivityDestroyed() || isFinishing()) {
+        onFallback()
+        return
+    }
+
+    try {
+        channel.invokeMethod("onBackPressed", null, object : MethodChannel.Result {
+            override fun success(result: Any?) {
+                val handled = result as? Boolean ?: false
+                if (!handled) {
+                    onFallback()
+                }
+            }
+
+            override fun error(error: String, message: String?, details: Any?) {
+                onFallback()
+            }
+
+            override fun notImplemented() {
+                onFallback()
+            }
+        })
+    } catch (e: RuntimeException) {
+        runCatching {
+            Log.w("OpenVineNavigation", "Back navigation invokeMethod failed after detach", e)
+        }
+        onFallback()
     }
 }

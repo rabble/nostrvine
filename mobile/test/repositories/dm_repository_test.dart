@@ -13,8 +13,10 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/dm_sync_state.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 
@@ -27,6 +29,38 @@ class _MockDirectMessagesDao extends Mock implements DirectMessagesDao {}
 class _MockConversationsDao extends Mock implements ConversationsDao {}
 
 class _FakeEvent extends Fake implements Event {}
+
+/// Test double for [DmSyncState] that stores values in memory and captures
+/// [recordSeen] calls for assertions.
+class _FakeDmSyncState implements DmSyncState {
+  int? newestOverride;
+  int? oldestOverride;
+  final List<({String pubkey, int createdAt})> recorded =
+      <({String pubkey, int createdAt})>[];
+
+  @override
+  int? newestSyncedAt(String pubkey) => newestOverride;
+
+  @override
+  int? oldestSyncedAt(String pubkey) => oldestOverride;
+
+  @override
+  Future<void> recordSeen(String pubkey, {required int createdAt}) async {
+    recorded.add((pubkey: pubkey, createdAt: createdAt));
+    if (newestOverride == null || createdAt > newestOverride!) {
+      newestOverride = createdAt;
+    }
+    if (oldestOverride == null || createdAt < oldestOverride!) {
+      oldestOverride = createdAt;
+    }
+  }
+
+  @override
+  Future<void> clear(String pubkey) async {
+    newestOverride = null;
+    oldestOverride = null;
+  }
+}
 
 // Valid 64-character hex pubkeys for testing
 const _validPubkeyA =
@@ -87,6 +121,7 @@ void main() {
       String? userPubkey,
       RumorDecryptor? rumorDecryptor,
       Nip04Decryptor? nip04Decryptor,
+      DmSyncState? syncState,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -97,6 +132,7 @@ void main() {
         signer: LocalNostrSigner(_validPrivateKey),
         rumorDecryptor: rumorDecryptor,
         nip04Decryptor: nip04Decryptor,
+        syncState: syncState,
       );
     }
 
@@ -613,6 +649,89 @@ void main() {
             dmProtocol: any(named: 'dmProtocol'),
           ),
         ).called(1);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
+      test('successful gift-wrap persist advances sync boundaries', () async {
+        const rumorCreatedAt = 1700000500;
+        final giftWrap = createGiftWrapEvent();
+        final rumor = createRumorEvent(createdAt: rumorCreatedAt);
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+        ).thenAnswer((_) async => false);
+        stubDaoInserts();
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(
+          rumorDecryptor: (_, _) async => rumor,
+          syncState: syncState,
+        );
+
+        repository.startListening();
+        controller.add(giftWrap);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(syncState.recorded, hasLength(1));
+        expect(syncState.recorded.single.pubkey, _validPubkeyA);
+        expect(syncState.recorded.single.createdAt, rumorCreatedAt);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
+      test('successful NIP-04 persist advances sync boundaries', () async {
+        const nip04CreatedAt = 1700000600;
+        final nip04Event = Event.fromJson({
+          'id':
+              'aaaa00000000000000000000000000000000000000'
+              '0000000000000000000000',
+          'pubkey': _validPubkeyB,
+          'created_at': nip04CreatedAt,
+          'kind': EventKind.directMessage,
+          'tags': [
+            ['p', _validPubkeyA],
+          ],
+          'content': 'nip04-ciphertext',
+          'sig': '',
+        });
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer((_) async => false);
+        stubDaoInserts();
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(
+          nip04Decryptor: (_, _) async => 'Hello over NIP-04',
+          syncState: syncState,
+        );
+
+        repository.startListening();
+        controller.add(nip04Event);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(syncState.recorded, hasLength(1));
+        expect(syncState.recorded.single.pubkey, _validPubkeyA);
+        expect(syncState.recorded.single.createdAt, nip04CreatedAt);
 
         await controller.close();
         await repository.stopListening();
@@ -1214,6 +1333,227 @@ void main() {
         ).called(1);
 
         await controller.close();
+      });
+
+      test('startListening after stopListening re-subscribes '
+          '(inbox can be re-opened)', () async {
+        // Return a fresh stream per subscribe call so both listens succeed.
+        final controllers = <StreamController<Event>>[];
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) {
+          final controller = StreamController<Event>();
+          controllers.add(controller);
+          return controller.stream;
+        });
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+
+        repository.startListening();
+        await repository.stopListening();
+        repository.startListening();
+
+        // Both opens should have produced a subscribe call on the client.
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(2);
+
+        await repository.stopListening();
+        for (final c in controllers) {
+          await c.close();
+        }
+      });
+
+      test('initialize does not open a subscription (lazy inbox)', () async {
+        // New behavior: initialize() only wires credentials. The gift-wrap
+        // subscription is started by the inbox screen via startListening().
+        // This keeps cold start off the UI isolate until the user visits
+        // the messages tab. Regression guard for
+        // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+        final repository = DmRepository(
+          nostrClient: mockNostrClient,
+          messageService: mockMessageService,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+          // Intentionally no userPubkey/signer — initialize() provides them.
+        );
+
+        repository.initialize(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        // The relay client must not have been asked to subscribe.
+        verifyNever(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        );
+        // But the repository should still be initialized so send() works.
+        expect(repository.isInitialized, isTrue);
+      });
+
+      test('startListening does not poll the relay', () async {
+        // Regression guard: the 10s gift-wrap poll timer was removed
+        // because it re-fetched the last 20 events forever on the UI
+        // isolate, producing constant dedup skips and log spam. The
+        // live subscription is now the sole event source while the
+        // inbox is open. See
+        // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        repository.startListening();
+
+        // Wait well beyond any former poll interval.
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // queryEvents must never be called — no background poller.
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+
+        await repository.stopListening();
+        await controller.close();
+      });
+
+      test(
+        'startListening on first ever open uses limit:50 and no since',
+        () async {
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+          repository.startListening();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured, hasLength(1));
+          expect(captured.single.limit, 50);
+          expect(captured.single.since, isNull);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
+
+      test(
+        'startListening on subsequent open uses since = newest - 2d',
+        () async {
+          const newest = 1700000000;
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState()..newestOverride = newest;
+          final repository = createRepository(syncState: syncState);
+          repository.startListening();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured, hasLength(1));
+          expect(captured.single.since, newest - 2 * 86400);
+          expect(captured.single.limit, isNull);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
+    });
+
+    // -----------------------------------------------------------------
+    // loadOlderMessages pagination
+    // -----------------------------------------------------------------
+
+    group('loadOlderMessages', () {
+      test('queries until:oldest with limit 50', () async {
+        const oldest = 1699000000;
+        final syncState = _FakeDmSyncState()..oldestOverride = oldest;
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+
+        final repository = createRepository(syncState: syncState);
+
+        await repository.loadOlderMessages();
+
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(
+                    captureAny(),
+                    subscriptionId: any(named: 'subscriptionId'),
+                    useCache: any(named: 'useCache'),
+                  ),
+                ).captured.single
+                as List<nostr_filter.Filter>;
+        expect(captured, hasLength(1));
+        expect(captured.single.until, oldest);
+        expect(captured.single.limit, 50);
+      });
+
+      test('is a no-op when oldest is null', () async {
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(syncState: syncState);
+
+        await repository.loadOlderMessages();
+
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
       });
     });
 

@@ -95,7 +95,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   // Convert auth state stream to a Listenable for GoRouter
   final authListenable = _StreamListenable(authService.authStateStream);
 
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: NavigatorKeys.root,
     // Start at /welcome - redirect logic will navigate to appropriate route
     initialLocation: WelcomeScreen.path,
@@ -1004,6 +1004,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(() {
+    router.dispose();
+    authListenable.dispose();
+  });
+
+  return router;
 });
 
 /// Maps URL location to bottom nav tab index.
