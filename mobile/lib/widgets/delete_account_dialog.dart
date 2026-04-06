@@ -291,12 +291,37 @@ Future<void> executeAccountDeletion({
 
     if (result.success) {
       // Step 2: Delete Keycast account if one exists (invalidates signer)
-      // We log but don't block on failure since NIP-62 already succeeded
       final (keycastSuccess, keycastError) = await authService
           .deleteKeycastAccount();
+      if (!keycastSuccess && authService.isRegistered) {
+        // divineOAuth users MUST have their Keycast account deleted to
+        // prevent re-login. Show error and do NOT sign out.
+        Log.error(
+          'Keycast account deletion failed for registered user: '
+          '$keycastError',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+        dismissDialog();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Could not delete your account from the server. '
+                'Please check your connection and try again.',
+                style: TextStyle(color: VineTheme.whiteText),
+              ),
+              backgroundColor: VineTheme.error,
+            ),
+          );
+        }
+        return;
+      }
       if (!keycastSuccess) {
+        // Non-OAuth users: log and continue (no server account to delete)
         Log.warning(
-          'Keycast account deletion failed (continuing anyway): $keycastError',
+          'Keycast account deletion failed (continuing anyway): '
+          '$keycastError',
           name: screenName,
           category: LogCategory.auth,
         );

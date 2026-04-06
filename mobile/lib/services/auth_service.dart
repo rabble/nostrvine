@@ -2385,26 +2385,20 @@ class AuthService implements BackgroundAwareService {
     }
 
     try {
-      // Check for existing session with valid access token
-      final session = await _oauthClient.getSession();
-      if (session == null) {
-        Log.debug(
-          'No Keycast session found - nothing to delete',
+      // Get session, refreshing if expired (token may have expired during
+      // the NIP-62 deletion step that runs before this call)
+      final session = await _oauthClient.getSessionOrRefresh();
+      if (session == null || session.accessToken == null) {
+        Log.warning(
+          'Cannot delete Keycast account: '
+          'session unavailable after refresh attempt',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return (true, null);
+        return (false, 'Session expired and could not be refreshed');
       }
 
-      final accessToken = session.accessToken;
-      if (accessToken == null) {
-        Log.debug(
-          'Keycast session has no access token - nothing to delete',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return (true, null);
-      }
+      final accessToken = session.accessToken!;
 
       // Delete the account using the session's access token
       final result = await _oauthClient.deleteAccount(accessToken);

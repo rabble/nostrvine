@@ -1101,6 +1101,94 @@ void main() {
       );
     });
 
+    group('getSessionOrRefresh', () {
+      test('returns valid session when not expired', () async {
+        final storage = MemoryKeycastStorage();
+        final validSession = KeycastSession(
+          bunkerUrl: 'bunker://test',
+          accessToken: 'valid_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        );
+        await storage.write(
+          'keycast_session',
+          jsonEncode(validSession.toJson()),
+        );
+
+        // No HTTP calls expected — session is valid
+        final mockClient = MockClient((request) async {
+          fail('Should not make HTTP request when session is valid');
+        });
+
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: mockClient,
+          storage: storage,
+        );
+        final result = await oauth.getSessionOrRefresh();
+
+        expect(result, isNotNull);
+        expect(result!.accessToken, 'valid_token');
+      });
+
+      test('refreshes and returns session when expired', () async {
+        final storage = MemoryKeycastStorage();
+        // Store an expired session
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'bunker://test',
+          accessToken: 'expired_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        await storage.write(
+          'keycast_session',
+          jsonEncode(expiredSession.toJson()),
+        );
+        await storage.write('keycast_refresh_token', 'my_refresh_token');
+
+        final mockClient = MockClient((request) async {
+          // Should hit the token endpoint for refresh
+          expect(request.url.path, '/api/oauth/token');
+          return http.Response(
+            jsonEncode({
+              'bunker_url': 'bunker://refreshed',
+              'access_token': 'new_access_token',
+              'token_type': 'Bearer',
+              'expires_in': 86400,
+              'refresh_token': 'new_refresh_token',
+            }),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: mockClient,
+          storage: storage,
+        );
+        final result = await oauth.getSessionOrRefresh();
+
+        expect(result, isNotNull);
+        expect(result!.accessToken, 'new_access_token');
+      });
+
+      test('returns null when no session and no refresh token', () async {
+        final storage = MemoryKeycastStorage();
+        // No session, no refresh token
+
+        final mockClient = MockClient((request) async {
+          fail('Should not make HTTP request when no refresh token');
+        });
+
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: mockClient,
+          storage: storage,
+        );
+        final result = await oauth.getSessionOrRefresh();
+
+        expect(result, isNull);
+      });
+    });
+
     group('close', () {
       test('closes the HTTP client', () {
         var closeCalled = false;
