@@ -57,53 +57,61 @@ void main() {
       expect(error, isNull);
     });
 
-    test('returns success when no session exists', () async {
-      // Create AuthService with OAuth client
-      authService = AuthService(
-        userDataCleanupService: mockCleanupService,
-        keyStorage: mockKeyStorage,
-        oauthClient: mockOAuthClient,
-      );
+    test(
+      'returns failure when session is unavailable after refresh',
+      () async {
+        // Create AuthService with OAuth client
+        authService = AuthService(
+          userDataCleanupService: mockCleanupService,
+          keyStorage: mockKeyStorage,
+          oauthClient: mockOAuthClient,
+        );
 
-      // Mock: no session
-      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+        // Mock: no session even after refresh attempt
+        when(
+          () => mockOAuthClient.getSessionOrRefresh(),
+        ).thenAnswer((_) async => null);
 
-      // Act
-      final (success, error) = await authService.deleteKeycastAccount();
+        // Act
+        final (success, error) = await authService.deleteKeycastAccount();
 
-      // Assert
-      expect(success, isTrue);
-      expect(error, isNull);
-      verify(() => mockOAuthClient.getSession()).called(1);
-      verifyNever(() => mockOAuthClient.deleteAccount(any()));
-    });
+        // Assert — now correctly reports failure
+        expect(success, isFalse);
+        expect(error, contains('Session expired'));
+        verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
+        verifyNever(() => mockOAuthClient.deleteAccount(any()));
+      },
+    );
 
-    test('returns success when session has no access token', () async {
-      // Create AuthService with OAuth client
-      authService = AuthService(
-        userDataCleanupService: mockCleanupService,
-        keyStorage: mockKeyStorage,
-        oauthClient: mockOAuthClient,
-      );
+    test(
+      'returns failure when session has no access token after refresh',
+      () async {
+        // Create AuthService with OAuth client
+        authService = AuthService(
+          userDataCleanupService: mockCleanupService,
+          keyStorage: mockKeyStorage,
+          oauthClient: mockOAuthClient,
+        );
 
-      // Mock: session exists but has no access token
-      final sessionWithoutToken = KeycastSession(
-        bunkerUrl: 'https://bunker.example.com',
-        expiresAt: DateTime.now().add(const Duration(hours: 1)),
-      );
-      when(
-        () => mockOAuthClient.getSession(),
-      ).thenAnswer((_) async => sessionWithoutToken);
+        // Mock: session exists but has no access token
+        final sessionWithoutToken = KeycastSession(
+          bunkerUrl: 'https://bunker.example.com',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        );
+        when(
+          () => mockOAuthClient.getSessionOrRefresh(),
+        ).thenAnswer((_) async => sessionWithoutToken);
 
-      // Act
-      final (success, error) = await authService.deleteKeycastAccount();
+        // Act
+        final (success, error) = await authService.deleteKeycastAccount();
 
-      // Assert
-      expect(success, isTrue);
-      expect(error, isNull);
-      verify(() => mockOAuthClient.getSession()).called(1);
-      verifyNever(() => mockOAuthClient.deleteAccount(any()));
-    });
+        // Assert — now correctly reports failure
+        expect(success, isFalse);
+        expect(error, contains('Session expired'));
+        verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
+        verifyNever(() => mockOAuthClient.deleteAccount(any()));
+      },
+    );
 
     test('returns success when account deletion succeeds', () async {
       // Create AuthService with OAuth client
@@ -121,7 +129,7 @@ void main() {
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
       when(
-        () => mockOAuthClient.getSession(),
+        () => mockOAuthClient.getSessionOrRefresh(),
       ).thenAnswer((_) async => validSession);
 
       // Mock: successful deletion
@@ -138,7 +146,7 @@ void main() {
       // Assert
       expect(success, isTrue);
       expect(error, isNull);
-      verify(() => mockOAuthClient.getSession()).called(1);
+      verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
       verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
     });
 
@@ -158,7 +166,7 @@ void main() {
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
       when(
-        () => mockOAuthClient.getSession(),
+        () => mockOAuthClient.getSessionOrRefresh(),
       ).thenAnswer((_) async => validSession);
 
       // Mock: failed deletion
@@ -173,7 +181,7 @@ void main() {
       // Assert
       expect(success, isFalse);
       expect(error, equals(errorMessage));
-      verify(() => mockOAuthClient.getSession()).called(1);
+      verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
       verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
     });
 
@@ -193,7 +201,7 @@ void main() {
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
       when(
-        () => mockOAuthClient.getSession(),
+        () => mockOAuthClient.getSessionOrRefresh(),
       ).thenAnswer((_) async => validSession);
 
       // Mock: exception during deletion

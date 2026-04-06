@@ -876,13 +876,20 @@ class RelayNotifications extends _$RelayNotifications {
     List<NotificationModel> currentNotifications,
     List<NotificationModel> enrichedNotifications,
   ) {
-    final enrichedById = {
+    // Build lookup by a stable key. When [id] is empty (API didn't provide
+    // one), fall back to actorPubkey+timestamp so each notification still
+    // gets its own enriched profile data.
+    String stableKey(NotificationModel n) => n.id.isNotEmpty
+        ? n.id
+        : '${n.actorPubkey}_${n.timestamp.microsecondsSinceEpoch}';
+
+    final enrichedByKey = {
       for (final notification in enrichedNotifications)
-        notification.id: notification,
+        stableKey(notification): notification,
     };
 
     return currentNotifications.map((current) {
-      final enriched = enrichedById[current.id];
+      final enriched = enrichedByKey[stableKey(current)];
       if (enriched == null) return current;
 
       return current.copyWith(
