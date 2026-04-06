@@ -218,22 +218,6 @@ class DmRepository {
     _disposed = false;
     if (_giftWrapSubscription != null || !isInitialized) return;
 
-    // Merge duplicate conversations on first listen (idempotent).
-    if (!_hasMergedConversations) {
-      _hasMergedConversations = true;
-      unawaited(_mergeDuplicateConversations());
-    }
-
-    // Determine sync window: use newest message timestamp with 2-day
-    // overlap, or fall back to a count-limited initial fetch.
-    final newestTimestamp = await _conversationsDao.getNewestMessageTimestamp(
-      ownerPubkey: _ownerPubkey,
-    );
-
-    // Re-check after await: stopListening() may have been called while
-    // the timestamp query was in flight (e.g. rapid tab switch).
-    if (_disposed || _giftWrapSubscription != null) return;
-
     // Count-based windowing: first open fetches a bounded backlog
     // (limit:50), later opens fetch only recent events via a `since:`
     // filter. The 2-day overlap absorbs NIP-17 randomized created_at

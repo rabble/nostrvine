@@ -1977,7 +1977,7 @@ DmRepository dmRepository(Ref ref) {
       // subscription via startListening() on mount and tears it down on
       // dispose so cold start does no DM network/decrypt work.
       // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
-      repository.initialize(
+      repository.setCredentials(
         userPubkey: publicKey,
         signer: signer,
         messageService: NIP17MessageService(

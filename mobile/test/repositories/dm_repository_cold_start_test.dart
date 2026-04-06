@@ -65,7 +65,7 @@ void main() {
           // Intentionally no userPubkey/signer — initialize() provides them.
         );
 
-        repository.initialize(
+        repository.setCredentials(
           userPubkey: _validPubkeyA,
           signer: LocalNostrSigner(_validPrivateKey),
           messageService: mockMessageService,
