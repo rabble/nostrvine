@@ -10,7 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_app_bar.dart';
 
-import '../../helpers/go_router.dart';
+import '../../../../helpers/go_router.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

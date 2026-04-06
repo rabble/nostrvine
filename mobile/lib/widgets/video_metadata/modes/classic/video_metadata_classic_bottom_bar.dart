@@ -30,7 +30,7 @@ class VideoMetadataClassicBottomBar extends ConsumerWidget {
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Padding(
         padding: const .fromLTRB(16, 0, 16, 4),
-        child: Expanded(child: _PostButton(onTap: () => _onPost(context, ref))),
+        child: _PostButton(onTap: () => _onPost(context, ref)),
       ),
     );
   }
