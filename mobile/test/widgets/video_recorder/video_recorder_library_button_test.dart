@@ -141,7 +141,7 @@ void main() {
         final semantics = tester.getSemantics(
           find.bySemanticsLabel('Open the clip library'),
         );
-        expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(semantics.flagsCollection.isButton, isTrue);
       });
     });
 
