@@ -176,7 +176,6 @@ class _CategoryTile extends StatelessWidget {
                         ? SvgPicture.asset(
                             visuals.assetPath!,
                             height: 88,
-                            fit: BoxFit.contain,
                             placeholderBuilder: (_) => _FallbackEmojiBadge(
                               emoji: category.emoji,
                               color: visuals.foregroundColor,

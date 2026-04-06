@@ -412,7 +412,6 @@ class _CategoryHeaderMascotSlot extends StatelessWidget {
                     visuals.assetPath!,
                     height: 104,
                     width: 132,
-                    fit: BoxFit.contain,
                   ),
                 ),
               ),
