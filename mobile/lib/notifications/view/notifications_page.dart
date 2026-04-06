@@ -34,7 +34,6 @@ class NotificationsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationRepository = ref.watch(notificationRepositoryProvider);
-    final followRepository = ref.watch(followRepositoryProvider);
 
     // Dependencies not yet available (e.g. ProfileRepository during auth).
     if (notificationRepository == null) {
@@ -45,6 +44,8 @@ class NotificationsPage extends ConsumerWidget {
         ),
       );
     }
+
+    final followRepository = ref.watch(followRepositoryProvider);
 
     return BlocProvider(
       create: (_) => NotificationFeedBloc(
