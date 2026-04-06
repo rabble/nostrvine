@@ -48,7 +48,7 @@ class MockWebSocketSink implements WebSocketSink {
 /// Mock WebSocket channel for testing
 class MockWebSocketChannel implements WebSocketChannel {
   MockWebSocketChannel({Future<void>? readyFuture})
-      : _readyFuture = readyFuture ?? Future.value();
+    : _readyFuture = readyFuture ?? Future.value();
 
   final MockWebSocketSink _sink = MockWebSocketSink();
   final StreamController<dynamic> _streamController =
