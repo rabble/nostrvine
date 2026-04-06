@@ -162,14 +162,19 @@ void main() {
         await tester.pump();
 
         final semantics = tester.widget<Semantics>(
-          find.descendant(
-            of: find.byType(VideoRecorderLibraryButton),
-            matching: find.byType(Semantics),
-          ).first,
+          find
+              .descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(Semantics),
+              )
+              .first,
         );
-        expect(semantics.properties.label, equals(
-          'Open clip library, 2 clips',
-        ));
+        expect(
+          semantics.properties.label,
+          equals(
+            'Open clip library, 2 clips',
+          ),
+        );
       });
 
       testWidgets('singular label for single clip', (tester) async {
@@ -189,14 +194,19 @@ void main() {
         await tester.pump();
 
         final semantics = tester.widget<Semantics>(
-          find.descendant(
-            of: find.byType(VideoRecorderLibraryButton),
-            matching: find.byType(Semantics),
-          ).first,
+          find
+              .descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(Semantics),
+              )
+              .first,
         );
-        expect(semantics.properties.label, equals(
-          'Open clip library, 1 clip',
-        ));
+        expect(
+          semantics.properties.label,
+          equals(
+            'Open clip library, 1 clip',
+          ),
+        );
       });
 
       testWidgets('is marked as button in semantics', (tester) async {
