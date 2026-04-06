@@ -83,7 +83,7 @@ void main() {
           overrides: [
             videoEditorProvider.overrideWith(() => mockNotifier),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
                 child: VideoMetadataFormFields(),
@@ -117,7 +117,7 @@ void main() {
           overrides: [
             videoEditorProvider.overrideWith(() => mockNotifier),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
                 child: VideoMetadataFormFields(),
