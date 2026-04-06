@@ -37,6 +37,7 @@ workspace:
   - packages/likes_repository
   - packages/media_cache
   - packages/models
+  - packages/notification_repository
   - packages/nostr_app_bridge_repository
   - packages/nostr_sdk
   - packages/nostr_client
@@ -136,6 +137,9 @@ dependencies:
 
   # Sound Service - Sound effects (countdown beeps, etc.)
   sound_service:
+
+  # Notification Repository - Notification enrichment and grouping
+  notification_repository:
 
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_app_bridge_repository:
