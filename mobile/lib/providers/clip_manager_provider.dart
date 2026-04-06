@@ -270,6 +270,9 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
       final proofData = await NativeProofModeService.proofFile(
         File(videoFile.path),
+        aiTrainingOptOut: ref
+            .read(aiTrainingPreferenceServiceProvider)
+            .isOptOutEnabled,
       );
 
       if (!ref.mounted) return;

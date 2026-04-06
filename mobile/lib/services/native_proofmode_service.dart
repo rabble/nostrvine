@@ -29,7 +29,7 @@ class NativeProofModeService {
   /// is not supported.
   static Future<NativeProofData?> proofFile(
     File videoFile, {
-    bool aiTrainingOptOut = true,
+    required bool aiTrainingOptOut,
     NostrCreatorBindingAssertion? creatorBindingAssertion,
     Map<String, dynamic>? cawgIdentityAssertion,
     Map<String, dynamic>? verifiedIdentityBundle,
