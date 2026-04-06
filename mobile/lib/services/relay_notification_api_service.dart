@@ -206,9 +206,8 @@ class RelayNotificationApiService {
       if (unreadOnly) {
         queryParams['unread_only'] = 'true';
       }
-      if (before != null) {
-        queryParams['before'] = before;
-      }
+      queryParams['before'] =
+          before ?? DateTime.now().millisecondsSinceEpoch.toString();
 
       final uri = Uri.parse(
         '$_baseUrl/api/users/$pubkey/notifications',
