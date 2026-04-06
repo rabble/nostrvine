@@ -329,18 +329,9 @@ Future<void> executeAccountDeletion({
       dismissDialog();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              keyDeletionWarning ?? 'Your account has been deleted',
-              style: TextStyle(
-                color: keyDeletionWarning != null
-                    ? VineTheme.whiteText
-                    : VineTheme.backgroundColor,
-              ),
-            ),
-            backgroundColor: keyDeletionWarning != null
-                ? VineTheme.error
-                : VineTheme.vineGreen,
+          DivineSnackbarContainer.snackBar(
+            keyDeletionWarning ?? 'Your account has been deleted',
+            error: keyDeletionWarning != null,
           ),
         );
       }
@@ -349,12 +340,9 @@ Future<void> executeAccountDeletion({
       dismissDialog();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result.error ?? 'Failed to delete content from relays',
-              style: const TextStyle(color: VineTheme.whiteText),
-            ),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            result.error ?? 'Failed to delete content from relays',
+            error: true,
           ),
         );
       }

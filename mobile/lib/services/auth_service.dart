@@ -2438,16 +2438,40 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
-  /// Sign out the current user
-  Future<void> signOut({bool deleteKeys = false}) async {
+  /// Sign out the current user.
+  ///
+  /// When [deleteKeys] is true, stored keys are removed from the device.
+  ///
+  /// When [abortOnKeyDeletionFailure] is true (only meaningful with
+  /// [deleteKeys]), platform key deletion is attempted **before** any
+  /// session cleanup. If deletion fails the method throws immediately and
+  /// no cleanup happens — the user stays signed in and can retry.
+  /// Use this for the "Remove Keys" flow where signing out without
+  /// actually removing keys is counter-productive.
+  ///
+  /// When [abortOnKeyDeletionFailure] is false (default), key deletion
+  /// failure is captured and rethrown **after** all cleanup completes.
+  /// Use this for "Delete Account" where sign-out must finish regardless.
+  Future<void> signOut({
+    bool deleteKeys = false,
+    bool abortOnKeyDeletionFailure = false,
+  }) async {
     Log.info(
       'signOut: starting — '
       'authSource=${_authSource.name}, '
       'deleteKeys=$deleteKeys, '
+      'abortOnKeyDeletionFailure=$abortOnKeyDeletionFailure, '
       'currentPubkey=${_currentKeyContainer?.publicKeyHex ?? "null"}',
       name: 'AuthService',
       category: LogCategory.auth,
     );
+
+    // Pre-flight: when the caller needs key deletion to succeed before
+    // sign-out proceeds, attempt it now. If this throws, no cleanup has
+    // happened and the user stays signed in.
+    if (deleteKeys && abortOnKeyDeletionFailure) {
+      await _keyStorage.deleteKeys();
+    }
 
     Object? keyDeletionError;
 
@@ -2500,15 +2524,18 @@ class AuthService implements BackgroundAwareService {
         // Isolate key deletion so that a failure does not short-circuit
         // the remaining cleanup (session, signers, auth state). The error
         // is rethrown after cleanup completes so callers can warn the user.
-        try {
-          await _keyStorage.deleteKeys();
-        } catch (e) {
-          keyDeletionError = e;
-          Log.error(
-            'Key deletion failed during signOut: $e',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
+        // Skip if already handled by the pre-flight check above.
+        if (!abortOnKeyDeletionFailure) {
+          try {
+            await _keyStorage.deleteKeys();
+          } catch (e) {
+            keyDeletionError = e;
+            Log.error(
+              'Key deletion failed during signOut: $e',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+          }
         }
       } else {
         // Non-destructive sign-out: archive signer info for later restoration

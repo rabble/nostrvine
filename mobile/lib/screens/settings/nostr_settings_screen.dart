@@ -155,22 +155,22 @@ class _RemoveKeysTile extends StatelessWidget {
         );
 
         try {
-          await authService.signOut(deleteKeys: true);
+          await authService.signOut(
+            deleteKeys: true,
+            abortOnKeyDeletionFailure: true,
+          );
         } on SecureKeyStorageException {
-          // Signed out but platform key deletion failed — warn the user.
+          // Platform key deletion failed — user stays signed in and can
+          // retry without having to log back in.
           if (!context.mounted) return;
           context.pop();
 
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Signed out, but your keys may not have been '
-                'fully removed from this device. '
-                'Try removing keys again.',
-                style: TextStyle(color: VineTheme.whiteText),
-              ),
-              backgroundColor: VineTheme.error,
+            DivineSnackbarContainer.snackBar(
+              'Could not remove keys from this device. '
+              'Please try again.',
+              error: true,
             ),
           );
           return;
@@ -180,12 +180,9 @@ class _RemoveKeysTile extends StatelessWidget {
 
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Failed to remove keys: $e',
-                style: const TextStyle(color: VineTheme.whiteText),
-              ),
-              backgroundColor: VineTheme.error,
+            DivineSnackbarContainer.snackBar(
+              'Failed to remove keys: $e',
+              error: true,
             ),
           );
         }
