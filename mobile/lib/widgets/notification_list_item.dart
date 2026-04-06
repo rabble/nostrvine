@@ -179,9 +179,10 @@ class NotificationListItem extends StatelessWidget {
 
   Widget _buildMessage(BuildContext context) {
     final textStyle = VineTheme.bodyMediumFont();
+    final message = _displayMessage();
 
     final actorName = notification.actorName;
-    if (_messageStartsWithActorName(actorName)) {
+    if (_messageStartsWithActorName(actorName, message)) {
       // Build rich text with bold actor name
       return RichText(
         textScaler: MediaQuery.textScalerOf(context),
@@ -193,20 +194,32 @@ class NotificationListItem extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             TextSpan(
-              text: notification.message.substring(actorName!.length),
+              text: message.substring(actorName!.length),
             ),
           ],
         ),
       );
     }
 
-    return Text(notification.message, style: textStyle);
+    return Text(message, style: textStyle);
   }
 
-  bool _messageStartsWithActorName(String? actorName) {
+  String _displayMessage() {
+    if (notification.type != NotificationType.follow) {
+      return notification.message;
+    }
+
+    final actorName = notification.actorName;
+    final displayName = actorName?.isNotEmpty == true
+        ? actorName!
+        : UserProfile.defaultDisplayNameFor(notification.actorPubkey);
+
+    return '$displayName started following you';
+  }
+
+  bool _messageStartsWithActorName(String? actorName, String message) {
     if (actorName == null) return false;
-    return notification.message == actorName ||
-        notification.message.startsWith('$actorName ');
+    return message == actorName || message.startsWith('$actorName ');
   }
 
   bool _hasAdditionalContent() {
