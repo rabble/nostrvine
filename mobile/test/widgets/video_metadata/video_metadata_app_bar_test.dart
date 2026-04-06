@@ -8,14 +8,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_app_bar.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_app_bar.dart';
 
 import '../../helpers/go_router.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group(VideoMetadataAppBar, () {
+  group(VideoMetadataCaptureAppBar, () {
     late GoRouter router;
 
     setUp(() {
@@ -29,7 +29,7 @@ void main() {
           GoRoute(
             path: '/test',
             builder: (context, state) => const Scaffold(
-              appBar: VideoMetadataAppBar(),
+              appBar: VideoMetadataCaptureAppBar(),
               body: Text('Test'),
             ),
           ),
@@ -41,10 +41,10 @@ void main() {
       return MaterialApp.router(routerConfig: router);
     }
 
-    testWidgets('renders $VideoMetadataAppBar', (tester) async {
+    testWidgets('renders $VideoMetadataCaptureAppBar', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.byType(VideoMetadataAppBar), findsOneWidget);
+      expect(find.byType(VideoMetadataCaptureAppBar), findsOneWidget);
     });
 
     testWidgets('renders title text "Post details"', (tester) async {
@@ -80,7 +80,7 @@ void main() {
     testWidgets('implements PreferredSizeWidget with kToolbarHeight', (
       tester,
     ) async {
-      const header = VideoMetadataAppBar();
+      const header = VideoMetadataCaptureAppBar();
 
       expect(header, isA<PreferredSizeWidget>());
       expect(header.preferredSize.height, equals(kToolbarHeight));
@@ -95,14 +95,17 @@ void main() {
         MockGoRouterProvider(
           goRouter: mockGoRouter,
           child: const MaterialApp(
-            home: Scaffold(appBar: VideoMetadataAppBar(), body: Text('Test')),
+            home: Scaffold(
+              appBar: VideoMetadataCaptureAppBar(),
+              body: Text('Test'),
+            ),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       // Verify we're showing the app bar
-      expect(find.byType(VideoMetadataAppBar), findsOneWidget);
+      expect(find.byType(VideoMetadataCaptureAppBar), findsOneWidget);
 
       await tester.tap(find.byType(DivineIconButton));
       await tester.pumpAndSettle();
@@ -114,7 +117,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
 
       final safeAreaFinder = find.descendant(
-        of: find.byType(VideoMetadataAppBar),
+        of: find.byType(VideoMetadataCaptureAppBar),
         matching: find.byType(SafeArea),
       );
       expect(safeAreaFinder, findsOneWidget);

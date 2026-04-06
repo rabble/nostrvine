@@ -7,8 +7,8 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:pro_image_editor/features/filter_editor/widgets/filter_generator.dart';
 
-class VideoMetadataPreviewThumbnail extends ConsumerWidget {
-  const VideoMetadataPreviewThumbnail({required this.clip, super.key});
+class VideoMetadataCapturePreviewThumbnail extends ConsumerWidget {
+  const VideoMetadataCapturePreviewThumbnail({required this.clip, super.key});
 
   final DivineVideoClip clip;
 
@@ -20,7 +20,11 @@ class VideoMetadataPreviewThumbnail extends ConsumerWidget {
 
     if (clip.thumbnailPath == null) {
       return const Center(
-        child: Icon(Icons.broken_image, size: 32, color: VineTheme.lightText),
+        child: DivineIcon(
+          icon: .warning,
+          size: 32,
+          color: VineTheme.lightText,
+        ),
       );
     }
 

@@ -4,63 +4,21 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/utils/gallery_save_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/gallery_permission_sheet.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///
 /// Buttons are disabled with reduced opacity when metadata is invalid.
 /// Handles shared gallery-save logic for both actions (DRY).
-class VideoMetadataBottomBar extends ConsumerWidget {
+class VideoMetadataCaptureBottomBar extends ConsumerWidget {
   /// Creates a video metadata bottom bar.
-  const VideoMetadataBottomBar({super.key});
-
-  /// Saves the final rendered video to the device gallery.
-  ///
-  /// When gallery permission is denied and the user has not previously
-  /// opted out, a bottom sheet is shown offering to open Settings or
-  /// dismiss forever. If the user opens Settings and comes back, the
-  /// save is retried once.
-  Future<void> _saveToGallery(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    // User opted out of gallery saves permanently.
-    if (await isGalleryPermissionDismissedForever()) return;
-
-    final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
-    if (finalRenderedClip == null) return;
-
-    final gallerySaveService = ref.read(gallerySaveServiceProvider);
-    final result = await gallerySaveService.saveVideoToGallery(
-      finalRenderedClip.video,
-    );
-
-    if (result is! GallerySavePermissionDenied || !context.mounted) {
-      return;
-    }
-
-    // Permission denied — show an actionable sheet instead of a snackbar.
-    final permissionsService = ref.read(permissionsServiceProvider);
-    final choice = await showGalleryPermissionSheet(
-      context,
-      permissionsService: permissionsService,
-    );
-
-    if (choice == GalleryPermissionChoice.openedSettings ||
-        choice == GalleryPermissionChoice.granted) {
-      // Retry once — the user may have just granted access.
-      await gallerySaveService.saveVideoToGallery(
-        finalRenderedClip.video,
-      );
-    }
-  }
+  const VideoMetadataCaptureBottomBar({super.key});
 
   void _showStatusSnackBar(
     BuildContext context, {
@@ -93,7 +51,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   }
 
   Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
-    await _saveToGallery(context, ref);
+    await saveToGallery(context, ref);
     var draftSaved = true;
 
     try {
@@ -138,7 +96,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   }
 
   Future<void> _onPost(BuildContext context, WidgetRef ref) async {
-    await _saveToGallery(context, ref);
+    await saveToGallery(context, ref);
     if (!context.mounted) return;
 
     await ref.read(videoEditorProvider.notifier).postVideo(context);

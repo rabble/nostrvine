@@ -7,16 +7,16 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_preview_thumbnail.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
 
 /// Video clip preview widget with thumbnail and play button.
 ///
 /// Displays a thumbnail of the recorded video and allows opening
 /// the full-screen preview when tapped. Shows processing overlay
 /// while the video is being rendered.
-class VideoMetadataClipPreview extends ConsumerWidget {
+class VideoMetadataCaptureClipPreview extends ConsumerWidget {
   /// Creates a video metadata clip preview.
-  const VideoMetadataClipPreview({super.key});
+  const VideoMetadataCaptureClipPreview({super.key});
 
   /// Opens the full-screen video preview with a fade transition.
   Future<void> _openPreview(BuildContext context, DivineVideoClip clip) async {
@@ -83,7 +83,7 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                         duration: const Duration(milliseconds: 150),
                         child: clip.thumbnailPath != null
                             ? // Video thumbnail image
-                              VideoMetadataPreviewThumbnail(clip: clip)
+                              VideoMetadataCapturePreviewThumbnail(clip: clip)
                             : // Fallback placeholder
                               const ColoredBox(
                                 color: VineTheme.onSurfaceMuted,

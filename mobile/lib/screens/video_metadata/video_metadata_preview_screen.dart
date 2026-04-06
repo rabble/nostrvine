@@ -14,8 +14,8 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_preview_thumbnail.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
 import 'package:video_player/video_player.dart';
 
 /// Full-screen preview of the recorded video with metadata overlay.
@@ -130,7 +130,10 @@ class _VideoMetadataPreviewScreenState
             ),
             // Post button at bottom
             if (!widget.previewOnly)
-              const SafeArea(top: false, child: VideoMetadataBottomBar()),
+              const SafeArea(
+                top: false,
+                child: VideoMetadataCaptureBottomBar(),
+              ),
           ],
         ),
       ),
@@ -213,7 +216,7 @@ class _VideoPlayerWidget extends StatelessWidget {
                 children: [
                   // Show thumbnail while video loads
                   if (clip.thumbnailPath != null)
-                    VideoMetadataPreviewThumbnail(clip: clip),
+                    VideoMetadataCapturePreviewThumbnail(clip: clip),
                   // Smooth transition to video player
                   AnimatedSwitcher(
                     layoutBuilder: (currentChild, previousChildren) => Stack(
