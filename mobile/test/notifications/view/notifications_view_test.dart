@@ -151,7 +151,6 @@ void main() {
             status: NotificationFeedStatus.loaded,
             notifications: testNotifications,
             isLoadingMore: true,
-            hasMore: true,
           ),
         );
 

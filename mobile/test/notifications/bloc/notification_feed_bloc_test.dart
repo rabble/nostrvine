@@ -78,7 +78,6 @@ void main() {
             status: NotificationFeedStatus.loaded,
             notifications: page.items,
             unreadCount: 1,
-            hasMore: true,
           ),
         ],
       );
@@ -101,7 +100,7 @@ void main() {
     });
 
     group('NotificationFeedLoadMore', () {
-      final existingItem = _single(id: 'n1');
+      final existingItem = _single();
       final newItem = _single(id: 'n2', displayName: 'Bob', pubkey: 'def456');
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
@@ -113,7 +112,6 @@ void main() {
             (_) async => NotificationPage(
               items: [existingItem, newItem],
               unreadCount: 2,
-              hasMore: false,
             ),
           );
         },
@@ -121,7 +119,6 @@ void main() {
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
           notifications: [existingItem],
-          hasMore: true,
         ),
         act: (bloc) => bloc.add(NotificationFeedLoadMore()),
         expect: () => [
@@ -129,7 +126,6 @@ void main() {
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
             notifications: [existingItem],
-            hasMore: true,
             isLoadingMore: true,
           ),
           // Appended — n1 deduped, only n2 added
@@ -137,7 +133,6 @@ void main() {
             status: NotificationFeedStatus.loaded,
             notifications: [existingItem, newItem],
             hasMore: false,
-            isLoadingMore: false,
           ),
         ],
       );
@@ -158,7 +153,6 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          hasMore: true,
           isLoadingMore: true,
         ),
         act: (bloc) => bloc.add(NotificationFeedLoadMore()),
@@ -170,7 +164,6 @@ void main() {
       final page = NotificationPage(
         items: [_single(id: 'refreshed')],
         unreadCount: 0,
-        hasMore: false,
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
@@ -190,7 +183,6 @@ void main() {
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
             notifications: page.items,
-            unreadCount: 0,
             hasMore: false,
           ),
         ],
@@ -222,7 +214,6 @@ void main() {
             status: NotificationFeedStatus.loaded,
             notifications: page.items,
             unreadCount: 3,
-            hasMore: true,
           ),
         ],
       );
@@ -278,15 +269,14 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single(id: 'n1', isRead: false)],
+          notifications: [_single()],
           unreadCount: 1,
         ),
         act: (bloc) => bloc.add(NotificationFeedItemTapped('n1')),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
-            notifications: [_single(id: 'n1', isRead: true)],
-            unreadCount: 0,
+            notifications: [_single(isRead: true)],
           ),
         ],
       );
@@ -311,7 +301,6 @@ void main() {
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
             notifications: [_single()],
-            unreadCount: 0,
           ),
         ],
       );

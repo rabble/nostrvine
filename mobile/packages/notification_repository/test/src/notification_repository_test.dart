@@ -59,7 +59,7 @@ void main() {
       sourceEventId: sourceEventId,
       sourceKind: sourceKind,
       notificationType: notificationType,
-      createdAt: createdAt ?? DateTime(2025, 1, 1),
+      createdAt: createdAt ?? DateTime(2025),
       read: read,
       referencedEventId: referencedEventId,
       content: content,
@@ -120,9 +120,7 @@ void main() {
       test('returns enriched items with real profile data', () async {
         stubNotifications([
           makeNotification(
-            id: 'n1',
             sourcePubkey: 'alice_pub',
-            notificationType: 'reaction',
             referencedEventId: 'video1',
           ),
         ]);
@@ -146,9 +144,7 @@ void main() {
       test('falls back to "Unknown user" for missing profiles', () async {
         stubNotifications([
           makeNotification(
-            id: 'n1',
             sourcePubkey: 'unknown_pub',
-            notificationType: 'reaction',
           ),
         ]);
         stubProfiles({});
@@ -210,23 +206,20 @@ void main() {
             makeNotification(
               id: 'l1',
               sourcePubkey: 'pub_a',
-              notificationType: 'reaction',
               referencedEventId: 'video_x',
               createdAt: DateTime(2025, 1, 3),
             ),
             makeNotification(
               id: 'l2',
               sourcePubkey: 'pub_b',
-              notificationType: 'reaction',
               referencedEventId: 'video_x',
               createdAt: DateTime(2025, 1, 2),
             ),
             makeNotification(
               id: 'l3',
               sourcePubkey: 'pub_c',
-              notificationType: 'reaction',
               referencedEventId: 'video_x',
-              createdAt: DateTime(2025, 1, 1),
+              createdAt: DateTime(2025),
             ),
           ]);
           stubProfiles({
@@ -252,7 +245,6 @@ void main() {
           makeNotification(
             id: 'l1',
             sourcePubkey: 'pub_a',
-            notificationType: 'reaction',
             referencedEventId: 'video_y',
           ),
         ]);
@@ -271,13 +263,11 @@ void main() {
           makeNotification(
             id: 'l1',
             sourcePubkey: 'pub_a',
-            notificationType: 'reaction',
             referencedEventId: 'video_1',
           ),
           makeNotification(
             id: 'l2',
             sourcePubkey: 'pub_b',
-            notificationType: 'reaction',
             referencedEventId: 'video_2',
           ),
         ]);
@@ -299,7 +289,7 @@ void main() {
         '2 follows from same pubkey become 1 notification '
         'with earliest timestamp',
         () async {
-          final earlier = DateTime(2025, 1, 1);
+          final earlier = DateTime(2025);
           final later = DateTime(2025, 1, 5);
           stubNotifications([
             makeNotification(
@@ -398,7 +388,7 @@ void main() {
     group('type mapping', () {
       test('reaction maps to like', () async {
         stubNotifications([
-          makeNotification(notificationType: 'reaction'),
+          makeNotification(),
         ]);
         stubProfiles({});
 
@@ -486,7 +476,7 @@ void main() {
 
       test('sourceKind 7 with unknown type maps to like', () async {
         stubNotifications([
-          makeNotification(notificationType: 'unknown', sourceKind: 7),
+          makeNotification(notificationType: 'unknown'),
         ]);
         stubProfiles({});
 
@@ -575,8 +565,6 @@ void main() {
       test('does not set commentText for non-comment types', () async {
         stubNotifications([
           makeNotification(
-            notificationType: 'reaction',
-            sourceKind: 7,
             content: '+',
           ),
         ]);
@@ -602,7 +590,6 @@ void main() {
         verify(
           () => funnelcakeApiClient.getNotifications(
             pubkey: userPubkey,
-            cursor: null,
             authHeaders: any(named: 'authHeaders'),
             limit: any(named: 'limit'),
           ),
@@ -711,7 +698,7 @@ void main() {
             sourcePubkey: 'pub_a',
             notificationType: 'comment',
             sourceKind: 1,
-            createdAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025),
             content: 'Old',
           ),
           makeNotification(
@@ -719,7 +706,7 @@ void main() {
             sourcePubkey: 'pub_b',
             notificationType: 'comment',
             sourceKind: 1,
-            createdAt: DateTime(2025, 6, 1),
+            createdAt: DateTime(2025, 6),
             content: 'New',
           ),
         ]);
