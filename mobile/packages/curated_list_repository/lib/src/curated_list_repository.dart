@@ -242,6 +242,7 @@ class CuratedListRepository {
       if (list == null) continue;
       if (excluded.contains(list.id)) continue;
       if (!list.isPublic) continue;
+      if (list.videoEventIds.isEmpty) continue;
 
       // Client-side query filter
       final matches =
