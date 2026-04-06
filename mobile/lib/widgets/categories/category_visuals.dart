@@ -28,42 +28,42 @@ const _featuredCategoryVisuals = <String, CategoryVisuals>{
   'animals': CategoryVisuals(
     backgroundColor: Color(0xFF3E0C1F),
     foregroundColor: Color(0xFFFF7FAF),
-    assetPath: 'assets/categories/animals.png',
+    assetPath: 'assets/categories/animals.svg',
   ),
   'food': CategoryVisuals(
     backgroundColor: Color(0xFF272F0E),
     foregroundColor: Color(0xFFD2FF40),
-    assetPath: 'assets/categories/food.png',
+    assetPath: 'assets/categories/food.svg',
   ),
   'nature': CategoryVisuals(
     backgroundColor: Color(0xFF231557),
     foregroundColor: Color(0xFF8568FF),
-    assetPath: 'assets/categories/nature.png',
+    assetPath: 'assets/categories/nature.svg',
   ),
   'sports': CategoryVisuals(
     backgroundColor: Color(0xFF471F10),
     foregroundColor: Color(0xFFFF7640),
-    assetPath: 'assets/categories/sports.png',
+    assetPath: 'assets/categories/sports.svg',
   ),
   'fashion': CategoryVisuals(
     backgroundColor: Color(0xFF0A223C),
     foregroundColor: Color(0xFF34BBF1),
-    assetPath: 'assets/categories/style.png',
+    assetPath: 'assets/categories/style.svg',
   ),
   'music': CategoryVisuals(
     backgroundColor: Color(0xFF363313),
     foregroundColor: Color(0xFFFFF140),
-    assetPath: 'assets/categories/music.png',
+    assetPath: 'assets/categories/music.svg',
   ),
   'fitness': CategoryVisuals(
     backgroundColor: Color(0xFF2D214D),
     foregroundColor: Color(0xFFA3A9FF),
-    assetPath: 'assets/categories/fitness.png',
+    assetPath: 'assets/categories/fitness.svg',
   ),
   'art': CategoryVisuals(
     backgroundColor: Color(0xFF471F10),
     foregroundColor: Color(0xFFFF7640),
-    assetPath: 'assets/categories/art.png',
+    assetPath: 'assets/categories/art.svg',
   ),
 };
 
