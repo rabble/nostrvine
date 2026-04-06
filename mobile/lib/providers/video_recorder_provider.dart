@@ -1056,6 +1056,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
     final prefs = ref.read(sharedPreferencesProvider);
     prefs.setString(_kLastUsedRecorderModeKey, mode.name);
+
+    ref.read(clipManagerProvider.notifier).clearAll();
+    ref.read(videoEditorProvider.notifier).reset();
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
       name: 'VideoRecorderNotifier',
