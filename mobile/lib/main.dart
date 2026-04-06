@@ -89,6 +89,17 @@ bool handleKnownFrameworkError(
   return false;
 }
 
+@visibleForTesting
+Future<void> configureVideoPlayerCacheForStartup({
+  required bool isWeb,
+  required Future<void> Function() configureCache,
+}) async {
+  if (isWeb) {
+    return;
+  }
+  await configureCache();
+}
+
 Future<void> _runTimedStartupTask({
   required String phaseName,
   required String initializationStep,
@@ -309,9 +320,10 @@ Future<void> _startOpenVineApp() async {
   // chain below (Firebase Crashlytics has no web impl), and runApp() is
   // never reached — the HTML loading spinner stays up forever with no JS
   // errors. Skip the call on web to unblock startup.
-  if (!kIsWeb) {
-    await DivineVideoPlayerController.configureCache();
-  }
+  await configureVideoPlayerCacheForStartup(
+    isWeb: kIsWeb,
+    configureCache: DivineVideoPlayerController.configureCache,
+  );
 
   StartupPerformanceService.instance.completePhase('bindings');
 
