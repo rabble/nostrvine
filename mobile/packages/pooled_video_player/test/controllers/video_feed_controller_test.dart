@@ -3028,8 +3028,8 @@ void main() {
       });
 
       test(
-        'allows the first real zero-duration rebuffer recovery before '
-        'marking error on the second',
+        'allows two zero-duration rebuffer recoveries before '
+        'marking error on the third',
         () async {
           final videos = createTestVideos(count: 1);
           final controller = VideoFeedController(videos: videos, pool: pool);
@@ -3058,7 +3058,18 @@ void main() {
 
           clearInteractions(setup.player);
 
-          // Second real rebuffer cycle with no media metadata: give up.
+          // Second real rebuffer cycle: still recovers (maxStallRetries = 2).
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+          verify(setup.player.play).called(greaterThanOrEqualTo(1));
+
+          clearInteractions(setup.player);
+
+          // Third real rebuffer cycle with no media metadata: give up.
           setup.bufferingController.add(true);
           await Future<void>.delayed(const Duration(milliseconds: 10));
           setup.bufferingController.add(false);

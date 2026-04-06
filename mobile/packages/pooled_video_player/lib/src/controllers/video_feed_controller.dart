@@ -190,7 +190,11 @@ class VideoFeedController extends ChangeNotifier {
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
 
-  static const _maxStallRetries = 1;
+  /// How many zero-duration rebuffer cycles to tolerate before marking the
+  /// video as an error. Set to 2 so a single transient network hiccup doesn't
+  /// immediately kill playback — but a genuinely broken stream still fails
+  /// within a few seconds.
+  static const _maxStallRetries = 2;
 
   /// Stale-position recovery: tracks the last observed position and how many
   /// consecutive heartbeats it has remained unchanged while the player reports
