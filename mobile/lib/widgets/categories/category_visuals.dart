@@ -15,12 +15,24 @@ class CategoryVisuals {
   final Color foregroundColor;
   final String? assetPath;
 
+  /// Resolves visuals for any category. Featured categories get custom colors;
+  /// all others cycle through fallback colors. Every category gets an SVG
+  /// asset path derived from its name.
   static CategoryVisuals forCategory(VideoCategory category, int index) {
-    final featured = _featuredCategoryVisuals[category.name.toLowerCase()];
+    final name = category.name.toLowerCase();
+    final featured = _featuredCategoryVisuals[name];
     if (featured != null) {
       return featured;
     }
-    return _fallbackCategoryVisuals[index % _fallbackCategoryVisuals.length];
+    final fallback =
+        _fallbackCategoryVisuals[index % _fallbackCategoryVisuals.length];
+    // Fashion is stored as style.svg for display-name consistency.
+    final assetName = name == 'fashion' ? 'style' : name;
+    return CategoryVisuals(
+      backgroundColor: fallback.backgroundColor,
+      foregroundColor: fallback.foregroundColor,
+      assetPath: 'assets/categories/$assetName.svg',
+    );
   }
 }
 
