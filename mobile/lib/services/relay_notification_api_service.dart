@@ -206,9 +206,10 @@ class RelayNotificationApiService {
       if (unreadOnly) {
         queryParams['unread_only'] = 'true';
       }
-      if (before != null) {
-        queryParams['before'] = before;
-      }
+      // Always send `before`, without it the API returns notifications in
+      // random order instead of newest-first.
+      queryParams['before'] =
+          before ?? DateTime.now().millisecondsSinceEpoch.toString();
 
       final uri = Uri.parse(
         '$_baseUrl/api/users/$pubkey/notifications',

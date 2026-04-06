@@ -429,29 +429,27 @@ class SecureKeyStorage {
 
     _log.fine('📱️ Deleting all stored secure keys');
 
-    try {
-      // Delete from platform storage
-      final success = await _platformStorage.deleteKey(
-        keyId: _primaryKeyId,
-        biometricPrompt: biometricPrompt,
+    // Always clear in-memory state first — prevents the app from using the
+    // key even if platform deletion fails below.
+    _cachedKeyContainer?.dispose();
+    _clearCache();
+
+    // Now attempt platform-level deletion. If this fails the key may still
+    // be in the Secure Enclave / Keychain, so we throw to let callers warn
+    // the user.
+    final success = await _platformStorage.deleteKey(
+      keyId: _primaryKeyId,
+      biometricPrompt: biometricPrompt,
+    );
+
+    if (!success) {
+      throw const SecureKeyStorageException(
+        'Platform key deletion failed — key may still be on device',
+        code: 'platform_deletion_failed',
       );
-
-      if (!success) {
-        _log.severe('Platform key deletion may have failed');
-      }
-
-      // Dispose cached container before clearing cache (proper place)
-      _cachedKeyContainer?.dispose();
-
-      // Clear cache
-      _clearCache();
-
-      // TODO(secure-storage): Delete metadata.
-
-      _log.info('All keys deleted');
-    } on Exception catch (e) {
-      throw SecureKeyStorageException('Failed to delete keys: $e');
     }
+
+    _log.info('All keys deleted');
   }
 
   // =========================================================================
@@ -542,17 +540,20 @@ class SecureKeyStorage {
 
     _log.fine('📱 Deleting backup key');
 
-    try {
-      await _platformStorage.deleteKey(keyId: _backupKeyId);
+    // Clear backup timestamp first (unconditionally).
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_backupTimestampKey);
 
-      // Clear backup timestamp
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_backupTimestampKey);
+    final success = await _platformStorage.deleteKey(keyId: _backupKeyId);
 
-      _log.info('Backup key deleted');
-    } on Exception catch (e) {
-      throw SecureKeyStorageException('Failed to delete backup key: $e');
+    if (!success) {
+      throw const SecureKeyStorageException(
+        'Platform backup key deletion failed — key may still be on device',
+        code: 'platform_deletion_failed',
+      );
     }
+
+    _log.info('Backup key deleted');
   }
 
   /// Store a key container for a specific identity (multi-account support)
