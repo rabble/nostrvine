@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/active_video_provider.dart';
@@ -19,6 +20,9 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockDmUnreadCountCubit extends MockCubit<int>
     implements DmUnreadCountCubit {}
 
+class _MockAppUpdateBloc extends MockBloc<AppUpdateEvent, AppUpdateState>
+    implements AppUpdateBloc {}
+
 Widget _buildSubject({
   required _MockAuthService mockAuthService,
   required int unreadCount,
@@ -27,8 +31,14 @@ Widget _buildSubject({
   final dmCubit = _MockDmUnreadCountCubit();
   when(() => dmCubit.state).thenReturn(dmUnreadCount);
 
-  return BlocProvider<DmUnreadCountCubit>.value(
-    value: dmCubit,
+  final appUpdateBloc = _MockAppUpdateBloc();
+  when(() => appUpdateBloc.state).thenReturn(const AppUpdateState());
+
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider<DmUnreadCountCubit>.value(value: dmCubit),
+      BlocProvider<AppUpdateBloc>.value(value: appUpdateBloc),
+    ],
     child: ProviderScope(
       overrides: [
         pageContextProvider.overrideWith(
