@@ -33,6 +33,7 @@ void main() {
         id: id ?? 'clip-${DateTime.now().millisecondsSinceEpoch}',
         video: EditorVideo.file('/path/to/clip.mp4'),
         thumbnailPath: '/path/to/thumb.jpg',
+        ghostFramePath: '/path/to/ghost.jpg',
         duration: duration,
         recordedAt: DateTime.now(),
         targetAspectRatio: .vertical,
@@ -43,6 +44,12 @@ void main() {
     setUp(() {
       mockClipLibraryService = _MockClipLibraryService();
       mockGallerySaveService = _MockGallerySaveService();
+
+      // Stub recoverMissingAssets so the unawaited background recovery
+      // triggered by clips with null ghostFramePath doesn't throw.
+      when(
+        () => mockClipLibraryService.recoverMissingAssets(any()),
+      ).thenAnswer((_) async => []);
     });
 
     ClipsLibraryBloc createBloc() => ClipsLibraryBloc(
