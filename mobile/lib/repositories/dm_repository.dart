@@ -158,11 +158,9 @@ class DmRepository {
     // backlog onto the UI isolate at app launch and scale linearly with
     // lifetime DM count. See docs/plans/2026-04-05-dm-scaling-fix-design.md.
 
-    // Merge duplicate conversations created by extra p-tags (idempotent).
-    unawaited(_mergeDuplicateConversations());
-
-    // Remove phantom self-conversations created by the self-wrap bug.
-    unawaited(_cleanupSelfConversations());
+    // Run post-auth maintenance sequentially so each step operates on the
+    // final state of the previous one (e.g. backfill runs after merge).
+    unawaited(_runPostAuthMaintenance());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
@@ -1567,6 +1565,44 @@ class DmRepository {
     } catch (e, stackTrace) {
       Log.error(
         'Failed to clean up self-conversation: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Runs post-auth cleanup and migration tasks sequentially so each step
+  /// operates on the final state of the previous one (e.g. backfill runs
+  /// after merge creates canonical conversation rows).
+  Future<void> _runPostAuthMaintenance() async {
+    await _mergeDuplicateConversations();
+    await _cleanupSelfConversations();
+    await _backfillCurrentUserHasSent();
+  }
+
+  /// Backfills `currentUserHasSent` for conversations where the column
+  /// was added with DEFAULT 0 but the user has actually sent messages.
+  ///
+  /// Fixes #2834 — without this, all pre-existing conversations appear
+  /// as message requests instead of in the Messages tab.
+  ///
+  /// Idempotent — safe to call on every init. Becomes a no-op once all
+  /// conversations are correctly flagged.
+  Future<void> _backfillCurrentUserHasSent() async {
+    try {
+      final updated = await _conversationsDao.backfillCurrentUserHasSent(
+        _userPubkey,
+      );
+      if (updated > 0) {
+        Log.info(
+          'Backfilled currentUserHasSent for $updated conversations',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to backfill currentUserHasSent: $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
