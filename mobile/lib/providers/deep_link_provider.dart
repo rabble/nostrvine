@@ -12,6 +12,7 @@ part 'deep_link_provider.g.dart';
 DeepLinkService deepLinkService(Ref ref) {
   final service = DeepLinkService();
   // Don't initialize here - it will be done after listener is set up
+  ref.onDispose(service.dispose);
   return service;
 }
 

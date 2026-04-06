@@ -2,11 +2,16 @@
 // ABOUTME: Displays author info, video description, and action buttons
 // ABOUTME: matching the new design: Like, Comment, Repost, Share, More.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
@@ -28,6 +33,7 @@ import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -77,9 +83,51 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
   bool _contentWarningRevealed = false;
 
+  /// Advances the feed to the next page by looking up the nearest
+  /// [PooledVideoFeedState] ancestor and calling its public
+  /// [PooledVideoFeedState.animateToPage]. Used as the Skip action on
+  /// the moderated-content overlay.
+  void _skipCurrentVideo(BuildContext context) {
+    final feedState = context.findAncestorStateOfType<PooledVideoFeedState>();
+    assert(
+      feedState != null,
+      'ModeratedContentOverlay must be mounted inside PooledVideoFeed',
+    );
+    if (feedState == null) return;
+    unawaited(feedState.animateToPage(widget.index + 1));
+  }
+
+  /// Triggers the existing age-verification flow via the Riverpod service.
+  /// On success, clears the cached moderated status so a retry can
+  /// re-classify the video using the newly unlocked auth cookie.
+  Future<void> _verifyAge(BuildContext context, VideoEvent video) async {
+    final ageVerificationService = ref.read(ageVerificationServiceProvider);
+    final verified = await ageVerificationService.verifyAdultContentAccess(
+      context,
+    );
+    if (!verified || !context.mounted) return;
+    context.read<VideoPlaybackStatusCubit>().report(
+      video.id,
+      PlaybackStatus.ready,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
+    final playbackStatus = context.select(
+      (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
+    );
+    if (playbackStatus == PlaybackStatus.forbidden ||
+        playbackStatus == PlaybackStatus.ageRestricted) {
+      return ModeratedContentOverlay(
+        status: playbackStatus,
+        onSkip: () => _skipCurrentVideo(context),
+        onVerifyAge: playbackStatus == PlaybackStatus.ageRestricted
+            ? () => _verifyAge(context, video)
+            : null,
+      );
+    }
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
       warnLabels: video.warnLabels,

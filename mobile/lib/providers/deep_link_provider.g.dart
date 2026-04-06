@@ -56,7 +56,7 @@ final class DeepLinkServiceProvider
   }
 }
 
-String _$deepLinkServiceHash() => r'e2448d07877558d988a553741b688eeeaaa32098';
+String _$deepLinkServiceHash() => r'09d157627be000ddb4b5ef34307797ed3c7745ca';
 
 /// Stream provider for incoming deep links
 

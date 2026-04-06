@@ -129,34 +129,21 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   void _onTabChanged() {
     if (_tabController.indexIsChanging || !mounted) return;
     setState(() {});
-    _dispatchSearch(_searchController.text.trim());
   }
 
-  /// Dispatches to all blocs; blocs skip fetch when they already have results.
+  /// Dispatches to all blocs so every tab fetches real results and counters
+  /// are accurate immediately.
   void _dispatchSearch(String query) {
-    final activeIndex = _tabController.index;
-    _videoSearchBloc.add(
-      VideoSearchQueryChanged(query, fetchResults: activeIndex == 0),
-    );
-    _userSearchBloc.add(
-      UserSearchQueryChanged(query, fetchResults: activeIndex == 1),
-    );
-    _hashtagSearchBloc.add(
-      HashtagSearchQueryChanged(query, fetchResults: activeIndex == 2),
-    );
+    _videoSearchBloc.add(VideoSearchQueryChanged(query));
+    _userSearchBloc.add(UserSearchQueryChanged(query));
+    _hashtagSearchBloc.add(HashtagSearchQueryChanged(query));
   }
 
-  int _videoCount(VideoSearchState state) {
-    return state.resultCount ?? state.videos.length;
-  }
+  int _videoCount(VideoSearchState state) => state.videos.length;
 
-  int _userCount(UserSearchState state) {
-    return state.resultCount ?? state.results.length;
-  }
+  int _userCount(UserSearchState state) => state.results.length;
 
-  int _hashtagCount(HashtagSearchState state) {
-    return state.resultCount ?? state.results.length;
-  }
+  int _hashtagCount(HashtagSearchState state) => state.results.length;
 
   bool _isActiveTabSearching({
     required VideoSearchState videoState,

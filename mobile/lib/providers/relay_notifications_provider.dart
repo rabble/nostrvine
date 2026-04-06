@@ -328,13 +328,12 @@ class RelayNotifications extends _$RelayNotifications {
         return;
       }
 
-      // Get existing IDs and follow pubkeys to exclude
+      // Get existing IDs to exclude (ID-level dedup only).
+      // Follow pubkeys are NOT excluded here — loadMore lets older follow
+      // notifications through so the post-merge consolidation can pick the
+      // earliest timestamp across batches.
       final existingIds = currentState.notifications
           .map((n) => n.id.toLowerCase())
-          .toSet();
-      final existingFollowPubkeys = currentState.notifications
-          .where((n) => n.type == NotificationType.follow)
-          .map((n) => n.actorPubkey.toLowerCase())
           .toSet();
 
       Log.info(
@@ -347,7 +346,6 @@ class RelayNotifications extends _$RelayNotifications {
       final result = await _fetchRawNotifications(
         pubkey: currentUserPubkey,
         excludeIds: existingIds,
-        excludeFollowPubkeys: existingFollowPubkeys,
       );
 
       if (!ref.mounted) return;
@@ -375,7 +373,12 @@ class RelayNotifications extends _$RelayNotifications {
         videoEventService: videoEventService,
       );
 
-      final allNotifications = [...currentState.notifications, ...rawNew];
+      // Merge and consolidate follows across batches — keep earliest per actor.
+      // This handles the case where batch 1 had follow_X at T2 (latest Kind 3)
+      // and batch 2 has follow_X at T1 (original follow).
+      final allNotifications = _consolidateFollowModels(
+        [...currentState.notifications, ...rawNew],
+      );
 
       Log.info(
         'RelayNotifications: Loaded ${rawNew.length} more notifications '
@@ -422,8 +425,18 @@ class RelayNotifications extends _$RelayNotifications {
     final currentState = await future;
     if (!ref.mounted) return;
 
-    // Deduplicate
+    // Deduplicate by ID
     if (currentState.notifications.any((n) => n.id == notification.id)) return;
+
+    // For follows, deduplicate by actor pubkey (Kind 3 republishes entire list)
+    if (notification.type == NotificationType.follow &&
+        currentState.notifications.any(
+          (n) =>
+              n.type == NotificationType.follow &&
+              n.actorPubkey == notification.actorPubkey,
+        )) {
+      return;
+    }
 
     // Insert at correct position (sorted by timestamp, newest first)
     final updated = [notification, ...currentState.notifications];
@@ -661,7 +674,6 @@ class RelayNotifications extends _$RelayNotifications {
   _fetchRawNotifications({
     required String pubkey,
     Set<String>? excludeIds,
-    Set<String>? excludeFollowPubkeys,
     bool resetCursor = false,
   }) async {
     final apiService = ref.read(relayNotificationApiServiceProvider);
@@ -673,8 +685,6 @@ class RelayNotifications extends _$RelayNotifications {
 
     final allRawNotifications = <RelayNotification>[];
     final mutableExcludeIds = excludeIds?.toSet() ?? <String>{};
-    final mutableExcludeFollowPubkeys =
-        excludeFollowPubkeys?.toSet() ?? <String>{};
     var unreadCount = 0;
 
     // Initial fetch
@@ -691,17 +701,12 @@ class RelayNotifications extends _$RelayNotifications {
     _hasMoreFromApi = response.hasMore;
     unreadCount = response.unreadCount;
 
-    // Dedupe initial batch
+    // Dedupe initial batch by notification ID.
+    // Follow notifications are NOT deduped by pubkey here — that is handled
+    // by _consolidateFollowNotifications (keeps earliest per source pubkey).
     for (final n in response.notifications) {
       final id = n.dedupeKey.toLowerCase();
       if (mutableExcludeIds.contains(id)) continue;
-
-      // Skip follow notifications from pubkeys we already have
-      if (n.notificationType.toLowerCase() == 'follow') {
-        final pk = n.sourcePubkey.toLowerCase();
-        if (mutableExcludeFollowPubkeys.contains(pk)) continue;
-        mutableExcludeFollowPubkeys.add(pk);
-      }
 
       mutableExcludeIds.add(id);
       allRawNotifications.add(n);
@@ -737,17 +742,11 @@ class RelayNotifications extends _$RelayNotifications {
 
       if (moreResponse.notifications.isEmpty) break;
 
-      // Dedupe new batch
+      // Dedupe new batch by notification ID only
       var addedAny = false;
       for (final n in moreResponse.notifications) {
         final id = n.dedupeKey.toLowerCase();
         if (mutableExcludeIds.contains(id)) continue;
-
-        if (n.notificationType.toLowerCase() == 'follow') {
-          final pk = n.sourcePubkey.toLowerCase();
-          if (mutableExcludeFollowPubkeys.contains(pk)) continue;
-          mutableExcludeFollowPubkeys.add(pk);
-        }
 
         mutableExcludeIds.add(id);
         allRawNotifications.add(n);
@@ -789,17 +788,13 @@ class RelayNotifications extends _$RelayNotifications {
         .toSet()
         .toList();
 
-    // Fire-and-forget batch fetch
-    unawaited(
-      profileRepo?.fetchBatchProfiles(pubkeys: pubkeys) ?? Future<void>.value(),
-    );
+    final profiles =
+        await profileRepo?.fetchBatchProfiles(pubkeys: pubkeys) ??
+        <String, UserProfile>{};
 
-    final profilesByPubkey = <String, UserProfile?>{};
-    for (final pubkey in pubkeys) {
-      profilesByPubkey[pubkey] = await profileRepo?.getCachedProfile(
-        pubkey: pubkey,
-      );
-    }
+    final profilesByPubkey = <String, UserProfile?>{
+      for (final pubkey in pubkeys) pubkey: profiles[pubkey],
+    };
 
     final enriched = _buildNotificationModels(
       relayNotifications,
@@ -932,16 +927,19 @@ class RelayNotifications extends _$RelayNotifications {
       category: LogCategory.system,
     );
 
-    // Keep only the most recent follow notification per source pubkey
-    final latestFollowByPubkey = <String, RelayNotification>{};
+    // Keep the earliest (original) follow notification per source pubkey.
+    // Kind 3 republishes the full contact list on every change, so the latest
+    // event timestamp reflects when the follower's list last changed, NOT when
+    // they originally followed this user.
+    final earliestFollowByPubkey = <String, RelayNotification>{};
     for (final follow in followNotifications) {
-      final existing = latestFollowByPubkey[follow.sourcePubkey];
-      if (existing == null || follow.createdAt.isAfter(existing.createdAt)) {
-        latestFollowByPubkey[follow.sourcePubkey] = follow;
+      final existing = earliestFollowByPubkey[follow.sourcePubkey];
+      if (existing == null || follow.createdAt.isBefore(existing.createdAt)) {
+        earliestFollowByPubkey[follow.sourcePubkey] = follow;
       }
     }
 
-    final consolidatedFollows = latestFollowByPubkey.values.toList();
+    final consolidatedFollows = earliestFollowByPubkey.values.toList();
 
     if (followNotifications.length != consolidatedFollows.length) {
       Log.info(
@@ -958,6 +956,31 @@ class RelayNotifications extends _$RelayNotifications {
 
     return result;
   }
+
+  /// Consolidate follow NotificationModels across batches, keeping the
+  /// earliest follow per actor pubkey.  Non-follow notifications pass through
+  /// unchanged.  Used after merging existing + new notifications in loadMore.
+  List<NotificationModel> _consolidateFollowModels(
+    List<NotificationModel> notifications,
+  ) {
+    final earliestFollowByActor = <String, NotificationModel>{};
+    final nonFollows = <NotificationModel>[];
+
+    for (final n in notifications) {
+      if (n.type != NotificationType.follow) {
+        nonFollows.add(n);
+        continue;
+      }
+      final existing = earliestFollowByActor[n.actorPubkey];
+      if (existing == null || n.timestamp.isBefore(existing.timestamp)) {
+        earliestFollowByActor[n.actorPubkey] = n;
+      }
+    }
+
+    final result = [...nonFollows, ...earliestFollowByActor.values];
+    result.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return result;
+  }
 }
 
 /// Provider for relay notification API service
@@ -965,9 +988,11 @@ class RelayNotifications extends _$RelayNotifications {
 RelayNotificationApiService relayNotificationApiService(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
   final nostrService = ref.watch(nostrServiceProvider);
+  // Fallback must use the relay URL, not apiBaseUrl (Fastly CDN).
+  // The notification API is served by the relay server itself.
   final baseUrl = resolvePinnedApiBaseUrlFromRelays(
     configuredRelays: nostrService.configuredRelays,
-    fallbackBaseUrl: environmentConfig.apiBaseUrl,
+    fallbackBaseUrl: relayWsToHttpBase(environmentConfig.relayUrl),
   );
   final nip98AuthService = ref.watch(nip98AuthServiceProvider);
 

@@ -33,6 +33,7 @@ const _testPubkey =
 
 VideoEvent _createVideo({
   List<String> contentWarningLabels = const [],
+  List<String> moderationLabels = const [],
   List<String> hashtags = const [],
   String? sha256,
   String? vineId,
@@ -45,6 +46,7 @@ VideoEvent _createVideo({
     content: '',
     timestamp: DateTime(2025),
     contentWarningLabels: contentWarningLabels,
+    moderationLabels: moderationLabels,
     hashtags: hashtags,
     sha256: sha256,
     vineId: vineId,
@@ -317,6 +319,103 @@ void main() {
             moderationLabelService: moderationLabelService,
           );
           final video = _createVideo(vineId: 'replaceable-video-d-tag');
+
+          expect(filter(video), isTrue);
+        },
+      );
+    });
+
+    group('ML moderation labels (video.moderationLabels)', () {
+      test('hides videos with unknown ML moderation labels', () {
+        final filter = createNsfwFilter(
+          contentFilterService,
+          moderationLabelService: moderationLabelService,
+        );
+        final video = _createVideo(
+          moderationLabels: const ['some-new-server-label'],
+        );
+
+        expect(filter(video), isTrue);
+      });
+
+      test('still hides videos with known hide labels', () {
+        final filter = createNsfwFilter(
+          contentFilterService,
+          moderationLabelService: moderationLabelService,
+        );
+        final video = _createVideo(moderationLabels: const ['nudity']);
+
+        expect(filter(video), isTrue);
+      });
+
+      test('does not hide videos with no moderation labels', () {
+        final filter = createNsfwFilter(
+          contentFilterService,
+          moderationLabelService: moderationLabelService,
+        );
+        final video = _createVideo();
+
+        expect(filter(video), isFalse);
+      });
+
+      test(
+        'hides when moderationLabels contains a known hide label '
+        'alongside an unknown label',
+        () {
+          final filter = createNsfwFilter(
+            contentFilterService,
+            moderationLabelService: moderationLabelService,
+          );
+          final video = _createVideo(
+            moderationLabels: const ['nudity', 'unknown-x'],
+          );
+
+          expect(filter(video), isTrue);
+        },
+      );
+
+      test(
+        'unknown label hides the video even if the user preferenced the '
+        'known label as show',
+        () async {
+          // Simulate an age-verified user who has explicitly opted in to
+          // seeing violence. Without the unknown-label short-circuit, a
+          // video labeled ['violence', 'unknown-x'] would pass through
+          // because the combined preference resolves to show.
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await contentFilterService.setPreference(
+            ContentLabel.violence,
+            ContentFilterPreference.show,
+          );
+
+          final filter = createNsfwFilter(
+            contentFilterService,
+            moderationLabelService: moderationLabelService,
+          );
+          final video = _createVideo(
+            moderationLabels: const ['violence', 'unknown-x'],
+          );
+
+          // The unknown label must force-hide regardless of user preference.
+          expect(filter(video), isTrue);
+        },
+      );
+
+      test(
+        'does not hide on self-labels branch when moderationLabels is empty',
+        () {
+          final filter = createNsfwFilter(
+            contentFilterService,
+            moderationLabelService: moderationLabelService,
+          );
+          // Self-labels branch: unknown self-label triggers nudity fallback
+          // inside _getContentLabels, which maps to hide. This test locks in
+          // that pre-existing behavior to guarantee the B2 change didn't touch
+          // the self-labels branch.
+          final video = _createVideo(
+            contentWarningLabels: const ['some-unknown-self-label'],
+          );
 
           expect(filter(video), isTrue);
         },

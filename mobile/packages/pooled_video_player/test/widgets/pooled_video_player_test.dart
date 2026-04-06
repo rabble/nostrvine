@@ -532,13 +532,15 @@ void main() {
         );
       });
 
-      testWidgets('shows default error when LoadState is error', (
+      testWidgets('shows default error with retry when LoadState is error', (
         tester,
       ) async {
         await tester.pumpWidget(buildWidget());
 
         expect(find.byIcon(Icons.error_outline), findsOneWidget);
         expect(find.text('Failed to load video'), findsOneWidget);
+        expect(find.text('Tap to retry'), findsOneWidget);
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
       });
 
       testWidgets('shows custom errorBuilder when provided', (tester) async {

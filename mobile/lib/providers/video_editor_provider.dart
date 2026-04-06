@@ -34,6 +34,18 @@ final videoEditorProvider =
       VideoEditorNotifier.new,
     );
 
+@visibleForTesting
+String? resolveRenderTaskId({
+  required String? activeRenderTaskId,
+  required List<DivineVideoClip> clips,
+}) {
+  if (activeRenderTaskId != null && activeRenderTaskId.isNotEmpty) {
+    return activeRenderTaskId;
+  }
+  if (clips.isEmpty) return null;
+  return clips.first.id;
+}
+
 /// Manages video editor state and operations.
 ///
 /// Handles:
@@ -67,6 +79,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       ref.read(draftStorageServiceProvider);
 
   bool get isAutosavedDraft => draftId == VideoEditorConstants.autoSaveId;
+
+  String? _activeRenderTaskId;
 
   // === LIFECYCLE ===
 
@@ -726,9 +740,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       }
     }
 
-    // Clear existing clips before restoring to prevent duplication
-    _clipManager.clearClips();
-
     // Validate finalRenderedClip - only restore if file still exists
     DivineVideoClip? validFinalRenderedClip;
     final finalClip = draft.finalRenderedClip;
@@ -770,7 +781,17 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       originalAudioVolume: draft.originalAudioVolume,
       customAudioVolume: draft.customAudioVolume,
     );
-    _clipManager.addMultipleClips(clipsWithThumbnails);
+
+    _clipManager.replaceClips(clipsWithThumbnails);
+    if (clipsWithThumbnails.isEmpty) {
+      Log.warning(
+        '⚠️ Draft restored with no clips',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
     // We set the aspect ratio in the video recorder to match the clips,
     // so the user can't mix them up.
     ref
@@ -833,6 +854,21 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     setProcessing(true);
 
     final renderParameters = _buildRenderParameters();
+    final taskId = resolveRenderTaskId(
+      activeRenderTaskId: _activeRenderTaskId,
+      clips: _clips,
+    );
+    if (taskId == null) {
+      Log.warning(
+        '⚠️ Skipping render start - no clips available',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+      setProcessing(false);
+      return;
+    }
+
+    _activeRenderTaskId = taskId;
 
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
@@ -842,7 +878,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       parameters: renderParameters,
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
-    );
+      taskId: taskId,
+    ).whenComplete(() => _activeRenderTaskId = null);
 
     if (result == null) {
       Log.warning(
@@ -873,7 +910,21 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Cancel an ongoing video render operation.
   Future<void> cancelRenderVideo() async {
-    await VideoEditorRenderService.cancelTask(_clips.first.id);
+    final taskId = resolveRenderTaskId(
+      activeRenderTaskId: _activeRenderTaskId,
+      clips: _clips,
+    );
+    if (taskId == null) {
+      Log.debug(
+        '⚠️ Skipping render cancel - no active task available',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+      state = state.copyWith(isProcessing: false);
+      return;
+    }
+
+    await VideoEditorRenderService.cancelTask(taskId);
 
     state = state.copyWith(isProcessing: false);
   }

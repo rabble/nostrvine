@@ -29,6 +29,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -42,6 +43,7 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/invite_api_service.dart';
@@ -297,7 +299,15 @@ Future<void> _startOpenVineApp() async {
   // in web/index.html (already added).
 
   // Configure the native video player disk cache (500 MB, LRU eviction).
-  await DivineVideoPlayerController.configureCache();
+  // divine_video_player only ships android/ios/macos plugin platforms, so
+  // invoking configureCache() on web throws MissingPluginException. That
+  // exception gets swallowed by the runZonedGuarded + CrashReportingService
+  // chain below (Firebase Crashlytics has no web impl), and runApp() is
+  // never reached — the HTML loading spinner stays up forever with no JS
+  // errors. Skip the call on web to unblock startup.
+  if (!kIsWeb) {
+    await DivineVideoPlayerController.configureCache();
+  }
 
   StartupPerformanceService.instance.completePhase('bindings');
 
@@ -913,6 +923,33 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // Block/mute list sync is handled by blocklistSyncBridgeProvider
     // (watched in AppShell) which reacts to auth state changes and
     // covers both already-authenticated startup and post-login scenarios.
+
+    // One-time repair for corrupted video events with local file paths (#2144)
+    unawaited(
+      Future.microtask(() async {
+        try {
+          final nostrClient = ref.read(nostrServiceProvider);
+          final authService = ref.read(authServiceProvider);
+          final env = ref.read(currentEnvironmentProvider);
+          final prefs = ref.read(sharedPreferencesProvider);
+          final videoEventService = ref.read(videoEventServiceProvider);
+          final repairService = CorruptedVideoRepairService(
+            nostrClient: nostrClient,
+            authService: authService,
+            prefs: prefs,
+            blossomBaseUrl: env.blossomUrl,
+            videoEventService: videoEventService,
+          );
+          await repairService.repairIfNeeded();
+        } catch (e) {
+          Log.warning(
+            '[INIT] Corrupted video repair failed (non-critical): $e',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+        }
+      }),
+    );
   }
 
   @override

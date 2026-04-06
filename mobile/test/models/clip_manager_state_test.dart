@@ -68,6 +68,10 @@ void main() {
       expect(ClipManagerState(clips: [clip1]).hasClips, isTrue);
     });
 
+    test('firstClipOrNull returns null when clips are empty', () {
+      expect(ClipManagerState(clips: []).firstClipOrNull, isNull);
+    });
+
     test('clipCount returns correct number of clips', () {
       expect(ClipManagerState(clips: []).clipCount, equals(0));
       expect(ClipManagerState(clips: [clip1]).clipCount, equals(1));

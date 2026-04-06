@@ -383,6 +383,78 @@ void main() {
         },
       );
     });
+
+    group('cancelRenderVideo', () {
+      test(
+        'resets isProcessing to false when clips are already empty',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/original.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          notifier.setProcessing(true);
+          container.read(clipManagerProvider.notifier).clearClips();
+
+          await notifier.cancelRenderVideo();
+
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isFalse,
+          );
+        },
+      );
+    });
+
+    group('resolveRenderTaskId', () {
+      test('prefers the active render task id when clips are empty', () {
+        expect(
+          resolveRenderTaskId(
+            activeRenderTaskId: 'render-123',
+            clips: const [],
+          ),
+          'render-123',
+        );
+      });
+
+      test(
+        'falls back to the first clip id when no active task is tracked',
+        () {
+          final clip = DivineVideoClip(
+            id: 'clip-123',
+            video: EditorVideo.file('/docs/original.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          expect(
+            resolveRenderTaskId(
+              activeRenderTaskId: null,
+              clips: [clip],
+            ),
+            'clip-123',
+          );
+        },
+      );
+
+      test('returns null when there is no active task and no clips', () {
+        expect(
+          resolveRenderTaskId(
+            activeRenderTaskId: null,
+            clips: const [],
+          ),
+          isNull,
+        );
+      });
+    });
   });
 
   group('getActiveDraft', () {

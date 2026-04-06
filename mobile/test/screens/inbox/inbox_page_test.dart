@@ -2,6 +2,7 @@
 // ABOUTME: Ensures InboxPage provides ConversationListBloc, DmUnreadCountCubit,
 // ABOUTME: and MyFollowingBloc to InboxView via MultiBlocProvider.
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -96,11 +97,54 @@ void main() {
       when(
         () => mockBlocklistService.isBlocked(any()),
       ).thenReturn(false);
+
+      when(() => mockDmRepository.startListening()).thenReturn(null);
+      when(
+        () => mockDmRepository.stopListening(),
+      ).thenAnswer((_) async {});
     });
 
     test('has correct route constants', () {
       expect(InboxPage.routeName, equals('inbox'));
       expect(InboxPage.path, equals('/inbox'));
+    });
+
+    group('dm subscription lifecycle', () {
+      testWidgets(
+        'calls startListening on mount and stopListening on dispose',
+        (tester) async {
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: const InboxPage(),
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                dmRepositoryProvider.overrideWithValue(mockDmRepository),
+                followRepositoryProvider.overrideWithValue(
+                  mockFollowRepository,
+                ),
+                contentBlocklistServiceProvider.overrideWithValue(
+                  mockBlocklistService,
+                ),
+                goRouterProvider.overrideWithValue(mockGoRouter),
+                relayNotificationUnreadCountProvider.overrideWithValue(0),
+                relayNotificationsProvider.overrideWith(
+                  _MockRelayNotifications.new,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          verify(() => mockDmRepository.startListening()).called(1);
+          verifyNever(() => mockDmRepository.stopListening());
+
+          // Replace the InboxPage with an empty widget to trigger dispose.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+
+          verify(() => mockDmRepository.stopListening()).called(1);
+        },
+      );
     });
 
     group('renders', () {
