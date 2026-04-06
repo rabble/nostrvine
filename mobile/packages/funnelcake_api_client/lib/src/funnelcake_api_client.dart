@@ -1769,6 +1769,102 @@ class FunnelcakeApiClient {
     }
   }
 
+  /// Fetches notifications for a user from the relay REST API.
+  ///
+  /// Uses NIP-98 authentication. The [cursor] parameter enables pagination
+  /// via the `before` query param. The [authHeaders] parameter allows the
+  /// caller to provide pre-built NIP-98 auth headers.
+  ///
+  /// Returns an empty [NotificationResponse] on errors instead of throwing.
+  Future<NotificationResponse> getNotifications({
+    required String pubkey,
+    int limit = 50,
+    String? cursor,
+    Map<String, String>? authHeaders,
+  }) async {
+    final queryParams = <String, String>{
+      'limit': '$limit',
+      'before': ?cursor,
+    };
+
+    final url = Uri.parse(
+      '$_baseUrl/api/users/$pubkey/notifications',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _httpClient
+          .get(
+            url,
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+              ...?authHeaders,
+            },
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode != 200) {
+        return const NotificationResponse(
+          notifications: [],
+          unreadCount: 0,
+          hasMore: false,
+        );
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return NotificationResponse.fromJson(json);
+    } on Object {
+      return const NotificationResponse(
+        notifications: [],
+        unreadCount: 0,
+        hasMore: false,
+      );
+    }
+  }
+
+  /// Marks notifications as read for a user.
+  ///
+  /// Pass [notificationIds] to mark specific notifications, or omit to
+  /// mark all as read. The [authHeaders] parameter allows the caller to
+  /// provide pre-built NIP-98 auth headers.
+  ///
+  /// Returns a failure [MarkReadResponse] on errors instead of throwing.
+  Future<MarkReadResponse> markNotificationsRead({
+    required String pubkey,
+    List<String>? notificationIds,
+    Map<String, String>? authHeaders,
+  }) async {
+    final url = Uri.parse('$_baseUrl/api/users/$pubkey/notifications/read');
+
+    final payload = jsonEncode({
+      'notification_ids': ?notificationIds,
+    });
+
+    try {
+      final response = await _httpClient
+          .post(
+            url,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+              ...?authHeaders,
+            },
+            body: payload,
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode != 200) {
+        return const MarkReadResponse(success: false, markedCount: 0);
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return MarkReadResponse.fromJson(json);
+    } on Object {
+      return const MarkReadResponse(success: false, markedCount: 0);
+    }
+  }
+
   /// Disposes of the HTTP client if it was created internally.
   void dispose() {
     if (_ownsHttpClient) {
