@@ -559,32 +559,26 @@ class NostrKeyManager {
   /// Removes all keys from secure storage and clears backup keys.
   /// Throws [NostrKeyException] if the operation fails.
   Future<void> clearKeys() async {
-    try {
-      _log.fine(
-        '📱 Clearing stored Nostr keys from secure storage...',
-      );
+    _log.fine('📱 Clearing stored Nostr keys from secure storage...');
 
-      // Clear from secure storage
-      await _secureStorage.deleteKeys();
+    // Clear in-memory state unconditionally — the app must not use these
+    // keys regardless of whether platform deletion succeeds.
+    _keyPair = null;
+    _backupHash = null;
+    _hasBackupCached = false;
 
-      // Clear backup key as well
-      await _secureStorage.deleteBackupKey();
+    // Clear legacy keys from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyPairKey);
+    await prefs.remove(_keyVersionKey);
+    await prefs.remove(_backupHashKey);
 
-      // Clear legacy keys from SharedPreferences if they exist
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_keyPairKey);
-      await prefs.remove(_keyVersionKey);
-      await prefs.remove(_backupHashKey);
+    // Attempt platform-level deletion — may throw
+    // SecureKeyStorageException if the platform reports failure.
+    await _secureStorage.deleteKeys();
+    await _secureStorage.deleteBackupKey();
 
-      _keyPair = null;
-      _backupHash = null;
-      _hasBackupCached = false;
-
-      _log.info('Nostr keys cleared successfully');
-    } on Exception catch (e) {
-      _log.severe('Failed to clear keys: $e');
-      throw NostrKeyException('Failed to clear keys: $e');
-    }
+    _log.info('Nostr keys cleared successfully');
   }
 
   /// Get user identity summary.
