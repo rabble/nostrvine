@@ -97,7 +97,9 @@ void main() {
       overrides: [relayNotificationsProvider.overrideWith(notifierFactory)],
       child: MaterialApp(
         theme: ThemeData.dark(),
-        home: const Scaffold(body: NotificationsScreen()),
+        home: const Scaffold(
+          body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+        ),
       ),
     );
   }
@@ -353,7 +355,6 @@ void main() {
 
           final mockNotifier = _MockRelayNotifications(
             notifications,
-            hasMoreContent: true,
           );
           await tester.pumpWidget(buildScreenWidget(() => mockNotifier));
           await tester.pumpAndSettle();
@@ -382,13 +383,15 @@ void main() {
             ),
           ];
 
-          final mockNotifier = _MockRelayNotifications(notifications);
+          final mockNotifier = _MockRelayNotifications(
+            notifications,
+            hasMoreContent: true,
+          );
           await tester.pumpWidget(buildScreenWidget(() => mockNotifier));
           await tester.pumpAndSettle();
 
           await tester.tap(find.text('Likes'));
-          await tester.pump();
-          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
 
           expect(mockNotifier.loadMoreCalls, greaterThanOrEqualTo(1));
         },

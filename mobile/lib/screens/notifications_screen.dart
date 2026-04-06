@@ -37,7 +37,13 @@ class NotificationsScreen extends ConsumerStatefulWidget {
   static String pathForIndex([int? index]) =>
       index == null ? path : '$path/$index';
 
-  const NotificationsScreen({super.key});
+  const NotificationsScreen({
+    this.skipInitialBootstrapForTesting = false,
+    super.key,
+  });
+
+  @visibleForTesting
+  final bool skipInitialBootstrapForTesting;
 
   @override
   ConsumerState<NotificationsScreen> createState() =>
@@ -48,16 +54,39 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _activeTabIndex = 0;
+  bool _isBootstrappingFreshFeed = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(_handleTabChanged);
-    // Mark all notifications as read when the screen is opened
+    if (widget.skipInitialBootstrapForTesting) {
+      _isBootstrappingFreshFeed = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+      });
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+      unawaited(_bootstrapFreshFeed());
     });
+  }
+
+  Future<void> _bootstrapFreshFeed() async {
+    ref.invalidate(relayNotificationsProvider);
+
+    try {
+      await ref.read(relayNotificationsProvider.future);
+      if (!mounted) return;
+      await ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBootstrappingFreshFeed = false;
+        });
+      }
+    }
   }
 
   void _handleTabChanged() {
@@ -77,6 +106,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_isBootstrappingFreshFeed) {
+      return const ColoredBox(
+        color: VineTheme.backgroundColor,
+        child: Center(
+          child: CircularProgressIndicator(color: VineTheme.vineGreen),
+        ),
+      );
+    }
+
     // AppShell provides the Scaffold and AppBar, so this is just the body content
     return Column(
       children: [
