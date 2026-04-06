@@ -11,6 +11,9 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(videoRecorderProvider.notifier);
+    final isRecording = ref.watch(
+      videoRecorderProvider.select((p) => p.isRecording),
+    );
 
     return Stack(
       children: [
@@ -18,22 +21,30 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
 
         Padding(
           padding: const .all(16),
-          child: Row(
-            mainAxisAlignment: .spaceBetween,
-            children: [
-              DivineIconButton(
-                icon: .x,
-                size: .small,
-                type: .ghostSecondary,
-                onPressed: () => notifier.closeVideoRecorder(context),
-              ),
-              DivineIconButton(
-                icon: .caretRight,
-                size: .small,
-                type: .ghostSecondary,
-                onPressed: () => notifier.openVideoEditor(context),
-              ),
-            ],
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 220),
+            opacity: isRecording ? 0 : 1,
+            child: Row(
+              mainAxisAlignment: .spaceBetween,
+              children: [
+                DivineIconButton(
+                  icon: .x,
+                  size: .small,
+                  type: .ghostSecondary,
+                  onPressed: isRecording
+                      ? null
+                      : () => notifier.closeVideoRecorder(context),
+                ),
+                DivineIconButton(
+                  icon: .caretRight,
+                  size: .small,
+                  type: .ghostSecondary,
+                  onPressed: isRecording
+                      ? null
+                      : () => notifier.openVideoEditor(context),
+                ),
+              ],
+            ),
           ),
         ),
       ],
