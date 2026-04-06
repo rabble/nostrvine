@@ -206,6 +206,8 @@ class RelayNotificationApiService {
       if (unreadOnly) {
         queryParams['unread_only'] = 'true';
       }
+      // Always send `before`, without it the API returns notifications in
+      // random order instead of newest-first.
       queryParams['before'] =
           before ?? DateTime.now().millisecondsSinceEpoch.toString();
 
