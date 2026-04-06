@@ -213,6 +213,10 @@ class _NotificationTabContentState
         );
 
         _maybeLoadMoreForFilteredTab(feedState, notifications);
+        final isSearchingForFilteredContent = _isSearchingForFilteredContent(
+          feedState,
+          notifications,
+        );
 
         if (notifications.isEmpty) {
           return ColoredBox(
@@ -230,37 +234,41 @@ class _NotificationTabContentState
                   child: SizedBox(
                     height: constraints.maxHeight,
                     child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.notifications_none,
-                            size: 64,
-                            color: VineTheme.lightText,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            widget.filter == null
-                                ? 'No notifications yet'
-                                : 'No ${_getFilterName(widget.filter!)}'
-                                      ' notifications',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: VineTheme.secondaryText,
+                      child: isSearchingForFilteredContent
+                          ? _FilteredTabLoadingState(
+                              filterName: _getFilterName(widget.filter!),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.notifications_none,
+                                  size: 64,
+                                  color: VineTheme.lightText,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  widget.filter == null
+                                      ? 'No notifications yet'
+                                      : 'No ${_getFilterName(widget.filter!)}'
+                                            ' notifications',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    color: VineTheme.secondaryText,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'When people interact with your content,\n'
+                                  "you'll see it here",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: VineTheme.lightText,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'When people interact with your content,\n'
-                            "you'll see it here",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: VineTheme.lightText,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ),
@@ -376,6 +384,13 @@ class _NotificationTabContentState
 
     if (!needsTopUp) return;
 
+    Log.info(
+      'NotificationsScreen: topping up ${_getFilterName(widget.filter!)} tab '
+      'because current page has no matching items',
+      name: 'NotificationsScreen',
+      category: LogCategory.ui,
+    );
+
     _isRequestingFilteredTopUp = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -385,6 +400,16 @@ class _NotificationTabContentState
         _isRequestingFilteredTopUp = false;
       });
     });
+  }
+
+  bool _isSearchingForFilteredContent(
+    NotificationFeedState feedState,
+    List<NotificationModel> notifications,
+  ) {
+    return widget.filter != null &&
+        notifications.isEmpty &&
+        (feedState.isLoadingMore || _isRequestingFilteredTopUp) &&
+        feedState.hasMoreContent;
   }
 
   String _getFilterName(NotificationType type) {
@@ -579,5 +604,29 @@ class _NotificationTabContentState
 
     final npub = NostrKeyUtils.encodePubKey(userPubkey);
     context.push(OtherProfileScreen.pathForNpub(npub));
+  }
+}
+
+class _FilteredTabLoadingState extends StatelessWidget {
+  const _FilteredTabLoadingState({required this.filterName});
+
+  final String filterName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const CircularProgressIndicator(color: VineTheme.vineGreen),
+        const SizedBox(height: 16),
+        Text(
+          'Loading $filterName notifications...',
+          style: const TextStyle(
+            fontSize: 18,
+            color: VineTheme.secondaryText,
+          ),
+        ),
+      ],
+    );
   }
 }
