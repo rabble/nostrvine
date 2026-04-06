@@ -428,6 +428,16 @@ class RelayNotifications extends _$RelayNotifications {
     // Deduplicate by ID
     if (currentState.notifications.any((n) => n.id == notification.id)) return;
 
+    // Cross-path dedup: REST notifications store the Nostr event ID in
+    // metadata['sourceEventId'], while WebSocket notifications use the Nostr
+    // event ID as the model ID. Check both directions so the same logical
+    // notification isn't shown twice.
+    if (currentState.notifications.any(
+      (n) => n.metadata?['sourceEventId'] == notification.id,
+    )) {
+      return;
+    }
+
     // For follows, deduplicate by actor pubkey (Kind 3 republishes entire list)
     if (notification.type == NotificationType.follow &&
         currentState.notifications.any(
@@ -466,6 +476,10 @@ class RelayNotifications extends _$RelayNotifications {
     _isRefreshing = true;
 
     final currentState = await future;
+
+    // Snapshot IDs before the API fetch so we can detect WebSocket insertions
+    // that arrive during the fetch window.
+    final preRefreshIds = currentState.notifications.map((n) => n.id).toSet();
     if (!ref.mounted) {
       _isRefreshing = false;
       return;
@@ -505,24 +519,54 @@ class RelayNotifications extends _$RelayNotifications {
         consolidatedNotifications,
         videoEventService: videoEventService,
       );
-      final refreshedState = NotificationFeedState(
-        notifications: rawNotifications,
-        unreadCount: result.unreadCount,
-        hasMoreContent: result.hasMore,
-        isInitialLoad: false,
-        lastUpdated: DateTime.now(),
+      // Re-read the live state to find WebSocket notifications inserted during
+      // the API fetch window. Only notifications absent from the pre-refresh
+      // snapshot are WebSocket insertions — old API data is replaced by the
+      // fresh API response.
+      final liveState = state.requireValue;
+      final wsInsertions = liveState.notifications
+          .where((n) => !preRefreshIds.contains(n.id))
+          .toList();
+
+      // Deduplicate WebSocket insertions against the API response by ID and
+      // sourceEventId (cross-path: REST server ID vs WebSocket Nostr event ID).
+      final apiIds = rawNotifications.map((n) => n.id).toSet();
+      final apiSourceIds = rawNotifications
+          .map((n) => n.metadata?['sourceEventId']?.toString())
+          .whereType<String>()
+          .toSet();
+
+      final webSocketOnly = wsInsertions.where((ws) {
+        if (apiIds.contains(ws.id)) return false;
+        if (apiSourceIds.contains(ws.id)) return false;
+        return true;
+      }).toList();
+
+      final merged = _consolidateFollowModels(
+        [...rawNotifications, ...webSocketOnly],
       );
 
       Log.info(
         'RelayNotifications: Refreshed with '
-        '${rawNotifications.length} notifications '
+        '${rawNotifications.length} API notifications '
         '(from ${result.notifications.length} raw), '
+        '${webSocketOnly.length} WebSocket-only preserved, '
+        'total: ${merged.length}, '
         'unread: ${result.unreadCount}, hasMore: ${result.hasMore}',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
 
-      state = AsyncData(refreshedState);
+      state = AsyncData(
+        currentState.copyWith(
+          notifications: merged,
+          unreadCount: result.unreadCount,
+          hasMoreContent: result.hasMore,
+          isInitialLoad: false,
+          isRefreshing: false,
+          lastUpdated: DateTime.now(),
+        ),
+      );
       _scheduleEnrichment(
         consolidatedNotifications,
         profileRepo: profileRepo,

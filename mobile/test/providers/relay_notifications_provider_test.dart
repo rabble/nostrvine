@@ -701,11 +701,12 @@ void main() {
         // Should have been called twice
         expect(callCount, 2);
 
-        // State should reflect the refreshed data
+        // State should contain the refreshed notification; the original may
+        // also be present because refresh now merges rather than replaces.
         final state = container.read(relayNotificationsProvider);
         final result = state.value!;
-        expect(result.notifications.length, 1);
-        expect(result.notifications[0].id, 'notif_call_2');
+        final ids = result.notifications.map((n) => n.id).toSet();
+        expect(ids, contains('notif_call_2'));
         expect(result.unreadCount, 2);
 
         container.dispose();
@@ -764,10 +765,13 @@ void main() {
         await refreshFuture;
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Now state should show refreshed data
+        // Now state should include the refreshed notification; the original
+        // may also be preserved since refresh now merges.
         final finalState = container.read(relayNotificationsProvider);
-        expect(finalState.value!.notifications.length, 1);
-        expect(finalState.value!.notifications[0].id, 'refreshed_notif');
+        final finalIds = finalState.value!.notifications
+            .map((n) => n.id)
+            .toSet();
+        expect(finalIds, contains('refreshed_notif'));
 
         container.dispose();
       });
@@ -1677,6 +1681,297 @@ void main() {
 
         container.dispose();
       });
+    });
+
+    group('Cross-path dedup (REST vs WebSocket)', () {
+      test(
+        'insertFromWebSocket drops notification whose ID matches '
+        "an existing REST notification's sourceEventId",
+        () async {
+          // REST API returns a notification with server-assigned ID 'notif_1'
+          // and sourceEventId 'event_notif_1' (stored in metadata).
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'notif_1'),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // WebSocket delivers the same logical notification but using the
+          // Nostr event ID as its model ID.
+          final wsNotification = NotificationModel(
+            id: 'event_notif_1', // matches REST metadata['sourceEventId']
+            type: NotificationType.like,
+            actorPubkey: 'source_pubkey_123',
+            actorName: 'Actor',
+            message: 'Actor liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(wsNotification);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          expect(
+            result.notifications.length,
+            1,
+            reason:
+                'WebSocket notification matching sourceEventId of existing '
+                'REST notification should be dropped',
+          );
+          expect(result.notifications.first.id, 'notif_1');
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'insertFromWebSocket allows notification with non-matching '
+        'sourceEventId',
+        () async {
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'notif_1'),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // WebSocket delivers a genuinely new notification
+          final wsNotification = NotificationModel(
+            id: 'completely_new_event',
+            type: NotificationType.like,
+            actorPubkey: 'other_pubkey',
+            actorName: 'Bob',
+            message: 'Bob liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000500 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(wsNotification);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          expect(
+            result.notifications.length,
+            2,
+            reason: 'Genuinely new WebSocket notification should be inserted',
+          );
+
+          container.dispose();
+        },
+      );
+    });
+
+    group('Refresh preserves WebSocket notifications', () {
+      test(
+        'refresh merges API data with WebSocket-inserted notifications',
+        () async {
+          final refreshCompleter = Completer<NotificationsResponse>();
+          var callCount = 0;
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return NotificationsResponse(
+                notifications: [
+                  createMockRelayNotification(
+                    id: 'api_notif_1',
+                    createdAtSeconds: 1700000100,
+                  ),
+                ],
+                unreadCount: 1,
+              );
+            }
+            // Second call (refresh) waits for completer
+            return refreshCompleter.future;
+          });
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // Start refresh (will block on completer)
+          final refreshFuture = container
+              .read(relayNotificationsProvider.notifier)
+              .refresh();
+
+          // While refresh is in-flight, insert a WebSocket notification
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+
+          final wsNotification = NotificationModel(
+            id: 'ws_new_like',
+            type: NotificationType.like,
+            actorPubkey: 'ws_actor',
+            actorName: 'WebSocket User',
+            message: 'WebSocket User liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000300 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(wsNotification);
+
+          // Complete the refresh with new API data
+          refreshCompleter.complete(
+            NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'api_notif_2',
+                  createdAtSeconds: 1700000200,
+                ),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          await refreshFuture;
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          // Both the API notification AND the WebSocket notification
+          // should be present after refresh
+          final ids = result.notifications.map((n) => n.id).toSet();
+          expect(
+            ids,
+            contains('api_notif_2'),
+            reason: 'Refreshed API notification should be present',
+          );
+          expect(
+            ids,
+            contains('ws_new_like'),
+            reason:
+                'WebSocket notification inserted during refresh '
+                'should be preserved',
+          );
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'refresh deduplicates WebSocket notification that arrived via API',
+        () async {
+          final refreshCompleter = Completer<NotificationsResponse>();
+          var callCount = 0;
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return NotificationsResponse(
+                notifications: [
+                  createMockRelayNotification(id: 'api_1'),
+                ],
+                unreadCount: 1,
+              );
+            }
+            return refreshCompleter.future;
+          });
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // Start refresh
+          final refreshFuture = container
+              .read(relayNotificationsProvider.notifier)
+              .refresh();
+
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+
+          // WebSocket inserts a notification with Nostr event ID
+          final wsNotification = NotificationModel(
+            id: 'event_api_refresh_1', // Will match sourceEventId
+            type: NotificationType.like,
+            actorPubkey: 'source_pubkey_123',
+            actorName: 'Actor',
+            message: 'Actor liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000100 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(wsNotification);
+
+          // Refresh returns the same notification via REST with different ID
+          // but sourceEventId = 'event_api_refresh_1'
+          refreshCompleter.complete(
+            NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'api_refresh_1'),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          await refreshFuture;
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          // Should have only 1 notification — not a duplicate
+          expect(
+            result.notifications.length,
+            1,
+            reason:
+                'WebSocket notification whose ID matches API '
+                'sourceEventId should be deduped during refresh merge',
+          );
+
+          container.dispose();
+        },
+      );
     });
   });
 }
