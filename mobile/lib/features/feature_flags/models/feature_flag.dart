@@ -8,6 +8,20 @@ enum FeatureFlag {
     'Detailed usage tracking and insights',
   ),
   newProfileLayout('New Profile Layout', 'Redesigned user profile screen'),
+  livestreamingBeta(
+    'Livestreaming Beta',
+    'Live video streaming feature (beta)',
+  ),
+  liveDiscovery('Live Discovery', 'Enable public live room discovery surfaces'),
+  liveAudience(
+    'Live Audience',
+    'Enable native room join and audience playback',
+  ),
+  liveHost('Live Host', 'Enable room creation and host controls'),
+  liveSpeakerPublishing(
+    'Live Speaker Publishing',
+    'Enable invited speakers to publish camera and microphone in live rooms',
+  ),
   debugTools('Debug Tools', 'Developer debugging utilities and diagnostics'),
   routerDrivenHome(
     'Router-Driven Home Screen',

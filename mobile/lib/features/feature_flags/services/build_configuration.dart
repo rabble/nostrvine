@@ -15,6 +15,16 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_ENHANCED_ANALYTICS');
       case FeatureFlag.newProfileLayout:
         return const bool.fromEnvironment('FF_NEW_PROFILE_LAYOUT');
+      case FeatureFlag.livestreamingBeta:
+        return const bool.fromEnvironment('FF_LIVESTREAMING_BETA');
+      case FeatureFlag.liveDiscovery:
+        return const bool.fromEnvironment('FF_LIVE_DISCOVERY');
+      case FeatureFlag.liveAudience:
+        return const bool.fromEnvironment('FF_LIVE_AUDIENCE');
+      case FeatureFlag.liveHost:
+        return const bool.fromEnvironment('FF_LIVE_HOST');
+      case FeatureFlag.liveSpeakerPublishing:
+        return const bool.fromEnvironment('FF_LIVE_SPEAKER_PUBLISHING');
       case FeatureFlag.debugTools:
         return const bool.fromEnvironment('FF_DEBUG_TOOLS', defaultValue: true);
       case FeatureFlag.routerDrivenHome:
@@ -71,6 +81,16 @@ class BuildConfiguration {
         return 'FF_ENHANCED_ANALYTICS';
       case FeatureFlag.newProfileLayout:
         return 'FF_NEW_PROFILE_LAYOUT';
+      case FeatureFlag.livestreamingBeta:
+        return 'FF_LIVESTREAMING_BETA';
+      case FeatureFlag.liveDiscovery:
+        return 'FF_LIVE_DISCOVERY';
+      case FeatureFlag.liveAudience:
+        return 'FF_LIVE_AUDIENCE';
+      case FeatureFlag.liveHost:
+        return 'FF_LIVE_HOST';
+      case FeatureFlag.liveSpeakerPublishing:
+        return 'FF_LIVE_SPEAKER_PUBLISHING';
       case FeatureFlag.debugTools:
         return 'FF_DEBUG_TOOLS';
       case FeatureFlag.routerDrivenHome:
