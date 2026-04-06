@@ -17,18 +17,22 @@ const _maxPeoplePreview = 3;
 /// Returns a [SliverMainAxisGroup] so the header and content participate
 /// natively in the parent [CustomScrollView]'s sliver protocol.
 class PeopleSection extends StatelessWidget {
-  const PeopleSection({this.showAll = false, super.key});
+  const PeopleSection({this.showAll = false, this.onSeeAll, super.key});
 
   /// When true, shows all results instead of a limited preview.
   final bool showAll;
+
+  /// Called when the user taps the "See all" chevron.
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
     return SliverMainAxisGroup(
       slivers: [
-        const SliverToBoxAdapter(
-          child: SectionHeader(title: 'People'),
-        ),
+        if (!showAll)
+          SliverToBoxAdapter(
+            child: SectionHeader(title: 'People', onTap: onSeeAll),
+          ),
         SliverToBoxAdapter(child: _PeopleContent(showAll: showAll)),
       ],
     );

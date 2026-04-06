@@ -20,14 +20,26 @@ class SearchResultsView extends StatelessWidget {
         // Reset scroll position when filter changes.
         key: ValueKey(filter),
         slivers: switch (filter) {
-          SearchResultsFilter.all => const [
-            PeopleSection(),
-            TagsSection(),
-            VideosSection(),
+          SearchResultsFilter.all => [
+            PeopleSection(
+              onSeeAll: () => context
+                  .read<SearchResultsFilterCubit>()
+                  .filterChanged(SearchResultsFilter.people),
+            ),
+            TagsSection(
+              onSeeAll: () => context
+                  .read<SearchResultsFilterCubit>()
+                  .filterChanged(SearchResultsFilter.tags),
+            ),
+            VideosSection(
+              onSeeAll: () => context
+                  .read<SearchResultsFilterCubit>()
+                  .filterChanged(SearchResultsFilter.videos),
+            ),
           ],
           SearchResultsFilter.people => const [PeopleSection(showAll: true)],
           SearchResultsFilter.tags => const [TagsSection(showAll: true)],
-          SearchResultsFilter.videos => const [VideosSection()],
+          SearchResultsFilter.videos => const [VideosSection(showAll: true)],
         },
       ),
     );
