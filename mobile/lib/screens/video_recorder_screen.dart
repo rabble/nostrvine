@@ -354,44 +354,6 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
                 ),
               ],
             ),
-            // FIXME: TODO:
-
-            /*  Stack(
-              fit: .expand,
-              children: [
-                Column(
-                  spacing: 12,
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        fit: .expand,
-                        children: [
-                          // Camera preview (includes ghost frame)
-                          VideoRecorderCameraPreview(),
-
-                          // Audio progress bar (shows during recording with sound)
-                          VideoRecorderAudioProgressBar(),
-
-                          // Segment bar
-                          VideoRecorderSegmentBar(),
-
-                          // Top bar with close-button and confirm-button
-                          VideoRecorderTopBar(),
-
-                          /// Record button
-                          RecordButton(),
-                        ],
-                      ),
-                    ),
-                    // Bottom controls
-                    VideoRecorderBottomBar(),
-                  ],
-                ),
-
-                // Countdown overlay
-                VideoRecorderCountdownOverlay(),
-              ],
-            ), */
           ),
         ),
       ),
