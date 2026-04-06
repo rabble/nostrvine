@@ -72,12 +72,23 @@ class WelcomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(currentAuthStateProvider);
+
+    // Gate on `checking` only — this state is set exclusively during startup
+    // (AuthService.initialize). Showing a blank scaffold here prevents the
+    // login UI from flashing before auto-login completes.
+    //
+    // We intentionally do NOT gate on `authenticating` because that state is
+    // also set during runtime sign-in flows (signInForAccount, importFromNsec,
+    // connectWithBunker, etc.). Gating on it would unmount the BlocProvider,
+    // disposing the WelcomeBloc mid-event-handler and breaking error navigation.
+    if (authState == AuthState.checking) {
+      return const Scaffold(backgroundColor: VineTheme.backgroundColor);
+    }
+
     final authService = ref.watch(authServiceProvider);
     final db = ref.watch(databaseProvider);
 
-    final isAuthLoading =
-        authState == AuthState.checking ||
-        authState == AuthState.authenticating;
+    final isAuthenticating = authState == AuthState.authenticating;
 
     return BlocProvider(
       create: (_) =>
@@ -90,7 +101,7 @@ class WelcomeScreen extends ConsumerWidget {
             ),
           ),
       child: _WelcomeView(
-        isAuthLoading: isAuthLoading,
+        isAuthenticating: isAuthenticating,
         lastError: authService.lastError,
       ),
     );
@@ -99,10 +110,13 @@ class WelcomeScreen extends ConsumerWidget {
 
 /// Welcome screen — View that consumes [WelcomeBloc] state.
 class _WelcomeView extends StatelessWidget {
-  const _WelcomeView({required this.isAuthLoading, required this.lastError});
+  const _WelcomeView({
+    required this.isAuthenticating,
+    required this.lastError,
+  });
 
-  /// Whether the global auth state is in a loading state.
-  final bool isAuthLoading;
+  /// Whether auth is in the `authenticating` state (sign-in in progress).
+  final bool isAuthenticating;
 
   /// Auth service error to display, if any.
   final String? lastError;
@@ -132,7 +146,7 @@ class _WelcomeView extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        final isLoading = isAuthLoading || state.isAccepting;
+        final isLoading = isAuthenticating || state.isAccepting;
 
         final isReturningUser = state.hasReturningUsers;
         return Scaffold(

@@ -203,7 +203,7 @@ void main() {
         expect(find.byType(ErrorMessage), findsNothing);
       });
 
-      testWidgets('hides action buttons when auth state is checking', (
+      testWidgets('shows only blank scaffold when auth state is checking', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -211,6 +211,7 @@ void main() {
         );
         await tester.pump();
 
+        expect(find.byType(AuthHeroSection), findsNothing);
         expect(find.text('Create a new Divine account'), findsNothing);
         expect(find.text('Sign in with a different account'), findsNothing);
       });
