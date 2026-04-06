@@ -4,6 +4,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 
@@ -21,10 +22,38 @@ class _VideoRecorderLibraryButtonState
   /// thumbnail is still being generated (~1 s delay).
   String? _lastKnownThumbnailPath;
 
+  /// Thumbnail path from the persisted clip library, loaded on demand.
+  String? _libraryThumbnailPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLibraryThumbnail();
+  }
+
+  Future<void> _loadLibraryThumbnail() async {
+    final service = ref.read(clipLibraryServiceProvider);
+    final libraryClips = await service.getAllClips();
+    if (!mounted) return;
+    setState(() {
+      _libraryThumbnailPath = libraryClips.isNotEmpty
+          ? libraryClips.first.thumbnailPath
+          : null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    //TODO: FIXME: select first clip from library if empty
     final clips = ref.watch(clipManagerProvider.select((p) => p.clips));
+
+    // Re-query library thumbnail whenever session clips change to empty
+    // (e.g. user reset or deleted clips).
+    ref.listen(
+      clipManagerProvider.select((p) => p.clips.length),
+      (previous, next) {
+        if (next == 0) _loadLibraryThumbnail();
+      },
+    );
 
     final currentPath = clips.lastOrNull?.thumbnailPath;
     if (currentPath != null) {
@@ -33,13 +62,18 @@ class _VideoRecorderLibraryButtonState
       _lastKnownThumbnailPath = null;
     }
 
-    final thumbnailPath = _lastKnownThumbnailPath;
+    final thumbnailPath = _lastKnownThumbnailPath ?? _libraryThumbnailPath;
 
     return Semantics(
       button: true,
       label: 'Open the clip library',
       child: InkWell(
-        onTap: () => context.push(LibraryScreen.clipsPath),
+        onTap: () async {
+          await context.push(LibraryScreen.clipsPath);
+          // Refresh library thumbnail after returning — user may have
+          // deleted clips or new thumbnails may have been recovered.
+          _loadLibraryThumbnail();
+        },
         child: Container(
           margin: const .only(left: 16),
           width: 40,
@@ -76,55 +110,67 @@ class _VideoRecorderLibraryButtonState
                       : const SizedBox.shrink(),
                 ),
               ),
-              Align(
-                alignment: .topRight,
-                child: FractionalTranslation(
-                  translation: const Offset(0.5, -0.5),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    transitionBuilder: (child, animation) => ScaleTransition(
-                      scale: animation,
-                      child: child,
-                    ),
-                    child: clips.isEmpty
-                        ? const SizedBox.shrink()
-                        : Container(
-                            constraints: const BoxConstraints(
-                              minWidth: 20,
-                              minHeight: 20,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: VineTheme.error,
-                              shape: .circle,
-                              border: Border.all(
-                                width: 2,
-                                color: VineTheme.backgroundCamera,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  clips.length.toString(),
-                                  textAlign: TextAlign.center,
-                                  style: VineTheme.labelSmallFont().copyWith(
-                                    fontFeatures: [
-                                      const .tabularFigures(),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
-                ),
-              ),
+
+              _SelectionCountBadge(count: clips.length),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectionCountBadge extends StatelessWidget {
+  const _SelectionCountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: .topRight,
+      child: FractionalTranslation(
+        translation: const Offset(0.5, -0.5),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          transitionBuilder: (child, animation) => ScaleTransition(
+            scale: animation,
+            child: child,
+          ),
+          child: count == 0
+              ? const SizedBox.shrink()
+              : Container(
+                  constraints: const BoxConstraints(
+                    minWidth: 20,
+                    minHeight: 20,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: VineTheme.error,
+                    shape: .circle,
+                    border: Border.all(
+                      width: 2,
+                      color: VineTheme.backgroundCamera,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        count.toString(),
+                        textAlign: TextAlign.center,
+                        style: VineTheme.labelSmallFont().copyWith(
+                          fontFeatures: [
+                            const .tabularFigures(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
         ),
       ),
     );

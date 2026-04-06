@@ -1,6 +1,8 @@
 // ABOUTME: BLoC for managing saved video clips in the library
 // ABOUTME: Handles loading, selection, deletion, and gallery export
 
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -68,6 +70,16 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           clearError: true,
         ),
       );
+
+      // Kick off background recovery for clips missing thumbnails/ghost
+      // frames. When done, a fresh load event is dispatched so the UI
+      // picks up the updated assets.
+      final hasIncomplete = clips.any(
+        (c) => c.thumbnailPath == null || c.ghostFramePath == null,
+      );
+      if (hasIncomplete) {
+        unawaited(_recoverAndReload(clips));
+      }
     } catch (e, stackTrace) {
       Log.error(
         '📚 Failed to load clips: $e',
@@ -291,5 +303,14 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         ),
       ),
     );
+  }
+
+  /// Runs asset recovery in the background and dispatches a fresh load
+  /// event when done so the UI picks up the updated thumbnails/ghost frames.
+  Future<void> _recoverAndReload(List<DivineVideoClip> clips) async {
+    final recovered = await _clipLibraryService.recoverMissingAssets(clips);
+    if (!identical(recovered, clips) && !isClosed) {
+      add(const ClipsLibraryLoadRequested());
+    }
   }
 }

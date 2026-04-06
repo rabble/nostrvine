@@ -161,16 +161,15 @@ class VideoRecorderBottomBar extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: 4),
           child: Stack(
             children: [
-              const Align(
-                alignment: .centerLeft,
-                child: VideoRecorderLibraryButton(),
-              ),
               Align(
-                alignment: .center,
                 child: VideoRecorderModeSelectorWheel(
                   selectedMode: state.recorderMode,
                   onModeChanged: notifier.setRecorderMode,
                 ),
+              ),
+              const Align(
+                alignment: .centerLeft,
+                child: VideoRecorderLibraryButton(),
               ),
             ],
           ),

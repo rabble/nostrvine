@@ -32,10 +32,10 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                     child: Semantics(
                       button: true,
                       liveRegion: true,
-                      label: ref.watch(
-                        videoRecorderProvider
-                            .select((s) => s.isRecording),
-                      )
+                      label:
+                          ref.watch(
+                            videoRecorderProvider.select((s) => s.isRecording),
+                          )
                           ? 'Recording. Tap anywhere to stop'
                           : 'Tap anywhere to start recording',
                       child: GestureDetector(

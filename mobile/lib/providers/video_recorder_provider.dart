@@ -764,6 +764,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       lensMetadata: _cameraService.currentLensMetadata,
       limitClipDuration: state.recorderMode.hasRecordingLimit,
     );
+    // Persist immediately so the clip is visible in the library right away.
+    clipProvider.saveClipToLibrary(clip);
 
     Log.debug(
       '📷 Lens metadata: ${_cameraService.currentLensMetadata?.toMap()}',
@@ -859,6 +861,12 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
     }
+
+    // Re-save to library now that metadata (duration, thumbnail, ghost
+    // frame) is attached. The initial save above makes the clip visible
+    // immediately; this upsert adds the generated assets.
+    final updatedClip = clipProvider.clips.firstWhere((c) => c.id == clip.id);
+    clipProvider.saveClipToLibrary(updatedClip);
   }
 
   /// Adjust zoom by vertical drag distance during long press.
