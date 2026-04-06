@@ -1,9 +1,14 @@
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:test/test.dart';
+
+class _MockNostrClient extends Mock implements NostrClient {}
 
 void main() {
   group(CuratedListRepository, () {
+    late _MockNostrClient nostrClient;
     late CuratedListRepository repository;
 
     final now = DateTime(2025, 6, 15);
@@ -31,7 +36,8 @@ void main() {
     }
 
     setUp(() {
-      repository = CuratedListRepository();
+      nostrClient = _MockNostrClient();
+      repository = CuratedListRepository(nostrClient: nostrClient);
     });
 
     tearDown(() async {
@@ -39,7 +45,10 @@ void main() {
     });
 
     test('can be instantiated', () {
-      expect(CuratedListRepository(), isNotNull);
+      expect(
+        CuratedListRepository(nostrClient: _MockNostrClient()),
+        isNotNull,
+      );
     });
 
     group('subscribedListsStream', () {

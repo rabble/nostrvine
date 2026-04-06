@@ -2960,7 +2960,7 @@ final class CuratedListRepositoryProvider
 }
 
 String _$curatedListRepositoryHash() =>
-    r'ac877d48b81aebf77fb573cbeaf70a123ea843d4';
+    r'bdaf3db0294147c0a4d79ab16cba37bd7ea1f29c';
 
 /// Provider for HashtagRepository instance.
 ///

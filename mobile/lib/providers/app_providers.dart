@@ -1361,7 +1361,9 @@ FollowRepository followRepository(Ref ref) {
 /// until the repository owns its own persistence (Phase 1b).
 @Riverpod(keepAlive: true)
 CuratedListRepository curatedListRepository(Ref ref) {
-  final repository = CuratedListRepository();
+  final repository = CuratedListRepository(
+    nostrClient: ref.watch(nostrServiceProvider),
+  );
 
   // Bridge: push curated list updates from legacy service into repository
   ref.listen(curatedListsStateProvider, (_, next) {
