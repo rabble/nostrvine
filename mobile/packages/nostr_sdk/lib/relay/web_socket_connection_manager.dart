@@ -193,6 +193,12 @@ class WebSocketConnectionManager {
       log('Connecting to $url');
       _channel = _channelFactory.create(uri);
 
+      // Wait for the WebSocket handshake to complete. Without this,
+      // IOWebSocketChannel.connect() returns immediately and DNS/TLS
+      // failures surface as unhandled async errors in the zone instead
+      // of being caught here.
+      await _channel!.ready.timeout(config.connectionTimeout);
+
       // Set up message listener
       _channelSubscription = _channel!.stream.listen(
         _onMessage,
@@ -215,9 +221,26 @@ class WebSocketConnectionManager {
       log('Connected to $url');
 
       return true;
+    } on WebSocketChannelException catch (e) {
+      log('Connection failed (WebSocket): $e');
+      _errorController.add('Connection failed: $e');
+      _channel = null;
+      _setState(ConnectionState.disconnected);
+      return false;
+    } on TimeoutException {
+      log('Connection timed out after ${config.connectionTimeout}');
+      _errorController.add('Connection timed out');
+      // Clean up the channel that never finished connecting
+      try {
+        await _channel?.sink.close();
+      } catch (_) {}
+      _channel = null;
+      _setState(ConnectionState.disconnected);
+      return false;
     } catch (e) {
       log('Connection failed: $e');
       _errorController.add('Connection failed: $e');
+      _channel = null;
       _setState(ConnectionState.disconnected);
       return false;
     }

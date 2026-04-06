@@ -81,7 +81,7 @@ void main() {
     });
 
     test(
-      'falls back to the environment API base URL when divine relay is absent',
+      'falls back to the environment relay URL when divine relay is absent',
       () async {
         String? requestedUrl;
 
@@ -110,6 +110,45 @@ void main() {
           requestedUrl,
           startsWith(
             'https://relay.staging.dvines.org/api/users/$testPubkey/notifications',
+          ),
+        );
+
+        container.dispose();
+      },
+    );
+
+    test(
+      'production fallback uses relay host, not Fastly CDN',
+      () async {
+        String? requestedUrl;
+
+        when(
+          () => mockNip98AuthService.createAuthToken(
+            url: any(named: 'url'),
+            method: HttpMethod.get,
+          ),
+        ).thenAnswer((invocation) async {
+          requestedUrl =
+              invocation.namedArguments[const Symbol('url')] as String;
+          return null;
+        });
+
+        // Production with no divine relay in configured list — simulates
+        // the startup race where configuredRelays is empty.
+        final container = createContainer(
+          environment: EnvironmentConfig.production,
+          configuredRelays: const [],
+        );
+
+        final service = container.read(relayNotificationApiServiceProvider);
+        await service.getNotifications(pubkey: testPubkey);
+
+        // Must hit relay.divine.video (notification server),
+        // NOT api.divine.video (Fastly CDN for FunnelCake).
+        expect(
+          requestedUrl,
+          startsWith(
+            'https://relay.divine.video/api/users/$testPubkey/notifications',
           ),
         );
 

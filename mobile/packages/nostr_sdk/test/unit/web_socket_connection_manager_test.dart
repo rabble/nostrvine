@@ -47,9 +47,13 @@ class MockWebSocketSink implements WebSocketSink {
 
 /// Mock WebSocket channel for testing
 class MockWebSocketChannel implements WebSocketChannel {
+  MockWebSocketChannel({Future<void>? readyFuture})
+    : _readyFuture = readyFuture ?? Future.value();
+
   final MockWebSocketSink _sink = MockWebSocketSink();
   final StreamController<dynamic> _streamController =
       StreamController<dynamic>.broadcast();
+  final Future<void> _readyFuture;
   int? _closeCode;
 
   @override
@@ -68,7 +72,7 @@ class MockWebSocketChannel implements WebSocketChannel {
   String? get protocol => null;
 
   @override
-  Future<void> get ready => Future.value();
+  Future<void> get ready => _readyFuture;
 
   // StreamChannel interface methods - use noSuchMethod for unneeded methods
   @override
@@ -105,12 +109,20 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
   bool shouldFail = false;
   String? failureMessage;
 
+  /// When set, the channel's `ready` future completes with this error
+  /// instead of succeeding. Simulates DNS/TLS handshake failures.
+  Object? readyError;
+
   @override
   WebSocketChannel create(Uri uri) {
     if (shouldFail) {
       throw Exception(failureMessage ?? 'Connection failed');
     }
-    final channel = MockWebSocketChannel();
+    final channel = MockWebSocketChannel(
+      readyFuture: readyError != null
+          ? Future.error(readyError!)
+          : Future.value(),
+    );
     createdChannels.add(channel);
     return channel;
   }
@@ -122,6 +134,7 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
     createdChannels.clear();
     shouldFail = false;
     failureMessage = null;
+    readyError = null;
   }
 }
 
@@ -208,6 +221,54 @@ void main() {
         expect(result, isFalse);
         expect(manager.state, equals(ConnectionState.disconnected));
         expect(errors, isNotEmpty);
+      });
+
+      test('handles DNS lookup failure via ready', () async {
+        mockFactory.readyError = WebSocketChannelException(
+          'SocketException: Failed host lookup: '
+          "'relay.divine.video'",
+        );
+
+        final errors = <String>[];
+        manager.errorStream.listen(errors.add);
+
+        final result = await manager.connect();
+        // Allow broadcast stream event to propagate
+        await Future<void>.delayed(Duration.zero);
+
+        expect(result, isFalse);
+        expect(manager.state, equals(ConnectionState.disconnected));
+        expect(errors, isNotEmpty);
+        expect(errors.first, contains('Connection failed'));
+      });
+
+      test('handles connection timeout via ready', () async {
+        // Create a ready future that never completes
+        final neverCompleter = Completer<void>();
+        mockFactory.readyError = null;
+
+        // Override the factory to use a channel with a never-completing ready
+        final slowFactory = _SlowReadyFactory(neverCompleter.future);
+        final slowManager = WebSocketConnectionManager(
+          url: 'wss://test.relay.com',
+          channelFactory: slowFactory,
+          logger: (msg) => logMessages.add(msg),
+          config: const WebSocketConfig(
+            connectionTimeout: Duration(milliseconds: 100),
+          ),
+        );
+
+        final errors = <String>[];
+        slowManager.errorStream.listen(errors.add);
+
+        final result = await slowManager.connect();
+
+        expect(result, isFalse);
+        expect(slowManager.state, equals(ConnectionState.disconnected));
+        expect(errors, isNotEmpty);
+        expect(errors.first, contains('timed out'));
+
+        await slowManager.dispose();
       });
     });
 
@@ -441,4 +502,17 @@ void main() {
       });
     });
   });
+}
+
+/// Factory that creates channels with a custom ready future (e.g. one that
+/// never completes, for testing connection timeout).
+class _SlowReadyFactory implements WebSocketChannelFactory {
+  _SlowReadyFactory(this._readyFuture);
+
+  final Future<void> _readyFuture;
+
+  @override
+  WebSocketChannel create(Uri uri) {
+    return MockWebSocketChannel(readyFuture: _readyFuture);
+  }
 }

@@ -10,6 +10,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -18,6 +19,9 @@ import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:openvine/repositories/dm_decryption_worker.dart';
+import 'package:openvine/repositories/dm_sync_state.dart';
+import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -66,6 +70,7 @@ class DmRepository {
     required NostrClient nostrClient,
     required DirectMessagesDao directMessagesDao,
     required ConversationsDao conversationsDao,
+    DmSyncState? syncState,
     NIP17MessageService? messageService,
     String? userPubkey,
     NostrSigner? signer,
@@ -74,6 +79,7 @@ class DmRepository {
   }) : _nostrClient = nostrClient,
        _directMessagesDao = directMessagesDao,
        _conversationsDao = conversationsDao,
+       _syncState = syncState,
        _messageService = messageService,
        _userPubkey = userPubkey ?? '',
        _signer = signer,
@@ -83,6 +89,7 @@ class DmRepository {
   final NostrClient _nostrClient;
   final DirectMessagesDao _directMessagesDao;
   final ConversationsDao _conversationsDao;
+  final DmSyncState? _syncState;
   NIP17MessageService? _messageService;
   String _userPubkey;
   NostrSigner? _signer;
@@ -90,13 +97,11 @@ class DmRepository {
   Nip04Decryptor? _nip04Decryptor;
 
   StreamSubscription<Event>? _giftWrapSubscription;
-  bool _disposed = false;
+  Timer? _reconnectTimer;
+  late bool _disposed = false;
 
-  /// Whether duplicate conversation merge has run at least once.
-  bool _hasMergedConversations = false;
-
-  /// Serializes event processing so subscription events never race
-  /// into the dedup/insert path concurrently.
+  /// Serializes event processing so concurrent subscription events
+  /// never race into the dedup/insert path.
   Future<void>? _eventLock;
 
   /// User-scoped subscription ID to prevent collision when the provider
@@ -116,12 +121,12 @@ class DmRepository {
   /// subscription require initialization.
   bool get isInitialized => _signer != null && _userPubkey.isNotEmpty;
 
-  /// Set auth credentials without starting the relay subscription.
+  /// Set auth credentials on the repository.
   ///
-  /// Called by the provider when the user's keys become available.
-  /// Read methods work before this; send requires it.
-  /// The relay subscription is started separately by [startListening()],
-  /// which should be driven by the inbox UI lifecycle.
+  /// Called by the provider when the user's keys become available. Read
+  /// methods work before this; send requires it. The relay subscription
+  /// is NOT started here — callers (the inbox screen) are responsible for
+  /// invoking [startListening] when they need live gift-wrap delivery.
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
   /// no-ops. If called with a different user, resets and re-initializes.
@@ -148,6 +153,16 @@ class DmRepository {
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
+    // Subscription is started by the inbox screen via startListening().
+    // Do NOT start it here — doing so would replay the full gift-wrap
+    // backlog onto the UI isolate at app launch and scale linearly with
+    // lifetime DM count. See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+
+    // Merge duplicate conversations created by extra p-tags (idempotent).
+    unawaited(_mergeDuplicateConversations());
+
+    // Remove phantom self-conversations created by the self-wrap bug.
+    unawaited(_cleanupSelfConversations());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
@@ -159,6 +174,8 @@ class DmRepository {
   void _resetState() {
     _disposed = true;
     _eventLock = null;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     unawaited(_giftWrapSubscription?.cancel());
     _giftWrapSubscription = null;
     final subId = _subscriptionId;
@@ -171,22 +188,11 @@ class DmRepository {
     _signer = null;
     _messageService = null;
     _disposed = false;
-    _hasMergedConversations = false;
     _subscriptionId = 'dm_inbox';
   }
 
   /// Delay before attempting to re-subscribe after stream closure.
   static const _reconnectDelay = Duration(seconds: 2);
-
-  /// Maximum events to fetch on the first inbox open (no prior sync).
-  static const _initialFetchLimit = 50;
-
-  /// Overlap window (in seconds) for the `since` filter.
-  ///
-  /// NIP-17 gift wraps randomize `created_at` up to 2 days in the past for
-  /// metadata privacy. Subtracting this from the newest synced timestamp
-  /// ensures no messages are missed across inbox visits.
-  static const int _nip17SyncOverlap = 2 * 24 * 60 * 60; // 172 800 s
 
   // -------------------------------------------------------------------------
   // Subscription lifecycle
@@ -228,6 +234,13 @@ class DmRepository {
     // the timestamp query was in flight (e.g. rapid tab switch).
     if (_disposed || _giftWrapSubscription != null) return;
 
+    // Count-based windowing: first open fetches a bounded backlog
+    // (limit:50), later opens fetch only recent events via a `since:`
+    // filter. The 2-day overlap absorbs NIP-17 randomized created_at
+    // jitter (gift wraps tweak their outer created_at within a ~2 day
+    // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+    final newest = _syncState?.newestSyncedAt(_userPubkey);
+    final isFirstOpen = newest == null;
     final filter = nostr_filter.Filter(
       kinds: [
         EventKind.giftWrap,
@@ -235,10 +248,8 @@ class DmRepository {
         EventKind.eventDeletion,
       ],
       p: [_userPubkey],
-      limit: newestTimestamp == null ? _initialFetchLimit : null,
-      since: newestTimestamp != null
-          ? newestTimestamp - _nip17SyncOverlap
-          : null,
+      limit: isFirstOpen ? 50 : null,
+      since: isFirstOpen ? null : (newest - 2 * 86400),
     );
 
     Log.info(
@@ -280,15 +291,63 @@ class DmRepository {
             'in ${_reconnectDelay.inSeconds}s',
             category: LogCategory.system,
           );
-          Future<void>.delayed(_reconnectDelay, startListening);
+          _reconnectTimer = Timer(_reconnectDelay, startListening);
         }
       },
     );
+
+    // No poll timer: the live subscription is the sole event source while
+    // the inbox is open. Poller was removed because it re-fetched duplicate
+    // events every 10s forever on the UI isolate. See
+    // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+  }
+
+  /// Fetches an older page of DM events (gift wraps, NIP-04, deletions)
+  /// from the relay, bounded above by [DmSyncState.oldestSyncedAt]. The
+  /// filter uses `until:` so the relay returns events *older* than the
+  /// current pagination boundary, capped to 50 by `limit`.
+  ///
+  /// No-op if [DmSyncState] is unset or no sync has happened yet — in
+  /// that case the caller should invoke [startListening] instead to
+  /// establish a baseline.
+  ///
+  /// Events flow through [_handleIncomingEvent] so dedup, transaction
+  /// integrity, and sync-boundary tracking apply automatically.
+  Future<void> loadOlderMessages() async {
+    if (!isInitialized) return;
+    final oldest = _syncState?.oldestSyncedAt(_userPubkey);
+    if (oldest == null) return;
+
+    final filter = nostr_filter.Filter(
+      kinds: [
+        EventKind.giftWrap,
+        EventKind.directMessage,
+        EventKind.eventDeletion,
+      ],
+      p: [_userPubkey],
+      until: oldest,
+      limit: 50,
+    );
+
+    final events = await _nostrClient.queryEvents(
+      [filter],
+      subscriptionId: 'dm_older_${DateTime.now().millisecondsSinceEpoch}',
+      useCache: false,
+    );
+
+    for (final event in events) {
+      await _handleIncomingEvent(event);
+    }
   }
 
   /// Stop listening for incoming DMs and clean up resources.
   Future<void> stopListening() async {
-    _disposed = true;
+    // Don't set _disposed = true here — _disposed is reserved for
+    // _resetState() (user switch). Setting it would make a subsequent
+    // startListening() call a silent no-op, breaking re-open flows like
+    // "user leaves the inbox tab and comes back later".
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _eventLock = null;
     await _giftWrapSubscription?.cancel();
     _giftWrapSubscription = null;
@@ -380,8 +439,10 @@ class DmRepository {
 
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
     try {
-      // Dedup: skip if already processed.
-      if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) return;
+      // Dedup: skip if already processed
+      if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
+        return;
+      }
 
       // Decrypt: gift wrap → seal → rumor
       final signer = _signer;
@@ -389,7 +450,7 @@ class DmRepository {
       final nostr = Nostr(signer, [], _dummyRelay);
       await nostr.refreshPublicKey();
 
-      final rumorEvent = await _rumorDecryptor(nostr, giftWrapEvent);
+      final rumorEvent = await _decryptRumor(nostr, giftWrapEvent);
       if (rumorEvent == null) {
         Log.debug(
           'Failed to decrypt gift wrap event ${giftWrapEvent.id}',
@@ -411,6 +472,12 @@ class DmRepository {
         rawParticipants,
         rumorEvent.pubkey,
       );
+
+      // Reject self-conversations (all participants are the same pubkey).
+      // Defense-in-depth: should not happen after the self-wrap fix above,
+      // but guards against any future code path producing degenerate lists.
+      if (participants.toSet().length < 2) return;
+
       final conversationId = computeConversationId(participants);
 
       // Extract common tags
@@ -437,7 +504,9 @@ class DmRepository {
         createdAt: rumorEvent.createdAt,
         ownerPubkey: _userPubkey,
       );
-      if (isDuplicate) return;
+      if (isDuplicate) {
+        return;
+      }
 
       // Persist message + conversation atomically inside a transaction.
       // The inner hasGiftWrap re-check guards against TOCTOU races where
@@ -496,6 +565,20 @@ class DmRepository {
           dmProtocol: 'nip17',
         );
       });
+
+      // Advance sync boundaries using the rumor's REAL created_at. The
+      // outer gift wrap randomizes its own created_at within a ~2 day
+      // window (NIP-17) so it must not be used for boundary tracking.
+      await _syncState?.recordSeen(
+        _userPubkey,
+        createdAt: rumorEvent.createdAt,
+      );
+
+      Log.debug(
+        'Persisted DM (kind ${rumorEvent.kind}) in conversation '
+        '$conversationId',
+        category: LogCategory.system,
+      );
     } catch (e, stackTrace) {
       Log.error(
         'Failed to process gift wrap event: $e',
@@ -504,6 +587,50 @@ class DmRepository {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Decrypts a single gift-wrap rumor, routing through a [compute]
+  /// isolate for local signers that can safely expose their private key
+  /// bytes, and falling back to the injected [_rumorDecryptor] on the
+  /// main isolate for remote signers (Amber, Keycast RPC, NIP-46) and
+  /// test-injected decryptors.
+  ///
+  /// Single-element isolate batches are intentional for v1: the
+  /// subscription pipeline processes gift wraps one at a time, and the
+  /// goal is to keep the expensive NIP-44 crypto off the UI thread.
+  /// Real backlog batching can come later.
+  Future<Event?> _decryptRumor(Nostr nostr, Event giftWrapEvent) async {
+    final signer = _signer;
+    if (signer is AuthServiceSigner && signer.canDecryptInIsolate) {
+      try {
+        final hex = signer.withPrivateKeyHex((k) => k);
+        final results = await compute(
+          decryptGiftWrapBatch,
+          DecryptBatchRequest(
+            events: [giftWrapEvent.toJson()],
+            privateKeyHex: hex,
+          ),
+        );
+        final result = results.single;
+        if (result.isSuccess) {
+          return Event.fromJson(result.rumor!);
+        }
+        Log.debug(
+          'Isolate decrypt returned failure for ${giftWrapEvent.id}: '
+          '${result.error}; falling back to main-isolate decryptor',
+          category: LogCategory.system,
+        );
+      } on Object catch (e, stackTrace) {
+        Log.error(
+          'Isolate decrypt threw for ${giftWrapEvent.id}: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Fall through to main-isolate decryptor.
+      }
+    }
+    return _rumorDecryptor(nostr, giftWrapEvent);
   }
 
   Future<void> _handleNip04Event(Event nip04Event) async {
@@ -604,6 +731,13 @@ class DmRepository {
           dmProtocol: existing?.dmProtocol ?? 'nip04',
         );
       });
+
+      // NIP-04 created_at values are not randomized (unlike NIP-17 gift
+      // wraps) so the event timestamp is safe to use directly.
+      await _syncState?.recordSeen(
+        _userPubkey,
+        createdAt: nip04Event.createdAt,
+      );
 
       Log.debug(
         'Persisted NIP-04 DM in conversation $conversationId',
@@ -1418,6 +1552,44 @@ class DmRepository {
     }
   }
 
+  /// Removes phantom self-conversations created by the self-wrap bug where
+  /// `_resolveConversationParticipants` produced `[self, self]`.
+  ///
+  /// Idempotent — safe to call on every init.
+  Future<void> _cleanupSelfConversations() async {
+    try {
+      final selfConvId = computeConversationId([_userPubkey, _userPubkey]);
+      final existing = await _conversationsDao.getConversation(
+        selfConvId,
+        ownerPubkey: _ownerPubkey,
+      );
+      if (existing == null) return;
+
+      await _conversationsDao.runInTransaction(() async {
+        await _directMessagesDao.deleteConversationMessages(
+          selfConvId,
+          ownerPubkey: _ownerPubkey,
+        );
+        await _conversationsDao.deleteConversation(
+          selfConvId,
+          ownerPubkey: _ownerPubkey,
+        );
+      });
+
+      Log.info(
+        'Cleaned up phantom self-conversation',
+        category: LogCategory.system,
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to clean up self-conversation: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Compute a deterministic conversation ID from sorted participant pubkeys.
   static String computeConversationId(List<String> participants) {
     final sorted = List<String>.from(participants)..sort();
@@ -1467,7 +1639,13 @@ class DmRepository {
     final canonical1to1 = [_userPubkey, senderPubkey]..sort();
 
     // Standard 1:1 message — no ambiguity.
-    if (extractedParticipants.length <= 2) return canonical1to1;
+    if (extractedParticipants.length <= 2) {
+      // Self-wrap: sender is the current user, so canonical1to1 would be
+      // [self, self]. Use extracted participants which contain the actual
+      // recipient from the rumor's p-tags.
+      if (_userPubkey == senderPubkey) return extractedParticipants;
+      return canonical1to1;
+    }
 
     // Extra p-tags present. Check if a group conversation with the
     // full participant set already exists — if so, it's a genuine group.

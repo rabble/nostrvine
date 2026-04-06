@@ -1,222 +1,149 @@
-# DM Cold-Start Scaling Fix — Design
+# DM Scaling Fix — Design
 
-**Date**: 2026-04-05
-**Status**: Approved
-**Issue**: #2766
+**Date:** 2026-04-05
+**Status:** Approved, pending implementation plan
+**Owner:** @rabble
 
-## Problem Statement
+## Problem
 
-`DmRepository.initialize()` opens a NIP-17 gift-wrap relay subscription at app
-startup and keeps a 10-second poller running for the life of the process. The
-subscription filter has no `since:` bound, so **every cold start replays the
-entire gift-wrap history** for the user's pubkey on the UI isolate.
+`DmRepository` (`mobile/lib/repositories/dm_repository.dart`) opens a NIP-17 gift-wrap subscription at app startup and keeps a 10-second poller running for the life of the process. The subscription filter has no `since:` bound, so every cold start replays the **entire** gift-wrap history for the user's pubkey. Each event is processed sequentially through an event lock on the UI isolate, with per-event debug logs and synchronous SQLite dedup lookups.
 
-The cost is **linear in lifetime DM count**, not recent activity:
+### Observed symptoms
+- Startup log spam: hundreds of `Received gift wrap event…` / `Skipping duplicate gift wrap…` lines per second on cold start.
+- UI isolate contention during the first several seconds of app life — home feed competes with DM replay.
+- All DM work (subscription, decryption, logging) happens regardless of whether the user ever opens the messages tab.
 
-| Lifetime DMs | Symptom |
-|---|---|
-| ~1 k | Cold start visibly janky, 2–5 s stutter |
-| ~5 k | 10 s+ stall, scroll-on-launch broken |
-| ~10 k | Minutes on new-device install; SQLite bloat |
-| ~25 k+ | iOS watchdog termination (20 s budget) — **crash on startup** |
+### Projected symptoms at scale
+- Linear-in-total-DM-count cold-start cost. At ~10k DMs the startup stall becomes measured in tens of seconds.
+- iOS watchdog termination risk on cold start past the 20-second launch budget.
+- New-device installs re-decrypt the entire backlog on the main isolate (minutes of CPU work).
+- Cross-protocol dedup (`hasMatchingMessage`, ±5s timestamp window) grows slower and risks false-positive message collapse as volume grows.
 
-The 10-second poller amplifies the problem while idle: ~172 800 redundant dedup
-lookups per day per user, plus log spam, plus main-isolate contention — whether
-or not the user opens messages.
+### Source-of-spam references
+- `mobile/lib/repositories/dm_repository.dart:150` — `initialize()` calls `startListening()` unconditionally.
+- `mobile/lib/repositories/dm_repository.dart:206–260` — `startListening()` opens subscription + starts poller.
+- `mobile/lib/repositories/dm_repository.dart:404, 412, 468` — the three debug log lines.
+- `mobile/lib/repositories/dm_repository.dart:259` — `_startPolling()`, 10-second interval with `limit: 20`.
+- `mobile/lib/repositories/dm_repository.dart:424` — NIP-17 three-layer decryption on the UI isolate.
 
-### Root Cause (one sentence)
+## Goals
 
-There is no concept of "I've already synced up to timestamp T"; the system
-trusts SQLite dedup to make full-backlog replay idempotent, which hides an
-O(total_history) cost behind every cold start and every reinstall.
+1. Cold start does zero DM work. No subscription, no decryption, no logging until the user visits the messages tab.
+2. DM sync cost is bounded by user behavior, not by total lifetime message count.
+3. Decryption never blocks the UI isolate.
+4. Existing local data is preserved; no destructive migration.
+5. Messaging UX remains correct: new messages appear while the inbox is open, history is reachable on demand.
 
-## Current Pipeline (broken)
+## Non-goals
 
-```
-App launch
-  → isNostrReadyProvider becomes true
-    → dmRepositoryProvider calls repository.initialize()
-      → startListening()                         ← NO since: filter
-        → relay replays ALL stored gift wraps
-        → _startPolling() kicks off 10 s timer   ← runs FOREVER
-      → _mergeDuplicateConversations()           ← loads ALL conversations
-```
+- Background push notifications (infrastructure does not exist yet).
+- In-app "you have new messages" indicator outside the inbox tab (separate UI task).
+- Migrating or pruning existing local DM storage.
+- Replacing NIP-04 legacy support.
 
-Every incoming event serializes through `_eventLock` on the UI isolate, runs a
-SQLite dedup lookup, runs three synchronous `Log.debug` string interpolations,
-and (if new) runs NIP-17 three-layer decryption inline. None of this is gated
-on the user being in the messages tab.
+## Design
 
-## Design Decisions
+### 1. Lifecycle — subscription gated by inbox visibility
 
-### 1. Lazy Inbox — Subscription Driven by Inbox Visibility
+`DmRepository.initialize()` stops opening the subscription. Two new methods take over:
 
-**Decision**: `DmRepository.initialize()` stops auto-starting the subscription.
-The inbox screen drives `startListening()` / `stopListening()`.
+- `Future<void> openInbox()` — idempotent. Starts the gift-wrap subscription, kicks off the initial sync, returns when the first page of 50 events is processed (or on timeout/empty result).
+- `Future<void> closeInbox()` — idempotent. Tears down the subscription, cancels any in-flight sync, drains the decrypt isolate queue.
 
-**Key finding**: `InboxPage` is **unmounted** on tab switch. The app shell uses a
-plain `ShellRoute` with `context.go()` — not `StatefulShellRoute` or
-`IndexedStack`. Every tab switch destroys the inbox subtree.
+Called from the messages tab screen's BLoC on open/close and from app lifecycle hooks when the app backgrounds. `initialize()` still runs at app start to wire up DB handles, decryptor instances, and prefs — but emits no network traffic and runs no gift-wrap processing.
 
-**Consequence**: The subscription is truly ephemeral. Start on inbox enter, stop
-on leave. When the user returns, do a windowed re-sync. This is the correct
-behavior because:
+### 2. Sync strategy — count-based windowing
 
-- Cold start does zero DM work.
-- Background push notifications do not exist (infrastructure gap, out of scope).
-- An unread badge outside the inbox is a separate UI task (out of scope).
-- Messages received while outside the inbox arrive on the next inbox visit.
+Two persisted keys in user prefs, scoped per-pubkey:
+- `dm.newestSyncedAt` — the highest `created_at` we have successfully processed.
+- `dm.oldestSyncedAt` — the lowest `created_at` we have successfully processed.
 
-**Lifecycle flow**:
+**First inbox open (no `newestSyncedAt`):**
+- Subscribe with filter `{kinds:[1059, 4, 5], p:[me], limit: 50}`.
+- Stream incoming events into a bounded queue.
+- Batch decryption (see §3).
+- On EOSE or after 50 events are processed, record `newestSyncedAt` and `oldestSyncedAt`, and transition to "steady" mode.
+- Live subscription stays open while inbox is visible; new events stream in.
 
-```
-User taps Inbox tab
-  → InboxPage.build()
-    → MultiBlocProvider creates ConversationListBloc
-      → ConversationListStarted event
-        → dmRepository.startListening()  ← subscription opens
+**Subsequent inbox opens:**
+- Subscribe with filter `{kinds:[1059, 4, 5], p:[me], since: newestSyncedAt - 2*86400}`. The 2-day overlap absorbs NIP-17 timestamp jitter (spec allows ±2 day randomization).
+- Local SQLite dedup absorbs the overlap cleanly (already works).
+- `newestSyncedAt` advances as events are processed.
 
-User taps another tab
-  → InboxPage unmounted
-    → BlocProvider.dispose closes ConversationListBloc
-      → ConversationListBloc.close()
-        → dmRepository.stopListening()   ← subscription closed
-```
+**"Load older" pagination:**
+- Triggered by scroll-to-top on the conversation list, or by a user-facing "Load older" control.
+- Fetch `{kinds:[1059, 4, 5], p:[me], until: oldestSyncedAt, limit: 50}`.
+- Update `oldestSyncedAt` as the page completes.
+- Repeat on subsequent "load older" actions.
 
-**Owner of lifecycle**: `ConversationListBloc`. It already owns the reactive
-streams from the repository. Adding `startListening()` in its constructor and
-`stopListening()` in `close()` is a natural fit, keeps the lifecycle in the
-business logic layer (not the widget), and is testable via `blocTest`.
+**Per-conversation "load older":**
+- Gift wraps hide sender, so we cannot filter server-side by conversation. v1 reuses the global "load older" page and filters client-side. Acceptable because the conversation list drives ordering; users loading more in a specific conversation typically also benefit from seeing older messages globally. Revisit in v2 if needed.
 
-**Provider change**: `dmRepositoryProvider` no longer calls `initialize()` with
-`startListening()` semantics. It still sets auth credentials (pubkey, signer,
-messageService) so that send operations and reactive watch queries work
-immediately. The provider calls a new `setCredentials()` method that does NOT
-start the subscription.
+### 3. Decryption isolate
 
-### 2. Count-Based Windowing
+New file: `mobile/lib/repositories/dm_decryption_worker.dart`.
 
-**Decision**: Use `limit` and `since` filters to bound relay traffic.
-
-**First inbox open** (no messages in DB):
-```
-Filter: {kinds: [1059, 4, 5], p: [me], limit: 50}
-```
-Fetches the 50 most recent events. User can "load older" to paginate backward.
-
-**Subsequent inbox opens** (messages exist in DB):
-```
-Filter: {kinds: [1059, 4, 5], p: [me], since: newestSyncedAt - 2d}
-```
-The 2-day overlap absorbs NIP-17's randomized `created_at` timestamps (gift
-wraps randomize the outer timestamp up to 2 days in the past for metadata
-privacy). This guarantees no missed messages while bounding the replay window.
-
-**"Load older" pagination**:
-```
-Filter: {kinds: [1059, 4, 5], p: [me], until: oldestSyncedAt, limit: 50}
-```
-Triggered by the user scrolling to the top of the conversation list or tapping
-"Load older messages".
-
-**Sync timestamp source**: `MAX(conversations.last_message_timestamp)` scoped to
-`ownerPubkey`. This is:
-
-- Zero-migration: column and index (`idx_conversation_last_message`) already
-  exist.
-- O(1): SQLite resolves `MAX` over a DESC index with a single seek.
-- Correct: every code path that inserts a message also calls
-  `upsertConversation(lastMessageTimestamp: rumorEvent.createdAt)`.
-
-New DAO method on `ConversationsDao`:
 ```dart
-Future<int?> getNewestMessageTimestamp({String? ownerPubkey});
+// Top-level function runnable under compute().
+Future<List<DecryptedRumorResult>> decryptGiftWrapBatch(
+  DecryptBatchRequest request,
+);
 ```
 
-### 3. Kill the Poller
+`DecryptBatchRequest` carries a `List<RawGiftWrapEvent>` and the user's private key bytes. `DecryptedRumorResult` carries the rumor plus any per-event error so the caller can log failures on the main isolate without the worker owning any logging infrastructure.
 
-**Decision**: Remove `_startPolling()` and `_pollTimer` entirely.
+**Flow inside `DmRepository`:**
+1. Subscription delivers an event on the main isolate.
+2. Main isolate runs `hasGiftWrap(id)` — cheap indexed lookup. If already stored, drop it silently.
+3. New events are accumulated into a batch of ~10 or flushed on a 250ms timer, whichever comes first.
+4. Each batch is handed to `compute(decryptGiftWrapBatch, request)`.
+5. Results come back to the main isolate, which runs the existing `hasMatchingMessage` cross-protocol dedup + writes to `messages`/`conversations` tables in a single transaction per batch.
 
-The poller was a workaround for relays that don't push real-time events for
-`#p`-filtered kind 1059 subscriptions. With the subscription now active only
-while the inbox is visible, the WebSocket subscription is the sole event
-source. If a relay doesn't push real-time events, the windowed `since` filter
-on the next inbox visit catches anything missed.
+The private key crosses the isolate boundary once per batch. Acceptable: batches only run while the inbox is open, and the key is already in memory on the main isolate.
 
-**Manual QA gate**: Verify DM delivery from a second client while the inbox is
-open (no poller fallback). If a relay is found that silently drops real-time
-kind 1059, the fix is relay-side, not a client-side poller.
+### 4. Kill the poller, cut the logs
 
-### 4. Debug Log Cleanup
+- **Delete `_startPolling()` and its timer.** The WebSocket subscription is live while the inbox is open; polling a live subscription is pure waste.
+- **Delete the three `Log.debug` calls at dm_repository.dart:404, 412, 468.** They were useful during bring-up and are now a measurable cost during replay. If deeper debugging is ever needed, gate a new log behind `assert(() { ... return true; }())` or a `kDebugMode && _verboseDmLogging` const so the hex-id interpolation itself doesn't run in release builds.
 
-**Decision**: Remove the three per-event `Log.debug` calls at:
+### 5. Data compatibility
 
-- `dm_repository.dart:406–409` — "Received gift wrap event ..."
-- `dm_repository.dart:414–416` — "Skipping duplicate gift wrap ..."
-- `dm_repository.dart:476–479` — "Skipping NIP-17 duplicate ..."
+No schema changes. No migration. Existing `gift_wraps`, `messages`, `conversations`, `nip04_messages` tables stay as they are. The new `newestSyncedAt` / `oldestSyncedAt` prefs start null on upgrade, which correctly routes the first post-upgrade inbox open into the "first open" path — but because local data already exists, the per-event dedup skip is fast and nothing re-decrypts.
 
-These were a measurable cost during backlog replay (string interpolation with
-64-char hex IDs on the UI isolate, hundreds of times per second). The
-`Log.error` calls for failures are kept. The `Log.info` at subscription
-start/stop is kept.
+### 6. Testing strategy
 
-### 5. Isolate Decryption (Conditional — Nice-to-Have)
+**Unit tests — `DmRepository`:**
+- `initialize()` does not open a subscription and does not call the relay client.
+- `openInbox()` opens exactly one subscription and returns when the first page is processed.
+- `closeInbox()` cancels the subscription and drains pending batches.
+- `openInbox(); closeInbox(); openInbox();` yields exactly two subscription lifecycles with no leaks.
+- First-open vs subsequent-open select the correct filter (presence/absence of `since:`).
+- Pagination advances `oldestSyncedAt` monotonically.
 
-**Decision**: Offload NIP-17 three-layer unwrap via `compute()` for local-key
-signers. Remote signers (Keycast RPC, Amber, NIP-46 bunker) stay on the main
-isolate because their signing operations are RPC calls that cannot cross
-isolate boundaries.
+**Unit tests — `dm_decryption_worker`:**
+- Empty batch returns empty result.
+- Malformed event returns an error entry, not a crash; other events in the batch succeed.
+- Results preserve input order.
+- Bad private key surfaces as a structured error.
 
-**Go/no-go gate**: A research spike must confirm that the local signer's private
-key can be safely extracted and passed to an isolate without violating
-security constraints. If the spike shows no safe path, this chunk is cut.
+**Unit tests — messages tab BLoC / owner widget:**
+- Mounts `openInbox`, disposes `closeInbox`.
+- App backgrounding triggers `closeInbox`; foregrounding while inbox visible triggers `openInbox`.
 
-**This chunk is not required for the PR to ship.** Chunks 1–4 alone deliver the
-full user-visible performance fix.
+**Integration test:**
+- Seeded local DB with N fake gift wraps + mock relay.
+- Cold-start app, navigate through feed, assert `DmRepository` subscription count is 0 and `hasGiftWrap` call count is 0.
+- Tap messages tab, assert exactly one subscription is opened and results render.
 
-## Architecture After Fix
+**Micro-benchmark / regression guard:**
+- Measure `runApp -> first frame` with a seeded DB of 1000 gift wraps, before and after. Post-change number should be independent of the seed size.
 
-```
-App launch
-  → isNostrReadyProvider becomes true
-    → dmRepositoryProvider calls repository.setCredentials()
-      → NO subscription, NO polling, NO merge
-      → Reactive watch queries work (Drift streams, cached data)
+## Open questions / v2 candidates
 
-User taps Inbox tab
-  → ConversationListBloc created
-    → calls dmRepository.startListening()
-      → sync timestamp query: MAX(last_message_timestamp)
-      → if null: Filter {limit: 50}
-      → if set:  Filter {since: timestamp - 2d}
-      → WebSocket subscription opens
-    → ConversationListStarted loads cached conversations from DB
+- Per-conversation `since:` pagination would need a side index (`conversation_id -> oldest_synced_at`). Revisit if client-side filtering of load-older pages proves insufficient.
+- An unread-count badge outside the inbox tab requires either background subscription or server-side push. Out of scope for this design, but the lifecycle split here makes either approach cleanly pluggable later.
+- Consider a one-time background compaction pass to drop cross-protocol dedup's ±5s window for records where we have confident NIP-17 provenance, to eliminate false-positive risk at scale.
 
-User taps another tab
-  → ConversationListBloc.close()
-    → calls dmRepository.stopListening()
-    → subscription closed, no timer, no background work
+## Rollout
 
-User taps Inbox tab again
-  → Fresh ConversationListBloc
-    → startListening() with updated since: timestamp
-    → Only new events since last visit are replayed
-```
-
-## Non-Goals
-
-- Background push notifications (infrastructure does not exist)
-- In-app unread badge outside the inbox tab (separate UI task)
-- Data migration / pruning of existing local DM storage
-- Replacing NIP-04 legacy support
-- Converting `ShellRoute` to `StatefulShellRoute` / `IndexedStack`
-
-## Risks
-
-| Risk | Mitigation |
-|---|---|
-| Messages missed while outside inbox | Windowed `since` with 2d overlap catches them on next visit |
-| Relay doesn't push real-time kind 1059 | Subscription reconnect + windowed re-sync on next inbox enter |
-| `stopListening()` fires mid-conversation | Only fires when `ConversationListBloc` is disposed (inbox unmounted), not during a single conversation view push |
-| NIP-17 randomized timestamps cause missed events | 2-day overlap in `since` filter handles the protocol's ±2d randomization |
-| `_mergeDuplicateConversations()` still runs eagerly | Moved to `startListening()` so it only runs when inbox opens (lazy) |
+Single PR, feature branch off main, isolated worktree. No feature flag — the behavior change is correct regardless of scale and only improves cold-start performance. Pre-merge manual QA: open inbox on an account with meaningful history, verify conversation list populates and live messages arrive, verify "load older" works, verify closing and reopening the tab doesn't leak subscriptions.

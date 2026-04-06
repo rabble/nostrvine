@@ -23,6 +23,8 @@ environment:
   flutter: ^3.41.1
 
 workspace:
+  - packages/app_update_repository
+  - packages/app_version_client
   - packages/comments_repository
   - packages/count_formatter
   - packages/curated_list_repository

@@ -1,14 +1,12 @@
-// ABOUTME: Regression tests for DM cold-start performance (#2766).
-// ABOUTME: Asserts that setCredentials() triggers zero relay subscription,
-// ABOUTME: polling, or event-processing activity. The subscription is
-// ABOUTME: only started when startListening() is called explicitly.
-
-import 'dart:async';
+// ABOUTME: Cold-start regression guard for DmRepository. Asserts that
+// ABOUTME: constructing + initializing the repository does zero
+// ABOUTME: network or DB work — the line in the sand against
+// ABOUTME: regressing the lazy-inbox behavior added in
+// ABOUTME: docs/plans/2026-04-05-dm-scaling-fix-design.md.
 
 import 'package:db_client/db_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
@@ -25,16 +23,13 @@ class _MockConversationsDao extends Mock implements ConversationsDao {}
 
 class _FakeEvent extends Fake implements Event {}
 
-// Valid 64-character hex keys for testing.
 const _validPubkeyA =
     'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
-const _validPubkeyB =
-    'b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012a1';
 const _validPrivateKey =
     'd4e5f6789012345678901234567890abcdef1234567890123456789012ab12c3';
 
 void main() {
-  group('DmRepository cold-start (#2766)', () {
+  group('$DmRepository cold start', () {
     late _MockNostrClient mockNostrClient;
     late _MockNIP17MessageService mockMessageService;
     late _MockDirectMessagesDao mockDirectMessagesDao;
@@ -50,79 +45,59 @@ void main() {
       mockDirectMessagesDao = _MockDirectMessagesDao();
       mockConversationsDao = _MockConversationsDao();
 
+      // Stub relay properties in case any log statement touches them.
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
     });
 
-    DmRepository createBareRepository() {
-      return DmRepository(
-        nostrClient: mockNostrClient,
-        directMessagesDao: mockDirectMessagesDao,
-        conversationsDao: mockConversationsDao,
-      );
-    }
+    test(
+      'construct + initialize triggers zero network or DB work',
+      () async {
+        // Regression guard for lazy-inbox behavior. Any reintroduction of
+        // eager subscribe / queryEvents / DAO writes from initialize() will
+        // break this test. See
+        // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+        final repository = DmRepository(
+          nostrClient: mockNostrClient,
+          messageService: mockMessageService,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+          // Intentionally no userPubkey/signer — initialize() provides them.
+        );
 
-    // -----------------------------------------------------------------
-    // setCredentials — zero side effects
-    // -----------------------------------------------------------------
-
-    group('setCredentials', () {
-      test('triggers zero subscribe calls', () {
-        final repository = createBareRepository();
-
-        repository.setCredentials(
+        repository.initialize(
           userPubkey: _validPubkeyA,
           signer: LocalNostrSigner(_validPrivateKey),
           messageService: mockMessageService,
         );
 
+        // Give any misbehaving async side-effects a chance to run.
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // No relay subscription should have been opened.
         verifyNever(
           () => mockNostrClient.subscribe(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
           ),
         );
-      });
 
-      test('triggers zero queryEvents calls', () {
-        final repository = createBareRepository();
-
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-
+        // No one-shot relay query either.
         verifyNever(
           () => mockNostrClient.queryEvents(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
             useCache: any(named: 'useCache'),
           ),
         );
-      });
 
-      test('triggers zero hasGiftWrap calls', () {
-        final repository = createBareRepository();
-
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-
+        // No DB reads checking for existing gift wraps.
         verifyNever(() => mockDirectMessagesDao.hasGiftWrap(any()));
-      });
 
-      test('triggers zero insertMessage calls', () {
-        final repository = createBareRepository();
-
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-
+        // No DB writes persisting messages.
         verifyNever(
           () => mockDirectMessagesDao.insertMessage(
             id: any(named: 'id'),
@@ -132,234 +107,25 @@ void main() {
             createdAt: any(named: 'createdAt'),
             giftWrapId: any(named: 'giftWrapId'),
             messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
-      });
 
-      test('triggers zero getAllConversations calls (no merge)', () {
-        final repository = createBareRepository();
-
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-
-        verifyNever(
-          () => mockConversationsDao.getAllConversations(
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-      });
-
-      test('sets isInitialized to true', () {
-        final repository = createBareRepository();
-
-        expect(repository.isInitialized, isFalse);
-
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-
+        // Sanity check: the repository is usable post-initialize.
         expect(repository.isInitialized, isTrue);
-      });
-
-      test('is idempotent for the same user', () {
-        final repository = createBareRepository();
-
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-
-        expect(repository.isInitialized, isTrue);
-        verifyNever(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        );
-      });
-    });
-
-    // -----------------------------------------------------------------
-    // Read operations work without startListening
-    // -----------------------------------------------------------------
-
-    group('read operations without subscription', () {
-      test('watchConversations works after setCredentials', () {
-        final participants = [_validPubkeyA, _validPubkeyB]..sort();
-        final convId = DmRepository.computeConversationId(participants);
-        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-        when(
-          () => mockConversationsDao.watchAllConversations(
-            limit: any(named: 'limit'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) => Stream.value([
-            ConversationRow(
-              id: convId,
-              participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
-              isGroup: false,
-              createdAt: now,
-              lastMessageTimestamp: now,
-              isRead: true,
-              currentUserHasSent: true,
-              dmProtocol: 'nip17',
-            ),
-          ]),
-        );
-
-        final repository = createBareRepository();
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-
-        expect(
-          repository.watchConversations(),
-          emits(isA<List<DmConversation>>()),
-        );
-
-        // Still no subscription activity.
-        verifyNever(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        );
-      });
-    });
-
-    // -----------------------------------------------------------------
-    // Poller is gone
-    // -----------------------------------------------------------------
-
-    group('no poller after startListening', () {
-      test('queryEvents is never called after startListening', () async {
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
-
-        when(
-          () => mockConversationsDao.getNewestMessageTimestamp(
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        when(
-          () => mockConversationsDao.getAllConversations(
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        final repository = createBareRepository();
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-        await repository.startListening();
-
-        // Advance past where the old 10s poll would have fired.
-        await Future<void>.delayed(const Duration(seconds: 12));
-
-        verifyNever(
-          () => mockNostrClient.queryEvents(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-          ),
-        );
-
-        await controller.close();
-        await repository.stopListening();
-      });
-    });
-
-    // -----------------------------------------------------------------
-    // Subscription restart after stop (tab switch cycle)
-    // -----------------------------------------------------------------
-
-    group('subscription restart after stopListening', () {
-      test('startListening works after stopListening (tab switch)', () async {
-        final controller1 = StreamController<Event>();
-        final controller2 = StreamController<Event>();
-        var callCount = 0;
-
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) {
-          callCount++;
-          return callCount == 1 ? controller1.stream : controller2.stream;
-        });
-
-        when(
-          () => mockNostrClient.unsubscribe(any()),
-        ).thenAnswer((_) async {});
-
-        when(
-          () => mockConversationsDao.getNewestMessageTimestamp(
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        when(
-          () => mockConversationsDao.getAllConversations(
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        final repository = createBareRepository();
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-
-        // First open: subscription starts.
-        await repository.startListening();
-        verify(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).called(1);
-
-        // Tab switch away: subscription stops.
-        await repository.stopListening();
-
-        // Tab switch back: subscription must restart.
-        await repository.startListening();
-        verify(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).called(1);
-
-        await controller1.close();
-        await controller2.close();
-      });
-    });
+      },
+    );
   });
 }

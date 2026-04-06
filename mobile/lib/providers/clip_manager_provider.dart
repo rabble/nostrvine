@@ -284,6 +284,27 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     _triggerAutosave();
   }
 
+  /// Replace all clips at once.
+  ///
+  /// Clears the current clip list and installs [clips] in a single state
+  /// update so consumers never observe an intermediate empty-then-populated
+  /// transition during restoration flows.
+  void replaceClips(List<DivineVideoClip> clips) {
+    final previousCount = _clips.length;
+    _clips
+      ..clear()
+      ..addAll(clips);
+
+    Log.info(
+      '📎 Replaced $previousCount clips with ${clips.length} clip(s)',
+      name: 'ClipManagerNotifier',
+      category: .video,
+    );
+
+    state = state.copyWith(clips: List.unmodifiable(_clips));
+    _triggerAutosave();
+  }
+
   /// Delete a clip by ID.
   ///
   /// Returns true if the clip was successfully deleted, false if not found.
