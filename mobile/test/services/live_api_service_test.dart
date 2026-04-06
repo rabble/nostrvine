@@ -170,5 +170,18 @@ void main() {
       expect(recording!.status, RecordingStatus.ready);
       expect(recording.playbackUrl, 'https://example.com/replay.m3u8');
     });
+
+    test(
+      'fetchRecording returns null when the room has no replay yet',
+      () async {
+        when(
+          () => mockClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('', 404));
+
+        final recording = await service.fetchRecording(roomId: 'room-abc');
+
+        expect(recording, isNull);
+      },
+    );
   });
 }

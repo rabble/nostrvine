@@ -5,6 +5,7 @@ import 'package:openvine/blocs/live_chat/live_chat_bloc.dart';
 import 'package:openvine/blocs/live_room/live_room_bloc.dart';
 import 'package:openvine/screens/live/widgets/live_chat_panel.dart';
 import 'package:openvine/screens/live/widgets/live_host_controls_sheet.dart';
+import 'package:openvine/screens/live/widgets/live_local_media_controls.dart';
 import 'package:openvine/screens/live/widgets/live_room_stage.dart';
 
 class LiveRoomView extends StatelessWidget {
@@ -27,6 +28,13 @@ class LiveRoomView extends StatelessWidget {
       ),
       body: BlocBuilder<LiveRoomBloc, LiveRoomState>(
         builder: (context, roomState) {
+          final cameraEnabled = roomState.mediaState.canPublish
+              ? roomState.mediaState.cameraEnabled
+              : roomState.canPublish;
+          final microphoneEnabled = roomState.mediaState.canPublish
+              ? roomState.mediaState.microphoneEnabled
+              : roomState.canPublish;
+
           return switch (roomState.status) {
             LiveRoomStatus.initial || LiveRoomStatus.loading => const Center(
               child: CircularProgressIndicator(color: VineTheme.primary),
@@ -37,73 +45,107 @@ class LiveRoomView extends StatelessWidget {
                 style: VineTheme.bodyMediumFont(),
               ),
             ),
-            LiveRoomStatus.ready => Padding(
+            LiveRoomStatus.ready => ListView(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  LiveRoomStage(
-                    speakerPubkeys: roomState.speakerPubkeys,
-                    audienceCount:
-                        roomState.session?.audienceCount ??
-                        roomState.presence.length,
-                    statusLabel: roomState.mediaState.status.name,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DivineButton(
-                          label: 'Zap',
-                          type: DivineButtonType.secondary,
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Zap flow lands in a follow-up slice.',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DivineButton(
-                          label: roomState.canPublish
-                              ? 'You are on stage'
-                              : 'Raise hand',
-                          onPressed: roomState.canPublish ? null : () {},
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (roomState.canModerate)
-                    Align(
-                      alignment: Alignment.centerLeft,
+              children: [
+                LiveRoomStage(
+                  speakerPubkeys: roomState.speakerPubkeys,
+                  audienceCount:
+                      roomState.session?.audienceCount ??
+                      roomState.presence.length,
+                  statusLabel: roomState.mediaState.status.name,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
                       child: DivineButton(
-                        label: 'Host controls',
+                        label: 'Zap',
                         type: DivineButtonType.secondary,
-                        size: DivineButtonSize.small,
                         onPressed: () {
-                          showModalBottomSheet<void>(
-                            context: context,
-                            backgroundColor: VineTheme.surfaceBackground,
-                            builder: (_) => const LiveHostControlsSheet(),
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Zap flow lands in a follow-up slice.',
+                              ),
+                            ),
                           );
                         },
                       ),
                     ),
-                  if (roomState.canModerate) const SizedBox(height: 16),
-                  Expanded(
-                    child: BlocBuilder<LiveChatBloc, LiveChatState>(
-                      builder: (context, chatState) {
-                        return const LiveChatPanel();
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DivineButton(
+                        label: roomState.canPublish
+                            ? 'You are on stage'
+                            : 'Raise hand',
+                        onPressed: roomState.canPublish ? null : () {},
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (roomState.canPublish)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: LiveLocalMediaControls(
+                      cameraButtonLabel: cameraEnabled
+                          ? 'Camera on'
+                          : 'Camera off',
+                      microphoneButtonLabel: microphoneEnabled
+                          ? 'Mic on'
+                          : 'Mic off',
+                      onToggleCamera: () {
+                        context.read<LiveRoomBloc>().add(
+                          const ToggleCameraRequested(),
+                        );
+                      },
+                      onToggleMicrophone: () {
+                        context.read<LiveRoomBloc>().add(
+                          const ToggleMicrophoneRequested(),
+                        );
+                      },
+                      onSwitchCamera: () {
+                        context.read<LiveRoomBloc>().add(
+                          const SwitchCameraRequested(),
+                        );
+                      },
+                      onEnableAudioOnly: () {
+                        context.read<LiveRoomBloc>().add(
+                          const EnableAudioOnlyRequested(),
+                        );
                       },
                     ),
                   ),
-                ],
-              ),
+                if (roomState.canModerate)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: DivineButton(
+                      label: 'Host controls',
+                      type: DivineButtonType.secondary,
+                      size: DivineButtonSize.small,
+                      onPressed: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          backgroundColor: VineTheme.surfaceBackground,
+                          builder: (_) => BlocProvider.value(
+                            value: context.read<LiveRoomBloc>(),
+                            child: const LiveHostControlsSheet(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                if (roomState.canModerate) const SizedBox(height: 16),
+                SizedBox(
+                  height: 320,
+                  child: BlocBuilder<LiveChatBloc, LiveChatState>(
+                    builder: (context, chatState) {
+                      return const LiveChatPanel();
+                    },
+                  ),
+                ),
+              ],
             ),
           };
         },

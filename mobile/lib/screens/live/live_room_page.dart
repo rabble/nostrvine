@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +9,7 @@ import 'package:openvine/blocs/live_room/live_room_bloc.dart';
 import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_session.dart';
+import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/screens/live/live_room_view.dart';
@@ -40,6 +43,11 @@ class LiveRoomPage extends ConsumerStatefulWidget {
 class _LiveRoomPageState extends ConsumerState<LiveRoomPage> {
   late final Future<_LiveRoomPayload?> _payloadFuture = _loadPayload();
 
+  LiveRoomBloc? _liveRoomBloc;
+  LiveChatBloc? _liveChatBloc;
+  ProviderSubscription<AsyncValue<bool>>? _lifecycleSubscription;
+  String? _activePayloadKey;
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<_LiveRoomPayload?>(
@@ -68,26 +76,14 @@ class _LiveRoomPageState extends ConsumerState<LiveRoomPage> {
           );
         }
 
+        _ensureBlocs(payload);
+        final liveRoomBloc = _liveRoomBloc!;
+        final liveChatBloc = _liveChatBloc!;
+
         return MultiBlocProvider(
           providers: [
-            BlocProvider<LiveRoomBloc>(
-              create: (_) =>
-                  LiveRoomBloc(
-                    liveRepository: ref.watch(liveRepositoryProvider),
-                    liveApiService: ref.watch(liveApiServiceProvider),
-                    liveKitRoomService: ref.watch(liveKitRoomServiceProvider),
-                  )..add(
-                    LiveRoomJoinRequested(
-                      room: payload.room,
-                      role: payload.role,
-                    ),
-                  ),
-            ),
-            BlocProvider<LiveChatBloc>(
-              create: (_) => LiveChatBloc(
-                liveChatRepository: ref.watch(liveChatRepositoryProvider),
-              ),
-            ),
+            BlocProvider<LiveRoomBloc>.value(value: liveRoomBloc),
+            BlocProvider<LiveChatBloc>.value(value: liveChatBloc),
           ],
           child: BlocListener<LiveRoomBloc, LiveRoomState>(
             listenWhen: (previous, current) =>
@@ -110,20 +106,73 @@ class _LiveRoomPageState extends ConsumerState<LiveRoomPage> {
     );
   }
 
+  @override
+  void dispose() {
+    _lifecycleSubscription?.close();
+    unawaited(_liveRoomBloc?.close());
+    unawaited(_liveChatBloc?.close());
+    super.dispose();
+  }
+
+  void _ensureBlocs(_LiveRoomPayload payload) {
+    final payloadKey = '${payload.room.id}:${payload.role.name}';
+    if (_activePayloadKey == payloadKey &&
+        _liveRoomBloc != null &&
+        _liveChatBloc != null) {
+      return;
+    }
+
+    _activePayloadKey = payloadKey;
+    _lifecycleSubscription?.close();
+    unawaited(_liveRoomBloc?.close());
+    unawaited(_liveChatBloc?.close());
+
+    final liveRoomBloc =
+        LiveRoomBloc(
+          liveRepository: ref.read(liveRepositoryProvider),
+          liveApiService: ref.read(liveApiServiceProvider),
+          liveKitRoomService: ref.read(liveKitRoomServiceProvider),
+          currentUserPubkey:
+              ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+        )..add(
+          LiveRoomJoinRequested(
+            room: payload.room,
+            role: payload.role,
+          ),
+        );
+    final liveChatBloc = LiveChatBloc(
+      liveChatRepository: ref.read(liveChatRepositoryProvider),
+    );
+
+    _liveRoomBloc = liveRoomBloc;
+    _liveChatBloc = liveChatBloc;
+    _lifecycleSubscription = ref.listenManual<AsyncValue<bool>>(
+      appForegroundProvider,
+      (previous, next) {
+        final isForeground = next.asData?.value;
+        if (isForeground != null) {
+          liveRoomBloc.add(LiveRoomAppForegroundChanged(isForeground));
+        }
+      },
+    );
+  }
+
   Future<_LiveRoomPayload?> _loadPayload() async {
-    final initialRoom = widget.initialRoom;
     final currentUserPubkey =
         ref.read(authServiceProvider).currentPublicKeyHex ?? '';
-
+    final initialRoom = widget.initialRoom;
     if (initialRoom != null) {
-      final role =
-          widget.initialRole ??
-          (initialRoom.hostPubkey == currentUserPubkey
-              ? LiveRole.host
-              : LiveRole.audience);
       return _LiveRoomPayload(
         room: initialRoom,
-        role: role,
+        role:
+            widget.initialRole ??
+            _deriveRole(
+              room: initialRoom,
+              sessions: widget.initialSession == null
+                  ? const <LiveSession>[]
+                  : <LiveSession>[widget.initialSession!],
+              currentUserPubkey: currentUserPubkey,
+            ),
       );
     }
 
@@ -133,13 +182,33 @@ class _LiveRoomPageState extends ConsumerState<LiveRoomPage> {
     if (room == null) {
       return null;
     }
-    final role = room.hostPubkey == currentUserPubkey
-        ? LiveRole.host
-        : LiveRole.audience;
+
+    final sessions = await repository.fetchSessions(roomAddress: room.address);
     return _LiveRoomPayload(
       room: room,
-      role: role,
+      role:
+          widget.initialRole ??
+          _deriveRole(
+            room: room,
+            sessions: sessions,
+            currentUserPubkey: currentUserPubkey,
+          ),
     );
+  }
+
+  LiveRole _deriveRole({
+    required LiveRoom room,
+    required List<LiveSession> sessions,
+    required String currentUserPubkey,
+  }) {
+    if (room.hostPubkey == currentUserPubkey) {
+      return LiveRole.host;
+    }
+
+    final isSpeaker = sessions.any(
+      (session) => session.speakerPubkeys.contains(currentUserPubkey),
+    );
+    return isSpeaker ? LiveRole.speaker : LiveRole.audience;
   }
 }
 

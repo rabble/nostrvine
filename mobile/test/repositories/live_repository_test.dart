@@ -8,8 +8,10 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/live/live_presence.dart';
 import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room.dart';
+import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/repositories/live_repository.dart';
+import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/live_nostr_codec.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -18,11 +20,14 @@ class _MockLiveNostrCodec extends Mock implements LiveNostrCodec {}
 
 class _MockNostrSigner extends Mock implements NostrSigner {}
 
+class _MockLiveApiService extends Mock implements LiveApiService {}
+
 void main() {
   group('LiveRepository', () {
     late _MockNostrClient mockNostrClient;
     late _MockLiveNostrCodec mockCodec;
     late _MockNostrSigner mockSigner;
+    late _MockLiveApiService mockLiveApiService;
     late LiveRepository repository;
 
     const hostPubkey =
@@ -76,6 +81,7 @@ void main() {
       mockNostrClient = _MockNostrClient();
       mockCodec = _MockLiveNostrCodec();
       mockSigner = _MockNostrSigner();
+      mockLiveApiService = _MockLiveApiService();
 
       when(() => mockNostrClient.signer).thenReturn(mockSigner);
       when(
@@ -113,6 +119,7 @@ void main() {
       repository = LiveRepository(
         nostrClient: mockNostrClient,
         codec: mockCodec,
+        liveApiService: mockLiveApiService,
       );
     });
 
@@ -444,6 +451,26 @@ void main() {
             signedPresenceEvent,
             targetRelays: any(named: 'targetRelays'),
           ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'fetchRecording delegates replay lookup to the live api service',
+      () async {
+        const recording = LiveRoomRecording(
+          playbackUrl: 'https://example.com/replay.m3u8',
+          status: RecordingStatus.ready,
+        );
+        when(
+          () => mockLiveApiService.fetchRecording(roomId: roomId),
+        ).thenAnswer((_) async => recording);
+
+        final result = await repository.fetchRecording(roomId: roomId);
+
+        expect(result, recording);
+        verify(
+          () => mockLiveApiService.fetchRecording(roomId: roomId),
         ).called(1);
       },
     );

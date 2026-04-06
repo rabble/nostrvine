@@ -1,7 +1,7 @@
 # Golden Testing Guide for Divine
 
 Status: Current
-Validated against: current `mobile/scripts/golden.sh` workflow on 2026-03-19.
+Validated against: current `mobile/scripts/golden.sh` workflow on 2026-04-06.
 
 ## Overview
 Golden tests (screenshot tests) are integrated into Divine using the `golden_toolkit` and `alchemist` packages. These tests help ensure UI consistency across different devices and prevent visual regressions.
@@ -43,7 +43,11 @@ test/
     │   ├── video_thumbnail_golden_test.dart
     │   └── upload_progress_golden_test.dart
     ├── screens/                  # Full screen golden tests
-    │   └── settings_screen_golden_test.dart
+    │   └── live/                 # Feature-specific screen suites
+    │       ├── live_discovery_screen_golden_test.dart
+    │       ├── live_room_detail_screen_golden_test.dart
+    │       ├── live_room_screen_golden_test.dart
+    │       └── live_golden_test_support.dart
     ├── flows/                    # Multi-screen flow tests
     └── ci/                       # CI-specific goldens
 ```
@@ -98,6 +102,14 @@ testGoldens('Widget states', (tester) async {
   await screenMatchesGolden(tester, 'widget_states');
 });
 ```
+
+### Reusing Repo Helpers
+
+- Use `test/goldens/**` for golden test files. `scripts/golden.sh` discovers any `*golden*.dart` or `*_golden_test.dart` under `test/`.
+- Prefer the shared helpers in `test/helpers/golden_test_helpers.dart` and `test/helpers/golden_test_devices.dart` instead of re-inventing wrappers.
+- For provider-backed screens, use `testProviderScope` or `testMaterialApp` from `test/helpers/test_provider_overrides.dart`.
+- Golden the `*View` widget directly when the page class mostly adds dependency wiring. Use the page only when the UI state depends on route or provider setup.
+- For tall live screens, start with `GoldenTestDevices.minimalDevices` unless the layout specifically needs tablet coverage.
 
 ## Device Configuration
 

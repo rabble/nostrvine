@@ -29,9 +29,11 @@ LiveKitRoomService liveKitRoomService(Ref ref) {
 LiveRepository liveRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final codec = ref.watch(liveNostrCodecProvider);
+  final liveApiService = ref.watch(liveApiServiceProvider);
   return LiveRepository(
     nostrClient: nostrClient,
     codec: codec,
+    liveApiService: liveApiService,
   );
 }
 

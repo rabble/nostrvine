@@ -6,7 +6,14 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 import 'package:openvine/models/live/live_room_token.dart';
 
 @immutable
-enum LiveMediaConnectionStatus { disconnected, connecting, connected }
+enum LiveMediaConnectionStatus {
+  disconnected,
+  connecting,
+  connected,
+  reconnecting,
+  audioOnly,
+  failed,
+}
 
 @immutable
 class LiveMediaState extends Equatable {
@@ -62,6 +69,8 @@ abstract class LiveKitRoomClient {
 
   Future<void> switchCamera();
 
+  Future<void> enableAudioOnly();
+
   Future<void> dispose();
 }
 
@@ -79,6 +88,7 @@ class LiveKitRoomService {
 
   LiveMediaState _currentState = const LiveMediaState();
   bool _isDisposed = false;
+  bool _disconnectRequested = false;
 
   static LiveKitRoomClient _defaultClientFactory() => _SdkLiveKitRoomClient();
 
@@ -107,6 +117,7 @@ class LiveKitRoomService {
   }
 
   Future<void> connect(LiveRoomToken token) async {
+    _disconnectRequested = false;
     _updateState(
       LiveMediaState(
         status: LiveMediaConnectionStatus.connecting,
@@ -117,8 +128,18 @@ class LiveKitRoomService {
     try {
       await _client.prepareConnection(token.serverUrl, token.token);
       await _client.connect(token.serverUrl, token.token);
+      _updateState(
+        _currentState.copyWith(
+          status: _connectedStatusForCurrentTracks(),
+        ),
+      );
     } catch (_) {
-      _updateState(const LiveMediaState());
+      _updateState(
+        LiveMediaState(
+          status: LiveMediaConnectionStatus.failed,
+          canPublish: token.canPublish,
+        ),
+      );
       rethrow;
     }
   }
@@ -141,7 +162,15 @@ class LiveKitRoomService {
     }
 
     await _client.setCameraEnabled(enabled);
-    _updateState(_currentState.copyWith(cameraEnabled: enabled));
+    _updateState(
+      _currentState.copyWith(
+        status: _localTrackStatus(
+          cameraEnabled: enabled,
+          microphoneEnabled: _currentState.microphoneEnabled,
+        ),
+        cameraEnabled: enabled,
+      ),
+    );
   }
 
   Future<void> setMicrophoneEnabled(bool enabled) async {
@@ -150,7 +179,15 @@ class LiveKitRoomService {
     }
 
     await _client.setMicrophoneEnabled(enabled);
-    _updateState(_currentState.copyWith(microphoneEnabled: enabled));
+    _updateState(
+      _currentState.copyWith(
+        status: _localTrackStatus(
+          cameraEnabled: _currentState.cameraEnabled,
+          microphoneEnabled: enabled,
+        ),
+        microphoneEnabled: enabled,
+      ),
+    );
   }
 
   Future<void> switchCamera() async {
@@ -161,7 +198,24 @@ class LiveKitRoomService {
     await _client.switchCamera();
   }
 
+  Future<void> enableAudioOnly() async {
+    if (!_currentState.canPublish) {
+      return;
+    }
+
+    await _client.setCameraEnabled(false);
+    await _client.setMicrophoneEnabled(true);
+    _updateState(
+      _currentState.copyWith(
+        status: LiveMediaConnectionStatus.audioOnly,
+        cameraEnabled: false,
+        microphoneEnabled: true,
+      ),
+    );
+  }
+
   Future<void> disconnect() async {
+    _disconnectRequested = true;
     try {
       await _client.disconnect();
     } finally {
@@ -183,19 +237,29 @@ class LiveKitRoomService {
   void _handleClientEvent(LiveKitRoomClientEvent event) {
     switch (event) {
       case LiveKitRoomClientEvent.connected:
+        _disconnectRequested = false;
         _updateState(
           _currentState.copyWith(
-            status: LiveMediaConnectionStatus.connected,
+            status: _connectedStatusForCurrentTracks(),
           ),
         );
       case LiveKitRoomClientEvent.reconnecting:
         _updateState(
           _currentState.copyWith(
-            status: LiveMediaConnectionStatus.connecting,
+            status: LiveMediaConnectionStatus.reconnecting,
           ),
         );
       case LiveKitRoomClientEvent.disconnected:
-        _updateState(const LiveMediaState());
+        if (_disconnectRequested) {
+          _updateState(const LiveMediaState());
+          return;
+        }
+        _updateState(
+          _currentState.copyWith(
+            status: LiveMediaConnectionStatus.failed,
+            cameraEnabled: false,
+          ),
+        );
     }
   }
 
@@ -206,6 +270,33 @@ class LiveKitRoomService {
 
     _currentState = nextState;
     _stateController.add(nextState);
+  }
+
+  LiveMediaConnectionStatus _localTrackStatus({
+    required bool cameraEnabled,
+    required bool microphoneEnabled,
+  }) {
+    final currentStatus = _currentState.status;
+    if (currentStatus == LiveMediaConnectionStatus.connecting ||
+        currentStatus == LiveMediaConnectionStatus.reconnecting ||
+        currentStatus == LiveMediaConnectionStatus.failed ||
+        currentStatus == LiveMediaConnectionStatus.disconnected) {
+      return currentStatus;
+    }
+
+    if (!cameraEnabled && microphoneEnabled) {
+      return LiveMediaConnectionStatus.audioOnly;
+    }
+
+    return LiveMediaConnectionStatus.connected;
+  }
+
+  LiveMediaConnectionStatus _connectedStatusForCurrentTracks() {
+    if (!_currentState.cameraEnabled && _currentState.microphoneEnabled) {
+      return LiveMediaConnectionStatus.audioOnly;
+    }
+
+    return LiveMediaConnectionStatus.connected;
   }
 }
 
@@ -289,6 +380,17 @@ class _SdkLiveKitRoomClient implements LiveKitRoomClient {
         : (currentIndex + 1) % devices.length;
 
     await _room.setVideoInputDevice(devices[nextIndex]);
+  }
+
+  @override
+  Future<void> enableAudioOnly() async {
+    final participant = _room.localParticipant;
+    if (participant == null) {
+      return;
+    }
+
+    await participant.setCameraEnabled(false);
+    await participant.setMicrophoneEnabled(true);
   }
 
   @override

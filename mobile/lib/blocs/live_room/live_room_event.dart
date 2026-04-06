@@ -60,3 +60,46 @@ class LiveRoomSubscriptionFailed extends LiveRoomEvent {
   @override
   List<Object?> get props => <Object?>[error];
 }
+
+class ToggleMicrophoneRequested extends LiveRoomEvent {
+  const ToggleMicrophoneRequested();
+}
+
+class ToggleCameraRequested extends LiveRoomEvent {
+  const ToggleCameraRequested();
+}
+
+class SwitchCameraRequested extends LiveRoomEvent {
+  const SwitchCameraRequested();
+}
+
+class PromoteSpeakerRequested extends LiveRoomEvent {
+  const PromoteSpeakerRequested(this.pubkey);
+
+  final String pubkey;
+
+  @override
+  List<Object?> get props => <Object?>[pubkey];
+}
+
+class DemoteSpeakerRequested extends LiveRoomEvent {
+  const DemoteSpeakerRequested(this.pubkey);
+
+  final String pubkey;
+
+  @override
+  List<Object?> get props => <Object?>[pubkey];
+}
+
+class EnableAudioOnlyRequested extends LiveRoomEvent {
+  const EnableAudioOnlyRequested();
+}
+
+class LiveRoomAppForegroundChanged extends LiveRoomEvent {
+  const LiveRoomAppForegroundChanged(this.isForeground);
+
+  final bool isForeground;
+
+  @override
+  List<Object?> get props => <Object?>[isForeground];
+}

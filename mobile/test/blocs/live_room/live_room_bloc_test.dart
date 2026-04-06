@@ -31,6 +31,12 @@ void main() {
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
     const speakerPubkey =
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const audiencePubkey =
+        'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+    const audienceTwoPubkey =
+        'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+    const audienceThreePubkey =
+        'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
     const room = LiveRoom(
       id: 'room-abc',
       hostPubkey: hostPubkey,
@@ -63,10 +69,45 @@ void main() {
       handRaised: false,
       updatedAt: DateTime.utc(2026, 4, 6, 12, 2),
     );
+    final raisedHandPresence = LivePresence(
+      sessionId: liveSession.id,
+      pubkey: audiencePubkey,
+      role: LiveRole.audience,
+      handRaised: true,
+      updatedAt: DateTime.utc(2026, 4, 6, 12, 3),
+    );
+    final audienceTwoPresence = LivePresence(
+      sessionId: liveSession.id,
+      pubkey: audienceTwoPubkey,
+      role: LiveRole.audience,
+      handRaised: true,
+      updatedAt: DateTime.utc(2026, 4, 6, 12, 4),
+    );
+    final audienceThreePresence = LivePresence(
+      sessionId: liveSession.id,
+      pubkey: audienceThreePubkey,
+      role: LiveRole.audience,
+      handRaised: true,
+      updatedAt: DateTime.utc(2026, 4, 6, 12, 5),
+    );
     const joinToken = LiveRoomToken(
       token: 'jwt-token',
       roomName: 'room-abc',
       participantIdentity: hostPubkey,
+      serverUrl: 'wss://livekit.example.com',
+      canPublish: true,
+    );
+    const audienceJoinToken = LiveRoomToken(
+      token: 'audience-jwt-token',
+      roomName: 'room-abc',
+      participantIdentity: audiencePubkey,
+      serverUrl: 'wss://livekit.example.com',
+      canPublish: false,
+    );
+    const speakerJoinToken = LiveRoomToken(
+      token: 'speaker-jwt-token',
+      roomName: 'room-abc',
+      participantIdentity: audiencePubkey,
       serverUrl: 'wss://livekit.example.com',
       canPublish: true,
     );
@@ -80,6 +121,7 @@ void main() {
     setUpAll(() {
       registerFallbackValue(room);
       registerFallbackValue(joinToken);
+      registerFallbackValue(liveSession);
     });
 
     setUp(() {
@@ -109,10 +151,49 @@ void main() {
         ),
       ).thenAnswer((_) async => joinToken);
       when(
+        () => mockApiService.fetchJoinToken(
+          roomId: room.id,
+          role: LiveRole.audience,
+        ),
+      ).thenAnswer((_) async => audienceJoinToken);
+      when(
+        () => mockApiService.fetchJoinToken(
+          roomId: room.id,
+          role: LiveRole.speaker,
+        ),
+      ).thenAnswer((_) async => speakerJoinToken);
+      when(
         () => mockMediaService.watchState(),
       ).thenAnswer((_) => mediaController.stream);
       when(() => mockMediaService.connect(joinToken)).thenAnswer((_) async {});
+      when(
+        () => mockMediaService.connect(audienceJoinToken),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockMediaService.connect(speakerJoinToken),
+      ).thenAnswer((_) async {});
       when(() => mockMediaService.disconnect()).thenAnswer((_) async {});
+      when(
+        () => mockMediaService.setMicrophoneEnabled(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockMediaService.setCameraEnabled(any()),
+      ).thenAnswer((_) async {});
+      when(() => mockMediaService.switchCamera()).thenAnswer((_) async {});
+      when(() => mockMediaService.enableAudioOnly()).thenAnswer((_) async {});
+      when(
+        () => mockMediaService.publishLocalTracks(
+          cameraEnabled: any(named: 'cameraEnabled'),
+          microphoneEnabled: any(named: 'microphoneEnabled'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockRepository.publishSession(
+          session: any(named: 'session'),
+          roomAddress: room.address,
+          hostPubkey: room.hostPubkey,
+        ),
+      ).thenAnswer((_) async => null);
     });
 
     tearDown(() async {
@@ -197,10 +278,264 @@ void main() {
 
       await bloc.close();
     });
+
+    test('publish control events delegate to the media service', () async {
+      final bloc = LiveRoomBloc(
+        liveRepository: mockRepository,
+        liveApiService: mockApiService,
+        liveKitRoomService: mockMediaService,
+      );
+
+      bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+      await _flush();
+
+      sessionsController.add(<LiveSession>[liveSession]);
+      await _flush();
+
+      mediaController.add(connectedMediaState);
+      await _flush();
+
+      bloc
+        ..add(const ToggleMicrophoneRequested())
+        ..add(const ToggleCameraRequested())
+        ..add(const SwitchCameraRequested())
+        ..add(const EnableAudioOnlyRequested());
+      await _flush();
+
+      verify(() => mockMediaService.setMicrophoneEnabled(false)).called(1);
+      verify(() => mockMediaService.setCameraEnabled(false)).called(1);
+      verify(() => mockMediaService.switchCamera()).called(1);
+      verify(() => mockMediaService.enableAudioOnly()).called(1);
+
+      await bloc.close();
+    });
+
+    test(
+      'audience members promoted onto the stage reconnect as speakers and gain publish access',
+      () async {
+        final promotedSession = liveSession.copyWith(
+          speakerPubkeys: const <String>[
+            hostPubkey,
+            speakerPubkey,
+            audiencePubkey,
+          ],
+        );
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          currentUserPubkey: audiencePubkey,
+        );
+
+        bloc.add(
+          const LiveRoomJoinRequested(room: room, role: LiveRole.audience),
+        );
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        expect(bloc.state.canPublish, isFalse);
+
+        sessionsController.add(<LiveSession>[promotedSession]);
+        await _flush();
+
+        expect(bloc.state.role, LiveRole.speaker);
+        expect(bloc.state.canPublish, isTrue);
+        verify(
+          () => mockApiService.fetchJoinToken(
+            roomId: room.id,
+            role: LiveRole.speaker,
+          ),
+        ).called(1);
+        verify(() => mockMediaService.connect(speakerJoinToken)).called(1);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'host can promote and demote speakers while enforcing the publisher cap',
+      () async {
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        presenceController.add(<LivePresence>[
+          hostPresence,
+          speakerPresence,
+          raisedHandPresence,
+          audienceTwoPresence,
+          audienceThreePresence,
+        ]);
+        await _flush();
+
+        bloc
+          ..add(const PromoteSpeakerRequested(audiencePubkey))
+          ..add(const PromoteSpeakerRequested(audienceTwoPubkey));
+        await _flush();
+
+        expect(
+          bloc.state.speakerPubkeys,
+          containsAll(<String>[
+            hostPubkey,
+            speakerPubkey,
+            audiencePubkey,
+            audienceTwoPubkey,
+          ]),
+        );
+
+        bloc.add(const PromoteSpeakerRequested(audienceThreePubkey));
+        await _flush();
+
+        expect(bloc.state.speakerPubkeys, isNot(contains(audienceThreePubkey)));
+        expect(bloc.state.errorMessage, contains('4 active video speakers'));
+
+        bloc.add(const DemoteSpeakerRequested(audiencePubkey));
+        await _flush();
+        bloc.add(const PromoteSpeakerRequested(audienceThreePubkey));
+        await _flush();
+
+        expect(bloc.state.speakerPubkeys, isNot(contains(audiencePubkey)));
+        expect(bloc.state.speakerPubkeys, contains(audienceThreePubkey));
+
+        await bloc.close();
+      },
+    );
+
+    test('audience backgrounds cleanly and reconnects on foreground', () async {
+      final bloc = LiveRoomBloc(
+        liveRepository: mockRepository,
+        liveApiService: mockApiService,
+        liveKitRoomService: mockMediaService,
+      );
+
+      bloc.add(
+        const LiveRoomJoinRequested(room: room, role: LiveRole.audience),
+      );
+      await _flush();
+
+      sessionsController.add(<LiveSession>[liveSession]);
+      await _flush();
+
+      bloc
+        ..add(const LiveRoomAppForegroundChanged(false))
+        ..add(const LiveRoomAppForegroundChanged(true));
+      await _flush();
+
+      verify(
+        () => mockApiService.fetchJoinToken(
+          roomId: room.id,
+          role: LiveRole.audience,
+        ),
+      ).called(1);
+      verify(() => mockMediaService.disconnect()).called(1);
+      verify(() => mockMediaService.connect(audienceJoinToken)).called(2);
+
+      await bloc.close();
+    });
+
+    test(
+      'audience reconnect fetches a fresh token after a stale-token failure',
+      () async {
+        const refreshedAudienceJoinToken = LiveRoomToken(
+          token: 'audience-jwt-token-fresh',
+          roomName: 'room-abc',
+          participantIdentity: audiencePubkey,
+          serverUrl: 'wss://livekit.example.com',
+          canPublish: false,
+        );
+        var audienceTokenCalls = 0;
+        var audienceConnectCalls = 0;
+        when(
+          () => mockApiService.fetchJoinToken(
+            roomId: room.id,
+            role: LiveRole.audience,
+          ),
+        ).thenAnswer((_) async {
+          audienceTokenCalls += 1;
+          return audienceTokenCalls == 1
+              ? audienceJoinToken
+              : refreshedAudienceJoinToken;
+        });
+        when(
+          () => mockMediaService.connect(audienceJoinToken),
+        ).thenAnswer((_) async {
+          audienceConnectCalls += 1;
+          if (audienceConnectCalls > 1) {
+            throw Exception('stale token');
+          }
+        });
+        when(
+          () => mockMediaService.connect(refreshedAudienceJoinToken),
+        ).thenAnswer((_) async {});
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+        );
+
+        bloc.add(
+          const LiveRoomJoinRequested(room: room, role: LiveRole.audience),
+        );
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        bloc
+          ..add(const LiveRoomAppForegroundChanged(false))
+          ..add(const LiveRoomAppForegroundChanged(true));
+        await _flush();
+
+        verify(
+          () => mockApiService.fetchJoinToken(
+            roomId: room.id,
+            role: LiveRole.audience,
+          ),
+        ).called(2);
+        verify(
+          () => mockMediaService.connect(refreshedAudienceJoinToken),
+        ).called(1);
+
+        await bloc.close();
+      },
+    );
+
+    test('hosts stay connected when the app backgrounds', () async {
+      final bloc = LiveRoomBloc(
+        liveRepository: mockRepository,
+        liveApiService: mockApiService,
+        liveKitRoomService: mockMediaService,
+      );
+
+      bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+      await _flush();
+
+      sessionsController.add(<LiveSession>[liveSession]);
+      await _flush();
+
+      bloc.add(const LiveRoomAppForegroundChanged(false));
+      await _flush();
+
+      verifyNever(() => mockMediaService.disconnect());
+
+      await bloc.close();
+    });
   });
 }
 
 Future<void> _flush() async {
+  await Future<void>.delayed(Duration.zero);
   await Future<void>.delayed(Duration.zero);
   await Future<void>.delayed(Duration.zero);
 }

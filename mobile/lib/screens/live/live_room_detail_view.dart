@@ -2,19 +2,23 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/live/live_room.dart';
+import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/screens/live/live_room_page.dart';
 import 'package:openvine/screens/live/live_route_data.dart';
+import 'package:openvine/screens/live/widgets/live_replay_banner.dart';
 
 class LiveRoomDetailView extends StatelessWidget {
   const LiveRoomDetailView({
     required this.room,
     this.session,
+    this.recording,
     super.key,
   });
 
   final LiveRoom room;
   final LiveSession? session;
+  final LiveRoomRecording? recording;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +38,10 @@ class LiveRoomDetailView extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          if (currentSession?.hasEnded == true && recording != null) ...[
+            LiveReplayBanner(recording: recording!),
+            const SizedBox(height: 16),
+          ],
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(

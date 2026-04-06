@@ -34,6 +34,8 @@ void main() {
             canPublish: true,
           ),
         );
+        await _flush();
+        await Future<void>.delayed(Duration.zero);
 
         expect(client.prepareCalls, 1);
         expect(client.connectCalls, 1);
@@ -69,6 +71,7 @@ void main() {
             canPublish: true,
           ),
         );
+        await Future<void>.delayed(Duration.zero);
 
         await service.publishLocalTracks(
           cameraEnabled: true,
@@ -92,10 +95,79 @@ void main() {
           canPublish: true,
         ),
       );
+      await Future<void>.delayed(Duration.zero);
 
       await service.switchCamera();
 
       expect(client.switchCameraCalls, 1);
+    });
+
+    test('reconnecting events surface a reconnecting media state', () async {
+      await service.connect(
+        const LiveRoomToken(
+          token: 'jwt-token',
+          roomName: 'room-abc',
+          participantIdentity: 'host-pubkey',
+          serverUrl: 'wss://livekit.example.com',
+          canPublish: true,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      client.emit(LiveKitRoomClientEvent.reconnecting);
+      await _flush();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        service.currentState.status,
+        LiveMediaConnectionStatus.reconnecting,
+      );
+    });
+
+    test('enableAudioOnly disables camera and keeps microphone live', () async {
+      await service.connect(
+        const LiveRoomToken(
+          token: 'jwt-token',
+          roomName: 'room-abc',
+          participantIdentity: 'host-pubkey',
+          serverUrl: 'wss://livekit.example.com',
+          canPublish: true,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await service.publishLocalTracks(
+        cameraEnabled: true,
+        microphoneEnabled: true,
+      );
+
+      await service.enableAudioOnly();
+      await _flush();
+
+      expect(client.cameraEnabledCalls, [true, false]);
+      expect(client.microphoneEnabledCalls, [true, true]);
+      expect(service.currentState.cameraEnabled, isFalse);
+      expect(service.currentState.microphoneEnabled, isTrue);
+      expect(service.currentState.status, LiveMediaConnectionStatus.audioOnly);
+    });
+
+    test('connect failures surface a failed media state', () async {
+      client.failConnect = true;
+
+      await expectLater(
+        () => service.connect(
+          const LiveRoomToken(
+            token: 'jwt-token',
+            roomName: 'room-abc',
+            participantIdentity: 'host-pubkey',
+            serverUrl: 'wss://livekit.example.com',
+            canPublish: true,
+          ),
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(service.currentState.status, LiveMediaConnectionStatus.failed);
+      expect(service.currentState.canPublish, isTrue);
     });
 
     test('disconnect resets the state to disconnected', () async {
@@ -108,6 +180,7 @@ void main() {
           canPublish: false,
         ),
       );
+      await Future<void>.delayed(Duration.zero);
 
       await service.disconnect();
 
@@ -123,14 +196,19 @@ void main() {
   });
 }
 
+Future<void> _flush() async {
+  await Future<void>.delayed(Duration.zero);
+}
+
 class _FakeLiveKitRoomClient implements LiveKitRoomClient {
   final StreamController<LiveKitRoomClientEvent> _eventsController =
-      StreamController<LiveKitRoomClientEvent>.broadcast();
+      StreamController<LiveKitRoomClientEvent>.broadcast(sync: true);
 
   int prepareCalls = 0;
   int connectCalls = 0;
   int disconnectCalls = 0;
   int switchCameraCalls = 0;
+  bool failConnect = false;
   String? lastUrl;
   String? lastToken;
   final List<bool> cameraEnabledCalls = <bool>[];
@@ -139,11 +217,18 @@ class _FakeLiveKitRoomClient implements LiveKitRoomClient {
   @override
   Stream<LiveKitRoomClientEvent> get events => _eventsController.stream;
 
+  void emit(LiveKitRoomClientEvent event) {
+    _eventsController.add(event);
+  }
+
   @override
   Future<void> connect(String serverUrl, String token) async {
     connectCalls += 1;
     lastUrl = serverUrl;
     lastToken = token;
+    if (failConnect) {
+      throw StateError('connect failed');
+    }
     _eventsController.add(LiveKitRoomClientEvent.connected);
   }
 
@@ -151,6 +236,12 @@ class _FakeLiveKitRoomClient implements LiveKitRoomClient {
   Future<void> disconnect() async {
     disconnectCalls += 1;
     _eventsController.add(LiveKitRoomClientEvent.disconnected);
+  }
+
+  @override
+  Future<void> enableAudioOnly() async {
+    cameraEnabledCalls.add(false);
+    microphoneEnabledCalls.add(true);
   }
 
   @override

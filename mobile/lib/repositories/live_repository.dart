@@ -5,18 +5,23 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/live/live_presence.dart';
 import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room.dart';
+import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/models/live/live_session.dart';
+import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/live_nostr_codec.dart';
 
 class LiveRepository {
   LiveRepository({
     required NostrClient nostrClient,
     required LiveNostrCodec codec,
+    LiveApiService? liveApiService,
   }) : _nostrClient = nostrClient,
-       _codec = codec;
+       _codec = codec,
+       _liveApiService = liveApiService;
 
   final NostrClient _nostrClient;
   final LiveNostrCodec _codec;
+  final LiveApiService? _liveApiService;
 
   Future<List<LiveRoom>> fetchPublicRooms({int limit = 50}) async {
     final events = await _nostrClient.queryEvents([
@@ -154,6 +159,17 @@ class LiveRepository {
       signer: _nostrClient.signer,
     );
     return _nostrClient.publishEvent(signedEvent);
+  }
+
+  Future<LiveRoomRecording?> fetchRecording({
+    required String roomId,
+  }) async {
+    final liveApiService = _liveApiService;
+    if (liveApiService == null) {
+      return null;
+    }
+
+    return liveApiService.fetchRecording(roomId: roomId);
   }
 
   Stream<List<T>> _watchCollection<T>({

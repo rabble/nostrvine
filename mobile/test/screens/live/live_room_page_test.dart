@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/live/live_chat_message.dart';
@@ -48,7 +50,7 @@ void main() {
       status: LiveSessionStatus.live,
       startedAt: DateTime.utc(2026, 4, 6, 8),
       endedAt: null,
-      speakerPubkeys: const <String>['host-pubkey'],
+      speakerPubkeys: const <String>['host-pubkey', 'speaker-pubkey'],
       audienceCount: 64,
     );
     const sessionAddress = '30313:host-pubkey:session-123';
@@ -65,6 +67,27 @@ void main() {
       roomName: 'room-123',
       participantIdentity: 'host-pubkey',
       canPublish: true,
+    );
+    const speakerToken = LiveRoomToken(
+      token: 'speaker-token',
+      serverUrl: 'wss://live.example.com',
+      roomName: 'room-123',
+      participantIdentity: 'speaker-pubkey',
+      canPublish: true,
+    );
+    final hostPresence = LivePresence(
+      sessionId: session.id,
+      pubkey: 'host-pubkey',
+      role: LiveRole.host,
+      handRaised: false,
+      updatedAt: DateTime.utc(2026, 4, 6, 8, 1),
+    );
+    final raisedHandPresence = LivePresence(
+      sessionId: session.id,
+      pubkey: 'audience-pubkey',
+      role: LiveRole.audience,
+      handRaised: true,
+      updatedAt: DateTime.utc(2026, 4, 6, 8, 2),
     );
 
     setUp(() {
@@ -84,7 +107,10 @@ void main() {
       when(
         () => mockLiveRepository.watchPresence(sessionAddress: sessionAddress),
       ).thenAnswer(
-        (_) => Stream<List<LivePresence>>.value(const <LivePresence>[]),
+        (_) => Stream<List<LivePresence>>.value(<LivePresence>[
+          hostPresence,
+          raisedHandPresence,
+        ]),
       );
       when(
         () => mockLiveChatRepository.watchChatMessages(
@@ -109,7 +135,16 @@ void main() {
       when(() => mockLiveKitRoomService.connect(hostToken)).thenAnswer(
         (_) async {},
       );
+      when(() => mockLiveKitRoomService.connect(speakerToken)).thenAnswer(
+        (_) async {},
+      );
       when(() => mockLiveKitRoomService.disconnect()).thenAnswer((_) async {});
+      when(
+        () => mockLiveKitRoomService.publishLocalTracks(
+          cameraEnabled: any(named: 'cameraEnabled'),
+          microphoneEnabled: any(named: 'microphoneEnabled'),
+        ),
+      ).thenAnswer((_) async {});
       when(
         () => mockLiveApiService.fetchJoinToken(
           roomId: room.id,
@@ -122,6 +157,12 @@ void main() {
           role: LiveRole.host,
         ),
       ).thenAnswer((_) async => hostToken);
+      when(
+        () => mockLiveApiService.fetchJoinToken(
+          roomId: room.id,
+          role: LiveRole.speaker,
+        ),
+      ).thenAnswer((_) async => speakerToken);
     });
 
     testWidgets('host controls appear for hosts, not audience members', (
@@ -158,7 +199,16 @@ void main() {
       await tester.pump();
 
       expect(find.text('Host controls'), findsOneWidget);
+      expect(find.text('Mic on'), findsOneWidget);
+      expect(find.text('Camera on'), findsOneWidget);
+      expect(find.text('Flip camera'), findsOneWidget);
+      expect(find.text('Audio only'), findsOneWidget);
       expect(find.text('Chat'), findsOneWidget);
+
+      await tester.tap(find.text('Host controls'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Manage speakers'), findsOneWidget);
     });
 
     testWidgets('audience members do not see host controls', (tester) async {
@@ -196,6 +246,138 @@ void main() {
 
       expect(find.text('Host controls'), findsNothing);
       expect(find.text('Raise hand'), findsOneWidget);
+      expect(find.text('Mic on'), findsNothing);
+      expect(find.text('Camera on'), findsNothing);
+      expect(find.text('Audio only'), findsNothing);
+    });
+
+    testWidgets('listed speakers get local publishing controls', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final speakerAuth = createMockAuthService();
+      when(() => speakerAuth.currentPublicKeyHex).thenReturn('speaker-pubkey');
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockSharedPreferences: sharedPreferences,
+          mockAuthService: speakerAuth,
+          additionalOverrides: [
+            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+            liveChatRepositoryProvider.overrideWithValue(
+              mockLiveChatRepository,
+            ),
+            liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+            liveKitRoomServiceProvider.overrideWithValue(
+              mockLiveKitRoomService,
+            ),
+          ],
+          home: LiveRoomPage(
+            roomId: room.id,
+            sessionId: session.id,
+            initialRoom: room,
+            initialSession: session,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Mic on'), findsOneWidget);
+      expect(find.text('Camera on'), findsOneWidget);
+      expect(find.text('Flip camera'), findsOneWidget);
+      expect(find.text('Audio only'), findsOneWidget);
+    });
+
+    testWidgets('audience members promoted on stage gain publishing controls', (
+      tester,
+    ) async {
+      final sessionsController = StreamController<List<LiveSession>>.broadcast(
+        sync: true,
+      );
+      final presenceController = StreamController<List<LivePresence>>.broadcast(
+        sync: true,
+      );
+      final promotedSession = session.copyWith(
+        speakerPubkeys: const <String>[
+          'host-pubkey',
+          'speaker-pubkey',
+          'audience-pubkey',
+        ],
+      );
+      final promotedAudiencePresence = LivePresence(
+        sessionId: session.id,
+        pubkey: 'audience-pubkey',
+        role: LiveRole.speaker,
+        handRaised: false,
+        updatedAt: DateTime.utc(2026, 4, 6, 8, 3),
+      );
+
+      when(
+        () => mockLiveRepository.watchSessions(roomAddress: room.address),
+      ).thenAnswer((_) => sessionsController.stream);
+      when(
+        () => mockLiveRepository.watchPresence(sessionAddress: sessionAddress),
+      ).thenAnswer((_) => presenceController.stream);
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final audienceAuth = createMockAuthService();
+      when(() => audienceAuth.currentPublicKeyHex).thenReturn(
+        'audience-pubkey',
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockSharedPreferences: sharedPreferences,
+          mockAuthService: audienceAuth,
+          additionalOverrides: [
+            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+            liveChatRepositoryProvider.overrideWithValue(
+              mockLiveChatRepository,
+            ),
+            liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+            liveKitRoomServiceProvider.overrideWithValue(
+              mockLiveKitRoomService,
+            ),
+          ],
+          home: LiveRoomPage(
+            roomId: room.id,
+            sessionId: session.id,
+            initialRoom: room,
+            initialSession: session,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      sessionsController.add(<LiveSession>[session]);
+      await tester.pump();
+      await tester.pump();
+      presenceController.add(<LivePresence>[hostPresence, raisedHandPresence]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Raise hand'), findsOneWidget);
+      expect(find.text('Mic on'), findsNothing);
+
+      sessionsController.add(<LiveSession>[promotedSession]);
+      await tester.pump();
+      await tester.pump();
+      presenceController.add(<LivePresence>[
+        hostPresence,
+        promotedAudiencePresence,
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Mic on'), findsOneWidget);
+      expect(find.text('Camera on'), findsOneWidget);
+      verify(() => mockLiveKitRoomService.connect(speakerToken)).called(1);
+
+      await sessionsController.close();
+      await presenceController.close();
     });
   });
 }

@@ -6,6 +6,7 @@ import 'package:openvine/models/live/live_chat_message.dart';
 import 'package:openvine/models/live/live_presence.dart';
 import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room.dart';
+import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/models/live/live_room_token.dart';
 import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/providers/live_providers.dart';
@@ -54,6 +55,15 @@ void main() {
       status: LiveSessionStatus.live,
       startedAt: DateTime.utc(2026, 4, 6, 8),
       endedAt: null,
+      speakerPubkeys: const <String>['host-pubkey'],
+      audienceCount: 64,
+    );
+    final endedSession = LiveSession(
+      id: 'session-ended',
+      roomId: 'room-123',
+      status: LiveSessionStatus.ended,
+      startedAt: DateTime.utc(2026, 4, 6, 7),
+      endedAt: DateTime.utc(2026, 4, 6, 9),
       speakerPubkeys: const <String>['host-pubkey'],
       audienceCount: 64,
     );
@@ -155,6 +165,85 @@ void main() {
       await tester.pump();
 
       expect(find.byType(LiveRoomPage), findsOneWidget);
+    });
+
+    testWidgets('ended rooms show a replay banner when recording exists', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      when(
+        () => mockLiveRepository.fetchRecording(roomId: room.id),
+      ).thenAnswer(
+        (_) async => const LiveRoomRecording(
+          playbackUrl: 'https://example.com/replay.m3u8',
+          status: RecordingStatus.ready,
+        ),
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockSharedPreferences: sharedPreferences,
+          mockAuthService: mockAuthService,
+          additionalOverrides: [
+            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+            liveChatRepositoryProvider.overrideWithValue(
+              mockLiveChatRepository,
+            ),
+            liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+            liveKitRoomServiceProvider.overrideWithValue(
+              mockLiveKitRoomService,
+            ),
+          ],
+          home: LiveRoomDetailPage(
+            roomId: room.id,
+            initialRoom: room,
+            initialSession: endedSession,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Replay ready'), findsOneWidget);
+      expect(find.text('Open replay'), findsOneWidget);
+    });
+
+    testWidgets('ended rooms hide replay UI when recording is absent', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      when(
+        () => mockLiveRepository.fetchRecording(roomId: room.id),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockSharedPreferences: sharedPreferences,
+          mockAuthService: mockAuthService,
+          additionalOverrides: [
+            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+            liveChatRepositoryProvider.overrideWithValue(
+              mockLiveChatRepository,
+            ),
+            liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+            liveKitRoomServiceProvider.overrideWithValue(
+              mockLiveKitRoomService,
+            ),
+          ],
+          home: LiveRoomDetailPage(
+            roomId: room.id,
+            initialRoom: room,
+            initialSession: endedSession,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Replay ready'), findsNothing);
+      expect(find.text('Open replay'), findsNothing);
     });
   });
 }
