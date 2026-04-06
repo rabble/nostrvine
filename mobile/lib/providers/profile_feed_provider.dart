@@ -84,6 +84,7 @@ class ProfileFeed extends _$ProfileFeed {
     if (retainedState != null && retainedState.videos.isNotEmpty) {
       _usingRestApi = funnelcakeAvailable;
       _nextOffset = estimateNextRestOffset(retainedState);
+      _totalVideoCount = retainedState.totalVideoCount;
       _registerRetainedRealtimeListeners(videoEventService);
       Future.microtask(() => refresh(retainedState: retainedState));
       return retainedState.copyWith(
