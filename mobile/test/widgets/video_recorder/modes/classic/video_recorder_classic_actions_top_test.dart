@@ -73,10 +73,12 @@ void main() {
         await tester.pumpAndSettle();
 
         final opacity = tester.widget<AnimatedOpacity>(
-          find.ancestor(
-            of: find.byType(Row),
-            matching: find.byType(AnimatedOpacity),
-          ).first,
+          find
+              .ancestor(
+                of: find.byType(Row),
+                matching: find.byType(AnimatedOpacity),
+              )
+              .first,
         );
         // isRecording || !hasClips => true when no clips
         expect(opacity.opacity, equals(0));
@@ -100,10 +102,12 @@ void main() {
         await tester.pumpAndSettle();
 
         final opacity = tester.widget<AnimatedOpacity>(
-          find.ancestor(
-            of: find.byType(Row),
-            matching: find.byType(AnimatedOpacity),
-          ).first,
+          find
+              .ancestor(
+                of: find.byType(Row),
+                matching: find.byType(AnimatedOpacity),
+              )
+              .first,
         );
         expect(opacity.opacity, equals(1));
       });
@@ -131,10 +135,12 @@ void main() {
         await tester.pumpAndSettle();
 
         final opacity = tester.widget<AnimatedOpacity>(
-          find.ancestor(
-            of: find.byType(Row),
-            matching: find.byType(AnimatedOpacity),
-          ).first,
+          find
+              .ancestor(
+                of: find.byType(Row),
+                matching: find.byType(AnimatedOpacity),
+              )
+              .first,
         );
         expect(opacity.opacity, equals(0));
       });

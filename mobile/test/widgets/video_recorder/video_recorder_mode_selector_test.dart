@@ -81,8 +81,8 @@ void main() {
         // Suppress haptic feedback method channel calls in test
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-          return null;
-        });
+              return null;
+            });
         addTearDown(() {
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
               .setMockMethodCallHandler(SystemChannels.platform, null);
