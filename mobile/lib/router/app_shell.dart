@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -479,7 +480,14 @@ class _AppShellState extends ConsumerState<AppShell> {
                       ),
                     ],
             ),
-      body: child,
+      body: currentIndex == 0
+          ? Column(
+              children: [
+                Expanded(child: child),
+                const UpdateBanner(),
+              ],
+            )
+          : child,
       // Bottom nav visible for all shell routes (search, tabs, etc.)
       // For search (currentIndex=-1), no tab is highlighted
       bottomNavigationBar: Container(

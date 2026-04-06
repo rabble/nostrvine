@@ -1,31 +1,43 @@
 // ABOUTME: Widget test for settings hub screen
 // ABOUTME: Verifies account header, auth-state tiles, and navigation structure
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/apps_permissions_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/go_router.dart';
+
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   group(SettingsScreen, () {
     late _MockAuthService mockAuthService;
+    late _MockDraftStorageService mockDraftStorageService;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
       mockAuthService = _MockAuthService();
+      mockDraftStorageService = _MockDraftStorageService();
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.isAnonymous).thenReturn(false);
@@ -41,22 +53,46 @@ void main() {
       when(
         () => mockAuthService.hasExpiredOAuthSession,
       ).thenReturn(false);
+      when(
+        () => mockAuthService.getKnownAccounts(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockDraftStorageService.getDraftCount(),
+      ).thenAnswer((_) async => 0);
     });
 
     Widget buildSubject({
       AuthState authState = AuthState.authenticated,
+      MockGoRouter? goRouter,
+      List<KnownAccount> knownAccounts = const [],
     }) {
-      return ProviderScope(
+      when(
+        () => mockAuthService.getKnownAccounts(),
+      ).thenAnswer((_) async => knownAccounts);
+
+      final app = ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           authServiceProvider.overrideWithValue(mockAuthService),
+          draftStorageServiceProvider.overrideWithValue(
+            mockDraftStorageService,
+          ),
           currentAuthStateProvider.overrideWith((ref) => authState),
+          knownAccountsProvider.overrideWith(
+            (ref) async => knownAccounts,
+          ),
           userProfileReactiveProvider.overrideWith(
             (ref, pubkey) => Stream.value(null),
           ),
         ],
         child: const MaterialApp(home: SettingsScreen()),
       );
+
+      if (goRouter == null) {
+        return app;
+      }
+
+      return MockGoRouterProvider(goRouter: goRouter, child: app);
     }
 
     testWidgets('renders app bar with title', (tester) async {
@@ -64,6 +100,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('scaffold has navGreen background', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+      expect(scaffold.backgroundColor, equals(VineTheme.navGreen));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -81,10 +128,27 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('renders Switch account button when authenticated', (
+    testWidgets('renders Switch account button when multiple accounts exist', (
       tester,
     ) async {
-      await tester.pumpWidget(buildSubject());
+      final twoAccounts = [
+        KnownAccount(
+          pubkeyHex:
+              'abc123pubkeyabc123pubkeyabc123pubkeyabc123pubkeyabc123pubkeyabc1',
+          authSource: AuthenticationSource.automatic,
+          addedAt: DateTime(2024),
+          lastUsedAt: DateTime(2024),
+        ),
+        KnownAccount(
+          pubkeyHex:
+              'def456pubkeydef456pubkeydef456pubkeydef456pubkeydef456pubkeydef4',
+          authSource: AuthenticationSource.automatic,
+          addedAt: DateTime(2024),
+          lastUsedAt: DateTime(2024),
+        ),
+      ];
+
+      await tester.pumpWidget(buildSubject(knownAccounts: twoAccounts));
       await tester.pumpAndSettle();
 
       expect(find.text('Switch account'), findsOneWidget);
@@ -116,6 +180,81 @@ void main() {
         );
         expect(find.text(title), findsOneWidget);
       }
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('tapping Integration Permissions opens the permissions route', (
+      tester,
+    ) async {
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('Integration Permissions'),
+        300,
+        scrollable: scrollable,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Integration Permissions'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockGoRouter.push(AppsPermissionsScreen.path)).called(1);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('tapping Integrated Apps opens the directory route', (
+      tester,
+    ) async {
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.go(any())).thenReturn(null);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          draftStorageServiceProvider.overrideWithValue(
+            mockDraftStorageService,
+          ),
+          currentAuthStateProvider.overrideWith(
+            (ref) => AuthState.authenticated,
+          ),
+          userProfileReactiveProvider.overrideWith(
+            (ref, pubkey) => Stream.value(null),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: const MaterialApp(home: SettingsScreen()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('Integrated Apps'),
+        100,
+        scrollable: scrollable,
+      );
+      await tester.tap(find.text('Integrated Apps'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockGoRouter.go(ExploreScreen.path)).called(1);
+      expect(container.read(forceExploreTabNameProvider), 'apps');
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -165,6 +304,9 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(sharedPreferences),
               authServiceProvider.overrideWithValue(mockAuthService),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
               currentAuthStateProvider.overrideWithValue(
                 AuthState.authenticated,
               ),
@@ -232,6 +374,9 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(sharedPreferences),
               authServiceProvider.overrideWithValue(mockAuthService),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
               currentAuthStateProvider.overrideWith(
                 (ref) => AuthState.authenticated,
               ),

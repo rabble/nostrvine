@@ -13,8 +13,10 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/dm_sync_state.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 
@@ -27,6 +29,38 @@ class _MockDirectMessagesDao extends Mock implements DirectMessagesDao {}
 class _MockConversationsDao extends Mock implements ConversationsDao {}
 
 class _FakeEvent extends Fake implements Event {}
+
+/// Test double for [DmSyncState] that stores values in memory and captures
+/// [recordSeen] calls for assertions.
+class _FakeDmSyncState implements DmSyncState {
+  int? newestOverride;
+  int? oldestOverride;
+  final List<({String pubkey, int createdAt})> recorded =
+      <({String pubkey, int createdAt})>[];
+
+  @override
+  int? newestSyncedAt(String pubkey) => newestOverride;
+
+  @override
+  int? oldestSyncedAt(String pubkey) => oldestOverride;
+
+  @override
+  Future<void> recordSeen(String pubkey, {required int createdAt}) async {
+    recorded.add((pubkey: pubkey, createdAt: createdAt));
+    if (newestOverride == null || createdAt > newestOverride!) {
+      newestOverride = createdAt;
+    }
+    if (oldestOverride == null || createdAt < oldestOverride!) {
+      oldestOverride = createdAt;
+    }
+  }
+
+  @override
+  Future<void> clear(String pubkey) async {
+    newestOverride = null;
+    oldestOverride = null;
+  }
+}
 
 // Valid 64-character hex pubkeys for testing
 const _validPubkeyA =
@@ -66,6 +100,20 @@ void main() {
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
 
+      // Stub getNewestMessageTimestamp for startListening() windowing.
+      when(
+        () => mockConversationsDao.getNewestMessageTimestamp(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Stub getAllConversations for _mergeDuplicateConversations().
+      when(
+        () => mockConversationsDao.getAllConversations(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => []);
+
       // Global stub for runInTransaction — executes the callback directly.
       // Stub both <void> and <Null> since Dart infers different type args
       // depending on whether the callback returns or is void-typed.
@@ -87,6 +135,7 @@ void main() {
       String? userPubkey,
       RumorDecryptor? rumorDecryptor,
       Nip04Decryptor? nip04Decryptor,
+      DmSyncState? syncState,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -97,6 +146,7 @@ void main() {
         signer: LocalNostrSigner(_validPrivateKey),
         rumorDecryptor: rumorDecryptor,
         nip04Decryptor: nip04Decryptor,
+        syncState: syncState,
       );
     }
 
@@ -570,7 +620,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
 
         // Allow async processing
@@ -618,6 +668,89 @@ void main() {
         await repository.stopListening();
       });
 
+      test('successful gift-wrap persist advances sync boundaries', () async {
+        const rumorCreatedAt = 1700000500;
+        final giftWrap = createGiftWrapEvent();
+        final rumor = createRumorEvent(createdAt: rumorCreatedAt);
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+        ).thenAnswer((_) async => false);
+        stubDaoInserts();
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(
+          rumorDecryptor: (_, _) async => rumor,
+          syncState: syncState,
+        );
+
+        repository.startListening();
+        controller.add(giftWrap);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(syncState.recorded, hasLength(1));
+        expect(syncState.recorded.single.pubkey, _validPubkeyA);
+        expect(syncState.recorded.single.createdAt, rumorCreatedAt);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
+      test('successful NIP-04 persist advances sync boundaries', () async {
+        const nip04CreatedAt = 1700000600;
+        final nip04Event = Event.fromJson({
+          'id':
+              'aaaa00000000000000000000000000000000000000'
+              '0000000000000000000000',
+          'pubkey': _validPubkeyB,
+          'created_at': nip04CreatedAt,
+          'kind': EventKind.directMessage,
+          'tags': [
+            ['p', _validPubkeyA],
+          ],
+          'content': 'nip04-ciphertext',
+          'sig': '',
+        });
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer((_) async => false);
+        stubDaoInserts();
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(
+          nip04Decryptor: (_, _) async => 'Hello over NIP-04',
+          syncState: syncState,
+        );
+
+        repository.startListening();
+        controller.add(nip04Event);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(syncState.recorded, hasLength(1));
+        expect(syncState.recorded.single.pubkey, _validPubkeyA);
+        expect(syncState.recorded.single.createdAt, nip04CreatedAt);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
       test('marks conversation as read for own messages', () async {
         final giftWrap = createGiftWrapEvent();
         // Sender is the current user
@@ -647,7 +780,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -692,7 +825,7 @@ void main() {
           rumorDecryptor: (_, _) async => createRumorEvent(),
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -746,7 +879,7 @@ void main() {
           rumorDecryptor: (_, _) async => null,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -802,7 +935,7 @@ void main() {
           rumorDecryptor: (_, _) async => wrongKindRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -858,7 +991,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -920,7 +1053,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -952,58 +1085,64 @@ void main() {
         await repository.stopListening();
       });
 
-      test('handles group messages with 3+ participants', () async {
-        final giftWrap = createGiftWrapEvent();
-        final rumor = createRumorEvent(
-          tags: [
-            ['p', _validPubkeyA],
-            ['p', _validPubkeyC],
-          ],
-        );
+      test(
+        'defaults extra p-tags to 1:1 when no existing conversation',
+        () async {
+          // When a message has 3+ participants but no existing group or
+          // 1:1 conversation exists, defaults to 1:1 to prevent phantom
+          // groups from non-compliant clients.
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent(
+            tags: [
+              ['p', _validPubkeyA],
+              ['p', _validPubkeyC],
+            ],
+          );
 
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(
-            _giftWrapEventId,
-          ),
-        ).thenAnswer((_) async => false);
-        stubDaoInserts();
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(
+              _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final repository = createRepository(
-          rumorDecryptor: (_, _) async => rumor,
-        );
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+          );
 
-        repository.startListening();
-        controller.add(giftWrap);
-        await Future<void>.delayed(Duration.zero);
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
 
-        verify(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: true,
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        ).called(1);
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: false,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test('processes multiple events sequentially', () async {
         final giftWrap1 = createGiftWrapEvent();
@@ -1046,7 +1185,7 @@ void main() {
           },
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap1);
         await Future<void>.delayed(Duration.zero);
         controller.add(giftWrap2);
@@ -1127,7 +1266,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         // Should not throw — error is caught internally
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
@@ -1142,7 +1281,7 @@ void main() {
     // -----------------------------------------------------------------
 
     group('subscription lifecycle', () {
-      test('startListening subscribes to kind 1059 events', () {
+      test('startListening subscribes to kind 1059 events', () async {
         final controller = StreamController<Event>();
         when(
           () => mockNostrClient.subscribe(
@@ -1152,7 +1291,7 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final repository = createRepository();
-        repository.startListening();
+        await repository.startListening();
 
         verify(
           () => mockNostrClient.subscribe(
@@ -1164,7 +1303,7 @@ void main() {
         controller.close();
       });
 
-      test('startListening is idempotent', () {
+      test('startListening is idempotent', () async {
         final controller = StreamController<Event>();
         when(
           () => mockNostrClient.subscribe(
@@ -1174,8 +1313,8 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final repository = createRepository();
-        repository.startListening();
-        repository.startListening(); // Second call is no-op
+        await repository.startListening();
+        await repository.startListening(); // Second call is no-op
 
         verify(
           () => mockNostrClient.subscribe(
@@ -1200,7 +1339,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final repository = createRepository();
-        repository.startListening();
+        await repository.startListening();
         await repository.stopListening();
 
         verify(
@@ -1208,6 +1347,227 @@ void main() {
         ).called(1);
 
         await controller.close();
+      });
+
+      test('startListening after stopListening re-subscribes '
+          '(inbox can be re-opened)', () async {
+        // Return a fresh stream per subscribe call so both listens succeed.
+        final controllers = <StreamController<Event>>[];
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) {
+          final controller = StreamController<Event>();
+          controllers.add(controller);
+          return controller.stream;
+        });
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+
+        repository.startListening();
+        await repository.stopListening();
+        repository.startListening();
+
+        // Both opens should have produced a subscribe call on the client.
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(2);
+
+        await repository.stopListening();
+        for (final c in controllers) {
+          await c.close();
+        }
+      });
+
+      test('initialize does not open a subscription (lazy inbox)', () async {
+        // New behavior: initialize() only wires credentials. The gift-wrap
+        // subscription is started by the inbox screen via startListening().
+        // This keeps cold start off the UI isolate until the user visits
+        // the messages tab. Regression guard for
+        // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+        final repository = DmRepository(
+          nostrClient: mockNostrClient,
+          messageService: mockMessageService,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+          // Intentionally no userPubkey/signer — initialize() provides them.
+        );
+
+        repository.setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        // The relay client must not have been asked to subscribe.
+        verifyNever(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        );
+        // But the repository should still be initialized so send() works.
+        expect(repository.isInitialized, isTrue);
+      });
+
+      test('startListening does not poll the relay', () async {
+        // Regression guard: the 10s gift-wrap poll timer was removed
+        // because it re-fetched the last 20 events forever on the UI
+        // isolate, producing constant dedup skips and log spam. The
+        // live subscription is now the sole event source while the
+        // inbox is open. See
+        // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        repository.startListening();
+
+        // Wait well beyond any former poll interval.
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // queryEvents must never be called — no background poller.
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+
+        await repository.stopListening();
+        await controller.close();
+      });
+
+      test(
+        'startListening on first ever open uses limit:50 and no since',
+        () async {
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+          repository.startListening();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured, hasLength(1));
+          expect(captured.single.limit, 50);
+          expect(captured.single.since, isNull);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
+
+      test(
+        'startListening on subsequent open uses since = newest - 2d',
+        () async {
+          const newest = 1700000000;
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState()..newestOverride = newest;
+          final repository = createRepository(syncState: syncState);
+          repository.startListening();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured, hasLength(1));
+          expect(captured.single.since, newest - 2 * 86400);
+          expect(captured.single.limit, isNull);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
+    });
+
+    // -----------------------------------------------------------------
+    // loadOlderMessages pagination
+    // -----------------------------------------------------------------
+
+    group('loadOlderMessages', () {
+      test('queries until:oldest with limit 50', () async {
+        const oldest = 1699000000;
+        final syncState = _FakeDmSyncState()..oldestOverride = oldest;
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+
+        final repository = createRepository(syncState: syncState);
+
+        await repository.loadOlderMessages();
+
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(
+                    captureAny(),
+                    subscriptionId: any(named: 'subscriptionId'),
+                    useCache: any(named: 'useCache'),
+                  ),
+                ).captured.single
+                as List<nostr_filter.Filter>;
+        expect(captured, hasLength(1));
+        expect(captured.single.until, oldest);
+        expect(captured.single.limit, 50);
+      });
+
+      test('is a no-op when oldest is null', () async {
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(syncState: syncState);
+
+        await repository.loadOlderMessages();
+
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
       });
     });
 
@@ -1708,7 +2068,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -1859,7 +2219,7 @@ void main() {
           rumorDecryptor: (_, _) async => fileRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -1949,7 +2309,7 @@ void main() {
           rumorDecryptor: (_, _) async => incompleteRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -2446,7 +2806,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumorFromMod,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -2726,7 +3086,7 @@ void main() {
           nip04Decryptor: (pubkey, ciphertext) async => 'Hello!',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2780,7 +3140,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'Decrypted NIP-04 text',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2844,7 +3204,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'My sent message',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2887,7 +3247,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'should not reach',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2939,7 +3299,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'should not reach',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -2991,7 +3351,7 @@ void main() {
           nip04Decryptor: (_, _) async => null,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3073,7 +3433,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'NIP-04 message',
         );
 
-        repository.startListening();
+        await repository.startListening();
 
         // Send both event types
         controller.add(giftWrap);
@@ -3252,7 +3612,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'Legacy message',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3649,6 +4009,796 @@ void main() {
           ).called(1);
         },
       );
+    });
+
+    // -----------------------------------------------------------------
+    // Canonicalization: extra p-tags routing
+    // -----------------------------------------------------------------
+    group('canonicalize 1:1 participants', () {
+      Event createGiftWrapEvent({String? id}) {
+        return Event.fromJson({
+          'id': id ?? _giftWrapEventId,
+          'pubkey':
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'created_at': 1700000000,
+          'kind': EventKind.giftWrap,
+          'tags': [
+            ['p', _validPubkeyA],
+          ],
+          'content': 'encrypted-content',
+          'sig': '',
+        });
+      }
+
+      Event createRumorEvent({
+        String? id,
+        String? pubkey,
+        String? content,
+        int? kind,
+        List<List<String>>? tags,
+        int? createdAt,
+      }) {
+        return Event.fromJson({
+          'id': id ?? _rumorEventId,
+          'pubkey': pubkey ?? _validPubkeyB,
+          'created_at': createdAt ?? 1700000000,
+          'kind': kind ?? EventKind.privateDirectMessage,
+          'tags':
+              tags ??
+              [
+                ['p', _validPubkeyA],
+              ],
+          'content': content ?? 'Hello from B!',
+          'sig': '',
+        });
+      }
+
+      test(
+        'routes message with extra p-tags to existing 1:1 conversation',
+        () async {
+          // Rumor from B with extra p-tag for C (e.g., reply mention).
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent(
+            tags: [
+              ['p', _validPubkeyA],
+              ['p', _validPubkeyC],
+            ],
+          );
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          // Compute the canonical 1:1 conversation ID (A ↔ B).
+          final canonical1to1 = [_validPubkeyA, _validPubkeyB]..sort();
+          final canonicalId = DmRepository.computeConversationId(canonical1to1);
+
+          // Stub: an existing 1:1 conversation between A and B.
+          when(
+            () => mockConversationsDao.getConversation(
+              canonicalId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: canonicalId,
+              participantPubkeys: jsonEncode(canonical1to1),
+              isGroup: false,
+              lastMessageContent: 'Previous msg',
+              lastMessageTimestamp: 1699999999,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1699999999,
+            ),
+          );
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          // Message should be stored with the canonical 1:1 ID, not the
+          // 3-party ID that the extra p-tag would have produced.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: canonicalId,
+              senderPubkey: _validPubkeyB,
+              content: 'Hello from B!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+
+          // Conversation should be upserted as 1:1 (not group).
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: canonicalId,
+              participantPubkeys: jsonEncode(canonical1to1),
+              isGroup: false,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello from B!',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: false,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'defaults to 1:1 when extra p-tags and no existing conversation',
+        () async {
+          // Rumor from B with extra p-tag for C — no prior conversation.
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent(
+            tags: [
+              ['p', _validPubkeyA],
+              ['p', _validPubkeyC],
+            ],
+          );
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          // Should default to canonical 1:1 (A <-> B), not a 3-party group.
+          final canonical1to1 = [_validPubkeyA, _validPubkeyB]..sort();
+          final canonicalId = DmRepository.computeConversationId(canonical1to1);
+
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: canonicalId,
+              senderPubkey: _validPubkeyB,
+              content: 'Hello from B!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+
+          // Conversation should be upserted as 1:1 (not group).
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: canonicalId,
+              participantPubkeys: jsonEncode(canonical1to1),
+              isGroup: false,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello from B!',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: false,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'routes to existing group when extra p-tags match it',
+        () async {
+          // Rumor from B with extra p-tag for C — group [A,B,C] exists.
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent(
+            tags: [
+              ['p', _validPubkeyA],
+              ['p', _validPubkeyC],
+            ],
+          );
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          // Stub: existing group conversation [A, B, C].
+          final groupParticipants = [
+            _validPubkeyA,
+            _validPubkeyB,
+            _validPubkeyC,
+          ]..sort();
+          final groupId = DmRepository.computeConversationId(groupParticipants);
+
+          // Generic fallback returns null (no conversation found).
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          // Specific stub: group conversation exists.
+          when(
+            () => mockConversationsDao.getConversation(
+              groupId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: groupId,
+              participantPubkeys: jsonEncode(groupParticipants),
+              isGroup: true,
+              lastMessageContent: 'Group msg',
+              lastMessageTimestamp: 1699999999,
+              lastMessageSenderPubkey: _validPubkeyC,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1699999999,
+            ),
+          );
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          // Should route to the existing group, not create a new 1:1.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: groupId,
+              senderPubkey: _validPubkeyB,
+              content: 'Hello from B!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: groupId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: true,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello from B!',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: false,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'self-wrap routes to correct conversation, not self-conversation',
+        () async {
+          // Self-wrap: rumor authored by current user (A) with p-tag to B.
+          // This simulates processing our own sent-message recovery wrap.
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent(
+            pubkey: _validPubkeyA, // Sender == current user
+            tags: [
+              ['p', _validPubkeyB], // Actual recipient
+            ],
+            content: 'Hello from me!',
+          );
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+          );
+
+          repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          // Should use canonical 1:1 conversation ID (A <-> B),
+          // NOT a self-conversation [A, A].
+          final canonical1to1 = [_validPubkeyA, _validPubkeyB]..sort();
+          final canonicalId = DmRepository.computeConversationId(canonical1to1);
+
+          // Verify message stored in correct conversation.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: canonicalId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello from me!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+
+          // Conversation should be upserted as 1:1 with correct participants.
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: canonicalId,
+              participantPubkeys: jsonEncode(canonical1to1),
+              isGroup: false,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello from me!',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyA,
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: true,
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+
+          // Self-conversation ID should NOT have been used.
+          final selfConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyA],
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: selfConvId,
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test('normal 1:1 message (single p-tag) is not affected', () async {
+        // Standard 1:1 message — single p-tag, no extra participants.
+        final giftWrap = createGiftWrapEvent();
+        final rumor = createRumorEvent();
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDirectMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            subject: any(named: 'subject'),
+            isRead: any(named: 'isRead'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final repository = createRepository(
+          rumorDecryptor: (_, _) async => rumor,
+        );
+
+        await repository.startListening();
+        controller.add(giftWrap);
+        await Future<void>.delayed(Duration.zero);
+
+        // Should use standard 1:1 conversation ID.
+        final participants = [_validPubkeyA, _validPubkeyB]..sort();
+        final convId = DmRepository.computeConversationId(participants);
+
+        verify(
+          () => mockDirectMessagesDao.insertMessage(
+            id: _rumorEventId,
+            conversationId: convId,
+            senderPubkey: _validPubkeyB,
+            content: 'Hello from B!',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+
+        // Canonicalization should NOT have been triggered — only one
+        // getConversation call (the one inside the transaction).
+        // The canonicalize method returns early for ≤ 2 participants.
+        verify(
+          () => mockConversationsDao.upsertConversation(
+            id: convId,
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Hello from B!',
+            lastMessageTimestamp: 1700000000,
+            lastMessageSenderPubkey: _validPubkeyB,
+            isRead: false,
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).called(1);
+
+        await controller.close();
+        await repository.stopListening();
+      });
     });
   });
 }

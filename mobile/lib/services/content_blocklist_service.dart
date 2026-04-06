@@ -388,7 +388,9 @@ class ContentBlocklistService {
         (pk) => pk != userPubkey,
         orElse: () => '',
       );
-      return otherPubkey.isEmpty || !shouldFilterFromFeeds(otherPubkey);
+      // Exclude self-conversations (no "other" participant found).
+      if (otherPubkey.isEmpty) return false;
+      return !shouldFilterFromFeeds(otherPubkey);
     }).toList();
   }
 

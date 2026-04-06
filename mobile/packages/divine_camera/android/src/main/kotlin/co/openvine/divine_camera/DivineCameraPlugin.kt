@@ -13,6 +13,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.view.TextureRegistry
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** DivineCameraPlugin */
 class DivineCameraPlugin :
@@ -35,9 +36,10 @@ class DivineCameraPlugin :
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
+        val oneShotResult = OneShotMethodResult(result)
         when (call.method) {
             "getPlatformVersion" -> {
-                result.success("Android ${android.os.Build.VERSION.RELEASE}")
+                oneShotResult.success("Android ${android.os.Build.VERSION.RELEASE}")
             }
 
             "initializeCamera" -> {
@@ -46,79 +48,79 @@ class DivineCameraPlugin :
                 val enableScreenFlash = call.argument<Boolean>("enableScreenFlash") ?: true
                 val mirrorFrontCameraOutput = call.argument<Boolean>("mirrorFrontCameraOutput") ?: true
                 val enableAutoLensSwitch = call.argument<Boolean>("enableAutoLensSwitch") ?: true
-                initializeCamera(lens, videoQuality, enableScreenFlash, mirrorFrontCameraOutput, enableAutoLensSwitch, result)
+                initializeCamera(lens, videoQuality, enableScreenFlash, mirrorFrontCameraOutput, enableAutoLensSwitch, oneShotResult)
             }
 
             "disposeCamera" -> {
-                disposeCamera(result)
+                disposeCamera(oneShotResult)
             }
 
             "setFlashMode" -> {
                 val mode = call.argument<String>("mode") ?: "off"
-                setFlashMode(mode, result)
+                setFlashMode(mode, oneShotResult)
             }
 
             "setFocusPoint" -> {
                 val x = call.argument<Double>("x") ?: 0.5
                 val y = call.argument<Double>("y") ?: 0.5
-                setFocusPoint(x.toFloat(), y.toFloat(), result)
+                setFocusPoint(x.toFloat(), y.toFloat(), oneShotResult)
             }
 
             "setExposurePoint" -> {
                 val x = call.argument<Double>("x") ?: 0.5
                 val y = call.argument<Double>("y") ?: 0.5
-                setExposurePoint(x.toFloat(), y.toFloat(), result)
+                setExposurePoint(x.toFloat(), y.toFloat(), oneShotResult)
             }
 
             "cancelFocusAndMetering" -> {
-                cancelFocusAndMetering(result)
+                cancelFocusAndMetering(oneShotResult)
             }
 
             "setZoomLevel" -> {
                 val level = call.argument<Double>("level") ?: 1.0
-                setZoomLevel(level.toFloat(), result)
+                setZoomLevel(level.toFloat(), oneShotResult)
             }
 
             "switchCamera" -> {
                 val lens = call.argument<String>("lens") ?: "back"
-                switchCamera(lens, result)
+                switchCamera(lens, oneShotResult)
             }
 
             "startRecording" -> {
                 val maxDurationMs = call.argument<Int>("maxDurationMs")
                 val useCache = call.argument<Boolean>("useCache") ?: true
                 val outputDirectory = call.argument<String>("outputDirectory")
-                startRecording(maxDurationMs, useCache, outputDirectory, result)
+                startRecording(maxDurationMs, useCache, outputDirectory, oneShotResult)
             }
 
             "stopRecording" -> {
-                stopRecording(result)
+                stopRecording(oneShotResult)
             }
 
             "pausePreview" -> {
-                pausePreview(result)
+                pausePreview(oneShotResult)
             }
 
             "resumePreview" -> {
-                resumePreview(result)
+                resumePreview(oneShotResult)
             }
 
             "getCameraState" -> {
-                getCameraState(result)
+                getCameraState(oneShotResult)
             }
 
             "setRemoteRecordControlEnabled" -> {
                 val enabled = call.argument<Boolean>("enabled") ?: false
-                setRemoteRecordControlEnabled(enabled, result)
+                setRemoteRecordControlEnabled(enabled, oneShotResult)
             }
 
             "setVolumeKeysEnabled" -> {
                 val enabled = call.argument<Boolean>("enabled") ?: true
-                setVolumeKeysEnabled(enabled, result)
+                setVolumeKeysEnabled(enabled, oneShotResult)
             }
 
             else -> {
-                result.notImplemented()
+                oneShotResult.notImplemented()
             }
         }
     }
@@ -389,4 +391,30 @@ class DivineCameraPlugin :
     override fun onDetachedFromActivity() {
         activity = null
     }
+}
+
+internal class OneShotMethodResult(
+    private val delegate: Result
+) : Result {
+    private val replied = AtomicBoolean(false)
+
+    override fun success(result: Any?) {
+        if (markReplied()) {
+            delegate.success(result)
+        }
+    }
+
+    override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
+        if (markReplied()) {
+            delegate.error(errorCode, errorMessage, errorDetails)
+        }
+    }
+
+    override fun notImplemented() {
+        if (markReplied()) {
+            delegate.notImplemented()
+        }
+    }
+
+    private fun markReplied(): Boolean = replied.compareAndSet(false, true)
 }

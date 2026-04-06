@@ -131,6 +131,7 @@ class RelayBase extends Relay {
     List<dynamic> message, {
     bool? forceSend,
     bool queueIfFailed = true,
+    bool skipReconnect = false,
   }) async {
     if (_connectionManager == null) {
       return false;
@@ -144,7 +145,10 @@ class RelayBase extends Relay {
 
       // Defensive serialization: Ensure all data is JSON-serializable
       final sanitizedMessage = sanitizeForJson(message);
-      final result = await _connectionManager!.sendJson(sanitizedMessage);
+      final result = await _connectionManager!.sendJson(
+        sanitizedMessage,
+        skipReconnect: skipReconnect,
+      );
       if (!result && queueIfFailed) {
         pendingMessages.add(message);
       }

@@ -36,6 +36,7 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
     this.bootstrapHttpClientOverride,
     this.javaScriptRunnerOverride,
     this.onBridgeMessageHandlerReady,
+    this.currentUserPubkeyOverride,
     super.key,
   });
 
@@ -47,6 +48,8 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
   final SandboxJavaScriptRunner? javaScriptRunnerOverride;
   final ValueChanged<Future<void> Function(String message)>?
   onBridgeMessageHandlerReady;
+  @visibleForTesting
+  final String? currentUserPubkeyOverride;
 
   static String pathForAppId(String appId) =>
       '/apps/${Uri.encodeComponent(appId)}/sandbox';
@@ -62,6 +65,10 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   Uri? _blockedUri;
   Uri? _currentPageUri;
   http.Client? _ownedBootstrapHttpClient;
+
+  String? get _currentUserPubkey =>
+      widget.currentUserPubkeyOverride ??
+      ref.read(authServiceProvider).currentPublicKeyHex;
 
   @override
   void initState() {
@@ -255,8 +262,12 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     }
 
     final contentController = await configuration.getUserContentController();
+    final fullScript = buildBridgeBootstrapScript(
+      pubkey: _currentUserPubkey,
+      autoLoginScript: widget.app.autoLoginScript,
+    );
     final userScript = WKUserScript(
-      source: _bridgeBootstrapScript,
+      source: fullScript,
       injectionTime: UserScriptInjectionTime.atDocumentStart,
       isForMainFrameOnly: false,
     );
@@ -287,7 +298,11 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
 
       return _BootstrappedSandboxPage(
         baseUri: resolvedUri,
-        html: injectBridgeBootstrapIntoHtml(response.body),
+        html: injectBridgeBootstrapIntoHtml(
+          response.body,
+          pubkey: _currentUserPubkey,
+          autoLoginScript: widget.app.autoLoginScript,
+        ),
       );
     } catch (_) {
       return null;
@@ -300,7 +315,11 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
       return;
     }
 
-    await _runJavaScript(_bridgeBootstrapScript);
+    final fullScript = buildBridgeBootstrapScript(
+      pubkey: _currentUserPubkey,
+      autoLoginScript: widget.app.autoLoginScript,
+    );
+    await _runJavaScript(fullScript);
   }
 
   Future<void> _handleBridgeMessage(String message) async {
@@ -472,7 +491,21 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   }
 }
 
-const String _bridgeBootstrapScript = r'''
+/// Builds the bridge bootstrap JavaScript with optional eager pubkey,
+/// provider metadata, ready-event dispatch, and per-app auto-login.
+@visibleForTesting
+String buildBridgeBootstrapScript({
+  String? pubkey,
+  String? autoLoginScript,
+}) {
+  final escapedPubkey = pubkey != null && pubkey.isNotEmpty
+      ? _escapeJs(pubkey)
+      : '';
+  final loginJs = autoLoginScript != null && autoLoginScript.isNotEmpty
+      ? autoLoginScript.replaceAll('{{PUBKEY}}', escapedPubkey)
+      : '';
+
+  return '''
 (() => {
   if (window.__divineNostrBridgeInstalled) {
     return;
@@ -482,7 +515,7 @@ const String _bridgeBootstrapScript = r'''
   let nextId = 0;
 
   const request = (method, args) => {
-    const id = `divine-${++nextId}`;
+    const id = `divine-\${++nextId}`;
     const payload = JSON.stringify({
       id,
       method,
@@ -517,7 +550,14 @@ const String _bridgeBootstrapScript = r'''
   };
 
   window.nostr = {
+    _pubkey: '$escapedPubkey' || null,
+    _metadata: {
+      name: 'diVine',
+      version: '1.0',
+      supports: ['nip04', 'nip44'],
+    },
     getPublicKey() {
+      if (this._pubkey) return Promise.resolve(this._pubkey);
       return request('getPublicKey', {});
     },
     getRelays() {
@@ -537,8 +577,29 @@ const String _bridgeBootstrapScript = r'''
   };
 
   window.__divineNostrBridgeInstalled = true;
+
+  // Auto-login: seed localStorage so the app recognises the session.
+  try { $loginJs } catch (_) {}
+
+  // Signal that a NIP-07 signer is available.
+  window.dispatchEvent(new Event('nostr:ready'));
+  document.dispatchEvent(new CustomEvent('nlAuth', {
+    detail: { type: 'login', method: 'extension' },
+  }));
 })();
 ''';
+}
+
+/// Escapes a string for safe embedding inside a JS single-quoted
+/// literal.
+String _escapeJs(String value) {
+  return value
+      .replaceAll(r'\', r'\\')
+      .replaceAll("'", r"\'")
+      .replaceAll('`', r'\`')
+      .replaceAll('\n', r'\n')
+      .replaceAll('\r', r'\r');
+}
 
 class _SandboxStatusCard extends StatelessWidget {
   const _SandboxStatusCard({
@@ -615,9 +676,16 @@ class _BootstrappedSandboxPage {
 }
 
 @visibleForTesting
-String injectBridgeBootstrapIntoHtml(String html) {
-  const bridgeMarkup =
-      '<!-- divine-nostr-bridge --><script>$_bridgeBootstrapScript</script>';
+String injectBridgeBootstrapIntoHtml(
+  String html, {
+  String? pubkey,
+  String? autoLoginScript,
+}) {
+  final script = buildBridgeBootstrapScript(
+    pubkey: pubkey,
+    autoLoginScript: autoLoginScript,
+  );
+  final bridgeMarkup = '<!-- divine-nostr-bridge --><script>$script</script>';
   final insertionPoints = <RegExp>[
     RegExp('<head[^>]*>', caseSensitive: false),
     RegExp('<!doctype[^>]*>', caseSensitive: false),

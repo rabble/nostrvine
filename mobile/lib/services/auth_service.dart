@@ -10,7 +10,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
-    show NostrKeyManager, SecureKeyContainer, SecureKeyStorage;
+    show
+        NostrKeyManager,
+        SecureKeyContainer,
+        SecureKeyStorage,
+        SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -1047,6 +1051,38 @@ class AuthService implements BackgroundAwareService {
   Future<void> removeKnownAccount(String pubkeyHex) async {
     await _removeFromKnownAccounts(pubkeyHex);
     await _clearArchivedSignerInfo(pubkeyHex);
+  }
+
+  /// Pubkey to pre-select on the welcome screen after the next sign-out.
+  ///
+  /// Set this before calling [signOut] when the user picks a different account
+  /// from the account-switcher. [WelcomeBloc] reads and clears this on start.
+  String? pendingAccountSwitchPubkey;
+
+  /// Updates [lastUsedAt] for an existing known account without signing in.
+  ///
+  /// Use this before [signOut] when the user explicitly selects a different
+  /// account from the account-switcher, so the welcome screen presents that
+  /// account as the pre-selected returning user.
+  Future<void> touchKnownAccount(String pubkeyHex) async {
+    final accounts = await getKnownAccounts();
+    final index = accounts.indexWhere((a) => a.pubkeyHex == pubkeyHex);
+    if (index < 0) return;
+    final updated = accounts[index].copyWith(lastUsedAt: DateTime.now());
+    accounts[index] = updated;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        kKnownAccountsKey,
+        jsonEncode(accounts.map((a) => a.toJson()).toList()),
+      );
+    } catch (e) {
+      Log.warning(
+        'touchKnownAccount: failed to persist for $pubkeyHex: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -2353,26 +2389,20 @@ class AuthService implements BackgroundAwareService {
     }
 
     try {
-      // Check for existing session with valid access token
-      final session = await _oauthClient.getSession();
-      if (session == null) {
-        Log.debug(
-          'No Keycast session found - nothing to delete',
+      // Get session, refreshing if expired (token may have expired during
+      // the NIP-62 deletion step that runs before this call)
+      final session = await _oauthClient.getSessionOrRefresh();
+      if (session == null || session.accessToken == null) {
+        Log.warning(
+          'Cannot delete Keycast account: '
+          'session unavailable after refresh attempt',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return (true, null);
+        return (false, 'Session expired and could not be refreshed');
       }
 
-      final accessToken = session.accessToken;
-      if (accessToken == null) {
-        Log.debug(
-          'Keycast session has no access token - nothing to delete',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return (true, null);
-      }
+      final accessToken = session.accessToken!;
 
       // Delete the account using the session's access token
       final result = await _oauthClient.deleteAccount(accessToken);
@@ -2402,16 +2432,42 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
-  /// Sign out the current user
-  Future<void> signOut({bool deleteKeys = false}) async {
+  /// Sign out the current user.
+  ///
+  /// When [deleteKeys] is true, stored keys are removed from the device.
+  ///
+  /// When [abortOnKeyDeletionFailure] is true (only meaningful with
+  /// [deleteKeys]), platform key deletion is attempted **before** any
+  /// session cleanup. If deletion fails the method throws immediately and
+  /// no cleanup happens — the user stays signed in and can retry.
+  /// Use this for the "Remove Keys" flow where signing out without
+  /// actually removing keys is counter-productive.
+  ///
+  /// When [abortOnKeyDeletionFailure] is false (default), key deletion
+  /// failure is captured and rethrown **after** all cleanup completes.
+  /// Use this for "Delete Account" where sign-out must finish regardless.
+  Future<void> signOut({
+    bool deleteKeys = false,
+    bool abortOnKeyDeletionFailure = false,
+  }) async {
     Log.info(
       'signOut: starting — '
       'authSource=${_authSource.name}, '
       'deleteKeys=$deleteKeys, '
+      'abortOnKeyDeletionFailure=$abortOnKeyDeletionFailure, '
       'currentPubkey=${_currentKeyContainer?.publicKeyHex ?? "null"}',
       name: 'AuthService',
       category: LogCategory.auth,
     );
+
+    // Pre-flight: when the caller needs key deletion to succeed before
+    // sign-out proceeds, attempt it now. If this throws, no cleanup has
+    // happened and the user stays signed in.
+    if (deleteKeys && abortOnKeyDeletionFailure) {
+      await _keyStorage.deleteKeys();
+    }
+
+    Object? keyDeletionError;
 
     try {
       // Clear TOS acceptance on any logout - user must re-accept when logging
@@ -2438,7 +2494,9 @@ class AuthService implements BackgroundAwareService {
 
       // Clear relay discovery cache so next login re-queries indexers
       // (even for same-user re-login, relays may have changed)
-      await _relayDiscoveryService.clearCache(_currentKeyContainer?.npub ?? '');
+      await _relayDiscoveryService.clearCache(
+        _currentKeyContainer?.npub ?? '',
+      );
 
       // Clear the stored pubkey tracking so next login is treated as new
       await prefs.remove('current_user_pubkey_hex');
@@ -2457,7 +2515,22 @@ class AuthService implements BackgroundAwareService {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        await _keyStorage.deleteKeys();
+        // Isolate key deletion so that a failure does not short-circuit
+        // the remaining cleanup (session, signers, auth state). The error
+        // is rethrown after cleanup completes so callers can warn the user.
+        // Skip if already handled by the pre-flight check above.
+        if (!abortOnKeyDeletionFailure) {
+          try {
+            await _keyStorage.deleteKeys();
+          } catch (e) {
+            keyDeletionError = e;
+            Log.error(
+              'Key deletion failed during signOut: $e',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+          }
+        }
       } else {
         // Non-destructive sign-out: archive signer info for later restoration
         if (currentPubkey != null) {
@@ -2512,7 +2585,8 @@ class AuthService implements BackgroundAwareService {
       _currentProfile = null;
       _lastError = null;
 
-      // Unregister relay-discovery callback so we don't hold a client reference
+      // Unregister relay-discovery callback so we don't hold a client
+      // reference
       _onUserRelaysDiscovered = null;
       _userRelays = [];
 
@@ -2581,6 +2655,14 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
       _lastError = 'Sign out failed: $e';
+    }
+
+    // After all cleanup, propagate key deletion failure so callers can
+    // warn the user that keys may still be on the device.
+    if (keyDeletionError != null) {
+      throw SecureKeyStorageException(
+        'Signed out but key deletion failed: $keyDeletionError',
+      );
     }
   }
 

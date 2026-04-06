@@ -1,33 +1,97 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:rxdart/rxdart.dart';
 
-/// Always-visible Videos section with a "Videos" header.
+/// Always-visible Videos section with a "Videos" header and optional
+/// "See all" chevron.
 ///
 /// Returns a [SliverMainAxisGroup] so the header and content participate
 /// natively in the parent [CustomScrollView]'s sliver protocol.
 class VideosSection extends StatelessWidget {
-  const VideosSection({super.key});
+  const VideosSection({this.onSeeAll, super.key});
+
+  /// Called when the user taps the "Videos" header chevron.
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
-    return const SliverMainAxisGroup(
+    return SliverMainAxisGroup(
       slivers: [
-        SliverToBoxAdapter(child: SectionHeader(title: 'Videos')),
-        _VideosContent(),
+        SliverToBoxAdapter(
+          child: SectionHeader(title: 'Videos', onTap: onSeeAll),
+        ),
+        const _VideosContent(),
       ],
     );
   }
 }
 
-class _VideosContent extends StatelessWidget {
+class _VideosContent extends StatefulWidget {
   const _VideosContent();
+
+  @override
+  State<_VideosContent> createState() => _VideosContentState();
+}
+
+class _VideosContentState extends State<_VideosContent> {
+  late final StreamController<List<VideoEvent>> _videosStreamController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+  }
+
+  @override
+  void dispose() {
+    _videosStreamController.close();
+    super.dispose();
+  }
+
+  void _onVideoTap(List<VideoEvent> videos, int index) {
+    context.push(
+      PooledFullscreenVideoFeedScreen.path,
+      extra: PooledFullscreenVideoFeedArgs(
+        videosStream: _videosStreamController.stream.startWith(videos),
+        initialIndex: index,
+        onLoadMore: () => context.read<VideoSearchBloc>().add(
+          const VideoSearchLoadMore(),
+        ),
+        contextTitle: 'Search Results',
+        trafficSource: ViewTrafficSource.search,
+        sourceDetail: context.read<VideoSearchBloc>().state.query,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<VideoSearchBloc, VideoSearchState>(
+      listenWhen: (prev, curr) => prev.videos != curr.videos,
+      listener: (context, state) {
+        _videosStreamController.add(state.videos);
+      },
+      child: _VideosGrid(onVideoTap: _onVideoTap),
+    );
+  }
+}
+
+class _VideosGrid extends StatelessWidget {
+  const _VideosGrid({required this.onVideoTap});
+
+  final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +102,9 @@ class _VideosContent extends StatelessWidget {
       (VideoSearchBloc bloc) => bloc.state.videos,
     );
 
-    if ((status == .initial || status == .searching) && videos.isEmpty) {
+    if ((status == VideoSearchStatus.initial ||
+            status == VideoSearchStatus.searching) &&
+        videos.isEmpty) {
       return const SliverToBoxAdapter(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 24),
@@ -64,10 +130,9 @@ class _VideosContent extends StatelessWidget {
         crossAxisSpacing: 4,
         childCount: videos.length,
         itemBuilder: (context, index) {
-          return _SearchVideoTile(
+          return SearchVideoTile(
             video: videos[index],
-            index: index,
-            videos: videos,
+            onTap: () => onVideoTap(videos, index),
           );
         },
       ),
@@ -75,23 +140,24 @@ class _VideosContent extends StatelessWidget {
   }
 }
 
-class _SearchVideoTile extends StatelessWidget {
-  const _SearchVideoTile({
+/// A video thumbnail tile for search results with author name overlay.
+///
+/// Shared between [VideosSection] (all-filter overview) and
+/// [VideoSearchView] (dedicated videos-filter grid).
+class SearchVideoTile extends StatelessWidget {
+  const SearchVideoTile({
     required this.video,
-    required this.index,
-    required this.videos,
+    required this.onTap,
+    super.key,
   });
 
   final VideoEvent video;
-  final int index;
-  final List<VideoEvent> videos;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // TODO(#2473): Navigate to video feed mode
-      },
+      onTap: onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: Stack(

@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved duration warning: shows exact seconds over limit instead of vague message
 
 ### Fixed
+- **Moderated Content Filtering**: Moderated videos from the relay are now filtered from the home feed cache,
+  unknown server-side moderation labels are preserved and treated as hide signals, and 401/403 playback failures
+  display a full-screen overlay with skip and age-verification actions instead of a half-broken player card.
+
 - **iOS Build: iPad Multitasking Orientation Requirements**: Fixed App Store validation failure for iPad multitasking
   - Added landscape orientations (LandscapeLeft, LandscapeRight) to iPad Info.plist configuration
   - Satisfies Apple requirement for split-screen/slide-over support on iPad

@@ -82,6 +82,10 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+      // Stub subscription lifecycle methods (#2766).
+      when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
+      when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
     });
 
     ConversationListBloc createBloc() => ConversationListBloc(
@@ -1097,5 +1101,75 @@ void main() {
 
       expect(target1, isNot(equals(target2)));
     });
+  });
+
+  // -------------------------------------------------------------------
+  // Subscription lifecycle (#2766)
+  // -------------------------------------------------------------------
+
+  group('subscription lifecycle (#2766)', () {
+    late _MockDmRepository mockDmRepository;
+    late _MockFollowRepository mockFollowRepository;
+
+    setUp(() {
+      mockDmRepository = _MockDmRepository();
+      mockFollowRepository = _MockFollowRepository();
+
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
+      when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+      when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
+      when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
+    });
+
+    blocTest<ConversationListBloc, ConversationListState>(
+      'calls startListening when $ConversationListStarted is added',
+      build: () {
+        _stubStreams(mockDmRepository);
+        return ConversationListBloc(
+          dmRepository: mockDmRepository,
+          followRepository: mockFollowRepository,
+        );
+      },
+      act: (bloc) => bloc.add(const ConversationListStarted()),
+      verify: (_) {
+        verify(() => mockDmRepository.startListening()).called(1);
+      },
+    );
+
+    test('calls stopListening when BLoC is closed', () async {
+      _stubStreams(mockDmRepository);
+      final bloc = ConversationListBloc(
+        dmRepository: mockDmRepository,
+        followRepository: mockFollowRepository,
+      );
+
+      await bloc.close();
+
+      verify(() => mockDmRepository.stopListening()).called(1);
+    });
+
+    blocTest<ConversationListBloc, ConversationListState>(
+      'startListening is idempotent across multiple Started events',
+      build: () {
+        _stubStreams(mockDmRepository);
+        return ConversationListBloc(
+          dmRepository: mockDmRepository,
+          followRepository: mockFollowRepository,
+        );
+      },
+      act: (bloc) {
+        bloc
+          ..add(const ConversationListStarted())
+          ..add(const ConversationListStarted());
+      },
+      verify: (_) {
+        // startListening is called once per event, but the repository's
+        // internal guard makes it a no-op after the first.
+        verify(() => mockDmRepository.startListening()).called(2);
+      },
+    );
   });
 }

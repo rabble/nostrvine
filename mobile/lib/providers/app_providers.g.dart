@@ -2324,6 +2324,58 @@ final class CurrentAuthStateProvider
 
 String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 
+/// Provider that fetches the list of known accounts from the auth service.
+///
+/// Invalidate this provider after sign-in or sign-out to refresh the list.
+
+@ProviderFor(knownAccounts)
+const knownAccountsProvider = KnownAccountsProvider._();
+
+/// Provider that fetches the list of known accounts from the auth service.
+///
+/// Invalidate this provider after sign-in or sign-out to refresh the list.
+
+final class KnownAccountsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<KnownAccount>>,
+          List<KnownAccount>,
+          FutureOr<List<KnownAccount>>
+        >
+    with
+        $FutureModifier<List<KnownAccount>>,
+        $FutureProvider<List<KnownAccount>> {
+  /// Provider that fetches the list of known accounts from the auth service.
+  ///
+  /// Invalidate this provider after sign-in or sign-out to refresh the list.
+  const KnownAccountsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'knownAccountsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$knownAccountsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<KnownAccount>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<KnownAccount>> create(Ref ref) {
+    return knownAccounts(ref);
+  }
+}
+
+String _$knownAccountsHash() => r'8e9753265420cf092af04aa07686c98cdaa8eb1e';
+
 /// Provider that returns true only when NostrClient is fully ready for operations.
 /// Combines auth state check AND nostrClient.hasKeys verification.
 /// Use this to guard providers that require authenticated NostrClient access.
@@ -2656,17 +2708,23 @@ final class HashtagServiceProvider
 
 String _$hashtagServiceHash() => r'5cd38d3c2e8d78a6f7b74a72b650d79e28938fe4';
 
-/// Social service depends on Nostr service, Auth service, and ProfileRepository
+/// Social service for follow sets (NIP-51 Kind 30000).
+///
+/// Follower count stats have moved to [FollowRepository].
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service, Auth service, and ProfileRepository
+/// Social service for follow sets (NIP-51 Kind 30000).
+///
+/// Follower count stats have moved to [FollowRepository].
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service, Auth service, and ProfileRepository
+  /// Social service for follow sets (NIP-51 Kind 30000).
+  ///
+  /// Follower count stats have moved to [FollowRepository].
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2700,7 +2758,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'7f858c18bfb9a531aef63fad0086233718f71a6a';
+String _$socialServiceHash() => r'5b4d5751d3f2ef22c9ee2610cda1c4e70b2302a7';
 
 /// Cached following list loaded directly from SharedPreferences.
 ///
@@ -2834,7 +2892,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'1f2f6ee87179a7ca7cb52695e4e304ff56704c41';
+String _$followRepositoryHash() => r'1f41b9c42e06c287a43fe235a3b3774d1a759a49';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -4283,14 +4341,13 @@ String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -4304,14 +4361,13 @@ const dmRepositoryProvider = DmRepositoryProvider._();
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -4325,14 +4381,13 @@ final class DmRepositoryProvider
   /// and sending encrypted direct messages. Works with any [NostrSigner]
   /// (local keys, Keycast RPC, Amber, etc.).
   ///
-  /// Automatically starts listening for incoming gift-wrapped messages and
-  /// stops when disposed.
+  /// Sets auth credentials eagerly so read/send operations work immediately.
+  /// The relay subscription is NOT started here — it is driven by the inbox
+  /// UI lifecycle via [ConversationListBloc] (#2766).
   ///
-  /// Uses `keepAlive: true` because the relay subscription must survive
-  /// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-  /// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-  /// provider auto-disposes during rebuild gaps, killing the subscription
-  /// and causing incoming DMs to be silently dropped.
+  /// Uses `keepAlive: true` because the repository must survive transient
+  /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+  /// `nostrServiceProvider` auth-state changes).
   ///
   /// Non-nullable: the repository works without keys at construction time.
   /// Read operations return cached/empty data; write operations check keys.
@@ -4369,7 +4424,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'9c7cab6895add408bb3d0a0c93f96ffbbd076525';
+String _$dmRepositoryHash() => r'30503db56d4371ec8d639cebcaf711fa372966bd';
 
 /// Provider for CommentsRepository instance
 ///

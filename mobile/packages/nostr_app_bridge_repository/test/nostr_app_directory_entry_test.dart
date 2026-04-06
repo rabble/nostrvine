@@ -61,6 +61,51 @@ void main() {
       });
     });
 
+    group('autoLoginScript', () {
+      test('defaults to null', () {
+        final entry = buildEntry();
+        expect(entry.autoLoginScript, isNull);
+      });
+
+      test('round-trips through JSON', () {
+        final entry = NostrAppDirectoryEntry(
+          id: '1',
+          slug: 'test',
+          name: 'Test',
+          tagline: 'A test app',
+          description: 'Description',
+          iconUrl: 'https://example.com/icon.png',
+          launchUrl: 'https://example.com/app',
+          allowedOrigins: const ['https://example.com'],
+          allowedMethods: const ['getPublicKey'],
+          allowedSignEventKinds: const [1],
+          promptRequiredFor: const ['signEvent'],
+          status: 'approved',
+          sortOrder: 0,
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2026),
+          autoLoginScript: "localStorage.setItem('pk', '{{PUBKEY}}');",
+        );
+        final json = entry.toJson();
+        expect(
+          json['auto_login_script'],
+          equals("localStorage.setItem('pk', '{{PUBKEY}}');"),
+        );
+
+        final restored = NostrAppDirectoryEntry.fromJson(json);
+        expect(
+          restored.autoLoginScript,
+          equals(entry.autoLoginScript),
+        );
+      });
+
+      test('omits auto_login_script from JSON when null', () {
+        final entry = buildEntry();
+        final json = entry.toJson();
+        expect(json.containsKey('auto_login_script'), isFalse);
+      });
+    });
+
     group('Equatable', () {
       test('two entries with same fields are equal', () {
         final a = buildEntry();

@@ -883,6 +883,27 @@ class VideosRepository {
     return video.copyWith(warnLabels: warnLabels);
   }
 
+  /// Applies the injected block filter, content filter, and warning-labels
+  /// resolver to an already-parsed list of [VideoEvent]s.
+  ///
+  /// Use this when you have videos that were not produced by this
+  /// repository's own parsing paths (e.g. entries restored from a local
+  /// cache). Videos that fail the block filter or content filter are
+  /// removed; surviving videos have their `warnLabels` rewritten to
+  /// reflect the current resolver output.
+  ///
+  /// This is a pure, synchronous operation. It does not touch the network
+  /// or local storage.
+  List<VideoEvent> applyContentPreferences(List<VideoEvent> videos) {
+    final out = <VideoEvent>[];
+    for (final video in videos) {
+      if (_blockFilter?.call(video.pubkey) ?? false) continue;
+      final processed = _applyContentPreferences(video);
+      if (processed != null) out.add(processed);
+    }
+    return out;
+  }
+
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.
   ///
   /// Applies two-stage filtering:
@@ -1021,24 +1042,32 @@ class VideosRepository {
   /// - [query]: The search query string. Returns empty if blank.
   /// - [limit]: Maximum number of results (default 50).
   ///
-  /// Returns a list of matching [VideoEvent]s (unsorted — call
-  /// [deduplicateAndSortVideos] to rank).
-  Future<List<VideoEvent>> searchVideosViaApi({
+  /// Returns a record of matching [VideoEvent]s (unsorted — call
+  /// [deduplicateAndSortVideos] to rank) and the total API result count.
+  Future<({List<VideoEvent> videos, int totalCount})> searchVideosViaApi({
     required String query,
     int limit = 50,
+    int offset = 0,
   }) async {
     final trimmed = query.trim();
-    if (trimmed.isEmpty) return [];
+    if (trimmed.isEmpty) {
+      return (videos: <VideoEvent>[], totalCount: 0);
+    }
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
-      return [];
+      return (videos: <VideoEvent>[], totalCount: 0);
     }
 
     try {
-      final stats = await _funnelcakeApiClient.searchVideos(
+      final response = await _funnelcakeApiClient.searchVideos(
         query: trimmed,
         limit: limit,
+        offset: offset,
       );
-      return _transformVideoStats(stats, sortByCreatedAt: false);
+      final videos = _transformVideoStats(
+        response.videos,
+        sortByCreatedAt: false,
+      );
+      return (videos: videos, totalCount: response.totalCount);
     } on FunnelcakeException catch (e, stackTrace) {
       developer.log(
         'searchVideosViaApi failed for "$trimmed"',
@@ -1046,7 +1075,7 @@ class VideosRepository {
         error: e,
         stackTrace: stackTrace,
       );
-      return [];
+      return (videos: <VideoEvent>[], totalCount: 0);
     }
   }
 
@@ -1093,9 +1122,12 @@ class VideosRepository {
 
     // Phase 2: Funnelcake API (fast)
     try {
-      final apiResults = await searchVideosViaApi(query: trimmed, limit: limit);
-      if (apiResults.isNotEmpty) {
-        accumulated = deduplicateAndSortVideos([...accumulated, ...apiResults]);
+      final apiResult = await searchVideosViaApi(query: trimmed, limit: limit);
+      if (apiResult.videos.isNotEmpty) {
+        accumulated = deduplicateAndSortVideos([
+          ...accumulated,
+          ...apiResult.videos,
+        ]);
         yield accumulated;
       }
     } on Exception catch (e, stackTrace) {

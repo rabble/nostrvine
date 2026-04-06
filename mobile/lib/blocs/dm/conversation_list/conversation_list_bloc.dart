@@ -59,6 +59,10 @@ class ConversationListBloc
     ConversationListStarted event,
     Emitter<ConversationListState> emit,
   ) async {
+    // Start the DM relay subscription when the inbox opens (#2766).
+    // The subscription is lazy — it only runs while this BLoC is alive.
+    unawaited(_dmRepository.startListening());
+
     // Only show the loading spinner and reset limit on first load.
     if (state.status == ConversationListStatus.initial) {
       emit(
@@ -187,5 +191,12 @@ class ConversationListBloc
     Emitter<ConversationListState> emit,
   ) {
     add(const ConversationListStarted());
+  }
+
+  @override
+  Future<void> close() {
+    // Stop the DM relay subscription when the inbox is closed (#2766).
+    _dmRepository.stopListening();
+    return super.close();
   }
 }

@@ -2784,7 +2784,7 @@ void main() {
         final filters = [
           Filter(kinds: [EventKind.textNote]),
         ];
-        const customTimeout = Duration(seconds: 5);
+        const customTimeout = Duration(seconds: 10);
 
         when(
           () => mockNostr.countEvents(

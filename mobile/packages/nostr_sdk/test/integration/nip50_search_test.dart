@@ -65,6 +65,7 @@ class _MockRelay extends RelayBase {
     List<dynamic> message, {
     bool? forceSend,
     bool queueIfFailed = true,
+    bool skipReconnect = false,
   }) async {
     sentMessages.add(message);
 

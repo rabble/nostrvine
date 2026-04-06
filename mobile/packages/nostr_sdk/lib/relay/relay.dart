@@ -100,6 +100,7 @@ abstract class Relay {
     List<dynamic> message, {
     bool? forceSend,
     bool queueIfFailed = true,
+    bool skipReconnect = false,
   });
 
   Future<void> disconnect();

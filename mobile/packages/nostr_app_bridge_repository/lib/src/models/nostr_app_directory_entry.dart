@@ -22,6 +22,7 @@ class NostrAppDirectoryEntry extends Equatable {
     required this.sortOrder,
     required this.createdAt,
     required this.updatedAt,
+    this.autoLoginScript,
   });
 
   /// Deserializes from JSON.
@@ -44,6 +45,7 @@ class NostrAppDirectoryEntry extends Equatable {
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
       createdAt: _readDateTime(json['created_at']),
       updatedAt: _readDateTime(json['updated_at']),
+      autoLoginScript: json['auto_login_script'] as String?,
     );
   }
 
@@ -92,6 +94,13 @@ class NostrAppDirectoryEntry extends Equatable {
   /// When the entry was last updated.
   final DateTime? updatedAt;
 
+  /// Optional JavaScript to seed localStorage so the app auto-logs
+  /// in without requiring a click.
+  ///
+  /// Use the placeholder `{{PUBKEY}}` for the user's hex public key.
+  /// The host injects the real value at runtime before evaluation.
+  final String? autoLoginScript;
+
   /// Whether the entry is currently approved.
   bool get isApproved => status == 'approved';
 
@@ -126,6 +135,7 @@ class NostrAppDirectoryEntry extends Equatable {
     sortOrder,
     createdAt,
     updatedAt,
+    autoLoginScript,
   ];
 
   /// Serializes to JSON.
@@ -146,6 +156,7 @@ class NostrAppDirectoryEntry extends Equatable {
       'sort_order': sortOrder,
       'created_at': createdAt?.toUtc().toIso8601String(),
       'updated_at': updatedAt?.toUtc().toIso8601String(),
+      if (autoLoginScript != null) 'auto_login_script': autoLoginScript,
     };
   }
 

@@ -20,7 +20,7 @@ const _pageSize = 50;
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
     required ProfileRepository profileRepository,
-    this.hasVideos = true,
+    this.hasVideos = false,
     this.searchTimeout = const Duration(seconds: 20),
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
@@ -55,15 +55,6 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     // Empty query resets to initial state
     if (query.isEmpty || query.length < minSearchQueryLength) {
       emit(const UserSearchState());
-      return;
-    }
-
-    if (!event.fetchResults) {
-      if (query == state.query && state.status != UserSearchStatus.initial) {
-        return; // preserve existing state including resultCount
-      }
-      final count = await _profileRepository.countUsersLocally(query: query);
-      emit(UserSearchState(query: query, resultCount: count));
       return;
     }
 

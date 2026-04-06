@@ -284,10 +284,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(widget.pubkey));
-    final statsAsync = ref.watch(
-      userProfileStatsReactiveProvider(widget.pubkey),
-    );
-
     // Track analytics when data is loaded
     if (videosAsync is AsyncData) {
       ScreenAnalyticsService().markDataLoaded(
@@ -314,6 +310,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           OtherProfileLoaded(:final profile) => profile,
           OtherProfileError(:final profile) => profile,
         };
+        final statsAsync = ref.watch(
+          userProfileStatsReactiveProvider(widget.pubkey),
+        );
         final headerStats = statsAsync.value;
 
         final displayName =

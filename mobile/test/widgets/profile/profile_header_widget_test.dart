@@ -220,6 +220,11 @@ void main() {
                 ? (ref) => Completer<UserProfile?>().future
                 : (ref) async => profile,
           ),
+          userProfileStatsReactiveProvider(userIdHex).overrideWith(
+            (ref) => profileStats != null
+                ? Stream.value(profileStats)
+                : const Stream<ProfileStats?>.empty(),
+          ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWith(

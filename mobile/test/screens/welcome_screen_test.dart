@@ -249,15 +249,6 @@ void main() {
         ).thenAnswer((_) async => _testProfile);
       });
 
-      testWidgets('shows "Welcome back!" title', (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
-
-        expect(find.text('Welcome back!'), findsOneWidget);
-      });
-
       testWidgets('shows user avatar', (tester) async {
         await tester.binding.setSurfaceSize(const Size(800, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));

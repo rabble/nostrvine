@@ -7,7 +7,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -21,6 +20,7 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
+import 'package:time_formatter/time_formatter.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -310,7 +310,10 @@ class _NotificationTabContentState
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         child: Text(
-                          _getDateHeader(notification.timestamp),
+                          TimeFormatter.formatDateLabel(
+                            notification.timestamp.millisecondsSinceEpoch ~/
+                                1000,
+                          ),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -378,45 +381,21 @@ class _NotificationTabContentState
     final current = notifications[index];
     final previous = notifications[index - 1];
 
+    final currentLocal = current.timestamp.toLocal();
     final currentDate = DateTime(
-      current.timestamp.year,
-      current.timestamp.month,
-      current.timestamp.day,
+      currentLocal.year,
+      currentLocal.month,
+      currentLocal.day,
     );
 
+    final previousLocal = previous.timestamp.toLocal();
     final previousDate = DateTime(
-      previous.timestamp.year,
-      previous.timestamp.month,
-      previous.timestamp.day,
+      previousLocal.year,
+      previousLocal.month,
+      previousLocal.day,
     );
 
     return currentDate != previousDate;
-  }
-
-  String _getDateHeader(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    if (dateOnly == today) {
-      return 'Today';
-    } else if (dateOnly == yesterday) {
-      return 'Yesterday';
-    } else if (now.difference(date).inDays < 7) {
-      final weekdays = [
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-        'Sunday',
-      ];
-      return weekdays[date.weekday - 1];
-    } else {
-      return DateFormat.yMd().format(date);
-    }
   }
 
   Future<void> _navigateToTarget(

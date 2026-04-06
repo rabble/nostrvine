@@ -4629,18 +4629,18 @@ void main() {
     group('searchVideosViaApi', () {
       test('returns empty list when query is empty', () async {
         final result = await repository.searchVideosViaApi(query: '');
-        expect(result, isEmpty);
+        expect(result.videos, isEmpty);
       });
 
       test('returns empty list when query is whitespace only', () async {
         final result = await repository.searchVideosViaApi(query: '   ');
-        expect(result, isEmpty);
+        expect(result.videos, isEmpty);
       });
 
       test('returns empty list when funnelcakeApiClient is null', () async {
         // Default repository has no funnelcake client
         final result = await repository.searchVideosViaApi(query: 'flutter');
-        expect(result, isEmpty);
+        expect(result.videos, isEmpty);
       });
 
       test(
@@ -4655,7 +4655,7 @@ void main() {
           );
 
           final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
-          expect(result, isEmpty);
+          expect(result.videos, isEmpty);
         },
       );
 
@@ -4668,14 +4668,17 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => [
-            _createVideoStats(
-              id: 'api-1',
-              pubkey: 'pubkey-1',
-              dTag: 'api-1',
-              videoUrl: 'https://example.com/api.mp4',
-            ),
-          ],
+          (_) async => VideoSearchResponse(
+            videos: [
+              _createVideoStats(
+                id: 'api-1',
+                pubkey: 'pubkey-1',
+                dTag: 'api-1',
+                videoUrl: 'https://example.com/api.mp4',
+              ),
+            ],
+            totalCount: 1,
+          ),
         );
 
         final repoWithApi = VideosRepository(
@@ -4685,7 +4688,7 @@ void main() {
 
         final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
 
-        expect(result, hasLength(1));
+        expect(result.videos, hasLength(1));
         verify(() => mockFunnelcake.searchVideos(query: 'flutter')).called(1);
       });
 
@@ -4705,7 +4708,7 @@ void main() {
         );
 
         final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
-        expect(result, isEmpty);
+        expect(result.videos, isEmpty);
       });
 
       test('applies block filter to API results', () async {
@@ -4720,20 +4723,23 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => [
-            _createVideoStats(
-              id: 'ok-video',
-              pubkey: 'good-pubkey',
-              dTag: 'ok-video',
-              videoUrl: 'https://example.com/ok.mp4',
-            ),
-            _createVideoStats(
-              id: 'blocked-video',
-              pubkey: 'blocked-pubkey',
-              dTag: 'blocked-video',
-              videoUrl: 'https://example.com/blocked.mp4',
-            ),
-          ],
+          (_) async => VideoSearchResponse(
+            videos: [
+              _createVideoStats(
+                id: 'ok-video',
+                pubkey: 'good-pubkey',
+                dTag: 'ok-video',
+                videoUrl: 'https://example.com/ok.mp4',
+              ),
+              _createVideoStats(
+                id: 'blocked-video',
+                pubkey: 'blocked-pubkey',
+                dTag: 'blocked-video',
+                videoUrl: 'https://example.com/blocked.mp4',
+              ),
+            ],
+            totalCount: 2,
+          ),
         );
 
         final repoWithFilter = VideosRepository(
@@ -4744,7 +4750,7 @@ void main() {
 
         final result = await repoWithFilter.searchVideosViaApi(query: 'video');
 
-        expect(result, hasLength(1));
+        expect(result.videos, hasLength(1));
       });
 
       test('passes custom limit to API', () async {
@@ -4755,7 +4761,12 @@ void main() {
             query: any(named: 'query'),
             limit: any(named: 'limit'),
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer(
+          (_) async => const VideoSearchResponse(
+            videos: [],
+            totalCount: 0,
+          ),
+        );
 
         final repoWithApi = VideosRepository(
           nostrClient: mockNostrClient,
@@ -4914,14 +4925,17 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => [
-            _createVideoStats(
-              id: 'api-1',
-              pubkey: 'pubkey-2',
-              dTag: 'api-1',
-              videoUrl: 'https://example.com/api.mp4',
-            ),
-          ],
+          (_) async => VideoSearchResponse(
+            videos: [
+              _createVideoStats(
+                id: 'api-1',
+                pubkey: 'pubkey-2',
+                dTag: 'api-1',
+                videoUrl: 'https://example.com/api.mp4',
+              ),
+            ],
+            totalCount: 1,
+          ),
         );
 
         when(
@@ -6108,6 +6122,118 @@ void main() {
             before: any(named: 'before'),
           ),
         ).called(2);
+      });
+    });
+
+    group('applyContentPreferences', () {
+      const goodPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const blockedPubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const cleanId =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      const nsfwId =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+      const violenceId =
+          'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+      VideoEvent buildVideo({
+        required String id,
+        required String pubkey,
+        List<String> moderationLabels = const [],
+        List<String> contentWarningLabels = const [],
+        List<String> warnLabels = const [],
+      }) {
+        return VideoEvent(
+          id: id,
+          pubkey: pubkey,
+          createdAt: 1704067200,
+          content: '',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+          videoUrl: 'https://example.com/video.mp4',
+          moderationLabels: moderationLabels,
+          contentWarningLabels: contentWarningLabels,
+          warnLabels: warnLabels,
+        );
+      }
+
+      test('returns videos unchanged when no filters are injected', () {
+        final repo = VideosRepository(nostrClient: mockNostrClient);
+        final videos = [
+          buildVideo(id: cleanId, pubkey: goodPubkey),
+          buildVideo(id: nsfwId, pubkey: blockedPubkey),
+        ];
+
+        final result = repo.applyContentPreferences(videos);
+
+        expect(result, equals(videos));
+      });
+
+      test('removes videos whose pubkey is blocked', () {
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+        final good = buildVideo(id: cleanId, pubkey: goodPubkey);
+        final bad = buildVideo(id: nsfwId, pubkey: blockedPubkey);
+
+        final result = repo.applyContentPreferences([good, bad]);
+
+        expect(result, equals([good]));
+      });
+
+      test('removes videos whose content filter returns true', () {
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          contentFilter: (video) => video.moderationLabels.contains('nudity'),
+        );
+        final clean = buildVideo(id: cleanId, pubkey: goodPubkey);
+        final nsfw = buildVideo(
+          id: nsfwId,
+          pubkey: goodPubkey,
+          moderationLabels: const ['nudity'],
+        );
+
+        final result = repo.applyContentPreferences([clean, nsfw]);
+
+        expect(result, equals([clean]));
+      });
+
+      test('applies warn labels from the resolver', () {
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          warningLabelsResolver: (video) =>
+              video.contentWarningLabels.contains('violence')
+              ? const ['violence']
+              : const [],
+        );
+        final video = buildVideo(
+          id: violenceId,
+          pubkey: goodPubkey,
+          contentWarningLabels: const ['violence'],
+        );
+
+        final result = repo.applyContentPreferences([video]);
+
+        expect(result, hasLength(1));
+        expect(result.single.warnLabels, equals(const ['violence']));
+      });
+
+      test('clears stale warnLabels when resolver returns empty', () {
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          warningLabelsResolver: (_) => const [],
+        );
+        final video = buildVideo(
+          id: violenceId,
+          pubkey: goodPubkey,
+          warnLabels: const ['violence'],
+        );
+
+        final result = repo.applyContentPreferences([video]);
+
+        expect(result, hasLength(1));
+        expect(result.single.warnLabels, isEmpty);
       });
     });
   });

@@ -39,5 +39,20 @@ void main() {
         SearchResultsFilter.all,
       ],
     );
+
+    blocTest<SearchResultsFilterCubit, SearchResultsFilter>(
+      'emits [videos] when setFilter is called with videos',
+      build: SearchResultsFilterCubit.new,
+      act: (cubit) => cubit.setFilter(SearchResultsFilter.videos),
+      expect: () => const [SearchResultsFilter.videos],
+    );
+
+    blocTest<SearchResultsFilterCubit, SearchResultsFilter>(
+      'emits [all] when setFilter is called with all from videos',
+      build: SearchResultsFilterCubit.new,
+      seed: () => SearchResultsFilter.videos,
+      act: (cubit) => cubit.setFilter(SearchResultsFilter.all),
+      expect: () => const [SearchResultsFilter.all],
+    );
   });
 }

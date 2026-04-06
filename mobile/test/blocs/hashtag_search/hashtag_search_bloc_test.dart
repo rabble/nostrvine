@@ -26,6 +26,7 @@ void main() {
         () => mockHashtagRepository.searchHashtags(
           query: any(named: 'query'),
           limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
         ),
       ).thenAnswer((_) async => []);
       when(
@@ -71,6 +72,7 @@ void main() {
             query: 'music',
             results: ['music', 'musician', 'musicvideo'],
             resultCount: 3,
+            offset: 3,
           ),
         ],
         verify: (_) {
@@ -153,6 +155,7 @@ void main() {
             () => mockHashtagRepository.searchHashtags(
               query: any(named: 'query'),
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
         },
@@ -169,6 +172,7 @@ void main() {
             () => mockHashtagRepository.searchHashtags(
               query: any(named: 'query'),
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
         },
@@ -185,6 +189,7 @@ void main() {
             () => mockHashtagRepository.searchHashtags(
               query: any(named: 'query'),
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
         },
@@ -206,6 +211,7 @@ void main() {
             () => mockHashtagRepository.searchHashtags(
               query: any(named: 'query'),
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
         },
@@ -231,6 +237,7 @@ void main() {
             query: 'cats',
             results: ['cats'],
             resultCount: 1,
+            offset: 1,
           ),
         ],
         verify: (_) {
@@ -267,6 +274,7 @@ void main() {
             query: 'final',
             results: ['finalize'],
             resultCount: 1,
+            offset: 1,
           ),
         ],
         verify: (_) {
@@ -278,112 +286,182 @@ void main() {
             () => mockHashtagRepository.searchHashtags(
               query: 'f',
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
           verifyNever(
             () => mockHashtagRepository.searchHashtags(
               query: 'fi',
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
           verifyNever(
             () => mockHashtagRepository.searchHashtags(
               query: 'fin',
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
           verifyNever(
             () => mockHashtagRepository.searchHashtags(
               query: 'fina',
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
         },
       );
+    });
 
+    group('HashtagSearchLoadMore', () {
       blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'emits local count only when full results are not requested',
+        'appends results and updates offset',
         setUp: () {
           when(
-            () => mockHashtagRepository.countHashtagsLocally(query: 'music'),
-          ).thenReturn(4);
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(
-          const HashtagSearchQueryChanged('music', fetchResults: false),
-        ),
-        wait: debounceDuration,
-        expect: () => const [
-          HashtagSearchState(query: 'music', resultCount: 4),
-        ],
-        verify: (_) {
-          verify(
-            () => mockHashtagRepository.countHashtagsLocally(query: 'music'),
-          ).called(1);
-          verifyNever(
             () => mockHashtagRepository.searchHashtags(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
+              query: 'music',
+              offset: 20,
             ),
-          );
+          ).thenAnswer((_) async => ['extra1', 'extra2']);
         },
-      );
-
-      blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'runs full search after a count-only update for the same query',
-        setUp: () {
-          when(
-            () => mockHashtagRepository.countHashtagsLocally(query: 'music'),
-          ).thenReturn(2);
-          when(
-            () => mockHashtagRepository.searchHashtags(query: 'music'),
-          ).thenAnswer((_) async => ['music', 'musician']);
-        },
-        build: createBloc,
-        act: (bloc) async {
-          bloc.add(
-            const HashtagSearchQueryChanged('music', fetchResults: false),
-          );
-          await Future<void>.delayed(debounceDuration);
-          bloc.add(const HashtagSearchQueryChanged('music'));
-        },
-        wait: debounceDuration,
-        expect: () => const [
-          HashtagSearchState(query: 'music', resultCount: 2),
-          HashtagSearchState(
-            status: HashtagSearchStatus.loading,
-            query: 'music',
-          ),
-          HashtagSearchState(
-            status: HashtagSearchStatus.success,
-            query: 'music',
-            results: ['music', 'musician'],
-            resultCount: 2,
-          ),
-        ],
-      );
-
-      blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'preserves existing results for same query when fetchResults is false',
         build: createBloc,
         seed: () => const HashtagSearchState(
           status: HashtagSearchStatus.success,
           query: 'music',
           results: ['music', 'musician'],
-          resultCount: 2,
+          offset: 20,
+          hasMore: true,
         ),
-        act: (bloc) => bloc.add(
-          const HashtagSearchQueryChanged('music', fetchResults: false),
-        ),
-        wait: debounceDuration,
-        expect: () => [],
-        verify: (_) {
-          verifyNever(
-            () => mockHashtagRepository.countHashtagsLocally(
-              query: any(named: 'query'),
+        act: (bloc) => bloc.add(const HashtagSearchLoadMore()),
+        expect: () => [
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'music',
+            results: ['music', 'musician'],
+            offset: 20,
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'music',
+            results: ['music', 'musician', 'extra1', 'extra2'],
+            offset: 4,
+          ),
+        ],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'sets hasMore to true when load more returns full page',
+        setUp: () {
+          when(
+            () => mockHashtagRepository.searchHashtags(
+              query: 'music',
+              offset: 20,
             ),
-          );
+          ).thenAnswer((_) async => List.generate(20, (i) => 'tag$i'));
         },
+        build: createBloc,
+        seed: () => const HashtagSearchState(
+          status: HashtagSearchStatus.success,
+          query: 'music',
+          results: ['music'],
+          offset: 20,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchLoadMore()),
+        expect: () => [
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'music',
+            results: ['music'],
+            offset: 20,
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+          HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'music',
+            results: ['music', ...List.generate(20, (i) => 'tag$i')],
+            offset: 21,
+            hasMore: true,
+          ),
+        ],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'does nothing when hasMore is false',
+        build: createBloc,
+        seed: () => const HashtagSearchState(
+          status: HashtagSearchStatus.success,
+          query: 'music',
+          results: ['music'],
+          offset: 1,
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchLoadMore()),
+        expect: () => <HashtagSearchState>[],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'does nothing when already loading more',
+        build: createBloc,
+        seed: () => const HashtagSearchState(
+          status: HashtagSearchStatus.success,
+          query: 'music',
+          results: ['music'],
+          offset: 20,
+          hasMore: true,
+          isLoadingMore: true,
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchLoadMore()),
+        expect: () => <HashtagSearchState>[],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'does nothing when query is empty',
+        build: createBloc,
+        seed: () => const HashtagSearchState(hasMore: true),
+        act: (bloc) => bloc.add(const HashtagSearchLoadMore()),
+        expect: () => <HashtagSearchState>[],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'resets isLoadingMore on failure',
+        setUp: () {
+          when(
+            () => mockHashtagRepository.searchHashtags(
+              query: 'music',
+              offset: 20,
+            ),
+          ).thenThrow(Exception('network error'));
+        },
+        build: createBloc,
+        seed: () => const HashtagSearchState(
+          status: HashtagSearchStatus.success,
+          query: 'music',
+          results: ['music'],
+          offset: 20,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchLoadMore()),
+        expect: () => [
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'music',
+            results: ['music'],
+            offset: 20,
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'music',
+            results: ['music'],
+            offset: 20,
+            hasMore: true,
+          ),
+        ],
       );
     });
 
@@ -436,6 +514,8 @@ void main() {
           status: HashtagSearchStatus.success,
           query: 'music',
           results: ['music', 'musician'],
+          offset: 2,
+          hasMore: true,
         );
 
         expect(state.props, [
@@ -443,6 +523,9 @@ void main() {
           'music',
           ['music', 'musician'],
           -1,
+          2,
+          true,
+          false,
         ]);
       });
     });
@@ -462,6 +545,7 @@ void main() {
           () => mockRepo.searchHashtags(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => []);
       });

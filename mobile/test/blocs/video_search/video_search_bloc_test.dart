@@ -51,6 +51,18 @@ void main() {
         () =>
             mockVideosRepository.countVideosLocally(query: any(named: 'query')),
       ).thenAnswer((_) async => 0);
+      when(
+        () => mockVideosRepository.searchVideosViaApi(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer(
+        (_) async => (videos: <VideoEvent>[], totalCount: 0),
+      );
+      when(
+        () => mockVideosRepository.deduplicateAndSortVideos(any()),
+      ).thenAnswer((inv) => inv.positionalArguments.first as List<VideoEvent>);
     });
 
     VideoSearchBloc createBloc() =>
@@ -260,6 +272,7 @@ void main() {
             VideoSearchStatus.failure,
           ),
         ],
+        errors: () => [isA<Exception>()],
       );
 
       blocTest<VideoSearchBloc, VideoSearchState>(
@@ -303,93 +316,6 @@ void main() {
         verify: (_) {
           verifyNever(
             () => mockVideosRepository.searchVideos(query: any(named: 'query')),
-          );
-        },
-      );
-
-      blocTest<VideoSearchBloc, VideoSearchState>(
-        'emits local count only when full results are not requested',
-        setUp: () {
-          when(
-            () => mockVideosRepository.countVideosLocally(query: 'flutter'),
-          ).thenAnswer((_) async => 5);
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(
-          const VideoSearchQueryChanged('flutter', fetchResults: false),
-        ),
-        wait: debounceDuration,
-        expect: () => const [
-          VideoSearchState(query: 'flutter', resultCount: 5),
-        ],
-        verify: (_) {
-          verify(
-            () => mockVideosRepository.countVideosLocally(query: 'flutter'),
-          ).called(1);
-          verifyNever(
-            () => mockVideosRepository.searchVideos(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-            ),
-          );
-        },
-      );
-
-      blocTest<VideoSearchBloc, VideoSearchState>(
-        'runs full search after a count-only update for the same query',
-        setUp: () {
-          final video = createVideo(id: 'v1', title: 'Flutter Tutorial');
-          when(
-            () => mockVideosRepository.countVideosLocally(query: 'flutter'),
-          ).thenAnswer((_) async => 1);
-          when(
-            () => mockVideosRepository.searchVideos(query: 'flutter'),
-          ).thenAnswer((_) => Stream.value([video]));
-        },
-        build: createBloc,
-        act: (bloc) async {
-          bloc.add(
-            const VideoSearchQueryChanged('flutter', fetchResults: false),
-          );
-          await Future<void>.delayed(debounceDuration);
-          bloc.add(const VideoSearchQueryChanged('flutter'));
-        },
-        wait: debounceDuration,
-        expect: () => [
-          const VideoSearchState(query: 'flutter', resultCount: 1),
-          isA<VideoSearchState>()
-              .having((s) => s.status, 'status', VideoSearchStatus.searching)
-              .having((s) => s.query, 'query', 'flutter'),
-          isA<VideoSearchState>()
-              .having((s) => s.status, 'status', VideoSearchStatus.searching)
-              .having((s) => s.videos.length, 'videos.length', 1)
-              .having((s) => s.resultCount, 'resultCount', 1),
-          isA<VideoSearchState>()
-              .having((s) => s.status, 'status', VideoSearchStatus.success)
-              .having((s) => s.videos.length, 'videos.length', 1)
-              .having((s) => s.resultCount, 'resultCount', 1),
-        ],
-      );
-
-      blocTest<VideoSearchBloc, VideoSearchState>(
-        'preserves existing videos for same query when fetchResults is false',
-        build: createBloc,
-        seed: () => VideoSearchState(
-          status: VideoSearchStatus.success,
-          query: 'flutter',
-          videos: [createVideo(id: 'v1', title: 'Flutter Tutorial')],
-          resultCount: 1,
-        ),
-        act: (bloc) => bloc.add(
-          const VideoSearchQueryChanged('flutter', fetchResults: false),
-        ),
-        wait: debounceDuration,
-        expect: () => [],
-        verify: (_) {
-          verifyNever(
-            () => mockVideosRepository.countVideosLocally(
-              query: any(named: 'query'),
-            ),
           );
         },
       );
@@ -459,7 +385,16 @@ void main() {
           videos: videos,
         );
 
-        expect(state.props, [VideoSearchStatus.success, 'test', videos, -1]);
+        expect(state.props, [
+          VideoSearchStatus.success,
+          'test',
+          videos,
+          -1,
+          0,
+          -1,
+          false,
+          false,
+        ]);
       });
 
       test('two states with same values are equal', () {
@@ -481,6 +416,139 @@ void main() {
 
         expect(state1, isNot(equals(state2)));
       });
+
+      test('copyWith updates pagination fields', () {
+        const state = VideoSearchState();
+
+        final updated = state.copyWith(
+          apiOffset: 50,
+          totalApiCount: 120,
+          hasMore: true,
+          isLoadingMore: true,
+        );
+
+        expect(updated.apiOffset, 50);
+        expect(updated.totalApiCount, 120);
+        expect(updated.hasMore, isTrue);
+        expect(updated.isLoadingMore, isTrue);
+      });
+
+      test('copyWith can clear totalApiCount to null', () {
+        const state = VideoSearchState(totalApiCount: 100);
+
+        final updated = state.copyWith(totalApiCount: null);
+
+        expect(updated.totalApiCount, isNull);
+      });
+    });
+
+    group('VideoSearchLoadMore', () {
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'fetches next page and appends results',
+        setUp: () {
+          when(
+            () => mockVideosRepository.searchVideosViaApi(
+              query: 'flutter',
+              offset: 50,
+            ),
+          ).thenAnswer(
+            (_) async => (
+              videos: [createVideo(id: 'v2', title: 'Page 2')],
+              totalCount: 75,
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoSearchState(
+          status: VideoSearchStatus.success,
+          query: 'flutter',
+          videos: [createVideo(id: 'v1', title: 'Page 1')],
+          apiOffset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const VideoSearchLoadMore()),
+        expect: () => [
+          isA<VideoSearchState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            isTrue,
+          ),
+          isA<VideoSearchState>()
+              .having((s) => s.videos, 'videos', hasLength(2))
+              .having((s) => s.apiOffset, 'apiOffset', 100)
+              .having((s) => s.totalApiCount, 'totalApiCount', 75)
+              .having((s) => s.hasMore, 'hasMore', isFalse)
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse),
+        ],
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'does nothing when hasMore is false',
+        build: createBloc,
+        seed: () => const VideoSearchState(
+          status: VideoSearchStatus.success,
+          query: 'flutter',
+        ),
+        act: (bloc) => bloc.add(const VideoSearchLoadMore()),
+        expect: () => <VideoSearchState>[],
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'does nothing when already loading more',
+        build: createBloc,
+        seed: () => const VideoSearchState(
+          status: VideoSearchStatus.success,
+          query: 'flutter',
+          hasMore: true,
+          isLoadingMore: true,
+        ),
+        act: (bloc) => bloc.add(const VideoSearchLoadMore()),
+        expect: () => <VideoSearchState>[],
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'does nothing when query is empty',
+        build: createBloc,
+        seed: () => const VideoSearchState(
+          status: VideoSearchStatus.success,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const VideoSearchLoadMore()),
+        expect: () => <VideoSearchState>[],
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'emits isLoadingMore false on error and reports via addError',
+        setUp: () {
+          when(
+            () => mockVideosRepository.searchVideosViaApi(
+              query: 'flutter',
+              offset: 50,
+            ),
+          ).thenThrow(Exception('network error'));
+        },
+        build: createBloc,
+        seed: () => const VideoSearchState(
+          status: VideoSearchStatus.success,
+          query: 'flutter',
+          apiOffset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const VideoSearchLoadMore()),
+        expect: () => [
+          isA<VideoSearchState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            isTrue,
+          ),
+          isA<VideoSearchState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            isFalse,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
     });
   });
 }

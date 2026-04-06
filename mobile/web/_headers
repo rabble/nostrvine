@@ -4,17 +4,36 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
 
-/*.js
-  Cache-Control: public, max-age=31536000, immutable
+# Flutter entrypoints are NOT content-hashed. Their filenames are stable but
+# their contents change on every deploy. Caching them as immutable strands users
+# on old builds for up to a year because Cloudflare does not purge zone-level
+# edge cache on custom domains attached to Pages projects.
+/flutter_bootstrap.js
+  Cache-Control: public, max-age=0, must-revalidate
 
-/*.css
-  Cache-Control: public, max-age=31536000, immutable
+/main.dart.js
+  Cache-Control: public, max-age=0, must-revalidate
 
-/*.wasm
-  Cache-Control: public, max-age=31536000, immutable
+/flutter_service_worker.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
 
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
 
 /manifest.json
   Cache-Control: no-cache, no-store, must-revalidate
+
+# Content-addressed paths are safe to cache immutably: canvaskit is pinned to
+# engineRevision in its URL, assets/ filenames are fingerprinted by Flutter's
+# asset pipeline, and .wasm files ship alongside hashed JS.
+/canvaskit/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.wasm
+  Cache-Control: public, max-age=31536000, immutable

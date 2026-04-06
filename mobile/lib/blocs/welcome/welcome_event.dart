@@ -9,11 +9,19 @@ sealed class WelcomeEvent extends Equatable {
 }
 
 /// Load returning-user data from SharedPreferences and SQLite cache.
+///
+/// If [initialSelectedPubkeyHex] is provided, that account will be
+/// pre-selected on the welcome screen instead of the most-recently-used one.
+/// Use this when navigating from the account-switcher so the chosen account
+/// is highlighted while the previous account remains the fallback for X/close.
 final class WelcomeStarted extends WelcomeEvent {
-  const WelcomeStarted();
+  const WelcomeStarted({this.initialSelectedPubkeyHex});
+
+  /// Optional pubkey to pre-select on load.
+  final String? initialSelectedPubkeyHex;
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [initialSelectedPubkeyHex];
 }
 
 /// Dismiss the returning-user variant and show the default welcome screen.
@@ -44,6 +52,18 @@ final class WelcomeAccountSelected extends WelcomeEvent {
 
   @override
   List<Object?> get props => [pubkeyHex];
+}
+
+/// Cancel an account switch and restore the previous (most-recently-used) account.
+///
+/// Used by the X/close button on the welcome screen when it was opened from
+/// the account-switcher with a pre-selected account. Signs in with
+/// [WelcomeState.previousAccounts.first] regardless of [WelcomeState.selectedPubkeyHex].
+final class WelcomeCancelSwitchRequested extends WelcomeEvent {
+  const WelcomeCancelSwitchRequested();
+
+  @override
+  List<Object?> get props => [];
 }
 
 /// Request to navigate to the create account screen (email/password sign-up).

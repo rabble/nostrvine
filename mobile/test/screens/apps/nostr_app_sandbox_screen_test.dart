@@ -23,7 +23,10 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            home: NostrAppSandboxScreen(app: _fixtureApp()),
+            home: NostrAppSandboxScreen(
+              app: _fixtureApp(),
+              currentUserPubkeyOverride: 'f' * 64,
+            ),
           ),
         );
         await tester.pump();
@@ -41,7 +44,10 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: NostrAppSandboxScreen(app: _fixtureApp()),
+          home: NostrAppSandboxScreen(
+            app: _fixtureApp(),
+            currentUserPubkeyOverride: 'f' * 64,
+          ),
         ),
       );
       await tester.pump();
@@ -72,6 +78,7 @@ void main() {
             home: NostrAppSandboxScreen(
               app: _fixtureApp(),
               bootstrapHttpClientOverride: bootstrapClient,
+              currentUserPubkeyOverride: 'f' * 64,
             ),
           ),
         );
@@ -103,6 +110,7 @@ void main() {
             home: NostrAppSandboxScreen(
               app: _fixtureApp(),
               bootstrapHttpClientOverride: bootstrapClient,
+              currentUserPubkeyOverride: 'f' * 64,
             ),
           ),
         );
@@ -211,6 +219,101 @@ void main() {
       expect(executedScripts, hasLength(1));
       expect(executedScripts.single, contains('req-1'));
       expect(executedScripts.single, contains('f' * 64));
+    });
+
+    group('bridge bootstrap script', () {
+      test('includes eager pubkey when provided', () {
+        final script = buildBridgeBootstrapScript(pubkey: 'abc123');
+        expect(script, contains("_pubkey: 'abc123'"));
+      });
+
+      test('sets pubkey to null when not provided', () {
+        final script = buildBridgeBootstrapScript();
+        expect(script, contains("_pubkey: '' || null"));
+      });
+
+      test('includes provider metadata', () {
+        final script = buildBridgeBootstrapScript();
+        expect(script, contains("name: 'diVine'"));
+        expect(script, contains("'nip04', 'nip44'"));
+      });
+
+      test('dispatches nostr:ready event', () {
+        final script = buildBridgeBootstrapScript();
+        expect(
+          script,
+          contains("window.dispatchEvent(new Event('nostr:ready'))"),
+        );
+      });
+
+      test('dispatches nlAuth event for nostr-login compat', () {
+        final script = buildBridgeBootstrapScript();
+        expect(
+          script,
+          contains("document.dispatchEvent(new CustomEvent('nlAuth'"),
+        );
+      });
+
+      test('injects auto-login script with pubkey substituted', () {
+        final script = buildBridgeBootstrapScript(
+          pubkey: 'deadbeef',
+          autoLoginScript: "localStorage.setItem('pubkey', '{{PUBKEY}}');",
+        );
+        expect(
+          script,
+          contains("localStorage.setItem('pubkey', 'deadbeef')"),
+        );
+        expect(script, isNot(contains('{{PUBKEY}}')));
+      });
+
+      test('skips auto-login when script is null', () {
+        final script = buildBridgeBootstrapScript(pubkey: 'abc');
+        expect(script, isNot(contains('localStorage.setItem')));
+      });
+
+      test('escapes single quotes in pubkey', () {
+        final script = buildBridgeBootstrapScript(pubkey: "a'b");
+        expect(script, contains(r"_pubkey: 'a\'b'"));
+      });
+
+      test('escapes backslashes in pubkey', () {
+        final script = buildBridgeBootstrapScript(pubkey: r'a\b');
+        expect(script, contains(r"_pubkey: 'a\\b'"));
+      });
+
+      test('escapes backticks in pubkey', () {
+        final script = buildBridgeBootstrapScript(pubkey: 'a`b');
+        expect(script, contains(r"_pubkey: 'a\`b'"));
+      });
+
+      test('escapes newlines in pubkey', () {
+        final script = buildBridgeBootstrapScript(pubkey: 'a\nb');
+        expect(script, contains(r"_pubkey: 'a\nb'"));
+      });
+    });
+
+    group('injectBridgeBootstrapIntoHtml', () {
+      test('inserts bridge after head tag', () {
+        final html = injectBridgeBootstrapIntoHtml(
+          '<html><head></head><body></body></html>',
+          pubkey: 'abc',
+        );
+        expect(html, contains('<!-- divine-nostr-bridge -->'));
+        expect(html, contains('__divineNostrBridgeInstalled'));
+        expect(html, contains("_pubkey: 'abc'"));
+      });
+
+      test('includes auto-login in injected HTML', () {
+        final html = injectBridgeBootstrapIntoHtml(
+          '<html><head></head><body></body></html>',
+          pubkey: 'abc',
+          autoLoginScript: "localStorage.setItem('loginType', 'extension');",
+        );
+        expect(
+          html,
+          contains("localStorage.setItem('loginType', 'extension')"),
+        );
+      });
     });
   });
 }
