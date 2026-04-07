@@ -285,7 +285,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     ]);
     if (!mounted) return;
 
-    await _videoPlayer!.play();
+    final mainState = context.read<VideoEditorMainBloc>().state;
+    if (!mainState.isExternalPauseRequested) {
+      await _videoPlayer!.play();
+    }
     if (!mounted) return;
     _isPlayerReadyNotifier.value = true;
 

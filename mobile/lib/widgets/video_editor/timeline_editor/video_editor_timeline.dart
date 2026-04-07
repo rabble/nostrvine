@@ -1,8 +1,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/timeline_constants.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_left_actions.dart';
@@ -15,14 +17,15 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 /// strips, and a fixed-center playhead. Reads playback position and
 /// duration from [VideoEditorMainBloc] and clip data from
 /// [ClipEditorBloc].
-class VideoEditorTimeline extends StatefulWidget {
+class VideoEditorTimeline extends ConsumerStatefulWidget {
   const VideoEditorTimeline({super.key});
 
   @override
-  State<VideoEditorTimeline> createState() => _VideoEditorTimelineState();
+  ConsumerState<VideoEditorTimeline> createState() =>
+      _VideoEditorTimelineState();
 }
 
-class _VideoEditorTimelineState extends State<VideoEditorTimeline> {
+class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
   late final ScrollController _scrollController;
   bool _isUserScrolling = false;
 
@@ -127,14 +130,58 @@ class _VideoEditorTimelineState extends State<VideoEditorTimeline> {
                           mainAxisSize: MainAxisSize.min,
                           spacing: 4,
                           children: [
-                            VideoEditorTimelineRulesIndicator(
-                              totalDuration: totalDuration,
-                              pixelsPerSecond: _pixelsPerSecond,
+                            BlocSelector<
+                              VideoEditorMainBloc,
+                              VideoEditorMainState,
+                              bool
+                            >(
+                              selector: (state) => state.isReordering,
+                              builder: (context, isReordering) {
+                                return AnimatedOpacity(
+                                  opacity: isReordering ? 0.0 : 1.0,
+                                  duration: const Duration(milliseconds: 200),
+                                  child: VideoEditorTimelineRulesIndicator(
+                                    totalDuration: totalDuration,
+                                    pixelsPerSecond: _pixelsPerSecond,
+                                  ),
+                                );
+                              },
                             ),
                             VideoEditorTimelineClipStrip(
                               clips: clips,
                               totalWidth: totalWidth,
                               pixelsPerSecond: _pixelsPerSecond,
+                              scrollController: _scrollController,
+                              onReorder: (reorderedClips) {
+                                ref
+                                    .read(clipManagerProvider.notifier)
+                                    .replaceClips(reorderedClips);
+                                context.read<ClipEditorBloc>().add(
+                                  ClipEditorInitialized(reorderedClips),
+                                );
+                                // Keep video paused after reorder.
+                                context.read<VideoEditorMainBloc>().add(
+                                  const VideoEditorExternalPauseRequested(
+                                    isPaused: true,
+                                  ),
+                                );
+                              },
+                              onReorderChanged: (isReordering) {
+                                final bloc = context
+                                    .read<VideoEditorMainBloc>();
+                                bloc.add(
+                                  VideoEditorReorderingChanged(
+                                    isReordering: isReordering,
+                                  ),
+                                );
+                                if (isReordering) {
+                                  bloc.add(
+                                    const VideoEditorExternalPauseRequested(
+                                      isPaused: true,
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                           ],
                         ),
@@ -142,7 +189,19 @@ class _VideoEditorTimelineState extends State<VideoEditorTimeline> {
                     ),
                   ),
                 ),
-                const VideoEditorTimelinePlayhead(),
+                BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
+                  selector: (state) => state.isReordering,
+                  builder: (context, isReordering) {
+                    return IgnorePointer(
+                      ignoring: isReordering,
+                      child: AnimatedOpacity(
+                        opacity: isReordering ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: const VideoEditorTimelinePlayhead(),
+                      ),
+                    );
+                  },
+                ),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: VideoEditorTimelineLeftActions(
@@ -150,16 +209,25 @@ class _VideoEditorTimelineState extends State<VideoEditorTimeline> {
                   ),
                 ),
 
-                Container(
-                  alignment: .topCenter,
-                  padding: const EdgeInsets.only(
-                    top: TimelineConstants.rulerHeight,
-                  ),
-                  child: const Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: VineTheme.outlinedDisabled,
-                  ),
+                BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
+                  selector: (state) => state.isReordering,
+                  builder: (context, isReordering) {
+                    return AnimatedOpacity(
+                      opacity: isReordering ? 0.0 : 1.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Container(
+                        alignment: .topCenter,
+                        padding: const EdgeInsets.only(
+                          top: TimelineConstants.rulerHeight,
+                        ),
+                        child: const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: VineTheme.outlinedDisabled,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
