@@ -50,13 +50,13 @@ String? buildLogsSummary(List<LogEntry> logs) {
     ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
   final buffer = StringBuffer();
-  for (final log in merged) {
-    var line = log.toFormattedString();
+  for (var i = 0; i < merged.length; i++) {
+    var line = merged[i].toFormattedString();
     if (line.length > _maxEntryLength) {
       line = '${line.substring(0, _maxEntryLength)}... [truncated]';
     }
     if (buffer.length + line.length + 1 > _maxSummaryLength) {
-      buffer.writeln('... [${merged.length - merged.indexOf(log)} entries truncated]');
+      buffer.writeln('... [${merged.length - i} entries truncated]');
       break;
     }
     buffer.writeln(line);
