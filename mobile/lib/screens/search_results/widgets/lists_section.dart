@@ -82,6 +82,7 @@ class _ListsContent extends StatelessWidget {
   }
 }
 
+// TODO(#2853): Display both video and people list cards in the grid.
 class _ResultsGrid extends StatelessWidget {
   const _ResultsGrid({required this.results, required this.displayCount});
 
@@ -143,6 +144,7 @@ class _InitialState extends StatelessWidget {
   }
 }
 
+// TODO(#2855): Replace spinner with skeleton/shimmer loading state.
 class _LoadingState extends StatelessWidget {
   const _LoadingState();
 
@@ -159,6 +161,7 @@ class _LoadingState extends StatelessWidget {
   }
 }
 
+// TODO(#2856): Improve empty state design with better guidance for users.
 class _NoResultsState extends StatelessWidget {
   const _NoResultsState({required this.query});
 

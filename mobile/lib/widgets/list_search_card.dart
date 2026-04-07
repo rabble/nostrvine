@@ -77,6 +77,7 @@ class _ListDescription extends StatelessWidget {
   }
 }
 
+// TODO(#2854): Replace single cover image with stacked video thumbnails.
 class _VideoListThumbnail extends StatelessWidget {
   const _VideoListThumbnail({required this.videoCount, this.imageUrl});
 

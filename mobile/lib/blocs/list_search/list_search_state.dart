@@ -33,6 +33,7 @@ final class ListSearchState extends Equatable {
   final String query;
 
   /// Curated video lists matching the search.
+  // TODO(#2853): Add people list results field.
   final List<CuratedList> results;
 
   /// Create a copy with updated values.
