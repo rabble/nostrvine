@@ -282,9 +282,7 @@ void main() {
     group('updatePreferences', () {
       test('encrypts kinds JSON and publishes kind 3083 event', () async {
         const prefs = NotificationPreferences(
-          likesEnabled: true,
           commentsEnabled: false,
-          followsEnabled: true,
           mentionsEnabled: false,
           repostsEnabled: false,
         );
@@ -444,7 +442,7 @@ void main() {
     group('dispose', () {
       test('cancels token refresh subscription without errors', () {
         final service = buildService();
-        expect(() => service.dispose(), returnsNormally);
+        expect(service.dispose, returnsNormally);
       });
     });
   });

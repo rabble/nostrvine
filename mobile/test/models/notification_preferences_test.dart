@@ -37,7 +37,7 @@ void main() {
 
     group('fromKindsList', () {
       test('creates preferences from kinds list', () {
-        final prefs = NotificationPreferences.fromKindsList([7, 3]);
+        final prefs = NotificationPreferences.fromKindsList(const [7, 3]);
         expect(prefs.likesEnabled, isTrue);
         expect(prefs.commentsEnabled, isFalse);
         expect(prefs.followsEnabled, isTrue);
@@ -46,7 +46,9 @@ void main() {
       });
 
       test('creates all-enabled from full kinds list', () {
-        final prefs = NotificationPreferences.fromKindsList([1, 3, 7, 16]);
+        final prefs = NotificationPreferences.fromKindsList(
+          const [1, 3, 7, 16],
+        );
         expect(prefs.likesEnabled, isTrue);
         expect(prefs.commentsEnabled, isTrue);
         expect(prefs.followsEnabled, isTrue);
@@ -58,11 +60,8 @@ void main() {
     group('toJson / fromJson', () {
       test('round-trips correctly', () {
         const original = NotificationPreferences(
-          likesEnabled: true,
           commentsEnabled: false,
-          followsEnabled: true,
           mentionsEnabled: false,
-          repostsEnabled: true,
         );
         final json = original.toJson();
         final restored = NotificationPreferences.fromJson(json);
