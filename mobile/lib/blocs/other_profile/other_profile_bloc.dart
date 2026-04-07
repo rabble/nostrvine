@@ -4,6 +4,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -55,6 +56,10 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
 
   /// Whether the current user is following the viewed profile.
   bool get isFollowing => _followRepository.isFollowing(pubkey);
+
+  /// The DM conversation ID for messaging this user.
+  String get conversationId =>
+      DmRepository.computeConversationId([_currentUserPubkey, pubkey]);
 
   Future<void> _onLoadRequested(
     OtherProfileLoadRequested event,

@@ -18,13 +18,10 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
@@ -105,6 +102,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         routeContext: value,
         scrollController: _scrollController,
         onFetchProfile: _fetchProfileIfNeeded,
+        onEditProfile: _editProfile,
         onOpenClips: _openClips,
         onMore: _more,
         refreshNotifier: _refreshNotifier,
@@ -127,34 +125,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
               )
               ..add(const MyProfileSubscriptionRequested())
               ..add(const MyProfileFetchRequested()),
-        child: BlocBuilder<MyProfileBloc, MyProfileState>(
-          buildWhen: (previous, current) {
-            final previousColor = switch (previous) {
-              MyProfileUpdated(:final profile) =>
-                profile.profileBackgroundColor,
-              _ => null,
-            };
-            final currentColor = switch (current) {
-              MyProfileUpdated(:final profile) =>
-                profile.profileBackgroundColor,
-              _ => null,
-            };
-            return previousColor != currentColor;
-          },
-          builder: (context, state) {
-            final profileColor = switch (state) {
-              MyProfileUpdated(:final profile) =>
-                profile.profileBackgroundColor,
-              _ => null,
-            };
-
-            return _ProfileScaffold(
-              onEditPressed: _editProfile,
-              appBarColor: profileColor,
-              body: content,
-            );
-          },
-        ),
+        child: _ProfileScaffold(body: content),
       );
     }
 
@@ -325,52 +296,14 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 }
 
 class _ProfileScaffold extends StatelessWidget {
-  const _ProfileScaffold({
-    required this.body,
-    this.appBarColor,
-    this.onEditPressed,
-  });
-
-  final Color? appBarColor;
+  const _ProfileScaffold({required this.body});
 
   final Widget body;
-
-  final VoidCallback? onEditPressed;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      extendBodyBehindAppBar: true,
-      appBar: DiVineAppBar(
-        title: '',
-        backgroundMode: DiVineAppBarBackgroundMode.transparent,
-        style: DiVineAppBarStyle.transparentStyle.copyWith(
-          iconSize: 24,
-          iconButtonSize: 40,
-          iconButtonBorderRadius: 16,
-        ),
-        leadingIcon: SvgIconSource(DivineIconName.gear.assetPath),
-        onLeadingPressed: () {
-          Log.info(
-            'User tapped settings gear',
-            name: 'Navigation',
-            category: LogCategory.ui,
-          );
-          context.pushWithVideoPause(SettingsScreen.path);
-        },
-        actions: [
-          if (onEditPressed != null)
-            DiVineAppBarAction(
-              icon: SvgIconSource(
-                DivineIconName.pencilSimpleLine.assetPath,
-              ),
-              onPressed: onEditPressed,
-              tooltip: 'Edit profile',
-              semanticLabel: 'Edit profile',
-            ),
-        ],
-      ),
       body: body,
       bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );
@@ -383,6 +316,7 @@ class _ProfileContentView extends ConsumerWidget {
     required this.routeContext,
     required this.scrollController,
     required this.onFetchProfile,
+    required this.onEditProfile,
     required this.onOpenClips,
     required this.onMore,
     required this.refreshNotifier,
@@ -391,6 +325,7 @@ class _ProfileContentView extends ConsumerWidget {
   final RouteContext routeContext;
   final ScrollController scrollController;
   final void Function(String userIdHex, bool isOwnProfile) onFetchProfile;
+  final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
   final ValueNotifier<int> refreshNotifier;
@@ -452,6 +387,7 @@ class _ProfileContentView extends ConsumerWidget {
       displayName: displayName,
       videoIndex: routeContext.videoIndex,
       scrollController: scrollController,
+      onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
       onMore: onMore,
       refreshNotifier: refreshNotifier,
@@ -508,6 +444,7 @@ class _ProfileDataView extends ConsumerWidget {
     required this.isOwnProfile,
     required this.videoIndex,
     required this.scrollController,
+    required this.onEditProfile,
     required this.onOpenClips,
     required this.onMore,
     required this.refreshNotifier,
@@ -520,6 +457,7 @@ class _ProfileDataView extends ConsumerWidget {
   final String? displayName;
   final int? videoIndex;
   final ScrollController scrollController;
+  final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
   final ValueNotifier<int> refreshNotifier;
@@ -571,6 +509,7 @@ class _ProfileDataView extends ConsumerWidget {
           videos: value.videos,
           videoIndex: videoIndex,
           scrollController: scrollController,
+          onEditProfile: onEditProfile,
           onOpenClips: onOpenClips,
           onMore: onMore,
           refreshNotifier: refreshNotifier,
@@ -593,6 +532,7 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.scrollController,
     required this.onOpenClips,
     required this.onMore,
+    this.onEditProfile,
     this.profileStats,
     this.refreshNotifier,
     this.displayName,
@@ -607,6 +547,7 @@ class ProfileViewSwitcher extends StatelessWidget {
   final List<VideoEvent> videos;
   final int? videoIndex;
   final ScrollController scrollController;
+  final VoidCallback? onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
 
@@ -638,6 +579,7 @@ class ProfileViewSwitcher extends StatelessWidget {
             profileStats: profileStats,
             videos: videos,
             scrollController: scrollController,
+            onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
             onShareProfile: () => onMore(userIdHex),
             refreshNotifier: refreshNotifier,

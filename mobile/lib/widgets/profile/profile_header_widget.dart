@@ -15,6 +15,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/widgets/followers_screen_router.dart';
 import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
@@ -33,6 +34,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
     required this.videoCount,
     this.profile,
     this.profileStats,
+    this.onEditProfile,
     this.displayNameHint,
     this.avatarUrlHint,
     super.key,
@@ -53,6 +55,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   /// Optional cached stats owned by the parent widget.
   final ProfileStats? profileStats;
+
+  /// Callback when edit profile is tapped (own profile only).
+  final VoidCallback? onEditProfile;
 
   /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
   final String? displayNameHint;
@@ -132,9 +137,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
     const avatarSize = 144.0;
     const actionLabelHeight = 16.0;
 
-    // The avatar's top edge aligns with the top of the app bar area
-    // (just below the status bar safe area).
-    final appBarBottom = MediaQuery.paddingOf(context).top;
+    // The avatar's top edge sits below the status bar + toolbar area,
+    // leaving room for the nav buttons above.
+    final appBarBottom = MediaQuery.paddingOf(context).top + kToolbarHeight;
     final totalHeight = appBarBottom + avatarSize + actionLabelHeight;
 
     return ColoredBox(
@@ -154,6 +159,32 @@ class ProfileHeaderWidget extends ConsumerWidget {
                   profileColor: profileColor,
                   height: bannerHeight,
                 ),
+
+                // Navigation buttons (scrolls with content)
+                if (isOwnProfile)
+                  Positioned(
+                    top: MediaQuery.paddingOf(context).top + 12,
+                    left: 12,
+                    right: 12,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        DivineIconButton(
+                          icon: DivineIconName.gear,
+                          type: DivineIconButtonType.ghostSecondary,
+                          size: DivineIconButtonSize.small,
+                          onPressed: () => context.push(SettingsScreen.path),
+                        ),
+                        if (onEditProfile != null)
+                          DivineIconButton(
+                            icon: DivineIconName.pencilSimpleLine,
+                            type: DivineIconButtonType.ghostSecondary,
+                            size: DivineIconButtonSize.small,
+                            onPressed: onEditProfile,
+                          ),
+                      ],
+                    ),
+                  ),
 
                 // Centered avatar — top edge aligns with app bar bottom
                 Positioned(
