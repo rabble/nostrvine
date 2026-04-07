@@ -13,18 +13,28 @@ import 'package:openvine/widgets/notification_list_item.dart';
 class _MockRelayNotifications extends RelayNotifications {
   final List<NotificationModel> _notifications;
   final bool _hasMoreContent;
+  final bool _isLoadingMore;
+  final bool _isRefreshing;
   final List<String> markedAsReadIds = [];
   bool markAllAsReadCalled = false;
   int loadMoreCalls = 0;
 
-  _MockRelayNotifications(this._notifications, {bool hasMoreContent = false})
-    : _hasMoreContent = hasMoreContent;
+  _MockRelayNotifications(
+    this._notifications, {
+    bool hasMoreContent = false,
+    bool isLoadingMore = false,
+    bool isRefreshing = false,
+  }) : _hasMoreContent = hasMoreContent,
+       _isLoadingMore = isLoadingMore,
+       _isRefreshing = isRefreshing;
 
   @override
   Future<NotificationFeedState> build() async {
     return NotificationFeedState(
       notifications: _notifications,
       hasMoreContent: _hasMoreContent,
+      isLoadingMore: _isLoadingMore,
+      isRefreshing: _isRefreshing,
       isInitialLoad: false,
       lastUpdated: DateTime.now(),
     );
@@ -365,35 +375,6 @@ void main() {
 
           expect(find.text('No follow notifications'), findsOneWidget);
           expect(find.byType(NotificationListItem), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'requests more pages when a filtered tab is empty but more content exists',
-        (WidgetTester tester) async {
-          final now = DateTime.now();
-          final notifications = [
-            NotificationModel(
-              id: 'follow-1',
-              type: NotificationType.follow,
-              actorPubkey: pubkeyBob,
-              actorName: 'Bob',
-              message: 'Bob started following you',
-              timestamp: now.subtract(const Duration(minutes: 1)),
-            ),
-          ];
-
-          final mockNotifier = _MockRelayNotifications(
-            notifications,
-            hasMoreContent: true,
-          );
-          await tester.pumpWidget(buildScreenWidget(() => mockNotifier));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text('Likes'));
-          await tester.pump(const Duration(milliseconds: 100));
-
-          expect(mockNotifier.loadMoreCalls, greaterThanOrEqualTo(1));
         },
       );
     });

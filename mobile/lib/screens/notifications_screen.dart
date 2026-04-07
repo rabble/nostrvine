@@ -90,7 +90,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   }
 
   void _handleTabChanged() {
-    if (_tabController.indexIsChanging) return;
     if (_activeTabIndex == _tabController.index) return;
     setState(() {
       _activeTabIndex = _tabController.index;
