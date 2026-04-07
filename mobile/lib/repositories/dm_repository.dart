@@ -21,7 +21,7 @@ import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/repositories/dm_decryption_worker.dart';
 import 'package:openvine/repositories/dm_sync_state.dart';
-import 'package:openvine/services/auth_service_signer.dart';
+import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -585,7 +585,7 @@ class DmRepository {
   /// Real backlog batching can come later.
   Future<Event?> _decryptRumor(Nostr nostr, Event giftWrapEvent) async {
     final signer = _signer;
-    if (signer is AuthServiceSigner && signer.canDecryptInIsolate) {
+    if (signer is IsolateDecryptSigner && signer.canDecryptInIsolate) {
       try {
         final hex = signer.withPrivateKeyHex((k) => k);
         final results = await compute(

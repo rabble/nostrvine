@@ -27,7 +27,7 @@ sealed class NostrIdentity implements NostrSigner {
 }
 
 /// Identity backed by a local [SecureKeyContainer] with a private key.
-class LocalNostrIdentity extends NostrIdentity {
+class LocalNostrIdentity extends NostrIdentity implements IsolateDecryptSigner {
   LocalNostrIdentity({required SecureKeyContainer keyContainer})
     : _signer = LocalKeySigner(keyContainer),
       pubkey = keyContainer.publicKeyHex;
@@ -46,6 +46,13 @@ class LocalNostrIdentity extends NostrIdentity {
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) =>
       _signer.signCanonicalPayload(payload);
+
+  @override
+  bool get canDecryptInIsolate => _signer.canDecryptInIsolate;
+
+  @override
+  T withPrivateKeyHex<T>(T Function(String hex) operation) =>
+      _signer.withPrivateKeyHex(operation);
 
   @override
   Future<Map?> getRelays() async => null;
@@ -76,7 +83,8 @@ class LocalNostrIdentity extends NostrIdentity {
 ///
 /// When a matching local private key is available, signs locally for speed.
 /// Otherwise delegates to the remote [KeycastRpc] signer.
-class KeycastNostrIdentity extends NostrIdentity {
+class KeycastNostrIdentity extends NostrIdentity
+    implements IsolateDecryptSigner {
   /// Creates a Keycast identity.
   ///
   /// [rpcSigner] is the remote Keycast RPC signer.
@@ -119,6 +127,20 @@ class KeycastNostrIdentity extends NostrIdentity {
   Future<String?> signCanonicalPayload(Uint8List payload) async {
     // Canonical signing requires deterministic local keys.
     return _localSigner?.signCanonicalPayload(payload);
+  }
+
+  @override
+  bool get canDecryptInIsolate => _localSigner?.canDecryptInIsolate ?? false;
+
+  @override
+  T withPrivateKeyHex<T>(T Function(String hex) operation) {
+    final localSigner = _localSigner;
+    if (localSigner == null) {
+      throw StateError(
+        'KeycastNostrIdentity has no local signer for isolate decryption',
+      );
+    }
+    return localSigner.withPrivateKeyHex(operation);
   }
 
   @override

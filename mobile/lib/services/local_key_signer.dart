@@ -13,11 +13,18 @@ const _canonicalPayloadAux =
     '00000000000000000000000000000000'
     '00000000000000000000000000000000';
 
+/// Optional capability for signers that can expose a local private key to an
+/// isolate-safe decrypt pipeline.
+abstract interface class IsolateDecryptSigner implements NostrSigner {
+  bool get canDecryptInIsolate;
+  T withPrivateKeyHex<T>(T Function(String hex) operation);
+}
+
 /// NostrSigner implementation backed by a local [SecureKeyContainer].
 ///
 /// Used internally by [LocalNostrIdentity] and [KeycastNostrIdentity]'s
 /// local signing optimization. Not used directly by consumers.
-class LocalKeySigner implements NostrSigner {
+class LocalKeySigner implements IsolateDecryptSigner {
   /// Creates a [LocalKeySigner] with the given key container.
   LocalKeySigner(this._keyContainer);
 
@@ -31,16 +38,18 @@ class LocalKeySigner implements NostrSigner {
   /// Whether this signer can expose its private key bytes to a
   /// [compute()] isolate for batch decryption. True only for local
   /// signers that already keep the key in memory.
+  @override
   bool get canDecryptInIsolate =>
       _keyContainer != null && _keyContainer.hasPrivateKey;
 
   /// Runs [operation] with the raw private key hex. Mirrors
   /// [SecureKeyContainer.withPrivateKey] but scoped to this signer so
   /// callers never need to reach into the container directly.
+  @override
   T withPrivateKeyHex<T>(T Function(String hex) operation) {
     final container = _keyContainer;
     if (container == null) {
-      throw StateError('AuthServiceSigner has no key container');
+      throw StateError('LocalKeySigner has no key container');
     }
     return container.withPrivateKey(operation);
   }
