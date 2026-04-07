@@ -56,8 +56,9 @@ void main() {
     configuredPushServicePubkey: configuredPushServicePubkey,
   );
 
-  const placeholderEnvironment = EnvironmentConfig(
+  const placeholderEnvironment = _ConfiguredEnvironmentConfig(
     environment: AppEnvironment.test,
+    configuredPushServicePubkey: 'TODO_TEST_PUBKEY',
   );
 
   setUp(() {
