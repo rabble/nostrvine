@@ -210,6 +210,7 @@ dependencies:
   qr_flutter: ^4.1.0
   android_intent_plus: ^6.0.0
   app_device_integrity: ^1.1.0
+  pointer_interceptor: ^0.10.1+2
 
 dependency_overrides:
   device_info_plus: ^10.1.2
