@@ -331,6 +331,59 @@ void main() {
       );
     });
 
+    group('returns immediately for terminal states', () {
+      testWidgets(
+        'navigates directly when state is $CameraPermissionDenied',
+        (tester) async {
+          final bloc = _FakeCameraPermissionBloc(
+            const CameraPermissionDenied(),
+          );
+          bool? result;
+          await tester.pumpWidget(
+            buildSubject(bloc, onResult: (r) => result = r),
+          );
+
+          await tester.tap(find.text('Trigger'));
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockGoRouter.push<Object?>(
+              VideoRecorderScreen.path,
+              extra: any(named: 'extra'),
+            ),
+          ).called(1);
+          expect(result, isTrue);
+          // Must not have dispatched any events.
+          expect(bloc.addedEvents, isEmpty);
+        },
+      );
+
+      testWidgets(
+        'navigates directly when state is $CameraPermissionError',
+        (tester) async {
+          final bloc = _FakeCameraPermissionBloc(
+            const CameraPermissionError(),
+          );
+          bool? result;
+          await tester.pumpWidget(
+            buildSubject(bloc, onResult: (r) => result = r),
+          );
+
+          await tester.tap(find.text('Trigger'));
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockGoRouter.push<Object?>(
+              VideoRecorderScreen.path,
+              extra: any(named: 'extra'),
+            ),
+          ).called(1);
+          expect(result, isTrue);
+          expect(bloc.addedEvents, isEmpty);
+        },
+      );
+    });
+
     group('shows bottom sheet when canRequest', () {
       testWidgets(
         'renders prompt with correct content',
@@ -466,6 +519,41 @@ void main() {
           await tester.pumpAndSettle();
 
           await tester.tap(find.text('Not now'));
+          await tester.pumpAndSettle();
+
+          verifyNever(
+            () => mockGoRouter.push<Object?>(
+              any(),
+              extra: any(named: 'extra'),
+            ),
+          );
+          expect(result, isFalse);
+        },
+      );
+
+      testWidgets(
+        'returns false when permission request times out',
+        (tester) async {
+          final bloc = _FakeCameraPermissionBloc(
+            const CameraPermissionLoaded(
+              CameraPermissionStatus.canRequest,
+            ),
+          );
+          bool? result;
+          await tester.pumpWidget(
+            buildSubject(bloc, onResult: (r) => result = r),
+          );
+
+          await tester.tap(find.text('Trigger'));
+          await tester.pumpAndSettle();
+
+          // Tap Continue to dispatch CameraPermissionRequest.
+          await tester.tap(find.text('Continue'));
+          await tester.pumpAndSettle();
+
+          // Simulate timeout by using fakeAsync elapsed time.
+          // The stream never emits, so the 30 s timeout fires.
+          await tester.pump(const Duration(seconds: 31));
           await tester.pumpAndSettle();
 
           verifyNever(
