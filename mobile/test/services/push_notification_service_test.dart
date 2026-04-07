@@ -24,6 +24,18 @@ class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _FakeEvent extends Fake implements Event {}
 
+class _ConfiguredEnvironmentConfig extends EnvironmentConfig {
+  const _ConfiguredEnvironmentConfig({
+    required super.environment,
+    required this.configuredPushServicePubkey,
+  });
+
+  final String configuredPushServicePubkey;
+
+  @override
+  String get pushServicePubkey => configuredPushServicePubkey;
+}
+
 void main() {
   late _MockAuthService mockAuthService;
   late _MockNostrClient mockNostrClient;
@@ -36,7 +48,15 @@ void main() {
   const testToken = 'fcm-test-token-abc123';
   const encryptedPayload = 'encrypted-payload-xyz';
 
-  const testEnvironment = EnvironmentConfig(
+  const configuredPushServicePubkey =
+      '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+
+  const testEnvironment = _ConfiguredEnvironmentConfig(
+    environment: AppEnvironment.test,
+    configuredPushServicePubkey: configuredPushServicePubkey,
+  );
+
+  const placeholderEnvironment = EnvironmentConfig(
     environment: AppEnvironment.test,
   );
 
@@ -194,6 +214,32 @@ void main() {
         service.dispose();
       });
 
+      test(
+        'skips registration when push service pubkey is still placeholder',
+        () async {
+          final service = PushNotificationService(
+            authService: mockAuthService,
+            nostrClient: mockNostrClient,
+            notificationService: mockNotificationService,
+            environmentConfig: placeholderEnvironment,
+            getToken: () async => testToken,
+            onTokenRefresh: tokenRefreshController.stream,
+          );
+
+          await service.register(testPubkey);
+
+          verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+          service.dispose();
+        },
+      );
+
       test('does nothing when NIP-44 encryption fails', () async {
         when(
           () => mockNostrSigner.nip44Encrypt(any(), any()),
@@ -337,6 +383,33 @@ void main() {
         verify(() => mockNostrClient.publishEvent(fakeEvent)).called(1);
         service.dispose();
       });
+
+      test(
+        'skips preferences update when push service pubkey is placeholder',
+        () async {
+          const prefs = NotificationPreferences();
+          final service = PushNotificationService(
+            authService: mockAuthService,
+            nostrClient: mockNostrClient,
+            notificationService: mockNotificationService,
+            environmentConfig: placeholderEnvironment,
+            getToken: () async => testToken,
+            onTokenRefresh: tokenRefreshController.stream,
+          );
+
+          await service.updatePreferences(prefs);
+
+          verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+          service.dispose();
+        },
+      );
     });
 
     group('handleForegroundMessage', () {

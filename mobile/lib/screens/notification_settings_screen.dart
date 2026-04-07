@@ -1,14 +1,12 @@
 // ABOUTME: Settings screen for notification preferences and controls
 // ABOUTME: Allows users to customize notification types and behavior
 
-import 'dart:convert';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce/hive.dart';
 import 'package:openvine/models/notification_preferences.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -40,30 +38,59 @@ class _NotificationSettingsScreenState
   }
 
   Future<void> _loadPreferences() async {
-    final box = await Hive.openBox<dynamic>('notifications');
-    final stored = box.get('push_preferences') as String?;
-    if (stored != null) {
-      try {
-        final json = jsonDecode(stored) as Map<String, dynamic>;
-        if (mounted) {
-          setState(() {
-            _preferences = NotificationPreferences.fromJson(json);
-          });
-        }
-      } on FormatException {
-        // Corrupted cache, use defaults
-      }
-    }
+    final prefs = await ref
+        .read(notificationPreferencesServiceProvider)
+        .loadPreferences();
+    if (!mounted) return;
+
+    setState(() {
+      _preferences = prefs;
+    });
   }
 
-  Future<void> _updatePreference(NotificationPreferences newPrefs) async {
+  Future<void> _applyPreferences(NotificationPreferences newPrefs) async {
     setState(() {
       _preferences = newPrefs;
     });
 
-    // Persist to Hive cache
-    final box = await Hive.openBox<dynamic>('notifications');
-    await box.put('push_preferences', jsonEncode(newPrefs.toJson()));
+    await ref
+        .read(notificationPreferencesServiceProvider)
+        .updatePreferences(newPrefs);
+  }
+
+  Future<void> _resetToDefaults() async {
+    await _applyPreferences(const NotificationPreferences());
+    if (!mounted) return;
+
+    setState(() {
+      _systemEnabled = true;
+      _pushNotificationsEnabled = true;
+      _soundEnabled = true;
+      _vibrationEnabled = true;
+    });
+  }
+
+  Future<void> _markAllAsRead() async {
+    await ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All notifications marked as read'),
+        duration: Duration(seconds: 2),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
+  }
+
+  void _showResetSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Settings reset to defaults'),
+        duration: Duration(seconds: 2),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
   }
 
   @override
@@ -77,22 +104,10 @@ class _NotificationSettingsScreenState
         DiVineAppBarAction(
           icon: const MaterialIconSource(Icons.refresh),
           tooltip: 'Reset to defaults',
-          onPressed: () {
-            _updatePreference(const NotificationPreferences());
-            setState(() {
-              _systemEnabled = true;
-              _pushNotificationsEnabled = true;
-              _soundEnabled = true;
-              _vibrationEnabled = true;
-            });
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Settings reset to defaults'),
-                duration: Duration(seconds: 2),
-                backgroundColor: VineTheme.vineGreen,
-              ),
-            );
+          onPressed: () async {
+            await _resetToDefaults();
+            if (!mounted) return;
+            _showResetSnackBar();
           },
         ),
       ],
@@ -118,8 +133,9 @@ class _NotificationSettingsScreenState
               title: 'Likes',
               subtitle: 'When someone likes your videos',
               value: _preferences.likesEnabled,
-              onChanged: (value) =>
-                  _updatePreference(_preferences.copyWith(likesEnabled: value)),
+              onChanged: (value) => _applyPreferences(
+                _preferences.copyWith(likesEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.chat_bubble,
@@ -127,7 +143,7 @@ class _NotificationSettingsScreenState
               title: 'Comments',
               subtitle: 'When someone comments on your videos',
               value: _preferences.commentsEnabled,
-              onChanged: (value) => _updatePreference(
+              onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(commentsEnabled: value),
               ),
             ),
@@ -137,7 +153,7 @@ class _NotificationSettingsScreenState
               title: 'Follows',
               subtitle: 'When someone follows you',
               value: _preferences.followsEnabled,
-              onChanged: (value) => _updatePreference(
+              onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(followsEnabled: value),
               ),
             ),
@@ -147,7 +163,7 @@ class _NotificationSettingsScreenState
               title: 'Mentions',
               subtitle: 'When you are mentioned',
               value: _preferences.mentionsEnabled,
-              onChanged: (value) => _updatePreference(
+              onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(mentionsEnabled: value),
               ),
             ),
@@ -157,7 +173,7 @@ class _NotificationSettingsScreenState
               title: 'Reposts',
               subtitle: 'When someone reposts your videos',
               value: _preferences.repostsEnabled,
-              onChanged: (value) => _updatePreference(
+              onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(repostsEnabled: value),
               ),
             ),
@@ -212,20 +228,7 @@ class _NotificationSettingsScreenState
               iconColor: VineTheme.vineGreenLight,
               title: 'Mark All as Read',
               subtitle: 'Mark all notifications as read',
-              onTap: () async {
-                await ref
-                    .read(relayNotificationsProvider.notifier)
-                    .markAllAsRead();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All notifications marked as read'),
-                      duration: Duration(seconds: 2),
-                      backgroundColor: VineTheme.vineGreen,
-                    ),
-                  );
-                }
-              },
+              onTap: _markAllAsRead,
             ),
 
             const SizedBox(height: 24),

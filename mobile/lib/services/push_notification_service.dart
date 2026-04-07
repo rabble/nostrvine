@@ -70,6 +70,9 @@ class PushNotificationService {
   Future<void> register(String userPubkey) async {
     if (kIsWeb) return;
 
+    final pushServicePubkey = _configuredPushServicePubkey();
+    if (pushServicePubkey == null) return;
+
     final token = await _getToken();
     if (token == null) {
       Log.warning(
@@ -80,7 +83,7 @@ class PushNotificationService {
       return;
     }
 
-    await _publishRegistration(token);
+    await _publishRegistration(token, pushServicePubkey);
   }
 
   /// Deregisters this device from the divine push service.
@@ -93,7 +96,8 @@ class PushNotificationService {
   Future<void> deregister(String userPubkey) async {
     if (kIsWeb) return;
 
-    final pushServicePubkey = _environmentConfig.pushServicePubkey;
+    final pushServicePubkey = _configuredPushServicePubkey();
+    if (pushServicePubkey == null) return;
 
     final event = await _authService.createAndSignEvent(
       kind: pushDeregistrationKind,
@@ -138,7 +142,8 @@ class PushNotificationService {
   Future<void> updatePreferences(NotificationPreferences prefs) async {
     if (kIsWeb) return;
 
-    final pushServicePubkey = _environmentConfig.pushServicePubkey;
+    final pushServicePubkey = _configuredPushServicePubkey();
+    if (pushServicePubkey == null) return;
     final kinds = prefs.toKindsList();
     final plaintext = jsonEncode({'kinds': kinds});
 
@@ -223,8 +228,10 @@ class PushNotificationService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  Future<void> _publishRegistration(String token) async {
-    final pushServicePubkey = _environmentConfig.pushServicePubkey;
+  Future<void> _publishRegistration(
+    String token,
+    String pushServicePubkey,
+  ) async {
     final plaintext = jsonEncode({'token': token});
 
     final encrypted = await _nostrClient.signer.nip44Encrypt(
@@ -288,7 +295,28 @@ class PushNotificationService {
       name: 'PushNotificationService',
       category: LogCategory.system,
     );
+    final pushServicePubkey = _configuredPushServicePubkey();
+    if (pushServicePubkey == null) return;
+
     // Fire-and-forget: errors are logged inside _publishRegistration
-    _publishRegistration(newToken);
+    _publishRegistration(newToken, pushServicePubkey);
+  }
+
+  String? _configuredPushServicePubkey() {
+    final pushServicePubkey = _environmentConfig.pushServicePubkey;
+    final isPlaceholder = pushServicePubkey.startsWith('TODO_');
+    final isValidHex = RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(pushServicePubkey);
+
+    if (!isPlaceholder && isValidHex) {
+      return pushServicePubkey;
+    }
+
+    Log.warning(
+      'Push service pubkey is not configured for ${_environmentConfig.displayName} '
+      '— skipping push notification sync',
+      name: 'PushNotificationService',
+      category: LogCategory.system,
+    );
+    return null;
   }
 }
