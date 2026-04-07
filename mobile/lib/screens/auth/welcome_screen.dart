@@ -81,6 +81,12 @@ class WelcomeScreen extends ConsumerWidget {
     // also set during runtime sign-in flows (signInForAccount, importFromNsec,
     // connectWithBunker, etc.). Gating on it would unmount the BlocProvider,
     // disposing the WelcomeBloc mid-event-handler and breaking error navigation.
+    //
+    // For this gate to be sufficient, AuthService._setAuthState suppresses
+    // the intermediate `checking → authenticating` transition during init,
+    // so session restore goes straight from `checking` to a terminal state
+    // (authenticated/unauthenticated/awaitingTosAcceptance). See
+    // auth_service.dart `_setAuthState` for the other half of this fix.
     if (authState == AuthState.checking) {
       return const Scaffold(backgroundColor: VineTheme.backgroundColor);
     }
