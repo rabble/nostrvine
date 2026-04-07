@@ -1,5 +1,5 @@
 // ABOUTME: State class for the ListSearchBloc.
-// ABOUTME: Represents all possible states of curated list search results.
+// ABOUTME: Holds status, query, and curated video list search results.
 
 part of 'list_search_bloc.dart';
 

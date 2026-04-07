@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/screens/search_results/widgets/widgets.dart';
-import 'package:openvine/widgets/list_search_view.dart';
 
 class SearchResultsView extends StatelessWidget {
   /// Use [SearchResultsPage] to ensure BLoC providers are wired.
@@ -49,7 +48,9 @@ class SearchResultsView extends StatelessWidget {
         SearchResultsFilter.tags => const CustomScrollView(
           slivers: [TagsSection(showAll: true)],
         ),
-        SearchResultsFilter.lists => const ListSearchView(),
+        SearchResultsFilter.lists => const CustomScrollView(
+          slivers: [ListsSection(showAll: true)],
+        ),
         SearchResultsFilter.videos => const CustomScrollView(
           slivers: [VideosSection(showAll: true)],
         ),
