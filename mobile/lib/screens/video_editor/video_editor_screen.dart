@@ -144,15 +144,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     final estimatedSize = MediaQuery.sizeOf(context) / 3;
 
     for (final sticker in stickers) {
-      final ImageProvider? provider = sticker.networkUrl != null
-          ? NetworkImage(sticker.networkUrl!)
-          : sticker.assetPath != null
-          ? AssetImage(sticker.assetPath!)
-          : null;
+      // SVG assets are vector and don't need raster precaching.
+      if (sticker.networkUrl == null) continue;
 
-      if (provider == null) continue;
-
-      unawaited(precacheImage(provider, context, size: estimatedSize));
+      unawaited(
+        precacheImage(
+          NetworkImage(sticker.networkUrl!),
+          context,
+          size: estimatedSize,
+        ),
+      );
     }
   }
 

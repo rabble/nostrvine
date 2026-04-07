@@ -53,6 +53,10 @@ void main() {
       // Default auth service behavior - authenticated user
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => mockAuthService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
 
       // Default API service behavior - available
       when(() => mockApiService.isAvailable).thenReturn(true);
@@ -102,6 +106,7 @@ void main() {
     }) {
       return ProviderContainer(
         overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           relayNotificationApiServiceProvider.overrideWithValue(mockApiService),
           authServiceProvider.overrideWithValue(mockAuthService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -237,6 +242,80 @@ void main() {
 
         container.dispose();
       });
+
+      test(
+        'resets to empty when auth state changes to unauthenticated',
+        () async {
+          final authStateController = StreamController<AuthState>.broadcast();
+          var authState = AuthState.authenticated;
+
+          when(() => mockAuthService.authState).thenAnswer((_) => authState);
+          when(
+            () => mockAuthService.authStateStream,
+          ).thenAnswer((_) => authStateController.stream);
+
+          final mockNotifications = [
+            createMockRelayNotification(
+              id: 'notif_1',
+              createdAtSeconds: 1700000100,
+            ),
+          ];
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: mockNotifications,
+              unreadCount: 1,
+            ),
+          );
+
+          final container = ProviderContainer(
+            overrides: [
+              relayNotificationApiServiceProvider.overrideWithValue(
+                mockApiService,
+              ),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+              nip98AuthServiceProvider.overrideWithValue(mockNip98AuthService),
+              profileRepositoryProvider.overrideWithValue(
+                mockProfileRepository,
+              ),
+              backgroundActivityManagerProvider.overrideWithValue(
+                mockBackgroundManager,
+              ),
+            ],
+          );
+          addTearDown(() async {
+            await authStateController.close();
+            container.dispose();
+          });
+
+          final initial = await waitForLoadComplete(container);
+          expect(initial.notifications, isNotEmpty);
+
+          authState = AuthState.unauthenticated;
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
+          authStateController.add(AuthState.unauthenticated);
+
+          await Future<void>.delayed(Duration.zero);
+
+          final updated = await container.read(
+            relayNotificationsProvider.future,
+          );
+          expect(updated.notifications, isEmpty);
+          expect(updated.unreadCount, 0);
+        },
+      );
 
       test(
         'converts RelayNotification to NotificationModel correctly',

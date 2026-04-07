@@ -34,5 +34,7 @@
 	<string>Divine needs access to your microphone to record audio with videos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Divine needs access to save videos to your Photos library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Divine needs access to your Photos library to save videos into the diVine album.</string>
 </dict>
 </plist>

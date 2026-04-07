@@ -1,3 +1,4 @@
+// TODO(notifications-refactor): Remove after migration is verified
 // ABOUTME: Riverpod provider for Divine Relay notifications API with pagination
 // ABOUTME: Combines REST API for initial load/pagination with profile enrichment
 
@@ -132,6 +133,10 @@ class RelayNotifications extends _$RelayNotifications {
 
   @override
   Future<NotificationFeedState> build() async {
+    // Rebuild on login/logout/account-switch so stale in-memory notifications
+    // do not survive across identities.
+    ref.watch(currentAuthStateProvider);
+
     // Reset pagination state at start of build
     _nextCursor = null;
     _hasMoreFromApi = true;
