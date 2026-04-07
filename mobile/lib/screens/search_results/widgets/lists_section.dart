@@ -192,6 +192,7 @@ class _NoResultsState extends StatelessWidget {
   }
 }
 
+// TODO(#2856): Improve error state design with retry action.
 class _FailureState extends StatelessWidget {
   const _FailureState();
 
