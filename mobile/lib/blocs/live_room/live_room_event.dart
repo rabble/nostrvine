@@ -95,6 +95,74 @@ class EnableAudioOnlyRequested extends LiveRoomEvent {
   const EnableAudioOnlyRequested();
 }
 
+class ToggleHandRaiseRequested extends LiveRoomEvent {
+  const ToggleHandRaiseRequested();
+}
+
+class EndSessionRequested extends LiveRoomEvent {
+  const EndSessionRequested();
+}
+
+class UpdateRoomMetadataRequested extends LiveRoomEvent {
+  const UpdateRoomMetadataRequested({
+    this.title,
+    this.summary,
+    this.visibility,
+  });
+
+  final String? title;
+  final String? summary;
+  final LiveRoomVisibility? visibility;
+
+  @override
+  List<Object?> get props => <Object?>[title, summary, visibility];
+}
+
+class ApproveRaisedHandRequested extends LiveRoomEvent {
+  const ApproveRaisedHandRequested(this.pubkey);
+
+  final String pubkey;
+
+  @override
+  List<Object?> get props => <Object?>[pubkey];
+}
+
+class DenyRaisedHandRequested extends LiveRoomEvent {
+  const DenyRaisedHandRequested(this.pubkey);
+
+  final String pubkey;
+
+  @override
+  List<Object?> get props => <Object?>[pubkey];
+}
+
+class MuteParticipantRequested extends LiveRoomEvent {
+  const MuteParticipantRequested(this.pubkey);
+
+  final String pubkey;
+
+  @override
+  List<Object?> get props => <Object?>[pubkey];
+}
+
+class MuteChatParticipantRequested extends LiveRoomEvent {
+  const MuteChatParticipantRequested(this.pubkey);
+
+  final String pubkey;
+
+  @override
+  List<Object?> get props => <Object?>[pubkey];
+}
+
+class RemoveParticipantRequested extends LiveRoomEvent {
+  const RemoveParticipantRequested(this.pubkey);
+
+  final String pubkey;
+
+  @override
+  List<Object?> get props => <Object?>[pubkey];
+}
+
 class LiveRoomAppForegroundChanged extends LiveRoomEvent {
   const LiveRoomAppForegroundChanged(this.isForeground);
 

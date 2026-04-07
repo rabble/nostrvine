@@ -36,6 +36,7 @@ class LiveDiscoveryView extends StatelessWidget {
       ),
       body: BlocBuilder<LiveDiscoveryBloc, LiveDiscoveryState>(
         builder: (context, state) {
+          final featuredRooms = _featuredRooms(state);
           return switch (state.status) {
             LiveDiscoveryStatus.initial ||
             LiveDiscoveryStatus.loading => const Center(
@@ -60,6 +61,14 @@ class LiveDiscoveryView extends StatelessWidget {
               child: ListView(
                 children: [
                   const SizedBox(height: 8),
+                  if (featuredRooms.isNotEmpty)
+                    _FeaturedHostsSection(
+                      rooms: featuredRooms,
+                      sessions: [
+                        ...state.activeSessions,
+                        ...state.upcomingSessions,
+                      ],
+                    ),
                   _DiscoverySection(
                     title: 'Live now',
                     subtitle: 'Drop into rooms that are already rolling.',
@@ -91,6 +100,17 @@ class LiveDiscoveryView extends StatelessWidget {
       ),
     );
   }
+}
+
+List<LiveRoom> _featuredRooms(LiveDiscoveryState state) {
+  final featuredByHost = <String, LiveRoom>{};
+  for (final room in <LiveRoom>[
+    ...state.activeRooms,
+    ...state.upcomingRooms,
+  ]) {
+    featuredByHost.putIfAbsent(room.hostPubkey, () => room);
+  }
+  return featuredByHost.values.toList(growable: false);
 }
 
 class _DiscoverySection extends StatelessWidget {
@@ -177,6 +197,163 @@ class _DiscoverySection extends StatelessWidget {
             );
           }),
         ],
+      ),
+    );
+  }
+}
+
+class _FeaturedHostsSection extends StatelessWidget {
+  const _FeaturedHostsSection({
+    required this.rooms,
+    required this.sessions,
+  });
+
+  final List<LiveRoom> rooms;
+  final List<LiveSession> sessions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text('Featured hosts', style: VineTheme.titleLargeFont()),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              'A quick scan of the hosts who are live or lined up next.',
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 196,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemBuilder: (context, index) {
+                final room = rooms[index];
+                final session = sessions
+                    .where((item) => item.roomId == room.id)
+                    .fold(
+                      null,
+                      (LiveSession? previous, LiveSession next) {
+                        if (previous == null) {
+                          return next;
+                        }
+                        return next.isLive ? next : previous;
+                      },
+                    );
+
+                return _FeaturedHostCard(
+                  room: room,
+                  session: session,
+                  onTap: () {
+                    context.push(
+                      LiveRoomDetailPage.pathFor(room.id),
+                      extra: LiveRoomDetailRouteData(
+                        room: room,
+                        session: session,
+                      ),
+                    );
+                  },
+                );
+              },
+              separatorBuilder: (context, index) => const SizedBox(width: 12),
+              itemCount: rooms.length,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeaturedHostCard extends StatelessWidget {
+  const _FeaturedHostCard({
+    required this.room,
+    required this.session,
+    required this.onTap,
+  });
+
+  final LiveRoom room;
+  final LiveSession? session;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLive = session?.isLive ?? false;
+
+    return SizedBox(
+      width: 280,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isLive ? VineTheme.primary : VineTheme.outlineMuted,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isLive
+                        ? VineTheme.primary
+                        : VineTheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    isLive ? 'Live now' : 'Scheduled',
+                    style: VineTheme.labelLargeFont(
+                      color: isLive ? VineTheme.onPrimary : VineTheme.onSurface,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  room.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: VineTheme.titleMediumFont(),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  room.summary,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Host: ${room.hostPubkey}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

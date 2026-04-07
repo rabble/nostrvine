@@ -19,6 +19,11 @@ class LiveRoomState extends Equatable {
     this.mediaState = const LiveMediaState(),
     this.errorMessage,
     this.stageSpeakerPubkeys,
+    this.dismissedHandPubkeys = const <String>[],
+    this.mutedParticipantPubkeys = const <String>[],
+    this.mutedChatParticipantPubkeys = const <String>[],
+    this.removedParticipantPubkeys = const <String>[],
+    this.currentUserHandRaised = false,
   });
 
   final LiveRoomStatus status;
@@ -29,10 +34,25 @@ class LiveRoomState extends Equatable {
   final LiveMediaState mediaState;
   final String? errorMessage;
   final List<String>? stageSpeakerPubkeys;
+  final List<String> dismissedHandPubkeys;
+  final List<String> mutedParticipantPubkeys;
+  final List<String> mutedChatParticipantPubkeys;
+  final List<String> removedParticipantPubkeys;
+  final bool currentUserHandRaised;
 
   bool get canModerate => role?.canModerate ?? false;
 
   bool get canPublish => role?.canPublish ?? false;
+
+  List<LivePresence> get visiblePresence {
+    if (removedParticipantPubkeys.isEmpty) {
+      return presence;
+    }
+
+    return presence
+        .where((member) => !removedParticipantPubkeys.contains(member.pubkey))
+        .toList(growable: false);
+  }
 
   String? get sessionAddress {
     final currentRoom = room;
@@ -47,7 +67,9 @@ class LiveRoomState extends Equatable {
   List<String> get speakerPubkeys {
     final stageSpeakerPubkeys = this.stageSpeakerPubkeys;
     if (stageSpeakerPubkeys != null) {
-      return List<String>.unmodifiable(stageSpeakerPubkeys);
+      return stageSpeakerPubkeys
+          .where((pubkey) => !removedParticipantPubkeys.contains(pubkey))
+          .toList(growable: false);
     }
 
     final speakers = <String>{};
@@ -55,7 +77,8 @@ class LiveRoomState extends Equatable {
     if (currentSession != null) {
       speakers.addAll(currentSession.speakerPubkeys);
     }
-    for (final member in presence) {
+    speakers.removeAll(removedParticipantPubkeys);
+    for (final member in visiblePresence) {
       if (member.role.canPublish) {
         speakers.add(member.pubkey);
       }
@@ -64,10 +87,12 @@ class LiveRoomState extends Equatable {
   }
 
   List<LivePresence> get raisedHands {
-    return presence
+    return visiblePresence
         .where(
           (member) =>
-              member.handRaised && !speakerPubkeys.contains(member.pubkey),
+              member.handRaised &&
+              !speakerPubkeys.contains(member.pubkey) &&
+              !dismissedHandPubkeys.contains(member.pubkey),
         )
         .toList(growable: false);
   }
@@ -87,6 +112,15 @@ class LiveRoomState extends Equatable {
     bool clearErrorMessage = false,
     List<String>? stageSpeakerPubkeys,
     bool clearStageSpeakerPubkeys = false,
+    List<String>? dismissedHandPubkeys,
+    bool clearDismissedHandPubkeys = false,
+    List<String>? mutedParticipantPubkeys,
+    bool clearMutedParticipantPubkeys = false,
+    List<String>? mutedChatParticipantPubkeys,
+    bool clearMutedChatParticipantPubkeys = false,
+    List<String>? removedParticipantPubkeys,
+    bool clearRemovedParticipantPubkeys = false,
+    bool? currentUserHandRaised,
   }) {
     return LiveRoomState(
       status: status ?? this.status,
@@ -101,6 +135,20 @@ class LiveRoomState extends Equatable {
       stageSpeakerPubkeys: clearStageSpeakerPubkeys
           ? null
           : (stageSpeakerPubkeys ?? this.stageSpeakerPubkeys),
+      dismissedHandPubkeys: clearDismissedHandPubkeys
+          ? const <String>[]
+          : (dismissedHandPubkeys ?? this.dismissedHandPubkeys),
+      mutedParticipantPubkeys: clearMutedParticipantPubkeys
+          ? const <String>[]
+          : (mutedParticipantPubkeys ?? this.mutedParticipantPubkeys),
+      mutedChatParticipantPubkeys: clearMutedChatParticipantPubkeys
+          ? const <String>[]
+          : (mutedChatParticipantPubkeys ?? this.mutedChatParticipantPubkeys),
+      removedParticipantPubkeys: clearRemovedParticipantPubkeys
+          ? const <String>[]
+          : (removedParticipantPubkeys ?? this.removedParticipantPubkeys),
+      currentUserHandRaised:
+          currentUserHandRaised ?? this.currentUserHandRaised,
     );
   }
 
@@ -114,5 +162,10 @@ class LiveRoomState extends Equatable {
     mediaState,
     errorMessage,
     stageSpeakerPubkeys,
+    dismissedHandPubkeys,
+    mutedParticipantPubkeys,
+    mutedChatParticipantPubkeys,
+    removedParticipantPubkeys,
+    currentUserHandRaised,
   ];
 }

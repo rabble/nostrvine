@@ -122,6 +122,7 @@ void main() {
       registerFallbackValue(room);
       registerFallbackValue(joinToken);
       registerFallbackValue(liveSession);
+      registerFallbackValue(LiveRole.audience);
     });
 
     setUp(() {
@@ -163,6 +164,12 @@ void main() {
         ),
       ).thenAnswer((_) async => speakerJoinToken);
       when(
+        () => mockApiService.endSession(
+          roomId: room.id,
+          sessionId: liveSession.id,
+        ),
+      ).thenAnswer((_) async {});
+      when(
         () => mockMediaService.watchState(),
       ).thenAnswer((_) => mediaController.stream);
       when(() => mockMediaService.connect(joinToken)).thenAnswer((_) async {});
@@ -192,6 +199,16 @@ void main() {
           session: any(named: 'session'),
           roomAddress: room.address,
           hostPubkey: room.hostPubkey,
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepository.publishRoom(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepository.publishPresence(
+          sessionAddress: any(named: 'sessionAddress'),
+          role: any(named: 'role'),
+          handRaised: any(named: 'handRaised'),
         ),
       ).thenAnswer((_) async => null);
     });
@@ -510,6 +527,186 @@ void main() {
         await bloc.close();
       },
     );
+
+    test('host can end the live session', () async {
+      final bloc = LiveRoomBloc(
+        liveRepository: mockRepository,
+        liveApiService: mockApiService,
+        liveKitRoomService: mockMediaService,
+      );
+
+      bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+      await _flush();
+
+      sessionsController.add(<LiveSession>[liveSession]);
+      await _flush();
+
+      final endedStateFuture = bloc.stream.firstWhere(
+        (state) => state.session?.status == LiveSessionStatus.ended,
+      );
+      bloc.add(const EndSessionRequested());
+      await endedStateFuture;
+
+      verify(
+        () => mockApiService.endSession(
+          roomId: room.id,
+          sessionId: liveSession.id,
+        ),
+      ).called(1);
+      expect(bloc.state.session?.status, LiveSessionStatus.ended);
+      expect(bloc.state.session?.endedAt, isNotNull);
+
+      await bloc.close();
+    });
+
+    test('host can publish room metadata updates', () async {
+      final bloc = LiveRoomBloc(
+        liveRepository: mockRepository,
+        liveApiService: mockApiService,
+        liveKitRoomService: mockMediaService,
+      );
+
+      bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+      await _flush();
+
+      sessionsController.add(<LiveSession>[liveSession]);
+      await _flush();
+
+      bloc.add(
+        const UpdateRoomMetadataRequested(
+          title: 'New title',
+          summary: 'Fresh summary',
+          visibility: LiveRoomVisibility.private,
+        ),
+      );
+      await _flush();
+
+      verify(
+        () => mockRepository.publishRoom(
+          any(
+            that: isA<LiveRoom>()
+                .having((value) => value.title, 'title', 'New title')
+                .having((value) => value.summary, 'summary', 'Fresh summary')
+                .having(
+                  (value) => value.visibility,
+                  'visibility',
+                  LiveRoomVisibility.private,
+                ),
+          ),
+        ),
+      ).called(1);
+      expect(bloc.state.room?.title, 'New title');
+      expect(bloc.state.room?.summary, 'Fresh summary');
+      expect(bloc.state.room?.visibility, LiveRoomVisibility.private);
+
+      await bloc.close();
+    });
+
+    test('host can approve and deny raised hands locally', () async {
+      final bloc = LiveRoomBloc(
+        liveRepository: mockRepository,
+        liveApiService: mockApiService,
+        liveKitRoomService: mockMediaService,
+      );
+
+      bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+      await _flush();
+
+      sessionsController.add(<LiveSession>[liveSession]);
+      await _flush();
+
+      presenceController.add(<LivePresence>[
+        hostPresence,
+        speakerPresence,
+        raisedHandPresence,
+      ]);
+      await _flush();
+
+      bloc
+        ..add(const DenyRaisedHandRequested(audiencePubkey))
+        ..add(const ApproveRaisedHandRequested(audiencePubkey));
+      await _flush();
+
+      expect(bloc.state.raisedHands, isEmpty);
+      expect(bloc.state.speakerPubkeys, contains(audiencePubkey));
+
+      await bloc.close();
+    });
+
+    test('audience members can raise a hand through live presence', () async {
+      final bloc = LiveRoomBloc(
+        liveRepository: mockRepository,
+        liveApiService: mockApiService,
+        liveKitRoomService: mockMediaService,
+        currentUserPubkey: audiencePubkey,
+      );
+
+      bloc.add(
+        const LiveRoomJoinRequested(room: room, role: LiveRole.audience),
+      );
+      await _flush();
+
+      sessionsController.add(<LiveSession>[liveSession]);
+      await _flush();
+
+      presenceController.add(<LivePresence>[hostPresence, speakerPresence]);
+      await _flush();
+
+      bloc.add(const ToggleHandRaiseRequested());
+      await _flush();
+
+      verify(
+        () => mockRepository.publishPresence(
+          sessionAddress: '30313:$hostPubkey:${liveSession.id}',
+          role: LiveRole.audience,
+          handRaised: true,
+        ),
+      ).called(1);
+      expect(bloc.state.currentUserHandRaised, isTrue);
+      expect(
+        bloc.state.presence,
+        contains(
+          isA<LivePresence>()
+              .having((value) => value.pubkey, 'pubkey', audiencePubkey)
+              .having((value) => value.handRaised, 'handRaised', isTrue),
+        ),
+      );
+
+      await bloc.close();
+    });
+
+    test('host can mute and remove participants from the room view', () async {
+      final bloc = LiveRoomBloc(
+        liveRepository: mockRepository,
+        liveApiService: mockApiService,
+        liveKitRoomService: mockMediaService,
+      );
+
+      bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+      await _flush();
+
+      sessionsController.add(<LiveSession>[liveSession]);
+      await _flush();
+
+      presenceController.add(<LivePresence>[
+        hostPresence,
+        speakerPresence,
+        raisedHandPresence,
+      ]);
+      await _flush();
+
+      bloc
+        ..add(const MuteParticipantRequested(speakerPubkey))
+        ..add(const RemoveParticipantRequested(speakerPubkey));
+      await _flush();
+
+      expect(bloc.state.removedParticipantPubkeys, contains(speakerPubkey));
+      expect(bloc.state.mutedParticipantPubkeys, contains(speakerPubkey));
+      expect(bloc.state.visiblePresence, isNot(contains(speakerPresence)));
+      expect(bloc.state.speakerPubkeys, isNot(contains(speakerPubkey)));
+
+      await bloc.close();
+    });
 
     test('hosts stay connected when the app backgrounds', () async {
       final bloc = LiveRoomBloc(

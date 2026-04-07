@@ -10,9 +10,9 @@ import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/repositories/live_repository.dart';
-import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/screens/live/live_room_detail_page.dart';
+import 'package:openvine/screens/live/live_route_data.dart';
 import 'package:openvine/screens/live/widgets/live_explore_entry_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -106,7 +106,17 @@ void main() {
             path: '/',
             builder: (context, state) => const LiveDiscoveryPage(),
           ),
-          ...buildLiveRoutes(liveEnabled: true),
+          GoRoute(
+            path: LiveRoomDetailPage.pathPattern,
+            builder: (context, state) {
+              final data = state.extra as LiveRoomDetailRouteData?;
+              return LiveRoomDetailPage(
+                roomId: state.pathParameters['roomId']!,
+                initialRoom: data?.room,
+                initialSession: data?.session,
+              );
+            },
+          ),
         ],
       );
 
@@ -128,6 +138,57 @@ void main() {
 
       expect(find.byType(LiveRoomDetailPage), findsOneWidget);
       expect(find.text('Join live'), findsOneWidget);
+    });
+
+    testWidgets('shows featured hosts above the room sections', (
+      tester,
+    ) async {
+      final activeRoom = _room(
+        id: 'room-123',
+        hostPubkey: 'host-pubkey',
+        title: 'Signal from the stage',
+      );
+      final upcomingRoom = _room(
+        id: 'room-456',
+        hostPubkey: 'other-host-pubkey',
+        title: 'After hours',
+      );
+      final activeSession = _session(
+        id: 'session-123',
+        roomId: activeRoom.id,
+        status: LiveSessionStatus.live,
+      );
+      final upcomingSession = _session(
+        id: 'session-456',
+        roomId: upcomingRoom.id,
+        status: LiveSessionStatus.planned,
+      );
+
+      when(() => mockLiveRepository.fetchPublicRooms()).thenAnswer(
+        (_) async => <LiveRoom>[activeRoom, upcomingRoom],
+      );
+      when(() => mockLiveRepository.fetchSessions()).thenAnswer(
+        (_) async => <LiveSession>[activeSession, upcomingSession],
+      );
+
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+          ],
+          child: const MaterialApp(home: LiveDiscoveryPage()),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Featured hosts'), findsOneWidget);
+      expect(find.text('Signal from the stage'), findsWidgets);
+      expect(find.text('After hours'), findsWidgets);
+      expect(
+        find.text('A quick scan of the hosts who are live or lined up next.'),
+        findsOneWidget,
+      );
     });
   });
 }

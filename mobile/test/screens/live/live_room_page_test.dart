@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/live/live_chat_message.dart';
@@ -8,10 +9,14 @@ import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_room_token.dart';
 import 'package:openvine/models/live/live_session.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/repositories/live_chat_repository.dart';
 import 'package:openvine/repositories/live_repository.dart';
 import 'package:openvine/screens/live/live_room_page.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/livekit_room_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +31,12 @@ class _MockLiveApiService extends Mock implements LiveApiService {}
 
 class _MockLiveKitRoomService extends Mock implements LiveKitRoomService {}
 
+class _MockContentReportingService extends Mock
+    implements ContentReportingService {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -34,6 +45,8 @@ void main() {
     late _MockLiveChatRepository mockLiveChatRepository;
     late _MockLiveApiService mockLiveApiService;
     late _MockLiveKitRoomService mockLiveKitRoomService;
+    late _MockContentReportingService mockContentReportingService;
+    late _MockContentBlocklistService mockContentBlocklistService;
 
     const room = LiveRoom(
       id: 'room-123',
@@ -90,11 +103,18 @@ void main() {
       updatedAt: DateTime.utc(2026, 4, 6, 8, 2),
     );
 
+    setUpAll(() {
+      registerFallbackValue(room);
+      registerFallbackValue(LiveRole.audience);
+    });
+
     setUp(() {
       mockLiveRepository = _MockLiveRepository();
       mockLiveChatRepository = _MockLiveChatRepository();
       mockLiveApiService = _MockLiveApiService();
       mockLiveKitRoomService = _MockLiveKitRoomService();
+      mockContentReportingService = _MockContentReportingService();
+      mockContentBlocklistService = _MockContentBlocklistService();
 
       when(() => mockLiveKitRoomService.watchState()).thenAnswer(
         (_) => Stream<LiveMediaState>.value(const LiveMediaState()),
@@ -146,6 +166,30 @@ void main() {
         ),
       ).thenAnswer((_) async {});
       when(
+        () => mockContentReportingService.reportUser(
+          userPubkey: 'audience-pubkey',
+          reason: ContentFilterReason.other,
+          details: 'Reported from live room moderation',
+          relatedEventIds: const <String>[],
+        ),
+      ).thenAnswer((_) async => ReportResult.createSuccess('report-id'));
+      when(
+        () => mockContentBlocklistService.blockUser(
+          'audience-pubkey',
+          ourPubkey: 'host-pubkey',
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockLiveRepository.publishPresence(
+          sessionAddress: any(named: 'sessionAddress'),
+          role: any(named: 'role'),
+          handRaised: any(named: 'handRaised'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockLiveRepository.publishRoom(any()),
+      ).thenAnswer((_) async => null);
+      when(
         () => mockLiveApiService.fetchJoinToken(
           roomId: room.id,
           role: LiveRole.audience,
@@ -186,6 +230,12 @@ void main() {
             liveKitRoomServiceProvider.overrideWithValue(
               mockLiveKitRoomService,
             ),
+            contentReportingServiceProvider.overrideWith(
+              (ref) async => mockContentReportingService,
+            ),
+            contentBlocklistServiceProvider.overrideWithValue(
+              mockContentBlocklistService,
+            ),
           ],
           home: LiveRoomPage(
             roomId: room.id,
@@ -205,13 +255,123 @@ void main() {
       expect(find.text('Audio only'), findsOneWidget);
       expect(find.text('Chat'), findsOneWidget);
 
+      await tester.scrollUntilVisible(
+        find.text('Host controls'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.tap(find.text('Host controls'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Manage speakers'), findsOneWidget);
+      expect(find.text('Room details'), findsOneWidget);
+      expect(find.text('Update title/status'), findsOneWidget);
+      expect(find.text('End session'), findsOneWidget);
+      expect(find.text('Manage participants'), findsOneWidget);
+
+      await tester.tap(find.text('Manage participants'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Raised hands'), findsOneWidget);
+      expect(find.text('Active speakers'), findsOneWidget);
+      expect(find.text('Audience'), findsOneWidget);
+      expect(find.text('Approve'), findsOneWidget);
+      expect(find.text('Deny'), findsOneWidget);
+      expect(find.text('Mute'), findsOneWidget);
+      expect(find.text('Remove'), findsOneWidget);
+      expect(find.text('Mute chat participant'), findsWidgets);
+      expect(find.text('Report user'), findsWidgets);
+      expect(find.text('Block user'), findsWidgets);
     });
 
+    testWidgets(
+      'host console can report, block, and mute live chat participants',
+      (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final hostAuth = createMockAuthService();
+        when(() => hostAuth.currentPublicKeyHex).thenReturn('host-pubkey');
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: hostAuth,
+            additionalOverrides: [
+              liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+              liveChatRepositoryProvider.overrideWithValue(
+                mockLiveChatRepository,
+              ),
+              liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+              liveKitRoomServiceProvider.overrideWithValue(
+                mockLiveKitRoomService,
+              ),
+              contentReportingServiceProvider.overrideWith(
+                (ref) async => mockContentReportingService,
+              ),
+              contentBlocklistServiceProvider.overrideWithValue(
+                mockContentBlocklistService,
+              ),
+            ],
+            home: LiveRoomPage(
+              roomId: room.id,
+              sessionId: session.id,
+              initialRoom: room,
+              initialSession: session,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        await tester.scrollUntilVisible(
+          find.text('Host controls'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Host controls'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Manage participants'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Report user').first);
+        await tester.pump();
+        await tester.pumpAndSettle();
+        verify(
+          () => mockContentReportingService.reportUser(
+            userPubkey: 'audience-pubkey',
+            reason: ContentFilterReason.other,
+            details: 'Reported from live room moderation',
+            relatedEventIds: const <String>[],
+          ),
+        ).called(1);
+
+        await tester.tap(find.text('Mute chat participant').first);
+        await tester.pumpAndSettle();
+        expect(find.text('This room is live.'), findsNothing);
+        expect(
+          find.text('Muted messages are hidden from the room.'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Block user').first);
+        await tester.pump();
+        await tester.pumpAndSettle();
+        verify(
+          () => mockContentBlocklistService.blockUser(
+            'audience-pubkey',
+            ourPubkey: 'host-pubkey',
+          ),
+        ).called(1);
+      },
+    );
+
     testWidgets('audience members do not see host controls', (tester) async {
+      when(
+        () => mockLiveRepository.watchPresence(sessionAddress: sessionAddress),
+      ).thenAnswer(
+        (_) => Stream<List<LivePresence>>.value(<LivePresence>[hostPresence]),
+      );
+
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final sharedPreferences = await SharedPreferences.getInstance();
       final audienceAuth = createMockAuthService();
@@ -245,10 +405,30 @@ void main() {
       await tester.pump();
 
       expect(find.text('Host controls'), findsNothing);
+      expect(find.text('Participants'), findsOneWidget);
+      expect(find.text('Share room'), findsOneWidget);
       expect(find.text('Raise hand'), findsOneWidget);
       expect(find.text('Mic on'), findsNothing);
       expect(find.text('Camera on'), findsNothing);
       expect(find.text('Audio only'), findsNothing);
+
+      await tester.tap(find.text('Raise hand'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Lower hand'), findsOneWidget);
+      expect(
+        find.text(
+          'Your hand is raised. The host can bring you on stage from the speaker queue.',
+        ),
+        findsOneWidget,
+      );
+      verify(
+        () => mockLiveRepository.publishPresence(
+          sessionAddress: sessionAddress,
+          role: LiveRole.audience,
+          handRaised: true,
+        ),
+      ).called(1);
     });
 
     testWidgets('listed speakers get local publishing controls', (
@@ -355,7 +535,7 @@ void main() {
       sessionsController.add(<LiveSession>[session]);
       await tester.pump();
       await tester.pump();
-      presenceController.add(<LivePresence>[hostPresence, raisedHandPresence]);
+      presenceController.add(<LivePresence>[hostPresence]);
       await tester.pump();
       await tester.pump();
 
@@ -379,5 +559,71 @@ void main() {
       await sessionsController.close();
       await presenceController.close();
     });
+
+    testWidgets(
+      'hosts see an audio-only suggestion when the connection reconnects',
+      (tester) async {
+        final mediaController = StreamController<LiveMediaState>.broadcast(
+          sync: true,
+        );
+
+        when(() => mockLiveKitRoomService.watchState()).thenAnswer(
+          (_) => mediaController.stream,
+        );
+
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final hostAuth = createMockAuthService();
+        when(() => hostAuth.currentPublicKeyHex).thenReturn('host-pubkey');
+
+        addTearDown(() async {
+          await mediaController.close();
+        });
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: hostAuth,
+            additionalOverrides: [
+              liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+              liveChatRepositoryProvider.overrideWithValue(
+                mockLiveChatRepository,
+              ),
+              liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+              liveKitRoomServiceProvider.overrideWithValue(
+                mockLiveKitRoomService,
+              ),
+            ],
+            home: LiveRoomPage(
+              roomId: room.id,
+              sessionId: session.id,
+              initialRoom: room,
+              initialSession: session,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.reconnecting,
+            canPublish: true,
+            cameraEnabled: true,
+            microphoneEnabled: true,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Connection looks shaky'), findsOneWidget);
+        expect(find.text('Switch to audio only'), findsOneWidget);
+
+        await tester.tap(find.text('Switch to audio only'));
+        await tester.pump();
+
+        verify(() => mockLiveKitRoomService.enableAudioOnly()).called(1);
+      },
+    );
   });
 }

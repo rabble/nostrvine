@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,12 +13,11 @@ import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/repositories/live_chat_repository.dart';
 import 'package:openvine/repositories/live_repository.dart';
-import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/live/live_room_detail_page.dart';
-import 'package:openvine/screens/live/live_room_page.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/livekit_room_service.dart';
+import 'package:share_plus_platform_interface/method_channel/method_channel_share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -123,6 +123,9 @@ void main() {
     testWidgets('join button opens room page when live beta is enabled', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(430, 932));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final sharedPreferences = await SharedPreferences.getInstance();
       final router = GoRouter(
@@ -135,7 +138,14 @@ void main() {
               initialSession: session,
             ),
           ),
-          ...buildLiveRoutes(liveEnabled: true),
+          GoRoute(
+            path: '/live/room/:roomId/session/:sessionId',
+            builder: (context, state) {
+              return const Scaffold(
+                body: Center(child: Text('room page')),
+              );
+            },
+          ),
         ],
       );
 
@@ -160,11 +170,15 @@ void main() {
 
       expect(find.text('Join live'), findsOneWidget);
 
+      await tester.scrollUntilVisible(
+        find.text('Join live'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.tap(find.text('Join live'));
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.byType(LiveRoomPage), findsOneWidget);
+      expect(find.text('room page'), findsOneWidget);
     });
 
     testWidgets('ended rooms show a replay banner when recording exists', (
@@ -244,6 +258,107 @@ void main() {
 
       expect(find.text('Replay ready'), findsNothing);
       expect(find.text('Open replay'), findsNothing);
+    });
+
+    testWidgets('shows schedule and speaker metadata for the room', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockSharedPreferences: sharedPreferences,
+          mockAuthService: mockAuthService,
+          additionalOverrides: [
+            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+            liveChatRepositoryProvider.overrideWithValue(
+              mockLiveChatRepository,
+            ),
+            liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+            liveKitRoomServiceProvider.overrideWithValue(
+              mockLiveKitRoomService,
+            ),
+          ],
+          home: LiveRoomDetailPage(
+            roomId: room.id,
+            initialRoom: room,
+            initialSession: session,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Schedule'), findsOneWidget);
+      expect(find.text('Speakers'), findsOneWidget);
+      expect(find.text('host-pubkey'), findsOneWidget);
+    });
+
+    testWidgets('share room sends a public live URL', (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final shareCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(MethodChannelShare.channel, (call) async {
+            shareCalls.add(call);
+            return null;
+          });
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(MethodChannelShare.channel, null);
+      });
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockSharedPreferences: sharedPreferences,
+          mockAuthService: mockAuthService,
+          additionalOverrides: [
+            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+            liveChatRepositoryProvider.overrideWithValue(
+              mockLiveChatRepository,
+            ),
+            liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+            liveKitRoomServiceProvider.overrideWithValue(
+              mockLiveKitRoomService,
+            ),
+          ],
+          home: LiveRoomDetailPage(
+            roomId: room.id,
+            initialRoom: room,
+            initialSession: session,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('Share room'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Share room'));
+      await tester.pumpAndSettle();
+
+      expect(shareCalls, hasLength(1));
+      expect(shareCalls.single.method, 'share');
+      expect(
+        shareCalls.single.arguments,
+        isA<Map>().having(
+          (arguments) => arguments['text'] as String,
+          'text',
+          contains('https://divine.video/live/room/room-123'),
+        ),
+      );
+      expect(
+        shareCalls.single.arguments,
+        isA<Map>().having(
+          (arguments) => arguments['subject'] as String,
+          'subject',
+          contains('Signal from the stage'),
+        ),
+      );
     });
   });
 }

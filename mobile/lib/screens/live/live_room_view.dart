@@ -1,16 +1,26 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/live_chat/live_chat_bloc.dart';
 import 'package:openvine/blocs/live_room/live_room_bloc.dart';
+import 'package:openvine/models/live/live_presence.dart';
+import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/screens/live/widgets/live_chat_panel.dart';
 import 'package:openvine/screens/live/widgets/live_host_controls_sheet.dart';
 import 'package:openvine/screens/live/widgets/live_local_media_controls.dart';
 import 'package:openvine/screens/live/widgets/live_room_stage.dart';
+import 'package:openvine/services/livekit_room_service.dart';
+import 'package:share_plus/share_plus.dart';
 
-class LiveRoomView extends StatelessWidget {
+class LiveRoomView extends StatefulWidget {
   const LiveRoomView({super.key});
 
+  @override
+  State<LiveRoomView> createState() => _LiveRoomViewState();
+}
+
+class _LiveRoomViewState extends State<LiveRoomView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,110 +55,447 @@ class LiveRoomView extends StatelessWidget {
                 style: VineTheme.bodyMediumFont(),
               ),
             ),
-            LiveRoomStatus.ready => ListView(
+            LiveRoomStatus.ready => SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              children: [
-                LiveRoomStage(
-                  speakerPubkeys: roomState.speakerPubkeys,
-                  audienceCount:
-                      roomState.session?.audienceCount ??
-                      roomState.presence.length,
-                  statusLabel: roomState.mediaState.status.name,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LiveRoomStage(
+                    speakerPubkeys: roomState.speakerPubkeys,
+                    audienceCount:
+                        roomState.session?.audienceCount ??
+                        roomState.presence.length,
+                    statusLabel: roomState.mediaState.status.name,
+                  ),
+                  const SizedBox(height: 16),
+                  if (roomState.canPublish &&
+                      roomState.mediaState.status ==
+                          LiveMediaConnectionStatus.reconnecting)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: _LiveNetworkDegradationBanner(),
+                    ),
+                  _LiveRoomActionRow(
+                    canPublish: roomState.canPublish,
+                    currentUserHandRaised: roomState.currentUserHandRaised,
+                    onShareRoom: () => _shareRoom(context, roomState),
+                    onZap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Zap flow lands in a follow-up slice.',
+                          ),
+                        ),
+                      );
+                    },
+                    onToggleRequestToSpeak: () {
+                      if (roomState.canPublish) {
+                        return;
+                      }
+
+                      context.read<LiveRoomBloc>().add(
+                        const ToggleHandRaiseRequested(),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _LiveParticipantRoster(
+                    presence: roomState.visiblePresence,
+                    speakerPubkeys: roomState.speakerPubkeys,
+                  ),
+                  const SizedBox(height: 16),
+                  if (roomState.currentUserHandRaised && !roomState.canPublish)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: _LiveRequestPendingBanner(),
+                    ),
+                  if (roomState.canPublish)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: LiveLocalMediaControls(
+                        cameraButtonLabel: cameraEnabled
+                            ? 'Camera on'
+                            : 'Camera off',
+                        microphoneButtonLabel: microphoneEnabled
+                            ? 'Mic on'
+                            : 'Mic off',
+                        onToggleCamera: () {
+                          context.read<LiveRoomBloc>().add(
+                            const ToggleCameraRequested(),
+                          );
+                        },
+                        onToggleMicrophone: () {
+                          context.read<LiveRoomBloc>().add(
+                            const ToggleMicrophoneRequested(),
+                          );
+                        },
+                        onSwitchCamera: () {
+                          context.read<LiveRoomBloc>().add(
+                            const SwitchCameraRequested(),
+                          );
+                        },
+                        onEnableAudioOnly: () {
+                          context.read<LiveRoomBloc>().add(
+                            const EnableAudioOnlyRequested(),
+                          );
+                        },
+                      ),
+                    ),
+                  if (roomState.canModerate)
+                    Align(
+                      alignment: Alignment.centerLeft,
                       child: DivineButton(
-                        label: 'Zap',
+                        label: 'Host controls',
                         type: DivineButtonType.secondary,
+                        size: DivineButtonSize.small,
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Zap flow lands in a follow-up slice.',
-                              ),
+                          showModalBottomSheet<void>(
+                            context: context,
+                            backgroundColor: VineTheme.surfaceBackground,
+                            isScrollControlled: true,
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<LiveRoomBloc>(),
+                              child: const LiveHostControlsSheet(),
                             ),
                           );
                         },
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DivineButton(
-                        label: roomState.canPublish
-                            ? 'You are on stage'
-                            : 'Raise hand',
-                        onPressed: roomState.canPublish ? null : () {},
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (roomState.canPublish)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: LiveLocalMediaControls(
-                      cameraButtonLabel: cameraEnabled
-                          ? 'Camera on'
-                          : 'Camera off',
-                      microphoneButtonLabel: microphoneEnabled
-                          ? 'Mic on'
-                          : 'Mic off',
-                      onToggleCamera: () {
-                        context.read<LiveRoomBloc>().add(
-                          const ToggleCameraRequested(),
-                        );
-                      },
-                      onToggleMicrophone: () {
-                        context.read<LiveRoomBloc>().add(
-                          const ToggleMicrophoneRequested(),
-                        );
-                      },
-                      onSwitchCamera: () {
-                        context.read<LiveRoomBloc>().add(
-                          const SwitchCameraRequested(),
-                        );
-                      },
-                      onEnableAudioOnly: () {
-                        context.read<LiveRoomBloc>().add(
-                          const EnableAudioOnlyRequested(),
-                        );
+                  if (roomState.canModerate) const SizedBox(height: 16),
+                  SizedBox(
+                    height: 320,
+                    child: BlocBuilder<LiveChatBloc, LiveChatState>(
+                      builder: (context, chatState) {
+                        return const LiveChatPanel();
                       },
                     ),
                   ),
-                if (roomState.canModerate)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: DivineButton(
-                      label: 'Host controls',
-                      type: DivineButtonType.secondary,
-                      size: DivineButtonSize.small,
-                      onPressed: () {
-                        showModalBottomSheet<void>(
-                          context: context,
-                          backgroundColor: VineTheme.surfaceBackground,
-                          builder: (_) => BlocProvider.value(
-                            value: context.read<LiveRoomBloc>(),
-                            child: const LiveHostControlsSheet(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                if (roomState.canModerate) const SizedBox(height: 16),
-                SizedBox(
-                  height: 320,
-                  child: BlocBuilder<LiveChatBloc, LiveChatState>(
-                    builder: (context, chatState) {
-                      return const LiveChatPanel();
-                    },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           };
         },
+      ),
+    );
+  }
+
+  Future<void> _shareRoom(BuildContext context, LiveRoomState state) async {
+    final room = state.room;
+    final session = state.session;
+    if (room == null || session == null) {
+      return;
+    }
+
+    final roomUrl =
+        'https://divine.video/live/room/${room.id}/session/${session.id}';
+    try {
+      await SharePlus.instance.share(
+        ShareParams(text: roomUrl, subject: 'Live room: ${room.title}'),
+      );
+    } catch (_) {
+      // Ignore share errors here and fall through to clipboard copy.
+    }
+
+    await Clipboard.setData(ClipboardData(text: roomUrl));
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Room link copied to clipboard')),
+    );
+  }
+}
+
+class _LiveRoomActionRow extends StatelessWidget {
+  const _LiveRoomActionRow({
+    required this.canPublish,
+    required this.currentUserHandRaised,
+    required this.onShareRoom,
+    required this.onZap,
+    required this.onToggleRequestToSpeak,
+  });
+
+  final bool canPublish;
+  final bool currentUserHandRaised;
+  final VoidCallback onShareRoom;
+  final VoidCallback onZap;
+  final VoidCallback onToggleRequestToSpeak;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DivineButton(
+                label: 'Share room',
+                type: DivineButtonType.secondary,
+                onPressed: onShareRoom,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DivineButton(
+                label: 'Zap',
+                type: DivineButtonType.secondary,
+                onPressed: onZap,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: DivineButton(
+            label: canPublish
+                ? 'You are on stage'
+                : currentUserHandRaised
+                ? 'Lower hand'
+                : 'Raise hand',
+            onPressed: canPublish ? null : onToggleRequestToSpeak,
+            expanded: true,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LiveParticipantRoster extends StatelessWidget {
+  const _LiveParticipantRoster({
+    required this.presence,
+    required this.speakerPubkeys,
+  });
+
+  final List<LivePresence> presence;
+  final List<String> speakerPubkeys;
+
+  @override
+  Widget build(BuildContext context) {
+    final orderedPresence = [...presence]
+      ..sort((left, right) {
+        int roleRank(LivePresence presence) => switch (presence.role) {
+          LiveRole.host => 0,
+          LiveRole.moderator => 1,
+          LiveRole.speaker => 2,
+          LiveRole.audience => 3,
+        };
+
+        final roleComparison = roleRank(left).compareTo(roleRank(right));
+        if (roleComparison != 0) {
+          return roleComparison;
+        }
+        return left.updatedAt.compareTo(right.updatedAt);
+      });
+
+    final hostCount = orderedPresence
+        .where((member) => member.role == LiveRole.host)
+        .length;
+    final moderatorCount = orderedPresence
+        .where((member) => member.role == LiveRole.moderator)
+        .length;
+    final speakerCount = orderedPresence
+        .where(
+          (member) =>
+              member.role == LiveRole.speaker ||
+              speakerPubkeys.contains(member.pubkey),
+        )
+        .length;
+    final audienceCount = orderedPresence
+        .where(
+          (member) =>
+              member.role == LiveRole.audience &&
+              !speakerPubkeys.contains(member.pubkey),
+        )
+        .length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  'Participants',
+                  style: VineTheme.titleLargeFont(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  '$hostCount host, $moderatorCount moderators, $speakerCount speakers, $audienceCount audience',
+                  textAlign: TextAlign.end,
+                  softWrap: true,
+                  style: VineTheme.labelMediumFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (orderedPresence.isEmpty)
+            Text(
+              'No one has joined the room yet.',
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.onSurfaceVariant,
+              ),
+            )
+          else
+            Column(
+              children: orderedPresence
+                  .map((member) {
+                    final roleLabel = switch (member.role) {
+                      LiveRole.host => 'Host',
+                      LiveRole.moderator => 'Moderator',
+                      LiveRole.speaker => 'Speaker',
+                      LiveRole.audience =>
+                        speakerPubkeys.contains(member.pubkey)
+                            ? 'Speaker'
+                            : 'Audience',
+                    };
+                    return Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: VineTheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: VineTheme.outlineMuted),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  member.pubkey,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: VineTheme.labelLargeFont(),
+                                ),
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _LiveRoleChip(label: roleLabel),
+                                    if (member.handRaised)
+                                      const _LiveRoleChip(label: 'Hand raised'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  })
+                  .toList(growable: false),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveRoleChip extends StatelessWidget {
+  const _LiveRoleChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: VineTheme.scrim15,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: VineTheme.labelSmallFont(
+          color: VineTheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveRequestPendingBanner extends StatelessWidget {
+  const _LiveRequestPendingBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: VineTheme.outlineMuted),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Your hand is raised. The host can bring you on stage from the speaker queue.',
+          style: VineTheme.bodyMediumFont(
+            color: VineTheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveNetworkDegradationBanner extends StatelessWidget {
+  const _LiveNetworkDegradationBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: VineTheme.outlineMuted),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Connection looks shaky',
+              style: VineTheme.titleSmallFont(),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Keep the room stable by switching to audio only until the network settles.',
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            DivineButton(
+              label: 'Switch to audio only',
+              type: DivineButtonType.secondary,
+              size: DivineButtonSize.small,
+              onPressed: () {
+                context.read<LiveRoomBloc>().add(
+                  const EnableAudioOnlyRequested(),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

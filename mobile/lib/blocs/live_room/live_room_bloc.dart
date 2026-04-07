@@ -37,6 +37,14 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     on<PromoteSpeakerRequested>(_onPromoteSpeakerRequested);
     on<DemoteSpeakerRequested>(_onDemoteSpeakerRequested);
     on<EnableAudioOnlyRequested>(_onEnableAudioOnlyRequested);
+    on<ToggleHandRaiseRequested>(_onToggleHandRaiseRequested);
+    on<EndSessionRequested>(_onEndSessionRequested);
+    on<UpdateRoomMetadataRequested>(_onUpdateRoomMetadataRequested);
+    on<ApproveRaisedHandRequested>(_onApproveRaisedHandRequested);
+    on<DenyRaisedHandRequested>(_onDenyRaisedHandRequested);
+    on<MuteParticipantRequested>(_onMuteParticipantRequested);
+    on<MuteChatParticipantRequested>(_onMuteChatParticipantRequested);
+    on<RemoveParticipantRequested>(_onRemoveParticipantRequested);
     on<LiveRoomAppForegroundChanged>(_onAppForegroundChanged);
 
     _mediaSubscription = _liveKitRoomService.watchState().listen(
@@ -80,6 +88,11 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
         mediaState: const LiveMediaState(),
         clearErrorMessage: true,
         clearStageSpeakerPubkeys: true,
+        clearDismissedHandPubkeys: true,
+        clearMutedParticipantPubkeys: true,
+        clearMutedChatParticipantPubkeys: true,
+        clearRemovedParticipantPubkeys: true,
+        currentUserHandRaised: false,
       ),
     );
 
@@ -100,6 +113,8 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     final nextSession = _selectSession(event.sessions);
     final currentRoom = state.room;
     final currentRole = state.role;
+    final currentSession = state.session;
+    final sessionChanged = currentSession?.id != nextSession?.id;
     final nextRole = currentRoom == null || currentRole == null
         ? currentRole
         : _resolveRole(
@@ -114,9 +129,18 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
         session: nextSession,
         clearSession: nextSession == null,
         role: nextRole,
-        presence: nextSession == null ? const <LivePresence>[] : state.presence,
+        presence: nextSession == null || sessionChanged
+            ? const <LivePresence>[]
+            : state.presence,
         clearErrorMessage: true,
-        clearStageSpeakerPubkeys: true,
+        clearStageSpeakerPubkeys: nextSession == null || sessionChanged,
+        clearDismissedHandPubkeys: nextSession == null || sessionChanged,
+        clearMutedParticipantPubkeys: nextSession == null || sessionChanged,
+        clearMutedChatParticipantPubkeys: nextSession == null || sessionChanged,
+        clearRemovedParticipantPubkeys: nextSession == null || sessionChanged,
+        currentUserHandRaised:
+            !(nextSession == null || sessionChanged) &&
+            _isCurrentUserHandRaised(state.presence),
       ),
     );
 
@@ -170,6 +194,7 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
         role: nextRole,
         presence: event.presence,
         clearErrorMessage: true,
+        currentUserHandRaised: _isCurrentUserHandRaised(event.presence),
       ),
     );
 
@@ -298,6 +323,197 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     } catch (error) {
       emit(state.copyWith(errorMessage: '$error'));
     }
+  }
+
+  Future<void> _onToggleHandRaiseRequested(
+    ToggleHandRaiseRequested event,
+    Emitter<LiveRoomState> emit,
+  ) async {
+    final room = state.room;
+    final session = state.session;
+    final role = state.role;
+    if (room == null ||
+        session == null ||
+        role == null ||
+        state.canPublish ||
+        _currentUserPubkey.isEmpty) {
+      return;
+    }
+
+    final nextHandRaised = !state.currentUserHandRaised;
+    final sessionAddress = _sessionAddress(room, session);
+
+    try {
+      await _liveRepository.publishPresence(
+        sessionAddress: sessionAddress,
+        role: role,
+        handRaised: nextHandRaised,
+      );
+
+      final nextPresence = List<LivePresence>.from(state.presence);
+      final nextMember = LivePresence(
+        sessionId: session.id,
+        pubkey: _currentUserPubkey,
+        role: role,
+        handRaised: nextHandRaised,
+        updatedAt: DateTime.now().toUtc(),
+      );
+      final existingIndex = nextPresence.indexWhere(
+        (member) => member.pubkey == _currentUserPubkey,
+      );
+      if (existingIndex == -1) {
+        nextPresence.add(nextMember);
+      } else {
+        nextPresence[existingIndex] = nextMember;
+      }
+
+      emit(
+        state.copyWith(
+          presence: nextPresence,
+          currentUserHandRaised: nextHandRaised,
+          clearErrorMessage: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(errorMessage: '$error'));
+    }
+  }
+
+  Future<void> _onEndSessionRequested(
+    EndSessionRequested event,
+    Emitter<LiveRoomState> emit,
+  ) async {
+    final room = state.room;
+    final session = state.session;
+    if (room == null || session == null || !state.canModerate) {
+      return;
+    }
+
+    final endedSession = session.copyWith(
+      status: LiveSessionStatus.ended,
+      endedAt: DateTime.now().toUtc(),
+    );
+
+    try {
+      await _liveApiService.endSession(
+        roomId: room.id,
+        sessionId: session.id,
+      );
+      await _liveRepository.publishSession(
+        session: endedSession,
+        roomAddress: room.address,
+        hostPubkey: room.hostPubkey,
+      );
+      _connectedSessionKey = null;
+      await _presenceSubscription?.cancel();
+      _presenceSubscription = null;
+      _presenceSessionAddress = null;
+      await _liveKitRoomService.disconnect();
+      emit(
+        state.copyWith(
+          session: endedSession,
+          presence: const <LivePresence>[],
+          mediaState: const LiveMediaState(),
+          stageSpeakerPubkeys: const <String>[],
+          clearDismissedHandPubkeys: true,
+          clearMutedParticipantPubkeys: true,
+          clearMutedChatParticipantPubkeys: true,
+          clearRemovedParticipantPubkeys: true,
+          currentUserHandRaised: false,
+          clearErrorMessage: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(errorMessage: '$error'));
+    }
+  }
+
+  Future<void> _onUpdateRoomMetadataRequested(
+    UpdateRoomMetadataRequested event,
+    Emitter<LiveRoomState> emit,
+  ) async {
+    final room = state.room;
+    if (room == null || !state.canModerate) {
+      return;
+    }
+
+    final nextRoom = room.copyWith(
+      title: event.title ?? room.title,
+      summary: event.summary ?? room.summary,
+      visibility: event.visibility ?? room.visibility,
+    );
+
+    try {
+      await _liveRepository.publishRoom(nextRoom);
+      emit(
+        state.copyWith(
+          room: nextRoom,
+          clearErrorMessage: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(errorMessage: '$error'));
+    }
+  }
+
+  Future<void> _onApproveRaisedHandRequested(
+    ApproveRaisedHandRequested event,
+    Emitter<LiveRoomState> emit,
+  ) async {
+    await _setParticipantHandDecision(
+      emit: emit,
+      pubkey: event.pubkey,
+      shouldApprove: true,
+    );
+  }
+
+  Future<void> _onDenyRaisedHandRequested(
+    DenyRaisedHandRequested event,
+    Emitter<LiveRoomState> emit,
+  ) async {
+    await _setParticipantHandDecision(
+      emit: emit,
+      pubkey: event.pubkey,
+      shouldApprove: false,
+    );
+  }
+
+  Future<void> _onMuteParticipantRequested(
+    MuteParticipantRequested event,
+    Emitter<LiveRoomState> emit,
+  ) async {
+    await _setParticipantMuteState(
+      emit: emit,
+      pubkey: event.pubkey,
+      isMuted: true,
+    );
+  }
+
+  Future<void> _onMuteChatParticipantRequested(
+    MuteChatParticipantRequested event,
+    Emitter<LiveRoomState> emit,
+  ) {
+    final nextMutedChatParticipants = List<String>.from(
+      state.mutedChatParticipantPubkeys,
+    );
+    if (!nextMutedChatParticipants.contains(event.pubkey)) {
+      nextMutedChatParticipants.add(event.pubkey);
+    }
+
+    emit(
+      state.copyWith(
+        mutedChatParticipantPubkeys: nextMutedChatParticipants,
+        clearErrorMessage: true,
+      ),
+    );
+    return Future<void>.value();
+  }
+
+  Future<void> _onRemoveParticipantRequested(
+    RemoveParticipantRequested event,
+    Emitter<LiveRoomState> emit,
+  ) async {
+    await _removeParticipant(emit: emit, pubkey: event.pubkey);
   }
 
   Future<void> _onAppForegroundChanged(
@@ -442,6 +658,20 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     return LiveRole.audience;
   }
 
+  bool _isCurrentUserHandRaised(List<LivePresence> presence) {
+    if (_currentUserPubkey.isEmpty) {
+      return false;
+    }
+
+    for (final member in presence) {
+      if (member.pubkey == _currentUserPubkey) {
+        return member.handRaised;
+      }
+    }
+
+    return false;
+  }
+
   Future<void> _updateSpeakerRoster({
     required Emitter<LiveRoomState> emit,
     required String pubkey,
@@ -485,6 +715,127 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
       state.copyWith(
         session: nextSession,
         stageSpeakerPubkeys: nextSpeakerPubkeys,
+        clearErrorMessage: true,
+      ),
+    );
+  }
+
+  Future<void> _setParticipantHandDecision({
+    required Emitter<LiveRoomState> emit,
+    required String pubkey,
+    required bool shouldApprove,
+  }) async {
+    final room = state.room;
+    final session = state.session;
+    if (room == null || session == null || !state.canModerate) {
+      return;
+    }
+
+    if (shouldApprove && !state.speakerPubkeys.contains(pubkey)) {
+      await _updateSpeakerRoster(
+        emit: emit,
+        pubkey: pubkey,
+        shouldPromote: true,
+      );
+    } else if (!shouldApprove && state.speakerPubkeys.contains(pubkey)) {
+      await _updateSpeakerRoster(
+        emit: emit,
+        pubkey: pubkey,
+        shouldPromote: false,
+      );
+    }
+
+    final nextDismissedHands = List<String>.from(state.dismissedHandPubkeys);
+    final nextRemovedParticipants = List<String>.from(
+      state.removedParticipantPubkeys,
+    );
+    if (shouldApprove) {
+      nextDismissedHands.remove(pubkey);
+      nextRemovedParticipants.remove(pubkey);
+    } else if (!nextDismissedHands.contains(pubkey)) {
+      nextDismissedHands.add(pubkey);
+    }
+
+    emit(
+      state.copyWith(
+        dismissedHandPubkeys: nextDismissedHands,
+        removedParticipantPubkeys: nextRemovedParticipants,
+        clearErrorMessage: true,
+      ),
+    );
+  }
+
+  Future<void> _setParticipantMuteState({
+    required Emitter<LiveRoomState> emit,
+    required String pubkey,
+    required bool isMuted,
+  }) {
+    final nextMutedParticipants = List<String>.from(
+      state.mutedParticipantPubkeys,
+    );
+    if (isMuted) {
+      if (!nextMutedParticipants.contains(pubkey)) {
+        nextMutedParticipants.add(pubkey);
+      }
+    } else {
+      nextMutedParticipants.remove(pubkey);
+    }
+
+    emit(
+      state.copyWith(
+        mutedParticipantPubkeys: nextMutedParticipants,
+        clearErrorMessage: true,
+      ),
+    );
+    return Future<void>.value();
+  }
+
+  Future<void> _removeParticipant({
+    required Emitter<LiveRoomState> emit,
+    required String pubkey,
+  }) async {
+    final room = state.room;
+    final session = state.session;
+    if (room == null || session == null || !state.canModerate) {
+      return;
+    }
+
+    final nextRemovedParticipants = List<String>.from(
+      state.removedParticipantPubkeys,
+    );
+    if (!nextRemovedParticipants.contains(pubkey)) {
+      nextRemovedParticipants.add(pubkey);
+    }
+
+    final nextMutedParticipants = List<String>.from(
+      state.mutedParticipantPubkeys,
+    );
+    if (!nextMutedParticipants.contains(pubkey)) {
+      nextMutedParticipants.add(pubkey);
+    }
+    final nextMutedChatParticipants = List<String>.from(
+      state.mutedChatParticipantPubkeys,
+    );
+    if (!nextMutedChatParticipants.contains(pubkey)) {
+      nextMutedChatParticipants.add(pubkey);
+    }
+    final nextDismissedHands = List<String>.from(state.dismissedHandPubkeys);
+    nextDismissedHands.remove(pubkey);
+
+    if (state.speakerPubkeys.contains(pubkey)) {
+      await _updateSpeakerRoster(
+        emit: emit,
+        pubkey: pubkey,
+        shouldPromote: false,
+      );
+    }
+
+    emit(
+      state.copyWith(
+        mutedParticipantPubkeys: nextMutedParticipants,
+        mutedChatParticipantPubkeys: nextMutedChatParticipants,
+        dismissedHandPubkeys: nextDismissedHands,
+        removedParticipantPubkeys: nextRemovedParticipants,
         clearErrorMessage: true,
       ),
     );
