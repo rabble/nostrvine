@@ -7,6 +7,7 @@ import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -75,12 +76,14 @@ import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
+import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
@@ -1070,6 +1073,66 @@ void zendeskIdentitySync(Ref ref) {
   });
 
   ref.onDispose(subscription.cancel);
+}
+
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+@Riverpod(keepAlive: true)
+void pushNotificationSync(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final notificationService = NotificationService();
+  final envConfig = ref.watch(currentEnvironmentProvider);
+
+  final pushService = PushNotificationService(
+    authService: authService,
+    nostrClient: nostrClient,
+    notificationService: notificationService,
+    environmentConfig: envConfig,
+    getToken: () => FirebaseMessaging.instance.getToken(),
+    onTokenRefresh: FirebaseMessaging.instance.onTokenRefresh,
+  );
+
+  // Request notification permissions
+  FirebaseMessaging.instance.requestPermission().then((settings) {
+    if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      Log.info(
+        'Push notification permission denied by user',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    // Register immediately if already authenticated
+    final pubkey = authService.currentPublicKeyHex;
+    if (pubkey != null && authService.authState == AuthState.authenticated) {
+      pushService.register(pubkey);
+    }
+  });
+
+  // React to auth state changes
+  final subscription = authService.authStateStream.listen((authState) async {
+    final currentPubkey = authService.currentPublicKeyHex;
+    if (authState == AuthState.authenticated && currentPubkey != null) {
+      await pushService.register(currentPubkey);
+    } else if (authState == AuthState.unauthenticated &&
+        currentPubkey != null) {
+      await pushService.deregister(currentPubkey);
+    }
+  });
+
+  // Set up foreground message handler
+  FirebaseMessaging.onMessage.listen((message) {
+    pushService.handleForegroundMessage(message.data);
+  });
+
+  ref.onDispose(() {
+    subscription.cancel();
+    pushService.dispose();
+  });
 }
 
 /// Helper to set Zendesk identity from pubkey
