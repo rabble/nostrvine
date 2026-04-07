@@ -342,7 +342,7 @@ void main() {
 
         // All four variants expose the same pubkey — it's a final field,
         // not a getter that reads from a mutable slot.
-        for (final identity in [local, keycast, bunker, amber]) {
+        for (final identity in <NostrIdentity>[local, keycast, bunker, amber]) {
           expect(identity.pubkey, equals(testPublicKey));
         }
       },
