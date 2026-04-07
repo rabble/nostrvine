@@ -2526,10 +2526,6 @@ class AuthService implements BackgroundAwareService {
           await _clearArchivedSignerInfo(currentPubkey);
         }
 
-        // Redirect recovery prefs to the most recently used remaining
-        // account so initialize() can restore it on next launch.
-        await _redirectRecoveryToRemainingAccount(prefs);
-
         Log.debug(
           '📱️ Deleting stored keys',
           name: 'AuthService',
@@ -2650,6 +2646,13 @@ class AuthService implements BackgroundAwareService {
       // (fire-and-forget since it's best-effort)
       unawaited(_pendingVerificationService?.clear());
 
+      // Redirect recovery prefs AFTER all signer cleanup so that
+      // _restoreSignerInfo can re-stage the remaining account's archived
+      // session without it being wiped by _oauthClient.logout() above.
+      if (deleteKeys) {
+        await _redirectRecoveryToRemainingAccount(prefs);
+      }
+
       _setAuthState(AuthState.unauthenticated);
 
       // Post-signout verification: confirm key storage state
@@ -2691,6 +2694,11 @@ class AuthService implements BackgroundAwareService {
   /// [_kAuthSourceKey] at the most recently used remaining known account
   /// so that [initialize] can restore it on next launch.  If no accounts
   /// remain, both prefs are cleared (fresh-install behaviour).
+  ///
+  /// For OAuth/bunker/amber accounts this also calls [_restoreSignerInfo]
+  /// to pre-stage the archived session into the active slot. This must
+  /// run AFTER [_oauthClient.logout()] / [KeycastSession.clear()] so the
+  /// restored session is not immediately wiped.
   Future<void> _redirectRecoveryToRemainingAccount(
     SharedPreferences prefs,
   ) async {
@@ -2714,6 +2722,11 @@ class AuthService implements BackgroundAwareService {
 
       await prefs.setString(_kLastUsedNpubKey, nextNpub);
       await prefs.setString(_kAuthSourceKey, next.authSource.code);
+
+      // Pre-stage the remaining account's archived signer info into the
+      // active slots so initialize() can find it.  For divineOAuth this
+      // restores the KeycastSession, for bunker/amber the connection info.
+      await _restoreSignerInfo(next.pubkeyHex, next.authSource);
 
       Log.info(
         'signOut: redirected recovery to remaining account '
@@ -2973,7 +2986,10 @@ class AuthService implements BackgroundAwareService {
     await _checkExistingAuth();
   }
 
-  /// Scans known accounts for one with stored per-identity keys.
+  /// Scans known accounts and attempts to restore the first one that has
+  /// restorable credentials.  For local-key accounts this checks per-identity
+  /// key containers; for OAuth/bunker/amber it delegates to [signInForAccount]
+  /// which restores archived signer info and triggers the appropriate flow.
   /// Returns true if an account was restored, false otherwise.
   Future<bool> _tryRestoreFromKnownAccounts(
     AuthenticationSource source,
@@ -2985,6 +3001,34 @@ class AuthService implements BackgroundAwareService {
       // Try most recently used first.
       accounts.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
       for (final account in accounts) {
+        // OAuth, bunker, and amber accounts don't store per-identity local
+        // keys — they rely on archived signer info.  Use signInForAccount
+        // which handles _restoreSignerInfo + the source-specific sign-in.
+        if (account.authSource == AuthenticationSource.divineOAuth ||
+            account.authSource == AuthenticationSource.bunker ||
+            account.authSource == AuthenticationSource.amber) {
+          try {
+            Log.info(
+              '_tryRestoreFromKnownAccounts: '
+              'trying signInForAccount for ${account.pubkeyHex} '
+              '(source=${account.authSource.name})',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            await signInForAccount(account.pubkeyHex, account.authSource);
+            return true;
+          } catch (e) {
+            Log.warning(
+              '_tryRestoreFromKnownAccounts: '
+              'signInForAccount failed for ${account.pubkeyHex}: $e',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            continue;
+          }
+        }
+
+        // Local-key accounts: look for per-identity key containers.
         final npub = NostrKeyUtils.encodePubKey(account.pubkeyHex);
         final container = await _keyStorage.getIdentityKeyContainer(npub);
         if (container != null) {
@@ -3002,7 +3046,7 @@ class AuthService implements BackgroundAwareService {
       }
       Log.info(
         '_tryRestoreFromKnownAccounts: '
-        'no per-identity keys found for any known account',
+        'no restorable account found among known accounts',
         name: 'AuthService',
         category: LogCategory.auth,
       );
