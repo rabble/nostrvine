@@ -1,10 +1,14 @@
 // ABOUTME: Settings screen for notification preferences and controls
 // ABOUTME: Allows users to customize notification types and behavior
 
+import 'dart:convert';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hive_ce/hive.dart';
+import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -23,15 +27,44 @@ class NotificationSettingsScreen extends ConsumerStatefulWidget {
 
 class _NotificationSettingsScreenState
     extends ConsumerState<NotificationSettingsScreen> {
-  bool _likesEnabled = true;
-  bool _commentsEnabled = true;
-  bool _followsEnabled = true;
-  bool _mentionsEnabled = true;
-  bool _repostsEnabled = true;
+  NotificationPreferences _preferences = const NotificationPreferences();
   bool _systemEnabled = true;
   bool _pushNotificationsEnabled = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final box = await Hive.openBox<dynamic>('notifications');
+    final stored = box.get('push_preferences') as String?;
+    if (stored != null) {
+      try {
+        final json = jsonDecode(stored) as Map<String, dynamic>;
+        if (mounted) {
+          setState(() {
+            _preferences = NotificationPreferences.fromJson(json);
+          });
+        }
+      } on FormatException {
+        // Corrupted cache, use defaults
+      }
+    }
+  }
+
+  Future<void> _updatePreference(NotificationPreferences newPrefs) async {
+    setState(() {
+      _preferences = newPrefs;
+    });
+
+    // Persist to Hive cache
+    final box = await Hive.openBox<dynamic>('notifications');
+    await box.put('push_preferences', jsonEncode(newPrefs.toJson()));
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -45,12 +78,8 @@ class _NotificationSettingsScreenState
           icon: const MaterialIconSource(Icons.refresh),
           tooltip: 'Reset to defaults',
           onPressed: () {
+            _updatePreference(const NotificationPreferences());
             setState(() {
-              _likesEnabled = true;
-              _commentsEnabled = true;
-              _followsEnabled = true;
-              _mentionsEnabled = true;
-              _repostsEnabled = true;
               _systemEnabled = true;
               _pushNotificationsEnabled = true;
               _soundEnabled = true;
@@ -88,40 +117,49 @@ class _NotificationSettingsScreenState
               iconColor: VineTheme.likeRed,
               title: 'Likes',
               subtitle: 'When someone likes your videos',
-              value: _likesEnabled,
-              onChanged: (value) => setState(() => _likesEnabled = value),
+              value: _preferences.likesEnabled,
+              onChanged: (value) =>
+                  _updatePreference(_preferences.copyWith(likesEnabled: value)),
             ),
             _buildNotificationCard(
               icon: Icons.chat_bubble,
               iconColor: VineTheme.commentBlue,
               title: 'Comments',
               subtitle: 'When someone comments on your videos',
-              value: _commentsEnabled,
-              onChanged: (value) => setState(() => _commentsEnabled = value),
+              value: _preferences.commentsEnabled,
+              onChanged: (value) => _updatePreference(
+                _preferences.copyWith(commentsEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.person_add,
               iconColor: VineTheme.vineGreen,
               title: 'Follows',
               subtitle: 'When someone follows you',
-              value: _followsEnabled,
-              onChanged: (value) => setState(() => _followsEnabled = value),
+              value: _preferences.followsEnabled,
+              onChanged: (value) => _updatePreference(
+                _preferences.copyWith(followsEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.alternate_email,
               iconColor: VineTheme.warning,
               title: 'Mentions',
               subtitle: 'When you are mentioned',
-              value: _mentionsEnabled,
-              onChanged: (value) => setState(() => _mentionsEnabled = value),
+              value: _preferences.mentionsEnabled,
+              onChanged: (value) => _updatePreference(
+                _preferences.copyWith(mentionsEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.repeat,
               iconColor: VineTheme.vineGreenLight,
               title: 'Reposts',
               subtitle: 'When someone reposts your videos',
-              value: _repostsEnabled,
-              onChanged: (value) => setState(() => _repostsEnabled = value),
+              value: _preferences.repostsEnabled,
+              onChanged: (value) => _updatePreference(
+                _preferences.copyWith(repostsEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.phone_android,
