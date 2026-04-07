@@ -154,8 +154,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         subtitle: 'Would you like to continue where you left off?',
         primaryButtonText: 'Yes, continue',
         onPrimaryPressed: () async {
-          final restoreSuccessful =
-              await ref.read(videoEditorProvider.notifier).restoreDraft();
+          final restoreSuccessful = await ref
+              .read(videoEditorProvider.notifier)
+              .restoreDraft();
 
           if (!mounted) return;
           context.pop();
