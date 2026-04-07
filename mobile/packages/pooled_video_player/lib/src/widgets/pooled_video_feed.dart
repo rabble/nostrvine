@@ -18,6 +18,10 @@ typedef VideoFeedItemBuilder =
 typedef OnActiveVideoChanged = void Function(VideoItem video, int index);
 
 /// Vertical/horizontal scrolling video feed with automatic preloading.
+///
+/// When [enableMidSwipePlayback] is `true`, the feed will start playing the
+/// next video (and pause the current one) when the swipe progress reaches
+/// about 50%, improving perceived responsiveness.
 class PooledVideoFeed extends StatefulWidget {
   /// Creates a pooled video feed widget.
   ///
@@ -35,6 +39,7 @@ class PooledVideoFeed extends StatefulWidget {
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.onScrollOffsetChanged,
+    this.enableMidSwipePlayback = false,
     this.maxLoopDuration,
     super.key,
   });
@@ -81,6 +86,16 @@ class PooledVideoFeed extends StatefulWidget {
   /// from page 1 toward page 2). Useful for computing per-item scroll fraction
   /// without changing the [itemBuilder] signature.
   final void Function(double page)? onScrollOffsetChanged;
+
+  /// Whether to enable mid‑swipe playback switching.
+  ///
+  /// When `true`, the feed will call [VideoFeedController.handleScrollProgress]
+  /// as the user swipes, causing the next video to start playing (and the
+  /// current video to pause) when the swipe progress reaches about 50%.
+  /// This improves perceived responsiveness and reduces resource usage.
+  ///
+  /// Defaults to `false` to maintain backward compatibility.
+  final bool enableMidSwipePlayback;
 
   @override
   State<PooledVideoFeed> createState() => PooledVideoFeedState();
@@ -148,6 +163,9 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
     final page = _pageController.page;
     if (page != null) {
       widget.onScrollOffsetChanged?.call(page);
+      if (widget.enableMidSwipePlayback) {
+        _controller.handleScrollProgress(page);
+      }
     }
   }
 
