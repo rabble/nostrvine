@@ -107,11 +107,10 @@ void main() {
           before: any(named: 'before'),
         ),
       ).thenAnswer(
-        (_) async => (
+        (_) async => VideosByAuthorResponse(
           videos: [
             _videoStats(id: 'a', pubkey: pubkey),
           ],
-          totalCount: null,
         ),
       );
 
@@ -150,11 +149,10 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => (
+          (_) async => VideosByAuthorResponse(
             videos: [
               _videoStats(id: 'b', pubkey: pubkey),
             ],
-            totalCount: null,
           ),
         );
 
@@ -194,11 +192,10 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => (
+          (_) async => VideosByAuthorResponse(
             videos: [
               _videoStats(id: 'c', pubkey: pubkey),
             ],
-            totalCount: null,
           ),
         );
 

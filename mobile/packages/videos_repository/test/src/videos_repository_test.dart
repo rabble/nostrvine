@@ -3255,7 +3255,7 @@ void main() {
                 before: any(named: 'before'),
               ),
             ).thenAnswer(
-              (_) async => (videos: [videoStats], totalCount: null),
+              (_) async => VideosByAuthorResponse(videos: [videoStats]),
             );
 
             final result = await repositoryWithFunnelcake
@@ -3312,7 +3312,7 @@ void main() {
                 before: any(named: 'before'),
               ),
             ).thenAnswer(
-              (_) async => (videos: [videoStats], totalCount: null),
+              (_) async => VideosByAuthorResponse(videos: [videoStats]),
             );
 
             final result = await repositoryWithFunnelcake
@@ -3368,7 +3368,7 @@ void main() {
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => (videos: [videoStats1], totalCount: null),
+            (_) async => VideosByAuthorResponse(videos: [videoStats1]),
           );
 
           when(
@@ -3378,7 +3378,7 @@ void main() {
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => (videos: [videoStats3], totalCount: null),
+            (_) async => VideosByAuthorResponse(videos: [videoStats3]),
           );
 
           final result = await repositoryWithFunnelcake
@@ -3467,7 +3467,7 @@ void main() {
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => (videos: [videoStats], totalCount: null),
+            (_) async => VideosByAuthorResponse(videos: [videoStats]),
           );
 
           final result = await repositoryWithFilter.getVideosByAddressableIds([
@@ -3506,7 +3506,7 @@ void main() {
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => (videos: [videoStats], totalCount: null),
+            (_) async => VideosByAuthorResponse(videos: [videoStats]),
           );
 
           final result = await repositoryWithFunnelcake
@@ -3551,7 +3551,8 @@ void main() {
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => (videos: [videoStats1, videoStats2], totalCount: null),
+            (_) async =>
+                VideosByAuthorResponse(videos: [videoStats1, videoStats2]),
           );
 
           final result = await repositoryWithFunnelcake
@@ -5617,7 +5618,7 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => (
+          (_) async => VideosByAuthorResponse(
             videos: [
               _createVideoStats(
                 id: 'event-1',
@@ -5626,7 +5627,6 @@ void main() {
                 videoUrl: 'https://example.com/video.mp4',
               ),
             ],
-            totalCount: null,
           ),
         );
 
@@ -5691,7 +5691,7 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenAnswer(
-          (_) async => (videos: <VideoStats>[], totalCount: null),
+          (_) async => const VideosByAuthorResponse(videos: <VideoStats>[]),
         );
 
         final repo = VideosRepository(

@@ -142,11 +142,12 @@ class FunnelcakeCreatorAnalyticsRepository
     int? before;
 
     for (var page = 0; page < maxPages; page++) {
-      final (:videos, totalCount: _) = await _client.getVideosByAuthor(
+      final result = await _client.getVideosByAuthor(
         pubkey: pubkey,
         limit: pageSize,
         before: before,
       );
+      final videos = result.videos;
 
       if (videos.isEmpty) break;
       final batch = videos.map((stats) => stats.toVideoEvent()).toList();

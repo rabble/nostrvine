@@ -130,8 +130,9 @@ class FunnelcakeApiClient {
   /// [offset] is an optional pagination offset.
   /// [before] is an optional Unix timestamp cursor for pagination.
   ///
-  /// Returns a record containing a list of [VideoStats] and an optional
-  /// `totalCount` parsed from the `X-Total-Count` response header.
+  /// Returns a [VideosByAuthorResponse] containing a list of [VideoStats]
+  /// and an optional `totalCount` parsed from the `X-Total-Count` response
+  /// header.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not configured.
@@ -139,7 +140,7 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails with a non-success status.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<({List<VideoStats> videos, int? totalCount})> getVideosByAuthor({
+  Future<VideosByAuthorResponse> getVideosByAuthor({
     required String pubkey,
     int limit = 50,
     int? offset,
@@ -181,7 +182,10 @@ class FunnelcakeApiClient {
             ? int.tryParse(totalCountHeader)
             : null;
 
-        return (videos: videos, totalCount: totalCount);
+        return VideosByAuthorResponse(
+          videos: videos,
+          totalCount: totalCount,
+        );
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(
           resource: 'Author videos',
