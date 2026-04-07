@@ -25,7 +25,9 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
     configuredRelays: nostrService.configuredRelays,
     fallbackBaseUrl: relayWsToHttpBase(environmentConfig.relayUrl),
   );
-  final funnelcakeApiClient = FunnelcakeApiClient(baseUrl: notificationsBaseUrl);
+  final funnelcakeApiClient = FunnelcakeApiClient(
+    baseUrl: notificationsBaseUrl,
+  );
   final profileRepository = ref.watch(profileRepositoryProvider);
 
   // ProfileRepository is nullable during early auth. Return null so the
