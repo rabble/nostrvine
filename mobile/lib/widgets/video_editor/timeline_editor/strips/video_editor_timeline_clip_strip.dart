@@ -166,33 +166,23 @@ class _ClipContainerState extends State<_ClipContainer> {
   Widget build(BuildContext context) {
     final count = _thumbnailCount;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(
-          TimelineConstants.thumbnailRadius,
-        ),
-        border: Border.all(color: VineTheme.onSurfaceMuted),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(
-          TimelineConstants.thumbnailRadius,
-        ),
-        child: SizedBox(
-          width: widget.width,
-          height: TimelineConstants.thumbnailStripHeight,
-          child: Row(
-            children: [
-              for (int i = 0; i < count; i++)
-                SizedBox(
-                  width: widget.width / count,
-                  height: TimelineConstants.thumbnailStripHeight,
-                  child: _ThumbnailImage(
-                    thumbnailPath: widget.clip.thumbnailPath,
-                    stripThumbnailPath: _thumbnailForSlot(i, count),
-                  ),
+    return ClipRRect(
+      borderRadius: .circular(TimelineConstants.thumbnailRadius),
+      child: SizedBox(
+        width: widget.width,
+        height: TimelineConstants.thumbnailStripHeight,
+        child: Row(
+          children: [
+            for (int i = 0; i < count; i++)
+              SizedBox(
+                width: widget.width / count,
+                height: TimelineConstants.thumbnailStripHeight,
+                child: _ThumbnailImage(
+                  thumbnailPath: widget.clip.thumbnailPath,
+                  stripThumbnailPath: _thumbnailForSlot(i, count),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
