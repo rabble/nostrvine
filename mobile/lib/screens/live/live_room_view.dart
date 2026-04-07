@@ -79,15 +79,6 @@ class _LiveRoomViewState extends State<LiveRoomView> {
                     canPublish: roomState.canPublish,
                     currentUserHandRaised: roomState.currentUserHandRaised,
                     onShareRoom: () => _shareRoom(context, roomState),
-                    onZap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Zap flow lands in a follow-up slice.',
-                          ),
-                        ),
-                      );
-                    },
                     onToggleRequestToSpeak: () {
                       if (roomState.canPublish) {
                         return;
@@ -212,38 +203,25 @@ class _LiveRoomActionRow extends StatelessWidget {
     required this.canPublish,
     required this.currentUserHandRaised,
     required this.onShareRoom,
-    required this.onZap,
     required this.onToggleRequestToSpeak,
   });
 
   final bool canPublish;
   final bool currentUserHandRaised;
   final VoidCallback onShareRoom;
-  final VoidCallback onZap;
   final VoidCallback onToggleRequestToSpeak;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: DivineButton(
-                label: 'Share room',
-                type: DivineButtonType.secondary,
-                onPressed: onShareRoom,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DivineButton(
-                label: 'Zap',
-                type: DivineButtonType.secondary,
-                onPressed: onZap,
-              ),
-            ),
-          ],
+        SizedBox(
+          width: double.infinity,
+          child: DivineButton(
+            label: 'Share room',
+            type: DivineButtonType.secondary,
+            onPressed: onShareRoom,
+          ),
         ),
         const SizedBox(height: 12),
         SizedBox(

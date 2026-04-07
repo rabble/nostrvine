@@ -254,6 +254,7 @@ void main() {
       expect(find.text('Flip camera'), findsOneWidget);
       expect(find.text('Audio only'), findsOneWidget);
       expect(find.text('Chat'), findsOneWidget);
+      expect(find.text('Zap'), findsNothing);
 
       await tester.scrollUntilVisible(
         find.text('Host controls'),
@@ -407,6 +408,7 @@ void main() {
       expect(find.text('Host controls'), findsNothing);
       expect(find.text('Participants'), findsOneWidget);
       expect(find.text('Share room'), findsOneWidget);
+      expect(find.text('Zap'), findsNothing);
       expect(find.text('Raise hand'), findsOneWidget);
       expect(find.text('Mic on'), findsNothing);
       expect(find.text('Camera on'), findsNothing);
