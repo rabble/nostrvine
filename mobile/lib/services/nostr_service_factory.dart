@@ -6,6 +6,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/environment_config.dart';
+import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -15,6 +16,8 @@ class NostrServiceFactory {
   ///
   /// [signer] is the single source of truth for the current user's public
   /// key and all signing operations. Pass `authService.currentIdentity`.
+  /// When null (pre-auth), a no-op [LocalKeySigner] is used as a
+  /// placeholder until the identity is established.
   ///
   /// Takes [environmentConfig] to determine the relay URL to use.
   /// If not provided, falls back to [AppConstants.defaultRelayUrl].
@@ -25,7 +28,7 @@ class NostrServiceFactory {
   /// [NostrClient.addRelays] and awaited BEFORE calling [initialize]
   /// to avoid race conditions.
   static NostrClient create({
-    required NostrSigner signer,
+    NostrSigner? signer,
     RelayStatisticsService? statisticsService,
     EnvironmentConfig? environmentConfig,
     AppDbClient? dbClient,
@@ -38,7 +41,9 @@ class NostrServiceFactory {
       name: 'NostrServiceFactory',
     );
 
-    final config = NostrClientConfig(signer: signer);
+    final effectiveSigner = signer ?? LocalKeySigner(null);
+
+    final config = NostrClientConfig(signer: effectiveSigner);
 
     // Create relay manager config with persistent storage
     // The Divine relay is always the default relay (cannot be removed)

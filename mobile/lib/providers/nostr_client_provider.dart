@@ -38,9 +38,12 @@ class NostrService extends _$NostrService {
         .map((relay) => relay.url)
         .toList();
 
-    // Create initial NostrClient using the atomic identity as signer
+    // Create initial NostrClient using the atomic identity as signer.
+    // currentIdentity is nullable — before auth completes, the factory falls
+    // back to a no-op LocalKeySigner. _onAuthStateChanged recreates the client
+    // once the user authenticates.
     final client = NostrServiceFactory.create(
-      signer: authService.requireIdentity,
+      signer: authService.currentIdentity,
       statisticsService: statisticsService,
       environmentConfig: environmentConfig,
       dbClient: dbClient,
@@ -133,7 +136,7 @@ class NostrService extends _$NostrService {
           .toList();
 
       final newClient = NostrServiceFactory.create(
-        signer: authService.requireIdentity,
+        signer: authService.currentIdentity,
         statisticsService: statisticsService,
         environmentConfig: environmentConfig,
         dbClient: dbClient,
