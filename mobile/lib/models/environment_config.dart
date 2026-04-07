@@ -149,15 +149,15 @@ class EnvironmentConfig {
   String get pushServicePubkey {
     switch (environment) {
       case AppEnvironment.poc:
-        return 'TODO_POC_PUBKEY';
+        return '2fc7d43fc02ae951a226108d3a31330bd26f37c1ef88eaa91948251de98b049d';
       case AppEnvironment.staging:
-        return 'TODO_STAGING_PUBKEY';
+        return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
       case AppEnvironment.test:
-        return 'TODO_TEST_PUBKEY';
+        return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
       case AppEnvironment.local:
-        return 'TODO_LOCAL_PUBKEY';
+        return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
       case AppEnvironment.production:
-        return 'TODO_PRODUCTION_PUBKEY';
+        return '2f871aaa4a519da94aeb5ebffe7587549158855c4460e7a5a1b91d36d2fb5b04';
     }
   }
 
