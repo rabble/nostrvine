@@ -91,7 +91,7 @@ class _VideoListThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 177 / 120,
+      aspectRatio: 3 / 2,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
