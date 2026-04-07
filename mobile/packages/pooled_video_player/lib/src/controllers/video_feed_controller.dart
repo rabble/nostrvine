@@ -717,10 +717,6 @@ class VideoFeedController extends ChangeNotifier {
         if (_isActive && !_isPaused && isVideoReady(targetIndex)) {
           _playVideo(targetIndex);
         }
-        _logDebug(
-          'swipe_threshold_crossed page=$page currentIndex=$_currentIndex '
-          'target=$targetIndex direction=${_swipeForward! ? 'forward' : 'backward'}',
-        );
       }
     } else if (_swipeThresholdCrossed &&
         distance < _swipeThreshold &&
@@ -736,10 +732,6 @@ class VideoFeedController extends ChangeNotifier {
           _playVideo(_currentIndex);
         }
         _pendingTargetIndex = null;
-        _logDebug(
-          'swipe_threshold_reversed page=$page currentIndex=$_currentIndex '
-          'target=$targetIndex',
-        );
       }
     }
 
@@ -761,10 +753,6 @@ class VideoFeedController extends ChangeNotifier {
           _playVideo(newTargetIndex);
         }
         _pendingTargetIndex = newTargetIndex;
-        _logDebug(
-          'swipe_target_updated page=$page currentIndex=$_currentIndex '
-          'oldTarget=$previousTarget newTarget=$newTargetIndex',
-        );
       }
     }
 
