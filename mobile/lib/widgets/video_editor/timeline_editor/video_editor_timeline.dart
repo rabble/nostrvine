@@ -333,12 +333,14 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
     double totalWidth,
   ) {
     if (!_scrollController.hasClients) return;
-    final totalMs = totalDuration.inMilliseconds;
-    if (totalMs == 0) return;
+    if (totalDuration == Duration.zero) return;
 
+    // Derive target directly from position × pixelsPerSecond so the
+    // scroll is always consistent with the ruler/clip layout, even if
+    // the player-reported duration differs from the sum of clip
+    // durations (which determines maxScrollExtent).
+    final target = position.inMilliseconds / 1000.0 * _pixelsPerSecond;
     final maxExtent = _scrollController.position.maxScrollExtent;
-    final fraction = position.inMilliseconds / totalMs;
-    final target = fraction * maxExtent;
     _scrollController.animateTo(
       target.clamp(0, maxExtent),
       duration: const Duration(milliseconds: 200),
