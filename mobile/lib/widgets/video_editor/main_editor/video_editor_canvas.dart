@@ -100,6 +100,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Tracks last playback state to detect changes.
   bool _lastIsPlaying = false;
 
+  /// Last position dispatched to BLoC — avoids flooding with duplicates.
+  Duration _lastReportedPosition = Duration.zero;
+
+  /// Last duration dispatched to BLoC — avoids flooding with duplicates.
+  Duration _lastReportedDuration = Duration.zero;
+
   @override
   void initState() {
     super.initState();
@@ -168,18 +174,35 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
   }
 
+  /// Handles seek requests from BLoC (e.g. timeline scrubbing).
+  void _onSeekRequested(Duration position) {
+    if (!_isPlayerReadyNotifier.value) return;
+    _videoPlayer?.pause();
+    _videoPlayer?.seekTo(position);
+  }
+
   /// Dispatches playback state changes to the BLoC.
   ///
-  /// Audio synchronization is handled natively by the player's
-  /// audio overlay tracks — no manual sync needed.
+  /// Reports play/pause state, current position, and duration so the
+  /// timeline can stay in sync with the real player.
+  /// Only dispatches when values actually change to avoid flooding.
   void _onPlayerStateChanged(DivineVideoPlayerState playerState) {
-    final isPlaying = playerState.isPlaying;
+    final bloc = context.read<VideoEditorMainBloc>();
 
+    final isPlaying = playerState.isPlaying;
     if (isPlaying != _lastIsPlaying) {
       _lastIsPlaying = isPlaying;
-      context.read<VideoEditorMainBloc>().add(
-        VideoEditorPlaybackChanged(isPlaying: isPlaying),
-      );
+      bloc.add(VideoEditorPlaybackChanged(isPlaying: isPlaying));
+    }
+
+    if (playerState.position != _lastReportedPosition) {
+      _lastReportedPosition = playerState.position;
+      bloc.add(VideoEditorPositionChanged(playerState.position));
+    }
+
+    if (playerState.duration != _lastReportedDuration) {
+      _lastReportedDuration = playerState.duration;
+      bloc.add(VideoEditorDurationChanged(playerState.duration));
     }
   }
 
@@ -516,6 +539,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 previous.playbackToggleCounter != current.playbackToggleCounter,
             listener: (context, state) {
               _onPlaybackToggleRequested();
+            },
+          ),
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.seekCounter != current.seekCounter,
+            listener: (context, state) {
+              _onSeekRequested(state.seekPosition);
+            },
+          ),
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.isMuted != current.isMuted,
+            listener: (context, state) {
+              _videoPlayer?.setVolume(state.isMuted ? 0 : 1);
+              ref
+                  .read(videoEditorProvider.notifier)
+                  .setOriginalAudioVolume(state.isMuted ? 0 : 1);
             },
           ),
         ],

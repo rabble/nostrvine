@@ -207,7 +207,12 @@ internal class DivineVideoPlayerInstance(
      */
     private fun resolveGlobalPosition(globalMs: Long): Pair<Int, Long> {
         // If offsets haven't been populated yet (all zero with >1 clip)
-        // fall back to clip 0 so we never accidentally land on the last.
+        // try refreshing once more from the current timeline.
+        if (clipCount > 1 && clipOffsets.all { it == 0L }) {
+            player?.let { refreshClipOffsets(it) }
+        }
+
+        // Still all zero — fall back to clip 0.
         if (clipCount > 1 && clipOffsets.all { it == 0L }) {
             return Pair(0, globalMs)
         }
@@ -404,21 +409,21 @@ internal class DivineVideoPlayerInstance(
         }
         val newOffsets = mutableListOf<Long>()
         var accum = 0L
+        var allResolved = true
         for (i in 0 until exoPlayer.mediaItemCount) {
             newOffsets.add(accum)
             val w = androidx.media3.common.Timeline.Window()
             timeline.getWindow(i, w)
             val durationMs = w.durationMs
-            // C.TIME_UNSET (Long.MIN_VALUE + 1) and any other negative value
-            // means the duration is not yet resolved. With an even number of
-            // clips, summing C.TIME_UNSET values overflows back to a small
-            // positive number (e.g. 2 for two clips), which passes the
-            // accum > 0 guard and corrupts clipOffsets with invalid values.
-            // Bail out early so clipOffsets stays all-zeros and the safety
-            // check in resolveGlobalPosition keeps playback on clip 0.
-            if (durationMs < 0) return
+            if (durationMs < 0) {
+                // Duration not yet resolved for this clip — skip it but
+                // continue so that earlier clips still get correct offsets.
+                allResolved = false
+                continue
+            }
             accum += durationMs
         }
+        // Only update when at least some durations are known.
         if (accum > 0) clipOffsets = newOffsets
     }
 

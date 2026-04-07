@@ -129,5 +129,50 @@ class VideoEditorPlaybackToggleRequested extends VideoEditorMainEvent {
   const VideoEditorPlaybackToggleRequested();
 }
 
+/// Triggered when the timeline requests a seek to a specific position.
+class VideoEditorSeekRequested extends VideoEditorMainEvent {
+  const VideoEditorSeekRequested(this.position);
+
+  final Duration position;
+
+  @override
+  List<Object?> get props => [position];
+}
+
+/// Triggered when the video player reports a new playback position.
+class VideoEditorPositionChanged extends VideoEditorMainEvent {
+  const VideoEditorPositionChanged(this.position);
+
+  final Duration position;
+
+  @override
+  List<Object?> get props => [position];
+}
+
+/// Triggered when the video player reports total duration.
+class VideoEditorDurationChanged extends VideoEditorMainEvent {
+  const VideoEditorDurationChanged(this.duration);
+
+  final Duration duration;
+
+  @override
+  List<Object?> get props => [duration];
+}
+
 /// Types of sub-editors that can be opened.
 enum SubEditorType { text, draw, filter, stickers, music, clips }
+
+/// Triggered when the user toggles audio mute in the timeline.
+class VideoEditorMuteToggled extends VideoEditorMainEvent {
+  const VideoEditorMuteToggled();
+}
+
+/// Triggered when clip reorder mode is toggled.
+class VideoEditorReorderingChanged extends VideoEditorMainEvent {
+  const VideoEditorReorderingChanged({required this.isReordering});
+
+  final bool isReordering;
+
+  @override
+  List<Object?> get props => [isReordering];
+}

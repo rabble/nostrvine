@@ -14,6 +14,12 @@ class VideoEditorMainState extends Equatable {
     this.isExternalPauseRequested = false,
     this.playbackRestartCounter = 0,
     this.playbackToggleCounter = 0,
+    this.seekPosition = Duration.zero,
+    this.seekCounter = 0,
+    this.currentPosition = Duration.zero,
+    this.totalDuration = Duration.zero,
+    this.isMuted = false,
+    this.isReordering = false,
   });
 
   /// Whether the undo action is available.
@@ -58,6 +64,26 @@ class VideoEditorMainState extends Equatable {
   /// Used by BlocListener to trigger play/pause toggle.
   final int playbackToggleCounter;
 
+  /// The position to seek to, set by the timeline during scrubbing.
+  final Duration seekPosition;
+
+  /// Counter that increments when a seek is requested.
+  ///
+  /// Used by BlocListener to trigger video player seekTo.
+  final int seekCounter;
+
+  /// Current playback position reported by the video player.
+  final Duration currentPosition;
+
+  /// Total duration of all clips reported by the video player.
+  final Duration totalDuration;
+
+  /// Whether audio is currently muted.
+  final bool isMuted;
+
+  /// Whether the timeline is in clip reorder mode.
+  final bool isReordering;
+
   /// Creates a copy with the given fields replaced.
   ///
   /// Use [clearOpenSubEditor] to explicitly close the sub-editor.
@@ -68,12 +94,18 @@ class VideoEditorMainState extends Equatable {
     bool clearOpenSubEditor = false,
     bool? isLayerInteractionActive,
     bool? isLayerOverRemoveArea,
+    bool? isMuted,
     List<Layer>? layers,
     bool? isPlaying,
     bool? isPlayerReady,
     bool? isExternalPauseRequested,
     int? playbackRestartCounter,
     int? playbackToggleCounter,
+    Duration? seekPosition,
+    int? seekCounter,
+    Duration? currentPosition,
+    Duration? totalDuration,
+    bool? isReordering,
   }) {
     return VideoEditorMainState(
       canUndo: canUndo ?? this.canUndo,
@@ -94,6 +126,12 @@ class VideoEditorMainState extends Equatable {
           playbackRestartCounter ?? this.playbackRestartCounter,
       playbackToggleCounter:
           playbackToggleCounter ?? this.playbackToggleCounter,
+      seekPosition: seekPosition ?? this.seekPosition,
+      seekCounter: seekCounter ?? this.seekCounter,
+      currentPosition: currentPosition ?? this.currentPosition,
+      totalDuration: totalDuration ?? this.totalDuration,
+      isMuted: isMuted ?? this.isMuted,
+      isReordering: isReordering ?? this.isReordering,
     );
   }
 
@@ -110,5 +148,11 @@ class VideoEditorMainState extends Equatable {
     isExternalPauseRequested,
     playbackRestartCounter,
     playbackToggleCounter,
+    seekPosition,
+    seekCounter,
+    currentPosition,
+    totalDuration,
+    isMuted,
+    isReordering,
   ];
 }

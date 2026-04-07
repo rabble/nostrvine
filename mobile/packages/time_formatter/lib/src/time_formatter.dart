@@ -102,4 +102,15 @@ abstract class TimeFormatter {
     if (date.year == now.year) return DateFormat.MMMd().format(date);
     return DateFormat.yMMMd().format(date);
   }
+
+  /// Formats a [Duration] as `m:ss.cc` (minutes, seconds, centiseconds).
+  ///
+  /// Examples: "0:04.60", "1:23.05", "0:00.00"
+  static String formatPreciseDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds % 60;
+    final centiseconds = (d.inMilliseconds % 1000) ~/ 10;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}.'
+        '${centiseconds.toString().padLeft(2, '0')}';
+  }
 }
