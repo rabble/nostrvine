@@ -2489,14 +2489,14 @@ class AuthService implements BackgroundAwareService {
       // Clear TOS acceptance on any logout - user must re-accept when logging
       // back in
       final prefs = await SharedPreferences.getInstance();
-      // Only clear the auth source on destructive sign-out. Non-destructive
-      // sign-out (switch account) preserves it so that initialize() can
-      // reconnect to the same external signer (Amber/Bunker) when the user
-      // returns.
-      if (deleteKeys) {
-        await prefs.remove(_kAuthSourceKey);
-        await prefs.remove(_kLastUsedNpubKey);
-      }
+      // On destructive sign-out, redirect recovery prefs to the next
+      // remaining account so initialize() can restore it. Only clear when
+      // no accounts remain — otherwise the user loses access to account A
+      // after deleting account B.
+      // Deferred: the actual redirect runs after _removeFromKnownAccounts
+      // so the deleted account is excluded from the remaining list.
+      // Non-destructive sign-out (switch account) preserves these so that
+      // initialize() can reconnect to the same external signer.
       await prefs.remove('age_verified_16_plus');
       await prefs.remove('terms_accepted_at');
 
@@ -2525,6 +2525,10 @@ class AuthService implements BackgroundAwareService {
           await _removeFromKnownAccounts(currentPubkey);
           await _clearArchivedSignerInfo(currentPubkey);
         }
+
+        // Redirect recovery prefs to the most recently used remaining
+        // account so initialize() can restore it on next launch.
+        await _redirectRecoveryToRemainingAccount(prefs);
 
         Log.debug(
           '📱️ Deleting stored keys',
@@ -2680,6 +2684,53 @@ class AuthService implements BackgroundAwareService {
       throw SecureKeyStorageException(
         'Signed out but key deletion failed: $keyDeletionError',
       );
+    }
+  }
+
+  /// After destructive sign-out, point [_kLastUsedNpubKey] and
+  /// [_kAuthSourceKey] at the most recently used remaining known account
+  /// so that [initialize] can restore it on next launch.  If no accounts
+  /// remain, both prefs are cleared (fresh-install behaviour).
+  Future<void> _redirectRecoveryToRemainingAccount(
+    SharedPreferences prefs,
+  ) async {
+    try {
+      final remaining = await getKnownAccounts();
+      if (remaining.isEmpty) {
+        await prefs.remove(_kAuthSourceKey);
+        await prefs.remove(_kLastUsedNpubKey);
+        Log.info(
+          'signOut: no remaining accounts — cleared recovery prefs',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
+
+      // Pick the most recently used account.
+      remaining.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
+      final next = remaining.first;
+      final nextNpub = NostrKeyUtils.encodePubKey(next.pubkeyHex);
+
+      await prefs.setString(_kLastUsedNpubKey, nextNpub);
+      await prefs.setString(_kAuthSourceKey, next.authSource.code);
+
+      Log.info(
+        'signOut: redirected recovery to remaining account '
+        'pubkey=${next.pubkeyHex}, source=${next.authSource.name}',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      // Best-effort: if this fails, the fallback scan in
+      // _restoreLastUsedAccountOrFallback will still find the account.
+      Log.warning(
+        'signOut: failed to redirect recovery prefs: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      await prefs.remove(_kAuthSourceKey);
+      await prefs.remove(_kLastUsedNpubKey);
     }
   }
 
@@ -2912,8 +2963,57 @@ class AuthService implements BackgroundAwareService {
       _reportStorageError(e, stack, '_restoreLastUsedAccountOrFallback');
     }
 
+    // Before falling through to _checkExistingAuth (which only checks
+    // PRIMARY storage), scan known accounts for per-identity keys.
+    // This covers the case where signOut(deleteKeys:true) wiped PRIMARY
+    // but another account's keys still exist in per-identity storage.
+    if (await _tryRestoreFromKnownAccounts(source)) return;
+
     // Fall back to the original behaviour (load primary key, or create new).
     await _checkExistingAuth();
+  }
+
+  /// Scans known accounts for one with stored per-identity keys.
+  /// Returns true if an account was restored, false otherwise.
+  Future<bool> _tryRestoreFromKnownAccounts(
+    AuthenticationSource source,
+  ) async {
+    try {
+      final accounts = await getKnownAccounts();
+      if (accounts.isEmpty) return false;
+
+      // Try most recently used first.
+      accounts.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
+      for (final account in accounts) {
+        final npub = NostrKeyUtils.encodePubKey(account.pubkeyHex);
+        final container = await _keyStorage.getIdentityKeyContainer(npub);
+        if (container != null) {
+          Log.info(
+            '_tryRestoreFromKnownAccounts: '
+            'found keys for ${account.pubkeyHex} '
+            '(source=${account.authSource.name})',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await _keyStorage.switchToIdentity(npub);
+          await _setupUserSession(container, account.authSource);
+          return true;
+        }
+      }
+      Log.info(
+        '_tryRestoreFromKnownAccounts: '
+        'no per-identity keys found for any known account',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.warning(
+        '_tryRestoreFromKnownAccounts: scan failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+    return false;
   }
 
   SecureKeyContainer? _restoreFromLoadedPrimaryIdentity(String lastNpub) {
