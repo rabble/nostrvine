@@ -82,6 +82,7 @@ class NotificationRepository {
       final response = await _funnelcakeApiClient.getNotifications(
         pubkey: _userPubkey,
         cursor: effectiveCursor,
+        requestUri: Uri.parse(requestUrl),
         authHeaders: authHeaders,
       );
 

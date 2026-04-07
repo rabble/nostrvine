@@ -108,6 +108,7 @@ void main() {
       () => funnelcakeApiClient.getNotifications(
         pubkey: any(named: 'pubkey'),
         cursor: any(named: 'cursor'),
+        requestUri: any(named: 'requestUri'),
         authHeaders: any(named: 'authHeaders'),
         limit: any(named: 'limit'),
       ),
@@ -249,6 +250,7 @@ void main() {
           () => funnelcakeApiClient.getNotifications(
             pubkey: any(named: 'pubkey'),
             cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
             authHeaders: any(named: 'authHeaders'),
             limit: any(named: 'limit'),
           ),
@@ -277,11 +279,85 @@ void main() {
           () => funnelcakeApiClient.getNotifications(
             pubkey: userPubkey,
             cursor: 'cursor_abc',
+            requestUri: any(named: 'requestUri'),
             authHeaders: any(named: 'authHeaders'),
             limit: any(named: 'limit'),
           ),
         ).called(1);
       });
+
+      test(
+        'passes the same first-page URI to signing and request execution',
+        () async {
+        var signedUrl = '';
+        Uri? requestedUri;
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          nostrClient: nostrClient,
+          authHeadersProvider: (url, method) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([]);
+        stubProfiles({});
+
+        await repository.getNotifications();
+
+        requestedUri = verify(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: userPubkey,
+            cursor: any(named: 'cursor'),
+            requestUri: captureAny(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).captured.single as Uri;
+
+        expect(requestedUri.toString(), equals(signedUrl));
+        },
+      );
+
+      test(
+        'passes the same paginated URI to signing and request execution',
+        () async {
+        var signedUrl = '';
+        Uri? requestedUri;
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          nostrClient: nostrClient,
+          authHeadersProvider: (url, method) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([], nextCursor: 'cursor_abc', hasMore: true);
+        stubProfiles({});
+
+        await repository.getNotifications();
+        stubNotifications([], nextCursor: 'cursor_def');
+
+        await repository.getNotifications();
+
+        requestedUri = verify(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: userPubkey,
+            cursor: 'cursor_abc',
+            requestUri: captureAny(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).captured.single as Uri;
+
+        expect(requestedUri.toString(), equals(signedUrl));
+        },
+      );
     });
 
     group('like grouping', () {
@@ -677,6 +753,8 @@ void main() {
         verify(
           () => funnelcakeApiClient.getNotifications(
             pubkey: userPubkey,
+            cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
             authHeaders: any(named: 'authHeaders'),
             limit: any(named: 'limit'),
           ),
@@ -770,6 +848,7 @@ void main() {
           () => funnelcakeApiClient.getNotifications(
             pubkey: userPubkey,
             cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
             authHeaders: {'Authorization': 'Nostr abc123'},
             limit: any(named: 'limit'),
           ),

@@ -1801,13 +1801,16 @@ class FunnelcakeApiClient {
     required String pubkey,
     int limit = 50,
     String? cursor,
+    Uri? requestUri,
     Map<String, String>? authHeaders,
   }) async {
-    final url = notificationsUri(
-      pubkey: pubkey,
-      limit: limit,
-      cursor: cursor,
-    );
+    final url =
+        requestUri ??
+        notificationsUri(
+          pubkey: pubkey,
+          limit: limit,
+          cursor: cursor,
+        );
 
     try {
       final response = await _httpClient
