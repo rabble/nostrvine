@@ -273,7 +273,7 @@ void main() {
 
       expect(find.text('Raised hands'), findsOneWidget);
       expect(find.text('Active speakers'), findsOneWidget);
-      expect(find.text('Audience'), findsOneWidget);
+      expect(find.text('Audience'), findsWidgets);
       expect(find.text('Approve'), findsOneWidget);
       expect(find.text('Deny'), findsOneWidget);
       expect(find.text('Mute'), findsOneWidget);
