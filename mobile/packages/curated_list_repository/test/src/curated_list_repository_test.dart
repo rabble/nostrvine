@@ -857,7 +857,7 @@ void main() {
         );
 
         expect(
-          () => (results as List).add(null),
+          () => results.add(createList(id: 'hack')),
           throwsA(isA<UnsupportedError>()),
         );
       });
@@ -925,11 +925,8 @@ void main() {
 
         await repository.searchAllLists('dance').toList();
 
-        final captured = verify(
-          () => nostrClient.queryEvents(any()),
-        ).captured;
         // Verify queryEvents was called (relay search happened)
-        expect(captured, hasLength(1));
+        verify(() => nostrClient.queryEvents(any())).called(1);
       });
 
       test('deduplicates relay results with local results', () async {
