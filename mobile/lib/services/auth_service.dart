@@ -1229,6 +1229,23 @@ class AuthService implements BackgroundAwareService {
             final sessionMap = jsonDecode(sessionJson) as Map<String, dynamic>;
             final session = KeycastSession.fromJson(sessionMap);
             await session.save(_flutterSecureStorage);
+            // Also restore the refresh token and auth handle to their
+            // standalone keys — KeycastOAuth.refreshSession() reads these
+            // separately from the session JSON, and _oauthClient.logout()
+            // clears them. Without this, expired restored sessions can
+            // never be refreshed.
+            if (session.refreshToken != null) {
+              await _flutterSecureStorage.write(
+                key: 'keycast_refresh_token',
+                value: session.refreshToken,
+              );
+            }
+            if (session.authorizationHandle != null) {
+              await _flutterSecureStorage.write(
+                key: 'keycast_auth_handle',
+                value: session.authorizationHandle,
+              );
+            }
           }
 
         case AuthenticationSource.automatic:
@@ -2636,7 +2653,7 @@ class AuthService implements BackgroundAwareService {
 
       try {
         if (_oauthClient != null) {
-          _oauthClient.logout();
+          await _oauthClient.logout();
         } else {
           await KeycastSession.clear(_flutterSecureStorage);
         }
