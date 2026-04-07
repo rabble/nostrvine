@@ -143,6 +143,24 @@ class EnvironmentConfig {
     }
   }
 
+  /// Public key of the divine-push-service for this environment.
+  /// Used for NIP-44 encryption of FCM token registration events.
+  /// Obtain from GET /health on the push service.
+  String get pushServicePubkey {
+    switch (environment) {
+      case AppEnvironment.poc:
+        return 'TODO_POC_PUBKEY';
+      case AppEnvironment.staging:
+        return 'TODO_STAGING_PUBKEY';
+      case AppEnvironment.test:
+        return 'TODO_TEST_PUBKEY';
+      case AppEnvironment.local:
+        return 'TODO_LOCAL_PUBKEY';
+      case AppEnvironment.production:
+        return 'TODO_PRODUCTION_PUBKEY';
+    }
+  }
+
   /// Color for environment indicator (as int for const constructor)
   int get indicatorColorValue {
     switch (environment) {
