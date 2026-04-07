@@ -44,6 +44,8 @@ void main() {
       OnActiveVideoChanged? onActiveVideoChanged,
       void Function(int)? onNearEnd,
       int nearEndThreshold = 3,
+      bool enableMidSwipePlayback = false,
+      void Function(double)? onScrollOffsetChanged,
     }) {
       return MaterialApp(
         home: Scaffold(
@@ -58,6 +60,8 @@ void main() {
             onActiveVideoChanged: onActiveVideoChanged,
             onNearEnd: onNearEnd,
             nearEndThreshold: nearEndThreshold,
+            enableMidSwipePlayback: enableMidSwipePlayback,
+            onScrollOffsetChanged: onScrollOffsetChanged,
             itemBuilder: (context, video, index, {required isActive}) {
               return ColoredBox(
                 key: Key('video_item_$index'),
@@ -446,6 +450,78 @@ void main() {
         expect(updatedPageView.childrenDelegate.estimatedChildCount, equals(4));
 
         controller.dispose();
+      });
+    });
+
+    group('enableMidSwipePlayback', () {
+      testWidgets('defaults to false (backward compatibility)', (tester) async {
+        await tester.pumpWidget(buildFeed());
+        // Widget should build without error
+        expect(find.byType(PooledVideoFeed), findsOneWidget);
+      });
+
+      testWidgets('true works with external controller', (tester) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+        await tester.pumpWidget(
+          buildFeed(
+            controller: controller,
+            enableMidSwipePlayback: true,
+          ),
+        );
+        expect(find.byType(PooledVideoFeed), findsOneWidget);
+        controller.dispose();
+      });
+
+      testWidgets('true works with internal controller', (tester) async {
+        await tester.pumpWidget(
+          buildFeed(
+            enableMidSwipePlayback: true,
+          ),
+        );
+        expect(find.byType(PooledVideoFeed), findsOneWidget);
+      });
+
+      testWidgets('onScrollOffsetChanged still called when enabled', (
+        tester,
+      ) async {
+        final offsets = <double>[];
+        await tester.pumpWidget(
+          buildFeed(
+            enableMidSwipePlayback: true,
+            onScrollOffsetChanged: (offset) {
+              offsets.add(offset);
+            },
+          ),
+        );
+
+        // Simulate a drag to trigger scroll
+        await tester.drag(find.byType(PageView), const Offset(0, -100));
+        await tester.pump();
+
+        // Expect at least one offset recorded
+        expect(offsets, isNotEmpty);
+      });
+
+      testWidgets('onScrollOffsetChanged still called when disabled', (
+        tester,
+      ) async {
+        final offsets = <double>[];
+        await tester.pumpWidget(
+          buildFeed(
+            enableMidSwipePlayback: false,
+            onScrollOffsetChanged: (offset) {
+              offsets.add(offset);
+            },
+          ),
+        );
+
+        await tester.drag(find.byType(PageView), const Offset(0, -100));
+        await tester.pump();
+
+        expect(offsets, isNotEmpty);
       });
     });
   });
