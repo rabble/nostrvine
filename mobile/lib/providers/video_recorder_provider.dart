@@ -153,7 +153,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
           )
         : VideoRecorderMode.capture;
     if (savedMode != state.recorderMode) {
-      setRecorderMode(savedMode);
+      setRecorderMode(savedMode, keepAutosavedDraft: true);
     }
     final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
     final initialLens = savedLensString != null
@@ -1087,7 +1087,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   }
 
   /// Set the recorder mode (capture / classic).
-  void setRecorderMode(VideoRecorderMode mode) {
+  ///
+  /// When [keepAutosavedDraft] is true the autosaved draft in the database
+  /// is preserved. This is used during initialisation where the saved mode
+  /// is restored but the user may still want to recover an earlier session.
+  void setRecorderMode(
+    VideoRecorderMode mode, {
+    bool keepAutosavedDraft = false,
+  }) {
     state = state.copyWith(
       recorderMode: mode,
       aspectRatio: mode.defaultAspectRatio,
@@ -1096,8 +1103,16 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final prefs = ref.read(sharedPreferencesProvider);
     prefs.setString(_kLastUsedRecorderModeKey, mode.name);
 
-    ref.read(clipManagerProvider.notifier).clearAll();
-    ref.read(videoEditorProvider.notifier).reset();
+    ref
+        .read(clipManagerProvider.notifier)
+        .clearAll(
+          keepAutosavedDraft: keepAutosavedDraft,
+        );
+    ref
+        .read(videoEditorProvider.notifier)
+        .reset(
+          keepAutosavedDraft: keepAutosavedDraft,
+        );
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
       name: 'VideoRecorderNotifier',
