@@ -2555,7 +2555,7 @@ final class PushNotificationSyncProvider
 }
 
 String _$pushNotificationSyncHash() =>
-    r'9d8b12f16c5a0f67f25cf3b3357bd210edad45db';
+    r'fed5d3b0d5d729c415c77b8d0a88c090abf4095d';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
