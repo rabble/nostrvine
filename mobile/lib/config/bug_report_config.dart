@@ -25,6 +25,16 @@ class BugReportConfig {
   /// Maximum bug report size in bytes (~1MB)
   static const int maxReportSizeBytes = 1024 * 1024;
 
+  /// Max characters per individual log entry in the Zendesk summary.
+  /// 500 chars is enough for error type + message context without
+  /// including full SQL statements or serialized event payloads.
+  static const int maxLogEntryLength = 500;
+
+  /// Max total characters for the log summary sent to Zendesk.
+  /// Zendesk description limit is 64K; logs share that space with
+  /// device info, steps to reproduce, etc. 32KB leaves headroom.
+  static const int maxLogSummaryLength = 32 * 1024;
+
   /// Sensitive data patterns to sanitize
   static final List<RegExp> sensitivePatterns = [
     RegExp(
