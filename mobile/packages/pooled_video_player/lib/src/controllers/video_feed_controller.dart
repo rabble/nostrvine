@@ -207,6 +207,28 @@ class VideoFeedController extends ChangeNotifier {
   /// detection activates. Gives the decoder time to start producing frames.
   int _staleGraceHeartbeats = 0;
 
+  /// Threshold for swipe progress to trigger playback of next video.
+  /// When the absolute difference between page and currentIndex reaches this
+  /// value, the next video starts playing and the current one pauses.
+  static const _swipeThreshold = 0.5;
+
+  /// Current fractional page value from PageController during a swipe.
+  /// Null when no swipe is in progress.
+  double? _swipeProgress;
+
+  /// Direction of the current swipe: true for forward (next video),
+  /// false for backward (previous video), null when swipe not active.
+  bool? _swipeForward;
+
+  /// Index of the video that is pending to become active if the swipe completes.
+  /// This is the video that has already started playing due to crossing the
+  /// threshold. Used to avoid duplicate play/pause calls in onPageChanged.
+  int? _pendingTargetIndex;
+
+  /// Whether the swipe threshold has been crossed in the current direction.
+  /// Prevents repeated play/pause calls while staying beyond the threshold.
+  bool _swipeThresholdCrossed = false;
+
   /// Number of consecutive stale heartbeats before triggering recovery.
   /// With a 100ms heartbeat interval, this means ~800ms of confirmed
   /// frozen video before recovery kicks in.
@@ -615,8 +637,15 @@ class VideoFeedController extends ChangeNotifier {
       _logLoadingSnapshot(index, reason: 'became_current');
     }
 
-    // Pause old video
-    _pauseVideo(oldIndex);
+    // If the swipe threshold was already crossed and the pending target matches
+    // the new index, we have already paused the old video and played the new one.
+    // Skip duplicate calls to avoid extra pauses/plays.
+    final bool alreadyHandled = _pendingTargetIndex == index;
+
+    if (!alreadyHandled) {
+      // Pause old video
+      _pauseVideo(oldIndex);
+    }
 
     // Mark the current video as most-recently-used in the pool so it is
     // never evicted when preloading neighbors below.
@@ -624,13 +653,128 @@ class VideoFeedController extends ChangeNotifier {
 
     // Play new video if ready
     if (_isActive && !_isPaused && isVideoReady(index)) {
-      _playVideo(index);
+      // Only play if not already handled (already playing due to threshold)
+      if (!alreadyHandled) {
+        _playVideo(index);
+      }
     }
 
     // Update preload window
     _updatePreloadWindow(index);
 
+    // Reset swipe state
+    _swipeProgress = null;
+    _swipeForward = null;
+    _swipeThresholdCrossed = false;
+    _pendingTargetIndex = null;
+
     notifyListeners();
+  }
+
+  /// Handles scroll progress during a swipe gesture.
+  ///
+  /// [page] is the fractional page value from PageController.
+  /// When the absolute difference between page and currentIndex reaches
+  /// [_swipeThreshold] (0.5), the next video starts playing and the current
+  /// one pauses. If the swipe is reversed before completing, playback reverts.
+  void handleScrollProgress(double page) {
+    if (_isDisposed) return;
+
+    _swipeProgress = page;
+    final int currentFloor = page.floor();
+    final double fractional = page - currentFloor;
+    final bool movingForward = page > _currentIndex;
+    final bool movingBackward = page < _currentIndex;
+
+    // Determine direction change
+    final bool? newDirection = movingForward
+        ? true
+        : movingBackward
+        ? false
+        : null;
+    final bool directionChanged = newDirection != _swipeForward;
+
+    if (directionChanged) {
+      // Direction changed, reset threshold crossing state
+      _swipeThresholdCrossed = false;
+      _swipeForward = newDirection;
+    }
+
+    // Calculate absolute distance from current index
+    final double distance = (page - _currentIndex).abs();
+
+    // Check if threshold crossed in current direction
+    if (!_swipeThresholdCrossed &&
+        distance >= _swipeThreshold &&
+        _swipeForward != null) {
+      _swipeThresholdCrossed = true;
+      final int targetIndex = _swipeForward! ? currentFloor + 1 : currentFloor;
+      if (targetIndex >= 0 && targetIndex < videoCount) {
+        _pendingTargetIndex = targetIndex;
+        // Pause current video
+        _pauseVideo(_currentIndex);
+        // Play target video if ready
+        if (_isActive && !_isPaused && isVideoReady(targetIndex)) {
+          _playVideo(targetIndex);
+        }
+        _logDebug(
+          'swipe_threshold_crossed page=$page currentIndex=$_currentIndex '
+          'target=$targetIndex direction=${_swipeForward! ? 'forward' : 'backward'}',
+        );
+      }
+    } else if (_swipeThresholdCrossed &&
+        distance < _swipeThreshold &&
+        _swipeForward != null) {
+      // Swipe reversed back across threshold
+      _swipeThresholdCrossed = false;
+      final int targetIndex = _swipeForward! ? currentFloor + 1 : currentFloor;
+      if (targetIndex >= 0 && targetIndex < videoCount) {
+        // Pause the target video
+        _pauseVideo(targetIndex);
+        // Resume current video
+        if (_isActive && !_isPaused && isVideoReady(_currentIndex)) {
+          _playVideo(_currentIndex);
+        }
+        _pendingTargetIndex = null;
+        _logDebug(
+          'swipe_threshold_reversed page=$page currentIndex=$_currentIndex '
+          'target=$targetIndex',
+        );
+      }
+    }
+
+    // If threshold already crossed and direction unchanged, check if target changed
+    if (_swipeThresholdCrossed && _swipeForward != null) {
+      final int newTargetIndex = _swipeForward!
+          ? currentFloor + 1
+          : currentFloor;
+      if (newTargetIndex >= 0 &&
+          newTargetIndex < videoCount &&
+          newTargetIndex != _pendingTargetIndex) {
+        // Pause previous target video
+        final int? previousTarget = _pendingTargetIndex;
+        if (previousTarget != null) {
+          _pauseVideo(previousTarget);
+        }
+        // Play new target video if ready
+        if (_isActive && !_isPaused && isVideoReady(newTargetIndex)) {
+          _playVideo(newTargetIndex);
+        }
+        _pendingTargetIndex = newTargetIndex;
+        _logDebug(
+          'swipe_target_updated page=$page currentIndex=$_currentIndex '
+          'oldTarget=$previousTarget newTarget=$newTargetIndex',
+        );
+      }
+    }
+
+    // If swipe progress is exactly on an integer page (snapped), reset state
+    if (fractional == 0.0) {
+      _swipeProgress = null;
+      _swipeForward = null;
+      _swipeThresholdCrossed = false;
+      _pendingTargetIndex = null;
+    }
   }
 
   /// Set whether this feed is active.
@@ -1283,7 +1427,20 @@ class VideoFeedController extends ChangeNotifier {
       }
 
       // Guard: user may have scrolled away during the seek.
-      if (_isDisposed || _currentIndex != index || !_isActive || _isPaused) {
+      // Allow playback for pending target during swipe threshold crossing.
+      final bool isPendingTarget =
+          index == _pendingTargetIndex && _swipeThresholdCrossed;
+      if (!isPendingTarget &&
+          (_isDisposed || _currentIndex != index || !_isActive || _isPaused)) {
+        _logDebug(
+          'play_aborted ${_videoDebugDetails(index)} '
+          'current=$_currentIndex active=$_isActive '
+          'paused=$_isPaused disposed=$_isDisposed',
+        );
+        return;
+      }
+      // For pending target, still check disposal, activity, and pause state.
+      if (_isDisposed || !_isActive || _isPaused) {
         _logDebug(
           'play_aborted ${_videoDebugDetails(index)} '
           'current=$_currentIndex active=$_isActive '

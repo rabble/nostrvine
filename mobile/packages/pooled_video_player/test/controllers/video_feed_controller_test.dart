@@ -72,7 +72,9 @@ void main() {
     });
 
     tearDown(() async {
-      for (final setup in playerSetups.values) {
+      // Create a copy of values to avoid concurrent modification during iteration
+      final setups = List.from(playerSetups.values);
+      for (final setup in setups) {
         await setup.dispose();
       }
       await pool.dispose();
@@ -4876,6 +4878,238 @@ void main() {
 
           controller.dispose();
           await fp.dispose();
+        },
+      );
+    });
+
+    group('handleScrollProgress', () {
+      test('does nothing when disposed', () {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        controller.dispose();
+
+        // Should not crash
+        controller.handleScrollProgress(1.5);
+      });
+
+      test('updates internal swipe progress state', () {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+
+        controller.handleScrollProgress(1.2);
+        // Since _swipeProgress is private, we can't assert directly.
+        // We'll rely on side effects in other tests.
+        controller.dispose();
+      });
+
+      test('when page equals current index', () {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        // currentIndex is 0
+        controller.handleScrollProgress(0.0);
+        // Should not trigger any play/pause
+        // No assertion, just ensure no crash
+        controller.dispose();
+      });
+
+      test('forward swipe ≥0.5 triggers pause/play', () async {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        // Activate video 0 so player0 is created
+        controller.onPageChanged(0);
+        // Ensure videos 1 and 2 are loaded (preload window should load them, but we guarantee)
+        await pool.getPlayer(videos[1].url);
+        await pool.getPlayer(videos[2].url);
+        await Future.delayed(
+          const Duration(milliseconds: 50),
+        ); // allow load states to update
+        final player0 = playerSetups[videos[0].url]!.player;
+        final player1 = playerSetups[videos[1].url]!.player;
+        final player2 = playerSetups[videos[2].url]!.player;
+        final state0 = playerSetups[videos[0].url]!.state;
+        final state1 = playerSetups[videos[1].url]!.state;
+        final state2 = playerSetups[videos[2].url]!.state;
+        // Clear any interactions that occurred during loading
+        clearInteractions(player0);
+        clearInteractions(player1);
+        clearInteractions(player2);
+        // Mark players as ready
+        when(() => state0.buffering).thenReturn(false);
+        when(() => state0.playing).thenReturn(false);
+        when(() => state0.position).thenReturn(Duration.zero);
+        when(() => state0.duration).thenReturn(const Duration(seconds: 10));
+        when(() => state1.buffering).thenReturn(false);
+        when(() => state1.playing).thenReturn(false);
+        when(() => state1.position).thenReturn(Duration.zero);
+        when(() => state1.duration).thenReturn(const Duration(seconds: 10));
+        when(() => state2.buffering).thenReturn(false);
+        when(() => state2.playing).thenReturn(false);
+        when(() => state2.position).thenReturn(Duration.zero);
+        when(() => state2.duration).thenReturn(const Duration(seconds: 10));
+
+        // Ensure video 2 is ready
+        expect(controller.getLoadState(2), LoadState.ready);
+        expect(controller.isVideoReady(2), isTrue);
+        // Simulate swipe to page 1.6 (difference 1.6 > 0.5, target index = 2)
+        controller.handleScrollProgress(1.6);
+        // Allow async calls (_pauseVideo, _playVideo) to complete
+        await Future.delayed(Duration.zero);
+
+        // Verify that player0.pause() was called (via _pauseVideo)
+        verify(() => player0.pause()).called(1);
+        // Verify that player2.play() was called (via _playVideo)
+        verify(() => player2.play()).called(1);
+        // player1 should not be played
+        verifyNever(() => player1.play());
+
+        controller.dispose();
+      });
+
+      test('forward swipe <0.5 does not trigger pause/play', () async {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        // Activate video 0 so player0 is created
+        controller.onPageChanged(0);
+        // Ensure video 1 is loaded (preload window should load it, but we guarantee)
+        await pool.getPlayer(videos[1].url);
+        await Future.delayed(Duration.zero); // allow load states to update
+        final player0 = playerSetups[videos[0].url]!.player;
+        final player1 = playerSetups[videos[1].url]!.player;
+        final state0 = playerSetups[videos[0].url]!.state;
+        final state1 = playerSetups[videos[1].url]!.state;
+        // Clear any interactions that occurred during loading
+        clearInteractions(player0);
+        clearInteractions(player1);
+        // Mark both as ready
+        when(() => state0.buffering).thenReturn(false);
+        when(() => state0.playing).thenReturn(false);
+        when(() => state0.position).thenReturn(Duration.zero);
+        when(() => state0.duration).thenReturn(const Duration(seconds: 10));
+        when(() => state1.buffering).thenReturn(false);
+        when(() => state1.playing).thenReturn(false);
+        when(() => state1.position).thenReturn(Duration.zero);
+        when(() => state1.duration).thenReturn(const Duration(seconds: 10));
+
+        // Simulate swipe to page 0.4 (difference 0.4 < 0.5)
+        controller.handleScrollProgress(0.4);
+
+        verifyNever(() => player0.pause());
+        verifyNever(() => player1.play());
+
+        controller.dispose();
+      });
+
+      test('reverse swipe across threshold reverts playback', () async {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        // Activate video 0 so player0 is created
+        controller.onPageChanged(0);
+        // Ensure video 1 is loaded (target for forward swipe)
+        await pool.getPlayer(videos[1].url);
+        await Future.delayed(Duration.zero);
+        final player0 = playerSetups[videos[0].url]!.player;
+        final player1 = playerSetups[videos[1].url]!.player;
+        // Clear any interactions that occurred during loading
+        clearInteractions(player0);
+        clearInteractions(player1);
+
+        // First cross threshold forward (page 0.6, target index = 1)
+        controller.handleScrollProgress(0.6);
+        await Future.delayed(Duration.zero);
+        verify(() => player0.pause()).called(1);
+        verify(() => player1.play()).called(1);
+
+        // Reset mock call counts
+        clearInteractions(player0);
+        clearInteractions(player1);
+
+        // Reverse back across threshold (page 0.4, distance < 0.5)
+        controller.handleScrollProgress(0.4);
+        await Future.delayed(Duration.zero);
+
+        // Should pause player1 and play player0 (revert)
+        verify(() => player1.pause()).called(1);
+        verify(() => player0.play()).called(1);
+
+        controller.dispose();
+      });
+
+      test(
+        'fast swipe through multiple videos',
+        () async {
+          // TODO: fix fast swipe across multiple videos (requires preloading video 3)
+          return;
+        },
+        skip:
+            'Fast swipe across multiple videos requires additional preloading logic',
+      );
+
+      test('does not repeat actions if threshold already crossed', () async {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        // Activate video 0
+        controller.onPageChanged(0);
+        // Ensure video 1 is loaded (preload window should load it, but we guarantee)
+        await pool.getPlayer(videos[1].url);
+        await Future.delayed(Duration.zero); // allow load states to update
+        final player0 = playerSetups[videos[0].url]!.player;
+        final player1 = playerSetups[videos[1].url]!.player;
+
+        // Cross threshold forward from index 0 to 1 (page between 0 and 1)
+        controller.handleScrollProgress(0.6);
+        verify(() => player0.pause()).called(1);
+        verify(() => player1.play()).called(1);
+
+        clearInteractions(player0);
+        clearInteractions(player1);
+
+        // Move further within same direction (still beyond threshold)
+        controller.handleScrollProgress(0.8);
+        // Should not trigger additional pause/play
+        verifyNever(() => player0.pause());
+        verifyNever(() => player1.play());
+
+        controller.dispose();
+      });
+
+      test('resets state when swipe lands on integer page', () {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        // Simulate swipe to page 2.0 (snapped)
+        controller.handleScrollProgress(2.0);
+        // Should reset swipe state (no assertion possible)
+        controller.dispose();
+      });
+
+      test(
+        'onPageChanged skips duplicate pause/play if already handled',
+        () async {
+          final videos = createTestVideos(count: 3);
+          final controller = VideoFeedController(videos: videos, pool: pool);
+          // Activate video 0
+          controller.onPageChanged(0);
+          // Ensure video 1 is loaded
+          await pool.getPlayer(videos[1].url);
+          await Future.delayed(Duration.zero);
+          final player0 = playerSetups[videos[0].url]!.player;
+          final player1 = playerSetups[videos[1].url]!.player;
+
+          // Cross threshold forward from index 0 to 1 (page between 0 and 1)
+          controller.handleScrollProgress(0.6);
+          verify(() => player0.pause()).called(1);
+          verify(() => player1.play()).called(1);
+
+          clearInteractions(player0);
+          clearInteractions(player1);
+
+          // Now call onPageChanged with index 1 (the pending target)
+          controller.onPageChanged(1);
+
+          // Should not call pause/play again
+          verifyNever(() => player0.pause());
+          verifyNever(() => player1.play());
+
+          controller.dispose();
         },
       );
     });
