@@ -148,5 +148,115 @@ void main() {
       // Assert: Auth state should be unauthenticated
       expect(authService.authState, equals(AuthState.unauthenticated));
     });
+
+    group('key deletion error propagation', () {
+      test(
+        'signOut with deleteKeys rethrows SecureKeyStorageException '
+        'after completing cleanup',
+        () async {
+          // Arrange: deleteKeys() throws
+          when(() => mockKeyStorage.deleteKeys()).thenThrow(
+            const SecureKeyStorageException(
+              'Platform key deletion failed',
+              code: 'platform_deletion_failed',
+            ),
+          );
+          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+          // Act & Assert: signOut completes cleanup then rethrows
+          await expectLater(
+            authService.signOut(deleteKeys: true),
+            throwsA(isA<SecureKeyStorageException>()),
+          );
+
+          // Auth state should still be unauthenticated — cleanup completed
+          expect(
+            authService.authState,
+            equals(AuthState.unauthenticated),
+          );
+        },
+      );
+
+      test(
+        'signOut with deleteKeys succeeds normally when keys delete '
+        'successfully',
+        () async {
+          // Arrange: deleteKeys() succeeds
+          when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+          // Act: should not throw
+          await authService.signOut(deleteKeys: true);
+
+          // Assert: completed normally
+          expect(
+            authService.authState,
+            equals(AuthState.unauthenticated),
+          );
+          verify(() => mockKeyStorage.deleteKeys()).called(1);
+        },
+      );
+
+      test(
+        'signOut with abortOnKeyDeletionFailure throws before cleanup '
+        'when key deletion fails',
+        () async {
+          // Arrange: deleteKeys() throws
+          when(() => mockKeyStorage.deleteKeys()).thenThrow(
+            const SecureKeyStorageException(
+              'Platform key deletion failed',
+              code: 'platform_deletion_failed',
+            ),
+          );
+
+          // Act & Assert: signOut throws immediately
+          await expectLater(
+            authService.signOut(
+              deleteKeys: true,
+              abortOnKeyDeletionFailure: true,
+            ),
+            throwsA(isA<SecureKeyStorageException>()),
+          );
+
+          // Auth state should still be initial — no cleanup happened
+          expect(
+            authService.authState,
+            isNot(equals(AuthState.unauthenticated)),
+          );
+
+          // Cleanup service should NOT have been called
+          verifyNever(
+            () => mockCleanupService.clearUserSpecificData(
+              reason: any(named: 'reason'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'signOut with abortOnKeyDeletionFailure completes normally '
+        'when key deletion succeeds',
+        () async {
+          // Arrange: deleteKeys() succeeds
+          when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+          // Act: should not throw
+          await authService.signOut(
+            deleteKeys: true,
+            abortOnKeyDeletionFailure: true,
+          );
+
+          // Assert: completed normally, auth state unauthenticated
+          expect(
+            authService.authState,
+            equals(AuthState.unauthenticated),
+          );
+
+          // deleteKeys() called only once (pre-flight), not twice
+          verify(() => mockKeyStorage.deleteKeys()).called(1);
+        },
+      );
+    });
   });
 }

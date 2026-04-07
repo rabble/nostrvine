@@ -34,7 +34,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
     required this.isOwnProfile,
     required this.videoCount,
     this.profile,
-    this.profileStats,
     this.onSetupProfile,
     this.displayNameHint,
     this.avatarUrlHint,
@@ -53,9 +52,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// Optional profile owned by the parent widget.
   /// When provided, avoids a second profile fetch path.
   final UserProfile? profile;
-
-  /// Optional cached stats owned by the parent widget.
-  final ProfileStats? profileStats;
 
   /// Callback when "Set Up" button is tapped on the setup banner.
   /// Only shown for own profile with default name.
@@ -107,6 +103,12 @@ class ProfileHeaderWidget extends ConsumerWidget {
       prefs,
       userIdHex,
     );
+
+    // Watch profile stats for accurate video count (own and other profiles).
+    // Falls back to videos.length (videoCount) when stats are not yet cached.
+    final watchedStats = ref
+        .watch(userProfileStatsReactiveProvider(userIdHex))
+        .value;
 
     // Use profile color as header background (like original Vine)
     // Color covers avatar/stats, then fades to dark for name/bio readability
@@ -186,7 +188,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                                 children: [
                                   ProfileStatColumn(
                                     count:
-                                        profileStats?.videoCount ?? videoCount,
+                                        watchedStats?.videoCount ?? videoCount,
                                     label: 'Videos',
                                     isLoading: false,
                                   ),

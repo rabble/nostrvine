@@ -1,4 +1,6 @@
 export 'people_section.dart';
+export 'search_filter_pill.dart';
+export 'search_filter_sheet.dart';
 export 'search_results_app_bar.dart';
 export 'search_tag_chip.dart';
 export 'search_user_tile.dart';

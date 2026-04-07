@@ -45,6 +45,10 @@ class _InboxViewState extends ConsumerState<InboxView> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild the inbox surfaces when auth identity changes so per-screen UI
+    // state does not linger across account switches.
+    ref.watch(currentAuthStateProvider);
+
     // Re-filter conversation list when blocklist changes.
     ref.listen(blocklistVersionProvider, (previous, current) {
       if (previous != null && current > previous) {
@@ -56,6 +60,7 @@ class _InboxViewState extends ConsumerState<InboxView> {
 
     // Watch notification unread count for the badge.
     final notificationCount = ref.watch(relayNotificationUnreadCountProvider);
+    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
 
     return ColoredBox(
       color: VineTheme.surfaceBackground,
@@ -76,8 +81,16 @@ class _InboxViewState extends ConsumerState<InboxView> {
                 child: ColoredBox(
                   color: VineTheme.surfaceContainerHigh,
                   child: _selectedTab == InboxTab.messages
-                      ? const _MessagesContent()
-                      : const NotificationsScreen(),
+                      ? KeyedSubtree(
+                          key: ValueKey('messages-$currentPubkey'),
+                          child: const _MessagesContent(),
+                        )
+                      // Keep Inbox on the proven relay-provider notifications
+                      // path until the BLoC migration matches production.
+                      : KeyedSubtree(
+                          key: ValueKey('notifications-$currentPubkey'),
+                          child: const NotificationsScreen(),
+                        ),
                 ),
               ),
             ),

@@ -2708,17 +2708,23 @@ final class HashtagServiceProvider
 
 String _$hashtagServiceHash() => r'5cd38d3c2e8d78a6f7b74a72b650d79e28938fe4';
 
-/// Social service depends on Nostr service, Auth service, and ProfileRepository
+/// Social service for follow sets (NIP-51 Kind 30000).
+///
+/// Follower count stats have moved to [FollowRepository].
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service, Auth service, and ProfileRepository
+/// Social service for follow sets (NIP-51 Kind 30000).
+///
+/// Follower count stats have moved to [FollowRepository].
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service, Auth service, and ProfileRepository
+  /// Social service for follow sets (NIP-51 Kind 30000).
+  ///
+  /// Follower count stats have moved to [FollowRepository].
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2752,7 +2758,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'7f858c18bfb9a531aef63fad0086233718f71a6a';
+String _$socialServiceHash() => r'5b4d5751d3f2ef22c9ee2610cda1c4e70b2302a7';
 
 /// Cached following list loaded directly from SharedPreferences.
 ///
@@ -2886,7 +2892,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'1f2f6ee87179a7ca7cb52695e4e304ff56704c41';
+String _$followRepositoryHash() => r'1f41b9c42e06c287a43fe235a3b3774d1a759a49';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -4335,14 +4341,13 @@ String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -4356,14 +4361,13 @@ const dmRepositoryProvider = DmRepositoryProvider._();
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -4377,14 +4381,13 @@ final class DmRepositoryProvider
   /// and sending encrypted direct messages. Works with any [NostrSigner]
   /// (local keys, Keycast RPC, Amber, etc.).
   ///
-  /// Automatically starts listening for incoming gift-wrapped messages and
-  /// stops when disposed.
+  /// Sets auth credentials eagerly so read/send operations work immediately.
+  /// The relay subscription is NOT started here — it is driven by the inbox
+  /// UI lifecycle via [ConversationListBloc] (#2766).
   ///
-  /// Uses `keepAlive: true` because the relay subscription must survive
-  /// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-  /// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-  /// provider auto-disposes during rebuild gaps, killing the subscription
-  /// and causing incoming DMs to be silently dropped.
+  /// Uses `keepAlive: true` because the repository must survive transient
+  /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+  /// `nostrServiceProvider` auth-state changes).
   ///
   /// Non-nullable: the repository works without keys at construction time.
   /// Read operations return cached/empty data; write operations check keys.
@@ -4421,7 +4424,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'2d91335bdfffc633b9b958854bc90ae07f282d0c';
+String _$dmRepositoryHash() => r'30503db56d4371ec8d639cebcaf711fa372966bd';
 
 /// Provider for CommentsRepository instance
 ///

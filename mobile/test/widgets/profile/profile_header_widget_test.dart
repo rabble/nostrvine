@@ -183,7 +183,6 @@ void main() {
         isOwnProfile: isOwnProfile,
         videoCount: videoCount,
         profile: suppliedProfile,
-        profileStats: profileStats,
         onSetupProfile: onSetupProfile,
         displayNameHint: displayNameHint,
         avatarUrlHint: avatarUrlHint,
@@ -226,6 +225,11 @@ void main() {
             profileIsLoading
                 ? (ref) => Completer<UserProfile?>().future
                 : (ref) async => profile,
+          ),
+          userProfileStatsReactiveProvider(userIdHex).overrideWith(
+            (ref) => profileStats != null
+                ? Stream.value(profileStats)
+                : const Stream<ProfileStats?>.empty(),
           ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           authServiceProvider.overrideWithValue(authService),
@@ -313,6 +317,51 @@ void main() {
       expect(find.text('42'), findsWidgets);
       expect(find.text('Videos'), findsOneWidget);
     });
+
+    testWidgets(
+      'shows true video count from stats provider for own profile',
+      (tester) async {
+        final testProfile = createTestProfile(displayName: 'Own User');
+        const stats = ProfileStats(
+          pubkey: testUserHex,
+          videoCount: 142,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            profileStats: stats,
+            videoCount: 5,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('142'), findsWidgets);
+        expect(find.text('Videos'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'falls back to videos.length when stats provider has no data',
+      (tester) async {
+        final testProfile = createTestProfile(displayName: 'Fallback User');
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            videoCount: 5,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('5'), findsWidgets);
+        expect(find.text('Videos'), findsOneWidget);
+      },
+    );
 
     testWidgets('displays all three stat columns', (tester) async {
       final testProfile = createTestProfile(displayName: 'Test User');

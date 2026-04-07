@@ -310,10 +310,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(widget.pubkey));
-    final statsAsync = ref.watch(
-      userProfileStatsReactiveProvider(widget.pubkey),
-    );
-
     // Track analytics when data is loaded
     if (videosAsync is AsyncData) {
       ScreenAnalyticsService().markDataLoaded(
@@ -341,7 +337,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           OtherProfileError(:final profile) => profile,
         };
         final profileColor = headerProfile?.profileBackgroundColor;
-        final headerStats = statsAsync.value;
 
         final displayName =
             headerProfile?.bestDisplayName ??
@@ -385,7 +380,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               userIdHex: widget.pubkey,
               isOwnProfile: false,
               profile: headerProfile,
-              profileStats: headerStats,
               displayName: displayName,
               videos: value.videos,
               scrollController: _scrollController,
