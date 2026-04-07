@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/platform_helpers.dart';
-import 'package:openvine/widgets/video_recorder/preview/video_recorder_macos_preview.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_mobile_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_focus_point.dart';
@@ -122,9 +121,7 @@ class _CameraPreview extends ConsumerWidget {
             Container(color: const Color(0xFF141414)),
 
             /// Preview widget
-            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS)
-              const VideoRecorderMacosPreview()
-            else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux)
+            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux)
               const SizedBox.shrink()
             else
               const VideoRecorderMobilePreview(),

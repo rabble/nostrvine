@@ -466,6 +466,19 @@ class NotificationServiceEnhanced {
         return;
       }
 
+      // For follow notifications, also deduplicate by actor pubkey.
+      // Kind 3 (contact list) is a replaceable event — each publish has a new
+      // event ID but doesn't represent a new follow if the actor was already
+      // following the user.
+      if (notification.type == NotificationType.follow &&
+          _notifications.any(
+            (n) =>
+                n.type == NotificationType.follow &&
+                n.actorPubkey == notification.actorPubkey,
+          )) {
+        return;
+      }
+
       // Add to list
       _notifications.insert(0, notification);
 

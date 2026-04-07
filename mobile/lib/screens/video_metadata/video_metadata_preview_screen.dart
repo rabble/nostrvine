@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +16,6 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_preview_thumbnail.dart';
-import 'package:video_player/video_player.dart';
 
 /// Full-screen preview of the recorded video with metadata overlay.
 ///
@@ -47,11 +46,10 @@ class VideoMetadataPreviewScreen extends ConsumerStatefulWidget {
 class _VideoMetadataPreviewScreenState
     extends ConsumerState<VideoMetadataPreviewScreen> {
   /// Video player controller for the clip, null until initialized.
-  VideoPlayerController? _controller;
+  DivineVideoPlayerController? _controller;
 
   /// Whether the video player has completed initialization and is ready
   /// to play.
-  bool _isInitialized = false;
   final _isPreviewReady = ValueNotifier<bool>(false);
 
   @override
@@ -63,7 +61,7 @@ class _VideoMetadataPreviewScreenState
     ref.listenManual(
       videoPublishProvider.select((state) => state.publishState),
       (previous, next) {
-        if (previous != next && _controller?.value.isPlaying == true) {
+        if (previous != next && _controller?.state.isPlaying == true) {
           _controller?.pause();
         }
       },
@@ -78,22 +76,20 @@ class _VideoMetadataPreviewScreenState
 
   /// Initializes the video player and starts playback.
   ///
-  /// Checks if the video file exists, creates a [VideoPlayerController],
-  /// initializes it, enables looping, and starts playback automatically.
-  /// Updates [_isInitialized] when complete.
+  /// Creates a [DivineVideoPlayerController], initializes it, enables
+  /// looping, and starts playback automatically.
   Future<void> _initializePlayer() async {
-    _controller = VideoPlayerController.file(
-      File(await widget.clip.video.safeFilePath()),
-    );
+    _controller = DivineVideoPlayerController(useTexture: true);
     if (mounted) await _controller!.initialize();
-    if (mounted) await _controller!.setLooping(true);
-    if (mounted) await _controller!.play();
-
     if (mounted) {
-      setState(() {
-        _isInitialized = true;
-      });
+      await _controller!.setSource(
+        VideoClip.file(await widget.clip.video.safeFilePath()),
+      );
     }
+    if (mounted) await _controller!.setLooping(looping: true);
+    if (mounted) await _controller!.play();
+    // Rebuild so DivineVideoPlayer receives the now-initialized controller.
+    if (mounted) setState(() {});
   }
 
   @override
@@ -120,7 +116,6 @@ class _VideoMetadataPreviewScreenState
                   _VideoPreviewContent(
                     clip: widget.clip,
                     controller: _controller,
-                    isInitialized: _isInitialized,
                     isPreviewReady: _isPreviewReady,
                     previewOnly: widget.previewOnly,
                   ),
@@ -145,14 +140,12 @@ class _VideoPreviewContent extends ConsumerWidget {
   const _VideoPreviewContent({
     required this.clip,
     required this.controller,
-    required this.isInitialized,
     required this.isPreviewReady,
     this.previewOnly = false,
   });
 
   final DivineVideoClip clip;
-  final VideoPlayerController? controller;
-  final bool isInitialized;
+  final DivineVideoPlayerController? controller;
   final ValueNotifier<bool> isPreviewReady;
   final bool previewOnly;
 
@@ -170,7 +163,6 @@ class _VideoPreviewContent extends ConsumerWidget {
           _VideoPlayerWidget(
             clip: clip,
             controller: controller,
-            isInitialized: isInitialized,
           ),
           // Metadata overlay layer
           if (!previewOnly) _PreviewOverlay(isPreviewReady: isPreviewReady),
@@ -186,12 +178,10 @@ class _VideoPlayerWidget extends StatelessWidget {
   const _VideoPlayerWidget({
     required this.clip,
     required this.controller,
-    required this.isInitialized,
   });
 
   final DivineVideoClip clip;
-  final VideoPlayerController? controller;
-  final bool isInitialized;
+  final DivineVideoPlayerController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -208,34 +198,11 @@ class _VideoPlayerWidget extends StatelessWidget {
             aspectRatio: aspectRatio,
             child: ClipRRect(
               borderRadius: .circular(16),
-              child: Stack(
-                fit: .expand,
-                children: [
-                  // Show thumbnail while video loads
-                  if (clip.thumbnailPath != null)
-                    VideoMetadataPreviewThumbnail(clip: clip),
-                  // Smooth transition to video player
-                  AnimatedSwitcher(
-                    layoutBuilder: (currentChild, previousChildren) => Stack(
-                      alignment: .center,
-                      fit: .expand,
-                      children: <Widget>[...previousChildren, ?currentChild],
-                    ),
-                    switchInCurve: Curves.easeInOut,
-                    duration: const Duration(milliseconds: 120),
-                    child: isInitialized && controller != null
-                        ? FittedBox(
-                            fit: .cover,
-                            clipBehavior: .hardEdge,
-                            child: SizedBox(
-                              width: controller!.value.size.width,
-                              height: controller!.value.size.height,
-                              child: VideoPlayer(controller!),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
+              child: DivineVideoPlayer(
+                controller: controller,
+                placeholder: VideoMetadataPreviewThumbnail(
+                  clip: clip,
+                ),
               ),
             ),
           );

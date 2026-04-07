@@ -74,6 +74,9 @@ class ClipManagerState {
   /// Whether at least one clip has been recorded.
   bool get hasClips => clips.isNotEmpty;
 
+  /// The first clip in the list, or null when no clips are available.
+  DivineVideoClip? get firstClipOrNull => clips.isEmpty ? null : clips.first;
+
   /// Total number of clips.
   int get clipCount => clips.length;
 

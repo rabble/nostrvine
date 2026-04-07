@@ -84,6 +84,7 @@ class ProfileFeed extends _$ProfileFeed {
     if (retainedState != null && retainedState.videos.isNotEmpty) {
       _usingRestApi = funnelcakeAvailable;
       _nextOffset = estimateNextRestOffset(retainedState);
+      _totalVideoCount = retainedState.totalVideoCount;
       _registerRetainedRealtimeListeners(videoEventService);
       Future.microtask(() => refresh(retainedState: retainedState));
       return retainedState.copyWith(
@@ -101,12 +102,12 @@ class ProfileFeed extends _$ProfileFeed {
       );
 
       try {
-        final (:videos, :totalCount) = await funnelcakeClient.getVideosByAuthor(
+        final result = await funnelcakeClient.getVideosByAuthor(
           pubkey: userId,
         );
-        final apiVideos = videos.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
         restPageCount = apiVideos.length;
-        _totalVideoCount = totalCount;
+        _totalVideoCount = result.totalCount;
 
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
@@ -460,14 +461,14 @@ class ProfileFeed extends _$ProfileFeed {
   Future<void> _refreshFromRestApi() async {
     try {
       final client = ref.read(funnelcakeApiClientProvider);
-      final (:videos, :totalCount) = await client.getVideosByAuthor(
+      final result = await client.getVideosByAuthor(
         pubkey: userId,
       );
-      final apiVideos = videos.map((v) => v.toVideoEvent()).toList();
+      final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
 
       if (!ref.mounted) return;
 
-      _totalVideoCount = totalCount;
+      _totalVideoCount = result.totalCount;
 
       if (apiVideos.isNotEmpty) {
         // Filter out reposts
@@ -580,11 +581,11 @@ class ProfileFeed extends _$ProfileFeed {
           category: LogCategory.video,
         );
 
-        final (:videos, totalCount: _) = await client.getVideosByAuthor(
+        final result = await client.getVideosByAuthor(
           pubkey: userId,
           offset: offset,
         );
-        final apiVideos = videos.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
         _nextOffset = offset + apiVideos.length;
@@ -762,14 +763,14 @@ class ProfileFeed extends _$ProfileFeed {
     if (funnelcakeAvailable) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
-        final (:videos, :totalCount) = await client.getVideosByAuthor(
+        final result = await client.getVideosByAuthor(
           pubkey: userId,
         );
-        final apiVideos = videos.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
 
-        _totalVideoCount = totalCount;
+        _totalVideoCount = result.totalCount;
 
         if (apiVideos.isNotEmpty) {
           // Reset offset-based pagination

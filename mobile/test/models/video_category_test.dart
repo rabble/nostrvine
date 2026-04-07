@@ -64,7 +64,7 @@ void main() {
     group('emoji', () {
       test('returns correct emoji for known categories', () {
         const music = VideoCategory(name: 'music', videoCount: 0);
-        expect(music.emoji, equals('🎵'));
+        expect(music.emoji, equals('🎸'));
 
         const sports = VideoCategory(name: 'sports', videoCount: 0);
         expect(sports.emoji, equals('🏆'));
@@ -80,7 +80,7 @@ void main() {
 
       test('is case insensitive', () {
         const category = VideoCategory(name: 'MUSIC', videoCount: 0);
-        expect(category.emoji, equals('🎵'));
+        expect(category.emoji, equals('🎸'));
       });
     });
 

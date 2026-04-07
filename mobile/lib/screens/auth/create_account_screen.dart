@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
@@ -285,11 +286,10 @@ class _SkipConfirmationSheet extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
-          Image.asset(
-            'assets/stickers/pointing_finger.png',
+          SvgPicture.asset(
+            'assets/stickers/pointing_finger.svg',
             width: 132,
             height: 132,
-            fit: BoxFit.contain,
           ),
           const SizedBox(height: 24),
 

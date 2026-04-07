@@ -119,7 +119,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'ditto.pub',
     tagline: 'Posting and conversations on Nostr.',
     description:
-        'A curated third-party Nostr client for browsing, posting, and conversations.',
+        'A curated third-party Nostr client for browsing, posting, and '
+        'conversations.',
     launchUrl: 'https://ditto.pub/',
     sortOrder: 8,
   ),
@@ -129,7 +130,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Agora',
     tagline: 'Connect with activists worldwide.',
     description:
-        'A curated third-party Nostr app for supporting activists and taking part in local actions.',
+        'A curated third-party Nostr app for supporting activists and taking '
+        'part in local actions.',
     launchUrl: 'https://agora.spot/',
     sortOrder: 9,
   ),
@@ -139,7 +141,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Treasures',
     tagline: 'Decentralized geocaching on Nostr.',
     description:
-        'A curated third-party Nostr app for discovering, hiding, and sharing geocaches.',
+        'A curated third-party Nostr app for discovering, hiding, and sharing '
+        'geocaches.',
     launchUrl: 'https://treasures.to/',
     sortOrder: 10,
   ),
@@ -149,7 +152,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Blobbi',
     tagline: 'A playful pet-themed social space on Nostr.',
     description:
-        'A curated third-party Nostr client with a playful pet-forward social experience.',
+        'A curated third-party Nostr client with a playful pet-forward social '
+        'experience.',
     launchUrl: 'https://www.blobbi.pet/',
     sortOrder: 11,
   ),
@@ -159,7 +163,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Espy',
     tagline: 'See beauty, share color.',
     description:
-        'A curated third-party Nostr app for sharing colors and beautiful moments.',
+        'A curated third-party Nostr app for sharing colors and beautiful '
+        'moments.',
     launchUrl: 'https://espy.you/',
     sortOrder: 12,
   ),
@@ -169,7 +174,8 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     name: 'Jumble',
     tagline: 'A user-friendly Nostr client for exploring relay feeds.',
     description:
-        'A curated third-party Nostr client for browsing relay feeds in a simpler interface.',
+        'A curated third-party Nostr client for browsing relay feeds in a '
+        'simpler interface.',
     launchUrl: 'https://jumble.social/',
     sortOrder: 13,
   ),

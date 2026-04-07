@@ -4,86 +4,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:models/models.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-/// Represents a user list (NIP-51 kind 30000) containing pubkeys
-class UserList {
-  const UserList({
-    required this.id,
-    required this.name,
-    required this.pubkeys,
-    required this.createdAt,
-    required this.updatedAt,
-    this.description,
-    this.imageUrl,
-    this.isPublic = true,
-    this.nostrEventId,
-    this.isEditable = true,
-  });
-
-  final String id;
-  final String name;
-  final String? description;
-  final String? imageUrl;
-  final List<String> pubkeys;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final bool isPublic;
-  final String? nostrEventId;
-  final bool isEditable; // false for Divine Team and other system lists
-
-  UserList copyWith({
-    String? id,
-    String? name,
-    String? description,
-    String? imageUrl,
-    List<String>? pubkeys,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    bool? isPublic,
-    String? nostrEventId,
-    bool? isEditable,
-  }) => UserList(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    description: description ?? this.description,
-    imageUrl: imageUrl ?? this.imageUrl,
-    pubkeys: pubkeys ?? this.pubkeys,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    isPublic: isPublic ?? this.isPublic,
-    nostrEventId: nostrEventId ?? this.nostrEventId,
-    isEditable: isEditable ?? this.isEditable,
-  );
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'imageUrl': imageUrl,
-    'pubkeys': pubkeys,
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
-    'isPublic': isPublic,
-    'nostrEventId': nostrEventId,
-    'isEditable': isEditable,
-  };
-
-  static UserList fromJson(Map<String, dynamic> json) => UserList(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    description: json['description'] as String?,
-    imageUrl: json['imageUrl'] as String?,
-    pubkeys: List<String>.from(json['pubkeys'] as Iterable? ?? []),
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    updatedAt: DateTime.parse(json['updatedAt'] as String),
-    isPublic: json['isPublic'] as bool? ?? true,
-    nostrEventId: json['nostrEventId'] as String?,
-    isEditable: json['isEditable'] as bool? ?? true,
-  );
-}
 
 /// Service for managing NIP-51 kind 30000 user lists
 class UserListService {

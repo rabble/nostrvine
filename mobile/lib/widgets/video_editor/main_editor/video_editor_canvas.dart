@@ -200,18 +200,25 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
   void _initializeController() {
-    final clips = ref.read(clipManagerProvider).clips;
-
     _proVideoController = ProVideoController(
       videoPlayer: ValueListenableBuilder(
         valueListenable: _isPlayerReadyNotifier,
         builder: (_, isPlayerReady, _) {
-          return VideoEditorPlayer(
-            controller: _videoPlayer,
-            targetAspectRatio: clips.first.targetAspectRatio,
-            originalAspectRatio: clips.first.originalAspectRatio,
-            bodySize: widget.bodySize,
-            renderSize: widget.renderSize,
+          return Consumer(
+            builder: (context, ref, _) {
+              final clip = ref.watch(
+                clipManagerProvider.select((s) => s.firstClipOrNull),
+              );
+              if (clip == null) return const SizedBox.shrink();
+
+              return VideoEditorPlayer(
+                controller: _videoPlayer,
+                targetAspectRatio: clip.targetAspectRatio,
+                originalAspectRatio: clip.originalAspectRatio,
+                bodySize: widget.bodySize,
+                renderSize: widget.renderSize,
+              );
+            },
           );
         },
       ),
@@ -247,6 +254,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     if (!mounted) return;
 
     final editorState = ref.read(videoEditorProvider);
+    if (clips.isEmpty) return;
     await Future.wait([
       _videoPlayer!.seekTo(clips.first.thumbnailTimestamp),
       _videoPlayer!.setLooping(looping: true),
@@ -372,7 +380,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
     _syncMainCapabilities(scope, bloc);
     final result = await scope.editor!.exportStateHistory(
-      configs: const ExportEditorConfigs(historySpan: .currentAndBackward),
+      configs: const ExportEditorConfigs(
+        historySpan: .currentAndBackward,
+        // We don't minify the state history so it remains readable for
+        // ProofMode.
+        enableMinify: false,
+      ),
     );
     final history = await result.toMap();
 
@@ -435,12 +448,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     final drawBloc = context.read<VideoEditorDrawBloc>();
 
     // Riverpod
+    final clip = ref.watch(
+      clipManagerProvider.select((s) => s.firstClipOrNull),
+    );
+    if (clip == null) return const SizedBox.shrink();
+
     final editorStateHistory = ref.read(
       videoEditorProvider.select((s) => s.editorStateHistory),
     );
-    final targetAspectRatio = ref.read(
-      clipManagerProvider.select((s) => s.clips.first.targetAspectRatio),
-    );
+    final targetAspectRatio = clip.targetAspectRatio;
 
     // Listen for sound changes to reload audio overlay track
     ref.listen<AudioEvent?>(
@@ -828,7 +844,10 @@ class _CanvasFitter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
+    final clip = ref.watch(
+      clipManagerProvider.select((s) => s.firstClipOrNull),
+    );
+    if (clip == null) return const SizedBox.shrink();
     final scope = VideoEditorScope.of(context);
 
     return LayoutBuilder(
@@ -902,8 +921,9 @@ class _OverlayCutArea extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final targetAspectRatio = ref.read(
-      clipManagerProvider.select((s) => s.clips.first.targetAspectRatio),
+      clipManagerProvider.select((s) => s.firstClipOrNull?.targetAspectRatio),
     );
+    if (targetAspectRatio == null) return const SizedBox.shrink();
 
     if (targetAspectRatio == .vertical) return child;
 

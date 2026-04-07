@@ -13,10 +13,22 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
 
+/// Max characters per individual log entry in the summary.
+/// 500 chars is enough for error type + message context without
+/// including full SQL statements or serialized event payloads.
+const int _maxEntryLength = 500;
+
+/// Max total characters for the entire log summary.
+/// Zendesk description limit is 64K; logs share that space with
+/// device info, steps to reproduce, etc. 32KB leaves headroom.
+const int _maxSummaryLength = 32 * 1024;
+
 /// Build a log summary prioritizing errors/warnings with recent context.
 /// Returns null if logs are empty.
 /// Takes up to 200 most recent error/warning entries plus the last 50
 /// entries of any level, deduplicates, and sorts chronologically.
+/// Individual entries are truncated to [_maxEntryLength] characters and
+/// the total summary is capped at [_maxSummaryLength] characters.
 String? buildLogsSummary(List<LogEntry> logs) {
   if (logs.isEmpty) return null;
 
@@ -37,7 +49,21 @@ String? buildLogsSummary(List<LogEntry> logs) {
   final merged = <LogEntry>{...recentErrors, ...recentContext}.toList()
     ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-  return merged.map((log) => log.toFormattedString()).join('\n');
+  final buffer = StringBuffer();
+  for (var i = 0; i < merged.length; i++) {
+    var line = merged[i].toFormattedString();
+    if (line.length > _maxEntryLength) {
+      line = '${line.substring(0, _maxEntryLength)}... [truncated]';
+    }
+    if (buffer.length + line.length + 1 > _maxSummaryLength) {
+      buffer.writeln('... [${merged.length - i} entries truncated]');
+      break;
+    }
+    buffer.writeln(line);
+  }
+
+  final result = buffer.toString().trimRight();
+  return result.isEmpty ? null : result;
 }
 
 /// Dialog for collecting and submitting bug reports

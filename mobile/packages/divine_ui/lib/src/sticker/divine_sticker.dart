@@ -1,10 +1,11 @@
 // ignore_for_file: public_member_api_docs, Sticker names are self-documenting
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// Sticker names from the Divine design system sticker set.
 ///
-/// Each value maps to a 132×132 raster PNG asset in `assets/stickers/`.
+/// Each value maps to an OpenMoji SVG asset in `assets/stickers/`.
 enum DivineStickerName {
   adjustableDumbbell('adjustable_dumbbell'),
   alert('alert'),
@@ -76,23 +77,23 @@ enum DivineStickerName {
   vinylRecord('vinyl_record'),
   wavePool('wave_pool'),
   worldMap('world_map'),
-  x('x'),
+  x('x')
   ;
 
   const DivineStickerName(this.fileName);
 
-  /// The PNG file name (without extension) in the assets/stickers directory.
+  /// The file name (without extension) in the assets/stickers directory.
   final String fileName;
 
   /// The full asset path for this sticker.
-  String get assetPath => 'assets/stickers/$fileName.png';
+  String get assetPath => 'assets/stickers/$fileName.svg';
 }
 
-/// A sticker widget that renders raster PNG stickers from the Divine
+/// A sticker widget that renders OpenMoji SVG stickers from the Divine
 /// design system.
 ///
-/// [DivineSticker] loads a PNG asset by name and renders it at the
-/// specified [size]. Stickers are 132×132 transparent PNGs.
+/// [DivineSticker] loads an SVG asset by name and renders it at the
+/// specified [size]. Stickers are vector SVGs from the OpenMoji set.
 ///
 /// Example usage:
 /// ```dart
@@ -103,11 +104,7 @@ enum DivineStickerName {
 /// ```
 class DivineSticker extends StatelessWidget {
   /// Creates a Divine design system sticker.
-  const DivineSticker({
-    required this.sticker,
-    this.size = 132,
-    super.key,
-  });
+  const DivineSticker({required this.sticker, this.size = 132, super.key});
 
   /// The sticker to display.
   final DivineStickerName sticker;
@@ -117,17 +114,10 @@ class DivineSticker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
+    return SvgPicture.asset(
       sticker.assetPath,
       width: size,
       height: size,
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) {
-        debugPrint(
-          'Failed to load sticker ${sticker.assetPath}: $error',
-        );
-        return SizedBox(width: size, height: size);
-      },
     );
   }
 }

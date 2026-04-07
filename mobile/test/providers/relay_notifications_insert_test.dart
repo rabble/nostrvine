@@ -70,6 +70,7 @@ void main() {
         overrides: [
           relayNotificationApiServiceProvider.overrideWithValue(mockApiService),
           authServiceProvider.overrideWithValue(mockAuthService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nip98AuthServiceProvider.overrideWithValue(mockNip98AuthService),
           profileRepositoryProvider.overrideWithValue(null),

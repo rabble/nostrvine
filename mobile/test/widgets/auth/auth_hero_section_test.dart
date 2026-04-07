@@ -49,17 +49,11 @@ void main() {
         expect(text.style?.color, equals(VineTheme.whiteText));
       });
 
-      testWidgets('displays $SvgPicture logo', (tester) async {
+      testWidgets('displays logo and sticker SVGs', (tester) async {
         await tester.pumpWidget(createTestWidget());
 
-        expect(find.byType(SvgPicture), findsOneWidget);
-      });
-
-      testWidgets('displays sticker images', (tester) async {
-        await tester.pumpWidget(createTestWidget());
-
-        // 4 sticker images in the Stack
-        expect(find.byType(Image), findsNWidgets(4));
+        // 4 sticker SVGs + 1 logo SVG = 5 total
+        expect(find.byType(SvgPicture), findsNWidgets(5));
       });
     });
   });

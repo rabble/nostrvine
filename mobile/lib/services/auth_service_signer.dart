@@ -29,6 +29,23 @@ class AuthServiceSigner implements NostrSigner {
     return _keyContainer?.publicKeyHex ?? '';
   }
 
+  /// Whether this signer can expose its private key bytes to a
+  /// [compute()] isolate for batch decryption. True only for local
+  /// signers that already keep the key in memory.
+  bool get canDecryptInIsolate =>
+      _keyContainer != null && _keyContainer.hasPrivateKey;
+
+  /// Runs [operation] with the raw private key hex. Mirrors
+  /// [SecureKeyContainer.withPrivateKey] but scoped to this signer so
+  /// callers never need to reach into the container directly.
+  T withPrivateKeyHex<T>(T Function(String hex) operation) {
+    final container = _keyContainer;
+    if (container == null) {
+      throw StateError('AuthServiceSigner has no key container');
+    }
+    return container.withPrivateKey(operation);
+  }
+
   @override
   Future<String?> getPublicKey() async {
     return _keyContainer?.publicKeyHex ?? '';

@@ -1,0 +1,124 @@
+// ABOUTME: Regression tests for deepLinkServiceProvider lifecycle cleanup
+// ABOUTME: Verifies late deep-link events stop flowing after disposal
+
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/providers/deep_link_provider.dart';
+import 'package:openvine/services/deep_link_service.dart';
+
+class _TrackingDeepLinkService extends DeepLinkService {
+  _TrackingDeepLinkService(this._source) {
+    _subscription = _source.stream.listen((deepLink) {
+      if (_disposed) return;
+      receivedDeepLinks.add(deepLink);
+      _controller.add(deepLink);
+    });
+  }
+
+  final StreamController<DeepLink> _source;
+  final StreamController<DeepLink> _controller =
+      StreamController<DeepLink>.broadcast(sync: true);
+  late final StreamSubscription<DeepLink> _subscription;
+  final List<DeepLink> receivedDeepLinks = [];
+  bool _disposed = false;
+
+  bool get isDisposed => _disposed;
+
+  @override
+  Stream<DeepLink> get linkStream => _controller.stream;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _subscription.cancel();
+    _controller.close();
+  }
+}
+
+void main() {
+  test(
+    'disposes the deep-link service between containers and ignores late events',
+    () async {
+      final deepLinkSource = StreamController<DeepLink>.broadcast(sync: true);
+      addTearDown(deepLinkSource.close);
+
+      late _TrackingDeepLinkService serviceA;
+      late _TrackingDeepLinkService serviceB;
+
+      ProviderContainer createContainer({
+        required void Function(_TrackingDeepLinkService service) assignService,
+      }) {
+        return ProviderContainer(
+          overrides: [
+            deepLinkServiceProvider.overrideWith((ref) {
+              final service = _TrackingDeepLinkService(deepLinkSource);
+              // Overrides replace the production provider factory, so the test
+              // must re-register the same disposal contract to observe it.
+              ref.onDispose(service.dispose);
+              assignService(service);
+              return service;
+            }),
+          ],
+        );
+      }
+
+      final receivedA = <DeepLink>[];
+      final containerA = createContainer(
+        assignService: (service) => serviceA = service,
+      );
+      final subscriptionA = containerA.listen<AsyncValue<DeepLink>>(
+        deepLinksProvider,
+        (previous, next) {
+          final value = next.asData?.value;
+          if (value != null) {
+            receivedA.add(value);
+          }
+        },
+      );
+      addTearDown(subscriptionA.close);
+
+      expect(serviceA.isDisposed, isFalse);
+
+      containerA.dispose();
+      expect(serviceA.isDisposed, isTrue);
+
+      await Future<void>.delayed(Duration.zero);
+      deepLinkSource.add(
+        const DeepLink(type: DeepLinkType.video, videoId: 'late-a'),
+      );
+
+      expect(serviceA.receivedDeepLinks, isEmpty);
+      expect(receivedA, isEmpty);
+
+      final receivedB = <DeepLink>[];
+      final containerB = createContainer(
+        assignService: (service) => serviceB = service,
+      );
+      addTearDown(containerB.dispose);
+      final subscriptionB = containerB.listen<AsyncValue<DeepLink>>(
+        deepLinksProvider,
+        (previous, next) {
+          final value = next.asData?.value;
+          if (value != null) {
+            receivedB.add(value);
+          }
+        },
+      );
+      addTearDown(subscriptionB.close);
+
+      await Future<void>.delayed(Duration.zero);
+      deepLinkSource.add(
+        const DeepLink(type: DeepLinkType.video, videoId: 'late-b'),
+      );
+
+      expect(serviceB.isDisposed, isFalse);
+      expect(serviceB.receivedDeepLinks, hasLength(1));
+      expect(receivedB, hasLength(1));
+    },
+  );
+}

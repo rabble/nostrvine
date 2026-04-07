@@ -53,6 +53,10 @@ void main() {
       // Default auth service behavior - authenticated user
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => mockAuthService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
 
       // Default API service behavior - available
       when(() => mockApiService.isAvailable).thenReturn(true);
@@ -102,6 +106,7 @@ void main() {
     }) {
       return ProviderContainer(
         overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           relayNotificationApiServiceProvider.overrideWithValue(mockApiService),
           authServiceProvider.overrideWithValue(mockAuthService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -239,6 +244,80 @@ void main() {
       });
 
       test(
+        'resets to empty when auth state changes to unauthenticated',
+        () async {
+          final authStateController = StreamController<AuthState>.broadcast();
+          var authState = AuthState.authenticated;
+
+          when(() => mockAuthService.authState).thenAnswer((_) => authState);
+          when(
+            () => mockAuthService.authStateStream,
+          ).thenAnswer((_) => authStateController.stream);
+
+          final mockNotifications = [
+            createMockRelayNotification(
+              id: 'notif_1',
+              createdAtSeconds: 1700000100,
+            ),
+          ];
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: mockNotifications,
+              unreadCount: 1,
+            ),
+          );
+
+          final container = ProviderContainer(
+            overrides: [
+              relayNotificationApiServiceProvider.overrideWithValue(
+                mockApiService,
+              ),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+              nip98AuthServiceProvider.overrideWithValue(mockNip98AuthService),
+              profileRepositoryProvider.overrideWithValue(
+                mockProfileRepository,
+              ),
+              backgroundActivityManagerProvider.overrideWithValue(
+                mockBackgroundManager,
+              ),
+            ],
+          );
+          addTearDown(() async {
+            await authStateController.close();
+            container.dispose();
+          });
+
+          final initial = await waitForLoadComplete(container);
+          expect(initial.notifications, isNotEmpty);
+
+          authState = AuthState.unauthenticated;
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
+          authStateController.add(AuthState.unauthenticated);
+
+          await Future<void>.delayed(Duration.zero);
+
+          final updated = await container.read(
+            relayNotificationsProvider.future,
+          );
+          expect(updated.notifications, isEmpty);
+          expect(updated.unreadCount, 0);
+        },
+      );
+
+      test(
         'converts RelayNotification to NotificationModel correctly',
         () async {
           final mockNotifications = [
@@ -277,7 +356,7 @@ void main() {
       test(
         'completes initial load before profile enrichment finishes',
         () async {
-          final profileLookupCompleter = Completer<UserProfile?>();
+          final batchFetchCompleter = Completer<Map<String, UserProfile>>();
           final mockNotifications = [
             createMockRelayNotification(id: 'notif_1'),
           ];
@@ -298,10 +377,10 @@ void main() {
           );
 
           when(
-            () => mockProfileRepository.getCachedProfile(
-              pubkey: any(named: 'pubkey'),
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
             ),
-          ).thenAnswer((_) => profileLookupCompleter.future);
+          ).thenAnswer((_) => batchFetchCompleter.future);
 
           final container = createTestContainer(
             profileRepository: mockProfileRepository,
@@ -701,11 +780,12 @@ void main() {
         // Should have been called twice
         expect(callCount, 2);
 
-        // State should reflect the refreshed data
+        // State should contain the refreshed notification; the original may
+        // also be present because refresh now merges rather than replaces.
         final state = container.read(relayNotificationsProvider);
         final result = state.value!;
-        expect(result.notifications.length, 1);
-        expect(result.notifications[0].id, 'notif_call_2');
+        final ids = result.notifications.map((n) => n.id).toSet();
+        expect(ids, contains('notif_call_2'));
         expect(result.unreadCount, 2);
 
         container.dispose();
@@ -764,10 +844,13 @@ void main() {
         await refreshFuture;
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Now state should show refreshed data
+        // Now state should include the refreshed notification; the original
+        // may also be preserved since refresh now merges.
         final finalState = container.read(relayNotificationsProvider);
-        expect(finalState.value!.notifications.length, 1);
-        expect(finalState.value!.notifications[0].id, 'refreshed_notif');
+        final finalIds = finalState.value!.notifications
+            .map((n) => n.id)
+            .toSet();
+        expect(finalIds, contains('refreshed_notif'));
 
         container.dispose();
       });
@@ -993,6 +1076,354 @@ void main() {
       });
     });
 
+    group('Follow Notification Deduplication', () {
+      test(
+        'consolidates follow notifications keeping earliest timestamp',
+        () async {
+          // Server returns multiple follow notifications from same pubkey
+          // (caused by Kind 3 contact list republishing)
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                // Latest Kind 3 event (user followed someone else)
+                createMockRelayNotification(
+                  id: 'follow_new',
+                  sourcePubkey: 'follower_abc',
+                  notificationType: 'follow',
+                  createdAtSeconds: 1700000200,
+                ),
+                // Original follow event
+                createMockRelayNotification(
+                  id: 'follow_original',
+                  sourcePubkey: 'follower_abc',
+                  notificationType: 'follow',
+                  createdAtSeconds: 1700000100,
+                ),
+                // Different follower (should be kept)
+                createMockRelayNotification(
+                  id: 'follow_other',
+                  sourcePubkey: 'follower_xyz',
+                  notificationType: 'follow',
+                  createdAtSeconds: 1700000150,
+                ),
+              ],
+              unreadCount: 3,
+            ),
+          );
+
+          final container = createTestContainer();
+          final result = await waitForLoadComplete(container);
+
+          // Should consolidate to 2 follow notifications (one per pubkey)
+          final follows = result.notifications
+              .where((n) => n.type == NotificationType.follow)
+              .toList();
+          expect(follows.length, 2);
+
+          // The follower_abc entry should use the earliest timestamp
+          final abcFollow = follows.firstWhere(
+            (n) => n.actorPubkey == 'follower_abc',
+          );
+          expect(
+            abcFollow.timestamp,
+            DateTime.fromMillisecondsSinceEpoch(1700000100 * 1000),
+            reason: 'Should keep earliest follow timestamp, not latest',
+          );
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'insertFromWebSocket deduplicates follow by actor pubkey',
+        () async {
+          // Initial load has one follow notification
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'existing_follow',
+                  sourcePubkey: 'follower_abc',
+                  notificationType: 'follow',
+                  createdAtSeconds: 1700000100,
+                ),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // WebSocket delivers a new Kind 3 event from the same actor
+          final duplicateFollow = NotificationModel(
+            id: 'new_kind3_event',
+            type: NotificationType.follow,
+            actorPubkey: 'follower_abc', // Same actor
+            actorName: 'Follower',
+            message: 'Follower started following you',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(duplicateFollow);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          // Should still have only one follow notification
+          final follows = result.notifications
+              .where((n) => n.type == NotificationType.follow)
+              .toList();
+          expect(
+            follows.length,
+            1,
+            reason:
+                'Duplicate follow from same actor via WebSocket should be '
+                'dropped',
+          );
+          expect(follows.first.id, 'existing_follow');
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'insertFromWebSocket allows follow from different actor',
+        () async {
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'existing_follow',
+                  sourcePubkey: 'follower_abc',
+                  notificationType: 'follow',
+                  createdAtSeconds: 1700000100,
+                ),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // WebSocket delivers a follow from a different actor
+          final newFollow = NotificationModel(
+            id: 'new_follow_event',
+            type: NotificationType.follow,
+            actorPubkey: 'follower_xyz', // Different actor
+            actorName: 'New Follower',
+            message: 'New Follower started following you',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(newFollow);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          // Should have both follows
+          final follows = result.notifications
+              .where((n) => n.type == NotificationType.follow)
+              .toList();
+          expect(
+            follows.length,
+            2,
+            reason: 'Follow from a different actor should be allowed',
+          );
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'insertFromWebSocket allows non-follow from same actor',
+        () async {
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'existing_follow',
+                  sourcePubkey: 'actor_abc',
+                  notificationType: 'follow',
+                  createdAtSeconds: 1700000100,
+                ),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // Same actor sends a like (non-follow, should not be deduped)
+          final like = NotificationModel(
+            id: 'like_event',
+            type: NotificationType.like,
+            actorPubkey: 'actor_abc', // Same actor
+            actorName: 'Actor',
+            message: 'Actor liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(like);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          expect(
+            result.notifications.length,
+            2,
+            reason: 'Non-follow notification from same actor should be allowed',
+          );
+
+          container.dispose();
+        },
+      );
+    });
+
+    group('Cross-batch follow consolidation (loadMore)', () {
+      test(
+        'loadMore replaces follow with earlier timestamp from later batch',
+        () async {
+          // Batch 1 must have >= 10 items so _fetchRawNotifications auto-fetch
+          // does NOT pull batch 2 early.  Batch 2 contains an older follow
+          // from the same actor — loadMore should swap to the earlier one.
+          var callCount = 0;
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return NotificationsResponse(
+                notifications: [
+                  createMockRelayNotification(
+                    id: 'follow_new',
+                    sourcePubkey: 'follower_abc',
+                    notificationType: 'follow',
+                    createdAtSeconds: 1700000200, // T2 — latest
+                  ),
+                  for (var i = 0; i < 9; i++)
+                    createMockRelayNotification(
+                      id: 'like_$i',
+                      createdAtSeconds: 1700000100 + i,
+                    ),
+                ],
+                unreadCount: 10,
+                nextCursor: 'cursor_1',
+                hasMore: true,
+              );
+            } else {
+              return NotificationsResponse(
+                notifications: [
+                  createMockRelayNotification(
+                    id: 'follow_original',
+                    sourcePubkey: 'follower_abc',
+                    notificationType: 'follow',
+                    createdAtSeconds: 1700000050, // T1 — original (earlier)
+                  ),
+                ],
+                unreadCount: 10,
+              );
+            }
+          });
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // Verify batch 1 has the T2 follow
+          var state = container.read(relayNotificationsProvider).value!;
+          var follows = state.notifications
+              .where((n) => n.type == NotificationType.follow)
+              .toList();
+          expect(follows.length, 1);
+          expect(
+            follows.first.timestamp,
+            DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+          );
+
+          // Load more — should get the older follow from batch 2
+          await container.read(relayNotificationsProvider.notifier).loadMore();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          state = container.read(relayNotificationsProvider).value!;
+          follows = state.notifications
+              .where((n) => n.type == NotificationType.follow)
+              .toList();
+
+          // Should have exactly 1 follow for follower_abc — with the earliest
+          // timestamp (T1), not the latest (T2)
+          expect(
+            follows.length,
+            1,
+            reason:
+                'Cross-batch consolidation should keep one follow per '
+                'actor',
+          );
+          expect(
+            follows.first.timestamp,
+            DateTime.fromMillisecondsSinceEpoch(1700000050 * 1000),
+            reason: 'Should keep earliest follow timestamp across batches',
+          );
+
+          // 9 likes + 1 consolidated follow = 10
+          expect(state.notifications.length, 10);
+
+          container.dispose();
+        },
+      );
+    });
+
     group('NotificationFeedState', () {
       test('copyWith creates correct copy', () {
         const original = NotificationFeedState(
@@ -1020,6 +1451,703 @@ void main() {
         expect(empty.isInitialLoad, isTrue);
         expect(empty.error, isNull);
       });
+    });
+
+    group('enrichment', () {
+      /// Waits for the enrichment phase to update notifications with
+      /// non-null actor names. Returns the enriched state.
+      Future<NotificationFeedState> waitForEnrichment(
+        ProviderContainer container,
+      ) async {
+        final completer = Completer<NotificationFeedState>();
+
+        container.listen<AsyncValue<NotificationFeedState>>(
+          relayNotificationsProvider,
+          (previous, next) {
+            next.whenData((state) {
+              if (state.notifications.isNotEmpty &&
+                  state.notifications.first.actorName != null &&
+                  !completer.isCompleted) {
+                completer.complete(state);
+              }
+            });
+          },
+        );
+
+        return completer.future.timeout(
+          const Duration(seconds: 2),
+          onTimeout: () =>
+              throw TimeoutException('Enrichment did not complete'),
+        );
+      }
+
+      test('populates actor names and avatars', () async {
+        const sourcePubkey = 'source_pubkey_123';
+        final testProfile = UserProfile(
+          pubkey: sourcePubkey,
+          displayName: 'Alice',
+          name: 'alice',
+          picture: 'https://example.com/alice.jpg',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_profile_1',
+        );
+
+        final mockNotifications = [
+          createMockRelayNotification(id: 'notif_1'),
+        ];
+
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: mockNotifications,
+            unreadCount: 1,
+          ),
+        );
+
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((_) async => {sourcePubkey: testProfile});
+
+        final container = createTestContainer(
+          profileRepository: mockProfileRepository,
+        );
+
+        // Initial load shows skeleton
+        final initial = await waitForLoadComplete(container);
+        expect(initial.notifications.single.actorName, isNull);
+        expect(
+          initial.notifications.single.message,
+          'Someone liked your video',
+        );
+
+        // Enrichment populates real profile data
+        final enriched = await waitForEnrichment(container);
+        expect(enriched.notifications, hasLength(1));
+        expect(enriched.notifications.single.actorName, equals('Alice'));
+        expect(
+          enriched.notifications.single.actorPictureUrl,
+          equals('https://example.com/alice.jpg'),
+        );
+        expect(
+          enriched.notifications.single.message,
+          equals('Alice liked your video'),
+        );
+
+        container.dispose();
+      });
+
+      test('merges without duplicating notifications', () async {
+        const pubkey1 = 'pubkey_aaa';
+        const pubkey2 = 'pubkey_bbb';
+        const pubkey3 = 'pubkey_ccc';
+
+        final profileA = UserProfile(
+          pubkey: pubkey1,
+          displayName: 'Alice',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_a',
+        );
+        final profileB = UserProfile(
+          pubkey: pubkey2,
+          displayName: 'Bob',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_b',
+        );
+
+        final mockNotifications = [
+          createMockRelayNotification(
+            id: 'n1',
+            sourcePubkey: pubkey1,
+            createdAtSeconds: 1700000300,
+          ),
+          createMockRelayNotification(
+            id: 'n2',
+            sourcePubkey: pubkey2,
+            createdAtSeconds: 1700000200,
+          ),
+          createMockRelayNotification(
+            id: 'n3',
+            sourcePubkey: pubkey3,
+            createdAtSeconds: 1700000100,
+          ),
+        ];
+
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: mockNotifications,
+            unreadCount: 3,
+          ),
+        );
+
+        // Only 2 of 3 pubkeys have profiles
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer(
+          (_) async => {pubkey1: profileA, pubkey2: profileB},
+        );
+
+        final container = createTestContainer(
+          profileRepository: mockProfileRepository,
+        );
+
+        await waitForLoadComplete(container);
+        final enriched = await waitForEnrichment(container);
+
+        expect(enriched.notifications, hasLength(3));
+        expect(enriched.notifications[0].actorName, equals('Alice'));
+        expect(enriched.notifications[1].actorName, equals('Bob'));
+        // Third notification has no profile — stays as "Someone"
+        expect(enriched.notifications[2].actorName, isNull);
+        expect(
+          enriched.notifications[2].message,
+          equals('Someone liked your video'),
+        );
+
+        container.dispose();
+      });
+
+      test('with null profileRepo does not crash', () async {
+        final mockNotifications = [
+          createMockRelayNotification(id: 'notif_1'),
+        ];
+
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: mockNotifications,
+            unreadCount: 1,
+          ),
+        );
+
+        // No profileRepository passed — defaults to null
+        final container = createTestContainer();
+
+        final result = await waitForLoadComplete(container);
+
+        expect(result.notifications, hasLength(1));
+        expect(result.notifications.single.actorName, isNull);
+        expect(
+          result.notifications.single.message,
+          equals('Someone liked your video'),
+        );
+
+        container.dispose();
+      });
+
+      test(
+        'enrichment merges correctly when notification ids are empty',
+        () async {
+          // Regression: when relay returns empty id, _mergeEnrichedNotifications
+          // used to put all enriched entries under the same '' key, so every
+          // notification got the last actor's name/avatar.
+          const pubkey1 = 'pubkey_alice_aaa';
+          const pubkey2 = 'pubkey_bob_bbb';
+
+          final profileA = UserProfile(
+            pubkey: pubkey1,
+            displayName: 'Alice',
+            picture: 'https://example.com/alice.jpg',
+            rawData: const {},
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+            eventId: 'event_a',
+          );
+          final profileB = UserProfile(
+            pubkey: pubkey2,
+            displayName: 'Bob',
+            picture: 'https://example.com/bob.jpg',
+            rawData: const {},
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+            eventId: 'event_b',
+          );
+
+          // Both notifications have empty id — the bug scenario
+          final mockNotifications = [
+            RelayNotification(
+              id: '',
+              sourcePubkey: pubkey1,
+              sourceEventId: 'event_1',
+              sourceKind: 7,
+              notificationType: 'reaction',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+              read: false,
+              referencedEventId: 'video_1',
+            ),
+            RelayNotification(
+              id: '',
+              sourcePubkey: pubkey2,
+              sourceEventId: 'event_2',
+              sourceKind: 7,
+              notificationType: 'reaction',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000100 * 1000),
+              read: false,
+              referencedEventId: 'video_2',
+            ),
+          ];
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: mockNotifications,
+              unreadCount: 2,
+            ),
+          );
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => {pubkey1: profileA, pubkey2: profileB},
+          );
+
+          final container = createTestContainer(
+            profileRepository: mockProfileRepository,
+          );
+
+          await waitForLoadComplete(container);
+          final enriched = await waitForEnrichment(container);
+
+          expect(enriched.notifications, hasLength(2));
+          // Each notification must have its own actor — not both "Bob"
+          expect(enriched.notifications[0].actorName, equals('Alice'));
+          expect(
+            enriched.notifications[0].actorPictureUrl,
+            equals('https://example.com/alice.jpg'),
+          );
+          expect(enriched.notifications[1].actorName, equals('Bob'));
+          expect(
+            enriched.notifications[1].actorPictureUrl,
+            equals('https://example.com/bob.jpg'),
+          );
+
+          container.dispose();
+        },
+      );
+
+      test('loadMore notifications are enriched', () async {
+        const pubkey1 = 'pubkey_initial';
+        const pubkey2 = 'pubkey_loadmore';
+
+        final profile1 = UserProfile(
+          pubkey: pubkey1,
+          displayName: 'Alice',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_1',
+        );
+        final profile2 = UserProfile(
+          pubkey: pubkey2,
+          displayName: 'Bob',
+          rawData: const {},
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          eventId: 'event_2',
+        );
+
+        var callCount = 0;
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'n1',
+                  sourcePubkey: pubkey1,
+                  createdAtSeconds: 1700000200,
+                ),
+              ],
+              unreadCount: 1,
+              nextCursor: 'cursor_1',
+              hasMore: true,
+            );
+          } else {
+            return NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'n2',
+                  sourcePubkey: pubkey2,
+                  createdAtSeconds: 1700000100,
+                ),
+              ],
+              unreadCount: 1,
+            );
+          }
+        });
+
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((invocation) async {
+          final pubkeys = invocation.namedArguments[#pubkeys] as List<String>;
+          final result = <String, UserProfile>{};
+          for (final pk in pubkeys) {
+            if (pk == pubkey1) result[pk] = profile1;
+            if (pk == pubkey2) result[pk] = profile2;
+          }
+          return result;
+        });
+
+        final container = createTestContainer(
+          profileRepository: mockProfileRepository,
+        );
+
+        // Wait for initial load + enrichment
+        await waitForLoadComplete(container);
+        await waitForEnrichment(container);
+
+        // Trigger loadMore
+        final notifier = container.read(relayNotificationsProvider.notifier);
+        await notifier.loadMore();
+
+        // Let loadMore enrichment complete
+        // Pump microtasks for the unawaited enrichment closure
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(relayNotificationsProvider).value!;
+
+        expect(state.notifications, hasLength(2));
+        expect(state.notifications[0].actorName, equals('Alice'));
+        expect(state.notifications[1].actorName, equals('Bob'));
+
+        container.dispose();
+      });
+    });
+
+    group('Cross-path dedup (REST vs WebSocket)', () {
+      test(
+        'insertFromWebSocket drops notification whose ID matches '
+        "an existing REST notification's sourceEventId",
+        () async {
+          // REST API returns a notification with server-assigned ID 'notif_1'
+          // and sourceEventId 'event_notif_1' (stored in metadata).
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'notif_1'),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // WebSocket delivers the same logical notification but using the
+          // Nostr event ID as its model ID.
+          final wsNotification = NotificationModel(
+            id: 'event_notif_1', // matches REST metadata['sourceEventId']
+            type: NotificationType.like,
+            actorPubkey: 'source_pubkey_123',
+            actorName: 'Actor',
+            message: 'Actor liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(wsNotification);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          expect(
+            result.notifications.length,
+            1,
+            reason:
+                'WebSocket notification matching sourceEventId of existing '
+                'REST notification should be dropped',
+          );
+          expect(result.notifications.first.id, 'notif_1');
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'insertFromWebSocket allows notification with non-matching '
+        'sourceEventId',
+        () async {
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'notif_1'),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // WebSocket delivers a genuinely new notification
+          final wsNotification = NotificationModel(
+            id: 'completely_new_event',
+            type: NotificationType.like,
+            actorPubkey: 'other_pubkey',
+            actorName: 'Bob',
+            message: 'Bob liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000500 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(wsNotification);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          expect(
+            result.notifications.length,
+            2,
+            reason: 'Genuinely new WebSocket notification should be inserted',
+          );
+
+          container.dispose();
+        },
+      );
+    });
+
+    group('Refresh preserves WebSocket notifications', () {
+      test(
+        'refresh merges API data with WebSocket-inserted notifications',
+        () async {
+          final refreshCompleter = Completer<NotificationsResponse>();
+          var callCount = 0;
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return NotificationsResponse(
+                notifications: [
+                  createMockRelayNotification(
+                    id: 'api_notif_1',
+                    createdAtSeconds: 1700000100,
+                  ),
+                ],
+                unreadCount: 1,
+              );
+            }
+            // Second call (refresh) waits for completer
+            return refreshCompleter.future;
+          });
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // Start refresh (will block on completer)
+          final refreshFuture = container
+              .read(relayNotificationsProvider.notifier)
+              .refresh();
+
+          // While refresh is in-flight, insert a WebSocket notification
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+
+          final wsNotification = NotificationModel(
+            id: 'ws_new_like',
+            type: NotificationType.like,
+            actorPubkey: 'ws_actor',
+            actorName: 'WebSocket User',
+            message: 'WebSocket User liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000300 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(wsNotification);
+
+          // Complete the refresh with new API data
+          refreshCompleter.complete(
+            NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'api_notif_2',
+                  createdAtSeconds: 1700000200,
+                ),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          await refreshFuture;
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          // Both the API notification AND the WebSocket notification
+          // should be present after refresh
+          final ids = result.notifications.map((n) => n.id).toSet();
+          expect(
+            ids,
+            contains('api_notif_2'),
+            reason: 'Refreshed API notification should be present',
+          );
+          expect(
+            ids,
+            contains('ws_new_like'),
+            reason:
+                'WebSocket notification inserted during refresh '
+                'should be preserved',
+          );
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'refresh deduplicates WebSocket notification that arrived via API',
+        () async {
+          final refreshCompleter = Completer<NotificationsResponse>();
+          var callCount = 0;
+
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return NotificationsResponse(
+                notifications: [
+                  createMockRelayNotification(id: 'api_1'),
+                ],
+                unreadCount: 1,
+              );
+            }
+            return refreshCompleter.future;
+          });
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // Start refresh
+          final refreshFuture = container
+              .read(relayNotificationsProvider.notifier)
+              .refresh();
+
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+
+          // WebSocket inserts a notification with Nostr event ID
+          final wsNotification = NotificationModel(
+            id: 'event_api_refresh_1', // Will match sourceEventId
+            type: NotificationType.like,
+            actorPubkey: 'source_pubkey_123',
+            actorName: 'Actor',
+            message: 'Actor liked your video',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000100 * 1000),
+          );
+
+          await container
+              .read(relayNotificationsProvider.notifier)
+              .insertFromWebSocket(wsNotification);
+
+          // Refresh returns the same notification via REST with different ID
+          // but sourceEventId = 'event_api_refresh_1'
+          refreshCompleter.complete(
+            NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'api_refresh_1'),
+              ],
+              unreadCount: 1,
+            ),
+          );
+
+          await refreshFuture;
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final state = container.read(relayNotificationsProvider);
+          final result = state.value!;
+
+          // Should have only 1 notification — not a duplicate
+          expect(
+            result.notifications.length,
+            1,
+            reason:
+                'WebSocket notification whose ID matches API '
+                'sourceEventId should be deduped during refresh merge',
+          );
+
+          container.dispose();
+        },
+      );
     });
   });
 }

@@ -23,6 +23,8 @@ environment:
   flutter: ^3.41.1
 
 workspace:
+  - packages/app_update_repository
+  - packages/app_version_client
   - packages/comments_repository
   - packages/count_formatter
   - packages/curated_list_repository
@@ -37,6 +39,7 @@ workspace:
   - packages/likes_repository
   - packages/media_cache
   - packages/models
+  - packages/notification_repository
   - packages/nostr_app_bridge_repository
   - packages/nostr_sdk
   - packages/nostr_client
@@ -99,7 +102,6 @@ dependencies:
     path: packages/divine_camera
   divine_video_player:
     path: packages/divine_video_player
-  camera_macos_plus: ^0.0.4
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
   image: ^4.1.7 # Image processing for GIF generation
@@ -136,6 +138,9 @@ dependencies:
 
   # Sound Service - Sound effects (countdown beeps, etc.)
   sound_service:
+
+  # Notification Repository - Notification enrichment and grouping
+  notification_repository:
 
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_app_bridge_repository:

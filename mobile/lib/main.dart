@@ -3,6 +3,8 @@ import 'dart:io'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart'
     as io;
 
+import 'package:app_update_repository/app_update_repository.dart';
+import 'package:app_version_client/app_version_client.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
@@ -15,6 +17,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
@@ -25,6 +28,7 @@ import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
@@ -37,7 +41,6 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -61,6 +64,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,6 +87,17 @@ bool handleKnownFrameworkError(
     return true;
   }
   return false;
+}
+
+@visibleForTesting
+Future<void> configureVideoPlayerCacheForStartup({
+  required bool isWeb,
+  required Future<void> Function() configureCache,
+}) async {
+  if (isWeb) {
+    return;
+  }
+  await configureCache();
 }
 
 Future<void> _runTimedStartupTask({
@@ -305,9 +320,10 @@ Future<void> _startOpenVineApp() async {
   // chain below (Firebase Crashlytics has no web impl), and runApp() is
   // never reached — the HTML loading spinner stays up forever with no JS
   // errors. Skip the call on web to unblock startup.
-  if (!kIsWeb) {
-    await DivineVideoPlayerController.configureCache();
-  }
+  await configureVideoPlayerCacheForStartup(
+    isWeb: kIsWeb,
+    configureCache: DivineVideoPlayerController.configureCache,
+  );
 
   StartupPerformanceService.instance.completePhase('bindings');
 
@@ -594,6 +610,9 @@ Future<void> _startOpenVineApp() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   StartupPerformanceService.instance.completePhase('shared_preferences');
 
+  // Load package info for version checking (non-blocking, fast).
+  final packageInfo = await PackageInfo.fromPlatform();
+
   // Create ProviderContainer to initialize services BEFORE runApp
   final container = ProviderContainer(
     overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
@@ -616,7 +635,10 @@ Future<void> _startOpenVineApp() async {
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: DivineApp(startupCoordinator: startupCoordinator),
+      child: DivineApp(
+        startupCoordinator: startupCoordinator,
+        packageInfo: packageInfo,
+      ),
     ),
   );
 }
@@ -821,9 +843,14 @@ void main() {
 }
 
 class DivineApp extends ConsumerStatefulWidget {
-  const DivineApp({required this.startupCoordinator, super.key});
+  const DivineApp({
+    required this.startupCoordinator,
+    required this.packageInfo,
+    super.key,
+  });
 
   final StartupCoordinator startupCoordinator;
+  final PackageInfo packageInfo;
 
   @override
   ConsumerState<DivineApp> createState() => _DivineAppState();
@@ -1258,7 +1285,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
         final newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
-          RouteType.notifications => NotificationsScreen.pathForIndex(0),
+          RouteType.notifications => NotificationsPage.pathForIndex(0),
           RouteType.explore => ExploreScreen.path,
           RouteType.profile => ProfileScreenRouter.pathForNpub(
             ctx.npub ?? 'me',
@@ -1303,7 +1330,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               router.go(ExploreScreen.path);
             }
           case 2:
-            router.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
+            router.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
           case 3:
             // Get current user's npub for profile
             final authService = ref.read(authServiceProvider);
@@ -1407,6 +1434,16 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               inviteApiService: context.read<InviteApiService>(),
             ),
           ),
+          BlocProvider(
+            create: (_) => AppUpdateBloc(
+              repository: AppUpdateRepository(
+                appVersionClient: AppVersionClient(),
+                sharedPreferences: ref.read(sharedPreferencesProvider),
+                currentVersion: widget.packageInfo.version,
+                installSource: InstallSource.sideload,
+              ),
+            )..add(const AppUpdateCheckRequested()),
+          ),
         ],
         // Global listener for email verification failures - shows snackbar
         // when verification times out or fails while user is elsewhere in app
@@ -1427,8 +1464,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               );
             }
           },
-          child: _UploadFailureListener(
-            child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+          child: UpdateDialogListener(
+            child: _UploadFailureListener(
+              child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+            ),
           ),
         ),
       ),

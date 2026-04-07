@@ -102,6 +102,27 @@ class FunnelcakeApiClient {
     };
   }
 
+  /// Builds the notifications endpoint URI for a user.
+  ///
+  /// The returned URI includes the same query parameters used by
+  /// [getNotifications] so callers can sign the exact request URL.
+  Uri notificationsUri({
+    required String pubkey,
+    int limit = 50,
+    String? cursor,
+  }) {
+    final effectiveBefore =
+        cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
+    final queryParams = <String, String>{
+      'limit': '$limit',
+      'before': effectiveBefore,
+    };
+
+    return Uri.parse(
+      '$_baseUrl/api/users/$pubkey/notifications',
+    ).replace(queryParameters: queryParams);
+  }
+
   /// Fetches videos by a specific author.
   ///
   /// [pubkey] is the author's public key (hex format).
@@ -109,8 +130,9 @@ class FunnelcakeApiClient {
   /// [offset] is an optional pagination offset.
   /// [before] is an optional Unix timestamp cursor for pagination.
   ///
-  /// Returns a record containing a list of [VideoStats] and an optional
-  /// `totalCount` parsed from the `X-Total-Count` response header.
+  /// Returns a [VideosByAuthorResponse] containing a list of [VideoStats]
+  /// and an optional `totalCount` parsed from the `X-Total-Count` response
+  /// header.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not configured.
@@ -118,7 +140,7 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails with a non-success status.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<({List<VideoStats> videos, int? totalCount})> getVideosByAuthor({
+  Future<VideosByAuthorResponse> getVideosByAuthor({
     required String pubkey,
     int limit = 50,
     int? offset,
@@ -160,7 +182,10 @@ class FunnelcakeApiClient {
             ? int.tryParse(totalCountHeader)
             : null;
 
-        return (videos: videos, totalCount: totalCount);
+        return VideosByAuthorResponse(
+          videos: videos,
+          totalCount: totalCount,
+        );
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(
           resource: 'Author videos',
@@ -1774,6 +1799,102 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch videos by category: $e');
+    }
+  }
+
+  /// Fetches notifications for a user from the relay REST API.
+  ///
+  /// Uses NIP-98 authentication. The [cursor] parameter enables pagination
+  /// via the `before` query param. The [authHeaders] parameter allows the
+  /// caller to provide pre-built NIP-98 auth headers.
+  ///
+  /// Returns an empty [NotificationResponse] on errors instead of throwing.
+  Future<NotificationResponse> getNotifications({
+    required String pubkey,
+    int limit = 50,
+    String? cursor,
+    Uri? requestUri,
+    Map<String, String>? authHeaders,
+  }) async {
+    final url =
+        requestUri ??
+        notificationsUri(
+          pubkey: pubkey,
+          limit: limit,
+          cursor: cursor,
+        );
+
+    try {
+      final response = await _httpClient
+          .get(
+            url,
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+              ...?authHeaders,
+            },
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode != 200) {
+        return const NotificationResponse(
+          notifications: [],
+          unreadCount: 0,
+          hasMore: false,
+        );
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return NotificationResponse.fromJson(json);
+    } on Object {
+      return const NotificationResponse(
+        notifications: [],
+        unreadCount: 0,
+        hasMore: false,
+      );
+    }
+  }
+
+  /// Marks notifications as read for a user.
+  ///
+  /// Pass [notificationIds] to mark specific notifications, or omit to
+  /// mark all as read. The [authHeaders] parameter allows the caller to
+  /// provide pre-built NIP-98 auth headers.
+  ///
+  /// Returns a failure [MarkReadResponse] on errors instead of throwing.
+  Future<MarkReadResponse> markNotificationsRead({
+    required String pubkey,
+    List<String>? notificationIds,
+    Map<String, String>? authHeaders,
+  }) async {
+    final url = Uri.parse('$_baseUrl/api/users/$pubkey/notifications/read');
+
+    final payload = jsonEncode({
+      'notification_ids': ?notificationIds,
+    });
+
+    try {
+      final response = await _httpClient
+          .post(
+            url,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+              ...?authHeaders,
+            },
+            body: payload,
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode != 200) {
+        return const MarkReadResponse(success: false, markedCount: 0);
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return MarkReadResponse.fromJson(json);
+    } on Object {
+      return const MarkReadResponse(success: false, markedCount: 0);
     }
   }
 

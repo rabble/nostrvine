@@ -9,6 +9,7 @@ import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -28,13 +29,27 @@ class NativeProofModeService {
   /// is not supported.
   static Future<NativeProofData?> proofFile(
     File videoFile, {
-    bool aiTrainingOptOut = true,
+    required bool aiTrainingOptOut,
     NostrCreatorBindingAssertion? creatorBindingAssertion,
     Map<String, dynamic>? cawgIdentityAssertion,
     Map<String, dynamic>? verifiedIdentityBundle,
     bool enableAdvancedCawgEmbedding = false,
+    List<DivineVideoClip>? clips,
+    Map<String, dynamic>? editorStateHistory,
   }) async {
     try {
+      // TODO(n8fr8): Incorporate clip-level proof data into the final
+      // combined proof. Each clip now carries its own attestation:
+      //
+      // Access per-clip data via the [clips] parameter:
+      //   for (final clip in clips ?? []) {
+      //     clip.proofManifestJson  // JSON string with C2PA/ProofMode data
+      //     clip.lensMetadata       // CameraLensMetadata (sensorWidth, etc.)
+      //   }
+      //
+      // Access editor transform history via [editorStateHistory]:
+      //   editorStateHistory  // Map of editor operations applied to clips
+
       // Check if native ProofMode/C2PA is available on this platform
       final isAvailable = await NativeProofModeService.isAvailable();
       if (!isAvailable) {

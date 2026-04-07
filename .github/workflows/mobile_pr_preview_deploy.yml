@@ -101,8 +101,19 @@ jobs:
           script: |
             const prNumber = Number('${{ steps.metadata.outputs.pr_number }}');
             const previewBranch = '${{ steps.metadata.outputs.preview_branch }}';
+            const headRef = '${{ steps.metadata.outputs.head_ref }}';
+            const sha = '${{ steps.metadata.outputs.head_sha }}'.slice(0, 7);
+            const runUrl =
+              `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}` +
+              `/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const updatedAt = new Date()
+              .toISOString()
+              .replace('T', ' ')
+              .replace(/\.\d+Z$/, ' UTC');
 
             const body = `## Mobile PR Preview
+
+            Last refresh: \`${sha}\` at ${updatedAt} ([preview run](${runUrl}))
 
             Preview deployment is not configured for this repository yet.
 
@@ -110,7 +121,13 @@ jobs:
             - \`CLOUDFLARE_API_TOKEN\`
             - \`CLOUDFLARE_ACCOUNT_ID\`
 
-            Once those are added, this workflow will deploy this PR to the existing \`openvine-app\` Pages project on branch \`${previewBranch}\`.`;
+            Once those are added, this workflow will deploy this PR to the existing \`openvine-app\` Pages project on branch \`${previewBranch}\`.
+
+            | Property | Value |
+            | --- | --- |
+            | Preview branch | \`${previewBranch}\` |
+            | PR branch | \`${headRef}\` |
+            | Commit | \`${sha}\` |`;
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -161,8 +178,17 @@ jobs:
             const previewBranch = '${{ steps.metadata.outputs.preview_branch }}';
             const sha = '${{ steps.metadata.outputs.head_sha }}'.slice(0, 7);
             const deploymentUrl = '${{ steps.deploy.outputs.deployment-url }}';
+            const runUrl =
+              `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}` +
+              `/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const updatedAt = new Date()
+              .toISOString()
+              .replace('T', ' ')
+              .replace(/\.\d+Z$/, ' UTC');
 
             const body = `## Mobile PR Preview
+
+            Last refresh: \`${sha}\` at ${updatedAt} ([preview run](${runUrl}))
 
             | Property | Value |
             | --- | --- |

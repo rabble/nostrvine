@@ -53,6 +53,22 @@ class Nostr {
     _cachedPublicKey = key ?? '';
   }
 
+  /// Returns the cached public key, refreshing from the signer if empty.
+  ///
+  /// Throws [StateError] if the signer has no public key available
+  /// (e.g. not yet configured or session expired).
+  Future<String> _ensurePublicKey() async {
+    if (_cachedPublicKey.isEmpty) {
+      await refreshPublicKey();
+    }
+    if (_cachedPublicKey.isEmpty) {
+      throw StateError(
+        'No public key available — signer may not be configured',
+      );
+    }
+    return _cachedPublicKey;
+  }
+
   RelayPool get relayPool => _pool;
 
   Future<Event?> sendLike(
@@ -80,7 +96,8 @@ class Nostr {
       tags.add(["k", targetKind.toString()]);
     }
 
-    Event event = Event(_cachedPublicKey, EventKind.reaction, tags, content);
+    final pk = await _ensurePublicKey();
+    Event event = Event(pk, EventKind.reaction, tags, content);
     return await sendEvent(
       event,
       tempRelays: tempRelays,
@@ -93,7 +110,8 @@ class Nostr {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    Event event = Event(_cachedPublicKey, EventKind.eventDeletion, [
+    final pk = await _ensurePublicKey();
+    Event event = Event(pk, EventKind.eventDeletion, [
       ["e", eventId],
     ], "delete");
     return await sendEvent(
@@ -113,12 +131,8 @@ class Nostr {
       tags.add(["e", eventId]);
     }
 
-    Event event = Event(
-      _cachedPublicKey,
-      EventKind.eventDeletion,
-      tags,
-      "delete",
-    );
+    final pk = await _ensurePublicKey();
+    Event event = Event(pk, EventKind.eventDeletion, tags, "delete");
     return await sendEvent(
       event,
       tempRelays: tempRelays,
@@ -137,7 +151,8 @@ class Nostr {
     if (StringUtil.isNotBlank(relayAddr)) {
       tag.add(relayAddr!);
     }
-    Event event = Event(_cachedPublicKey, EventKind.repost, [tag], content);
+    final pk = await _ensurePublicKey();
+    Event event = Event(pk, EventKind.repost, [tag], content);
     return await sendEvent(
       event,
       tempRelays: tempRelays,
@@ -152,7 +167,8 @@ class Nostr {
     List<String>? targetRelays,
   }) async {
     final tags = contacts.toJson();
-    final event = Event(_cachedPublicKey, EventKind.contactList, tags, content);
+    final pk = await _ensurePublicKey();
+    final event = Event(pk, EventKind.contactList, tags, content);
     return await sendEvent(
       event,
       tempRelays: tempRelays,
