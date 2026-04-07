@@ -174,13 +174,13 @@ class _NoResultsState extends StatelessWidget {
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 16,
           children: [
             const DivineIcon(
               icon: DivineIconName.search,
               color: VineTheme.secondaryText,
               size: 64,
             ),
-            const SizedBox(height: 16),
             Text(
               'No lists found for "$query"',
               style: VineTheme.titleSmallFont(),
@@ -203,13 +203,13 @@ class _FailureState extends StatelessWidget {
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 16,
           children: [
             const DivineIcon(
               icon: DivineIconName.warningCircle,
               color: VineTheme.error,
               size: 64,
             ),
-            const SizedBox(height: 16),
             Text(
               'Search failed',
               style: VineTheme.bodyMediumFont(color: VineTheme.lightText),

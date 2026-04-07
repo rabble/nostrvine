@@ -409,3 +409,35 @@ Semantics(
   ),
 );
 ```
+
+Wrap tappable cards and tiles with `Semantics` so screen readers announce meaningful content:
+
+```dart
+Semantics(
+  label: curatedList.name,
+  container: true,
+  child: GestureDetector(
+    onTap: onTap,
+    child: ...,
+  ),
+);
+```
+
+### Fixed Overlay Badges
+Small badges overlaid on images (e.g. video count, duration) should not scale with system text size — scaling breaks the fixed layout. Wrap badge content with `MediaQuery.withNoTextScaling`:
+
+```dart
+// Good — badge stays fixed size regardless of system text scale
+MediaQuery.withNoTextScaling(
+  child: DecoratedBox(
+    decoration: BoxDecoration(...),
+    child: Text('3', style: VineTheme.labelSmallFont()),
+  ),
+)
+
+// Bad — badge grows with system font size, overflows container
+DecoratedBox(
+  decoration: BoxDecoration(...),
+  child: Text('3', style: VineTheme.labelSmallFont()),
+)
+```

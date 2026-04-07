@@ -22,24 +22,28 @@ class CuratedListSearchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _VideoListThumbnail(
-            imageUrl: curatedList.imageUrl,
-            videoCount: curatedList.videoEventIds.length,
-          ),
-          const SizedBox(height: 8),
-          _ListTitle(title: curatedList.name),
-          if (curatedList.description != null &&
-              curatedList.description!.isNotEmpty) ...[
-            const SizedBox(height: 2),
-            _ListDescription(description: curatedList.description!),
+    return Semantics(
+      label: curatedList.name,
+      container: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _VideoListThumbnail(
+              imageUrl: curatedList.imageUrl,
+              videoCount: curatedList.videoEventIds.length,
+            ),
+            const SizedBox(height: 8),
+            _ListTitle(title: curatedList.name),
+            if (curatedList.description != null &&
+                curatedList.description!.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              _ListDescription(description: curatedList.description!),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -125,31 +129,29 @@ class _CountBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.backgroundColor.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 4,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.play,
-              color: VineTheme.whiteText,
-              size: 12,
-            ),
-            Text(
-              '$count',
-              style: const TextStyle(
+    return MediaQuery.withNoTextScaling(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: VineTheme.backgroundColor.withValues(alpha: 0.65),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [
+              const DivineIcon(
+                icon: DivineIconName.play,
                 color: VineTheme.whiteText,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+                size: 12,
               ),
-            ),
-          ],
+              Text(
+                '$count',
+                style: VineTheme.labelSmallFont(),
+              ),
+            ],
+          ),
         ),
       ),
     );
