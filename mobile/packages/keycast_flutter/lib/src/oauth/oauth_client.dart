@@ -134,6 +134,17 @@ class KeycastOAuth {
     }
   }
 
+  /// Get an active session, refreshing if the current one is expired.
+  ///
+  /// Tries [getSession] first. If that returns `null` (no session stored or
+  /// token expired), falls back to [refreshSession] to obtain a fresh token.
+  /// Returns `null` only when no session can be recovered at all.
+  Future<KeycastSession?> getSessionOrRefresh() async {
+    final session = await getSession();
+    if (session != null) return session;
+    return refreshSession();
+  }
+
   /// Generate authorization URL for OAuth flow
   /// Automatically uses stored authorization handle for silent re-auth if available
   ///

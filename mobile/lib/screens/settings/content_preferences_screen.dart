@@ -3,7 +3,7 @@
 
 import 'dart:ui';
 
-import 'package:camera_macos_plus/camera_macos.dart';
+import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +61,7 @@ class ContentPreferencesScreen extends ConsumerWidget {
               ),
               const _AccountContentLabelsTile(),
               const _AudioSharingToggle(),
-              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS)
+              if (!kIsWeb && defaultTargetPlatform != TargetPlatform.linux)
                 const _AudioDeviceSelector(),
             ],
           ),
@@ -501,10 +501,8 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
   Widget build(BuildContext context) {
     final audioDevicePref = ref.watch(audioDevicePreferenceServiceProvider);
 
-    return FutureBuilder<List<CameraMacOSDevice>>(
-      future: CameraMacOS.instance.listDevices(
-        deviceType: CameraMacOSDeviceType.audio,
-      ),
+    return FutureBuilder<List<AudioDevice>>(
+      future: DivineCamera.instance.listAudioDevices(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.length <= 1) {
           return const SizedBox.shrink();
@@ -517,9 +515,9 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
         if (currentDevice == null) {
           currentDisplayName = 'Auto (recommended)';
         } else {
-          final device = devices.where((d) => d.deviceId == currentDevice);
+          final device = devices.where((d) => d.id == currentDevice);
           currentDisplayName = device.isNotEmpty
-              ? _formatAudioDeviceName(device.first.deviceId)
+              ? _formatAudioDeviceName(device.first.name)
               : 'Auto (recommended)';
         }
 
@@ -544,22 +542,13 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
     );
   }
 
-  String _formatAudioDeviceName(String deviceId) {
-    if (deviceId.toLowerCase().contains('builtinmicrophone')) {
-      return 'Built-in Microphone';
-    }
-    if (deviceId.toLowerCase().contains('zoom')) {
-      return 'Zoom Audio Device';
-    }
-    return deviceId
-        .replaceAll('Device', '')
-        .replaceAll('device', '')
-        .replaceAll(RegExp('[0-9a-f]{8}-[0-9a-f]{4}-.*'), '')
-        .trim();
+  String _formatAudioDeviceName(String name) {
+    if (name.isEmpty) return 'Unknown Microphone';
+    return name;
   }
 
   Future<void> _showAudioDevicePicker(
-    List<CameraMacOSDevice> devices,
+    List<AudioDevice> devices,
     String? currentDevice,
   ) async {
     final audioDevicePref = ref.read(audioDevicePreferenceServiceProvider);
@@ -614,17 +603,17 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
             ...devices.map(
               (device) => ListTile(
                 leading: Icon(
-                  currentDevice == device.deviceId
+                  currentDevice == device.id
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off,
                   color: VineTheme.vineGreen,
                 ),
                 title: Text(
-                  _formatAudioDeviceName(device.deviceId),
+                  _formatAudioDeviceName(device.name),
                   style: const TextStyle(color: VineTheme.whiteText),
                 ),
                 subtitle: Text(
-                  device.deviceId,
+                  device.id,
                   style: const TextStyle(
                     color: VineTheme.lightText,
                     fontSize: 11,
@@ -632,7 +621,7 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 onTap: () async {
-                  await audioDevicePref.setPreferredDeviceId(device.deviceId);
+                  await audioDevicePref.setPreferredDeviceId(device.id);
                   if (context.mounted) {
                     setState(() {});
                     Navigator.pop(context);

@@ -1,21 +1,28 @@
-// ABOUTME: Widget tests for VideoEditorSticker - displays asset or network stickers.
-// ABOUTME: Tests rendering, caching behavior, and error states.
+// ABOUTME: Widget tests for VideoEditorSticker - displays SVG asset or network stickers.
+// ABOUTME: Tests rendering paths for local SVG assets vs network images.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show StickerData;
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 
 void main() {
-  group('VideoEditorSticker', () {
-    const testSticker = StickerData.asset(
-      'assets/stickers/test.png',
+  group(VideoEditorSticker, () {
+    const assetSticker = StickerData.asset(
+      'assets/stickers/test.svg',
       description: 'Test sticker',
       tags: ['test'],
     );
 
+    const networkSticker = StickerData.network(
+      'https://example.com/sticker.png',
+      description: 'Network sticker',
+      tags: ['network'],
+    );
+
     Widget buildTestWidget({
-      StickerData sticker = testSticker,
+      StickerData sticker = assetSticker,
       bool? enableLimitCacheSize,
       double size = 100,
     }) {
@@ -33,41 +40,37 @@ void main() {
       );
     }
 
-    testWidgets('renders asset image when assetPath is provided', (
-      tester,
-    ) async {
+    testWidgets('renders SvgPicture for asset stickers', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.byType(Image), findsOneWidget);
+      expect(find.byType(SvgPicture), findsOneWidget);
     });
 
-    testWidgets('is centered', (tester) async {
-      await tester.pumpWidget(buildTestWidget(size: 200));
+    testWidgets('skips LayoutBuilder for asset stickers', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
 
-      expect(find.byType(Center), findsOneWidget);
+      expect(find.byType(LayoutBuilder), findsNothing);
     });
 
-    testWidgets('uses LayoutBuilder when enableLimitCacheSize is true', (
+    testWidgets('uses LayoutBuilder for network stickers with cache sizing', (
       tester,
     ) async {
-      await tester.pumpWidget(buildTestWidget(enableLimitCacheSize: true));
+      await tester.pumpWidget(
+        buildTestWidget(sticker: networkSticker, enableLimitCacheSize: true),
+      );
 
       expect(find.byType(LayoutBuilder), findsOneWidget);
     });
 
     testWidgets(
-      'does not use LayoutBuilder when enableLimitCacheSize is false',
+      'does not use LayoutBuilder for network stickers without cache sizing',
       (tester) async {
-        await tester.pumpWidget(buildTestWidget(enableLimitCacheSize: false));
+        await tester.pumpWidget(
+          buildTestWidget(sticker: networkSticker, enableLimitCacheSize: false),
+        );
 
         expect(find.byType(LayoutBuilder), findsNothing);
       },
     );
-
-    testWidgets('enableLimitCacheSize defaults to true', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      expect(find.byType(LayoutBuilder), findsOneWidget);
-    });
   });
 }

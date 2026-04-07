@@ -190,7 +190,11 @@ class VideoFeedController extends ChangeNotifier {
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
 
-  static const _maxStallRetries = 1;
+  /// How many zero-duration rebuffer cycles to tolerate before marking the
+  /// video as an error. Set to 2 so a single transient network hiccup doesn't
+  /// immediately kill playback — but a genuinely broken stream still fails
+  /// within a few seconds.
+  static const _maxStallRetries = 2;
 
   /// Stale-position recovery: tracks the last observed position and how many
   /// consecutive heartbeats it has remained unchanged while the player reports
@@ -1057,7 +1061,7 @@ class VideoFeedController extends ChangeNotifier {
         'positionMs=${player.state.position.inMilliseconds} '
         '${_videoDebugDetails(index)}',
       );
-      unawaited(_resume(index, player));
+      unawaited(_resume(index, player, forcePlay: false));
 
       // Start position callback timer for current video
       _startPositionTimer(index);
@@ -1264,7 +1268,11 @@ class VideoFeedController extends ChangeNotifier {
   /// videos, or from [_pauseVideo] for swiped-away videos). Seeking while
   /// paused avoids the mpv renderer stall that occurs when seeking a playing
   /// HLS stream.
-  Future<void> _resume(int index, Player player) async {
+  Future<void> _resume(
+    int index,
+    Player player, {
+    bool forcePlay = true,
+  }) async {
     try {
       // Seek to zero only when the video has reached the end so it loops.
       // Mid-playback position is preserved for swiped-away videos.
@@ -1286,9 +1294,13 @@ class VideoFeedController extends ChangeNotifier {
       if (_loadedPlayers[index]?.player != player) return;
 
       await player.setVolume(_desiredPlayerVolume);
-      await player.play();
+      final issuedPlay = forcePlay || !player.state.playing;
+      if (issuedPlay) {
+        await player.play();
+      }
       _logDebug(
         'play_started ${_videoDebugDetails(index)} '
+        'issuedPlay=$issuedPlay '
         'playing=${player.state.playing} '
         'elapsedMs=${_loadStopwatches[index]?.elapsedMilliseconds}',
       );

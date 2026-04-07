@@ -9,7 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -22,7 +24,6 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
@@ -395,7 +396,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                           // For Notifications, index 0 is the base state
                           case RouteType.notifications when ctx.videoIndex != 0:
                             return context.go(
-                              NotificationsScreen.pathForIndex(0),
+                              NotificationsPage.pathForIndex(0),
                             );
                           default:
                             break;
@@ -433,7 +434,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                             }
                           case 2:
                             return context.go(
-                              NotificationsScreen.pathForIndex(lastIndex ?? 0),
+                              NotificationsPage.pathForIndex(lastIndex ?? 0),
                             );
                           case 3:
                             final authService = ref.read(authServiceProvider);
@@ -479,7 +480,14 @@ class _AppShellState extends ConsumerState<AppShell> {
                       ),
                     ],
             ),
-      body: child,
+      body: currentIndex == 0
+          ? Column(
+              children: [
+                Expanded(child: child),
+                const UpdateBanner(),
+              ],
+            )
+          : child,
       // Bottom nav visible for all shell routes (search, tabs, etc.)
       // For search (currentIndex=-1), no tab is highlighted
       bottomNavigationBar: Container(

@@ -17,7 +17,10 @@ const _maxPeoplePreview = 3;
 /// Returns a [SliverMainAxisGroup] so the header and content participate
 /// natively in the parent [CustomScrollView]'s sliver protocol.
 class PeopleSection extends StatelessWidget {
-  const PeopleSection({this.onSeeAll, super.key});
+  const PeopleSection({this.showAll = false, this.onSeeAll, super.key});
+
+  /// When true, shows all results instead of a limited preview.
+  final bool showAll;
 
   /// Called when the user taps the "See all" chevron.
   final VoidCallback? onSeeAll;
@@ -26,24 +29,25 @@ class PeopleSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverMainAxisGroup(
       slivers: [
-        SliverToBoxAdapter(
-          child: SectionHeader(title: 'People', onTap: onSeeAll),
-        ),
-        SliverToBoxAdapter(child: _PeopleContent()),
+        if (!showAll)
+          SliverToBoxAdapter(
+            child: SectionHeader(title: 'People', onTap: onSeeAll),
+          ),
+        SliverToBoxAdapter(child: _PeopleContent(showAll: showAll)),
       ],
     );
   }
 }
 
 class _PeopleContent extends StatelessWidget {
+  const _PeopleContent({this.showAll = false});
+
+  final bool showAll;
+
   @override
   Widget build(BuildContext context) {
-    final status = context.select(
-      (UserSearchBloc bloc) => bloc.state.status,
-    );
-    final results = context.select(
-      (UserSearchBloc bloc) => bloc.state.results,
-    );
+    final status = context.select((UserSearchBloc bloc) => bloc.state.status);
+    final results = context.select((UserSearchBloc bloc) => bloc.state.results);
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
       return const Padding(
@@ -56,7 +60,9 @@ class _PeopleContent extends StatelessWidget {
 
     if (results.isEmpty) return const SizedBox.shrink();
 
-    final profiles = results.take(_maxPeoplePreview).toList();
+    final profiles = showAll
+        ? results
+        : results.take(_maxPeoplePreview).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

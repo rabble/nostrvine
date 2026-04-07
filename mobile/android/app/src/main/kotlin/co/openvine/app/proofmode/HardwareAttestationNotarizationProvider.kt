@@ -35,7 +35,7 @@ class HardwareAttestationNotarizationProvider (_context: Context) : Notarization
     }
 
     override fun getProof(p0: String?): String? {
-        TODO("Not yet implemented")
+        return null
     }
 
     override fun getNotarizationFileExtension(): String? {

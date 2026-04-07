@@ -46,6 +46,8 @@ void main() {
         () => mockDmRepository.watchPotentialRequests(),
       ).thenAnswer((_) => Stream.value(const []));
       when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
+      when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
+      when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
 
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
       when(() => mockAuthService.isAuthenticated).thenReturn(true);

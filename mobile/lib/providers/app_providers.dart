@@ -31,6 +31,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/categories_repository.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/dm_sync_state.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
@@ -1223,22 +1224,19 @@ HashtagService hashtagService(Ref ref) {
   return HashtagService(videoEventService, cacheService);
 }
 
-/// Social service depends on Nostr service, Auth service, and ProfileRepository
+/// Social service for follow sets (NIP-51 Kind 30000).
+///
+/// Follower count stats have moved to [FollowRepository].
 @Riverpod(keepAlive: true)
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
-  final profileRepository = ref.watch(profileRepositoryProvider);
-
-  final env = ref.watch(currentEnvironmentProvider);
 
   return SocialService(
     nostrService,
     authService,
     personalEventCache: personalEventCache,
-    profileRepository: profileRepository,
-    indexerRelayUrls: env.indexerRelays,
   );
 }
 
@@ -1289,10 +1287,13 @@ FollowRepository followRepository(Ref ref) {
 
   final env = ref.watch(currentEnvironmentProvider);
 
+  final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
     funnelcakeApiClient: funnelcakeApiClient,
+    profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
@@ -1305,11 +1306,6 @@ FollowRepository followRepository(Ref ref) {
             );
           }
         : null,
-    fetchFollowerCount: (pubkey) async {
-      final socialService = ref.read(socialServiceProvider);
-      final stats = await socialService.getFollowerStats(pubkey);
-      return stats['followers'] ?? 0;
-    },
   );
 
   // Register executors with pending action service for sync
@@ -1939,14 +1935,13 @@ BugReportService bugReportService(Ref ref) {
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -1954,29 +1949,30 @@ BugReportService bugReportService(Ref ref) {
 DmRepository dmRepository(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final db = ref.watch(databaseProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
 
   final repository = DmRepository(
     nostrClient: nostrService,
     directMessagesDao: db.directMessagesDao,
     conversationsDao: db.conversationsDao,
+    syncState: DmSyncState(prefs),
   );
 
   ref.onDispose(repository.stopListening);
 
-  // Initialize when the signer's public key is available.
+  // Set credentials when the signer's public key is available.
+  // This does NOT start the relay subscription — that is lazy (#2766).
   if (ref.watch(isNostrReadyProvider)) {
-    // Use the signer's public key as the single source of truth.
-    // This is populated by Nostr.refreshPublicKey() during initialization
-    // (guarded by isNostrReadyProvider above) and always reflects the
-    // active signer — whether local keys, Keycast RPC, Amber, or bunker.
     final publicKey = nostrService.publicKey;
     if (publicKey.isNotEmpty) {
-      // Reuse the signer from the main NostrClient. This is the same signer
-      // created by NostrServiceFactory.create() and is guaranteed to work for
-      // NIP-44 operations (signing, encrypting, decrypting).
       final signer = nostrService.signer;
 
-      repository.initialize(
+      // initialize() wires credentials only — it does NOT open the
+      // gift-wrap subscription. The inbox screen (InboxPage) starts the
+      // subscription via startListening() on mount and tears it down on
+      // dispose so cold start does no DM network/decrypt work.
+      // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+      repository.setCredentials(
         userPubkey: publicKey,
         signer: signer,
         messageService: NIP17MessageService(

@@ -1,0 +1,23 @@
+name: notification_repository
+description: >-
+  Repository for fetching, enriching, grouping, and managing
+  notifications via the FunnelCake REST API.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  db_client:
+  equatable: ^2.0.5
+  funnelcake_api_client:
+  models:
+  nostr_client:
+  profile_repository:
+
+dev_dependencies:
+  mocktail: ^1.0.4
+  test: ^1.26.3
+  very_good_analysis: ^10.0.0

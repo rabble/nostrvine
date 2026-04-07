@@ -300,7 +300,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               isOwnProfile: widget.isOwnProfile,
               videoCount: widget.totalVideoCount ?? widget.videos.length,
               profile: widget.profile,
-              profileStats: widget.profileStats,
               onSetupProfile: widget.onSetupProfile,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,

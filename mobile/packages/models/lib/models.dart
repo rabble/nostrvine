@@ -1,6 +1,7 @@
 /// A package containing data models used across the application.
 library;
 
+export 'src/actor_info.dart';
 export 'src/aspect_ratio.dart';
 export 'src/bug_report_data.dart';
 export 'src/bug_report_result.dart';
@@ -24,6 +25,7 @@ export 'src/nip71_video_kinds.dart';
 export 'src/nip94_metadata.dart';
 export 'src/nostr_app_audit_event.dart';
 export 'src/nostr_app_directory_entry.dart';
+export 'src/notification_item.dart';
 export 'src/notification_model.dart';
 export 'src/paginated_pubkeys.dart';
 export 'src/pending_upload.dart';

@@ -25,12 +25,18 @@ class NotificationTargetResolver {
       return null;
     }
 
-    if (event.kind == NIP71VideoKinds.shortVideo ||
-        event.kind == NIP71VideoKinds.addressableNormalVideo ||
-        event.kind == NIP71VideoKinds.addressableShortVideo) {
+    if (NIP71VideoKinds.isAcceptableVideoKind(event.kind)) {
       return targetId;
     }
 
+    // NIP-22: uppercase E tag = root scope, always points to root video
+    for (final tag in event.tags) {
+      if (tag.length >= 2 && tag[0] == 'E' && tag[1].isNotEmpty) {
+        return tag[1];
+      }
+    }
+
+    // Fallback: lowercase e tags (NIP-10 style / older events)
     String? replyId;
     String? firstEtagId;
 

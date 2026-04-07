@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
@@ -132,7 +133,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     if (waitlistEmail != null) {
       return _InviteSheetPage(
         showBackButton: false,
-        illustrationAsset: 'assets/stickers/confetti.png',
+        illustrationAsset: 'assets/stickers/confetti.svg',
         title: "You're in!",
         body: RichText(
           textAlign: TextAlign.center,
@@ -185,7 +186,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
         if (state.configStatus == InviteGateConfigStatus.failure ||
             state.config == null) {
           return _InviteSheetPage(
-            illustrationAsset: 'assets/stickers/alert.png',
+            illustrationAsset: 'assets/stickers/alert.svg',
             title: 'Invite access is temporarily unavailable.',
             body: const Text(
               'Try again in a moment, or contact support if you need help getting in.',
@@ -559,11 +560,10 @@ class _InviteSheetPage extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        Image.asset(
+                        SvgPicture.asset(
                           illustrationAsset,
                           width: 132,
                           height: 132,
-                          fit: BoxFit.contain,
                         ),
                         const SizedBox(height: 32),
                         Text(

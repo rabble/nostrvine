@@ -2318,6 +2318,59 @@ void main() {
       });
 
       test(
+        'current video restores volume without replaying '
+        'when initial buffering ends and playback is already running',
+        () async {
+          final bufferingSetups = <String, MockPlayerSetup>{};
+          final bufferingPool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup(
+                isPlaying: true,
+                isBuffering: true,
+              );
+              bufferingSetups[url] = setup;
+
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+              when(mockPooledPlayer.clearRecycled).thenReturn(null);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              return mockPooledPlayer;
+            },
+          );
+
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: bufferingPool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup0 = bufferingSetups[videos[0].url]!;
+
+          clearInteractions(setup0.player);
+
+          setup0.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(() => setup0.player.setVolume(100)).called(1);
+          verifyNever(setup0.player.play);
+
+          controller.dispose();
+          for (final setup in bufferingSetups.values) {
+            await setup.dispose();
+          }
+          await bufferingPool.dispose();
+        },
+      );
+
+      test(
         'current video explicitly resumes playback when initial buffering ends',
         () async {
           final bufferingSetups = <String, MockPlayerSetup>{};
@@ -2975,8 +3028,8 @@ void main() {
       });
 
       test(
-        'allows the first real zero-duration rebuffer recovery before '
-        'marking error on the second',
+        'allows two zero-duration rebuffer recoveries before '
+        'marking error on the third',
         () async {
           final videos = createTestVideos(count: 1);
           final controller = VideoFeedController(videos: videos, pool: pool);
@@ -3005,7 +3058,18 @@ void main() {
 
           clearInteractions(setup.player);
 
-          // Second real rebuffer cycle with no media metadata: give up.
+          // Second real rebuffer cycle: still recovers (maxStallRetries = 2).
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+          verify(setup.player.play).called(greaterThanOrEqualTo(1));
+
+          clearInteractions(setup.player);
+
+          // Third real rebuffer cycle with no media metadata: give up.
           setup.bufferingController.add(true);
           await Future<void>.delayed(const Duration(milliseconds: 10));
           setup.bufferingController.add(false);
