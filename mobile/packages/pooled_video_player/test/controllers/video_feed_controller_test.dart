@@ -4917,7 +4917,8 @@ void main() {
         final controller = VideoFeedController(videos: videos, pool: pool);
         // Activate video 0 so player0 is created
         controller.onPageChanged(0);
-        // Ensure videos 1 and 2 are loaded (preload window should load them, but we guarantee)
+        // Ensure videos 1 and 2 are loaded
+        // (preload window should load them, but we guarantee)
         await pool.getPlayer(videos[1].url);
         await pool.getPlayer(videos[2].url);
         await Future.delayed(
@@ -4953,7 +4954,7 @@ void main() {
         // Simulate swipe to page 1.6 (difference 1.6 > 0.5, target index = 2)
         controller.handleScrollProgress(1.6);
         // Allow async calls (_pauseVideo, _playVideo) to complete
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Verify that player0.pause() was called (via _pauseVideo)
         verify(() => player0.pause()).called(1);
@@ -4970,9 +4971,12 @@ void main() {
         final controller = VideoFeedController(videos: videos, pool: pool);
         // Activate video 0 so player0 is created
         controller.onPageChanged(0);
-        // Ensure video 1 is loaded (preload window should load it, but we guarantee)
+        // Ensure video 1 is loaded
+        // (preload window should load it, but we guarantee)
         await pool.getPlayer(videos[1].url);
-        await Future.delayed(Duration.zero); // allow load states to update
+        await Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        ); // allow load states to update
         final player0 = playerSetups[videos[0].url]!.player;
         final player1 = playerSetups[videos[1].url]!.player;
         final state0 = playerSetups[videos[0].url]!.state;
@@ -5038,7 +5042,7 @@ void main() {
         // Simulate swipe backward to page 1.4 (difference 0.6 > 0.5, target index = 1)
         controller.handleScrollProgress(1.4);
         // Allow async calls (_pauseVideo, _playVideo) to complete
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Verify that player2.pause() was called (via _pauseVideo)
         verify(() => player2.pause()).called(1);
@@ -5057,7 +5061,7 @@ void main() {
         controller.onPageChanged(0);
         // Ensure video 1 is loaded (target for forward swipe)
         await pool.getPlayer(videos[1].url);
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         final player0 = playerSetups[videos[0].url]!.player;
         final player1 = playerSetups[videos[1].url]!.player;
         // Clear any interactions that occurred during loading
@@ -5066,7 +5070,7 @@ void main() {
 
         // First cross threshold forward (page 0.6, target index = 1)
         controller.handleScrollProgress(0.6);
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         verify(() => player0.pause()).called(1);
         verify(() => player1.play()).called(1);
 
@@ -5076,7 +5080,7 @@ void main() {
 
         // Reverse back across threshold (page 0.4, distance < 0.5)
         controller.handleScrollProgress(0.4);
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Should pause player1 and play player0 (revert)
         verify(() => player1.pause()).called(1);
@@ -5102,7 +5106,9 @@ void main() {
         controller.onPageChanged(0);
         // Ensure video 1 is loaded (preload window should load it, but we guarantee)
         await pool.getPlayer(videos[1].url);
-        await Future.delayed(Duration.zero); // allow load states to update
+        await Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        ); // allow load states to update
         final player0 = playerSetups[videos[0].url]!.player;
         final player1 = playerSetups[videos[1].url]!.player;
 
@@ -5130,7 +5136,7 @@ void main() {
         controller.onPageChanged(0);
         // Ensure video 1 is loaded
         await pool.getPlayer(videos[1].url);
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         final player0 = playerSetups[videos[0].url]!.player;
         final player1 = playerSetups[videos[1].url]!.player;
         final state0 = playerSetups[videos[0].url]!.state;
@@ -5155,7 +5161,7 @@ void main() {
 
         // Cross threshold forward from index 0 to 1 (page 0.6)
         controller.handleScrollProgress(0.6);
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Even though video 0 is already paused, _pauseVideo should still be called
         // because the controller doesn't check playing state before pausing.
@@ -5196,7 +5202,7 @@ void main() {
           controller.onPageChanged(0);
           // Ensure video 1 is loaded
           await pool.getPlayer(videos[1].url);
-          await Future.delayed(Duration.zero);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
           final player0 = playerSetups[videos[0].url]!.player;
           final player1 = playerSetups[videos[1].url]!.player;
 
