@@ -118,10 +118,6 @@ class DivineSticker extends StatelessWidget {
       sticker.assetPath,
       width: size,
       height: size,
-      placeholderBuilder: (_) {
-        debugPrint('Failed to load sticker ${sticker.assetPath}');
-        return SizedBox(width: size, height: size);
-      },
     );
   }
 }
