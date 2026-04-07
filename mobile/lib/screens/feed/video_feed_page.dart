@@ -467,6 +467,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       controller: controller,
                       onScrollOffsetChanged: (page) =>
                           _pagePosition.value = page,
+                      enableMidSwipePlayback: true,
                       itemBuilder: (context, video, index, {required isActive}) {
                         final originalEvent = eventsById[video.id];
                         if (originalEvent == null) {

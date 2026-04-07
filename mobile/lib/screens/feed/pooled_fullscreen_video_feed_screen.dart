@@ -478,6 +478,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                     onNearEnd: (index) => _onNearEnd(state, index),
                     nearEndThreshold: 0,
                     onScrollOffsetChanged: (page) => _pagePosition.value = page,
+                    enableMidSwipePlayback: true,
                     maxLoopDuration: VideoEditorConstants.maxDuration,
                     itemBuilder: (context, video, index, {required isActive}) {
                       if (state.videos.isEmpty) {
