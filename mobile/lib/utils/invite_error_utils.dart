@@ -1,9 +1,9 @@
 // ABOUTME: Shared invite activation error mapping for auth and onboarding flows
 
-import 'package:openvine/services/api_service.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 
 class InviteErrorUtils {
-  static String activationFailureMessage(ApiException error) {
+  static String activationFailureMessage(InviteApiException error) {
     final statusCode = error.statusCode;
     final normalizedMessage = error.message.toLowerCase();
 

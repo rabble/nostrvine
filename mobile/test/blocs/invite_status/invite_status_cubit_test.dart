@@ -2,16 +2,15 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
-import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/services/invite_api_service.dart';
 
-class _MockInviteApiService extends Mock implements InviteApiService {}
+class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 void main() {
   group(InviteStatusCubit, () {
-    late _MockInviteApiService mockInviteApiService;
+    late _MockInviteApiClient mockInviteApiClient;
 
     const testStatus = InviteStatus(
       canInvite: true,
@@ -29,11 +28,11 @@ void main() {
     );
 
     setUp(() {
-      mockInviteApiService = _MockInviteApiService();
+      mockInviteApiClient = _MockInviteApiClient();
     });
 
     InviteStatusCubit buildCubit() => InviteStatusCubit(
-      inviteApiService: mockInviteApiService,
+      inviteApiClient: mockInviteApiClient,
     );
 
     test('initial state is correct', () {
@@ -48,7 +47,7 @@ void main() {
       'load emits loading then loaded with invite status',
       setUp: () {
         when(
-          () => mockInviteApiService.getInviteStatus(),
+          () => mockInviteApiClient.getInviteStatus(),
         ).thenAnswer((_) async => testStatus);
       },
       build: buildCubit,
@@ -66,7 +65,7 @@ void main() {
       'load emits loading then error on failure',
       setUp: () {
         when(
-          () => mockInviteApiService.getInviteStatus(),
+          () => mockInviteApiClient.getInviteStatus(),
         ).thenThrow(Exception('network error'));
       },
       build: buildCubit,
@@ -82,7 +81,7 @@ void main() {
       'load does not re-fetch if already loading',
       setUp: () {
         when(
-          () => mockInviteApiService.getInviteStatus(),
+          () => mockInviteApiClient.getInviteStatus(),
         ).thenAnswer((_) async => testStatus);
       },
       build: buildCubit,
@@ -92,7 +91,7 @@ void main() {
       act: (cubit) => cubit.load(),
       expect: () => <InviteStatusState>[],
       verify: (_) {
-        verifyNever(() => mockInviteApiService.getInviteStatus());
+        verifyNever(() => mockInviteApiClient.getInviteStatus());
       },
     );
 
@@ -100,7 +99,7 @@ void main() {
       'load after error re-fetches successfully',
       setUp: () {
         when(
-          () => mockInviteApiService.getInviteStatus(),
+          () => mockInviteApiClient.getInviteStatus(),
         ).thenAnswer((_) async => testStatus);
       },
       build: buildCubit,

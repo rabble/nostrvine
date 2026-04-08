@@ -73,7 +73,7 @@ class _LoadedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unclaimed = inviteStatus.unclaimedCodes;
-    final claimed = inviteStatus.codes.where((c) => c.claimed).toList();
+    final claimed = inviteStatus.claimedCodes;
 
     if (unclaimed.isEmpty && claimed.isEmpty) {
       return const Center(
@@ -135,12 +135,7 @@ class _InviteCodeCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Expanded(
-              child: Text(
-                code.code,
-                style: VineTheme.titleLargeFont(),
-              ),
-            ),
+            Expanded(child: Text(code.code, style: VineTheme.titleLargeFont())),
             IconButton(
               icon: const DivineIcon(
                 icon: DivineIconName.copy,
@@ -160,10 +155,7 @@ class _InviteCodeCard extends StatelessWidget {
               ),
               tooltip: 'Share invite',
               onPressed: () => SharePlus.instance.share(
-                ShareParams(
-                  text: _shareMessage,
-                  subject: 'Join me on diVine',
-                ),
+                ShareParams(text: _shareMessage, subject: 'Join me on diVine'),
               ),
             ),
           ],
