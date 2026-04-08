@@ -105,3 +105,32 @@ jobs:
         run: flutter pub get
       - name: 🚀 Run Flutter test shard
         run: scripts/ci/run_flutter_test_shard.sh ${{ matrix.shard_index }} ${{ matrix.shard_count }}
+  mobile-ci:
+    name: Mobile CI
+    if: ${{ always() }}
+    needs:
+      - generated-files
+      - format
+      - analyze
+      - tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify upstream jobs
+        env:
+          GENERATED_FILES_RESULT: ${{ needs.generated-files.result }}
+          FORMAT_RESULT: ${{ needs.format.result }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+          TESTS_RESULT: ${{ needs.tests.result }}
+        run: |
+          echo "generated-files: ${GENERATED_FILES_RESULT}"
+          echo "format: ${FORMAT_RESULT}"
+          echo "analyze: ${ANALYZE_RESULT}"
+          echo "tests: ${TESTS_RESULT}"
+
+          if [[ "${GENERATED_FILES_RESULT}" != "success" || \
+                "${FORMAT_RESULT}" != "success" || \
+                "${ANALYZE_RESULT}" != "success" || \
+                "${TESTS_RESULT}" != "success" ]]; then
+            echo "One or more Mobile CI jobs failed."
+            exit 1
+          fi
