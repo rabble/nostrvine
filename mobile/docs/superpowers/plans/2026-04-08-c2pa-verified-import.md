@@ -131,6 +131,8 @@ Do NOT use `@GenerateMocks`, `mockito`, or codegen-based mocking.
 - **Event transformers**: Use `droppable()` from `bloc_concurrency` on all async event handlers to prevent duplicate processing.
 - **GoRouter navigation only**: Use `context.go()` / `context.pop()` -- never `Navigator.of(context).pop()`.
 - **Route isolation**: Import verification route needs `parentNavigatorKey: NavigatorKeys.root` to render outside the tab shell.
+- **Custom Share Extension + share_handler for Flutter-side listening**: The custom Swift Share Extension handles iOS file receipt and App Group handoff. `share_handler` is used ONLY on the Flutter/Android side for listening to shared media via intent filters. The custom extension replaces `share_handler`'s built-in iOS extension -- do NOT use both. On Android, `share_handler` handles everything.
+- **Codemagic signing**: The current `codemagic.yaml` uses `bundle_identifier: $BUNDLE_ID` (single string). Since the recent revert (`ae7a8d3e6`) explicitly went back to a single string, do NOT change it to a list. Instead, use Codemagic's `BUNDLE_ID` env var with a wildcard provisioning profile (`co.openvine.app.*`) or add a separate `ios_signing` entry for the Share Extension target.
 
 ### Known Blockers to Resolve During Implementation
 
@@ -1033,7 +1035,9 @@ class VideoImportBloc extends Bloc<VideoImportEvent, VideoImportState> {
     VideoImportConfirmed event,
     Emitter<VideoImportState> emit,
   ) async {
-    if (state.status != VideoImportStatus.verified || state.filePath == null) {
+    if (state.status != VideoImportStatus.verified ||
+        state.filePath == null ||
+        state.validationResult == null) {
       return;
     }
 
@@ -1084,6 +1088,10 @@ class _MockVideoImportService extends Mock implements VideoImportService {}
 void main() {
   late _MockC2paImportValidationService mockValidationService;
   late _MockVideoImportService mockImportService;
+
+  setUpAll(() {
+    registerFallbackValue(C2paImportResult.noCredentials());
+  });
 
   setUp(() {
     mockValidationService = _MockC2paImportValidationService();
@@ -1225,6 +1233,36 @@ void main() {
         act: (bloc) => bloc.add(const VideoImportConfirmed()),
         expect: () => <VideoImportState>[],
       );
+
+      blocTest<VideoImportBloc, VideoImportState>(
+        'emits [importing, error] when import throws',
+        setUp: () {
+          when(() => mockImportService.importVerifiedVideo(
+            filePath: any(named: 'filePath'),
+            validationResult: any(named: 'validationResult'),
+          )).thenThrow(Exception('disk full'));
+        },
+        build: buildBloc,
+        seed: () => VideoImportState(
+          status: VideoImportStatus.verified,
+          filePath: '/path/to/video.mp4',
+          validationResult: verifiedResult,
+        ),
+        act: (bloc) => bloc.add(const VideoImportConfirmed()),
+        expect: () => [
+          VideoImportState(
+            status: VideoImportStatus.importing,
+            filePath: '/path/to/video.mp4',
+            validationResult: verifiedResult,
+          ),
+          VideoImportState(
+            status: VideoImportStatus.error,
+            filePath: '/path/to/video.mp4',
+            validationResult: verifiedResult,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
     });
 
     group('VideoImportDismissed', () {
@@ -1272,12 +1310,14 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model;
 import 'package:openvine/models/c2pa_import_result.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_import_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
@@ -1285,15 +1325,35 @@ class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   late VideoImportService service;
-  late MockClipLibraryService mockClipLibraryService;
-  late MockDraftStorageService mockDraftStorageService;
+  late _MockClipLibraryService mockClipLibraryService;
+  late _MockDraftStorageService mockDraftStorageService;
   late Directory tempDir;
+
+  setUpAll(() {
+    registerFallbackValue(
+      DivineVideoClip(
+        id: '',
+        video: EditorVideo.file('/dev/null'),
+        duration: Duration.zero,
+        recordedAt: DateTime(0),
+        targetAspectRatio: model.AspectRatio.square,
+        originalAspectRatio: 1,
+      ),
+    );
+    registerFallbackValue(
+      DivineVideoDraft.create(
+        clips: const [],
+        title: '',
+        description: '',
+        hashtags: const {},
+        selectedApproach: '',
+      ),
+    );
+  });
 
   setUp(() async {
     mockClipLibraryService = _MockClipLibraryService();
     mockDraftStorageService = _MockDraftStorageService();
-    registerFallbackValue(DivineVideoClip.empty());
-    registerFallbackValue(DivineVideoDraft.empty());
     tempDir = await Directory.systemTemp.createTemp('import_test_');
 
     service = VideoImportService(
@@ -1517,7 +1577,7 @@ git commit -m "feat: add VideoImportService for importing C2PA-verified videos t
 ### Task 6: Import Verification Screen
 
 **Files:**
-- Create: `lib/screens/import_verification/import_verification_screen.dart`
+- Create: `lib/screens/import_verification/import_verification_page.dart`
 - Test: `test/screens/import_verification/import_verification_screen_test.dart`
 
 This is a full-screen that shows one of three states:
@@ -1558,7 +1618,7 @@ void main() {
     );
   }
 
-  group(ImportVerificationScreen, () {
+  group(ImportVerificationView, () {
     testWidgets('shows loading indicator when validating', (tester) async {
       when(() => mockBloc.state).thenReturn(
         const VideoImportState(status: VideoImportStatus.validating),
@@ -1650,7 +1710,7 @@ void main() {
 - [ ] **Step 2: Write the screen**
 
 ```dart
-// lib/screens/import_verification/import_verification_screen.dart
+// lib/screens/import_verification/import_verification_page.dart
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1708,6 +1768,7 @@ class ImportVerificationView extends StatelessWidget {
           child: BlocBuilder<VideoImportBloc, VideoImportState>(
             builder: (context, state) {
               return switch (state.status) {
+                VideoImportStatus.initial ||
                 VideoImportStatus.validating =>
                     const _ValidatingView(),
                 VideoImportStatus.verified => _VerifiedView(
@@ -1718,7 +1779,12 @@ class ImportVerificationView extends StatelessWidget {
                 ),
                 VideoImportStatus.importing =>
                     const _ImportingView(),
-                _ => const _ValidatingView(),
+                VideoImportStatus.imported =>
+                    const _ImportingView(),
+                VideoImportStatus.error => _RejectedView(
+                  result: state.validationResult ??
+                      C2paImportResult.error('Unknown error'),
+                ),
               };
             },
           ),
@@ -1899,7 +1965,7 @@ class _RejectedView extends StatelessWidget {
                 context
                     .read<VideoImportBloc>()
                     .add(const VideoImportDismissed());
-                context.pop();
+                context.go('/');
               },
               child: const Text('Close'),
             ),
@@ -2307,8 +2373,8 @@ RepositoryProvider(
 
 ```bash
 cd /Users/rabble/code/divine/divine-mobile/.worktrees/feat-c2pa-share-target
-git add mobile/lib/
-git commit -m "feat: register C2PA import services in dependency tree"
+git add mobile/lib/main.dart mobile/lib/router/app_router.dart mobile/pubspec.yaml mobile/pubspec.lock
+git commit -m "feat: register C2PA import services and wire share handler"
 ```
 
 ---
@@ -2362,18 +2428,16 @@ git commit -m "feat: complete C2PA-verified video import via share sheet"
 
 1. **VideoMetadataScreen draft loading** (BLOCKING): The metadata screen currently relies on providers populated during the recording flow. An alternative entry point that loads a draft by ID from `DraftStorageService` is needed. See "Known Blockers" section above.
 
-2. **Codemagic CI**: The Share Extension is a new Xcode target. Update `codemagic.yaml` to include `co.openvine.app.ShareExtension` in the `ios_signing.bundle_identifier` list. A new provisioning profile must be created in Apple Developer Portal for this bundle ID.
-
-3. **share_handler vs manual iOS extension**: The plan uses a custom Swift Share Extension for iOS and `share_handler` for the Flutter-side listener. Evaluate whether `share_handler`'s built-in iOS extension is sufficient, or if the custom approach is needed for the share sheet UX.
+2. **Codemagic CI**: A wildcard provisioning profile (`co.openvine.app.*`) or separate signing entry is needed for the Share Extension bundle ID (`co.openvine.app.ShareExtension`). Do NOT change `bundle_identifier` back to a list format (recently reverted). A new provisioning profile must be created in Apple Developer Portal.
 
 4. **ProVideoEditor metadata API**: Verify `ProVideoEditor.instance.getMetadata(path)` is the correct API for extracting video duration and dimensions from the `pro_video_editor` package.
 
 5. **Large file handling in Share Extension**: The extension has ~120MB memory. Copying a large 4K video inside the extension may fail. Consider using hard links (`link()` instead of `copyItem()`) or coordinated file access.
-
-6. **DivineVideoClip.empty() / DivineVideoDraft.empty()**: The test code uses `registerFallbackValue(DivineVideoClip.empty())` and `DivineVideoDraft.empty()` for mocktail. Verify these factory constructors exist or create them as `@visibleForTesting` helpers.
 
 ### Resolved During Review (No Longer Open)
 
 - ~~ManifestStoreInfo construction~~: Has public const constructor. Test helper implemented.
 - ~~App Group identifier~~: Confirmed as `group.co.openvine.app` from existing entitlements.
 - ~~VineTheme constants~~: Corrected to `surfaceBackground`, `primary`, `lightText`, `onSurfaceMuted`.
+- ~~share_handler vs custom extension~~: Custom Swift extension for iOS, share_handler for Flutter/Android listening only. See Design Decisions.
+- ~~DivineVideoClip.empty()~~: Tests use real constructors with minimal values for `registerFallbackValue`.
