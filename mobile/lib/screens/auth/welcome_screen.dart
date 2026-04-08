@@ -50,9 +50,7 @@ class WelcomeScreen extends ConsumerWidget {
 
   /// Build invite gate path with optional recovery context prefilled.
   static String inviteGatePathWithCode(String code, {String? error}) {
-    final queryParameters = <String, String>{
-      'code': code,
-    };
+    final queryParameters = <String, String>{'code': code};
 
     if (error != null && error.isNotEmpty) {
       queryParameters['error'] = error;
@@ -73,21 +71,33 @@ class WelcomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(currentAuthStateProvider);
 
-    // Gate on `checking` only — this state is set exclusively during startup
-    // (AuthService.initialize). Showing a blank scaffold here prevents the
-    // login UI from flashing before auto-login completes.
+    // Gate on `checking` and `authenticated` to show a blank scaffold and
+    // prevent the full welcome UI from flashing during startup auto-login.
+    //
+    // - `checking`: set exclusively during startup (AuthService.initialize).
+    //   Blank scaffold here covers the window before auth resolves.
+    //
+    // - `authenticated`: covers the brief window AFTER auth resolves but
+    //   BEFORE GoRouter navigates away from /welcome. When _setAuthState
+    //   emits `authenticated`, both Riverpod's currentAuthStateProvider and
+    //   the router's refreshListenable are notified via the same auth stream.
+    //   Riverpod can rebuild WelcomeScreen with the new state in the same
+    //   frame that GoRouter is completing its navigation to /home, causing
+    //   the full hero+buttons UI to render for one frame before unmount.
+    //   Rendering the blank scaffold during this transient closes the race.
     //
     // We intentionally do NOT gate on `authenticating` because that state is
     // also set during runtime sign-in flows (signInForAccount, importFromNsec,
     // connectWithBunker, etc.). Gating on it would unmount the BlocProvider,
     // disposing the WelcomeBloc mid-event-handler and breaking error navigation.
     //
-    // For this gate to be sufficient, AuthService._setAuthState suppresses
-    // the intermediate `checking → authenticating` transition during init,
-    // so session restore goes straight from `checking` to a terminal state
-    // (authenticated/unauthenticated/awaitingTosAcceptance). See
-    // auth_service.dart `_setAuthState` for the other half of this fix.
-    if (authState == AuthState.checking) {
+    // For the `checking` gate to be sufficient during init, AuthService
+    // ._setAuthState suppresses the intermediate `checking → authenticating`
+    // transition, so session restore goes straight from `checking` to a
+    // terminal state (authenticated/unauthenticated/awaitingTosAcceptance).
+    // See auth_service.dart `_setAuthState` for that half of the fix.
+    if (authState == AuthState.checking ||
+        authState == AuthState.authenticated) {
       return const Scaffold(backgroundColor: VineTheme.backgroundColor);
     }
 
@@ -102,9 +112,7 @@ class WelcomeScreen extends ConsumerWidget {
             userProfilesDao: db.userProfilesDao,
             authService: authService,
           )..add(
-            WelcomeStarted(
-              initialSelectedPubkeyHex: initialSelectedPubkeyHex,
-            ),
+            WelcomeStarted(initialSelectedPubkeyHex: initialSelectedPubkeyHex),
           ),
       child: _WelcomeView(
         isAuthenticating: isAuthenticating,
@@ -116,10 +124,7 @@ class WelcomeScreen extends ConsumerWidget {
 
 /// Welcome screen — View that consumes [WelcomeBloc] state.
 class _WelcomeView extends StatelessWidget {
-  const _WelcomeView({
-    required this.isAuthenticating,
-    required this.lastError,
-  });
+  const _WelcomeView({required this.isAuthenticating, required this.lastError});
 
   /// Whether auth is in the `authenticating` state (sign-in in progress).
   final bool isAuthenticating;
@@ -332,10 +337,7 @@ class _ReturningUserLayout extends StatelessWidget {
 /// Displays the returning user's avatar, display name, identifier, and auth
 /// source badge.
 class _ReturningUserProfile extends StatelessWidget {
-  const _ReturningUserProfile({
-    required this.pubkeyHex,
-    required this.profile,
-  });
+  const _ReturningUserProfile({required this.pubkeyHex, required this.profile});
 
   final String pubkeyHex;
   final UserProfile? profile;
@@ -386,11 +388,7 @@ class _AvatarWithSwitchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return UserAvatar(
-      imageUrl: imageUrl,
-      name: displayName,
-      size: _avatarSize,
-    );
+    return UserAvatar(imageUrl: imageUrl, name: displayName, size: _avatarSize);
   }
 }
 
