@@ -354,6 +354,15 @@ class CuratedListRepository {
 
   /// Resolves up to [maxThumbnails] thumbnail URLs for a single [list].
   ///
+  /// Strategy per video reference:
+  /// 1. Hex event ID → try FunnelCake API (`getVideoStats`), use
+  ///    `VideoStats.thumbnail`.
+  /// 2. If FunnelCake fails or returns empty → fall back to Nostr relay
+  ///    query, parse as `VideoEvent`, use `effectiveThumbnailUrl`.
+  /// 3. Addressable coordinate → query relay with appropriate filter,
+  ///    parse as `VideoEvent`, use `effectiveThumbnailUrl`.
+  /// 4. If all fail → skip (becomes a placeholder in the UI).
+  ///
   /// Returns the list with [CuratedList.thumbnailUrls] populated.
   Future<CuratedList> _resolveThumbnails(
     CuratedList list, {
@@ -405,16 +414,7 @@ class CuratedListRepository {
     return null;
   }
 
-  /// Resolves a thumbnail URL for a single video reference.
-  ///
-  /// Strategy per video reference:
-  /// 1. Hex event ID → try FunnelCake API (`getVideoStats`), use
-  ///    `VideoStats.thumbnail`.
-  /// 2. If FunnelCake fails or returns empty → fall back to Nostr relay
-  ///    query, parse as `VideoEvent`, use `effectiveThumbnailUrl`.
-  /// 3. Addressable coordinate → query relay with appropriate filter,
-  ///    parse as `VideoEvent`, use `effectiveThumbnailUrl`.
-  /// 4. If all fail → skip (becomes a placeholder in the UI).
+  /// Resolves relay-side thumbnail URLs for a batch of video references.
   ///
   /// Batches all relay lookups into a single `queryEvents` call: hex IDs
   /// go into one `Filter(ids: [...])` and addressable coordinates become

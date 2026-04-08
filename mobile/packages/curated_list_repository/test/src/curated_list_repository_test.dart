@@ -1044,6 +1044,33 @@ void main() {
         }
       });
 
+      test('excludes relay lists with empty videoEventIds', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'empty-list'],
+                ['title', 'Dance Empty'],
+                // No 'e' or 'a' tags → videoEventIds is empty
+              ],
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'good-list'],
+                ['title', 'Dance Good'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        final relayIds = emissions[2].map((l) => l.id).toList();
+        expect(relayIds, isNot(contains('empty-list')));
+        expect(relayIds, contains('good-list'));
+      });
+
       test('skips malformed relay events without d-tag', () async {
         when(() => nostrClient.queryEvents(any())).thenAnswer(
           (_) async => [

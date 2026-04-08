@@ -128,7 +128,8 @@ void main() {
       );
 
       testWidgets(
-        'renders $VineCachedImage for each thumbnail URL',
+        'renders $VineCachedImage for each thumbnail URL '
+        'while keeping all 5 card slots',
         (tester) async {
           await tester.pumpWidget(
             buildSubject(
@@ -143,6 +144,9 @@ void main() {
           );
 
           expect(find.byType(VineCachedImage), findsNWidgets(2));
+          // 5 card slots + 1 count badge remain regardless of how many
+          // thumbnails are supplied.
+          expect(find.byType(DecoratedBox), findsAtLeastNWidgets(6));
         },
       );
     });
