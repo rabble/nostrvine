@@ -589,8 +589,6 @@ class _TimelineScrollContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overlayState = context.watch<TimelineOverlayBloc>().state;
-
     final trimExpand = trimmingClipId != null
         ? TimelineConstants.trimHandleWidth + 12.0
         : 0.0;
@@ -626,89 +624,140 @@ class _TimelineScrollContent extends StatelessWidget {
             onTrimDragChanged: onTrimDragChanged,
             onClipTapped: onClipTapped,
           ),
-          // Layer strip (pink) — text, drawings, stickers.
-          if (overlayState.hasItemsOfType(TimelineOverlayType.layer))
-            Padding(
-              padding: const EdgeInsets.only(
-                top: TimelineConstants.overlayStripTopGap,
-              ),
-              child: TimelineOverlayStrip(
-                items: overlayState.itemsOfType(TimelineOverlayType.layer),
-                rowCount: overlayState.rowCountForType(
-                  TimelineOverlayType.layer,
-                ),
-                totalWidth: totalWidth,
-                pixelsPerSecond: pixelsPerSecond,
-                totalDuration: totalDuration,
-                color: const Color(0xFFE91E8C),
-                isCollapsed: overlayState.isTypeCollapsed(
-                  TimelineOverlayType.layer,
-                ),
-                selectedItemId: overlayState.selectedItemId,
-                onItemTapped: onOverlayItemTapped,
-                onItemMoved: onOverlayItemMoved,
-                onTrimChanged: onOverlayItemTrimmed,
-                onTrimDragChanged: onOverlayTrimDragChanged,
-                onDragStarted: onOverlayDragStarted,
-                onDragEnded: onOverlayDragEnded,
-              ),
-            ),
-          // Sound strip (red) — audio tracks.
-          if (overlayState.hasItemsOfType(TimelineOverlayType.sound))
-            Padding(
-              padding: const EdgeInsets.only(
-                top: TimelineConstants.overlayStripGap,
-              ),
-              child: TimelineOverlayStrip(
-                items: overlayState.itemsOfType(TimelineOverlayType.sound),
-                rowCount: overlayState.rowCountForType(
-                  TimelineOverlayType.sound,
-                ),
-                totalWidth: totalWidth,
-                pixelsPerSecond: pixelsPerSecond,
-                totalDuration: totalDuration,
-                color: const Color(0xFFE53935),
-                isCollapsed: overlayState.isTypeCollapsed(
-                  TimelineOverlayType.sound,
-                ),
-                selectedItemId: overlayState.selectedItemId,
-                onItemTapped: onOverlayItemTapped,
-                onItemMoved: onOverlayItemMoved,
-                onTrimChanged: onOverlayItemTrimmed,
-                onTrimDragChanged: onOverlayTrimDragChanged,
-                onDragStarted: onOverlayDragStarted,
-                onDragEnded: onOverlayDragEnded,
-              ),
-            ),
-          // Filter strip (green) — visual effects.
-          if (overlayState.hasItemsOfType(TimelineOverlayType.filter))
-            Padding(
-              padding: const EdgeInsets.only(
-                top: TimelineConstants.overlayStripGap,
-              ),
-              child: TimelineOverlayStrip(
-                items: overlayState.itemsOfType(TimelineOverlayType.filter),
-                rowCount: overlayState.rowCountForType(
-                  TimelineOverlayType.filter,
-                ),
-                totalWidth: totalWidth,
-                pixelsPerSecond: pixelsPerSecond,
-                totalDuration: totalDuration,
-                color: const Color(0xFF43A047),
-                isCollapsed: overlayState.isTypeCollapsed(
-                  TimelineOverlayType.filter,
-                ),
-                selectedItemId: overlayState.selectedItemId,
-                onItemTapped: onOverlayItemTapped,
-                onItemMoved: onOverlayItemMoved,
-                onTrimChanged: onOverlayItemTrimmed,
-                onTrimDragChanged: onOverlayTrimDragChanged,
-                onDragStarted: onOverlayDragStarted,
-                onDragEnded: onOverlayDragEnded,
-              ),
-            ),
+          _TimelineOverlayStrips(
+            totalWidth: totalWidth,
+            pixelsPerSecond: pixelsPerSecond,
+            totalDuration: totalDuration,
+            onItemTapped: onOverlayItemTapped,
+            onItemMoved: onOverlayItemMoved,
+            onItemTrimmed: onOverlayItemTrimmed,
+            onTrimDragChanged: onOverlayTrimDragChanged,
+            onDragStarted: onOverlayDragStarted,
+            onDragEnded: onOverlayDragEnded,
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// Watches [TimelineOverlayBloc] and renders layer / sound / filter strips.
+///
+/// Extracted into its own widget so that overlay state changes only rebuild
+/// the overlay strips — not the clip strip or ruler.
+class _TimelineOverlayStrips extends StatelessWidget {
+  const _TimelineOverlayStrips({
+    required this.totalWidth,
+    required this.pixelsPerSecond,
+    required this.totalDuration,
+    this.onItemTapped,
+    this.onItemMoved,
+    this.onItemTrimmed,
+    this.onTrimDragChanged,
+    this.onDragStarted,
+    this.onDragEnded,
+  });
+
+  final double totalWidth;
+  final double pixelsPerSecond;
+  final Duration totalDuration;
+  final ValueChanged<String>? onItemTapped;
+  final OverlayMoveCallback? onItemMoved;
+  final OverlayTrimCallback? onItemTrimmed;
+  final ValueChanged<bool>? onTrimDragChanged;
+  final ValueChanged<String>? onDragStarted;
+  final VoidCallback? onDragEnded;
+
+  @override
+  Widget build(BuildContext context) {
+    final overlayState = context.watch<TimelineOverlayBloc>().state;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Layer strip (pink) — text, drawings, stickers.
+        if (overlayState.hasItemsOfType(TimelineOverlayType.layer))
+          Padding(
+            padding: const EdgeInsets.only(
+              top: TimelineConstants.overlayStripTopGap,
+            ),
+            child: TimelineOverlayStrip(
+              items: overlayState.itemsOfType(TimelineOverlayType.layer),
+              rowCount: overlayState.rowCountForType(
+                TimelineOverlayType.layer,
+              ),
+              totalWidth: totalWidth,
+              pixelsPerSecond: pixelsPerSecond,
+              totalDuration: totalDuration,
+              color: const Color(0xFFE91E8C),
+              isCollapsed: overlayState.isTypeCollapsed(
+                TimelineOverlayType.layer,
+              ),
+              selectedItemId: overlayState.selectedItemId,
+              onItemTapped: onItemTapped,
+              onItemMoved: onItemMoved,
+              onTrimChanged: onItemTrimmed,
+              onTrimDragChanged: onTrimDragChanged,
+              onDragStarted: onDragStarted,
+              onDragEnded: onDragEnded,
+            ),
+          ),
+        // Sound strip (red) — audio tracks.
+        if (overlayState.hasItemsOfType(TimelineOverlayType.sound))
+          Padding(
+            padding: const EdgeInsets.only(
+              top: TimelineConstants.overlayStripGap,
+            ),
+            child: TimelineOverlayStrip(
+              items: overlayState.itemsOfType(TimelineOverlayType.sound),
+              rowCount: overlayState.rowCountForType(
+                TimelineOverlayType.sound,
+              ),
+              totalWidth: totalWidth,
+              pixelsPerSecond: pixelsPerSecond,
+              totalDuration: totalDuration,
+              color: const Color(0xFFE53935),
+              isCollapsed: overlayState.isTypeCollapsed(
+                TimelineOverlayType.sound,
+              ),
+              selectedItemId: overlayState.selectedItemId,
+              onItemTapped: onItemTapped,
+              onItemMoved: onItemMoved,
+              onTrimChanged: onItemTrimmed,
+              onTrimDragChanged: onTrimDragChanged,
+              onDragStarted: onDragStarted,
+              onDragEnded: onDragEnded,
+            ),
+          ),
+        // Filter strip (green) — visual effects.
+        if (overlayState.hasItemsOfType(TimelineOverlayType.filter))
+          Padding(
+            padding: const EdgeInsets.only(
+              top: TimelineConstants.overlayStripGap,
+            ),
+            child: TimelineOverlayStrip(
+              items: overlayState.itemsOfType(TimelineOverlayType.filter),
+              rowCount: overlayState.rowCountForType(
+                TimelineOverlayType.filter,
+              ),
+              totalWidth: totalWidth,
+              pixelsPerSecond: pixelsPerSecond,
+              totalDuration: totalDuration,
+              color: const Color(0xFF43A047),
+              isCollapsed: overlayState.isTypeCollapsed(
+                TimelineOverlayType.filter,
+              ),
+              selectedItemId: overlayState.selectedItemId,
+              onItemTapped: onItemTapped,
+              onItemMoved: onItemMoved,
+              onTrimChanged: onItemTrimmed,
+              onTrimDragChanged: onTrimDragChanged,
+              onDragStarted: onDragStarted,
+              onDragEnded: onDragEnded,
+            ),
+          ),
+      ],
     );
   }
 }
