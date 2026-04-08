@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 
@@ -34,7 +35,9 @@ class VideoEditorPlayer extends StatelessWidget {
         bodySize: bodySize,
         enableFullScreen: useFullSize,
         targetAspectRatio: targetAspectRatio.value,
-        borderRadius: targetAspectRatio == .square ? 0 : 32,
+        borderRadius: targetAspectRatio == .square
+            ? 0
+            : VideoEditorConstants.canvasRadius,
       ),
       child: AspectRatio(
         aspectRatio: aspectRatio,

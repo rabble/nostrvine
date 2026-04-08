@@ -1,22 +1,5 @@
 /// Extension on Duration for video editor time formatting.
 extension VideoEditorTimeUtils on Duration {
-  /// Formats as ss:ms, prepending minutes only when >= 1 min.
-  ///
-  /// Examples:
-  /// * `Duration(seconds: 5, milliseconds: 730)` → `"05:73"`
-  /// * `Duration(minutes: 1, seconds: 5, milliseconds: 730)` → `"1:05:73"`
-  String toEditorTime() {
-    final ms = (inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(
-      2,
-      '0',
-    );
-    final secs = (inSeconds % 60).toString().padLeft(2, '0');
-    if (inMinutes > 0) {
-      return '$inMinutes:$secs:$ms';
-    }
-    return '$secs:$ms';
-  }
-
   /// Formats duration as SS:MS (seconds:milliseconds).
   ///
   /// Example: Duration(seconds: 5, milliseconds: 730) → "05:73"

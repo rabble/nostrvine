@@ -148,97 +148,83 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                           onPointerMove: _onPointerMove,
                           onPointerUp: _onPointerUp,
                           onPointerCancel: _onPointerCancel,
-                          child: Padding(
-                            padding: const .only(bottom: 4),
-                            child: NotificationListener<ScrollNotification>(
-                              onNotification: _handleScrollNotification,
-                              child: SingleChildScrollView(
-                                controller: _scrollController,
-                                scrollDirection: Axis.horizontal,
-                                physics: _isPinching
-                                    ? const NeverScrollableScrollPhysics()
-                                    : const ClampingScrollPhysics(),
-                                padding: .only(
-                                  left: halfScreen,
-                                  right: halfScreen,
-                                  bottom: MediaQuery.paddingOf(context).bottom,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  spacing: 4,
-                                  children: [
-                                    AnimatedOpacity(
-                                      opacity: isReordering ? 0.0 : 1.0,
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      child: VideoEditorTimelineRulesIndicator(
-                                        totalDuration: totalDuration,
-                                        pixelsPerSecond: _pixelsPerSecond,
-                                        scrollController: _scrollController,
-                                        scrollPadding: halfScreen,
-                                      ),
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: _handleScrollNotification,
+                            child: SingleChildScrollView(
+                              controller: _scrollController,
+                              scrollDirection: Axis.horizontal,
+                              physics: _isPinching
+                                  ? const NeverScrollableScrollPhysics()
+                                  : const ClampingScrollPhysics(),
+                              padding: .only(
+                                left: halfScreen,
+                                right: halfScreen,
+                                bottom: MediaQuery.paddingOf(context).bottom,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                spacing: 4,
+                                children: [
+                                  AnimatedOpacity(
+                                    opacity: isReordering ? 0.0 : 1.0,
+                                    duration: const Duration(
+                                      milliseconds: 200,
                                     ),
-                                    VideoEditorTimelineClipStrip(
-                                      clips: clips,
-                                      totalWidth: totalWidth,
+                                    child: VideoEditorTimelineRulesIndicator(
+                                      totalDuration: totalDuration,
                                       pixelsPerSecond: _pixelsPerSecond,
                                       scrollController: _scrollController,
-                                      isInteracting:
-                                          _isUserScrolling || _isPinching,
-                                      onReorder: (reorderedClips) {
-                                        ref
-                                            .read(clipManagerProvider.notifier)
-                                            .replaceClips(reorderedClips);
-                                        context.read<ClipEditorBloc>().add(
-                                          ClipEditorInitialized(reorderedClips),
-                                        );
-                                        // Keep video paused after reorder.
-                                        context.read<VideoEditorMainBloc>().add(
+                                      scrollPadding: halfScreen,
+                                    ),
+                                  ),
+                                  VideoEditorTimelineClipStrip(
+                                    clips: clips,
+                                    totalWidth: totalWidth,
+                                    pixelsPerSecond: _pixelsPerSecond,
+                                    scrollController: _scrollController,
+                                    isInteracting:
+                                        _isUserScrolling || _isPinching,
+                                    onReorder: (reorderedClips) {
+                                      ref
+                                          .read(clipManagerProvider.notifier)
+                                          .replaceClips(reorderedClips);
+                                      context.read<ClipEditorBloc>().add(
+                                        ClipEditorInitialized(reorderedClips),
+                                      );
+                                      // Keep video paused after reorder.
+                                      context.read<VideoEditorMainBloc>().add(
+                                        const VideoEditorExternalPauseRequested(
+                                          isPaused: true,
+                                        ),
+                                      );
+                                    },
+                                    onReorderChanged: (isReordering) {
+                                      final bloc = context
+                                          .read<VideoEditorMainBloc>();
+                                      bloc.add(
+                                        VideoEditorReorderingChanged(
+                                          isReordering: isReordering,
+                                        ),
+                                      );
+                                      if (isReordering) {
+                                        bloc.add(
                                           const VideoEditorExternalPauseRequested(
                                             isPaused: true,
                                           ),
                                         );
-                                      },
-                                      onReorderChanged: (isReordering) {
-                                        final bloc = context
-                                            .read<VideoEditorMainBloc>();
-                                        bloc.add(
-                                          VideoEditorReorderingChanged(
-                                            isReordering: isReordering,
-                                          ),
-                                        );
-                                        if (isReordering) {
-                                          bloc.add(
-                                            const VideoEditorExternalPauseRequested(
-                                              isPaused: true,
-                                            ),
-                                          );
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
                       ),
 
-                      // Overlay: playhead, time display, divider.
-                      AnimatedOpacity(
-                        opacity: isReordering ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: IgnorePointer(
-                          ignoring: isReordering,
-                          child: const Stack(
-                            children: [
-                              VideoEditorTimelinePlayhead(),
-                            ],
-                          ),
-                        ),
-                      ),
+                      // Playhead
+                      VideoEditorTimelinePlayhead(isVisible: !isReordering),
                     ],
                   ),
                 ),

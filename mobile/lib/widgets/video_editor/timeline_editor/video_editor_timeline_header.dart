@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
-import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:time_formatter/time_formatter.dart';
 
 class VideoEditorTimelineHeader extends StatelessWidget {
   const VideoEditorTimelineHeader({
@@ -114,7 +114,8 @@ class _TimeDisplay extends StatelessWidget {
     return ValueListenableBuilder<Duration>(
       valueListenable: playheadPosition,
       builder: (context, position, _) => Text(
-        '${position.toEditorTime()} / ${totalDuration.toEditorTime()}',
+        '${TimeFormatter.formatCompactDuration(position)} / '
+            '${TimeFormatter.formatCompactDuration(totalDuration)}',
         style: _timeStyle,
         maxLines: 1,
       ),

@@ -4,16 +4,23 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 
 /// Playhead — thin vertical line centered in the viewport
 class VideoEditorTimelinePlayhead extends StatelessWidget {
-  const VideoEditorTimelinePlayhead({super.key});
+  const VideoEditorTimelinePlayhead({required this.isVisible, super.key});
+
+  final bool isVisible;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      child: Container(
-        margin: const EdgeInsets.only(top: TimelineConstants.rulerHeight),
-        width: TimelineConstants.playheadWidth,
-        height: .infinity,
-        child: const ColoredBox(color: VineTheme.onSurface),
+    return AnimatedOpacity(
+      opacity: isVisible ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      child: const IgnorePointer(
+        child: Align(
+          child: SizedBox(
+            width: TimelineConstants.playheadWidth,
+            height: .infinity,
+            child: ColoredBox(color: VineTheme.onSurface),
+          ),
+        ),
       ),
     );
   }
