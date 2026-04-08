@@ -85,3 +85,17 @@ final class WelcomeLoginOptionsRequested extends WelcomeEvent {
   @override
   List<Object?> get props => [];
 }
+
+/// Internal event: profiles have been hydrated from SQLite cache.
+///
+/// Fired after [WelcomeStarted] emits the initial account list without
+/// profiles. The handler replaces the account list with profile-enriched
+/// versions. Ignored if state has moved past [WelcomeStatus.loaded].
+final class WelcomeProfilesHydrated extends WelcomeEvent {
+  const WelcomeProfilesHydrated(this.accounts);
+
+  final List<PreviousAccount> accounts;
+
+  @override
+  List<Object?> get props => [accounts];
+}
