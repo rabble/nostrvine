@@ -2418,7 +2418,7 @@ Expected: ALL PASS
 
 ```bash
 cd /Users/rabble/code/divine/divine-mobile/.worktrees/feat-c2pa-share-target
-git add .
+git add mobile/lib/ mobile/test/ mobile/ios/ShareExtension/ mobile/android/app/src/main/AndroidManifest.xml
 git commit -m "feat: complete C2PA-verified video import via share sheet"
 ```
 
