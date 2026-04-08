@@ -4,7 +4,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_foreground_provider.dart';
-import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -83,14 +82,16 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.search:
       videosAsync = ref.watch(videosForSearchRouteProvider);
     case RouteType.likedVideos:
-      videosAsync = ref.watch(likedVideosFeedProvider);
-    case RouteType.videoFeed:
+      // Liked videos feed mode uses PooledFullscreenVideoFeedScreen inline,
+      // which self-manages playback. Return null.
+      return null;
+    case RouteType.videoFeed: // legacy alias, same as pooledVideoFeed
     case RouteType.pooledVideoFeed:
     case RouteType.videoDetail:
-      // videoFeed routes manage their own playback via passed videos
-      // Return null to let the screen handle it internally
+      // Pooled feed routes manage their own playback internally.
+      // Return null to let the screen handle it.
       Log.debug(
-        '[ACTIVE] ❌ videoFeed route (self-managed)',
+        '[ACTIVE] ❌ pooledVideoFeed route (self-managed)',
         name: 'ActiveVideoProvider',
         category: LogCategory.system,
       );

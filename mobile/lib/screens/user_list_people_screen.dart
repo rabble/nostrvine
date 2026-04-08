@@ -8,11 +8,10 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -215,13 +214,10 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
 
         return Stack(
           children: [
-            ExploreVideoScreenPure(
-              startingVideo: videos[_activeVideoIndex!],
-              videoList: videos,
+            PooledFullscreenVideoFeedScreen(
+              videosStream: Stream.value(videos),
+              initialIndex: _activeVideoIndex!,
               contextTitle: widget.userList.name,
-              startingIndex: _activeVideoIndex,
-              useLocalActiveState:
-                  true, // Use local state since not using URL routing
             ),
             // Header bar showing list name and back button
             Positioned(
@@ -261,8 +257,6 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                           ),
                         ),
                         onPressed: () {
-                          // Stop all videos before switching to grid
-                          disposeAllVideoControllers(ref);
                           setState(() {
                             _activeVideoIndex = null;
                           });
