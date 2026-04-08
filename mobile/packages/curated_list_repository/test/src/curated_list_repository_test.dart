@@ -973,6 +973,53 @@ void main() {
         expect(emissions[1].first.thumbnailUrls, isEmpty);
       });
 
+      test(
+        'skips unparseable relay events during thumbnail resolution',
+        () async {
+          repository.setSubscribedLists([
+            createList(
+              id: 'local-1',
+              name: 'Dance Local',
+              videoEventIds: [_videoEventId],
+            ),
+          ]);
+
+          when(
+            () => funnelcakeApiClient.getVideoStats(_videoEventId),
+          ).thenAnswer((_) async => null);
+
+          // Relay returns an event with kind 1 (text note) which causes
+          // VideoEvent.fromNostrEvent to throw — exercises the on Exception
+          // catch in _batchRelayThumbnails.
+          when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) {
+            final filters = invocation.positionalArguments[0] as List<dynamic>;
+            final filter = filters.first;
+
+            if (filter is Filter && filter.kinds?.contains(30005) == true) {
+              return Future.value(<Event>[]);
+            }
+
+            // Non-video event that will fail parsing
+            return Future.value([
+              Event.fromJson({
+                'id': _videoEventId,
+                'pubkey': _testPubkey,
+                'created_at': 1718400000,
+                'kind': 1, // text note — not a video kind
+                'tags': <List<String>>[],
+                'content': 'hello',
+                'sig': '',
+              }),
+            ]);
+          });
+
+          final emissions = await repository.searchAllLists('dance').toList();
+
+          // Thumbnail resolution skipped the unparseable event
+          expect(emissions[1].first.thumbnailUrls, isEmpty);
+        },
+      );
+
       test('filters out private lists from all emissions', () async {
         repository.setSubscribedLists([
           createList(

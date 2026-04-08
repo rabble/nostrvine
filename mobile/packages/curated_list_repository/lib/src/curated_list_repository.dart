@@ -483,7 +483,9 @@ class CuratedListRepository {
             break;
           }
         }
-      } on Exception {
+      } on Object {
+        // Skip unparseable events (e.g. non-video kinds throw
+        // ArgumentError from VideoEvent.fromNostrEvent).
         continue;
       }
     }
