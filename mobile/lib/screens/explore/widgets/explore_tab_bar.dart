@@ -64,6 +64,7 @@ class ExploreTabBar extends StatelessWidget {
                 Tab(text: context.l10n.exploreTabCategories),
                 if (tabsState.forYouAvailable)
                   Tab(text: context.l10n.exploreTabForYou),
+                if (tabsState.liveAvailable) const Tab(text: 'Live'),
                 Tab(text: context.l10n.exploreTabLists),
                 if (tabsState.appsAvailable)
                   Tab(text: context.l10n.exploreTabIntegratedApps),

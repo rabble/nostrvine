@@ -6,10 +6,15 @@ import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/screens/live/live_discovery_view.dart';
 
 class LiveDiscoveryPage extends ConsumerWidget {
-  const LiveDiscoveryPage({super.key});
+  const LiveDiscoveryPage({
+    super.key,
+    this.embedded = false,
+  });
 
   static const String routeName = 'liveDiscovery';
   static const String path = '/live';
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,7 +24,7 @@ class LiveDiscoveryPage extends ConsumerWidget {
       create: (_) =>
           LiveDiscoveryBloc(liveRepository: repository)
             ..add(const LiveDiscoveryRequested()),
-      child: const LiveDiscoveryView(),
+      child: LiveDiscoveryView(embedded: embedded),
     );
   }
 }

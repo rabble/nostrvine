@@ -11,10 +11,88 @@ import 'package:openvine/screens/live/live_route_data.dart';
 import 'package:openvine/screens/live/widgets/live_room_card.dart';
 
 class LiveDiscoveryView extends StatelessWidget {
-  const LiveDiscoveryView({super.key});
+  const LiveDiscoveryView({
+    super.key,
+    this.embedded = false,
+  });
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
+    final body = BlocBuilder<LiveDiscoveryBloc, LiveDiscoveryState>(
+      builder: (context, state) {
+        final featuredRooms = _featuredRooms(state);
+        return switch (state.status) {
+          LiveDiscoveryStatus.initial ||
+          LiveDiscoveryStatus.loading => const Center(
+            child: CircularProgressIndicator(color: VineTheme.primary),
+          ),
+          LiveDiscoveryStatus.failure => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                state.errorMessage ?? 'Live rooms are unavailable.',
+                style: VineTheme.bodyMediumFont(),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          LiveDiscoveryStatus.success => RefreshIndicator(
+            onRefresh: () async {
+              context.read<LiveDiscoveryBloc>().add(
+                const LiveDiscoveryRequested(force: true),
+              );
+            },
+            child: ListView(
+              children: [
+                if (embedded) const _EmbeddedLiveHeader(),
+                const SizedBox(height: 8),
+                if (featuredRooms.isNotEmpty)
+                  _FeaturedHostsSection(
+                    rooms: featuredRooms,
+                    sessions: [
+                      ...state.activeSessions,
+                      ...state.upcomingSessions,
+                    ],
+                  ),
+                _DiscoverySection(
+                  title: 'Live now',
+                  subtitle: 'Drop into rooms that are already rolling.',
+                  rooms: state.activeRooms,
+                  sessions: state.activeSessions,
+                ),
+                _DiscoverySection(
+                  title: 'Upcoming',
+                  subtitle: 'See what is lined up next.',
+                  rooms: state.upcomingRooms,
+                  sessions: state.upcomingSessions,
+                ),
+                if (state.activeRooms.isEmpty && state.upcomingRooms.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'No rooms yet. Start the first one.',
+                      style: VineTheme.bodyMediumFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        };
+      },
+    );
+
+    if (embedded) {
+      return ColoredBox(
+        color: VineTheme.surfaceBackground,
+        child: body,
+      );
+    }
+
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
       appBar: AppBar(
@@ -34,69 +112,43 @@ class LiveDiscoveryView extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocBuilder<LiveDiscoveryBloc, LiveDiscoveryState>(
-        builder: (context, state) {
-          final featuredRooms = _featuredRooms(state);
-          return switch (state.status) {
-            LiveDiscoveryStatus.initial ||
-            LiveDiscoveryStatus.loading => const Center(
-              child: CircularProgressIndicator(color: VineTheme.primary),
-            ),
-            LiveDiscoveryStatus.failure => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  state.errorMessage ?? 'Live rooms are unavailable.',
-                  style: VineTheme.bodyMediumFont(),
-                  textAlign: TextAlign.center,
+      body: body,
+    );
+  }
+}
+
+class _EmbeddedLiveHeader extends StatelessWidget {
+  const _EmbeddedLiveHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Live', style: VineTheme.titleLargeFont()),
+                const SizedBox(height: 4),
+                Text(
+                  'See who is live right now or start your own room.',
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
+              ],
             ),
-            LiveDiscoveryStatus.success => RefreshIndicator(
-              onRefresh: () async {
-                context.read<LiveDiscoveryBloc>().add(
-                  const LiveDiscoveryRequested(force: true),
-                );
-              },
-              child: ListView(
-                children: [
-                  const SizedBox(height: 8),
-                  if (featuredRooms.isNotEmpty)
-                    _FeaturedHostsSection(
-                      rooms: featuredRooms,
-                      sessions: [
-                        ...state.activeSessions,
-                        ...state.upcomingSessions,
-                      ],
-                    ),
-                  _DiscoverySection(
-                    title: 'Live now',
-                    subtitle: 'Drop into rooms that are already rolling.',
-                    rooms: state.activeRooms,
-                    sessions: state.activeSessions,
-                  ),
-                  _DiscoverySection(
-                    title: 'Upcoming',
-                    subtitle: 'See what is lined up next.',
-                    rooms: state.upcomingRooms,
-                    sessions: state.upcomingSessions,
-                  ),
-                  if (state.activeRooms.isEmpty && state.upcomingRooms.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'No rooms yet. Start the first one.',
-                        style: VineTheme.bodyMediumFont(
-                          color: VineTheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          };
-        },
+          ),
+          const SizedBox(width: 12),
+          DivineButton(
+            label: 'Go live',
+            size: DivineButtonSize.small,
+            onPressed: () => context.push(GoLivePage.path),
+          ),
+        ],
       ),
     );
   }

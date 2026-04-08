@@ -6,6 +6,7 @@ import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/explore/tabs/explore_lists_tab.dart';
 import 'package:openvine/screens/explore/widgets/explore_buffered_videos_banner.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/widgets/categories_tab.dart';
 import 'package:openvine/widgets/classic_vines_tab.dart';
 import 'package:openvine/widgets/for_you_tab.dart';
@@ -44,6 +45,8 @@ class ExploreTabView extends StatelessWidget {
             const PopularVideosTab(),
             const CategoriesTab(),
             if (tabsState.forYouAvailable) const ForYouTab(),
+            if (tabsState.liveAvailable)
+              const LiveDiscoveryPage(embedded: true),
             const ExploreListsTab(),
             if (tabsState.appsAvailable)
               const AppsDirectoryScreen(embedded: true),

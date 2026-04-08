@@ -10,8 +10,8 @@ part 'explore_tabs_state.dart';
 
 /// Coordinates which explore tabs are present and their order.
 ///
-/// Tab availability is dynamic: Classics, For You, and Apps tabs appear based
-/// on async feature/platform checks, which shifts the index of every later
+/// Tab availability is dynamic: Classics, For You, Live, and Apps tabs appear
+/// based on async feature/platform checks, which shifts the index of every later
 /// tab. To keep callers from reasoning about raw indices, this cubit owns the
 /// ordered tab-name list and the name<->index conversion, and treats tab
 /// identity as the stable key (never the index).
@@ -43,10 +43,12 @@ class ExploreTabsCubit extends Cubit<ExploreTabsState> {
   void updateAvailability({
     required bool classicsAvailable,
     required bool forYouAvailable,
+    required bool liveAvailable,
     required bool appsAvailable,
   }) {
     if (classicsAvailable == state.classicsAvailable &&
         forYouAvailable == state.forYouAvailable &&
+        liveAvailable == state.liveAvailable &&
         appsAvailable == state.appsAvailable) {
       return;
     }
@@ -54,6 +56,7 @@ class ExploreTabsCubit extends Cubit<ExploreTabsState> {
       state.copyWith(
         classicsAvailable: classicsAvailable,
         forYouAvailable: forYouAvailable,
+        liveAvailable: liveAvailable,
         appsAvailable: appsAvailable,
       ),
     );
