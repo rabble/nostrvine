@@ -90,9 +90,10 @@ class VideoStats {
         isUtc: true,
       );
     } else if (rawCreatedAt is String) {
-      createdAt = DateTime.tryParse(rawCreatedAt)?.toUtc() ?? DateTime.now();
+      createdAt =
+          DateTime.tryParse(rawCreatedAt)?.toUtc() ?? DateTime.now().toUtc();
     } else {
-      createdAt = DateTime.now();
+      createdAt = DateTime.now().toUtc();
     }
 
     // Parse loops from multiple possible sources

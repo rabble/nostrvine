@@ -96,7 +96,7 @@ class RelayNotification {
 
   @override
   String toString() =>
-      'RelayNotification(id: $id, type: $notificationType, from: $sourcePubkey)';
+      'RelayNotification(id: $id, type: $notificationType, from: $sourcePubkey, sourceCreatedAt: $sourceCreatedAt)';
 }
 
 /// Response from GET /api/users/{pubkey}/notifications

@@ -493,6 +493,24 @@ void main() {
         expect(notification.sourceCreatedAt, isNull);
       });
 
+      test('toString includes sourceCreatedAt for debugging', () {
+        final notification = RelayNotification(
+          id: 'notif_123',
+          sourcePubkey: 'author_pubkey',
+          sourceEventId: 'event_abc',
+          sourceKind: 7,
+          notificationType: 'reaction',
+          createdAt: DateTime.utc(2023, 11, 14, 22, 13, 20),
+          read: false,
+          sourceCreatedAt: DateTime.utc(2023, 11, 14, 21, 56, 40),
+        );
+
+        expect(
+          notification.toString(),
+          contains('sourceCreatedAt: 2023-11-14 21:56:40.000Z'),
+        );
+      });
+
       test('handles ISO date string format', () {
         final json = {
           'id': 'notif_123',
