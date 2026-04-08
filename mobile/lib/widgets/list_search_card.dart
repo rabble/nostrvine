@@ -2,6 +2,7 @@
 // ABOUTME: Shows stacked video thumbnails with a count badge,
 // ABOUTME: plus title and description below. Designed for 2-column grid layout.
 
+import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide AspectRatio;
@@ -199,7 +200,7 @@ class _CountBadge extends StatelessWidget {
                 size: 16,
               ),
               Text(
-                _formatCount(count),
+                CountFormatter.formatCompact(count),
                 style: VineTheme.labelSmallFont(),
               ),
             ],
@@ -208,17 +209,4 @@ class _CountBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Formats large numbers with a 'k' suffix (e.g., 9100 → "9.1k").
-String _formatCount(int count) {
-  if (count >= 1000) {
-    final thousands = count / 1000;
-    // Show one decimal if not a whole number
-    if (thousands == thousands.roundToDouble()) {
-      return '${thousands.toInt()}k';
-    }
-    return '${thousands.toStringAsFixed(1)}k';
-  }
-  return '$count';
 }
