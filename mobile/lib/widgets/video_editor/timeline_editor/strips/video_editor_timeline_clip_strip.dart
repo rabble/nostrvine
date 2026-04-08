@@ -7,6 +7,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 
 part 'video_editor_timeline_clip_strip_tiles.dart';
@@ -68,10 +69,7 @@ class _VideoEditorTimelineClipStripState
   /// Thumbnail data keyed by clip ID — survives reordering.
   /// Each notifier is updated independently so only the affected
   /// clip tile rebuilds, not the entire strip.
-  final Map<String, ValueNotifier<List<StripThumbnail>>> _thumbnailNotifiers =
-      {};
-  final Map<String, StreamSubscription<List<StripThumbnail>>> _subscriptions =
-      {};
+  final _thumbnails = ClipThumbnailManager();
 
   static const double _reorderSize = TimelineConstants.thumbnailStripHeight;
 
@@ -105,74 +103,15 @@ class _VideoEditorTimelineClipStripState
   @override
   void dispose() {
     _stopAutoScroll();
-    for (final sub in _subscriptions.values) {
-      sub.cancel();
-    }
-    for (final notifier in _thumbnailNotifiers.values) {
-      _deleteFiles(notifier.value);
-      notifier.dispose();
-    }
+    _thumbnails.dispose();
     super.dispose();
   }
 
-  /// Starts thumbnail loading for new clips, cleans up removed clips.
   void _syncThumbnails() {
-    final currentIds = widget.clips.map((c) => c.id).toSet();
-
-    // Remove stale entries.
-    final staleIds = _thumbnailNotifiers.keys
-        .where((id) => !currentIds.contains(id))
-        .toList();
-    for (final id in staleIds) {
-      _subscriptions.remove(id)?.cancel();
-      final notifier = _thumbnailNotifiers.remove(id);
-      if (notifier != null) {
-        _deleteFiles(notifier.value);
-        notifier.dispose();
-      }
-    }
-
-    // Ensure notifiers exist and start loading for new clips.
-    for (final clip in widget.clips) {
-      _thumbnailNotifiers.putIfAbsent(
-        clip.id,
-        () => ValueNotifier(const []),
-      );
-      if (!_subscriptions.containsKey(clip.id)) {
-        _loadStripThumbnails(clip);
-      }
-    }
-  }
-
-  void _loadStripThumbnails(DivineVideoClip clip) {
-    final videoPath = clip.video.file?.path;
-    if (videoPath == null) return;
-
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    final outputSize = Size(
-      TimelineConstants.thumbnailWidth * dpr,
-      TimelineConstants.thumbnailStripHeight * dpr,
+    _thumbnails.sync(
+      clips: widget.clips,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
     );
-
-    _subscriptions[clip.id] =
-        VideoThumbnailService.generateStripThumbnails(
-          videoPath: videoPath,
-          clipId: clip.id,
-          duration: clip.duration,
-          outputSize: outputSize,
-        ).listen((thumbnails) {
-          if (mounted) {
-            _thumbnailNotifiers[clip.id]?.value = thumbnails;
-          }
-        });
-  }
-
-  static Future<void> _deleteFiles(List<StripThumbnail> thumbnails) async {
-    for (final thumb in thumbnails) {
-      try {
-        await File(thumb.path).delete();
-      } catch (_) {}
-    }
   }
 
   double _clipWidth(DivineVideoClip clip) {
@@ -463,8 +402,7 @@ class _VideoEditorTimelineClipStripState
                     index: i,
                     total: _orderedClips.length,
                     clipWidth: layout.widths[i],
-                    thumbnailNotifier:
-                        _thumbnailNotifiers[_orderedClips[i].id]!,
+                    thumbnailNotifier: _thumbnails[_orderedClips[i].id],
                     onReorder: _reorderClip,
                   ),
                 ),
@@ -486,8 +424,7 @@ class _VideoEditorTimelineClipStripState
                   clip: _orderedClips[_dragIndex!],
                   index: _dragIndex!,
                   fullWidth: layout.widths[_dragIndex!],
-                  thumbnailNotifier:
-                      _thumbnailNotifiers[_orderedClips[_dragIndex!].id]!,
+                  thumbnailNotifier: _thumbnails[_orderedClips[_dragIndex!].id],
                 ),
               ),
           ],
