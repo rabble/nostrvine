@@ -908,6 +908,35 @@ void main() {
         expect(relayList.first.name, equals('Dance New'));
       });
 
+      test('returns list unchanged when thumbnail resolution throws', () async {
+        repository.setSubscribedLists([
+          createList(
+            id: 'local-1',
+            name: 'Dance Local',
+            videoEventIds: [_videoEventId],
+          ),
+        ]);
+
+        when(
+          () => funnelcakeApiClient.getVideoStats(_videoEventId),
+        ).thenAnswer((_) async => null);
+
+        // First call (thumbnail relay fallback) throws TypeError which
+        // passes through `on Exception` in _resolveThumbnailFromRelay.
+        // Second call (relay search) returns empty.
+        var callCount = 0;
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) throw TypeError();
+          return [];
+        });
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        // Yield 2: thumbnail resolution failed, list returned unchanged
+        expect(emissions[1].first.thumbnailUrls, isEmpty);
+      });
+
       test('emits 4 yields even when relay returns empty', () async {
         repository.setSubscribedLists([
           createList(id: 'local-1', name: 'Dance Local'),

@@ -380,7 +380,7 @@ class CuratedListRepository {
       for (final url in results) {
         if (url != null) urls.add(url);
       }
-    } on Exception {
+    } on Object {
       // Complete failure — return list as-is.
       return list;
     }
@@ -430,7 +430,7 @@ class CuratedListRepository {
         permissive: true,
       );
       return videoEvent.effectiveThumbnailUrl;
-    } on Object {
+    } on Exception {
       return null;
     }
   }
