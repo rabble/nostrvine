@@ -162,7 +162,7 @@ class _ThumbnailCard extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(width: _cardBorder),
         borderRadius: BorderRadius.circular(_cardRadius),
-        color: VineTheme.cardBackground,
+        color: VineTheme.containerLow,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_cardRadius),
