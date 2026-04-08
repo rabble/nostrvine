@@ -313,6 +313,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             aiTrainingOptOut: ref
                 .read(aiTrainingPreferenceServiceProvider)
                 .isOptOutEnabled,
+            editorStateHistory: draft.editorStateHistory,
           );
 
           if (result == null) {

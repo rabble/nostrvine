@@ -13,7 +13,6 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 import '../helpers/test_provider_overrides.dart';

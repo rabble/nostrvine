@@ -32,6 +32,7 @@ import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/notification_badge.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, required this.currentIndex, super.key});
@@ -272,6 +273,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);
 
+    // Initialize push notification sync to register FCM token on auth
+    ref.watch(pushNotificationSyncProvider);
+
     // Start block/mute list sync once authenticated (handles post-reinstall login)
     ref.watch(blocklistSyncBridgeProvider);
 
@@ -490,86 +494,91 @@ class _AppShellState extends ConsumerState<AppShell> {
           : child,
       // Bottom nav visible for all shell routes (search, tabs, etc.)
       // For search (currentIndex=-1), no tab is highlighted
-      bottomNavigationBar: Container(
-        color: VineTheme.navGreen,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildTabButton(
-                context,
-                ref,
-                DivineIconName.house.assetPath,
-                0,
-                currentIndex,
-                'home_tab',
-              ),
-              _buildTabButton(
-                context,
-                ref,
-                DivineIconName.compass.assetPath,
-                1,
-                currentIndex,
-                'explore_tab',
-              ),
-              // Camera button in center of bottom nav (hidden on web)
-              if (!kIsWeb)
-                Semantics(
-                  identifier: 'camera_button',
-                  button: true,
-                  label: 'Open camera',
-                  child: GestureDetector(
-                    onTap: () {
-                      Log.info(
-                        '👆 User tapped camera button',
-                        name: 'Navigation',
-                        category: LogCategory.ui,
-                      );
-                      context.pushToCameraWithPermission();
-                    },
-                    child: Container(
-                      width: 72,
-                      height: 48,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VineTheme.cameraButtonGreen,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: SvgPicture.asset(
-                        DivineIconName.cameraRetro.assetPath,
-                        width: 32,
-                        height: 32,
+      // PointerInterceptor ensures the bottom nav receives taps on web
+      // even when HTML platform views (video elements) overlap the area.
+      bottomNavigationBar: PointerInterceptor(
+        intercepting: kIsWeb,
+        child: Container(
+          color: VineTheme.navGreen,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildTabButton(
+                  context,
+                  ref,
+                  DivineIconName.house.assetPath,
+                  0,
+                  currentIndex,
+                  'home_tab',
+                ),
+                _buildTabButton(
+                  context,
+                  ref,
+                  DivineIconName.compass.assetPath,
+                  1,
+                  currentIndex,
+                  'explore_tab',
+                ),
+                // Camera button in center of bottom nav (hidden on web)
+                if (!kIsWeb)
+                  Semantics(
+                    identifier: 'camera_button',
+                    button: true,
+                    label: 'Open camera',
+                    child: GestureDetector(
+                      onTap: () {
+                        Log.info(
+                          '👆 User tapped camera button',
+                          name: 'Navigation',
+                          category: LogCategory.ui,
+                        );
+                        context.pushToCameraWithPermission();
+                      },
+                      child: Container(
+                        width: 72,
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: VineTheme.cameraButtonGreen,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: SvgPicture.asset(
+                          DivineIconName.cameraRetro.assetPath,
+                          width: 32,
+                          height: 32,
+                        ),
                       ),
                     ),
                   ),
+                NotificationBadge(
+                  count:
+                      context.watch<DmUnreadCountCubit>().state +
+                      ref.watch(relayNotificationUnreadCountProvider),
+                  child: _buildTabButton(
+                    context,
+                    ref,
+                    DivineIconName.chat.assetPath,
+                    2,
+                    currentIndex,
+                    'inbox_tab',
+                  ),
                 ),
-              NotificationBadge(
-                count:
-                    context.watch<DmUnreadCountCubit>().state +
-                    ref.watch(relayNotificationUnreadCountProvider),
-                child: _buildTabButton(
+                _buildTabButton(
                   context,
                   ref,
-                  DivineIconName.chat.assetPath,
-                  2,
+                  DivineIconName.userCircle.assetPath,
+                  3,
                   currentIndex,
-                  'inbox_tab',
+                  'profile_tab',
                 ),
-              ),
-              _buildTabButton(
-                context,
-                ref,
-                DivineIconName.userCircle.assetPath,
-                3,
-                currentIndex,
-                'profile_tab',
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
