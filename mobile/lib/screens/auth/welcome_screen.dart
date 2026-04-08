@@ -71,11 +71,18 @@ class WelcomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(currentAuthStateProvider);
 
-    // Gate on `checking` and `authenticated` to show a blank scaffold and
-    // prevent the full welcome UI from flashing during startup auto-login.
+    // Gate on `checking` and `authenticated` to show a splash-continuation
+    // scaffold (matches the native splash background + wordmark pixel-for-pixel)
+    // and prevent the full welcome UI from flashing during startup auto-login.
+    //
+    // The scaffold uses VineTheme.surfaceBackground (#00150D) and the same
+    // Divine wordmark SVG as the native splash assets. The OS removes its
+    // splash the moment Flutter draws its first frame, so the gate frame
+    // must visually match the splash exactly — otherwise the user perceives
+    // a flash where the splash unmounts and a different first frame appears.
     //
     // - `checking`: set exclusively during startup (AuthService.initialize).
-    //   Blank scaffold here covers the window before auth resolves.
+    //   The gate covers the window before auth resolves.
     //
     // - `authenticated`: covers the brief window AFTER auth resolves but
     //   BEFORE GoRouter navigates away from /welcome. When _setAuthState
@@ -84,7 +91,7 @@ class WelcomeScreen extends ConsumerWidget {
     //   Riverpod can rebuild WelcomeScreen with the new state in the same
     //   frame that GoRouter is completing its navigation to /home, causing
     //   the full hero+buttons UI to render for one frame before unmount.
-    //   Rendering the blank scaffold during this transient closes the race.
+    //   Rendering the splash continuation during this transient closes the race.
     //
     // We intentionally do NOT gate on `authenticating` because that state is
     // also set during runtime sign-in flows (signInForAccount, importFromNsec,
@@ -98,7 +105,14 @@ class WelcomeScreen extends ConsumerWidget {
     // See auth_service.dart `_setAuthState` for that half of the fix.
     if (authState == AuthState.checking ||
         authState == AuthState.authenticated) {
-      return const Scaffold(backgroundColor: VineTheme.backgroundColor);
+      // Size 196 matches the iOS LaunchScreen.storyboard LaunchImage width.
+      // DivineIcon renders a 196×196 box; BoxFit.contain scales the wordmark
+      // to 196×~70 centered inside it, so the visible logo is pixel-identical
+      // to the native splash image.
+      return const Scaffold(
+        backgroundColor: VineTheme.surfaceBackground,
+        body: Center(child: DivineIcon(icon: DivineIconName.logo, size: 196)),
+      );
     }
 
     final authService = ref.watch(authServiceProvider);

@@ -219,7 +219,9 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Logo
+                                // Logo (raw SvgPicture so we can size by
+                                // height alone — DivineIcon forces a square
+                                // box which distorts the wordmark layout).
                                 SvgPicture.asset(
                                   'assets/icon/logo.svg',
                                   height: 50,

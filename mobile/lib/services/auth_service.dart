@@ -3462,8 +3462,9 @@ class AuthService implements BackgroundAwareService {
     // _reconnectBunker, and _reconnectAmber are all called from
     // initialize() and each set `authenticating` before reaching the
     // terminal state. Holding `checking` until we reach a terminal state
-    // keeps WelcomeScreen showing its blank scaffold instead of briefly
-    // rendering the full login UI between `checking` and `authenticated`.
+    // keeps WelcomeScreen showing its splash-continuation scaffold instead
+    // of briefly rendering the full login UI between `checking` and
+    // `authenticated`.
     //
     // Runtime sign-in flows (signInForAccount, divine_auth_cubit,
     // email_verification_cubit, tryRefreshExpiredSession) are unaffected

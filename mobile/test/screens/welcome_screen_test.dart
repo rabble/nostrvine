@@ -203,7 +203,7 @@ void main() {
         expect(find.byType(ErrorMessage), findsNothing);
       });
 
-      testWidgets('shows only blank scaffold when auth state is checking', (
+      testWidgets('shows splash continuation when auth state is checking', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -211,22 +211,38 @@ void main() {
         );
         await tester.pump();
 
+        // Welcome content must not be present.
         expect(find.byType(AuthHeroSection), findsNothing);
         expect(find.text('Create a new Divine account'), findsNothing);
         expect(find.text('Sign in with a different account'), findsNothing);
+
+        // Splash-continuation scaffold must visually match the native splash:
+        // - background = VineTheme.surfaceBackground (#00150D, the splash bg)
+        // - centered Divine wordmark logo
+        final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+        expect(scaffold.backgroundColor, equals(VineTheme.surfaceBackground));
+        final logo = tester.widget<DivineIcon>(find.byType(DivineIcon));
+        expect(logo.icon, equals(DivineIconName.logo));
       });
 
       testWidgets(
-        'shows only blank scaffold when auth state is authenticated',
+        'shows splash continuation when auth state is authenticated',
         (tester) async {
           await tester.pumpWidget(
             createTestWidget(authState: AuthState.authenticated),
           );
           await tester.pump();
 
+          // Welcome content must not be present.
           expect(find.byType(AuthHeroSection), findsNothing);
           expect(find.text('Create a new Divine account'), findsNothing);
           expect(find.text('Sign in with a different account'), findsNothing);
+
+          // Splash-continuation scaffold must visually match the native splash.
+          final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+          expect(scaffold.backgroundColor, equals(VineTheme.surfaceBackground));
+          final logo = tester.widget<DivineIcon>(find.byType(DivineIcon));
+          expect(logo.icon, equals(DivineIconName.logo));
         },
       );
 

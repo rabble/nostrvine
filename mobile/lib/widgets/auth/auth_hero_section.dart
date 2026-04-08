@@ -100,7 +100,10 @@ class AuthHeroSection extends StatelessWidget {
 
           const SizedBox(height: 40),
 
-          // Divine wordmark (green SVG logo)
+          // Divine wordmark (green SVG logo).
+          // Uses raw SvgPicture so we can size by width alone; DivineIcon
+          // forces a square box which breaks the wordmark's aspect ratio
+          // inside this constrained Column.
           SvgPicture.asset('assets/icon/logo.svg', width: 120),
         ],
       ),
