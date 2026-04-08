@@ -71,6 +71,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     // Split
     on<ClipEditorOriginalClipReplaced>(_onOriginalClipReplaced);
     on<ClipEditorSplitRequested>(_onSplitRequested);
+
+    // Trim
+    on<ClipEditorTrimUpdated>(_onTrimUpdated);
+    on<ClipEditorTrimDragStarted>(_onTrimDragStarted);
+    on<ClipEditorTrimDragEnded>(_onTrimDragEnded);
   }
 
   final SplitExecutor? _splitExecutor;
@@ -556,5 +561,38 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         category: LogCategory.video,
       );
     }
+  }
+
+  // === TRIM ===
+
+  void _onTrimUpdated(
+    ClipEditorTrimUpdated event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+
+    final base = event.isStart ? _pushUndo(state) : state;
+    final newClips = List<DivineVideoClip>.of(base.clips);
+    newClips[index] = newClips[index].copyWith(
+      trimStart: event.trimStart,
+      trimEnd: event.trimEnd,
+    );
+
+    emit(base.copyWith(clips: List.unmodifiable(newClips)));
+  }
+
+  void _onTrimDragStarted(
+    ClipEditorTrimDragStarted event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    emit(state.copyWith(isTrimDragging: true));
+  }
+
+  void _onTrimDragEnded(
+    ClipEditorTrimDragEnded event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    emit(state.copyWith(isTrimDragging: false));
   }
 }

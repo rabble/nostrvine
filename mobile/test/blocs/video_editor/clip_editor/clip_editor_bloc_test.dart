@@ -1323,6 +1323,136 @@ void main() {
     });
 
     // =========================================================
+    // TRIM
+    // =========================================================
+
+    group('ClipEditorTrimUpdated', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'updates trimStart and trimEnd on target clip',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          ClipEditorTrimUpdated(
+            clipId: 'a',
+            trimStart: const Duration(milliseconds: 500),
+            trimEnd: const Duration(milliseconds: 300),
+            isStart: true,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.clips.first.trimStart,
+                'trimStart',
+                const Duration(milliseconds: 500),
+              )
+              .having(
+                (s) => s.clips.first.trimEnd,
+                'trimEnd',
+                const Duration(milliseconds: 300),
+              ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'pushes undo when isStart is true',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          ClipEditorTrimUpdated(
+            clipId: 'a',
+            trimStart: const Duration(milliseconds: 200),
+            trimEnd: Duration.zero,
+            isStart: true,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.undoStack,
+            'undoStack',
+            hasLength(1),
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'does not push undo when isStart is false',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorTrimUpdated(
+            clipId: 'a',
+            trimStart: Duration(milliseconds: 200),
+            trimEnd: Duration.zero,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.undoStack,
+            'undoStack',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'no-op for unknown clip ID',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorTrimUpdated(
+            clipId: 'unknown',
+            trimStart: Duration(seconds: 1),
+            trimEnd: Duration.zero,
+            isStart: true,
+          ),
+        ),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'updates totalDuration to reflect trimmed clips',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          ClipEditorTrimUpdated(
+            clipId: 'a',
+            trimStart: const Duration(milliseconds: 500),
+            trimEnd: Duration.zero,
+            isStart: true,
+          ),
+        ),
+        verify: (bloc) {
+          // Clip 'a' was 2s, now trimmed by 500ms = 1.5s
+          // Clip 'b' is 3s, unchanged
+          // Total should be 4.5s
+          expect(
+            bloc.state.totalDuration,
+            equals(const Duration(milliseconds: 4500)),
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'does not affect other clips',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          ClipEditorTrimUpdated(
+            clipId: 'a',
+            trimStart: const Duration(seconds: 1),
+            trimEnd: Duration.zero,
+            isStart: true,
+          ),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.clips.last.trimStart, equals(Duration.zero));
+          expect(bloc.state.clips.last.trimEnd, equals(Duration.zero));
+        },
+      );
+    });
+
+    // =========================================================
     // EVENT EQUALITY
     // =========================================================
 
@@ -1459,6 +1589,20 @@ void main() {
         expect(
           const ClipEditorSplitRequested(),
           equals(const ClipEditorSplitRequested()),
+        );
+        expect(
+          const ClipEditorTrimUpdated(
+            clipId: 'a',
+            trimStart: Duration(seconds: 1),
+            trimEnd: Duration.zero,
+          ),
+          equals(
+            const ClipEditorTrimUpdated(
+              clipId: 'a',
+              trimStart: Duration(seconds: 1),
+              trimEnd: Duration.zero,
+            ),
+          ),
         );
       });
     });

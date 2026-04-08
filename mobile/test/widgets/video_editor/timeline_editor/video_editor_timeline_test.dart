@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
@@ -27,16 +28,22 @@ class _MockVideoEditorMainBloc
 class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
     implements ClipEditorBloc {}
 
+class _MockTimelineOverlayBloc
+    extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
+    implements TimelineOverlayBloc {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoEditorTimeline, () {
     late _MockVideoEditorMainBloc mockMainBloc;
     late _MockClipEditorBloc mockClipBloc;
+    late _MockTimelineOverlayBloc mockOverlayBloc;
 
     setUp(() {
       mockMainBloc = _MockVideoEditorMainBloc();
       mockClipBloc = _MockClipEditorBloc();
+      mockOverlayBloc = _MockTimelineOverlayBloc();
 
       when(() => mockMainBloc.state).thenReturn(
         const VideoEditorMainState(),
@@ -49,6 +56,12 @@ void main() {
       );
       when(() => mockClipBloc.stream).thenAnswer(
         (_) => const Stream<ClipEditorState>.empty(),
+      );
+      when(() => mockOverlayBloc.state).thenReturn(
+        const TimelineOverlayState(),
+      );
+      when(() => mockOverlayBloc.stream).thenAnswer(
+        (_) => const Stream<TimelineOverlayState>.empty(),
       );
     });
 
@@ -82,6 +95,9 @@ void main() {
                     value: mockMainBloc,
                   ),
                   BlocProvider<ClipEditorBloc>.value(value: mockClipBloc),
+                  BlocProvider<TimelineOverlayBloc>.value(
+                    value: mockOverlayBloc,
+                  ),
                 ],
                 child: const VideoEditorTimeline(),
               ),

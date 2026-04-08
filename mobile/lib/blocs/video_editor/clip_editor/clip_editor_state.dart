@@ -31,6 +31,7 @@ class ClipEditorState extends Equatable {
     this.isPlayerReady = false,
     this.hasPlayedOnce = false,
     this.isMuted = false,
+    this.isTrimDragging = false,
     this.undoStack = const [],
     this.redoStack = const [],
   });
@@ -69,6 +70,9 @@ class ClipEditorState extends Equatable {
   /// Whether audio is muted during playback.
   final bool isMuted;
 
+  /// Whether a trim handle is currently being dragged.
+  final bool isTrimDragging;
+
   /// Stack of previous clip states for undo.
   final List<ClipSnapshot> undoStack;
 
@@ -81,9 +85,9 @@ class ClipEditorState extends Equatable {
   /// Whether a redo operation is available.
   bool get canRedo => redoStack.isNotEmpty;
 
-  /// Total duration of all clips.
+  /// Total duration of all clips (respecting trim).
   Duration get totalDuration =>
-      clips.fold(Duration.zero, (sum, clip) => sum + clip.duration);
+      clips.fold(Duration.zero, (sum, clip) => sum + clip.trimmedDuration);
 
   /// Creates a copy with the given fields replaced.
   ClipEditorState copyWith({
@@ -98,6 +102,7 @@ class ClipEditorState extends Equatable {
     bool? isPlayerReady,
     bool? hasPlayedOnce,
     bool? isMuted,
+    bool? isTrimDragging,
     List<ClipSnapshot>? undoStack,
     List<ClipSnapshot>? redoStack,
   }) {
@@ -113,6 +118,7 @@ class ClipEditorState extends Equatable {
       isPlayerReady: isPlayerReady ?? this.isPlayerReady,
       hasPlayedOnce: hasPlayedOnce ?? this.hasPlayedOnce,
       isMuted: isMuted ?? this.isMuted,
+      isTrimDragging: isTrimDragging ?? this.isTrimDragging,
       undoStack: undoStack ?? this.undoStack,
       redoStack: redoStack ?? this.redoStack,
     );
@@ -131,6 +137,7 @@ class ClipEditorState extends Equatable {
     isPlayerReady,
     hasPlayedOnce,
     isMuted,
+    isTrimDragging,
     undoStack,
     redoStack,
   ];

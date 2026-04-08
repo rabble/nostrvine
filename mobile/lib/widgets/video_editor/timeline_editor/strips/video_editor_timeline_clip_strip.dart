@@ -3,14 +3,24 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 
 part 'video_editor_timeline_clip_strip_tiles.dart';
+
+/// Callback reporting a trim change for a clip.
+typedef ClipTrimCallback =
+    void Function({
+      required String clipId,
+      required Duration trimStart,
+      required Duration trimEnd,
+      required bool isStart,
+    });
 
 class VideoEditorTimelineClipStrip extends StatefulWidget {
   const VideoEditorTimelineClipStrip({
@@ -21,6 +31,10 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
     this.onReorder,
     this.onReorderChanged,
     this.isInteracting = false,
+    this.onClipTapped,
+    this.trimmingClipId,
+    this.onTrimChanged,
+    this.onTrimDragChanged,
     super.key,
   });
 
@@ -34,6 +48,18 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
   /// When `true` the user is scrolling or pinch-zooming — long press
   /// must not start a reorder drag.
   final bool isInteracting;
+
+  /// Called when a clip tile is tapped with the clip's index.
+  final ValueChanged<int>? onClipTapped;
+
+  /// ID of the clip currently being trimmed, or `null`.
+  final String? trimmingClipId;
+
+  /// Called when a trim handle is dragged.
+  final ClipTrimCallback? onTrimChanged;
+
+  /// Called when a trim drag gesture starts (`true`) or ends (`false`).
+  final ValueChanged<bool>? onTrimDragChanged;
 
   @override
   State<VideoEditorTimelineClipStrip> createState() =>
@@ -116,7 +142,7 @@ class _VideoEditorTimelineClipStripState
 
   double _clipWidth(DivineVideoClip clip) {
     if (widget.clips.length == 1) return widget.totalWidth;
-    return clip.durationInSeconds * widget.pixelsPerSecond;
+    return clip.trimmedDurationInSeconds * widget.pixelsPerSecond;
   }
 
   int _clipIndexAtX(double localX) {
@@ -371,65 +397,204 @@ class _VideoEditorTimelineClipStripState
 
     final shouldAnimate = _isReordering || _isReorderExiting;
 
-    return GestureDetector(
-      onLongPressStart: _onLongPressStart,
-      onLongPressMoveUpdate: _isReordering ? _onLongPressMoveUpdate : null,
-      onLongPressEnd: _isReordering ? _onLongPressEnd : null,
-      onLongPressCancel: _isReordering ? _onLongPressCancel : null,
-      child: AnimatedContainer(
-        duration: shouldAnimate ? animDuration : Duration.zero,
-        curve: animCurve,
-        width: totalWidth,
-        height: TimelineConstants.thumbnailStripHeight,
-        child: Stack(
-          clipBehavior: shouldAnimate ? Clip.none : Clip.hardEdge,
-          children: [
-            // Non-dragged clips.
-            for (int i = 0; i < _orderedClips.length; i++)
-              if (i != _dragIndex)
-                AnimatedPositioned(
-                  key: ValueKey(_orderedClips[i].id),
-                  duration: shouldAnimate ? animDuration : Duration.zero,
-                  curve: animCurve,
-                  left: _isReordering
-                      ? _rowOffset + i * reorderSlotStep
-                      : layout.offsets[i],
-                  top: 0,
-                  width: _isReordering ? _reorderSize : layout.widths[i],
-                  height: TimelineConstants.thumbnailStripHeight,
-                  child: _AccessibleClipTile(
-                    clip: _orderedClips[i],
-                    index: i,
-                    total: _orderedClips.length,
-                    clipWidth: layout.widths[i],
-                    thumbnailNotifier: _thumbnails[_orderedClips[i].id],
-                    onReorder: _reorderClip,
-                  ),
-                ),
-            // Dragged clip — AnimatedPositioned so left+width animate
-            // together during shrink, then Duration.zero for instant
-            // finger-following after the animation completes.
-            if (_dragIndex != null)
-              AnimatedPositioned(
-                key: const ValueKey('dragged'),
-                duration: _dragAnimating ? animDuration : Duration.zero,
-                curve: animCurve,
-                left: _dragAnimating
-                    ? _dragStartClipCenter - _dragClipWidth / 2
-                    : _effectiveLocalX - _dragClipWidth * _dragFingerRatio,
-                top: 0,
-                width: _dragClipWidth,
-                height: TimelineConstants.thumbnailStripHeight,
-                child: _DraggedClipTile(
-                  clip: _orderedClips[_dragIndex!],
-                  index: _dragIndex!,
-                  fullWidth: layout.widths[_dragIndex!],
-                  thumbnailNotifier: _thumbnails[_orderedClips[_dragIndex!].id],
-                ),
+    final trimExpand = widget.trimmingClipId != null
+        ? TimelineConstants.trimHandleWidth + 12.0
+        : 0.0;
+
+    return _HitExpandedBox(
+      expandLeft: trimExpand,
+      expandRight: trimExpand,
+      child: GestureDetector(
+        onLongPressStart: _onLongPressStart,
+        onLongPressMoveUpdate: _isReordering ? _onLongPressMoveUpdate : null,
+        onLongPressEnd: _isReordering ? _onLongPressEnd : null,
+        onLongPressCancel: _isReordering ? _onLongPressCancel : null,
+        child: _HitExpandedBox(
+          expandLeft: trimExpand,
+          expandRight: trimExpand,
+          child: AnimatedContainer(
+            duration: shouldAnimate ? animDuration : Duration.zero,
+            curve: animCurve,
+            width: totalWidth,
+            height: TimelineConstants.thumbnailStripHeight,
+            child: _HitExpandedBox(
+              expandLeft: trimExpand,
+              expandRight: trimExpand,
+              child: Stack(
+                clipBehavior: shouldAnimate || widget.trimmingClipId != null
+                    ? Clip.none
+                    : Clip.hardEdge,
+                children: [
+                  // Non-dragged, non-trimming clips.
+                  for (int i = 0; i < _orderedClips.length; i++)
+                    if (i != _dragIndex &&
+                        _orderedClips[i].id != widget.trimmingClipId)
+                      AnimatedPositioned(
+                        key: ValueKey(_orderedClips[i].id),
+                        duration: shouldAnimate ? animDuration : Duration.zero,
+                        curve: animCurve,
+                        left: _isReordering
+                            ? _rowOffset + i * reorderSlotStep
+                            : layout.offsets[i],
+                        top: 0,
+                        width: _isReordering ? _reorderSize : layout.widths[i],
+                        height: TimelineConstants.thumbnailStripHeight,
+                        child: _AccessibleClipTile(
+                          clip: _orderedClips[i],
+                          index: i,
+                          total: _orderedClips.length,
+                          clipWidth: layout.widths[i],
+                          thumbnailNotifier: _thumbnails[_orderedClips[i].id],
+                          onReorder: _reorderClip,
+                          onTap: widget.onClipTapped,
+                        ),
+                      ),
+                  // Trimming clip — rendered last so handles stay on top.
+                  // AnimatedPositioned is expanded by trimExpand on each side
+                  // so the handle hit-areas fall within its bounds.
+                  for (int i = 0; i < _orderedClips.length; i++)
+                    if (i != _dragIndex &&
+                        _orderedClips[i].id == widget.trimmingClipId)
+                      AnimatedPositioned(
+                        key: ValueKey(_orderedClips[i].id),
+                        duration: shouldAnimate ? animDuration : Duration.zero,
+                        curve: animCurve,
+                        left: _isReordering
+                            ? _rowOffset + i * reorderSlotStep
+                            : layout.offsets[i] - trimExpand,
+                        top: 0,
+                        width: _isReordering
+                            ? _reorderSize
+                            : layout.widths[i] + trimExpand * 2,
+                        height: TimelineConstants.thumbnailStripHeight,
+                        child: _TrimmableClipTile(
+                          clip: _orderedClips[i],
+                          clipWidth: layout.widths[i],
+                          pixelsPerSecond: widget.pixelsPerSecond,
+                          thumbnailNotifier: _thumbnails[_orderedClips[i].id],
+                          onTrimChanged: widget.onTrimChanged,
+                          onTrimDragChanged: widget.onTrimDragChanged,
+                          trimExpand: trimExpand,
+                          onTap: widget.onClipTapped != null
+                              ? () => widget.onClipTapped!(i)
+                              : null,
+                        ),
+                      ),
+                  // Dragged clip — AnimatedPositioned so left+width animate
+                  // together during shrink, then Duration.zero for instant
+                  // finger-following after the animation completes.
+                  if (_dragIndex != null)
+                    AnimatedPositioned(
+                      key: const ValueKey('dragged'),
+                      duration: _dragAnimating ? animDuration : Duration.zero,
+                      curve: animCurve,
+                      left: _dragAnimating
+                          ? _dragStartClipCenter - _dragClipWidth / 2
+                          : _effectiveLocalX -
+                                _dragClipWidth * _dragFingerRatio,
+                      top: 0,
+                      width: _dragClipWidth,
+                      height: TimelineConstants.thumbnailStripHeight,
+                      child: _DraggedClipTile(
+                        clip: _orderedClips[_dragIndex!],
+                        index: _dragIndex!,
+                        fullWidth: layout.widths[_dragIndex!],
+                        thumbnailNotifier:
+                            _thumbnails[_orderedClips[_dragIndex!].id],
+                      ),
+                    ),
+                ],
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
+  }
+}
+
+/// Wraps a child and expands its hit-test area beyond its layout bounds.
+///
+/// This is needed because Flutter's [Stack] (and other [RenderBox] subclasses)
+/// reject hit-tests that land outside `size`. When trim handles are positioned
+/// outside the clip strip's bounds via [Clip.none], they paint correctly but
+/// cannot receive touches. Wrapping the strip hierarchy with this widget
+/// extends the hit-test rect so outer-positioned handles remain interactive.
+class _HitExpandedBox extends SingleChildRenderObjectWidget {
+  const _HitExpandedBox({
+    required super.child,
+    this.expandLeft = 0,
+    this.expandRight = 0,
+  });
+
+  final double expandLeft;
+  final double expandRight;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderHitExpandedBox(
+      expandLeft: expandLeft,
+      expandRight: expandRight,
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderHitExpandedBox renderObject,
+  ) {
+    renderObject
+      ..expandLeft = expandLeft
+      ..expandRight = expandRight;
+  }
+}
+
+class _RenderHitExpandedBox extends RenderProxyBox {
+  _RenderHitExpandedBox({
+    required double expandLeft,
+    required double expandRight,
+  }) : _expandLeft = expandLeft,
+       _expandRight = expandRight;
+
+  double _expandLeft;
+  double get expandLeft => _expandLeft;
+  set expandLeft(double value) {
+    if (_expandLeft == value) return;
+    _expandLeft = value;
+  }
+
+  double _expandRight;
+  double get expandRight => _expandRight;
+  set expandRight(double value) {
+    if (_expandRight == value) return;
+    _expandRight = value;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (position.dx >= -_expandLeft &&
+        position.dx < size.width + _expandRight &&
+        position.dy >= 0 &&
+        position.dy < size.height) {
+      // Inside normal bounds → standard path so GestureDetectors
+      // (e.g. longPress for reorder) register in the hit result.
+      if (size.contains(position)) {
+        if (hitTestChildren(result, position: position) ||
+            hitTestSelf(position)) {
+          result.add(BoxHitTestEntry(this, position));
+          return true;
+        }
+      } else {
+        // Expanded margin → bypass child's size.contains() so
+        // touches reach the trim handles.
+        final childHit =
+            child?.hitTestChildren(result, position: position) ?? false;
+        if (childHit || hitTestSelf(position)) {
+          result.add(BoxHitTestEntry(this, position));
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

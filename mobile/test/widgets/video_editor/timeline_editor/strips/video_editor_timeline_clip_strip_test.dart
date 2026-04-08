@@ -100,8 +100,7 @@ void main() {
           find.byType(AnimatedContainer),
         );
         expect(
-          (container.constraints as BoxConstraints?)?.maxHeight ??
-              container.decoration,
+          container.constraints?.maxHeight ?? container.decoration,
           isNotNull,
         );
       });
@@ -111,7 +110,12 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(find.byType(GestureDetector), findsOneWidget);
+        // 1 root GestureDetector for long-press reorder +
+        // 1 per clip tile for tap selection.
+        expect(
+          find.byType(GestureDetector),
+          findsAtLeast(1),
+        );
       });
     });
 
@@ -129,7 +133,9 @@ void main() {
         );
 
         // Long press on single clip should not enter reorder mode
-        await tester.longPress(find.byType(GestureDetector));
+        await tester.longPress(
+          find.byType(VideoEditorTimelineClipStrip),
+        );
         await tester.pumpAndSettle();
 
         expect(reorderTriggered, isFalse);
@@ -149,7 +155,9 @@ void main() {
           ),
         );
 
-        await tester.longPress(find.byType(GestureDetector));
+        await tester.longPress(
+          find.byType(VideoEditorTimelineClipStrip),
+        );
         await tester.pumpAndSettle();
 
         expect(reorderTriggered, isFalse);

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 /// Sizing and layout constants for the video editor timeline.
 abstract class TimelineConstants {
   /// Height of the timeline.
@@ -35,4 +37,35 @@ abstract class TimelineConstants {
 
   /// Horizontal padding around the scrollable content.
   static const double horizontalPadding = 12;
+
+  // --- Trim handles ---
+
+  /// Width of each trim handle (left / right).
+  static const double trimHandleWidth = 16;
+
+  /// Width of the vertical marker inside a trim handle.
+  static const double trimHandleMarkerWidth = 3;
+
+  /// Height of the vertical marker inside a trim handle.
+  static const double trimHandleMarkerHeight = 32;
+
+  /// Colour of the vertical marker inside each trim handle.
+  static const Color trimHandleMarkerColor = Color(0xF0000000);
+
+  /// Border width around a clip in trim mode.
+  static const double trimBorderWidth = 2;
+
+  /// Minimum trimmed duration for a clip.
+  static const Duration minTrimDuration = Duration(milliseconds: 60);
+
+  // --- Overlay strips (layers / filters / sounds) ---
+
+  /// Height of a single row in an overlay strip.
+  static const double overlayRowHeight = 40;
+
+  /// Vertical gap between the clip strip and the first overlay strip.
+  static const double overlayStripTopGap = 8;
+
+  /// Vertical gap between different overlay strip sections.
+  static const double overlayStripGap = 4;
 }
