@@ -152,6 +152,7 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                               totalWidth: totalWidth,
                               pixelsPerSecond: _pixelsPerSecond,
                               scrollController: _scrollController,
+                              isInteracting: _isUserScrolling || _isPinching,
                               onReorder: (reorderedClips) {
                                 ref
                                     .read(clipManagerProvider.notifier)

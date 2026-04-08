@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -20,6 +21,7 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
     this.scrollController,
     this.onReorder,
     this.onReorderChanged,
+    this.isInteracting = false,
     super.key,
   });
 
@@ -30,6 +32,10 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
   final ValueChanged<List<DivineVideoClip>>? onReorder;
   final ValueChanged<bool>? onReorderChanged;
 
+  /// When `true` the user is scrolling or pinch-zooming — long press
+  /// must not start a reorder drag.
+  final bool isInteracting;
+
   @override
   State<VideoEditorTimelineClipStrip> createState() =>
       _VideoEditorTimelineClipStripState();
@@ -38,6 +44,7 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
 class _VideoEditorTimelineClipStripState
     extends State<VideoEditorTimelineClipStrip> {
   bool _isReordering = false;
+  bool _isReorderExiting = false;
   bool _dragAnimating = false;
   int? _dragIndex;
   double _rowOffset = 0;
@@ -175,6 +182,7 @@ class _VideoEditorTimelineClipStripState
 
   void _onLongPressStart(LongPressStartDetails details) {
     if (widget.clips.length <= 1) return;
+    if (widget.isInteracting) return;
 
     final fingerX = details.localPosition.dx;
 
@@ -320,6 +328,17 @@ class _VideoEditorTimelineClipStripState
     _endReorder();
   }
 
+  /// Programmatic reorder for accessibility custom actions.
+  void _reorderClip(int from, int to) {
+    if (from == to) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      final clip = _orderedClips.removeAt(from);
+      _orderedClips.insert(to, clip);
+    });
+    widget.onReorder?.call(List.of(_orderedClips));
+  }
+
   void _endReorder() {
     if (!_isReordering) return;
 
@@ -328,18 +347,13 @@ class _VideoEditorTimelineClipStripState
     final reordered = List<DivineVideoClip>.of(_orderedClips);
     final changed = !_sameOrder(reordered, widget.clips);
 
+    // Phase 1: switch to exit mode — layout returns to normal widths
+    // while AnimatedPositioned still has animDuration.
     setState(() {
       _isReordering = false;
+      _isReorderExiting = true;
       _dragIndex = null;
-      _dragGlobalX = 0;
-      _dragStartGlobalX = 0;
-      _dragStartLocalX = 0;
-      _dragStartScrollOffset = 0;
-      _dragClipWidth = 0;
-      _dragFingerRatio = 0.5;
-      _dragStartClipCenter = 0;
       _dragAnimating = false;
-      _rowOffset = 0;
     });
 
     widget.onReorderChanged?.call(false);
@@ -347,6 +361,23 @@ class _VideoEditorTimelineClipStripState
     if (changed) {
       widget.onReorder?.call(reordered);
     }
+
+    // Phase 2: after the grow-back animation completes, clean up.
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) {
+        setState(() {
+          _isReorderExiting = false;
+          _dragGlobalX = 0;
+          _dragStartGlobalX = 0;
+          _dragStartLocalX = 0;
+          _dragStartScrollOffset = 0;
+          _dragClipWidth = 0;
+          _dragFingerRatio = 0.5;
+          _dragStartClipCenter = 0;
+          _rowOffset = 0;
+        });
+      }
+    });
   }
 
   static bool _sameOrder(
@@ -393,25 +424,27 @@ class _VideoEditorTimelineClipStripState
         ? _orderedClips.length * reorderSlotStep - gap
         : _normalTotalWidth;
 
+    final shouldAnimate = _isReordering || _isReorderExiting;
+
     return GestureDetector(
       onLongPressStart: _onLongPressStart,
       onLongPressMoveUpdate: _isReordering ? _onLongPressMoveUpdate : null,
       onLongPressEnd: _isReordering ? _onLongPressEnd : null,
       onLongPressCancel: _isReordering ? _onLongPressCancel : null,
       child: AnimatedContainer(
-        duration: animDuration,
+        duration: shouldAnimate ? animDuration : Duration.zero,
         curve: animCurve,
         width: totalWidth,
         height: TimelineConstants.thumbnailStripHeight,
         child: Stack(
-          clipBehavior: Clip.none,
+          clipBehavior: shouldAnimate ? Clip.none : Clip.hardEdge,
           children: [
             // Non-dragged clips.
             for (int i = 0; i < _orderedClips.length; i++)
               if (i != _dragIndex)
                 AnimatedPositioned(
                   key: ValueKey(_orderedClips[i].id),
-                  duration: animDuration,
+                  duration: shouldAnimate ? animDuration : Duration.zero,
                   curve: animCurve,
                   left: _isReordering
                       ? _rowOffset + i * reorderSlotStep
@@ -421,10 +454,7 @@ class _VideoEditorTimelineClipStripState
                       ? _reorderSize
                       : _clipWidth(_orderedClips[i]),
                   height: TimelineConstants.thumbnailStripHeight,
-                  child: _buildClipTile(
-                    _orderedClips[i],
-                    _clipWidth(_orderedClips[i]),
-                  ),
+                  child: _buildAccessibleClipTile(i),
                 ),
             // Dragged clip — AnimatedPositioned so left+width animate
             // together during shrink, then Duration.zero for instant
@@ -460,6 +490,23 @@ class _VideoEditorTimelineClipStripState
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAccessibleClipTile(int index) {
+    final clip = _orderedClips[index];
+    final total = _orderedClips.length;
+    return Semantics(
+      label: 'Clip ${index + 1} of $total',
+      customSemanticsActions: {
+        if (index > 0)
+          const CustomSemanticsAction(label: 'Move left'): () =>
+              _reorderClip(index, index - 1),
+        if (index < total - 1)
+          const CustomSemanticsAction(label: 'Move right'): () =>
+              _reorderClip(index, index + 1),
+      },
+      child: _buildClipTile(clip, _clipWidth(clip)),
     );
   }
 
