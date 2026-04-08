@@ -1,35 +1,50 @@
 # Divine Live Server Design
 
-Status: Proposed
+Status: In Progress
 Date: 2026-04-08
-Validated against: `live-spaces-v1` mobile client branch, existing NIP-98 auth patterns in `mobile/lib/services/nip98_auth_service.dart`, and the hosted LiveKit Cloud project authenticated locally on 2026-04-08.
+Last updated: 2026-04-08
+Validated against: `live-spaces-v1` mobile client branch, `divine-live-server` `main` at `64a497c`, and the hosted LiveKit Cloud `divine` project authenticated locally on 2026-04-08.
 
 ## Goal
 
-Create a dedicated Divine live control-plane service in a new repo at `../divine-live-server`, deployed at `https://live.api.divine.video`, that powers livestream room creation, join-token minting, session lifecycle, and replay handoff for the mobile live feature.
+Document the dedicated Divine live control-plane service in `../divine-live-server`, deployed at `https://live.api.divine.video`, that powers livestream room creation, join-token minting, session lifecycle, speaker grants, and replay handoff for the mobile live feature.
+
+## Implementation Snapshot
+
+As of `divine-live-server` `main` `64a497c`:
+
+- the repo exists and boots as a Rust/Axum service from `src/main.rs`
+- production startup loads env config, connects to Postgres, runs `sqlx` migrations, and serves HTTP
+- the app router exposes `/health`, room create/start/end, join, participant role, recording lookup, and LiveKit webhook routes
+- NIP-98 verification is implemented in `src/auth/nip98.rs`
+- role-based LiveKit join token minting is implemented in `src/livekit/tokens.rs`
+- replay-ready webhook handling is implemented in `src/livekit/webhooks.rs` and `src/routes/live_webhooks.rs`
+- Docker and GKE deployment assets exist in `Dockerfile` and `k8s/`
+- route and auth tests exist under `tests/`
+- Hosted LiveKit Cloud is authenticated locally for the `divine` project
 
 ## Product Decisions
 
-These decisions were explicitly approved during brainstorming:
+These decisions were approved during design and are still the intended product boundary:
 
-- Create a new dedicated backend repo: `../divine-live-server`
-- Deploy it on a dedicated host: `live.api.divine.video`
-- Keep it separate from `divine-funnelcake` at `api.divine.video`
-- Use hosted LiveKit Cloud first, not self-hosted LiveKit
-- Verify Nostr-signed HTTP requests rather than Divine-account session cookies or bearer tokens
-- Allow any valid Nostr signer to join a public room as audience
-- Restrict room hosting to a Divine-managed allowlist in v1
-- Keep Nostr as the public source of truth for room/session/chat/presence discovery
-- Include replay and recording webhook handling in v1
+- use a dedicated backend repo: `../divine-live-server`
+- deploy it on a dedicated host: `live.api.divine.video`
+- keep it separate from `divine-funnelcake` at `api.divine.video`
+- use hosted LiveKit Cloud first, not self-hosted LiveKit
+- verify Nostr-signed HTTP requests rather than Divine-account session cookies or bearer tokens
+- allow any valid Nostr signer to join a public room as audience
+- restrict room hosting to a Divine-managed allowlist in v1
+- keep Nostr as the public source of truth for room/session/chat/presence discovery
+- include replay and recording webhook handling in v1
 
 ## Non-Goals For V1
 
-- Replacing Nostr as the discovery or social source of truth
-- Running our own SFU or self-hosting LiveKit
-- Folding live media control-plane logic into `divine-funnelcake`
-- Requiring a Divine-only account system to watch public rooms
-- Private rooms, paywalled rooms, or guest access without a Nostr signer
-- Full moderator policy tooling beyond host-controlled room lifecycle and role grants
+- replacing Nostr as the discovery or social source of truth
+- running our own SFU or self-hosting LiveKit
+- folding live media control-plane logic into `divine-funnelcake`
+- requiring a Divine-only account system to watch public rooms
+- private rooms, paywalled rooms, or guest access without a Nostr signer
+- full moderator policy tooling beyond host-controlled room lifecycle and role grants
 
 ## Why A Separate Service
 
@@ -111,16 +126,16 @@ Request format:
 
 - `Authorization: Nostr <base64-encoded kind 27235 event>`
 
-The server must verify:
+The server verifies:
 
 - event kind is `27235`
 - Schnorr signature is valid
 - the `u` tag matches the exact request URL
 - the `method` tag matches the exact HTTP method
-- the `payload` tag matches the request body hash for `POST`, `PUT`, and `PATCH`
-- the event timestamp is fresh, with a short clock-skew window
+- the `payload` tag matches the request body hash
+- the event timestamp is fresh
 
-Recommended initial freshness window:
+Current implementation constants in `src/auth/nip98.rs`:
 
 - reject requests older than 10 minutes
 - reject requests more than 60 seconds in the future
@@ -159,9 +174,9 @@ Only pubkeys in the Divine host allowlist may:
 
 ### Speaker Access
 
-Speaker publishing must be server-authoritative. Nostr-only speaker state is not enough to mint secure publish tokens.
+Speaker publishing is server-authoritative. Nostr-only speaker state is not enough to mint secure publish tokens.
 
-To support invited speakers, the service must store room role grants and only mint publish-capable speaker tokens for pubkeys explicitly granted speaker access by the host.
+To support invited speakers, the service stores room role grants and only mints publish-capable speaker tokens for pubkeys explicitly granted speaker access by the host.
 
 ### Moderator Access
 
@@ -176,14 +191,14 @@ For v1:
 
 Use hosted LiveKit Cloud for v1.
 
-The service will store:
+The service stores:
 
 - LiveKit server URL
 - LiveKit API key
 - LiveKit API secret
-- LiveKit webhook secret
+- a configured webhook secret value for follow-up cleanup or future verification work
 
-The service will mint short-lived access tokens with role-specific grants:
+The service mints short-lived access tokens with role-specific grants:
 
 - audience:
   - `roomJoin = true`
@@ -200,11 +215,11 @@ The service will mint short-lived access tokens with role-specific grants:
 
 Participant identity should be the caller's full hex pubkey so media participation preserves Nostr identity continuity.
 
-Recommended initial token TTL:
+Current implementation details in `src/livekit/tokens.rs`:
 
-- 15 minutes for join tokens
-
-The room name passed to LiveKit should be stable and backend-derived from the Divine room record, not user-editable free text.
+- join token TTL is 15 minutes
+- the LiveKit room name is currently the Divine room id
+- `roomName`, `participantIdentity`, `serverUrl`, `canPublish`, and `expiresAt` are returned to the client
 
 ## API Contract
 
@@ -280,7 +295,6 @@ Notes:
 
 - the service creates the active session record
 - the mobile app still publishes the corresponding Nostr session event
-- the service may also trigger LiveKit recording/egress startup here if replay is enabled
 
 ### `POST /v1/live/rooms/:roomId/join`
 
@@ -408,10 +422,8 @@ Response when replay exists:
 
 Response when replay is not available yet:
 
-- `204 No Content`, or
 - `404 Not Found`
-
-The mobile client already treats both as "no replay yet".
+- `204 No Content` remains acceptable for future callers, though the current implementation returns `404`
 
 ### `POST /v1/live/webhooks/livekit`
 
@@ -419,18 +431,29 @@ Receives LiveKit webhook callbacks.
 
 Auth:
 
-- verified via LiveKit webhook signature, not NIP-98
+- verified via LiveKit webhook authorization, not NIP-98
 
-Responsibilities:
+Current implementation responsibilities:
 
-- verify webhook signature
-- update room/session status from room lifecycle events
-- update replay status when recording becomes ready or fails
-- write structured audit logs for lifecycle transitions
+- verify the Bearer token authorization from LiveKit
+- parse `recording_ready` webhook payloads
+- update replay status when recording becomes ready
+
+Follow-up responsibilities:
+
+- cover more room/session lifecycle webhook types if the mobile product needs them
+- reconcile the configured `LIVEKIT_WEBHOOK_SECRET` with the verification path in code
 
 ## Storage Model
 
-Use a durable relational database from day one. This service should not rely on in-memory session tracking.
+Production runtime uses a durable relational database from day one.
+
+Current implementation details:
+
+- `src/main.rs` always connects to Postgres and runs `sqlx` migrations before serving
+- `migrations/0001_init.sql` creates `host_allowlist`, `live_rooms`, `live_sessions`, and `live_room_roles`
+- repository modules under `src/repos/` back the Postgres code path
+- `AppState` still carries an in-memory backend for fast route and unit tests
 
 ### Tables
 
@@ -460,7 +483,7 @@ Use a durable relational database from day one. This service should not rely on 
 - `id` primary key
 - `room_id` foreign key
 - `host_pubkey`
-- `status` enum: `planned | live | ended`
+- `status` enum-ish text field currently used as `live | ended`
 - `started_at`
 - `ended_at`
 - `recording_status`
@@ -472,7 +495,7 @@ Use a durable relational database from day one. This service should not rely on 
 
 - `room_id`
 - `pubkey`
-- `role` enum: `host | speaker`
+- `role`
 - `granted_by`
 - `granted_at`
 - `revoked_at`
@@ -491,14 +514,12 @@ The service should not require every room/session update to round-trip through i
 - presence
 - chat
 
-However, the service must remain authoritative for media permissions:
+However, the service remains authoritative for media permissions:
 
 - host allowlist
 - room ownership
 - speaker publish grants
 - session status for token minting
-
-This means the public Nostr state and backend control-plane state can overlap, but they serve different purposes.
 
 ## Error Model
 
@@ -511,10 +532,12 @@ Examples:
   - invalid role value
 - `401 Unauthorized`
   - missing or invalid NIP-98 auth
+  - missing or invalid LiveKit webhook authorization
 - `403 Forbidden`
   - valid signer but not allowed to host, publish, or end session
 - `404 Not Found`
   - unknown room or session
+  - replay not available
 - `409 Conflict`
   - joining a room with no active session
   - attempting to start a second active session for the same room
@@ -534,11 +557,11 @@ Error body shape:
 
 ### Repo
 
-- new repo: `../divine-live-server`
+- backend repo now exists at `../divine-live-server`
 
 ### Public Host
 
-- production: `https://live.api.divine.video`
+- production host: `https://live.api.divine.video`
 
 ### Required Configuration
 
@@ -548,62 +571,46 @@ Error body shape:
 - `LIVEKIT_API_KEY`
 - `LIVEKIT_API_SECRET`
 - `LIVEKIT_WEBHOOK_SECRET`
-- `REPLAY_PUBLIC_BASE_URL` or equivalent recording playback base
+- `REPLAY_PUBLIC_BASE_URL`
+- `PORT`
 
-### Client Integration Follow-Up
+### Deployment Assets
 
-The mobile client should stop deriving live API requests from the generic `BACKEND_URL`.
+Current repo assets:
 
-Add a dedicated `LIVE_API_URL` client setting, defaulting to `https://live.api.divine.video`, so livestream control-plane traffic is isolated from the rest of the app backend.
+- `.env.example`
+- `Dockerfile`
+- `k8s/deployment.yaml`
+- `k8s/service.yaml`
+- `k8s/httproute.yaml`
 
-## Security Notes
+## Observability And Testing
 
-- never trust a requested publish role without checking backend authorization
-- never mint host or speaker tokens from client-provided room metadata alone
-- do not log raw LiveKit API secrets or raw NIP-98 auth headers
-- treat replay URLs as public only for public rooms
-- keep all pubkeys untruncated in logs and records
-
-## Observability
-
-Add from day one:
+Current implementation provides:
 
 - `GET /health`
-- structured logs with request id, room id, session id, and caller pubkey
-- counters for auth failures, join-token issuance, host denials, session starts, session ends, and webhook failures
+- health JSON with safe `service` and `version` metadata
+- unit and route tests for health, NIP-98, room lifecycle, join authorization, and replay webhooks
 
-## Testing Requirements
+Still needed:
 
-### Unit Tests
-
-- NIP-98 verification
-- request URL and payload-hash validation
-- host allowlist authorization
-- role-to-token-grant mapping
-- LiveKit webhook signature verification
-- recording status transitions
-
-### Integration Tests
-
-- create room as allowlisted host
-- reject create room for non-allowlisted pubkey
-- start session then mint host token
-- mint audience token for any valid signer
-- reject unauthorized speaker token request
-- grant speaker role then mint speaker token
-- end session and reject later join attempts
-- update replay state from verified webhook payload
+- structured request ids in logs
+- counters and metrics for auth failures, token issuance, and webhook failures
+- sqlx-backed integration tests that exercise migrations and repositories against a real Postgres database
 
 ## Migration Impact On Mobile
 
-The existing mobile live branch already matches most of the basic control-plane contract, but backend-authoritative speaker publishing requires one client follow-up:
+The existing mobile live branch still needs two client follow-ups:
 
-- host promote/demote actions must call `PUT /v1/live/rooms/:roomId/participants/:pubkey/role` in addition to publishing the Nostr session update
+- add a dedicated `LIVE_API_URL` client setting, defaulting to `https://live.api.divine.video`, so livestream control-plane traffic is isolated from the rest of the app backend
+- call `PUT /v1/live/rooms/:roomId/participants/:pubkey/role` when the host promotes or demotes speakers
 
-Without that follow-up, public Nostr state may show a speaker while the backend still refuses to mint a publish-capable token.
+Without the second follow-up, public Nostr state may show a speaker while the backend still refuses to mint a publish-capable token.
 
-## Open Follow-Ups
+## Known Gaps And Follow-Ups
 
-- decide whether replay output URLs should be served directly from LiveKit-managed storage or remapped behind a Divine domain
-- decide whether session start should always auto-enable recording
-- decide whether host removal and mute actions should call LiveKit server APIs in v1 or remain UI/Nostr-only until a later moderation slice
+- route tests mostly exercise the in-memory `AppState` backend, not the production Postgres path
+- `LIVEKIT_WEBHOOK_SECRET` is configured but not currently used by `src/livekit/webhooks.rs`
+- `REPLAY_PUBLIC_BASE_URL` is configured but replay responses currently return the playback URL from the webhook payload directly
+- observability is still minimal beyond `/health`
+- host moderation actions that should affect LiveKit participants directly remain a follow-up slice
