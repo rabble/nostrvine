@@ -58,8 +58,10 @@ void main() {
   tearDown(() async {
     uploadManager.dispose();
     await Hive.close();
-    if (testDir.existsSync()) {
+    try {
       await testDir.delete(recursive: true);
+    } on PathNotFoundException catch (_) {
+      // Lock file may already be deleted by Hive.close().
     }
   });
 
