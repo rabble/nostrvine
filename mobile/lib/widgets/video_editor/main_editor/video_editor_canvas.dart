@@ -59,7 +59,10 @@ class _VideoEditorCanvasState extends State<VideoEditorCanvas> {
         }
       },
       child: Padding(
-        padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
+        padding: .only(
+          // FIXME(hm21)  bottom:  VideoEditorConstants.bottomBarHeight,
+          top: MediaQuery.viewPaddingOf(context).top,
+        ),
         child: _CanvasFitter(
           builder: (bodySize, renderSize) =>
               _VideoEditor(renderSize: renderSize, bodySize: bodySize),

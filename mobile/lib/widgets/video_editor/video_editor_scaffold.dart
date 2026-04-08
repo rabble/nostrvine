@@ -39,6 +39,7 @@ class VideoEditorScaffold extends ConsumerWidget {
         backgroundColor: VineTheme.surfaceContainerHigh,
         resizeToAvoidBottomInset: false,
         body: Column(
+          spacing: 16,
           children: [
             Expanded(
               child: Stack(
@@ -50,7 +51,7 @@ class VideoEditorScaffold extends ConsumerWidget {
                   else
                     const VideoEditorCanvas(),
                   const _OverlayControls(),
-                  const _BottomActions(),
+                  // FIXME(hm21) const _BottomActions(),
                 ],
               ),
             ),
@@ -101,6 +102,7 @@ class _OverlayControls extends StatelessWidget {
 ///
 /// Shows [VideoEditorFilterBottomBar] when filter editor is open, hides the
 /// bar during layer interaction, and falls back to [VideoEditorMainBottomBar].
+// ignore: unused_element
 class _BottomActions extends StatelessWidget {
   const _BottomActions();
 
