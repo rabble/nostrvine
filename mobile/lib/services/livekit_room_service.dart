@@ -59,7 +59,11 @@ abstract class LiveKitRoomClient {
 
   Future<void> prepareConnection(String serverUrl, String token);
 
-  Future<void> connect(String serverUrl, String token);
+  Future<void> connect(
+    String serverUrl,
+    String token, {
+    bool disableFastConnectPublish = false,
+  });
 
   Future<void> disconnect();
 
@@ -127,7 +131,11 @@ class LiveKitRoomService {
 
     try {
       await _client.prepareConnection(token.serverUrl, token.token);
-      await _client.connect(token.serverUrl, token.token);
+      await _client.connect(
+        token.serverUrl,
+        token.token,
+        disableFastConnectPublish: true,
+      );
       _updateState(
         _currentState.copyWith(
           status: _connectedStatusForCurrentTracks(),
@@ -333,8 +341,18 @@ class _SdkLiveKitRoomClient implements LiveKitRoomClient {
   }
 
   @override
-  Future<void> connect(String serverUrl, String token) {
-    return _room.connect(serverUrl, token);
+  Future<void> connect(
+    String serverUrl,
+    String token, {
+    bool disableFastConnectPublish = false,
+  }) {
+    return _room.connect(
+      serverUrl,
+      token,
+      fastConnectOptions: disableFastConnectPublish
+          ? lk.FastConnectOptions()
+          : null,
+    );
   }
 
   @override

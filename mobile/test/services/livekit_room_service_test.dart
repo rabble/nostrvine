@@ -39,6 +39,7 @@ void main() {
 
         expect(client.prepareCalls, 1);
         expect(client.connectCalls, 1);
+        expect(client.lastDisableFastConnectPublish, isTrue);
         expect(client.lastUrl, 'wss://livekit.example.com');
         expect(client.lastToken, 'jwt-token');
         expect(
@@ -211,6 +212,7 @@ class _FakeLiveKitRoomClient implements LiveKitRoomClient {
   bool failConnect = false;
   String? lastUrl;
   String? lastToken;
+  bool? lastDisableFastConnectPublish;
   final List<bool> cameraEnabledCalls = <bool>[];
   final List<bool> microphoneEnabledCalls = <bool>[];
 
@@ -222,10 +224,15 @@ class _FakeLiveKitRoomClient implements LiveKitRoomClient {
   }
 
   @override
-  Future<void> connect(String serverUrl, String token) async {
+  Future<void> connect(
+    String serverUrl,
+    String token, {
+    bool disableFastConnectPublish = false,
+  }) async {
     connectCalls += 1;
     lastUrl = serverUrl;
     lastToken = token;
+    lastDisableFastConnectPublish = disableFastConnectPublish;
     if (failConnect) {
       throw StateError('connect failed');
     }
