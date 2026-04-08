@@ -3894,7 +3894,8 @@ void main() {
       });
 
       test(
-        'non-current ready preload ignores buffering=false until it becomes current',
+        'non-current ready preload ignores '
+        'buffering=false until it becomes current',
         () async {
           final videos = createTestVideos(count: 3);
           final controller = VideoFeedController(
