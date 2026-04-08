@@ -12,6 +12,9 @@ class GoLiveCubit extends Cubit<GoLiveState> {
     required LiveApiService liveApiService,
     required LiveRepository liveRepository,
     required String currentUserPubkey,
+    String initialTitle = '',
+    String initialSummary = '',
+    String? initialImageUrl,
     DateTime Function()? now,
     String Function()? sessionIdBuilder,
   }) : _liveApiService = liveApiService,
@@ -21,7 +24,13 @@ class GoLiveCubit extends Cubit<GoLiveState> {
        _sessionIdBuilder =
            sessionIdBuilder ??
            (() => DateTime.now().microsecondsSinceEpoch.toString()),
-       super(const GoLiveState());
+       super(
+         GoLiveState(
+           title: initialTitle,
+           summary: initialSummary,
+           imageUrl: initialImageUrl,
+         ),
+       );
 
   final LiveApiService _liveApiService;
   final LiveRepository _liveRepository;

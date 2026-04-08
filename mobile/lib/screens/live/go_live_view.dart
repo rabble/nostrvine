@@ -6,9 +6,12 @@ import 'package:openvine/blocs/go_live/go_live_cubit.dart';
 import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/screens/live/live_room_page.dart';
 import 'package:openvine/screens/live/live_route_data.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 class GoLiveView extends StatefulWidget {
   const GoLiveView({super.key});
+
+  static const Key coverPreviewKey = Key('go_live_cover_preview');
 
   @override
   State<GoLiveView> createState() => _GoLiveViewState();
@@ -18,6 +21,15 @@ class _GoLiveViewState extends State<GoLiveView> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _summaryController = TextEditingController();
   final TextEditingController _imageController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final initialState = context.read<GoLiveCubit>().state;
+    _titleController.text = initialState.title;
+    _summaryController.text = initialState.summary;
+    _imageController.text = initialState.imageUrl ?? '';
+  }
 
   @override
   void dispose() {
@@ -83,6 +95,45 @@ class _GoLiveViewState extends State<GoLiveView> {
                     controller: _summaryController,
                     onChanged: context.read<GoLiveCubit>().summaryChanged,
                   ),
+                  if ((state.imageUrl ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: VineTheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        children: [
+                          UserAvatar(
+                            key: GoLiveView.coverPreviewKey,
+                            imageUrl: state.imageUrl,
+                            name: state.title,
+                            size: 72,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Default thumbnail',
+                                  style: VineTheme.bodyLargeFont(),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Using your profile photo as the starting thumbnail.',
+                                  style: VineTheme.bodyMediumFont(
+                                    color: VineTheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   DivineAuthTextField(
                     label: 'Cover image URL',
