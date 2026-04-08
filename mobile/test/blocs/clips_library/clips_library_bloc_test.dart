@@ -113,8 +113,11 @@ void main() {
         errors: () => [isA<Exception>()],
         expect: () => [
           const ClipsLibraryState(status: ClipsLibraryStatus.loading),
-          isA<ClipsLibraryState>()
-              .having((s) => s.status, 'status', ClipsLibraryStatus.error),
+          isA<ClipsLibraryState>().having(
+            (s) => s.status,
+            'status',
+            ClipsLibraryStatus.error,
+          ),
         ],
       );
     });
