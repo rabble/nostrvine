@@ -276,6 +276,41 @@ void main() {
       },
     );
 
+    test(
+      'host join does not auto-publish local tracks on room entry',
+      () async {
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        presenceController.add(<LivePresence>[hostPresence, speakerPresence]);
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        verifyNever(
+          () => mockMediaService.publishLocalTracks(
+            cameraEnabled: any(named: 'cameraEnabled'),
+            microphoneEnabled: any(named: 'microphoneEnabled'),
+          ),
+        );
+
+        await bloc.close();
+      },
+    );
+
     test('join request emits failure when token fetch fails', () async {
       when(
         () => mockApiService.fetchJoinToken(

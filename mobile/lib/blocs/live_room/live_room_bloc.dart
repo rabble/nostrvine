@@ -600,13 +600,6 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
       }
 
       _connectedSessionKey = sessionKey;
-
-      if (role.canPublish) {
-        await _liveKitRoomService.publishLocalTracks(
-          cameraEnabled: true,
-          microphoneEnabled: true,
-        );
-      }
     } catch (error) {
       _connectedSessionKey = null;
       final mediaFailed =
