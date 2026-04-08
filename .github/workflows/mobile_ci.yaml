@@ -11,26 +11,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Mobile CI
+  generated-files:
+    name: Generated Files
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: mobile/
-
     steps:
       - uses: actions/checkout@v4
-
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.41.4"
           channel: "stable"
           cache: true
-
       - name: 📦 Install dependencies
         run: flutter pub get
-
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs
@@ -39,12 +35,62 @@ jobs:
             git diff --name-only
             exit 1
           fi
-
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
       - name: ✨ Check formatting
         run: dart format --output=none --set-exit-if-changed lib test integration_test
-
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
-
-      - name: 🚀 Run tests
-        run: flutter test --exclude-tags integration
+  tests:
+    name: Tests (shard ${{ matrix.shard_index + 1 }}/${{ matrix.shard_count }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard_index: [0, 1, 2, 3]
+        shard_count: [4]
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
+      - name: 🚀 Run Flutter test shard
+        run: scripts/ci/run_flutter_test_shard.sh ${{ matrix.shard_index }} ${{ matrix.shard_count }}
