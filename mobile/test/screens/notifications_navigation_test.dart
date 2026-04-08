@@ -52,7 +52,9 @@ void main() {
         nostrServiceProvider.overrideWithValue(nostrClient),
       ],
       child: const MaterialApp(
-        home: Scaffold(body: NotificationsScreen()),
+        home: Scaffold(
+          body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+        ),
       ),
     );
   }

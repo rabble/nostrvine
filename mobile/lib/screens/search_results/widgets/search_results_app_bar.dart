@@ -4,6 +4,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
@@ -61,6 +62,7 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
       context.read<VideoSearchBloc>().add(VideoSearchQueryChanged(query));
       context.read<UserSearchBloc>().add(UserSearchQueryChanged(query));
       context.read<HashtagSearchBloc>().add(HashtagSearchQueryChanged(query));
+      context.read<ListSearchBloc>().add(ListSearchQueryChanged(query));
     });
   }
 

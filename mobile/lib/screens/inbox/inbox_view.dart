@@ -14,7 +14,6 @@ import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubi
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
-import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -29,6 +28,7 @@ import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
+import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
@@ -45,6 +45,10 @@ class _InboxViewState extends ConsumerState<InboxView> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild the inbox surfaces when auth identity changes so per-screen UI
+    // state does not linger across account switches.
+    ref.watch(currentAuthStateProvider);
+
     // Re-filter conversation list when blocklist changes.
     ref.listen(blocklistVersionProvider, (previous, current) {
       if (previous != null && current > previous) {
@@ -56,6 +60,7 @@ class _InboxViewState extends ConsumerState<InboxView> {
 
     // Watch notification unread count for the badge.
     final notificationCount = ref.watch(relayNotificationUnreadCountProvider);
+    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
 
     return ColoredBox(
       color: VineTheme.surfaceBackground,
@@ -76,8 +81,16 @@ class _InboxViewState extends ConsumerState<InboxView> {
                 child: ColoredBox(
                   color: VineTheme.surfaceContainerHigh,
                   child: _selectedTab == InboxTab.messages
-                      ? const _MessagesContent()
-                      : const NotificationsPage(),
+                      ? KeyedSubtree(
+                          key: ValueKey('messages-$currentPubkey'),
+                          child: const _MessagesContent(),
+                        )
+                      // Keep Inbox on the proven relay-provider notifications
+                      // path until the BLoC migration matches production.
+                      : KeyedSubtree(
+                          key: ValueKey('notifications-$currentPubkey'),
+                          child: const NotificationsScreen(),
+                        ),
                 ),
               ),
             ),

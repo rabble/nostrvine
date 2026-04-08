@@ -133,6 +133,10 @@ class RelayNotifications extends _$RelayNotifications {
 
   @override
   Future<NotificationFeedState> build() async {
+    // Rebuild on login/logout/account-switch so stale in-memory notifications
+    // do not survive across identities.
+    ref.watch(currentAuthStateProvider);
+
     // Reset pagination state at start of build
     _nextCursor = null;
     _hasMoreFromApi = true;

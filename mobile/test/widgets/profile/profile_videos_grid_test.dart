@@ -154,7 +154,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Error: Connection failed'), findsOneWidget);
+        expect(find.text('Connection failed'), findsOneWidget);
       });
 
       testWidgets('video grid when videos are provided', (tester) async {
@@ -398,6 +398,97 @@ void main() {
             find.bySemanticsLabel(RegExp('Video thumbnail')),
             findsOneWidget,
           );
+        },
+      );
+    });
+
+    group('scroll coordination with NestedScrollView', () {
+      testWidgets(
+        'uses PrimaryScrollController from NestedScrollView ancestor',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _ownPubkey, count: 6);
+
+          await tester.pumpWidget(
+            testProviderScope(
+              mockAuthService: mockAuth,
+              child: BlocProvider<BackgroundPublishBloc>.value(
+                value: mockBloc,
+                child: MaterialApp(
+                  home: Scaffold(
+                    body: NestedScrollView(
+                      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 200),
+                        ),
+                      ],
+                      body: ProfileVideosGrid(
+                        videos: videos,
+                        userIdHex: _ownPubkey,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(find.byType(ProfileVideosGrid), findsOneWidget);
+          expect(find.byType(SliverGrid), findsOneWidget);
+
+          final customScrollView = tester.widget<CustomScrollView>(
+            find.byType(CustomScrollView).last,
+          );
+          expect(customScrollView.controller, isNull);
+        },
+      );
+
+      testWidgets(
+        'header scrolls away when scrolling inside the grid',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _ownPubkey, count: 30);
+
+          await tester.pumpWidget(
+            testProviderScope(
+              mockAuthService: mockAuth,
+              child: BlocProvider<BackgroundPublishBloc>.value(
+                value: mockBloc,
+                child: MaterialApp(
+                  home: Scaffold(
+                    body: NestedScrollView(
+                      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                        const SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 200,
+                            child: ColoredBox(
+                              color: Colors.red,
+                              child: Center(child: Text('Header')),
+                            ),
+                          ),
+                        ),
+                      ],
+                      body: ProfileVideosGrid(
+                        videos: videos,
+                        userIdHex: _ownPubkey,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('Header'), findsOneWidget);
+
+          await tester.drag(
+            find.byType(CustomScrollView).last,
+            const Offset(0, -300),
+          );
+          await tester.pumpAndSettle();
+
+          // Header should have scrolled off screen (clipped from tree)
+          expect(find.text('Header'), findsNothing);
         },
       );
     });

@@ -7,6 +7,7 @@ import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -74,12 +75,15 @@ import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
+import 'package:openvine/services/notification_preferences_service.dart';
+import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
@@ -127,6 +131,54 @@ final nostrAppGrantStoreProvider = Provider<NostrAppGrantStore>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return NostrAppGrantStore(sharedPreferences: prefs);
 });
+
+final firebaseMessagingProvider = Provider<FirebaseMessaging>(
+  (ref) => FirebaseMessaging.instance,
+);
+
+final firebaseOnMessageProvider = Provider<Stream<RemoteMessage>>(
+  (ref) => FirebaseMessaging.onMessage,
+);
+
+final notificationServiceProvider = Provider<NotificationService>(
+  (ref) => NotificationService(),
+);
+
+final pushNotificationServiceProvider = Provider<PushNotificationService>((
+  ref,
+) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final notificationService = ref.watch(notificationServiceProvider);
+  final envConfig = ref.watch(currentEnvironmentProvider);
+  final firebaseMessaging = ref.watch(firebaseMessagingProvider);
+
+  final pushService = PushNotificationService(
+    authService: authService,
+    nostrClient: nostrClient,
+    notificationService: notificationService,
+    environmentConfig: envConfig,
+    getToken: firebaseMessaging.getToken,
+    onTokenRefresh: firebaseMessaging.onTokenRefresh,
+  );
+
+  ref.onDispose(pushService.dispose);
+  return pushService;
+});
+
+final notificationPreferencesServiceProvider =
+    Provider<NotificationPreferencesService>((ref) {
+      return NotificationPreferencesService(
+        openBox: NotificationPreferencesService.openBox,
+        publishPreferences: (prefs) {
+          return ref
+              .read(pushNotificationServiceProvider)
+              .updatePreferences(
+                prefs,
+              );
+        },
+      );
+    });
 
 final nostrAppBridgePolicyProvider = Provider<NostrAppBridgePolicy>((ref) {
   final authService = ref.watch(authServiceProvider);
@@ -1063,6 +1115,64 @@ void zendeskIdentitySync(Ref ref) {
   ref.onDispose(subscription.cancel);
 }
 
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+@Riverpod(keepAlive: true)
+void pushNotificationSync(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  Future<void> requestPermissionAndRegister(String pubkey) async {
+    final firebaseMessaging = ref.read(firebaseMessagingProvider);
+    final pushService = ref.read(pushNotificationServiceProvider);
+    final settings = await firebaseMessaging.requestPermission();
+    if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      Log.info(
+        'Push notification permission denied by user',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    await pushService.register(pubkey);
+  }
+
+  String? lastAuthenticatedPubkey = authService.currentPublicKeyHex;
+  if (authService.authState == AuthState.authenticated &&
+      lastAuthenticatedPubkey != null) {
+    unawaited(requestPermissionAndRegister(lastAuthenticatedPubkey));
+  }
+
+  // React to auth state changes
+  final subscription = authService.authStateStream.listen((authState) async {
+    final currentPubkey = authService.currentPublicKeyHex;
+    if (authState == AuthState.authenticated && currentPubkey != null) {
+      lastAuthenticatedPubkey = currentPubkey;
+      await requestPermissionAndRegister(currentPubkey);
+    } else if (authState == AuthState.unauthenticated &&
+        lastAuthenticatedPubkey != null) {
+      await ref
+          .read(pushNotificationServiceProvider)
+          .deregister(lastAuthenticatedPubkey!);
+    }
+  });
+
+  // Set up foreground message handler
+  final onMessageSubscription = ref.read(firebaseOnMessageProvider).listen((
+    message,
+  ) {
+    final pushService = ref.read(pushNotificationServiceProvider);
+    pushService.handleForegroundMessage(message.data);
+  });
+
+  ref.onDispose(() {
+    subscription.cancel();
+    onMessageSubscription.cancel();
+  });
+}
+
 /// Helper to set Zendesk identity from pubkey
 Future<void> _setZendeskIdentity(
   String pubkeyHex,
@@ -1352,7 +1462,9 @@ FollowRepository followRepository(Ref ref) {
 /// until the repository owns its own persistence (Phase 1b).
 @Riverpod(keepAlive: true)
 CuratedListRepository curatedListRepository(Ref ref) {
-  final repository = CuratedListRepository();
+  final repository = CuratedListRepository(
+    nostrClient: ref.watch(nostrServiceProvider),
+  );
 
   // Bridge: push curated list updates from legacy service into repository
   ref.listen(curatedListsStateProvider, (_, next) {

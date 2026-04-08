@@ -23,6 +23,7 @@ class DivineVideoClip {
     this.processingCompleter,
     this.lensMetadata,
     this.ghostFramePath,
+    this.proofManifestJson,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
 
@@ -48,6 +49,9 @@ class DivineVideoClip {
 
   /// File path to the last frame of this clip (used for ghost frame overlay).
   final String? ghostFramePath;
+
+  /// JSON-encoded ProofMode / C2PA attestation data for this individual clip.
+  final String? proofManifestJson;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
   bool get isProcessing =>
@@ -81,6 +85,8 @@ class DivineVideoClip {
     Completer<bool>? processingCompleter,
     CameraLensMetadata? lensMetadata,
     String? ghostFramePath,
+    String? proofManifestJson,
+    bool clearProofManifestJson = false,
   }) {
     return DivineVideoClip(
       id: id ?? this.id,
@@ -94,6 +100,9 @@ class DivineVideoClip {
       processingCompleter: processingCompleter ?? this.processingCompleter,
       lensMetadata: lensMetadata ?? this.lensMetadata,
       ghostFramePath: ghostFramePath ?? this.ghostFramePath,
+      proofManifestJson: clearProofManifestJson
+          ? null
+          : (proofManifestJson ?? this.proofManifestJson),
     );
   }
 
@@ -113,6 +122,7 @@ class DivineVideoClip {
       'originalAspectRatio': _originalAspectRatio,
       'targetAspectRatio': targetAspectRatio.name,
       'lensMetadata': lensMetadata?.toMap(),
+      if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
     };
   }
 
@@ -156,6 +166,7 @@ class DivineVideoClip {
               json['lensMetadata'] as Map<String, dynamic>,
             )
           : null,
+      proofManifestJson: json['proofManifestJson'] as String?,
     );
   }
 

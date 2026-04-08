@@ -2,6 +2,8 @@
 // ABOUTME: Manages recorded video clips with modern Notifier pattern
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:divine_camera/divine_camera.dart' show CameraLensMetadata;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +16,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -159,6 +162,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// trimmed to fit within the max duration limit. The trimming happens
   /// asynchronously in the background while the clip is displayed immediately.
   ///
+  /// After recording (and optional trimming), a ProofMode / C2PA attestation
+  /// is generated for the clip's video file. The clip is updated with the
+  /// resulting [proofManifestJson] once generation completes.
+  ///
   /// Returns the created clip with unique ID.
   DivineVideoClip addClip({
     required EditorVideo video,
@@ -176,7 +183,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // Check if clip needs to be trimmed to fit within max duration
     final isClipToLong = clipDuration > remainingDuration;
 
-    // Create a completer to track async trimming progress
+    // Create a completer to track async trimming progress only when needed.
+    // Proof generation runs independently and does not block the UI.
     final processingCompleter = isClipToLong ? Completer<bool>() : null;
 
     var clip = DivineVideoClip(
@@ -233,7 +241,74 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
 
     _triggerAutosave();
+
+    // Fire-and-forget: generate proof attestation without blocking the UI.
+    // This runs after trimming (if any) completes via the processingCompleter.
+    unawaited(_generateClipProof(clip));
+
     return clip;
+  }
+
+  /// Generates a ProofMode / C2PA attestation for a single clip.
+  ///
+  /// Waits for any pending processing (e.g. trimming) to finish first,
+  /// then generates the proof and updates the clip via [refreshClip].
+  /// Failures are logged but do not block clip usage.
+  Future<void> _generateClipProof(DivineVideoClip clip) async {
+    try {
+      // Wait for trimming to finish before proofing the final file
+      await clip.processingCompleter?.future;
+
+      final videoFile = clip.video.file;
+      if (videoFile == null) return;
+
+      Log.debug(
+        '🔐 Generating proof attestation for clip ${clip.id}',
+        name: 'ClipManagerNotifier',
+        category: .video,
+      );
+
+      final proofData = await NativeProofModeService.proofFile(
+        File(videoFile.path),
+        aiTrainingOptOut: ref
+            .read(aiTrainingPreferenceServiceProvider)
+            .isOptOutEnabled,
+      );
+
+      if (!ref.mounted) return;
+
+      if (proofData != null) {
+        // Merge with latest clip state (thumbnail may have been updated).
+        // If the clip was deleted while proof generation was in progress,
+        // skip the update entirely.
+        final current = getClipById(clip.id);
+        if (current == null) return;
+        refreshClip(
+          current.copyWith(proofManifestJson: jsonEncode(proofData)),
+        );
+        _triggerAutosave();
+
+        Log.info(
+          '✅ Proof attestation generated for clip ${clip.id}',
+          name: 'ClipManagerNotifier',
+          category: .video,
+        );
+      } else {
+        Log.warning(
+          '⚠️ No proof data available for clip ${clip.id}',
+          name: 'ClipManagerNotifier',
+          category: .video,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        '❌ Failed to generate proof for clip ${clip.id}: $e',
+        name: 'ClipManagerNotifier',
+        category: .video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Insert a clip at a specific position.

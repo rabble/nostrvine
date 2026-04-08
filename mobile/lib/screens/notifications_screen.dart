@@ -37,7 +37,13 @@ class NotificationsScreen extends ConsumerStatefulWidget {
   static String pathForIndex([int? index]) =>
       index == null ? path : '$path/$index';
 
-  const NotificationsScreen({super.key});
+  const NotificationsScreen({
+    this.skipInitialBootstrapForTesting = false,
+    super.key,
+  });
+
+  @visibleForTesting
+  final bool skipInitialBootstrapForTesting;
 
   @override
   ConsumerState<NotificationsScreen> createState() =>
@@ -47,25 +53,67 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _activeTabIndex = 0;
+  bool _isBootstrappingFreshFeed = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    // Mark all notifications as read when the screen is opened
+    _tabController.addListener(_handleTabChanged);
+    if (widget.skipInitialBootstrapForTesting) {
+      _isBootstrappingFreshFeed = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+      });
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+      unawaited(_bootstrapFreshFeed());
+    });
+  }
+
+  Future<void> _bootstrapFreshFeed() async {
+    ref.invalidate(relayNotificationsProvider);
+
+    try {
+      await ref.read(relayNotificationsProvider.future);
+      if (!mounted) return;
+      await ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBootstrappingFreshFeed = false;
+        });
+      }
+    }
+  }
+
+  void _handleTabChanged() {
+    if (_activeTabIndex == _tabController.index) return;
+    setState(() {
+      _activeTabIndex = _tabController.index;
     });
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChanged);
     _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isBootstrappingFreshFeed) {
+      return const ColoredBox(
+        color: VineTheme.backgroundColor,
+        child: Center(
+          child: CircularProgressIndicator(color: VineTheme.vineGreen),
+        ),
+      );
+    }
+
     // AppShell provides the Scaffold and AppBar, so this is just the body content
     return Column(
       children: [
@@ -101,12 +149,27 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: const [
-              _NotificationTabContent(filter: null),
-              _NotificationTabContent(filter: NotificationType.like),
-              _NotificationTabContent(filter: NotificationType.comment),
-              _NotificationTabContent(filter: NotificationType.follow),
-              _NotificationTabContent(filter: NotificationType.repost),
+            children: [
+              _NotificationTabContent(
+                filter: null,
+                isActive: _activeTabIndex == 0,
+              ),
+              _NotificationTabContent(
+                filter: NotificationType.like,
+                isActive: _activeTabIndex == 1,
+              ),
+              _NotificationTabContent(
+                filter: NotificationType.comment,
+                isActive: _activeTabIndex == 2,
+              ),
+              _NotificationTabContent(
+                filter: NotificationType.follow,
+                isActive: _activeTabIndex == 3,
+              ),
+              _NotificationTabContent(
+                filter: NotificationType.repost,
+                isActive: _activeTabIndex == 4,
+              ),
             ],
           ),
         ),
@@ -118,9 +181,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 /// Content for a single notification tab. Each tab has its own scroll
 /// controller so scroll positions are preserved when switching tabs.
 class _NotificationTabContent extends ConsumerStatefulWidget {
-  const _NotificationTabContent({required this.filter});
+  const _NotificationTabContent({
+    required this.filter,
+    required this.isActive,
+  });
 
   final NotificationType? filter;
+  final bool isActive;
 
   @override
   ConsumerState<_NotificationTabContent> createState() =>
@@ -131,6 +198,7 @@ class _NotificationTabContentState
     extends ConsumerState<_NotificationTabContent>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
+  bool _isRequestingFilteredTopUp = false;
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -211,6 +279,12 @@ class _NotificationTabContentState
           relayNotificationsByTypeProvider(widget.filter),
         );
 
+        _maybeLoadMoreForFilteredTab(feedState, notifications);
+        final isSearchingForFilteredContent = _isSearchingForFilteredContent(
+          feedState,
+          notifications,
+        );
+
         if (notifications.isEmpty) {
           return ColoredBox(
             color: VineTheme.backgroundColor,
@@ -227,37 +301,41 @@ class _NotificationTabContentState
                   child: SizedBox(
                     height: constraints.maxHeight,
                     child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.notifications_none,
-                            size: 64,
-                            color: VineTheme.lightText,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            widget.filter == null
-                                ? 'No notifications yet'
-                                : 'No ${_getFilterName(widget.filter!)}'
-                                      ' notifications',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: VineTheme.secondaryText,
+                      child: isSearchingForFilteredContent
+                          ? _FilteredTabLoadingState(
+                              filterName: _getFilterName(widget.filter!),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.notifications_none,
+                                  size: 64,
+                                  color: VineTheme.lightText,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  widget.filter == null
+                                      ? 'No notifications yet'
+                                      : 'No ${_getFilterName(widget.filter!)}'
+                                            ' notifications',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    color: VineTheme.secondaryText,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'When people interact with your content,\n'
+                                  "you'll see it here",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: VineTheme.lightText,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'When people interact with your content,\n'
-                            "you'll see it here",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: VineTheme.lightText,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ),
@@ -357,6 +435,50 @@ class _NotificationTabContentState
         );
       },
     );
+  }
+
+  void _maybeLoadMoreForFilteredTab(
+    NotificationFeedState feedState,
+    List<NotificationModel> notifications,
+  ) {
+    final needsTopUp =
+        widget.isActive &&
+        widget.filter != null &&
+        notifications.isEmpty &&
+        feedState.hasMoreContent &&
+        !feedState.isLoadingMore &&
+        !feedState.isRefreshing &&
+        !_isRequestingFilteredTopUp;
+
+    if (!needsTopUp) return;
+
+    Log.info(
+      'NotificationsScreen: topping up ${_getFilterName(widget.filter!)} tab '
+      'because current page has no matching items',
+      name: 'NotificationsScreen',
+      category: LogCategory.ui,
+    );
+
+    _isRequestingFilteredTopUp = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await ref.read(relayNotificationsProvider.notifier).loadMore();
+      if (!mounted) return;
+      setState(() {
+        _isRequestingFilteredTopUp = false;
+      });
+    });
+  }
+
+  bool _isSearchingForFilteredContent(
+    NotificationFeedState feedState,
+    List<NotificationModel> notifications,
+  ) {
+    return widget.filter != null &&
+        widget.isActive &&
+        notifications.isEmpty &&
+        (feedState.isLoadingMore || _isRequestingFilteredTopUp) &&
+        feedState.hasMoreContent;
   }
 
   String _getFilterName(NotificationType type) {
@@ -551,5 +673,29 @@ class _NotificationTabContentState
 
     final npub = NostrKeyUtils.encodePubKey(userPubkey);
     context.push(OtherProfileScreen.pathForNpub(npub));
+  }
+}
+
+class _FilteredTabLoadingState extends StatelessWidget {
+  const _FilteredTabLoadingState({required this.filterName});
+
+  final String filterName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const CircularProgressIndicator(color: VineTheme.vineGreen),
+        const SizedBox(height: 16),
+        Text(
+          'Loading $filterName notifications...',
+          style: const TextStyle(
+            fontSize: 18,
+            color: VineTheme.secondaryText,
+          ),
+        ),
+      ],
+    );
   }
 }

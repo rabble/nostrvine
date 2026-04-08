@@ -403,6 +403,238 @@ void main() {
       );
     });
 
+    group('addClip proof generation', () {
+      test('newly added clip has no proofManifestJson initially', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(clip.proofManifestJson, isNull);
+      });
+
+      test('clip without trimming has no processingCompleter', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(clip.processingCompleter, isNull);
+        expect(clip.isProcessing, isFalse);
+      });
+
+      test('multiple clips each have independent proof state', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip1 = notifier.addClip(
+          video: EditorVideo.file('/path/to/video1.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        final clip2 = notifier.addClip(
+          video: EditorVideo.file('/path/to/video2.mp4'),
+          duration: const Duration(seconds: 3),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        // Both start without proof
+        expect(clip1.proofManifestJson, isNull);
+        expect(clip2.proofManifestJson, isNull);
+
+        // Each clip has a unique ID
+        expect(clip1.id, isNot(equals(clip2.id)));
+      });
+
+      test('refreshClip updates proofManifestJson on existing clip', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(clip.proofManifestJson, isNull);
+
+        // Simulate what _generateClipProof does after proof generation
+        notifier.refreshClip(
+          clip.copyWith(proofManifestJson: '{"hash":"abc123"}'),
+        );
+
+        final state = container.read(clipManagerProvider);
+        final updatedClip = state.clips.first;
+        expect(updatedClip.proofManifestJson, equals('{"hash":"abc123"}'));
+      });
+
+      test('refreshClip preserves thumbnail when updating proof', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          thumbnailPath: '/path/to/thumb.jpg',
+        );
+
+        // Update thumbnail first
+        notifier.updateThumbnail(
+          clipId: clip.id,
+          thumbnailPath: '/path/to/updated_thumb.jpg',
+          thumbnailTimestamp: const Duration(milliseconds: 500),
+        );
+
+        // Then update proof (simulating _generateClipProof)
+        final currentClip = notifier.getClipById(clip.id)!;
+        notifier.refreshClip(
+          currentClip.copyWith(proofManifestJson: '{"hash":"abc123"}'),
+        );
+
+        final state = container.read(clipManagerProvider);
+        final updatedClip = state.clips.first;
+        expect(updatedClip.proofManifestJson, equals('{"hash":"abc123"}'));
+        expect(
+          updatedClip.thumbnailPath,
+          equals('/path/to/updated_thumb.jpg'),
+        );
+      });
+
+      test('proof state survives clip reordering', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip1 = notifier.addClip(
+          video: EditorVideo.file('/path/to/video1.mp4'),
+          duration: const Duration(seconds: 1),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        notifier.addClip(
+          video: EditorVideo.file('/path/to/video2.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        // Add proof to first clip
+        notifier.refreshClip(
+          clip1.copyWith(proofManifestJson: '{"hash":"proof1"}'),
+        );
+
+        // Verify proof is on first clip
+        final state = container.read(clipManagerProvider);
+        final proofClip = state.clips.firstWhere(
+          (c) => c.proofManifestJson != null,
+        );
+        expect(proofClip.proofManifestJson, equals('{"hash":"proof1"}'));
+      });
+
+      test('clearAll removes clips including their proof data', () async {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        // Simulate proof generation
+        notifier.refreshClip(
+          clip.copyWith(proofManifestJson: '{"hash":"abc123"}'),
+        );
+
+        // Verify proof exists
+        expect(
+          container.read(clipManagerProvider).clips.first.proofManifestJson,
+          isNotNull,
+        );
+
+        await notifier.clearAll();
+
+        final state = container.read(clipManagerProvider);
+        expect(state.clips, isEmpty);
+      });
+
+      test('getClipById returns clip with current proof state', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        // Initially no proof
+        expect(notifier.getClipById(clip.id)?.proofManifestJson, isNull);
+
+        // Add proof
+        notifier.refreshClip(
+          clip.copyWith(proofManifestJson: '{"hash":"abc123"}'),
+        );
+
+        // getClipById returns updated state
+        final updated = notifier.getClipById(clip.id);
+        expect(updated?.proofManifestJson, equals('{"hash":"abc123"}'));
+      });
+
+      test('getClipById returns null for deleted clip', () async {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(notifier.getClipById(clip.id), isNotNull);
+
+        await notifier.removeClipById(clip.id);
+
+        expect(notifier.getClipById(clip.id), isNull);
+      });
+
+      test('refreshClip is no-op for deleted clip '
+          '(simulates proof arriving after deletion)', () async {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        final clip = notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        // Delete the clip
+        await notifier.removeClipById(clip.id);
+        expect(container.read(clipManagerProvider).clips, isEmpty);
+
+        // Simulate late proof arrival — refreshClip should not re-add the clip
+        notifier.refreshClip(
+          clip.copyWith(proofManifestJson: '{"hash":"late_proof"}'),
+        );
+
+        final state = container.read(clipManagerProvider);
+        expect(
+          state.clips,
+          isEmpty,
+          reason: 'Deleted clip should not reappear from late proof update',
+        );
+      });
+    });
+
     group('updateGhostFrame', () {
       test('updates ghost frame path for existing clip', () {
         final notifier = container.read(clipManagerProvider.notifier);

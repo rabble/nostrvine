@@ -102,6 +102,27 @@ class FunnelcakeApiClient {
     };
   }
 
+  /// Builds the notifications endpoint URI for a user.
+  ///
+  /// The returned URI includes the same query parameters used by
+  /// [getNotifications] so callers can sign the exact request URL.
+  Uri notificationsUri({
+    required String pubkey,
+    int limit = 50,
+    String? cursor,
+  }) {
+    final effectiveBefore =
+        cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
+    final queryParams = <String, String>{
+      'limit': '$limit',
+      'before': effectiveBefore,
+    };
+
+    return Uri.parse(
+      '$_baseUrl/api/users/$pubkey/notifications',
+    ).replace(queryParameters: queryParams);
+  }
+
   /// Fetches videos by a specific author.
   ///
   /// [pubkey] is the author's public key (hex format).
@@ -109,7 +130,9 @@ class FunnelcakeApiClient {
   /// [offset] is an optional pagination offset.
   /// [before] is an optional Unix timestamp cursor for pagination.
   ///
-  /// Returns a list of [VideoStats] objects.
+  /// Returns a [VideosByAuthorResponse] containing a list of [VideoStats]
+  /// and an optional `totalCount` parsed from the `X-Total-Count` response
+  /// header.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not configured.
@@ -117,7 +140,7 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails with a non-success status.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<List<VideoStats>> getVideosByAuthor({
+  Future<VideosByAuthorResponse> getVideosByAuthor({
     required String pubkey,
     int limit = 50,
     int? offset,
@@ -149,10 +172,20 @@ class FunnelcakeApiClient {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List<dynamic>;
 
-        return data
+        final videos = data
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
+
+        final totalCountHeader = response.headers['x-total-count'];
+        final totalCount = totalCountHeader != null
+            ? int.tryParse(totalCountHeader)
+            : null;
+
+        return VideosByAuthorResponse(
+          videos: videos,
+          totalCount: totalCount,
+        );
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(
           resource: 'Author videos',
@@ -1780,16 +1813,16 @@ class FunnelcakeApiClient {
     required String pubkey,
     int limit = 50,
     String? cursor,
+    Uri? requestUri,
     Map<String, String>? authHeaders,
   }) async {
-    final queryParams = <String, String>{
-      'limit': '$limit',
-      'before': ?cursor,
-    };
-
-    final url = Uri.parse(
-      '$_baseUrl/api/users/$pubkey/notifications',
-    ).replace(queryParameters: queryParams);
+    final url =
+        requestUri ??
+        notificationsUri(
+          pubkey: pubkey,
+          limit: limit,
+          cursor: cursor,
+        );
 
     try {
       final response = await _httpClient

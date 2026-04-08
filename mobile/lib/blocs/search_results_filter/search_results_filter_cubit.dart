@@ -9,8 +9,7 @@ enum SearchResultsFilter {
   all('All'),
   people('People'),
 
-  // TODO(#2474): Add lists filter when the API is available.
-  // lists('Lists'),
+  lists('Lists'),
   tags('Tags'),
   videos('Videos')
   ;
