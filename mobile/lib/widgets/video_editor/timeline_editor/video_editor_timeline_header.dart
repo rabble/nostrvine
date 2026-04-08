@@ -115,7 +115,7 @@ class _TimeDisplay extends StatelessWidget {
       valueListenable: playheadPosition,
       builder: (context, position, _) => Text(
         '${TimeFormatter.formatCompactDuration(position)} / '
-            '${TimeFormatter.formatCompactDuration(totalDuration)}',
+        '${TimeFormatter.formatCompactDuration(totalDuration)}',
         style: _timeStyle,
         maxLines: 1,
       ),

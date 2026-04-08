@@ -1,5 +1,5 @@
 // ABOUTME: Widget tests for VideoEditorMainOverlayActions toolbar.
-// ABOUTME: Tests button rendering, play state indicator, and music sub-editor hiding.
+// ABOUTME: Tests button rendering, music sub-editor hiding, and close/done.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -9,9 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
-import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 
 import '../../../helpers/go_router.dart';
 
@@ -78,81 +78,39 @@ void main() {
         );
       });
 
-      testWidgets('renders Close button', (tester) async {
+      testWidgets('renders $VideoEditorToolbar', (tester) async {
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.byType(VideoEditorToolbar), findsOneWidget);
+      });
+
+      testWidgets('renders Close button with caret-left icon', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildWidget());
 
         expect(find.bySemanticsLabel('Close'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.caretLeft,
+          ),
+          findsOneWidget,
+        );
       });
 
-      testWidgets('renders Done button', (tester) async {
+      testWidgets('renders Done button with caret-right icon', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildWidget());
 
         expect(find.bySemanticsLabel('Done'), findsOneWidget);
-      });
-
-      testWidgets('renders $VideoEditorAudioChip', (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.byType(VideoEditorAudioChip), findsOneWidget);
-      });
-
-      testWidgets('renders Reorder button', (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.bySemanticsLabel('Reorder'), findsOneWidget);
-      });
-
-      testWidgets('renders play icon when not playing and player ready', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildWidget(
-            state: const VideoEditorMainState(isPlayerReady: true),
-          ),
-        );
-
         expect(
           find.byWidgetPredicate(
-            (w) => w is DivineIcon && w.icon == DivineIconName.playFill,
+            (w) => w is DivineIcon && w.icon == DivineIconName.caretRight,
           ),
           findsOneWidget,
         );
       });
-
-      testWidgets('renders pause icon when playing', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(
-            state: const VideoEditorMainState(
-              isPlaying: true,
-              isPlayerReady: true,
-            ),
-          ),
-        );
-
-        expect(
-          find.byWidgetPredicate(
-            (w) => w is DivineIcon && w.icon == DivineIconName.pauseFill,
-          ),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets(
-        'does not render play/pause icon when player is not ready',
-        (tester) async {
-          await tester.pumpWidget(buildWidget());
-
-          expect(
-            find.byWidgetPredicate(
-              (w) =>
-                  w is DivineIcon &&
-                  (w.icon == DivineIconName.playFill ||
-                      w.icon == DivineIconName.pauseFill),
-            ),
-            findsNothing,
-          );
-        },
-      );
     });
 
     group('music sub-editor hiding', () {
@@ -207,21 +165,6 @@ void main() {
           findOverlayOpacity(),
         );
         expect(animatedOpacity.opacity, equals(1));
-      });
-    });
-
-    group('enabled/disabled states', () {
-      testWidgets('Reorder button is disabled with 0 or 1 layers', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-
-        final reorderButton = tester.widget<DivineIconButton>(
-          find.byWidgetPredicate(
-            (w) => w is DivineIconButton && w.semanticLabel == 'Reorder',
-          ),
-        );
-        expect(reorderButton.onPressed, isNull);
       });
     });
 

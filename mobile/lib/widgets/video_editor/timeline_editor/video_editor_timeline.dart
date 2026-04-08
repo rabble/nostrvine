@@ -126,22 +126,38 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                       // Scrollable timeline content.
                       ValueListenableBuilder<Duration>(
                         valueListenable: _playheadPosition,
-                        builder: (context, position, child) => Semantics(
-                          label: 'Video timeline',
-                          slider: true,
-                          value: _formatPosition(position),
-                          onIncrease: () => _stepPosition(
-                            position,
-                            totalDuration,
-                            const Duration(seconds: 1),
-                          ),
-                          onDecrease: () => _stepPosition(
-                            position,
-                            totalDuration,
-                            const Duration(seconds: -1),
-                          ),
-                          child: child ?? const SizedBox.shrink(),
-                        ),
+                        builder: (context, position, child) {
+                          final increased = Duration(
+                            milliseconds:
+                                (position + const Duration(seconds: 1))
+                                    .inMilliseconds
+                                    .clamp(0, totalDuration.inMilliseconds),
+                          );
+                          final decreased = Duration(
+                            milliseconds:
+                                (position - const Duration(seconds: 1))
+                                    .inMilliseconds
+                                    .clamp(0, totalDuration.inMilliseconds),
+                          );
+                          return Semantics(
+                            label: 'Video timeline',
+                            slider: true,
+                            value: _formatPosition(position),
+                            increasedValue: _formatPosition(increased),
+                            decreasedValue: _formatPosition(decreased),
+                            onIncrease: () => _stepPosition(
+                              position,
+                              totalDuration,
+                              const Duration(seconds: 1),
+                            ),
+                            onDecrease: () => _stepPosition(
+                              position,
+                              totalDuration,
+                              const Duration(seconds: -1),
+                            ),
+                            child: child ?? const SizedBox.shrink(),
+                          );
+                        },
                         // Pinch-to-zoom gesture tracking.
                         child: Listener(
                           onPointerDown: _onPointerDown,

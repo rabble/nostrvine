@@ -120,9 +120,10 @@ abstract class TimeFormatter {
   ///
   /// Examples: "05:73", "00:00", "1:05:73"
   static String formatCompactDuration(Duration d) {
-    final cs = (d.inMilliseconds.remainder(1000) ~/ 10)
-        .toString()
-        .padLeft(2, '0');
+    final cs = (d.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(
+      2,
+      '0',
+    );
     final secs = (d.inSeconds % 60).toString().padLeft(2, '0');
     if (d.inMinutes > 0) {
       return '${d.inMinutes}:$secs:$cs';
