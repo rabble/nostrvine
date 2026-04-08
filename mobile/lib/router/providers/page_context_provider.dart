@@ -27,6 +27,10 @@ import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
+import 'package:openvine/screens/live/go_live_page.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
+import 'package:openvine/screens/live/live_room_detail_page.dart';
+import 'package:openvine/screens/live/live_room_page.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -65,6 +69,10 @@ enum RouteType {
   likedVideos, // Current user's liked videos feed
   hashtag, // Still supported as push route within explore
   categoryGallery, // Category gallery pushed from explore categories
+  liveDiscovery,
+  goLive,
+  liveRoomDetail,
+  liveRoom,
   videoRecorder, // Video recorder screen
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
@@ -130,6 +138,8 @@ class RouteContext {
     this.videoId,
     this.draftId,
     this.conversationId,
+    this.roomId,
+    this.sessionId,
   });
 
   final RouteType type;
@@ -143,6 +153,8 @@ class RouteContext {
   final String? videoId;
   final String? draftId;
   final String? conversationId;
+  final String? roomId;
+  final String? sessionId;
 }
 
 /// Decodes a URL path segment, returning the raw input on malformed
@@ -265,6 +277,38 @@ RouteContext parseRoute(String path) {
         type: RouteType.categoryGallery,
         categoryName: categoryName,
       );
+
+    case 'live':
+      if (segments.length == 1) {
+        return const RouteContext(type: RouteType.liveDiscovery);
+      }
+
+      if (segments[1] == 'go') {
+        return const RouteContext(type: RouteType.goLive);
+      }
+
+      if (segments[1] == 'room') {
+        if (segments.length < 3) {
+          return const RouteContext(type: RouteType.liveDiscovery);
+        }
+
+        final roomId = _safeDecode(segments[2]);
+        if (segments.length > 4 && segments[3] == 'session') {
+          final sessionId = _safeDecode(segments[4]);
+          return RouteContext(
+            type: RouteType.liveRoom,
+            roomId: roomId,
+            sessionId: sessionId,
+          );
+        }
+
+        return RouteContext(
+          type: RouteType.liveRoomDetail,
+          roomId: roomId,
+        );
+      }
+
+      return const RouteContext(type: RouteType.liveDiscovery);
 
     case 'video-recorder':
       return const RouteContext(type: RouteType.videoRecorder);
@@ -535,6 +579,33 @@ String buildRoute(RouteContext context) {
         return ExploreScreen.path;
       }
       return CategoryGalleryScreen.locationFor(categoryName);
+
+    case RouteType.liveDiscovery:
+      return LiveDiscoveryPage.path;
+
+    case RouteType.goLive:
+      return GoLivePage.path;
+
+    case RouteType.liveRoomDetail:
+      final roomId = context.roomId;
+      if (roomId == null || roomId.isEmpty) {
+        return LiveDiscoveryPage.path;
+      }
+      return LiveRoomDetailPage.pathFor(Uri.encodeComponent(roomId));
+
+    case RouteType.liveRoom:
+      final roomId = context.roomId;
+      final sessionId = context.sessionId;
+      if (roomId == null ||
+          roomId.isEmpty ||
+          sessionId == null ||
+          sessionId.isEmpty) {
+        return LiveDiscoveryPage.path;
+      }
+      return LiveRoomPage.pathFor(
+        Uri.encodeComponent(roomId),
+        Uri.encodeComponent(sessionId),
+      );
 
     case RouteType.videoRecorder:
       return VideoRecorderScreen.path;

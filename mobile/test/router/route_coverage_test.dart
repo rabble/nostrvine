@@ -17,6 +17,10 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/screens/live/go_live_page.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
+import 'package:openvine/screens/live/live_room_detail_page.dart';
+import 'package:openvine/screens/live/live_room_page.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup/profile_setup.dart';
@@ -357,6 +361,7 @@ void main() {
         final context = parseRoute('/video-editor');
         expect(context.type, RouteType.videoEditor);
       });
+
       test('/video-edit parses to RouteType.videoEdit', () {
         final context = parseRoute('/video-edit');
         expect(context.type, RouteType.videoEdit);
@@ -379,6 +384,34 @@ void main() {
         expect(context.type, RouteType.subtitleEdit);
         expect(context.videoId, 'test-id-abc');
       });
+
+      test('${LiveDiscoveryPage.path} parses to RouteType.liveDiscovery', () {
+        final context = parseRoute(LiveDiscoveryPage.path);
+        expect(context.type, RouteType.liveDiscovery);
+      });
+
+      test('${GoLivePage.path} parses to RouteType.goLive', () {
+        final context = parseRoute(GoLivePage.path);
+        expect(context.type, RouteType.goLive);
+      });
+
+      test(
+        '${LiveRoomDetailPage.pathFor('room-123')} parses to RouteType.liveRoomDetail',
+        () {
+          final context = parseRoute(LiveRoomDetailPage.pathFor('room-123'));
+          expect(context.type, RouteType.liveRoomDetail);
+        },
+      );
+
+      test(
+        '${LiveRoomPage.pathFor('room-123', 'session-456')} parses to RouteType.liveRoom',
+        () {
+          final context = parseRoute(
+            LiveRoomPage.pathFor('room-123', 'session-456'),
+          );
+          expect(context.type, RouteType.liveRoom);
+        },
+      );
     });
 
     group('Edge cases', () {
@@ -446,6 +479,10 @@ void main() {
       'people list create': CreatePeopleListPage.path,
       'people list members': '/people-lists/list%3A123',
       'people list add people': '/people-lists/list%3A123/add-people',
+      'live discovery': LiveDiscoveryPage.path,
+      'go live': GoLivePage.path,
+      'live room detail': LiveRoomDetailPage.pathFor('room-123'),
+      'live room': LiveRoomPage.pathFor('room-123', 'session-456'),
     };
 
     for (final entry in roundTripCases.entries) {
@@ -493,6 +530,10 @@ void main() {
         RouteType.clips: LibraryScreen.clipsPath,
         RouteType.drafts: LibraryScreen.draftsPath,
         RouteType.welcome: WelcomeScreen.path,
+        RouteType.liveDiscovery: LiveDiscoveryPage.path,
+        RouteType.goLive: GoLivePage.path,
+        RouteType.liveRoomDetail: LiveRoomDetailPage.pathFor('room-123'),
+        RouteType.liveRoom: LiveRoomPage.pathFor('room-123', 'session-456'),
         RouteType.videoDetail: VideoDetailScreen.pathForId('test_id'),
         RouteType.peopleListCreate: CreatePeopleListPage.path,
         RouteType.peopleListMembers: '/people-lists/list%3A123',
