@@ -65,6 +65,8 @@ import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/services/c2pa_import_validation_service.dart';
+import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -78,6 +80,7 @@ import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
+import 'package:openvine/services/video_import_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
@@ -1635,6 +1638,17 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             },
           ),
           dispose: (client) => client.dispose(),
+        ),
+        RepositoryProvider(
+          create: (_) => C2paImportValidationService(
+            c2paSigningService: C2paSigningService(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => VideoImportService(
+            clipLibraryService: ref.read(clipLibraryServiceProvider),
+            draftStorageService: ref.read(draftStorageServiceProvider),
+          ),
         ),
         BlocProvider(
           create: (_) =>

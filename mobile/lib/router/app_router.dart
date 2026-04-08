@@ -46,6 +46,7 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/import_verification/import_verification_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
@@ -457,6 +458,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           // See note above: do not double-decode path parameters.
           final query = st.pathParameters['query'] ?? '';
           return SearchResultsPage(initialQuery: query);
+        },
+      ),
+
+      // IMPORT VERIFICATION route (shared file C2PA validation, no bottom nav)
+      GoRoute(
+        path: ImportVerificationPage.path,
+        name: ImportVerificationPage.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (context, state) {
+          final filePath = state.uri.queryParameters['path'] ?? '';
+          return ImportVerificationPage(filePath: filePath);
         },
       ),
 

@@ -156,6 +156,7 @@ dependencies:
   cached_network_image: ^3.3.1
   flutter_cache_manager: ^3.3.1
   share_plus: ^12.0.0 # Cross-platform sharing
+  share_handler: ^0.0.25 # Receive shared files from other apps
   google_fonts: ^6.3.2 # For using Google Fonts including Pacifico
   flutter_svg: ^2.0.10+1 # For custom SVG icons
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
