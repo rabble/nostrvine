@@ -70,7 +70,7 @@ void main() {
       );
 
       expect(
-        () => service.getInviteStatus(),
+        service.getInviteStatus,
         throwsA(isA<ApiException>()),
       );
     });
@@ -88,7 +88,7 @@ void main() {
       );
 
       expect(
-        () => service.getInviteStatus(),
+        service.getInviteStatus,
         throwsA(isA<ApiException>()),
       );
     });
@@ -146,7 +146,7 @@ void main() {
       );
 
       expect(
-        () => service.generateInvite(),
+        service.generateInvite,
         throwsA(isA<ApiException>()),
       );
     });
@@ -165,7 +165,7 @@ void main() {
       );
 
       expect(
-        () => service.generateInvite(),
+        service.generateInvite,
         throwsA(isA<ApiException>()),
       );
     });

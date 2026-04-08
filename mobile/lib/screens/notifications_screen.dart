@@ -9,9 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
-import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -19,6 +18,7 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -751,13 +751,12 @@ class _InviteNotificationCard extends StatelessWidget {
               child: const DivineIcon(
                 icon: DivineIconName.shareNetwork,
                 color: VineTheme.backgroundColor,
-                size: 24,
               ),
             ),
             Expanded(
               child: Text(
                 label,
-                style: VineTheme.bodyMediumFont(color: VineTheme.whiteText),
+                style: VineTheme.bodyMediumFont(),
               ),
             ),
             const DivineIcon(

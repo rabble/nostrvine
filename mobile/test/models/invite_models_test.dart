@@ -37,7 +37,7 @@ void main() {
     });
 
     test('fromJson handles missing fields gracefully', () {
-      final code = InviteCode.fromJson(<String, dynamic>{});
+      final code = InviteCode.fromJson(const <String, dynamic>{});
       expect(code.code, isEmpty);
       expect(code.claimed, isFalse);
       expect(code.claimedAt, isNull);
@@ -95,7 +95,7 @@ void main() {
     });
 
     test('fromJson handles missing codes key', () {
-      final status = InviteStatus.fromJson(<String, dynamic>{
+      final status = InviteStatus.fromJson(const <String, dynamic>{
         'canInvite': false,
       });
       expect(status.remaining, equals(0));
@@ -156,7 +156,7 @@ void main() {
 
   group(GenerateInviteResult, () {
     test('fromJson parses result', () {
-      final result = GenerateInviteResult.fromJson(<String, dynamic>{
+      final result = GenerateInviteResult.fromJson(const <String, dynamic>{
         'code': 'WX56-3MKT',
         'remaining': 4,
       });
@@ -165,7 +165,7 @@ void main() {
     });
 
     test('fromJson handles missing fields', () {
-      final result = GenerateInviteResult.fromJson(<String, dynamic>{});
+      final result = GenerateInviteResult.fromJson(const <String, dynamic>{});
       expect(result.code, isEmpty);
       expect(result.remaining, equals(0));
     });

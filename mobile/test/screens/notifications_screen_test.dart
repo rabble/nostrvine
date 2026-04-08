@@ -112,7 +112,7 @@ void main() {
   Widget buildScreenWidget(RelayNotifications Function() notifierFactory) {
     final mockInviteCubit = _MockInviteStatusCubit();
     when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
-    when(() => mockInviteCubit.load()).thenAnswer((_) async {});
+    when(mockInviteCubit.load).thenAnswer((_) async {});
     return ProviderScope(
       overrides: [relayNotificationsProvider.overrideWith(notifierFactory)],
       child: MaterialApp(

@@ -138,7 +138,7 @@ class _InviteCodeCard extends StatelessWidget {
             Expanded(
               child: Text(
                 code.code,
-                style: VineTheme.titleLargeFont(color: VineTheme.whiteText),
+                style: VineTheme.titleLargeFont(),
               ),
             ),
             IconButton(
