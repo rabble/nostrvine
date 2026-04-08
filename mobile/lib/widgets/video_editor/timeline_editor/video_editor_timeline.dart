@@ -51,10 +51,10 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
 
   bool get _isPinching => _pointerPositions.length >= 2;
 
-  /// Throttle timestamp — limits how often native seekTo is called during
-  /// scrubbing so the scroll stays fluid.
+  /// Throttle timestamp — limits BLoC event frequency during scrubbing.
+  /// The native seek backpressure is handled by the canvas.
   int _lastSeekMs = 0;
-  static const _seekThrottleMs = 80;
+  static const _seekThrottleMs = 16;
 
   @override
   void initState() {

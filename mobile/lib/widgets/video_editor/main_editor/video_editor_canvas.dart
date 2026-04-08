@@ -109,6 +109,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Last duration dispatched to BLoC — avoids flooding with duplicates.
   Duration _lastReportedDuration = Duration.zero;
 
+  /// Whether a native seekTo is currently in flight.
+  bool _isSeeking = false;
+
+  /// The most recent seek position received while a seek was in progress.
+  /// Processed as a trailing seek once the current seek completes.
+  Duration? _pendingSeekPosition;
+
   @override
   void initState() {
     super.initState();
@@ -178,10 +185,35 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   }
 
   /// Handles seek requests from BLoC (e.g. timeline scrubbing).
-  void _onSeekRequested(Duration position) {
+  ///
+  /// Uses a leading + trailing pattern with async backpressure:
+  /// - The first request (leading) is executed immediately via await.
+  /// - While the native seekTo is in flight, intermediate requests are
+  ///   dropped; only the latest position is kept.
+  /// - Once the seek completes, the last received position is fired as
+  ///   a trailing seek so the video always lands on the final frame.
+  ///
+  /// This relies on both Android and iOS returning from seekTo only
+  /// after the frame is actually decoded and rendered.
+  Future<void> _onSeekRequested(Duration position) async {
     if (!_isPlayerReadyNotifier.value) return;
-    _videoPlayer?.pause();
-    _videoPlayer?.seekTo(position);
+
+    if (_isSeeking) {
+      _pendingSeekPosition = position;
+      return;
+    }
+
+    _isSeeking = true;
+    await _videoPlayer?.seekTo(position);
+
+    // Process trailing seek if one arrived while we were busy.
+    while (_pendingSeekPosition != null && mounted) {
+      final pending = _pendingSeekPosition!;
+      _pendingSeekPosition = null;
+      await _videoPlayer?.seekTo(pending);
+    }
+
+    _isSeeking = false;
   }
 
   /// Dispatches playback state changes to the BLoC.
