@@ -438,6 +438,61 @@ void main() {
         expect(notification.content, isNull);
       });
 
+      test('createdAt is parsed as UTC', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'author_pubkey',
+          'source_event_id': 'event_abc',
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1700000000,
+          'read': false,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.createdAt.isUtc, isTrue);
+        expect(notification.createdAt, DateTime.utc(2023, 11, 14, 22, 13, 20));
+      });
+
+      test('parses sourceCreatedAt as UTC Unix timestamp', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'author_pubkey',
+          'source_event_id': 'event_abc',
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1700000000,
+          'read': false,
+          'source_created_at': 1699999000,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.sourceCreatedAt, isNotNull);
+        expect(notification.sourceCreatedAt!.isUtc, isTrue);
+        expect(
+          notification.sourceCreatedAt,
+          DateTime.utc(2023, 11, 14, 21, 56, 40),
+        );
+      });
+
+      test('sourceCreatedAt is null when field is absent', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'author_pubkey',
+          'source_event_id': 'event_abc',
+          'source_kind': 7,
+          'notification_type': 'reaction',
+          'created_at': 1700000000,
+          'read': false,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.sourceCreatedAt, isNull);
+      });
+
       test('handles ISO date string format', () {
         final json = {
           'id': 'notif_123',

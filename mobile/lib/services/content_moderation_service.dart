@@ -490,7 +490,7 @@ class ContentModerationService with NostrListServiceMixin {
       final latestEvent = events.first;
 
       Log.debug(
-        'Found mute list event: ${latestEvent.id} (created: ${DateTime.fromMillisecondsSinceEpoch(latestEvent.createdAt * 1000)})',
+        'Found mute list event: ${latestEvent.id} (created: ${latestEvent.createdAtDateTime})',
         name: 'ContentModerationService',
         category: LogCategory.system,
       );
@@ -551,7 +551,7 @@ class ContentModerationService with NostrListServiceMixin {
         value: value,
         reason: filterReason,
         severity: ContentSeverity.hide, // Default severity for external lists
-        createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+        createdAt: event.createdAtDateTime,
         note: reason,
       );
 
