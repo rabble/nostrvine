@@ -66,11 +66,13 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   List<VideoEvent>? _lastPrefetchedVideos;
   final _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
-  final _scrollController = ScrollController();
   final _precachedThumbnailUrls = <String>{};
 
+  /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
+  ScrollController? _primaryScrollController;
+
   @override
-  ScrollController get paginationScrollController => _scrollController;
+  ScrollController get paginationScrollController => _primaryScrollController!;
 
   @override
   bool canLoadMore() {
@@ -89,7 +91,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   @override
   void initState() {
     super.initState();
-    initPagination();
     // Prefetch visible grid videos after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -99,9 +100,19 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final primary = PrimaryScrollController.of(context);
+    if (_primaryScrollController != primary) {
+      if (_primaryScrollController != null) disposePagination();
+      _primaryScrollController = primary;
+      initPagination();
+    }
+  }
+
+  @override
   void dispose() {
     disposePagination();
-    _scrollController.dispose();
     _videosStreamController.close();
     super.dispose();
   }
@@ -255,7 +266,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     final uploadingCount = activeUploads.length;
 
     return CustomScrollView(
-      controller: _scrollController,
       slivers: [
         SliverPadding(
           padding: .fromLTRB(

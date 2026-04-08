@@ -154,6 +154,34 @@ void main() {
       expect(filtered, hasLength(2));
     });
 
+    test('filterBlockedConversations excludes self-conversations', () {
+      const userPubkey = 'current_user';
+
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final conversations = [
+        DmConversation(
+          id: 'self_conv',
+          participantPubkeys: const [userPubkey, userPubkey],
+          isGroup: false,
+          createdAt: now,
+        ),
+        DmConversation(
+          id: 'normal_conv',
+          participantPubkeys: const [userPubkey, 'other_user'],
+          isGroup: false,
+          createdAt: now,
+        ),
+      ];
+
+      final filtered = service.filterBlockedConversations(
+        conversations,
+        userPubkey: userPubkey,
+      );
+
+      expect(filtered, hasLength(1));
+      expect(filtered.first.id, equals('normal_conv'));
+    });
+
     test('should provide blocking stats', () {
       final stats = service.blockingStats;
 

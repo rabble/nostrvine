@@ -7,6 +7,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart'
+    show SecureKeyStorageException;
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -153,19 +155,34 @@ class _RemoveKeysTile extends StatelessWidget {
         );
 
         try {
-          await authService.signOut(deleteKeys: true);
+          await authService.signOut(
+            deleteKeys: true,
+            abortOnKeyDeletionFailure: true,
+          );
+        } on SecureKeyStorageException {
+          // Platform key deletion failed — user stays signed in and can
+          // retry without having to log back in.
+          if (!context.mounted) return;
+          context.pop();
+
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              'Could not remove keys from this device. '
+              'Please try again.',
+              error: true,
+            ),
+          );
+          return;
         } catch (e) {
           if (!context.mounted) return;
           context.pop();
 
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Failed to remove keys: $e',
-                style: const TextStyle(color: VineTheme.whiteText),
-              ),
-              backgroundColor: VineTheme.error,
+            DivineSnackbarContainer.snackBar(
+              'Failed to remove keys: $e',
+              error: true,
             ),
           );
         }

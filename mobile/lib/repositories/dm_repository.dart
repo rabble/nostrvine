@@ -130,7 +130,7 @@ class DmRepository {
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
   /// no-ops. If called with a different user, resets and re-initializes.
-  void initialize({
+  void setCredentials({
     required String userPubkey,
     required NostrSigner signer,
     required NIP17MessageService messageService,
@@ -160,12 +160,15 @@ class DmRepository {
 
     // Merge duplicate conversations created by extra p-tags (idempotent).
     unawaited(_mergeDuplicateConversations());
+
+    // Remove phantom self-conversations created by the self-wrap bug.
+    unawaited(_cleanupSelfConversations());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
   /// different user. Stops the relay subscription and clears credentials.
   ///
-  /// Synchronous so [initialize] can call it inline. Subscription cancel
+  /// Synchronous so [setCredentials] can call it inline. Subscription cancel
   /// is fire-and-forget — the old subscription filtered by the old pubkey
   /// so any late arrivals are harmless (dedup rejects them).
   void _resetState() {
@@ -200,14 +203,20 @@ class DmRepository {
   /// Subscribes to kind 1059 events p-tagged to the current user.
   /// Each received event is decrypted and persisted automatically.
   ///
+  /// Uses count-based windowing to avoid replaying the full event history:
+  /// - First open (no messages in DB): fetches the most recent 50 events.
+  /// - Subsequent opens: fetches events since the newest synced timestamp
+  ///   minus a 2-day overlap (absorbs NIP-17 randomized timestamps).
+  ///
   /// If the relay stream closes unexpectedly (e.g. relay disconnect,
   /// NostrClient rebuild), automatically re-subscribes after a brief delay.
-  ///
-  /// Also starts a periodic health check that reconnects relays when they
-  /// become disconnected (e.g. from WebSocket idle timeout). This is
-  /// critical on iOS where connections are dropped more aggressively.
-  void startListening() {
-    if (_giftWrapSubscription != null || _disposed || !isInitialized) return;
+  Future<void> startListening() async {
+    // Reset _disposed so that the subscription can restart after a prior
+    // stopListening() call (e.g. tab switch away and back). The flag is
+    // only meant to suppress the onDone reconnect during intentional stop;
+    // a new explicit startListening() should always be honored.
+    _disposed = false;
+    if (_giftWrapSubscription != null || !isInitialized) return;
 
     // Count-based windowing: first open fetches a bounded backlog
     // (limit:50), later opens fetch only recent events via a `since:`
@@ -249,6 +258,12 @@ class DmRepository {
           'DM subscription error: $error',
           category: LogCategory.system,
         );
+        // Reset subscription state so a subsequent startListening() can
+        // open a fresh connection instead of seeing a stale reference.
+        _giftWrapSubscription = null;
+        if (!_disposed) {
+          Future<void>.delayed(_reconnectDelay, startListening);
+        }
       },
       onDone: () {
         // Stream closed (relay disconnect, NostrClient rebuild, etc.)
@@ -333,8 +348,8 @@ class DmRepository {
 
   /// Routes an incoming event to the correct handler based on kind.
   ///
-  /// Serialized via [_eventLock] so that poll events and subscription
-  /// events never race into the dedup/insert path concurrently.
+  /// Serialized via [_eventLock] so that subscription events never race
+  /// into the dedup/insert path concurrently.
   Future<void> _handleIncomingEvent(Event event) async {
     // Wait for any in-flight event processing to complete.
     while (_eventLock != null) {
@@ -441,6 +456,12 @@ class DmRepository {
         rawParticipants,
         rumorEvent.pubkey,
       );
+
+      // Reject self-conversations (all participants are the same pubkey).
+      // Defense-in-depth: should not happen after the self-wrap fix above,
+      // but guards against any future code path producing degenerate lists.
+      if (participants.toSet().length < 2) return;
+
       final conversationId = computeConversationId(participants);
 
       // Extract common tags
@@ -598,20 +619,8 @@ class DmRepository {
 
   Future<void> _handleNip04Event(Event nip04Event) async {
     try {
-      Log.debug(
-        'Received NIP-04 event ${nip04Event.id} '
-        'from ${nip04Event.pubkey}',
-        category: LogCategory.system,
-      );
-
-      // Dedup: use event ID as giftWrapId for the unique index
-      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
-        Log.debug(
-          'Skipping duplicate NIP-04 event ${nip04Event.id}',
-          category: LogCategory.system,
-        );
-        return;
-      }
+      // Dedup: use event ID as giftWrapId for the unique index.
+      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) return;
 
       // Extract recipient from p tag
       String? recipientPubkey;
@@ -1527,6 +1536,44 @@ class DmRepository {
     }
   }
 
+  /// Removes phantom self-conversations created by the self-wrap bug where
+  /// `_resolveConversationParticipants` produced `[self, self]`.
+  ///
+  /// Idempotent — safe to call on every init.
+  Future<void> _cleanupSelfConversations() async {
+    try {
+      final selfConvId = computeConversationId([_userPubkey, _userPubkey]);
+      final existing = await _conversationsDao.getConversation(
+        selfConvId,
+        ownerPubkey: _ownerPubkey,
+      );
+      if (existing == null) return;
+
+      await _conversationsDao.runInTransaction(() async {
+        await _directMessagesDao.deleteConversationMessages(
+          selfConvId,
+          ownerPubkey: _ownerPubkey,
+        );
+        await _conversationsDao.deleteConversation(
+          selfConvId,
+          ownerPubkey: _ownerPubkey,
+        );
+      });
+
+      Log.info(
+        'Cleaned up phantom self-conversation',
+        category: LogCategory.system,
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to clean up self-conversation: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Compute a deterministic conversation ID from sorted participant pubkeys.
   static String computeConversationId(List<String> participants) {
     final sorted = List<String>.from(participants)..sort();
@@ -1576,7 +1623,13 @@ class DmRepository {
     final canonical1to1 = [_userPubkey, senderPubkey]..sort();
 
     // Standard 1:1 message — no ambiguity.
-    if (extractedParticipants.length <= 2) return canonical1to1;
+    if (extractedParticipants.length <= 2) {
+      // Self-wrap: sender is the current user, so canonical1to1 would be
+      // [self, self]. Use extracted participants which contain the actual
+      // recipient from the rumor's p-tags.
+      if (_userPubkey == senderPubkey) return extractedParticipants;
+      return canonical1to1;
+    }
 
     // Extra p-tags present. Check if a group conversation with the
     // full participant set already exists — if so, it's a genuine group.

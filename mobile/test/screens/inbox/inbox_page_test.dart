@@ -98,7 +98,7 @@ void main() {
         () => mockBlocklistService.isBlocked(any()),
       ).thenReturn(false);
 
-      when(() => mockDmRepository.startListening()).thenReturn(null);
+      when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(
         () => mockDmRepository.stopListening(),
       ).thenAnswer((_) async {});

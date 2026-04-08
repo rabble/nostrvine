@@ -12,15 +12,29 @@ import 'package:openvine/widgets/notification_list_item.dart';
 /// Mock notifier that returns test notifications
 class _MockRelayNotifications extends RelayNotifications {
   final List<NotificationModel> _notifications;
+  final bool _hasMoreContent;
+  final bool _isLoadingMore;
+  final bool _isRefreshing;
   final List<String> markedAsReadIds = [];
   bool markAllAsReadCalled = false;
+  int loadMoreCalls = 0;
 
-  _MockRelayNotifications(this._notifications);
+  _MockRelayNotifications(
+    this._notifications, {
+    bool hasMoreContent = false,
+    bool isLoadingMore = false,
+    bool isRefreshing = false,
+  }) : _hasMoreContent = hasMoreContent,
+       _isLoadingMore = isLoadingMore,
+       _isRefreshing = isRefreshing;
 
   @override
   Future<NotificationFeedState> build() async {
     return NotificationFeedState(
       notifications: _notifications,
+      hasMoreContent: _hasMoreContent,
+      isLoadingMore: _isLoadingMore,
+      isRefreshing: _isRefreshing,
       isInitialLoad: false,
       lastUpdated: DateTime.now(),
     );
@@ -37,7 +51,9 @@ class _MockRelayNotifications extends RelayNotifications {
   }
 
   @override
-  Future<void> loadMore() async {}
+  Future<void> loadMore() async {
+    loadMoreCalls++;
+  }
 
   @override
   Future<void> refresh() async {}
@@ -46,6 +62,7 @@ class _MockRelayNotifications extends RelayNotifications {
 /// Mock notifier that returns empty list
 class _MockEmptyRelayNotifications extends RelayNotifications {
   bool markAllAsReadCalled = false;
+  int loadMoreCalls = 0;
 
   @override
   Future<NotificationFeedState> build() async {
@@ -65,7 +82,9 @@ class _MockEmptyRelayNotifications extends RelayNotifications {
   }
 
   @override
-  Future<void> loadMore() async {}
+  Future<void> loadMore() async {
+    loadMoreCalls++;
+  }
 
   @override
   Future<void> refresh() async {}
@@ -88,7 +107,9 @@ void main() {
       overrides: [relayNotificationsProvider.overrideWith(notifierFactory)],
       child: MaterialApp(
         theme: ThemeData.dark(),
-        home: const Scaffold(body: NotificationsScreen()),
+        home: const Scaffold(
+          body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+        ),
       ),
     );
   }
@@ -342,7 +363,9 @@ void main() {
             ),
           ];
 
-          final mockNotifier = _MockRelayNotifications(notifications);
+          final mockNotifier = _MockRelayNotifications(
+            notifications,
+          );
           await tester.pumpWidget(buildScreenWidget(() => mockNotifier));
           await tester.pumpAndSettle();
 

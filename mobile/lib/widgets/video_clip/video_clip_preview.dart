@@ -2,9 +2,11 @@
 // ABOUTME: Shows looping video player with clip info, save-to-gallery,
 // ABOUTME: and dismiss
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +14,6 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:video_player/video_player.dart';
 
 class VideoClipPreview extends ConsumerStatefulWidget {
   const VideoClipPreview({
@@ -34,10 +35,11 @@ class VideoClipPreview extends ConsumerStatefulWidget {
 
 class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
   /// Video player controller for the clip, null until initialized.
-  VideoPlayerController? _controller;
+  DivineVideoPlayerController? _controller;
+  StreamSubscription<DivineVideoPlayerState>? _stateSubscription;
 
-  /// Whether the video player has completed initialization and is ready to play.
-  bool _isInitialized = false;
+  /// Whether the video player has reported non-zero dimensions.
+  bool _hasDimensions = false;
 
   /// Whether a gallery save operation is currently in progress.
   bool _isSaving = false;
@@ -50,9 +52,9 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
 
   /// Initializes the video player and starts playback.
   ///
-  /// Checks if the video file exists, creates a [VideoPlayerController],
-  /// initializes it, enables looping, and starts playback automatically.
-  /// Updates [_isInitialized] when complete.
+  /// Checks if the video file exists, creates a
+  /// [DivineVideoPlayerController], initializes it, enables looping,
+  /// and starts playback automatically.
   Future<void> _initializePlayer() async {
     final file = File(await widget.clip.video.safeFilePath());
     if (!file.existsSync()) {
@@ -60,20 +62,28 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
       return;
     }
 
-    if (mounted) _controller = VideoPlayerController.file(file);
+    if (mounted) _controller = DivineVideoPlayerController(useTexture: true);
     if (mounted) await _controller!.initialize();
-    if (mounted) await _controller!.setLooping(true);
+    if (mounted) await _controller!.setSource(VideoClip.file(file.path));
+    if (mounted) await _controller!.setLooping(looping: true);
     if (mounted) await _controller!.play();
 
-    if (mounted) {
-      setState(() {
-        _isInitialized = true;
-      });
-    }
+    if (!mounted) return;
+
+    // Rebuild once video dimensions become available.
+    _stateSubscription = _controller!.stateStream.listen((state) {
+      if (mounted && state.videoWidth > 0 && !_hasDimensions) {
+        _hasDimensions = true;
+        setState(() {});
+      }
+    });
+
+    setState(() {});
   }
 
   @override
   void dispose() {
+    _stateSubscription?.cancel();
     _controller?.dispose();
     super.dispose();
   }
@@ -158,52 +168,49 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
                       aspectRatio: widget.clip.targetAspectRatio.value,
                       child: ClipRRect(
                         borderRadius: .circular(16),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Thumbnail
-                            if (widget.clip.thumbnailPath != null)
-                              Hero(
-                                tag: 'Video-Clip-Preview-${widget.clip.id}',
-                                child: Image.file(
-                                  File(widget.clip.thumbnailPath!),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
+                        child: Builder(
+                          builder: (context) {
+                            final vw = _controller?.state.videoWidth ?? 0;
+                            final vh = _controller?.state.videoHeight ?? 0;
 
-                            // Progress-indicator
-                            const Center(
-                              child: CircularProgressIndicator(
-                                color: VineTheme.vineGreen,
-                              ),
-                            ),
-
-                            // Video-player
-                            AnimatedSwitcher(
-                              layoutBuilder: (currentChild, previousChildren) =>
-                                  Stack(
-                                    alignment: Alignment.center,
-                                    fit: StackFit.expand,
-                                    children: <Widget>[
-                                      ...previousChildren,
-                                      ?currentChild,
-                                    ],
-                                  ),
-                              switchInCurve: Curves.easeInOut,
-                              duration: const Duration(milliseconds: 120),
-                              child: _isInitialized && _controller != null
-                                  ? FittedBox(
-                                      fit: BoxFit.cover,
-                                      clipBehavior: Clip.hardEdge,
-                                      child: SizedBox(
-                                        width: _controller!.value.size.width,
-                                        height: _controller!.value.size.height,
-                                        child: VideoPlayer(_controller!),
+                            final player = DivineVideoPlayer(
+                              controller: _controller,
+                              placeholder: Stack(
+                                fit: .expand,
+                                children: [
+                                  // Thumbnail
+                                  if (widget.clip.thumbnailPath != null)
+                                    Hero(
+                                      tag:
+                                          'Video-Clip-Preview-${widget.clip.id}',
+                                      child: Image.file(
+                                        File(widget.clip.thumbnailPath!),
+                                        fit: BoxFit.cover,
                                       ),
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                          ],
+                                    ),
+
+                                  // Progress-indicator
+                                  const Center(
+                                    child: CircularProgressIndicator(
+                                      color: VineTheme.vineGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (vw == 0 || vh == 0) return player;
+
+                            return FittedBox(
+                              fit: BoxFit.cover,
+                              clipBehavior: Clip.hardEdge,
+                              child: SizedBox(
+                                width: vw.toDouble(),
+                                height: vh.toDouble(),
+                                child: player,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),

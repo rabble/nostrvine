@@ -30,10 +30,11 @@ class ProfileLikedGrid extends StatefulWidget {
 
 class _ProfileLikedGridState extends State<ProfileLikedGrid>
     with ScrollPaginationMixin {
-  final ScrollController _scrollController = ScrollController();
+  /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
+  ScrollController? _primaryScrollController;
 
   @override
-  ScrollController get paginationScrollController => _scrollController;
+  ScrollController get paginationScrollController => _primaryScrollController!;
 
   @override
   bool canLoadMore() {
@@ -49,15 +50,19 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
   }
 
   @override
-  void initState() {
-    super.initState();
-    initPagination();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final primary = PrimaryScrollController.of(context);
+    if (_primaryScrollController != primary) {
+      if (_primaryScrollController != null) disposePagination();
+      _primaryScrollController = primary;
+      initPagination();
+    }
   }
 
   @override
   void dispose() {
     disposePagination();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -103,7 +108,6 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
         }
 
         return CustomScrollView(
-          controller: _scrollController,
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.all(4),

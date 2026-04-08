@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
 import 'package:openvine/models/video_category.dart';
@@ -166,54 +167,23 @@ class _CategoryTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Positioned(
-                  right: 18,
-                  top: 0,
-                  bottom: 0,
-                  child: IgnorePointer(
-                    child: visuals.assetPath != null
-                        ? Image.asset(
-                            visuals.assetPath!,
-                            height: 88,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) =>
-                                _FallbackEmojiBadge(
-                                  emoji: category.emoji,
-                                  color: visuals.foregroundColor,
-                                ),
-                          )
-                        : _FallbackEmojiBadge(
-                            emoji: category.emoji,
-                            color: visuals.foregroundColor,
-                          ),
+                if (visuals.assetPath != null)
+                  Positioned(
+                    right: 18,
+                    top: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      child: SvgPicture.asset(
+                        visuals.assetPath!,
+                        height: 88,
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _FallbackEmojiBadge extends StatelessWidget {
-  const _FallbackEmojiBadge({required this.emoji, required this.color});
-
-  final String emoji;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 56,
-      height: 56,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Text(emoji, style: const TextStyle(fontSize: 28)),
     );
   }
 }
