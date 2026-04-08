@@ -114,8 +114,7 @@ void main() {
         expect: () => [
           const ClipsLibraryState(status: ClipsLibraryStatus.loading),
           isA<ClipsLibraryState>()
-              .having((s) => s.status, 'status', ClipsLibraryStatus.error)
-              .having((s) => s.errorMessage, 'errorMessage', isNotNull),
+              .having((s) => s.status, 'status', ClipsLibraryStatus.error),
         ],
       );
     });

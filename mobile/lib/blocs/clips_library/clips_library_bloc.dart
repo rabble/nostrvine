@@ -67,7 +67,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
-          clearError: true,
         ),
       );
 
@@ -90,7 +89,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       emit(
         state.copyWith(
           status: ClipsLibraryStatus.error,
-          errorMessage: e.toString(),
         ),
       );
     }
@@ -163,7 +161,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           selectedClipIds: const {},
           selectedDuration: Duration.zero,
           lastDeletedCount: deletedCount,
-          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
@@ -176,7 +173,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       emit(
         state.copyWith(
           status: ClipsLibraryStatus.error,
-          errorMessage: 'Failed to delete clips: $e',
         ),
       );
     }
@@ -215,7 +211,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           selectedClipIds: selectedIds,
           selectedDuration: selectedDuration,
           lastDeletedCount: 1,
-          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
@@ -228,7 +223,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       emit(
         state.copyWith(
           status: ClipsLibraryStatus.error,
-          errorMessage: 'Failed to delete clip: $e',
         ),
       );
     }

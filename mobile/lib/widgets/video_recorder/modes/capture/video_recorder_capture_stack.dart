@@ -71,6 +71,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                     opacity: hasClips && !isRecording ? 1 : 0,
                     child: DivineIconButton(
                       icon: .arrowCounterClockwise,
+                      semanticLabel: 'Undo last clip',
                       type: .ghostSecondary,
                       size: .small,
                       onPressed: () => _removeLastClip(context, ref),

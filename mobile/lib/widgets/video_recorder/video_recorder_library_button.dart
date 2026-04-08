@@ -144,28 +144,25 @@ class _SelectionCountBadge extends StatelessWidget {
                     minWidth: 20,
                     minHeight: 20,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                  ),
+                  padding: const .symmetric(horizontal: 4),
                   decoration: BoxDecoration(
                     color: VineTheme.error,
                     shape: .circle,
-                    border: Border.all(
-                      width: 2,
-                      color: VineTheme.backgroundCamera,
-                    ),
+                    border: .all(width: 2, color: VineTheme.backgroundCamera),
                   ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: .min,
+                    mainAxisAlignment: .center,
                     children: [
-                      Text(
-                        count.toString(),
-                        textAlign: TextAlign.center,
-                        style: VineTheme.labelSmallFont().copyWith(
-                          fontFeatures: [
-                            const .tabularFigures(),
-                          ],
+                      MediaQuery.withNoTextScaling(
+                        child: Text(
+                          count.toString(),
+                          textAlign: .center,
+                          style: VineTheme.labelSmallFont().copyWith(
+                            fontFeatures: [
+                              const .tabularFigures(),
+                            ],
+                          ),
                         ),
                       ),
                     ],

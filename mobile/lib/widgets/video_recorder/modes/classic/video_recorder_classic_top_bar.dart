@@ -29,6 +29,7 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
               children: [
                 DivineIconButton(
                   icon: .x,
+                  semanticLabel: 'Close',
                   size: .small,
                   type: .ghostSecondary,
                   onPressed: isRecording
@@ -37,6 +38,7 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
                 ),
                 DivineIconButton(
                   icon: .caretRight,
+                  semanticLabel: 'Next',
                   size: .small,
                   type: .ghostSecondary,
                   onPressed: isRecording
