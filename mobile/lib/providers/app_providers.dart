@@ -1400,6 +1400,7 @@ FollowRepository followRepository(Ref ref) {
   // Get connection status and pending action service for offline support
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
+  final authService = ref.watch(authServiceProvider);
 
   // Get FunnelcakeApiClient for direct API access
   final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
@@ -1414,7 +1415,8 @@ FollowRepository followRepository(Ref ref) {
     funnelcakeApiClient: funnelcakeApiClient,
     profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({required bool isFollow, required String pubkey}) async {
             await pendingActionService.queueAction(
@@ -2235,7 +2237,8 @@ LikesRepository likesRepository(Ref ref) {
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({
             required bool isLike,
@@ -2323,7 +2326,8 @@ RepostsRepository repostsRepository(Ref ref) {
   final repository = RepostsRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({
             required bool isRepost,
