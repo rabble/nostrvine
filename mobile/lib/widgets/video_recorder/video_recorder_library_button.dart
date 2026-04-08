@@ -63,64 +63,66 @@ class _VideoRecorderLibraryButtonState
 
     final thumbnailPath = _lastKnownThumbnailPath ?? _libraryThumbnailPath;
 
-    return Semantics(
-      button: true,
-      label: thumbnailPath == null
-          ? 'Clip library, no clips'
-          : 'Open clip library, ${clips.length} '
-                'clip${clips.length == 1 ? '' : 's'}',
-      enabled: clips.isNotEmpty,
-      child: InkWell(
-        onTap: thumbnailPath == null
-            ? null
-            : () async {
-                await ref
-                    .read(videoRecorderProvider.notifier)
-                    .openLibrary(context);
+    return Padding(
+      padding: const .only(left: 16),
+      child: Semantics(
+        button: true,
+        label: thumbnailPath == null
+            ? 'Clip library, no clips'
+            : 'Open clip library, ${clips.length} '
+                  'clip${clips.length == 1 ? '' : 's'}',
+        enabled: clips.isNotEmpty,
+        child: GestureDetector(
+          onTap: thumbnailPath == null
+              ? null
+              : () async {
+                  await ref
+                      .read(videoRecorderProvider.notifier)
+                      .openLibrary(context);
 
-                // Refresh library thumbnail after returning — user may have
-                // deleted clips or new thumbnails may have been recovered.
-                _loadLibraryThumbnail();
-              },
-        child: Container(
-          margin: const .only(left: 16),
-          width: 40,
-          height: 40,
-          decoration: ShapeDecoration(
-            color: VineTheme.surfaceContainer,
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 2, color: VineTheme.onSurface),
-              borderRadius: .circular(16),
-            ),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipRRect(
-                borderRadius: .circular(14),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
-                  layoutBuilder: (currentChild, previousChildren) => Stack(
-                    alignment: .center,
-                    fit: .expand,
-                    children: [...previousChildren, ?currentChild],
-                  ),
-                  child: thumbnailPath != null
-                      ? Image.file(
-                          File(thumbnailPath),
-                          key: ValueKey(thumbnailPath),
-                          fit: BoxFit.cover,
-                        )
-                      : const SizedBox.shrink(),
-                ),
+                  // Refresh library thumbnail after returning — user may have
+                  // deleted clips or new thumbnails may have been recovered.
+                  _loadLibraryThumbnail();
+                },
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: ShapeDecoration(
+              color: VineTheme.surfaceContainer,
+              shape: RoundedRectangleBorder(
+                side: const BorderSide(width: 2, color: VineTheme.onSurface),
+                borderRadius: .circular(16),
               ),
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRRect(
+                  borderRadius: .circular(14),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    ),
+                    layoutBuilder: (currentChild, previousChildren) => Stack(
+                      alignment: .center,
+                      fit: .expand,
+                      children: [...previousChildren, ?currentChild],
+                    ),
+                    child: thumbnailPath != null
+                        ? Image.file(
+                            File(thumbnailPath),
+                            key: ValueKey(thumbnailPath),
+                            fit: BoxFit.cover,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
 
-              _SelectionCountBadge(count: clips.length),
-            ],
+                _SelectionCountBadge(count: clips.length),
+              ],
+            ),
           ),
         ),
       ),
