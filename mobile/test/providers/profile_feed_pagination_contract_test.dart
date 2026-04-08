@@ -228,7 +228,7 @@ void main() {
     test(
       'REST refreshFromService marks hasMoreContent false when response is shorter than a page',
       () async {
-        final responses = Queue<List<VideoStats>>()
+        final responses = Queue<VideosByAuthorResponse>()
           ..add(_videoStats(count: 50, pubkey: userId))
           ..add(_videoStats(count: 12, pubkey: userId));
 
@@ -312,14 +312,15 @@ void main() {
   });
 }
 
-List<VideoStats> _videoStats({
+VideosByAuthorResponse _videoStats({
   required int count,
   required String pubkey,
   int startIndex = 0,
+  int? totalCount,
 }) {
   final now = DateTime(2026, 3, 30, 12);
 
-  return List.generate(count, (index) {
+  final videos = List.generate(count, (index) {
     final videoIndex = startIndex + index;
     final createdAt = now.subtract(Duration(minutes: videoIndex));
     return VideoStats(
@@ -337,4 +338,5 @@ List<VideoStats> _videoStats({
       engagementScore: videoIndex,
     );
   });
+  return VideosByAuthorResponse(videos: videos, totalCount: totalCount);
 }

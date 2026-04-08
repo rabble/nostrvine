@@ -151,7 +151,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
             'Collaborators are tagged as co-creators on this post. '
             'You can only add people you mutually follow, and they appear '
             'in the post metadata when published.',
-        assetPath: 'assets/stickers/sparkle.png',
+        assetPath: 'assets/stickers/sparkle.svg',
       ),
     );
   }

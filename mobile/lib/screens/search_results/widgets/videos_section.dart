@@ -20,7 +20,10 @@ import 'package:rxdart/rxdart.dart';
 /// Returns a [SliverMainAxisGroup] so the header and content participate
 /// natively in the parent [CustomScrollView]'s sliver protocol.
 class VideosSection extends StatelessWidget {
-  const VideosSection({this.onSeeAll, super.key});
+  const VideosSection({this.showAll = false, this.onSeeAll, super.key});
+
+  /// When true, shows all results and hides the section header.
+  final bool showAll;
 
   /// Called when the user taps the "Videos" header chevron.
   final VoidCallback? onSeeAll;
@@ -29,9 +32,10 @@ class VideosSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverMainAxisGroup(
       slivers: [
-        SliverToBoxAdapter(
-          child: SectionHeader(title: 'Videos', onTap: onSeeAll),
-        ),
+        if (!showAll)
+          SliverToBoxAdapter(
+            child: SectionHeader(title: 'Videos', onTap: onSeeAll),
+          ),
         const _VideosContent(),
       ],
     );

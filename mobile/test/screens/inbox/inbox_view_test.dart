@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
+import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -35,7 +36,8 @@ class _MockConversationListBloc
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
     implements MyFollowingBloc {}
 
-/// Minimal mock so NotificationsScreen (default tab) renders without crashing.
+/// Minimal mock so the legacy RelayNotifications provider (still used for
+/// unread-count) does not start real timers or HTTP calls.
 class _MockRelayNotifications extends RelayNotifications {
   @override
   Future<NotificationFeedState> build() async {
@@ -121,6 +123,7 @@ void main() {
         additionalOverrides: [
           relayNotificationUnreadCountProvider.overrideWithValue(0),
           relayNotificationsProvider.overrideWith(_MockRelayNotifications.new),
+          notificationRepositoryProvider.overrideWithValue(null),
           goRouterProvider.overrideWithValue(mockGoRouter),
         ],
         home: MockGoRouterProvider(

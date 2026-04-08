@@ -8,6 +8,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart'
+    show SecureKeyStorageException;
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -291,12 +293,34 @@ Future<void> executeAccountDeletion({
 
     if (result.success) {
       // Step 2: Delete Keycast account if one exists (invalidates signer)
-      // We log but don't block on failure since NIP-62 already succeeded
       final (keycastSuccess, keycastError) = await authService
           .deleteKeycastAccount();
+      if (!keycastSuccess && authService.isRegistered) {
+        // divineOAuth users MUST have their Keycast account deleted to
+        // prevent re-login. Show error and do NOT sign out.
+        Log.error(
+          'Keycast account deletion failed for registered user: '
+          '$keycastError',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+        dismissDialog();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              'Could not delete your account from the server. '
+              'Please check your connection and try again.',
+              error: true,
+            ),
+          );
+        }
+        return;
+      }
       if (!keycastSuccess) {
+        // Non-OAuth users: log and continue (no server account to delete)
         Log.warning(
-          'Keycast account deletion failed (continuing anyway): $keycastError',
+          'Keycast account deletion failed (continuing anyway): '
+          '$keycastError',
           name: screenName,
           category: LogCategory.auth,
         );
@@ -304,20 +328,32 @@ Future<void> executeAccountDeletion({
 
       // Step 3: Sign out and delete local keys
       // Router will automatically redirect to /welcome when auth state
-      // becomes unauthenticated
-      await authService.signOut(deleteKeys: true);
+      // becomes unauthenticated.
+      // signOut may throw SecureKeyStorageException if platform key
+      // deletion failed — the user IS signed out but keys may remain.
+      String? keyDeletionWarning;
+      try {
+        await authService.signOut(deleteKeys: true);
+      } on SecureKeyStorageException catch (e) {
+        Log.warning(
+          'Key deletion failed during account deletion: $e',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+        keyDeletionWarning =
+            'Account deleted, but your keys may '
+            'not have been fully removed from this device. '
+            'Go to Settings → Nostr Keys → Remove Keys to retry.';
+      }
 
-      // Close loading indicator and show success snackbar
+      // Close loading indicator and show result snackbar
       // Router will automatically redirect to /welcome after sign out
       dismissDialog();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Your account has been deleted',
-              style: TextStyle(color: VineTheme.backgroundColor),
-            ),
-            backgroundColor: VineTheme.vineGreen,
+          DivineSnackbarContainer.snackBar(
+            keyDeletionWarning ?? 'Your account has been deleted',
+            error: keyDeletionWarning != null,
           ),
         );
       }
@@ -326,12 +362,9 @@ Future<void> executeAccountDeletion({
       dismissDialog();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result.error ?? 'Failed to delete content from relays',
-              style: const TextStyle(color: VineTheme.whiteText),
-            ),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            result.error ?? 'Failed to delete content from relays',
+            error: true,
           ),
         );
       }

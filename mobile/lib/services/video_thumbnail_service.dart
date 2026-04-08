@@ -469,9 +469,10 @@ class VideoThumbnailService {
 
   /// Persist ghost-frame bytes to disk and return the path.
   static Future<String> _writeGhostFrame(Uint8List bytes) async {
+    final documentsDir = await getApplicationDocumentsDirectory();
+    await Directory(documentsDir.path).create(recursive: true);
     final destPath =
-        '${(await getApplicationDocumentsDirectory()).path}/'
-        'ghost_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        '${documentsDir.path}/ghost_${DateTime.now().millisecondsSinceEpoch}.jpg';
     await File(destPath).writeAsBytes(bytes);
 
     Log.debug(

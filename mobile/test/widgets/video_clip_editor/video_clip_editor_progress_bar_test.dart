@@ -197,6 +197,180 @@ void main() {
       expect(fractionalBox.widthFactor, 0.5);
     });
 
+    testWidgets('shows progress while playing via ticker interpolation', (
+      tester,
+    ) async {
+      final clips = [
+        DivineVideoClip(
+          id: 'clip1',
+          video: EditorVideo.file('/test/clip1.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        ),
+      ];
+
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          clips: clips,
+          currentPosition: const Duration(seconds: 2),
+          hasPlayedOnce: true,
+          isPlaying: true,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: BlocProvider<ClipEditorBloc>.value(
+            value: bloc,
+            child: const MaterialApp(
+              home: Scaffold(body: VideoClipEditorProgressBar()),
+            ),
+          ),
+        ),
+      );
+
+      // Pump a few frames so the ticker fires
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byType(FractionallySizedBox), findsOneWidget);
+      final fractionalBox = tester.widget<FractionallySizedBox>(
+        find.byType(FractionallySizedBox),
+      );
+      // Progress should be ≥ 0.2 (2s/10s baseline) and slightly higher
+      // from ticker interpolation.
+      expect(fractionalBox.widthFactor, greaterThanOrEqualTo(0.2));
+      expect(fractionalBox.widthFactor, lessThanOrEqualTo(1.0));
+    });
+
+    testWidgets('ticker stops when playback pauses', (tester) async {
+      final clips = [
+        DivineVideoClip(
+          id: 'clip1',
+          video: EditorVideo.file('/test/clip1.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        ),
+      ];
+
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          clips: clips,
+          currentPosition: const Duration(seconds: 5),
+          hasPlayedOnce: true,
+          isPlaying: true,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: BlocProvider<ClipEditorBloc>.value(
+            value: bloc,
+            child: const MaterialApp(
+              home: Scaffold(body: VideoClipEditorProgressBar()),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Pause playback
+      bloc.emit(
+        ClipEditorState(
+          clips: clips,
+          currentPosition: const Duration(seconds: 5),
+          hasPlayedOnce: true,
+        ),
+      );
+
+      await tester.pump();
+
+      // After pause, progress should snap to native progress (0.5)
+      final fractionalBox = tester.widget<FractionallySizedBox>(
+        find.byType(FractionallySizedBox),
+      );
+      expect(fractionalBox.widthFactor, 0.5);
+    });
+
+    testWidgets('snaps progress on loop reset', (tester) async {
+      final clips = [
+        DivineVideoClip(
+          id: 'clip1',
+          video: EditorVideo.file('/test/clip1.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        ),
+      ];
+
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          clips: clips,
+          currentPosition: const Duration(seconds: 9),
+          hasPlayedOnce: true,
+          isPlaying: true,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: BlocProvider<ClipEditorBloc>.value(
+            value: bloc,
+            child: const MaterialApp(
+              home: Scaffold(body: VideoClipEditorProgressBar()),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+
+      // Simulate loop reset: position jumps from near-end back to start
+      bloc.emit(
+        ClipEditorState(
+          clips: clips,
+          currentPosition: const Duration(milliseconds: 100),
+          hasPlayedOnce: true,
+          isPlaying: true,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+
+      final fractionalBox = tester.widget<FractionallySizedBox>(
+        find.byType(FractionallySizedBox),
+      );
+      // After reset, progress should be close to 0.01 (100ms / 10s),
+      // not interpolated from the old high value.
+      expect(fractionalBox.widthFactor, lessThan(0.15));
+    });
+
+    testWidgets('hides overlay when progress is zero', (tester) async {
+      final clips = [
+        DivineVideoClip(
+          id: 'clip1',
+          video: EditorVideo.file('/test/clip1.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          clips: clips,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // When hasPlayedOnce is false, progress is 0 → SizedBox.shrink
+      expect(find.byType(FractionallySizedBox), findsNothing);
+    });
+
     testWidgets('first and last segments have rounded corners', (tester) async {
       final clips = [
         DivineVideoClip(

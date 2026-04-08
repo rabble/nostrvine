@@ -100,6 +100,20 @@ void main() {
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
 
+      // Stub getNewestMessageTimestamp for startListening() windowing.
+      when(
+        () => mockConversationsDao.getNewestMessageTimestamp(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      // Stub getAllConversations for _mergeDuplicateConversations().
+      when(
+        () => mockConversationsDao.getAllConversations(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => []);
+
       // Global stub for runInTransaction — executes the callback directly.
       // Stub both <void> and <Null> since Dart infers different type args
       // depending on whether the callback returns or is void-typed.
@@ -606,7 +620,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
 
         // Allow async processing
@@ -766,7 +780,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -811,7 +825,7 @@ void main() {
           rumorDecryptor: (_, _) async => createRumorEvent(),
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -865,7 +879,7 @@ void main() {
           rumorDecryptor: (_, _) async => null,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -921,7 +935,7 @@ void main() {
           rumorDecryptor: (_, _) async => wrongKindRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -977,7 +991,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -1039,7 +1053,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -1104,7 +1118,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -1171,7 +1185,7 @@ void main() {
           },
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap1);
         await Future<void>.delayed(Duration.zero);
         controller.add(giftWrap2);
@@ -1252,7 +1266,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         // Should not throw — error is caught internally
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
@@ -1267,7 +1281,7 @@ void main() {
     // -----------------------------------------------------------------
 
     group('subscription lifecycle', () {
-      test('startListening subscribes to kind 1059 events', () {
+      test('startListening subscribes to kind 1059 events', () async {
         final controller = StreamController<Event>();
         when(
           () => mockNostrClient.subscribe(
@@ -1277,7 +1291,7 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final repository = createRepository();
-        repository.startListening();
+        await repository.startListening();
 
         verify(
           () => mockNostrClient.subscribe(
@@ -1289,7 +1303,7 @@ void main() {
         controller.close();
       });
 
-      test('startListening is idempotent', () {
+      test('startListening is idempotent', () async {
         final controller = StreamController<Event>();
         when(
           () => mockNostrClient.subscribe(
@@ -1299,8 +1313,8 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final repository = createRepository();
-        repository.startListening();
-        repository.startListening(); // Second call is no-op
+        await repository.startListening();
+        await repository.startListening(); // Second call is no-op
 
         verify(
           () => mockNostrClient.subscribe(
@@ -1325,7 +1339,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final repository = createRepository();
-        repository.startListening();
+        await repository.startListening();
         await repository.stopListening();
 
         verify(
@@ -1387,7 +1401,7 @@ void main() {
           // Intentionally no userPubkey/signer — initialize() provides them.
         );
 
-        repository.initialize(
+        repository.setCredentials(
           userPubkey: _validPubkeyA,
           signer: LocalNostrSigner(_validPrivateKey),
           messageService: mockMessageService,
@@ -2054,7 +2068,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -2205,7 +2219,7 @@ void main() {
           rumorDecryptor: (_, _) async => fileRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -2295,7 +2309,7 @@ void main() {
           rumorDecryptor: (_, _) async => incompleteRumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -2792,7 +2806,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumorFromMod,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -3072,7 +3086,7 @@ void main() {
           nip04Decryptor: (pubkey, ciphertext) async => 'Hello!',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3126,7 +3140,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'Decrypted NIP-04 text',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3190,7 +3204,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'My sent message',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3233,7 +3247,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'should not reach',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3285,7 +3299,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'should not reach',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3337,7 +3351,7 @@ void main() {
           nip04Decryptor: (_, _) async => null,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -3419,7 +3433,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'NIP-04 message',
         );
 
-        repository.startListening();
+        await repository.startListening();
 
         // Send both event types
         controller.add(giftWrap);
@@ -3598,7 +3612,7 @@ void main() {
           nip04Decryptor: (_, _) async => 'Legacy message',
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -4147,7 +4161,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -4280,7 +4294,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -4444,7 +4458,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 
@@ -4486,6 +4500,171 @@ void main() {
               dmProtocol: any(named: 'dmProtocol'),
             ),
           ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'self-wrap routes to correct conversation, not self-conversation',
+        () async {
+          // Self-wrap: rumor authored by current user (A) with p-tag to B.
+          // This simulates processing our own sent-message recovery wrap.
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent(
+            pubkey: _validPubkeyA, // Sender == current user
+            tags: [
+              ['p', _validPubkeyB], // Actual recipient
+            ],
+            content: 'Hello from me!',
+          );
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+          );
+
+          repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          // Should use canonical 1:1 conversation ID (A <-> B),
+          // NOT a self-conversation [A, A].
+          final canonical1to1 = [_validPubkeyA, _validPubkeyB]..sort();
+          final canonicalId = DmRepository.computeConversationId(canonical1to1);
+
+          // Verify message stored in correct conversation.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: canonicalId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello from me!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+
+          // Conversation should be upserted as 1:1 with correct participants.
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: canonicalId,
+              participantPubkeys: jsonEncode(canonical1to1),
+              isGroup: false,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello from me!',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyA,
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: true,
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+
+          // Self-conversation ID should NOT have been used.
+          final selfConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyA],
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: selfConvId,
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
 
           await controller.close();
           await repository.stopListening();
@@ -4568,7 +4747,7 @@ void main() {
           rumorDecryptor: (_, _) async => rumor,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 

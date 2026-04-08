@@ -7,6 +7,7 @@ import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -75,12 +76,15 @@ import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
+import 'package:openvine/services/notification_preferences_service.dart';
+import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
@@ -128,6 +132,54 @@ final nostrAppGrantStoreProvider = Provider<NostrAppGrantStore>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return NostrAppGrantStore(sharedPreferences: prefs);
 });
+
+final firebaseMessagingProvider = Provider<FirebaseMessaging>(
+  (ref) => FirebaseMessaging.instance,
+);
+
+final firebaseOnMessageProvider = Provider<Stream<RemoteMessage>>(
+  (ref) => FirebaseMessaging.onMessage,
+);
+
+final notificationServiceProvider = Provider<NotificationService>(
+  (ref) => NotificationService(),
+);
+
+final pushNotificationServiceProvider = Provider<PushNotificationService>((
+  ref,
+) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final notificationService = ref.watch(notificationServiceProvider);
+  final envConfig = ref.watch(currentEnvironmentProvider);
+  final firebaseMessaging = ref.watch(firebaseMessagingProvider);
+
+  final pushService = PushNotificationService(
+    authService: authService,
+    nostrClient: nostrClient,
+    notificationService: notificationService,
+    environmentConfig: envConfig,
+    getToken: firebaseMessaging.getToken,
+    onTokenRefresh: firebaseMessaging.onTokenRefresh,
+  );
+
+  ref.onDispose(pushService.dispose);
+  return pushService;
+});
+
+final notificationPreferencesServiceProvider =
+    Provider<NotificationPreferencesService>((ref) {
+      return NotificationPreferencesService(
+        openBox: NotificationPreferencesService.openBox,
+        publishPreferences: (prefs) {
+          return ref
+              .read(pushNotificationServiceProvider)
+              .updatePreferences(
+                prefs,
+              );
+        },
+      );
+    });
 
 final nostrAppBridgePolicyProvider = Provider<NostrAppBridgePolicy>((ref) {
   final authService = ref.watch(authServiceProvider);
@@ -1072,6 +1124,64 @@ void zendeskIdentitySync(Ref ref) {
   ref.onDispose(subscription.cancel);
 }
 
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+@Riverpod(keepAlive: true)
+void pushNotificationSync(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  Future<void> requestPermissionAndRegister(String pubkey) async {
+    final firebaseMessaging = ref.read(firebaseMessagingProvider);
+    final pushService = ref.read(pushNotificationServiceProvider);
+    final settings = await firebaseMessaging.requestPermission();
+    if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      Log.info(
+        'Push notification permission denied by user',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    await pushService.register(pubkey);
+  }
+
+  String? lastAuthenticatedPubkey = authService.currentPublicKeyHex;
+  if (authService.authState == AuthState.authenticated &&
+      lastAuthenticatedPubkey != null) {
+    unawaited(requestPermissionAndRegister(lastAuthenticatedPubkey));
+  }
+
+  // React to auth state changes
+  final subscription = authService.authStateStream.listen((authState) async {
+    final currentPubkey = authService.currentPublicKeyHex;
+    if (authState == AuthState.authenticated && currentPubkey != null) {
+      lastAuthenticatedPubkey = currentPubkey;
+      await requestPermissionAndRegister(currentPubkey);
+    } else if (authState == AuthState.unauthenticated &&
+        lastAuthenticatedPubkey != null) {
+      await ref
+          .read(pushNotificationServiceProvider)
+          .deregister(lastAuthenticatedPubkey!);
+    }
+  });
+
+  // Set up foreground message handler
+  final onMessageSubscription = ref.read(firebaseOnMessageProvider).listen((
+    message,
+  ) {
+    final pushService = ref.read(pushNotificationServiceProvider);
+    pushService.handleForegroundMessage(message.data);
+  });
+
+  ref.onDispose(() {
+    subscription.cancel();
+    onMessageSubscription.cancel();
+  });
+}
+
 /// Helper to set Zendesk identity from pubkey
 Future<void> _setZendeskIdentity(
   String pubkeyHex,
@@ -1224,22 +1334,19 @@ HashtagService hashtagService(Ref ref) {
   return HashtagService(videoEventService, cacheService);
 }
 
-/// Social service depends on Nostr service, Auth service, and ProfileRepository
+/// Social service for follow sets (NIP-51 Kind 30000).
+///
+/// Follower count stats have moved to [FollowRepository].
 @Riverpod(keepAlive: true)
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
-  final profileRepository = ref.watch(profileRepositoryProvider);
-
-  final env = ref.watch(currentEnvironmentProvider);
 
   return SocialService(
     nostrService,
     authService,
     personalEventCache: personalEventCache,
-    profileRepository: profileRepository,
-    indexerRelayUrls: env.indexerRelays,
   );
 }
 
@@ -1290,10 +1397,13 @@ FollowRepository followRepository(Ref ref) {
 
   final env = ref.watch(currentEnvironmentProvider);
 
+  final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
     funnelcakeApiClient: funnelcakeApiClient,
+    profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
@@ -1306,11 +1416,6 @@ FollowRepository followRepository(Ref ref) {
             );
           }
         : null,
-    fetchFollowerCount: (pubkey) async {
-      final socialService = ref.read(socialServiceProvider);
-      final stats = await socialService.getFollowerStats(pubkey);
-      return stats['followers'] ?? 0;
-    },
   );
 
   // Register executors with pending action service for sync
@@ -1366,7 +1471,9 @@ FollowRepository followRepository(Ref ref) {
 /// until the repository owns its own persistence (Phase 1b).
 @Riverpod(keepAlive: true)
 CuratedListRepository curatedListRepository(Ref ref) {
-  final repository = CuratedListRepository();
+  final repository = CuratedListRepository(
+    nostrClient: ref.watch(nostrServiceProvider),
+  );
 
   // Bridge: push curated list updates from legacy service into repository
   ref.listen(curatedListsStateProvider, (_, next) {
@@ -1940,14 +2047,13 @@ BugReportService bugReportService(Ref ref) {
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Automatically starts listening for incoming gift-wrapped messages and
-/// stops when disposed.
+/// Sets auth credentials eagerly so read/send operations work immediately.
+/// The relay subscription is NOT started here — it is driven by the inbox
+/// UI lifecycle via [ConversationListBloc] (#2766).
 ///
-/// Uses `keepAlive: true` because the relay subscription must survive
-/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
-/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
-/// provider auto-disposes during rebuild gaps, killing the subscription
-/// and causing incoming DMs to be silently dropped.
+/// Uses `keepAlive: true` because the repository must survive transient
+/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
 /// Read operations return cached/empty data; write operations check keys.
@@ -1966,17 +2072,11 @@ DmRepository dmRepository(Ref ref) {
 
   ref.onDispose(repository.stopListening);
 
-  // Initialize when the signer's public key is available.
+  // Set credentials when the signer's public key is available.
+  // This does NOT start the relay subscription — that is lazy (#2766).
   if (ref.watch(isNostrReadyProvider)) {
-    // Use the signer's public key as the single source of truth.
-    // This is populated by Nostr.refreshPublicKey() during initialization
-    // (guarded by isNostrReadyProvider above) and always reflects the
-    // active signer — whether local keys, Keycast RPC, Amber, or bunker.
     final publicKey = nostrService.publicKey;
     if (publicKey.isNotEmpty) {
-      // Reuse the signer from the main NostrClient. This is the same signer
-      // created by NostrServiceFactory.create() and is guaranteed to work for
-      // NIP-44 operations (signing, encrypting, decrypting).
       final signer = nostrService.signer;
 
       // initialize() wires credentials only — it does NOT open the
@@ -1984,7 +2084,7 @@ DmRepository dmRepository(Ref ref) {
       // subscription via startListening() on mount and tears it down on
       // dispose so cold start does no DM network/decrypt work.
       // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
-      repository.initialize(
+      repository.setCredentials(
         userPubkey: publicKey,
         signer: signer,
         messageService: NIP17MessageService(

@@ -277,5 +277,104 @@ void main() {
         ).called(1);
       });
     });
+
+    group('scroll coordination with NestedScrollView', () {
+      testWidgets(
+        'uses PrimaryScrollController from NestedScrollView ancestor',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            ProfileCommentsState(
+              status: ProfileCommentsStatus.success,
+              textComments: [
+                _createTextComment(id: 't1'),
+                _createTextComment(id: 't2'),
+              ],
+            ),
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 200),
+                    ),
+                  ],
+                  body: BlocProvider<ProfileCommentsBloc>.value(
+                    value: mockBloc,
+                    child: const ProfileCommentsGrid(isOwnProfile: true),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(find.byType(ProfileCommentsGrid), findsOneWidget);
+
+          final customScrollView = tester.widget<CustomScrollView>(
+            find.byType(CustomScrollView).last,
+          );
+          expect(customScrollView.controller, isNull);
+        },
+      );
+
+      testWidgets(
+        'header scrolls away when scrolling inside the grid',
+        (tester) async {
+          final manyComments = List.generate(
+            30,
+            (i) => _createTextComment(
+              id: 't$i',
+              createdAtSeconds: 1700000000 - i,
+            ),
+          );
+
+          when(() => mockBloc.state).thenReturn(
+            ProfileCommentsState(
+              status: ProfileCommentsStatus.success,
+              textComments: manyComments,
+            ),
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    const SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 200,
+                        child: ColoredBox(
+                          color: Colors.red,
+                          child: Center(child: Text('Header')),
+                        ),
+                      ),
+                    ),
+                  ],
+                  body: BlocProvider<ProfileCommentsBloc>.value(
+                    value: mockBloc,
+                    child: const ProfileCommentsGrid(isOwnProfile: true),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('Header'), findsOneWidget);
+
+          await tester.drag(
+            find.byType(CustomScrollView).last,
+            const Offset(0, -300),
+          );
+          await tester.pumpAndSettle();
+
+          // Header should have scrolled off screen (clipped from tree)
+          expect(find.text('Header'), findsNothing);
+        },
+      );
+    });
   });
 }

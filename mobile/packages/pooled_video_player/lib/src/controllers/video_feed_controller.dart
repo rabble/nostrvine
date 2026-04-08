@@ -429,9 +429,12 @@ class VideoFeedController extends ChangeNotifier {
       final isRawBlob = resolvedSource == rawUrl;
       return isRawBlob
           ? _orderedUniqueSources([resolvedSource, hlsUrl, originalUrl])
-          : _orderedUniqueSources(
-              [resolvedSource, rawUrl, hlsUrl, originalUrl],
-            );
+          : _orderedUniqueSources([
+              resolvedSource,
+              rawUrl,
+              hlsUrl,
+              originalUrl,
+            ]);
     }
 
     return _orderedUniqueSources([resolvedSource, originalUrl]);
@@ -1093,9 +1096,7 @@ class VideoFeedController extends ChangeNotifier {
       if (_isDisposed || _loadedPlayers[index]?.player != player) return;
       await player.seek(Duration.zero);
     } on Exception catch (e) {
-      _logDebug(
-        'preload_rewind_failed ${_videoDebugDetails(index)} error=$e',
-      );
+      _logDebug('preload_rewind_failed ${_videoDebugDetails(index)} error=$e');
     }
 
     _notifyIndex(index);
@@ -1126,10 +1127,15 @@ class VideoFeedController extends ChangeNotifier {
 
       if (_loadStates[index] == LoadState.loading) {
         _onBufferReady(index);
-      } else if (_loadStates[index] == LoadState.ready &&
-          index == _currentIndex &&
-          _isActive &&
-          !_isPaused) {
+      } else if (_loadStates[index] == LoadState.ready) {
+        // Non-current ready videos that finish rebuffering should NOT
+        // be played — they are preloaded and should stay paused.
+        // Playing them in the background advances position, causing
+        // stale-heartbeat stutter when the user later swipes to them.
+        if (index != _currentIndex || !_isActive || _isPaused) {
+          _readyVideosAwaitingRecovery.remove(index);
+          return;
+        }
         final player = _loadedPlayers[index]?.player;
         if (player != null) {
           final wasRecovering = _readyVideosAwaitingRecovery.remove(index);

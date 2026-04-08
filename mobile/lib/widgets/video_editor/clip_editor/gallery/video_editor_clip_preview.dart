@@ -5,12 +5,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
-import 'package:video_player/video_player.dart';
 
 /// Displays a video clip preview with thumbnail and video playback.
 ///
@@ -54,8 +54,10 @@ class VideoEditorClipPreview extends StatefulWidget {
 }
 
 class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
-  VideoPlayerController? _controller;
+  DivineVideoPlayerController? _controller;
+  StreamSubscription<DivineVideoPlayerState>? _stateSubscription;
   bool _isInitialized = false;
+  bool _hasDimensions = false;
 
   @override
   void initState() {
@@ -76,9 +78,9 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
 
     await _videoPlayerListener();
 
-    if (shouldPlay && !_controller!.value.isPlaying) {
+    if (shouldPlay && !_controller!.state.isPlaying) {
       await _controller!.play();
-    } else if (!shouldPlay && _controller!.value.isPlaying) {
+    } else if (!shouldPlay && _controller!.state.isPlaying) {
       await _controller!.pause();
     }
   }
@@ -86,26 +88,36 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
   Future<void> _initializeVideoPlayer() async {
     final videoPath = await widget.clip.video.safeFilePath();
 
-    _controller = VideoPlayerController.file(File(videoPath));
+    _controller = DivineVideoPlayerController(useTexture: true);
     await _controller?.initialize();
+    await _controller?.setSource(VideoClip.file(videoPath));
     // Seek to thumbnail timestamp for seamless transition from thumbnail to video
     final thumbnailTimestamp = widget.clip.thumbnailTimestamp;
     if (mounted && thumbnailTimestamp > .zero) {
       await _controller?.seekTo(thumbnailTimestamp);
     }
-    if (mounted) await _controller?.setLooping(true);
+    if (mounted) await _controller?.setLooping(looping: true);
 
-    // Add listener to detect when video ends
-    _controller?.addListener(_videoPlayerListener);
+    if (!mounted) return;
 
-    if (mounted) {
-      context.read<ClipEditorBloc>().add(
-        const ClipEditorPlayerReadyChanged(isReady: true),
-      );
-      setState(() {
-        _isInitialized = true;
-      });
-    }
+    // Listen to state changes to detect when video ends
+    // and to rebuild when video dimensions become available.
+    _stateSubscription = _controller?.stateStream.listen(
+      (state) {
+        _videoPlayerListener();
+        if (mounted && state.videoWidth > 0 && !_hasDimensions) {
+          _hasDimensions = true;
+          setState(() {});
+        }
+      },
+    );
+
+    context.read<ClipEditorBloc>().add(
+      const ClipEditorPlayerReadyChanged(isReady: true),
+    );
+    setState(() {
+      _isInitialized = true;
+    });
   }
 
   Future<void> _videoPlayerListener() async {
@@ -119,20 +131,20 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
     final splitPosition = blocState.splitPosition;
 
     // Check if video has ended
-    final position = _controller!.value.position;
+    final position = _controller!.state.position;
     final targetDuration = isEditing
         ? splitPosition
-        : _controller!.value.duration;
+        : _controller!.state.duration;
 
     bloc.add(
       ClipEditorPositionUpdated(
         clipId: widget.clip.id,
-        position: _controller!.value.position,
+        position: _controller!.state.position,
       ),
     );
 
     // Track when video starts playing (to hide thumbnail)
-    if (!blocState.hasPlayedOnce && (_controller?.value.isPlaying ?? false)) {
+    if (!blocState.hasPlayedOnce && (_controller?.state.isPlaying ?? false)) {
       bloc.add(const ClipEditorFirstPlaybackStarted());
     }
 
@@ -167,6 +179,7 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
       );
       unawaited(_disposeController());
       _isInitialized = false;
+      _hasDimensions = false;
     }
 
     // Reinitialize when the underlying video file changed (e.g. after a
@@ -194,7 +207,8 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
   }
 
   Future<void> _disposeController() async {
-    _controller?.removeListener(_videoPlayerListener);
+    await _stateSubscription?.cancel();
+    _stateSubscription = null;
     await _controller?.dispose();
     _controller = null;
   }
@@ -230,7 +244,8 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
         ),
         BlocListener<ClipEditorBloc, ClipEditorState>(
           listenWhen: (prev, curr) => prev.isEditing != curr.isEditing,
-          listener: (_, state) => _controller?.setLooping(!state.isEditing),
+          listener: (_, state) =>
+              _controller?.setLooping(looping: !state.isEditing),
         ),
       ],
       child: Center(
@@ -273,18 +288,32 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
                       ),
 
                     // Show video player ONLY when this is the current clip
-                    if (_isInitialized &&
-                        _controller != null &&
-                        widget.isCurrentClip)
-                      FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: _controller!.value.size.width,
-                          height: _controller!.value.size.height,
-                          child: IgnorePointer(
-                            child: VideoPlayer(_controller!),
-                          ),
-                        ),
+                    if (widget.isCurrentClip)
+                      Builder(
+                        builder: (context) {
+                          final vw = _controller?.state.videoWidth ?? 0;
+                          final vh = _controller?.state.videoHeight ?? 0;
+
+                          final player = IgnorePointer(
+                            child: DivineVideoPlayer(
+                              controller: _controller,
+                              placeholder: _ClipThumbnail(clip: widget.clip),
+                            ),
+                          );
+
+                          // Before video dimensions are known, fill parent
+                          // (constrained by AspectRatio above).
+                          if (vw == 0 || vh == 0) return player;
+
+                          return FittedBox(
+                            fit: BoxFit.cover,
+                            child: SizedBox(
+                              width: vw.toDouble(),
+                              height: vh.toDouble(),
+                              child: player,
+                            ),
+                          );
+                        },
                       ),
 
                     _ThumbnailVisibility(

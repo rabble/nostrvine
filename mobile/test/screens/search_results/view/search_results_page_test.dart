@@ -5,7 +5,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/search_results/widgets/widgets.dart';
-import 'package:openvine/widgets/user_search_view.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
@@ -61,34 +60,40 @@ void main() {
           await tester.tap(find.text('People'));
           await tester.pump();
 
-          expect(find.byType(UserSearchView), findsOneWidget);
-          expect(find.byType(PeopleSection), findsNothing);
+          // People filter shows only PeopleSection (with header hidden).
+          expect(find.byType(PeopleSection), findsOneWidget);
           expect(find.byType(TagsSection), findsNothing);
           expect(find.byType(VideosSection), findsNothing);
-          expect(find.text('People'), findsOneWidget);
         },
       );
 
       testWidgets(
-        'returns to All mode when People chip is tapped',
+        'filter pill shows correct label after switching to People',
         (tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
 
-          // Switch to People mode first.
+          // Default label is "All".
+          expect(
+            find.descendant(
+              of: find.byType(SearchFilterPill),
+              matching: find.text('All'),
+            ),
+            findsOneWidget,
+          );
+
+          // Switch to People mode.
           await tester.tap(find.text('People'));
           await tester.pump();
 
-          expect(find.byType(UserSearchView), findsOneWidget);
-
-          // Tap the "People" filter chip to return to All.
-          await tester.tap(find.text('People'));
-          await tester.pump();
-
-          expect(find.byType(PeopleSection), findsOneWidget);
-          expect(find.byType(TagsSection), findsOneWidget);
-          expect(find.byType(VideosSection), findsOneWidget);
-          expect(find.text('All'), findsOneWidget);
+          // Pill now shows "People".
+          expect(
+            find.descendant(
+              of: find.byType(SearchFilterPill),
+              matching: find.text('People'),
+            ),
+            findsOneWidget,
+          );
         },
       );
     });

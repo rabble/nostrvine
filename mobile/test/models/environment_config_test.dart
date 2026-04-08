@@ -141,6 +141,39 @@ void main() {
       );
     });
 
+    test('pushServicePubkey returns the expected key for each environment', () {
+      expect(
+        const EnvironmentConfig(
+          environment: AppEnvironment.poc,
+        ).pushServicePubkey,
+        '2fc7d43fc02ae951a226108d3a31330bd26f37c1ef88eaa91948251de98b049d',
+      );
+      expect(
+        const EnvironmentConfig(
+          environment: AppEnvironment.staging,
+        ).pushServicePubkey,
+        '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809',
+      );
+      expect(
+        const EnvironmentConfig(
+          environment: AppEnvironment.test,
+        ).pushServicePubkey,
+        '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809',
+      );
+      expect(
+        const EnvironmentConfig(
+          environment: AppEnvironment.local,
+        ).pushServicePubkey,
+        '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809',
+      );
+      expect(
+        const EnvironmentConfig(
+          environment: AppEnvironment.production,
+        ).pushServicePubkey,
+        '2f871aaa4a519da94aeb5ebffe7587549158855c4460e7a5a1b91d36d2fb5b04',
+      );
+    });
+
     test('indicatorColorValue returns correct colors', () {
       expect(
         const EnvironmentConfig(

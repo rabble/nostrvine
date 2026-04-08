@@ -3,6 +3,7 @@
 
 import Flutter
 import UIKit
+import AVFoundation
 
 public class DivineCameraPlugin: NSObject, FlutterPlugin {
     private var cameraController: CameraController?
@@ -112,6 +113,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             let args = call.arguments as? [String: Any] ?? [:]
             let enabled = args["enabled"] as? Bool ?? true
             setVolumeKeysEnabled(enabled: enabled, result: result)
+            
+        case "listAudioDevices":
+            listAudioDevices(result: result)
             
         default:
             result(FlutterMethodNotImplemented)
@@ -294,5 +298,20 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             return
         }
         result(controller.getCameraState())
+    }
+    
+    private func listAudioDevices(result: @escaping FlutterResult) {
+        let discoverySession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInMicrophone],
+            mediaType: .audio,
+            position: .unspecified
+        )
+        let devices: [[String: String]] = discoverySession.devices.map { device in
+            [
+                "id": device.uniqueID,
+                "name": device.localizedName,
+            ]
+        }
+        result(devices)
     }
 }

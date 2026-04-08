@@ -117,6 +117,23 @@ void main() {
     );
 
     test(
+      'uses a deterministic generated name for follow notifications without actorName',
+      () {
+        final relay = makeRelayNotification(
+          notificationType: 'follow',
+          sourceKind: 3,
+          referencedEventId: null,
+        );
+
+        final model = notificationModelFromRelayApi(relay);
+
+        expect(model.type, NotificationType.follow);
+        expect(model.message, isNot('Someone started following you'));
+        expect(model.message, endsWith(' started following you'));
+      },
+    );
+
+    test(
       'preserves original relay.id for API calls, not uniqueId fallback',
       () {
         // When API returns a notification without an id field, the model
