@@ -99,121 +99,125 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
             state.totalDuration,
             totalWidth,
           ),
-          child: Container(
-            color: VineTheme.backgroundCamera,
-            height: 350, // FIXME(hm21): set correct height
-            child: Stack(
-              fit: .expand,
-              children: [
-                Listener(
-                  onPointerDown: _onPointerDown,
-                  onPointerMove: _onPointerMove,
-                  onPointerUp: _onPointerUp,
-                  onPointerCancel: _onPointerCancel,
-                  child: Padding(
-                    padding: const .only(bottom: 4),
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: _handleScrollNotification,
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        scrollDirection: Axis.horizontal,
-                        physics: _isPinching
-                            ? const NeverScrollableScrollPhysics()
-                            : const ClampingScrollPhysics(),
-                        padding: .only(
-                          left: halfScreen,
-                          right: halfScreen,
-                          bottom: MediaQuery.paddingOf(context).bottom,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          spacing: 4,
-                          children: [
-                            BlocSelector<
-                              VideoEditorMainBloc,
-                              VideoEditorMainState,
-                              bool
-                            >(
-                              selector: (state) => state.isReordering,
-                              builder: (context, isReordering) {
-                                return AnimatedOpacity(
-                                  opacity: isReordering ? 0.0 : 1.0,
-                                  duration: const Duration(milliseconds: 200),
-                                  child: VideoEditorTimelineRulesIndicator(
-                                    totalDuration: totalDuration,
-                                    pixelsPerSecond: _pixelsPerSecond,
-                                  ),
-                                );
-                              },
-                            ),
-                            VideoEditorTimelineClipStrip(
-                              clips: clips,
-                              totalWidth: totalWidth,
-                              pixelsPerSecond: _pixelsPerSecond,
-                              scrollController: _scrollController,
-                              isInteracting: _isUserScrolling || _isPinching,
-                              onReorder: (reorderedClips) {
-                                ref
-                                    .read(clipManagerProvider.notifier)
-                                    .replaceClips(reorderedClips);
-                                context.read<ClipEditorBloc>().add(
-                                  ClipEditorInitialized(reorderedClips),
-                                );
-                                // Keep video paused after reorder.
-                                context.read<VideoEditorMainBloc>().add(
-                                  const VideoEditorExternalPauseRequested(
-                                    isPaused: true,
-                                  ),
-                                );
-                              },
-                              onReorderChanged: (isReordering) {
-                                final bloc = context
-                                    .read<VideoEditorMainBloc>();
-                                bloc.add(
-                                  VideoEditorReorderingChanged(
-                                    isReordering: isReordering,
-                                  ),
-                                );
-                                if (isReordering) {
-                                  bloc.add(
-                                    const VideoEditorExternalPauseRequested(
-                                      isPaused: true,
+          child: BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
+            selector: (state) => state.isReordering,
+            builder: (context, isReordering) {
+              return Container(
+                color: VineTheme.backgroundCamera,
+                height: 350, // FIXME(hm21): set correct height
+                child: Stack(
+                  fit: .expand,
+                  children: [
+                    Semantics(
+                      label: 'Video timeline',
+                      slider: true,
+                      value: _formatPosition(playback.currentPosition),
+                      onIncrease: () => _stepPosition(
+                        playback.currentPosition,
+                        playback.totalDuration,
+                        const Duration(seconds: 1),
+                      ),
+                      onDecrease: () => _stepPosition(
+                        playback.currentPosition,
+                        playback.totalDuration,
+                        const Duration(seconds: -1),
+                      ),
+                      child: Listener(
+                        onPointerDown: _onPointerDown,
+                        onPointerMove: _onPointerMove,
+                        onPointerUp: _onPointerUp,
+                        onPointerCancel: _onPointerCancel,
+                        child: Padding(
+                          padding: const .only(bottom: 4),
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: _handleScrollNotification,
+                            child: SingleChildScrollView(
+                              controller: _scrollController,
+                              scrollDirection: Axis.horizontal,
+                              physics: _isPinching
+                                  ? const NeverScrollableScrollPhysics()
+                                  : const ClampingScrollPhysics(),
+                              padding: .only(
+                                left: halfScreen,
+                                right: halfScreen,
+                                bottom: MediaQuery.paddingOf(context).bottom,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                spacing: 4,
+                                children: [
+                                  AnimatedOpacity(
+                                    opacity: isReordering ? 0.0 : 1.0,
+                                    duration: const Duration(milliseconds: 200),
+                                    child: VideoEditorTimelineRulesIndicator(
+                                      totalDuration: totalDuration,
+                                      pixelsPerSecond: _pixelsPerSecond,
+                                      scrollController: _scrollController,
+                                      scrollPadding: halfScreen,
                                     ),
-                                  );
-                                }
-                              },
+                                  ),
+                                  VideoEditorTimelineClipStrip(
+                                    clips: clips,
+                                    totalWidth: totalWidth,
+                                    pixelsPerSecond: _pixelsPerSecond,
+                                    scrollController: _scrollController,
+                                    isInteracting:
+                                        _isUserScrolling || _isPinching,
+                                    onReorder: (reorderedClips) {
+                                      ref
+                                          .read(clipManagerProvider.notifier)
+                                          .replaceClips(reorderedClips);
+                                      context.read<ClipEditorBloc>().add(
+                                        ClipEditorInitialized(reorderedClips),
+                                      );
+                                      // Keep video paused after reorder.
+                                      context.read<VideoEditorMainBloc>().add(
+                                        const VideoEditorExternalPauseRequested(
+                                          isPaused: true,
+                                        ),
+                                      );
+                                    },
+                                    onReorderChanged: (isReordering) {
+                                      final bloc = context
+                                          .read<VideoEditorMainBloc>();
+                                      bloc.add(
+                                        VideoEditorReorderingChanged(
+                                          isReordering: isReordering,
+                                        ),
+                                      );
+                                      if (isReordering) {
+                                        bloc.add(
+                                          const VideoEditorExternalPauseRequested(
+                                            isPaused: true,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-                BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
-                  selector: (state) => state.isReordering,
-                  builder: (context, isReordering) {
-                    return IgnorePointer(
+                    IgnorePointer(
                       ignoring: isReordering,
                       child: AnimatedOpacity(
                         opacity: isReordering ? 0.0 : 1.0,
                         duration: const Duration(milliseconds: 200),
                         child: const VideoEditorTimelinePlayhead(),
                       ),
-                    );
-                  },
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: VideoEditorTimelineLeftActions(
-                    playheadPosition: _playheadPosition,
-                  ),
-                ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: VideoEditorTimelineLeftActions(
+                        playheadPosition: _playheadPosition,
+                      ),
+                    ),
 
-                BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
-                  selector: (state) => state.isReordering,
-                  builder: (context, isReordering) {
-                    return AnimatedOpacity(
+                    AnimatedOpacity(
                       opacity: isReordering ? 0.0 : 1.0,
                       duration: const Duration(milliseconds: 200),
                       child: Container(
@@ -227,11 +231,11 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                           color: VineTheme.outlinedDisabled,
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         );
       },
@@ -258,6 +262,28 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
   }
 
   // -- Pointer tracking + manual pinch-to-zoom ------------------------------
+
+  static String _formatPosition(Duration position) {
+    final totalSeconds = position.inMilliseconds / 1000.0;
+    final minutes = totalSeconds ~/ 60;
+    final seconds = (totalSeconds % 60).toStringAsFixed(1);
+    return '${minutes}m ${seconds}s';
+  }
+
+  void _stepPosition(
+    Duration current,
+    Duration total,
+    Duration step,
+  ) {
+    final ms = (current + step).inMilliseconds.clamp(
+      0,
+      total.inMilliseconds,
+    );
+    final position = Duration(milliseconds: ms);
+    context.read<VideoEditorMainBloc>().add(
+      VideoEditorSeekRequested(position),
+    );
+  }
 
   void _onPointerDown(PointerDownEvent event) {
     _pointerPositions[event.pointer] = event.position;

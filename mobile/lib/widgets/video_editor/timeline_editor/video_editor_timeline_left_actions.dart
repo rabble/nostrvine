@@ -36,6 +36,10 @@ class _ActiveTimeDisplay extends StatelessWidget {
 
   final ValueNotifier<Duration> playheadPosition;
 
+  static final TextStyle _timeStyle = VineTheme.labelSmallFont(
+    color: VineTheme.onSurface,
+  ).copyWith(fontFeatures: [const .tabularFigures()]);
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -45,9 +49,7 @@ class _ActiveTimeDisplay extends StatelessWidget {
           valueListenable: playheadPosition,
           builder: (context, position, _) => Text(
             TimeFormatter.formatPreciseDuration(position),
-            style: VineTheme.labelSmallFont(
-              color: VineTheme.onSurface,
-            ).copyWith(fontFeatures: [const .tabularFigures()]),
+            style: _timeStyle,
             textAlign: TextAlign.center,
             maxLines: 1,
           ),
@@ -74,6 +76,7 @@ class _AudioButton extends StatelessWidget {
           icon: isMuted ? .speakerSimpleX : .speakerHigh,
           size: .small,
           type: .secondary,
+          semanticLabel: isMuted ? 'Unmute audio' : 'Mute audio',
           onPressed: () => context.read<VideoEditorMainBloc>().add(
             const VideoEditorMuteToggled(),
           ),

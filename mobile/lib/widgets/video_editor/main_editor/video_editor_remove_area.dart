@@ -16,21 +16,27 @@ class VideoEditorRemoveArea extends ConsumerWidget {
     );
 
     return Center(
-      child: AnimatedScale(
-        key: scope.removeAreaKey,
-        scale: isLayerOverRemoveArea ? 1.4 : 1.0,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        child: Container(
-          padding: const .all(10),
-          decoration: ShapeDecoration(
-            color: VineTheme.error,
-            shape: RoundedRectangleBorder(borderRadius: .circular(20)),
-          ),
-          child: const DivineIcon(
-            icon: .trash,
-            size: 28,
-            color: VineTheme.backgroundColor,
+      child: Semantics(
+        liveRegion: true,
+        label: isLayerOverRemoveArea
+            ? 'Release to delete layer'
+            : 'Delete layer drop zone',
+        child: AnimatedScale(
+          key: scope.removeAreaKey,
+          scale: isLayerOverRemoveArea ? 1.4 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: Container(
+            padding: const .all(10),
+            decoration: ShapeDecoration(
+              color: VineTheme.error,
+              shape: RoundedRectangleBorder(borderRadius: .circular(20)),
+            ),
+            child: const DivineIcon(
+              icon: .trash,
+              size: 28,
+              color: VineTheme.backgroundColor,
+            ),
           ),
         ),
       ),

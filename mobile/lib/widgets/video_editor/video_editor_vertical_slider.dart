@@ -78,12 +78,31 @@ class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
               ? constraints.maxHeight.clamp(0.0, widget.height)
               : widget.height;
 
-          return _SliderBody(
-            height: actualHeight,
-            value: _currentValue,
-            onDragStart: _handleDragStart,
-            onDragUpdate: _handleDragUpdate,
-            onDragEnd: _handleDragEnd,
+          return Semantics(
+            slider: true,
+            label: 'Level',
+            value: '${(_currentValue * 100).round()}%',
+            increasedValue:
+                '${((_currentValue + 0.1).clamp(0.0, 1.0) * 100).round()}%',
+            decreasedValue:
+                '${((_currentValue - 0.1).clamp(0.0, 1.0) * 100).round()}%',
+            onIncrease: () {
+              final v = (_currentValue + 0.1).clamp(0.0, 1.0);
+              widget.onChanged(v);
+              widget.onChangeEnd?.call(v);
+            },
+            onDecrease: () {
+              final v = (_currentValue - 0.1).clamp(0.0, 1.0);
+              widget.onChanged(v);
+              widget.onChangeEnd?.call(v);
+            },
+            child: _SliderBody(
+              height: actualHeight,
+              value: _currentValue,
+              onDragStart: _handleDragStart,
+              onDragUpdate: _handleDragUpdate,
+              onDragEnd: _handleDragEnd,
+            ),
           );
         },
       ),

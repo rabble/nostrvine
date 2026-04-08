@@ -125,10 +125,12 @@ class _ActionButton extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(),
-          textAlign: .center,
+        ExcludeSemantics(
+          child: Text(
+            label,
+            style: VineTheme.bodySmallFont(),
+            textAlign: .center,
+          ),
         ),
       ],
     );

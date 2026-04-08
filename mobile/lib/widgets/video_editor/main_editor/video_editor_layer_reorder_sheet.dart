@@ -91,9 +91,13 @@ class _LayerTile extends StatelessWidget {
     return ListTile(
       minTileHeight: 56,
       tileColor: VineTheme.surfaceContainer,
-      leading: ReorderableDragStartListener(
-        index: index,
-        child: const DivineIcon(icon: .menu, color: VineTheme.primary),
+      leading: Semantics(
+        label: 'Reorder layer ${index + 1}',
+        hint: 'Hold to reorder',
+        child: ReorderableDragStartListener(
+          index: index,
+          child: const DivineIcon(icon: .menu, color: VineTheme.primary),
+        ),
       ),
       title: switch (layer) {
         final TextLayer layer => _TextLayerPreview(layer: layer),

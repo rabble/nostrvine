@@ -68,7 +68,10 @@ class _VideoEditorTimelineClipStripState
   }
 
   /// Thumbnail data keyed by clip ID — survives reordering.
-  final Map<String, List<StripThumbnail>> _thumbnailCache = {};
+  /// Each notifier is updated independently so only the affected
+  /// clip tile rebuilds, not the entire strip.
+  final Map<String, ValueNotifier<List<StripThumbnail>>> _thumbnailNotifiers =
+      {};
   final Map<String, StreamSubscription<List<StripThumbnail>>> _subscriptions =
       {};
 
@@ -107,8 +110,9 @@ class _VideoEditorTimelineClipStripState
     for (final sub in _subscriptions.values) {
       sub.cancel();
     }
-    for (final thumbs in _thumbnailCache.values) {
-      _deleteFiles(thumbs);
+    for (final notifier in _thumbnailNotifiers.values) {
+      _deleteFiles(notifier.value);
+      notifier.dispose();
     }
     super.dispose();
   }
@@ -118,16 +122,24 @@ class _VideoEditorTimelineClipStripState
     final currentIds = widget.clips.map((c) => c.id).toSet();
 
     // Remove stale entries.
-    final staleIds = _thumbnailCache.keys
+    final staleIds = _thumbnailNotifiers.keys
         .where((id) => !currentIds.contains(id))
         .toList();
     for (final id in staleIds) {
       _subscriptions.remove(id)?.cancel();
-      _deleteFiles(_thumbnailCache.remove(id) ?? const []);
+      final notifier = _thumbnailNotifiers.remove(id);
+      if (notifier != null) {
+        _deleteFiles(notifier.value);
+        notifier.dispose();
+      }
     }
 
-    // Start loading for new clips.
+    // Ensure notifiers exist and start loading for new clips.
     for (final clip in widget.clips) {
+      _thumbnailNotifiers.putIfAbsent(
+        clip.id,
+        () => ValueNotifier(const []),
+      );
       if (!_subscriptions.containsKey(clip.id)) {
         _loadStripThumbnails(clip);
       }
@@ -152,7 +164,7 @@ class _VideoEditorTimelineClipStripState
           outputSize: outputSize,
         ).listen((thumbnails) {
           if (mounted) {
-            setState(() => _thumbnailCache[clip.id] = thumbnails);
+            _thumbnailNotifiers[clip.id]?.value = thumbnails;
           }
         });
   }
@@ -391,25 +403,21 @@ class _VideoEditorTimelineClipStripState
     return true;
   }
 
-  /// Compute the left offset for each clip in normal (non-reorder) layout.
-  List<double> _normalLeftOffsets() {
+  /// Compute clip widths, left offsets and total width in a single pass.
+  ({List<double> widths, List<double> offsets, double totalWidth})
+  _computeLayout() {
+    final widths = <double>[];
     final offsets = <double>[];
     var x = 0.0;
     for (var i = 0; i < _orderedClips.length; i++) {
+      final w = _clipWidth(_orderedClips[i]);
+      widths.add(w);
       offsets.add(x);
-      x += _clipWidth(_orderedClips[i]) + TimelineConstants.clipGap;
+      x += w + TimelineConstants.clipGap;
     }
-    return offsets;
-  }
-
-  /// Total width of the strip in normal layout.
-  double get _normalTotalWidth {
-    var w = 0.0;
-    for (final clip in _orderedClips) {
-      w += _clipWidth(clip);
-    }
-    w += (_orderedClips.length - 1) * TimelineConstants.clipGap;
-    return w;
+    // Subtract trailing gap.
+    final total = x > 0 ? x - TimelineConstants.clipGap : 0.0;
+    return (widths: widths, offsets: offsets, totalWidth: total);
   }
 
   @override
@@ -419,10 +427,10 @@ class _VideoEditorTimelineClipStripState
     const animDuration = Duration(milliseconds: 250);
     const animCurve = Curves.easeInOut;
 
-    final normalOffsets = _normalLeftOffsets();
+    final layout = _computeLayout();
     final totalWidth = _isReordering
         ? _orderedClips.length * reorderSlotStep - gap
-        : _normalTotalWidth;
+        : layout.totalWidth;
 
     final shouldAnimate = _isReordering || _isReorderExiting;
 
@@ -448,13 +456,19 @@ class _VideoEditorTimelineClipStripState
                   curve: animCurve,
                   left: _isReordering
                       ? _rowOffset + i * reorderSlotStep
-                      : normalOffsets[i],
+                      : layout.offsets[i],
                   top: 0,
-                  width: _isReordering
-                      ? _reorderSize
-                      : _clipWidth(_orderedClips[i]),
+                  width: _isReordering ? _reorderSize : layout.widths[i],
                   height: TimelineConstants.thumbnailStripHeight,
-                  child: _buildAccessibleClipTile(i),
+                  child: _AccessibleClipTile(
+                    clip: _orderedClips[i],
+                    index: i,
+                    total: _orderedClips.length,
+                    clipWidth: layout.widths[i],
+                    thumbnailNotifier:
+                        _thumbnailNotifiers[_orderedClips[i].id]!,
+                    onReorder: _reorderClip,
+                  ),
                 ),
             // Dragged clip — AnimatedPositioned so left+width animate
             // together during shrink, then Duration.zero for instant
@@ -470,21 +484,12 @@ class _VideoEditorTimelineClipStripState
                 top: 0,
                 width: _dragClipWidth,
                 height: TimelineConstants.thumbnailStripHeight,
-                child: DecoratedBox(
-                  position: DecorationPosition.foreground,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
-                      TimelineConstants.thumbnailRadius,
-                    ),
-                    border: Border.all(
-                      color: VineTheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  child: _buildClipTile(
-                    _orderedClips[_dragIndex!],
-                    _clipWidth(_orderedClips[_dragIndex!]),
-                  ),
+                child: _DraggedClipTile(
+                  clip: _orderedClips[_dragIndex!],
+                  index: _dragIndex!,
+                  fullWidth: layout.widths[_dragIndex!],
+                  thumbnailNotifier:
+                      _thumbnailNotifiers[_orderedClips[_dragIndex!].id]!,
                 ),
               ),
           ],
@@ -492,36 +497,119 @@ class _VideoEditorTimelineClipStripState
       ),
     );
   }
+}
 
-  Widget _buildAccessibleClipTile(int index) {
-    final clip = _orderedClips[index];
-    final total = _orderedClips.length;
+class _DraggedClipTile extends StatelessWidget {
+  const _DraggedClipTile({
+    required this.clip,
+    required this.index,
+    required this.fullWidth,
+    required this.thumbnailNotifier,
+  });
+
+  final DivineVideoClip clip;
+  final int index;
+  final double fullWidth;
+  final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      position: DecorationPosition.foreground,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(
+          TimelineConstants.thumbnailRadius,
+        ),
+        border: Border.all(
+          color: VineTheme.primary,
+          width: 2,
+        ),
+      ),
+      child: Semantics(
+        label: 'Dragging clip ${index + 1}',
+        child: _ClipTile(
+          clip: clip,
+          fullWidth: fullWidth,
+          thumbnailNotifier: thumbnailNotifier,
+        ),
+      ),
+    );
+  }
+}
+
+class _AccessibleClipTile extends StatelessWidget {
+  const _AccessibleClipTile({
+    required this.clip,
+    required this.index,
+    required this.total,
+    required this.clipWidth,
+    required this.thumbnailNotifier,
+    required this.onReorder,
+  });
+
+  final DivineVideoClip clip;
+  final int index;
+  final int total;
+  final double clipWidth;
+  final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
+  final void Function(int from, int to) onReorder;
+
+  @override
+  Widget build(BuildContext context) {
+    final durationSec = clip.duration.inMilliseconds / 1000.0;
     return Semantics(
-      label: 'Clip ${index + 1} of $total',
+      label:
+          'Clip ${index + 1} of $total, '
+          '${durationSec.toStringAsFixed(1)} seconds',
+      hint: total > 1 ? 'Long press to reorder' : null,
       customSemanticsActions: {
         if (index > 0)
           const CustomSemanticsAction(label: 'Move left'): () =>
-              _reorderClip(index, index - 1),
+              onReorder(index, index - 1),
         if (index < total - 1)
           const CustomSemanticsAction(label: 'Move right'): () =>
-              _reorderClip(index, index + 1),
+              onReorder(index, index + 1),
       },
-      child: _buildClipTile(clip, _clipWidth(clip)),
+      child: _ClipTile(
+        clip: clip,
+        fullWidth: clipWidth,
+        thumbnailNotifier: thumbnailNotifier,
+      ),
     );
   }
+}
 
-  Widget _buildClipTile(DivineVideoClip clip, double fullWidth) {
+class _ClipTile extends StatelessWidget {
+  const _ClipTile({
+    required this.clip,
+    required this.fullWidth,
+    required this.thumbnailNotifier,
+  });
+
+  final DivineVideoClip clip;
+  final double fullWidth;
+  final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
+
+  @override
+  Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(TimelineConstants.thumbnailRadius),
+      borderRadius: BorderRadius.circular(
+        TimelineConstants.thumbnailRadius,
+      ),
       child: FittedBox(
         fit: BoxFit.cover,
         child: SizedBox(
           width: fullWidth,
           height: TimelineConstants.thumbnailStripHeight,
-          child: _ClipContainer(
-            clip: clip,
-            width: fullWidth,
-            stripThumbnails: _thumbnailCache[clip.id] ?? const [],
+          child: ValueListenableBuilder<List<StripThumbnail>>(
+            valueListenable: thumbnailNotifier,
+            builder: (context, stripThumbnails, _) {
+              return _ClipContainer(
+                clip: clip,
+                width: fullWidth,
+                stripThumbnails: stripThumbnails,
+              );
+            },
           ),
         ),
       ),

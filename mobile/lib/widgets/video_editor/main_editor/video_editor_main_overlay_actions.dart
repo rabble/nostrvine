@@ -223,36 +223,40 @@ class _PlayStateIndicatorState extends State<_PlayStateIndicator> {
           final isPlaying = state.isPlaying;
           final isPlayerReady = state.isPlayerReady;
 
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            layoutBuilder: (currentChild, previousChildren) => Stack(
-              alignment: .center,
-              fit: .expand,
-              children: <Widget>[...previousChildren, ?currentChild],
+          return Semantics(
+            liveRegion: true,
+            label: isPlaying ? 'Playing' : 'Paused',
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              layoutBuilder: (currentChild, previousChildren) => Stack(
+                alignment: .center,
+                fit: .expand,
+                children: <Widget>[...previousChildren, ?currentChild],
+              ),
+              child: isPlayerReady
+                  ? Center(
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _iconVisible,
+                        builder: (_, visible, child) => AnimatedOpacity(
+                          opacity: visible ? 1 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: child,
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: VineTheme.scrim65,
+                            borderRadius: .circular(24),
+                          ),
+                          padding: const .all(16),
+                          child: DivineIcon(
+                            icon: isPlaying ? .pauseFill : .playFill,
+                            size: _iconSize,
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
-            child: isPlayerReady
-                ? Center(
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: _iconVisible,
-                      builder: (_, visible, child) => AnimatedOpacity(
-                        opacity: visible ? 1 : 0,
-                        duration: const Duration(milliseconds: 200),
-                        child: child,
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: VineTheme.scrim65,
-                          borderRadius: .circular(24),
-                        ),
-                        padding: const .all(16),
-                        child: DivineIcon(
-                          icon: isPlaying ? .pauseFill : .playFill,
-                          size: _iconSize,
-                        ),
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
           );
         },
       ),
