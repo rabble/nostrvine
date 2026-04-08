@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:patrol/patrol.dart';
 
@@ -103,6 +104,18 @@ void main() {
         )) {
           await $.platformAutomator.mobile.grantPermissionWhenInUse();
           logPhase('Microphone permission granted');
+        }
+
+        // Dismiss the "Why six seconds?" onboarding sheet if it appears
+        for (var i = 0; i < 20; i++) {
+          await tester.pump(const Duration(milliseconds: 250));
+          final gotIt = find.text('Got it!');
+          if (gotIt.evaluate().isNotEmpty) {
+            await tester.tap(gotIt);
+            await tester.pump(const Duration(milliseconds: 500));
+            logPhase('Dismissed onboarding sheet');
+            break;
+          }
         }
 
         // Wait for camera to fully initialize (authorized state, child
@@ -294,11 +307,22 @@ void main() {
         final userPubkey = await getUserPubkeyByEmail(testEmail);
         expect(userPubkey, isNotNull, reason: 'User pubkey should be in DB');
 
-        // Query the relay for this user's kind 34236 videos
-        final userVideos = await queryRelay({
-          'kinds': [34236],
-          'authors': [userPubkey],
-        });
+        // Poll the relay until the video event appears. The blossom upload
+        // and relay publish happen asynchronously after the UI navigates
+        // to the profile screen, so we need to wait.
+        logPhase('Waiting for video to appear on relay...');
+        var userVideos = <Event>[];
+        for (var i = 0; i < 120; i++) {
+          await tester.pump(const Duration(milliseconds: 500));
+          userVideos = await queryRelay({
+            'kinds': [34236],
+            'authors': [userPubkey],
+          });
+          if (userVideos.isNotEmpty) {
+            logPhase('Video found on relay after ${i * 500}ms');
+            break;
+          }
+        }
         expect(
           userVideos,
           isNotEmpty,
