@@ -67,7 +67,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
 
     // On iOS, mirror preview only when native isn't mirroring
     // coverage:ignore-start
-    if (Platform.isIOS) {
+    if (Platform.isIOS || Platform.isMacOS) {
       return !_camera.mirrorFrontCameraOutput;
     }
     // coverage:ignore-end
