@@ -176,5 +176,46 @@ void main() {
         endsWith('.mov'),
       );
     });
+
+    test('copied file exists at destination and has correct content', () async {
+      final sourceFile = File(p.join(tempDir.path, 'check_copy.mp4'));
+      final sourceBytes = [10, 20, 30, 40, 50];
+      await sourceFile.writeAsBytes(sourceBytes);
+
+      final validationResult = C2paImportResult.verified(
+        claimGenerator: 'TestApp/1.0',
+        digitalSourceType: C2paSourceClassification.humanCreated,
+        digitalSourceTypeRaw: 'digitalCapture',
+      );
+
+      await service.importVerifiedVideo(
+        filePath: sourceFile.path,
+        validationResult: validationResult,
+      );
+
+      final importsDir = Directory(p.join(tempDir.path, 'imports'));
+      final importedFiles = importsDir.listSync();
+      expect(importedFiles, hasLength(1));
+
+      final copiedFile = importedFiles.first as File;
+      expect(copiedFile.existsSync(), isTrue);
+      expect(await copiedFile.readAsBytes(), equals(sourceBytes));
+    });
+
+    test('throws when source file does not exist', () async {
+      final validationResult = C2paImportResult.verified(
+        claimGenerator: 'TestApp/1.0',
+        digitalSourceType: C2paSourceClassification.humanCreated,
+        digitalSourceTypeRaw: 'digitalCapture',
+      );
+
+      expect(
+        () => service.importVerifiedVideo(
+          filePath: '/nonexistent/path/video.mp4',
+          validationResult: validationResult,
+        ),
+        throwsA(isA<PathNotFoundException>()),
+      );
+    });
   });
 }
