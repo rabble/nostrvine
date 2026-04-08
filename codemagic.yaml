@@ -327,7 +327,9 @@ workflows:
         BUNDLE_ID: co.openvine.app
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: $BUNDLE_ID
+        bundle_identifier:
+          - $BUNDLE_ID
+          - $BUNDLE_ID.NotificationServiceExtension
     cache:
       cache_paths:
         - $HOME/Library/Caches/CocoaPods
