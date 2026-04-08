@@ -878,6 +878,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       parameters: renderParameters,
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
+      editorStateHistory: state.editorStateHistory,
       taskId: taskId,
     ).whenComplete(() => _activeRenderTaskId = null);
 

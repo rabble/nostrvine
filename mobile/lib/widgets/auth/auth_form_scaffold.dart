@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 
@@ -157,8 +158,8 @@ class AuthFormScaffold extends StatelessWidget {
                         offset: const Offset(20, 0),
                         child: Transform.rotate(
                           angle: 12 * pi / 180,
-                          child: Image.asset(
-                            'assets/stickers/samoyed_dog.png',
+                          child: SvgPicture.asset(
+                            'assets/stickers/samoyed_dog.svg',
                             width: 174,
                             height: 174,
                           ),

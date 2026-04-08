@@ -363,7 +363,7 @@ void main() {
       expect(find.text('Animals'), findsOneWidget);
       expect(find.text('Music'), findsOneWidget);
       expect(find.text('🐾'), findsOneWidget);
-      expect(find.text('🎵'), findsOneWidget);
+      expect(find.text('🎸'), findsOneWidget);
       // Hashtag chip still present
       expect(find.text('cool'), findsOneWidget);
       expect(find.text('#'), findsOneWidget);

@@ -104,9 +104,6 @@ MockSocialService createMockSocialService() {
   final mockSocial = MockSocialService();
 
   // Stub common methods to return empty results by default
-  when(
-    () => mockSocial.getFollowerStats(any()),
-  ).thenAnswer((_) async => {'followers': 0, 'following': 0});
   when(() => mockSocial.getUserVideoCount(any())).thenAnswer((_) async => 0);
 
   return mockSocial;

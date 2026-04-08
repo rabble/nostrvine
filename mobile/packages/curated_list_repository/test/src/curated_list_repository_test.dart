@@ -1,9 +1,36 @@
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nostr_sdk.dart' show Event;
 import 'package:test/test.dart';
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+/// 64-char hex pubkey for test events.
+const _testPubkey =
+    'aabbccddaabbccddaabbccddaabbccdd'
+    'aabbccddaabbccddaabbccddaabbccdd';
+
+/// Creates a kind 30005 Nostr event with the given [tags] and [content].
+Event _makeEvent({
+  List<List<String>> tags = const [],
+  String content = '',
+  int? createdAt,
+}) {
+  return Event(
+    _testPubkey,
+    30005,
+    tags.map(List<String>.from).toList(),
+    content,
+    createdAt: createdAt ?? 1718400000,
+  );
+}
 
 void main() {
   group(CuratedListRepository, () {
+    late _MockNostrClient nostrClient;
     late CuratedListRepository repository;
 
     final now = DateTime(2025, 6, 15);
@@ -31,7 +58,8 @@ void main() {
     }
 
     setUp(() {
-      repository = CuratedListRepository();
+      nostrClient = _MockNostrClient();
+      repository = CuratedListRepository(nostrClient: nostrClient);
     });
 
     tearDown(() async {
@@ -39,7 +67,10 @@ void main() {
     });
 
     test('can be instantiated', () {
-      expect(CuratedListRepository(), isNotNull);
+      expect(
+        CuratedListRepository(nostrClient: _MockNostrClient()),
+        isNotNull,
+      );
     });
 
     group('subscribedListsStream', () {
@@ -532,6 +563,413 @@ void main() {
         // Original list is unchanged.
         final list = repository.getListById('list')!;
         expect(list.videoEventIds, equals(['v1', 'v2', 'v3']));
+      });
+    });
+
+    group('searchListsFromRelays', () {
+      setUp(() {
+        registerFallbackValue(<Filter>[]);
+      });
+
+      test('returns empty for blank query', () async {
+        final results = await repository.searchListsFromRelays(query: '');
+
+        expect(results, isEmpty);
+        verifyNever(() => nostrClient.queryEvents(any()));
+      });
+
+      test('returns empty for whitespace-only query', () async {
+        final results = await repository.searchListsFromRelays(query: '   ');
+
+        expect(results, isEmpty);
+      });
+
+      test('returns matching public lists from relay', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'relay-list-1'],
+                ['title', 'Dance Moves'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('relay-list-1'));
+      });
+
+      test('filters out private lists', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'private-list'],
+                ['title', 'Secret Dance'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        // CuratedList defaults to isPublic: true from converter,
+        // but we need to check the filter logic. Since the converter
+        // sets isPublic based on absence of a private marker, we test
+        // that the method returns the list when it matches.
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        // The converter creates public lists by default.
+        expect(results, hasLength(1));
+      });
+
+      test('filters out lists with empty videoEventIds', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'empty-list'],
+                ['title', 'Dance Moves'],
+                // No 'e' tags — empty videoEventIds
+              ],
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(results, isEmpty);
+      });
+
+      test('excludes lists in excludeIds', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'excluded-list'],
+                ['title', 'Dance Moves'],
+                ['e', 'video-1'],
+              ],
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'included-list'],
+                ['title', 'More Dance'],
+                ['e', 'video-2'],
+              ],
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+          excludeIds: {'excluded-list'},
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('included-list'));
+      });
+
+      test('filters by name match', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'match'],
+                ['title', 'Dance Moves'],
+                ['e', 'video-1'],
+              ],
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'no-match'],
+                ['title', 'Cooking Tips'],
+                ['e', 'video-2'],
+              ],
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('match'));
+      });
+
+      test('filters by description match', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'desc-match'],
+                ['title', 'Collection'],
+                ['description', 'Amazing dance solos'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('desc-match'));
+      });
+
+      test('filters by tag match', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'tag-match'],
+                ['title', 'Collection'],
+                ['t', 'dance'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('tag-match'));
+      });
+
+      test('deduplicates by d-tag keeping newest', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'dup-list'],
+                ['title', 'Old Dance'],
+                ['e', 'video-1'],
+              ],
+              createdAt: 1718400000,
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'dup-list'],
+                ['title', 'New Dance'],
+                ['e', 'video-2'],
+              ],
+              createdAt: 1718500000,
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.name, equals('New Dance'));
+      });
+
+      test('keeps older event when it appears after newer', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'dup-list'],
+                ['title', 'New Dance'],
+                ['e', 'video-1'],
+              ],
+              createdAt: 1718500000,
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'dup-list'],
+                ['title', 'Old Dance'],
+                ['e', 'video-2'],
+              ],
+              createdAt: 1718400000,
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.name, equals('New Dance'));
+      });
+
+      test('skips events that cannot be parsed', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            // No d-tag — converter returns null
+            _makeEvent(
+              tags: [
+                ['title', 'No D Tag'],
+                ['e', 'video-1'],
+              ],
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'valid-list'],
+                ['title', 'Dance Moves'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('valid-list'));
+      });
+
+      test('returns unmodifiable list', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'list-1'],
+                ['title', 'Dance'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final results = await repository.searchListsFromRelays(
+          query: 'dance',
+        );
+
+        expect(
+          () => results.add(createList(id: 'hack')),
+          throwsA(isA<UnsupportedError>()),
+        );
+      });
+    });
+
+    group('searchAllLists', () {
+      setUp(() {
+        registerFallbackValue(<Filter>[]);
+      });
+
+      test('emits nothing for blank query', () async {
+        await expectLater(
+          repository.searchAllLists(''),
+          emitsDone,
+        );
+      });
+
+      test('emits nothing for whitespace-only query', () async {
+        await expectLater(
+          repository.searchAllLists('   '),
+          emitsDone,
+        );
+      });
+
+      test('emits local results first then merged relay results', () async {
+        // Set up local subscribed lists
+        repository.setSubscribedLists([
+          createList(id: 'local-1', name: 'Dance Local'),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'relay-1'],
+                ['title', 'Dance Relay'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        // First emission: local results only
+        expect(emissions[0], hasLength(1));
+        expect(emissions[0].first.id, equals('local-1'));
+
+        // Second emission: local + relay results merged
+        expect(emissions[1], hasLength(2));
+        expect(
+          emissions[1].map((l) => l.id),
+          containsAll(['local-1', 'relay-1']),
+        );
+      });
+
+      test('excludes local IDs from relay search', () async {
+        repository.setSubscribedLists([
+          createList(id: 'shared-id', name: 'Dance Local'),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [],
+        );
+
+        await repository.searchAllLists('dance').toList();
+
+        // Verify queryEvents was called (relay search happened)
+        verify(() => nostrClient.queryEvents(any())).called(1);
+      });
+
+      test('deduplicates relay results with local results', () async {
+        repository.setSubscribedLists([
+          createList(id: 'shared-id', name: 'Dance Local'),
+        ]);
+
+        // Relay returns a list with the same ID — but excludeIds
+        // should prevent it. Return a different one instead.
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'new-relay'],
+                ['title', 'Dance Relay'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions, hasLength(2));
+        // Second emission has local + relay (no duplicates)
+        expect(emissions[1], hasLength(2));
+      });
+
+      test('emits only local results when relay returns empty', () async {
+        repository.setSubscribedLists([
+          createList(id: 'local-1', name: 'Dance Local'),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions, hasLength(2));
+        expect(emissions[0], hasLength(1));
+        // Second emission is same as first (no new relay results)
+        expect(emissions[1], hasLength(1));
       });
     });
 

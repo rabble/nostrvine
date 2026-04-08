@@ -126,7 +126,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
             'Use this to give attribution. Inspired-by credit is different '
             'from collaborators: it acknowledges influence, but does not tag '
             'someone as a co-creator.',
-        assetPath: 'assets/stickers/trail_sign.png',
+        assetPath: 'assets/stickers/trail_sign.svg',
       ),
     );
   }

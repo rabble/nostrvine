@@ -81,6 +81,16 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
+  /// Read the stats row without expiry checking.
+  ///
+  /// Unlike [getStats], this never deletes expired rows.
+  /// Use this when the consumer manages its own staleness logic
+  /// (e.g., hysteresis with a custom stale duration).
+  Future<ProfileStatRow?> getStatsRaw(String pubkey) async {
+    final query = select(profileStats)..where((t) => t.pubkey.equals(pubkey));
+    return query.getSingleOrNull();
+  }
+
   /// Watch stats for a pubkey.
   ///
   /// Returns a stream that emits the current [ProfileStatRow] whenever
