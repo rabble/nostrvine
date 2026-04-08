@@ -68,7 +68,7 @@ void main() {
 
       testWidgets('renders clip tiles for each clip', (tester) async {
         final clips = [
-          _createTestClip(id: 'a', seconds: 2),
+          _createTestClip(id: 'a'),
           _createTestClip(id: 'b', seconds: 3),
           _createTestClip(id: 'c', seconds: 1),
         ];
@@ -100,8 +100,7 @@ void main() {
           find.byType(AnimatedContainer),
         );
         expect(
-          (container.constraints as BoxConstraints?)?.maxHeight ??
-              container.decoration,
+          container.constraints?.maxHeight ?? container.decoration,
           isNotNull,
         );
       });
@@ -164,7 +163,7 @@ void main() {
         ];
 
         await tester.pumpWidget(
-          buildWidget(clips: clips, totalWidth: 500),
+          buildWidget(clips: clips),
         );
 
         // Clip 1 of 2, 3.0 seconds
@@ -181,7 +180,7 @@ void main() {
 
       testWidgets('provides reorder hint for multiple clips', (tester) async {
         final clips = [
-          _createTestClip(id: 'a', seconds: 2),
+          _createTestClip(id: 'a'),
           _createTestClip(id: 'b', seconds: 3),
         ];
 
@@ -190,7 +189,7 @@ void main() {
         );
 
         final semantics = tester.getSemantics(
-          find.bySemanticsLabel(RegExp(r'Clip 1 of 2')),
+          find.bySemanticsLabel(RegExp('Clip 1 of 2')),
         );
         expect(semantics.hint, contains('Long press to reorder'));
       });
