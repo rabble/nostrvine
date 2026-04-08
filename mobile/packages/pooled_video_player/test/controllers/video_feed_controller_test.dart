@@ -3892,6 +3892,48 @@ void main() {
 
         controller.dispose();
       });
+
+      test(
+        'non-current ready preload ignores '
+        'buffering=false until it becomes current',
+        () async {
+          final videos = createTestVideos(count: 3);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadBehind: 0,
+            preloadAhead: 1,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup1 = playerSetups[videos[1].url]!;
+
+          // First buffer-ready event marks the preloaded video ready and
+          // pauses/rewinds it for later playback.
+          setup1.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(controller.getLoadState(1), equals(LoadState.ready));
+
+          clearInteractions(setup1.player);
+
+          // A later buffering=false from recovery/rebuffering must not restart
+          // background playback while the video is still off-screen.
+          setup1.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          verifyNever(setup1.player.play);
+
+          // Once the user swipes to the video, normal playback should still
+          // resume from the current-page path.
+          controller.onPageChanged(1);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          verify(setup1.player.play).called(1);
+
+          controller.dispose();
+        },
+      );
     });
 
     group('stuck playback watchdog', () {

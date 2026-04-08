@@ -67,8 +67,13 @@
       background: #000;
     }
 
-    /* Let Flutter overlays receive taps above platform-view backed video. */
-    video {
+    /* Let Flutter overlays receive taps above platform-view backed video.
+       Cover the <video> element AND its Flutter wrapper elements so stale
+       platform views from the Home feed never block the Explore tab, bottom
+       nav, or any other Flutter-rendered widget. */
+    video,
+    flt-platform-view,
+    flt-platform-view-slot {
       pointer-events: none;
     }
     

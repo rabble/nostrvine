@@ -35,6 +35,7 @@ export 'src/ready_event_data.dart';
 export 'src/recommendations_response.dart';
 export 'src/social_counts.dart';
 export 'src/trending_hashtag.dart';
+export 'src/user_list.dart';
 export 'src/user_profile.dart';
 export 'src/video_attribution.dart';
 export 'src/video_editor/sticker_data.dart';
