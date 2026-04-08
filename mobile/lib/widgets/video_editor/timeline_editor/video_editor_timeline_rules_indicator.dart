@@ -1,6 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/widgets.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/timeline_constants.dart';
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
 
 /// Ruler markers — "0s · 10f · 20f · 1s · …"
 ///

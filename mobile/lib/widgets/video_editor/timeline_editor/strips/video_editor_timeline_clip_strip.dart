@@ -1,7 +1,3 @@
-// ---------------------------------------------------------------------------
-// Clip thumbnail strip — horizontal row of clip containers
-// ---------------------------------------------------------------------------
-
 import 'dart:async';
 import 'dart:io';
 
@@ -11,7 +7,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/timeline_constants.dart';
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
 
 class VideoEditorTimelineClipStrip extends StatefulWidget {
   const VideoEditorTimelineClipStrip({
