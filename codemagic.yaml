@@ -38,6 +38,33 @@ definitions:
     - &enable_spm
       name: Enable Swift Package Manager
       script: flutter config --enable-swift-package-manager
+    - &prepare_ios_spm_packages
+      name: Prepare iOS Swift package deployment targets
+      script: |
+        flutter build ios --config-only
+
+        ruby <<'RUBY'
+        files = [
+          'ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift',
+          'ios/Flutter/ephemeral/Packages/.packages/FlutterFramework/Package.swift',
+        ]
+
+        files.each do |path|
+          contents = File.read(path)
+          updated = contents.gsub('.iOS("13.0")', '.iOS("16.0")')
+
+          unless updated.include?('.iOS("16.0")')
+            abort("expected #{path} to declare iOS 16.0")
+          end
+
+          if updated != contents
+            File.write(path, updated)
+            puts "patched #{path} to iOS 16.0"
+          else
+            puts "#{path} already targets iOS 16.0"
+          end
+        end
+        RUBY
     - &flutter_pub_get
       name: Get Flutter dependencies
       script: flutter pub get
@@ -338,6 +365,7 @@ workflows:
       - *setup_code_signing_xcode
       - *install_flutterfire
       - *enable_spm
+      - *prepare_ios_spm_packages
       - *pod_install
       - *build_ios
       - *upload_dsyms_to_crashlytics
