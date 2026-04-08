@@ -4,6 +4,7 @@
 // ABOUTME(WIP): Page layer. Persistence and relay sync come in later phases.
 
 import 'package:curated_list_repository/src/curated_list_converter.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -29,10 +30,14 @@ const defaultListId = 'my_vine_list';
 /// {@endtemplate}
 class CuratedListRepository {
   /// {@macro curated_list_repository}
-  CuratedListRepository({required NostrClient nostrClient})
-    : _nostrClient = nostrClient;
+  CuratedListRepository({
+    required NostrClient nostrClient,
+    required FunnelcakeApiClient funnelcakeApiClient,
+  }) : _nostrClient = nostrClient,
+       _funnelcakeApiClient = funnelcakeApiClient;
 
   final NostrClient _nostrClient;
+  final FunnelcakeApiClient _funnelcakeApiClient;
   final Map<String, CuratedList> _subscribedLists = {};
 
   // BehaviorSubject replays last value to late subscribers, fixing race
@@ -210,17 +215,9 @@ class CuratedListRepository {
   // Relay search
   // ---------------------------------------------------------------------------
 
-  /// Searches for curated lists from Nostr relays matching [query].
-  ///
-  /// Queries kind 30005 events via [NostrClient.queryEvents], converts each
-  /// with [CuratedListConverter], filters client-side by name/description/tags,
-  /// and deduplicates by d-tag (keeps newest).
-  ///
-  /// Pass [excludeIds] to omit already-known lists.
-  ///
-  /// Returns an empty list if no [NostrClient] was provided or [query] is
-  /// blank.
-  Future<List<CuratedList>> searchListsFromRelays({
+  /// Queries Nostr relays for curated lists matching [query] without
+  /// resolving thumbnails.
+  Future<List<CuratedList>> _queryListsFromRelays({
     required String query,
     int limit = 50,
     Set<String>? excludeIds,
@@ -259,14 +256,24 @@ class CuratedListRepository {
       seen[list.id] = list;
     }
 
-    return List.unmodifiable(seen.values.toList());
+    return seen.values.toList();
   }
 
   /// Searches both local subscribed lists and relay lists for [query].
   ///
-  /// Yields local results first (instant), then merges relay results and
-  /// yields the combined set. Deduplicates by list ID.
-  Stream<List<CuratedList>> searchAllLists(String query) async* {
+  /// Yields results progressively so the UI can render list names immediately
+  /// while thumbnails resolve in the background:
+  ///
+  /// 1. Local matches (no thumbnails)
+  /// 2. Local matches with thumbnails resolved
+  /// 3. Local + relay matches merged (relay items without thumbnails)
+  /// 4. Fully enriched (relay thumbnails resolved)
+  ///
+  /// Deduplicates by list ID.
+  Stream<List<CuratedList>> searchAllLists(
+    String query, {
+    int maxThumbnails = 5,
+  }) async* {
     if (query.trim().isEmpty) return;
 
     final localResults = searchLists(query);
@@ -274,15 +281,35 @@ class CuratedListRepository {
       for (final list in localResults) list.id: list,
     };
 
-    // Yield local results immediately
+    // Yield 1: local results immediately (no thumbnails)
     yield List.unmodifiable(merged.values.toList());
 
-    // Await relay results and merge
-    final relayResults = await searchListsFromRelays(
+    // Yield 2: local results with thumbnails resolved
+    final enrichedLocal = await _resolveAllThumbnails(
+      merged.values.toList(),
+      maxThumbnails: maxThumbnails,
+    );
+    merged
+      ..clear()
+      ..addEntries(enrichedLocal.map((l) => MapEntry(l.id, l)));
+    yield List.unmodifiable(merged.values.toList());
+
+    // Yield 3: relay results merged (no thumbnails on new items)
+    final relayResults = await _queryListsFromRelays(
       query: query,
       excludeIds: merged.keys.toSet(),
     );
     for (final list in relayResults) {
+      merged[list.id] = list;
+    }
+    yield List.unmodifiable(merged.values.toList());
+
+    // Yield 4: relay thumbnails resolved
+    final enrichedRelay = await _resolveAllThumbnails(
+      relayResults,
+      maxThumbnails: maxThumbnails,
+    );
+    for (final list in enrichedRelay) {
       merged[list.id] = list;
     }
     yield List.unmodifiable(merged.values.toList());
@@ -299,6 +326,134 @@ class CuratedListRepository {
     if (!_subscribedListsSubject.isClosed) {
       await _subscribedListsSubject.close();
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Thumbnail resolution
+  // ---------------------------------------------------------------------------
+
+  /// Regular expression matching a 64-character lowercase hex string
+  /// (Nostr event ID). Non-matching entries are addressable coordinates.
+  static final _hexEventIdPattern = RegExp(r'^[0-9a-f]{64}$');
+
+  /// Resolves thumbnail URLs for a batch of [lists] concurrently.
+  ///
+  /// Each list gets up to [maxThumbnails] thumbnail URLs populated from
+  /// its [CuratedList.videoEventIds]. Resolution is best-effort — lists
+  /// that fail silently keep their original (empty) thumbnailUrls.
+  Future<List<CuratedList>> _resolveAllThumbnails(
+    List<CuratedList> lists, {
+    required int maxThumbnails,
+  }) async {
+    final futures = lists.map(
+      (list) => _resolveThumbnails(list, maxThumbnails: maxThumbnails),
+    );
+    return Future.wait(futures);
+  }
+
+  /// Resolves up to [maxThumbnails] thumbnail URLs for a single [list].
+  ///
+  /// Strategy per video reference:
+  /// 1. Hex event ID → try FunnelCake API (`getVideoStats`), use
+  ///    `VideoStats.thumbnail`.
+  /// 2. If FunnelCake fails or returns empty → fall back to Nostr relay
+  ///    query, parse as `VideoEvent`, use `effectiveThumbnailUrl`.
+  /// 3. Addressable coordinate → query relay with appropriate filter,
+  ///    parse as `VideoEvent`, use `effectiveThumbnailUrl`.
+  /// 4. If all fail → skip (becomes a placeholder in the UI).
+  ///
+  /// Returns the list with [CuratedList.thumbnailUrls] populated.
+  /// On complete failure, returns the list unchanged.
+  Future<CuratedList> _resolveThumbnails(
+    CuratedList list, {
+    required int maxThumbnails,
+  }) async {
+    if (list.videoEventIds.isEmpty) return list;
+
+    final candidates = list.videoEventIds.take(maxThumbnails).toList();
+    final urls = <String>[];
+
+    try {
+      final results = await Future.wait(
+        candidates.map(_resolveSingleThumbnail),
+      );
+      for (final url in results) {
+        if (url != null) urls.add(url);
+      }
+    } on Exception {
+      // Complete failure — return list as-is.
+      return list;
+    }
+
+    return list.copyWith(thumbnailUrls: urls);
+  }
+
+  /// Resolves a thumbnail URL for a single video reference.
+  ///
+  /// Returns the URL or `null` if resolution fails.
+  Future<String?> _resolveSingleThumbnail(String videoRef) async {
+    final isHexId = _hexEventIdPattern.hasMatch(videoRef);
+
+    if (isHexId) {
+      // Try FunnelCake first for hex event IDs.
+      try {
+        final stats = await _funnelcakeApiClient.getVideoStats(videoRef);
+        if (stats != null && stats.thumbnail.isNotEmpty) {
+          return stats.thumbnail;
+        }
+      } on Exception {
+        // Fall through to relay fallback.
+      }
+    }
+
+    // Relay fallback — works for both hex IDs and addressable coords.
+    return _resolveThumbnailFromRelay(videoRef, isHexId: isHexId);
+  }
+
+  /// Queries a Nostr relay for the video event and extracts its thumbnail.
+  Future<String?> _resolveThumbnailFromRelay(
+    String videoRef, {
+    required bool isHexId,
+  }) async {
+    try {
+      final filter = isHexId
+          ? Filter(ids: [videoRef], limit: 1)
+          : _buildAddressableFilter(videoRef);
+
+      if (filter == null) return null;
+
+      final events = await _nostrClient.queryEvents([filter]);
+      if (events.isEmpty) return null;
+
+      final videoEvent = VideoEvent.fromNostrEvent(
+        events.first,
+        permissive: true,
+      );
+      return videoEvent.effectiveThumbnailUrl;
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Builds a [Filter] for an addressable coordinate (`kind:pubkey:d-tag`).
+  ///
+  /// Returns `null` if the coordinate format is invalid.
+  static Filter? _buildAddressableFilter(String coordinate) {
+    final parts = coordinate.split(':');
+    if (parts.length < 3) return null;
+
+    final kind = int.tryParse(parts[0]);
+    if (kind == null) return null;
+
+    final pubkey = parts[1];
+    final dTag = parts.sublist(2).join(':');
+
+    return Filter(
+      kinds: [kind],
+      authors: [pubkey],
+      d: [dTag],
+      limit: 1,
+    );
   }
 
   // ---------------------------------------------------------------------------

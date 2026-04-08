@@ -1363,6 +1363,7 @@ FollowRepository followRepository(Ref ref) {
 CuratedListRepository curatedListRepository(Ref ref) {
   final repository = CuratedListRepository(
     nostrClient: ref.watch(nostrServiceProvider),
+    funnelcakeApiClient: ref.watch(funnelcakeApiClientProvider),
   );
 
   // Bridge: push curated list updates from legacy service into repository
