@@ -270,5 +270,59 @@ void main() {
         );
       });
     });
+
+    group('formatPreciseDuration', () {
+      test('formats zero duration', () {
+        expect(
+          TimeFormatter.formatPreciseDuration(Duration.zero),
+          equals('0:00.00'),
+        );
+      });
+
+      test('formats seconds and centiseconds', () {
+        expect(
+          TimeFormatter.formatPreciseDuration(
+            const Duration(seconds: 4, milliseconds: 600),
+          ),
+          equals('0:04.60'),
+        );
+      });
+
+      test('formats minutes, seconds, and centiseconds', () {
+        expect(
+          TimeFormatter.formatPreciseDuration(
+            const Duration(minutes: 1, seconds: 23, milliseconds: 50),
+          ),
+          equals('1:23.05'),
+        );
+      });
+    });
+
+    group('formatCompactDuration', () {
+      test('formats zero duration', () {
+        expect(
+          TimeFormatter.formatCompactDuration(Duration.zero),
+          equals('00:00'),
+        );
+      });
+
+      test('formats seconds and centiseconds without minutes', () {
+        expect(
+          TimeFormatter.formatCompactDuration(
+            const Duration(seconds: 5, milliseconds: 730),
+          ),
+          equals('05:73'),
+        );
+      });
+
+      test('prepends minutes when duration >= 1 minute', () {
+        expect(
+          TimeFormatter.formatCompactDuration(
+            const Duration(minutes: 1, seconds: 5, milliseconds: 730),
+          ),
+          equals('1:05:73'),
+        );
+      });
+    });
   });
 }
