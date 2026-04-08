@@ -51,6 +51,7 @@ class C2paSigningService {
   /// signing fails (signing is best-effort, not blocking).
   Future<C2paSigningResult> signVideo({
     required String videoPath,
+    DigitalSourceType sourceType = DigitalSourceType.digitalCapture,
     bool aiTrainingOptOut = true,
     NostrCreatorBindingAssertion? creatorBindingAssertion,
     Map<String, dynamic>? cawgIdentityAssertion,
@@ -86,7 +87,7 @@ class C2paSigningService {
       final manifestResult = _manifestService.buildCreatedVideoManifest(
         claimGenerator: claimGenerator,
         title: filename,
-        sourceType: DigitalSourceType.digitalCapture,
+        sourceType: sourceType,
         aiTrainingOptOut: aiTrainingOptOut,
         creatorBindingAssertion: creatorBindingAssertion,
         cawgIdentityAssertion: cawgIdentityAssertion,
