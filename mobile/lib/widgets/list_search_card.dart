@@ -161,7 +161,10 @@ class _ThumbnailCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(width: _cardBorder),
+        border: Border.all(
+          width: _cardBorder,
+          color: VineTheme.surfaceBackground,
+        ),
         borderRadius: BorderRadius.circular(_cardRadius),
         color: VineTheme.containerLow,
       ),

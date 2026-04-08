@@ -7,6 +7,7 @@ import 'package:curated_list_repository/src/curated_list_converter.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -353,6 +354,59 @@ class CuratedListRepository {
 
   /// Resolves up to [maxThumbnails] thumbnail URLs for a single [list].
   ///
+  /// Returns the list with [CuratedList.thumbnailUrls] populated.
+  Future<CuratedList> _resolveThumbnails(
+    CuratedList list, {
+    required int maxThumbnails,
+  }) async {
+    if (list.videoEventIds.isEmpty) return list;
+
+    final candidates = list.videoEventIds.take(maxThumbnails).toList();
+
+    // Phase 1: Try FunnelCake for each hex ID (parallel HTTP calls).
+    final fcResults = await Future.wait(
+      candidates.map(_tryFunnelcake),
+    );
+
+    // Phase 2: Collect refs needing relay fallback, batch into one query.
+    final needsRelay = <String>[];
+    for (var i = 0; i < candidates.length; i++) {
+      if (fcResults[i] == null) {
+        needsRelay.add(candidates[i]);
+      }
+    }
+
+    final relayThumbnails = await _batchRelayThumbnails(needsRelay);
+
+    // Merge results in candidate order.
+    final urls = <String>[];
+    for (var i = 0; i < candidates.length; i++) {
+      final url = fcResults[i] ?? relayThumbnails[candidates[i]];
+      if (url != null) urls.add(url);
+    }
+
+    return list.copyWith(thumbnailUrls: urls);
+  }
+
+  /// Tries FunnelCake API for a hex event ID.
+  ///
+  /// Returns the thumbnail URL, or `null` if [videoRef] is not a hex ID
+  /// or FunnelCake has no result.
+  Future<String?> _tryFunnelcake(String videoRef) async {
+    if (!_hexEventIdPattern.hasMatch(videoRef)) return null;
+    try {
+      final stats = await _funnelcakeApiClient.getVideoStats(videoRef);
+      if (stats != null && stats.thumbnail.isNotEmpty) {
+        return stats.thumbnail;
+      }
+    } on Exception {
+      // Fall through to relay fallback.
+    }
+    return null;
+  }
+
+  /// Resolves a thumbnail URL for a single video reference.
+  ///
   /// Strategy per video reference:
   /// 1. Hex event ID → try FunnelCake API (`getVideoStats`), use
   ///    `VideoStats.thumbnail`.
@@ -362,77 +416,79 @@ class CuratedListRepository {
   ///    parse as `VideoEvent`, use `effectiveThumbnailUrl`.
   /// 4. If all fail → skip (becomes a placeholder in the UI).
   ///
-  /// Returns the list with [CuratedList.thumbnailUrls] populated.
-  /// On complete failure, returns the list unchanged.
-  Future<CuratedList> _resolveThumbnails(
-    CuratedList list, {
-    required int maxThumbnails,
-  }) async {
-    if (list.videoEventIds.isEmpty) return list;
+  /// Batches all relay lookups into a single `queryEvents` call: hex IDs
+  /// go into one `Filter(ids: [...])` and addressable coordinates become
+  /// individual filters in the same request.
+  ///
+  /// Returns a map from video ref → thumbnail URL for refs that resolved.
+  Future<Map<String, String?>> _batchRelayThumbnails(
+    List<String> refs,
+  ) async {
+    if (refs.isEmpty) return {};
 
-    final candidates = list.videoEventIds.take(maxThumbnails).toList();
-    final urls = <String>[];
+    final hexIds = <String>[];
+    final coordRefs = <String>[];
+    final coordFilters = <Filter>[];
 
-    try {
-      final results = await Future.wait(
-        candidates.map(_resolveSingleThumbnail),
-      );
-      for (final url in results) {
-        if (url != null) urls.add(url);
+    for (final ref in refs) {
+      if (_hexEventIdPattern.hasMatch(ref)) {
+        hexIds.add(ref);
+      } else {
+        final filter = _buildAddressableFilter(ref);
+        if (filter != null) {
+          coordRefs.add(ref);
+          coordFilters.add(filter);
+        }
       }
-    } on Object {
-      // Complete failure — return list as-is.
-      return list;
     }
 
-    return list.copyWith(thumbnailUrls: urls);
-  }
+    final filters = <Filter>[
+      if (hexIds.isNotEmpty) Filter(ids: hexIds),
+      ...coordFilters,
+    ];
 
-  /// Resolves a thumbnail URL for a single video reference.
-  ///
-  /// Returns the URL or `null` if resolution fails.
-  Future<String?> _resolveSingleThumbnail(String videoRef) async {
-    final isHexId = _hexEventIdPattern.hasMatch(videoRef);
+    if (filters.isEmpty) return {};
 
-    if (isHexId) {
-      // Try FunnelCake first for hex event IDs.
+    List<Event> events;
+    try {
+      events = await _nostrClient.queryEvents(filters);
+    } on Exception {
+      return {};
+    }
+
+    final results = <String, String?>{};
+
+    for (final event in events) {
       try {
-        final stats = await _funnelcakeApiClient.getVideoStats(videoRef);
-        if (stats != null && stats.thumbnail.isNotEmpty) {
-          return stats.thumbnail;
+        final videoEvent = VideoEvent.fromNostrEvent(
+          event,
+          permissive: true,
+        );
+        final thumb = videoEvent.effectiveThumbnailUrl;
+        if (thumb == null) continue;
+
+        // Match hex IDs by event ID.
+        if (hexIds.contains(event.id)) {
+          results[event.id] = thumb;
+          continue;
+        }
+
+        // Match addressable coords by reconstructing the coordinate.
+        for (final ref in coordRefs) {
+          final parts = ref.split(':');
+          if (parts.length >= 3 &&
+              int.tryParse(parts[0]) == event.kind &&
+              parts[1] == event.pubkey) {
+            results[ref] = thumb;
+            break;
+          }
         }
       } on Exception {
-        // Fall through to relay fallback.
+        continue;
       }
     }
 
-    // Relay fallback — works for both hex IDs and addressable coords.
-    return _resolveThumbnailFromRelay(videoRef, isHexId: isHexId);
-  }
-
-  /// Queries a Nostr relay for the video event and extracts its thumbnail.
-  Future<String?> _resolveThumbnailFromRelay(
-    String videoRef, {
-    required bool isHexId,
-  }) async {
-    try {
-      final filter = isHexId
-          ? Filter(ids: [videoRef], limit: 1)
-          : _buildAddressableFilter(videoRef);
-
-      if (filter == null) return null;
-
-      final events = await _nostrClient.queryEvents([filter]);
-      if (events.isEmpty) return null;
-
-      final videoEvent = VideoEvent.fromNostrEvent(
-        events.first,
-        permissive: true,
-      );
-      return videoEvent.effectiveThumbnailUrl;
-    } on Exception {
-      return null;
-    }
+    return results;
   }
 
   /// Builds a [Filter] for an addressable coordinate (`kind:pubkey:d-tag`).

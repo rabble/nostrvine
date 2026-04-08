@@ -58,6 +58,25 @@ Event _makeVideoEvent({String? thumbnail}) {
   );
 }
 
+/// Creates a kind 34236 video event with a specific [id] for relay
+/// batching tests where the returned event must match the queried hex ID.
+Event _makeVideoEventWithId(String id, {String? thumbnail}) {
+  return Event.fromJson({
+    'id': id,
+    'pubkey': _testPubkey,
+    'created_at': 1718400000,
+    'kind': 34236,
+    'tags': [
+      ['d', 'test-video'],
+      ['title', 'Test Video'],
+      ['url', 'https://example.com/video.mp4'],
+      if (thumbnail != null) ['thumb', thumbnail],
+    ],
+    'content': '',
+    'sig': '',
+  });
+}
+
 void main() {
   group(CuratedListRepository, () {
     late _MockNostrClient nostrClient;
@@ -760,17 +779,24 @@ void main() {
           () => funnelcakeApiClient.getVideoStats(_videoEventId),
         ).thenThrow(Exception('API down'));
 
-        // First call: relay fallback for thumbnail resolution
-        // Second call: relay search for additional lists
-        var callCount = 0;
-        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async {
-          callCount++;
-          if (callCount == 1) {
-            return [
-              _makeVideoEvent(thumbnail: 'https://relay.com/thumb.jpg'),
-            ];
+        // Batched relay fallback returns event matching _videoEventId,
+        // then relay search returns empty.
+        when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments[0] as List<dynamic>;
+          final filter = filters.first;
+
+          // Relay search for curated lists (kind 30005)
+          if (filter is Filter && filter.kinds?.contains(30005) == true) {
+            return Future.value(<Event>[]);
           }
-          return [];
+
+          // Batched thumbnail fallback
+          return Future.value([
+            _makeVideoEventWithId(
+              _videoEventId,
+              thumbnail: 'https://relay.com/thumb.jpg',
+            ),
+          ]);
         });
 
         final emissions = await repository.searchAllLists('dance').toList();
@@ -914,7 +940,7 @@ void main() {
         expect(relayList.first.name, equals('Dance New'));
       });
 
-      test('returns list unchanged when thumbnail resolution throws', () async {
+      test('returns empty thumbnails when relay batch throws', () async {
         repository.setSubscribedLists([
           createList(
             id: 'local-1',
@@ -927,19 +953,23 @@ void main() {
           () => funnelcakeApiClient.getVideoStats(_videoEventId),
         ).thenAnswer((_) async => null);
 
-        // First call (thumbnail relay fallback) throws TypeError which
-        // passes through `on Exception` in _resolveThumbnailFromRelay.
-        // Second call (relay search) returns empty.
-        var callCount = 0;
-        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async {
-          callCount++;
-          if (callCount == 1) throw TypeError();
-          return [];
+        // Batched relay fallback throws, relay search returns empty.
+        when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments[0] as List<dynamic>;
+          final filter = filters.first;
+
+          // Relay search for curated lists (kind 30005)
+          if (filter is Filter && filter.kinds?.contains(30005) == true) {
+            return Future.value(<Event>[]);
+          }
+
+          // Batched thumbnail fallback throws
+          throw Exception('relay timeout');
         });
 
         final emissions = await repository.searchAllLists('dance').toList();
 
-        // Yield 2: thumbnail resolution failed, list returned unchanged
+        // Yield 2: relay batch failed, thumbnails empty
         expect(emissions[1].first.thumbnailUrls, isEmpty);
       });
 
@@ -1053,8 +1083,9 @@ void main() {
           () => funnelcakeApiClient.getVideoStats(_videoEventId3),
         ).thenThrow(Exception('API error'));
 
-        // Relay fallback calls: ref2 → empty, ref3 → video with thumbnail,
-        // then the relay search call → empty.
+        // Batched relay fallback: ref2 and ref3 go in one query.
+        // Only ref3 returns a video with a thumbnail (ref2 has no match).
+        // Relay search call returns empty.
         when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) {
           final filters = invocation.positionalArguments[0] as List<dynamic>;
           final filter = filters.first;
@@ -1064,21 +1095,13 @@ void main() {
             return Future.value(<Event>[]);
           }
 
-          // Relay fallback for ref2 (by event ID) → empty
-          if (filter is Filter &&
-              filter.ids?.contains(_videoEventId2) == true) {
-            return Future.value(<Event>[]);
-          }
-
-          // Relay fallback for ref3 (by event ID) → video with thumb
-          if (filter is Filter &&
-              filter.ids?.contains(_videoEventId3) == true) {
-            return Future.value([
-              _makeVideoEvent(thumbnail: 'https://relay.com/thumb3.jpg'),
-            ]);
-          }
-
-          return Future.value(<Event>[]);
+          // Batched thumbnail fallback — only ref3 resolves
+          return Future.value([
+            _makeVideoEventWithId(
+              _videoEventId3,
+              thumbnail: 'https://relay.com/thumb3.jpg',
+            ),
+          ]);
         });
 
         final emissions = await repository.searchAllLists('dance').toList();

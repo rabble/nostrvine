@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/widgets/list_search_card.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 void main() {
   final now = DateTime(2025, 6, 15);
@@ -115,18 +116,19 @@ void main() {
 
     group('thumbnails', () {
       testWidgets(
-        'renders stacked layout even with no thumbnails',
+        'renders 5 card slots with no images when thumbnailUrls is empty',
         (tester) async {
           await tester.pumpWidget(
             buildSubject(curatedList: createList()),
           );
 
-          expect(find.byType(LayoutBuilder), findsOneWidget);
+          expect(find.byType(DecoratedBox), findsNWidgets(6));
+          expect(find.byType(VineCachedImage), findsNothing);
         },
       );
 
       testWidgets(
-        'renders stacked layout when thumbnailUrls are present',
+        'renders $VineCachedImage for each thumbnail URL',
         (tester) async {
           await tester.pumpWidget(
             buildSubject(
@@ -140,7 +142,7 @@ void main() {
             ),
           );
 
-          expect(find.byType(LayoutBuilder), findsOneWidget);
+          expect(find.byType(VineCachedImage), findsNWidgets(2));
         },
       );
     });
