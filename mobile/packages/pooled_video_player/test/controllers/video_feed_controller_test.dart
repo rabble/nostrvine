@@ -1816,6 +1816,9 @@ void main() {
 
         evictionPool = TestablePlayerPool(
           maxPlayers: 2,
+          // serialized: true — concurrent loads must be serialized so the
+          // pool evicts the LRU player instead of creating one per call.
+          serialized: true,
           mockPlayerFactory: (url) {
             // isBuffering: true prevents immediate _onBufferReady, giving
             // us control over when the buffer-ready path fires.
@@ -2067,6 +2070,9 @@ void main() {
 
         callbackPool = TestablePlayerPool(
           maxPlayers: 2,
+          // serialized: true — concurrent loads must be serialized so the
+          // pool evicts the LRU player instead of creating one per call.
+          serialized: true,
           mockPlayerFactory: (url) {
             final setup = createMockPlayerSetup(isBuffering: true);
             callbackSetups[url] = setup;
