@@ -16,6 +16,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
         SecureKeyStorage,
         SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -173,6 +174,10 @@ class AuthService implements BackgroundAwareService {
   Future<bool>? _pendingRefresh;
   KeycastRpc? _keycastSigner;
 
+  // RPC capability state — separate from AuthState so the router doesn't
+  // need to know about remote signer warmup.
+  AuthRpcCapability _authRpcCapability = AuthRpcCapability.unavailable;
+
   // NIP-46 bunker signer state
   NostrRemoteSigner? _bunkerSigner;
 
@@ -223,6 +228,8 @@ class AuthService implements BackgroundAwareService {
       StreamController<AuthState>.broadcast();
   final StreamController<UserProfile?> _profileController =
       StreamController<UserProfile?>.broadcast();
+  final StreamController<AuthRpcCapability> _rpcCapabilityController =
+      StreamController<AuthRpcCapability>.broadcast();
 
   /// Current authentication state
   AuthState get authState => _authState;
@@ -275,6 +282,30 @@ class AuthService implements BackgroundAwareService {
 
   /// Check if user is using an anonymous auto-generated identity
   bool get isAnonymous => _authSource == AuthenticationSource.automatic;
+
+  /// Current RPC capability state.
+  AuthRpcCapability get authRpcCapability => _authRpcCapability;
+
+  /// Stream of RPC capability changes.
+  Stream<AuthRpcCapability> get authRpcCapabilityStream =>
+      _rpcCapabilityController.stream;
+
+  /// Whether this identity can publish Nostr writes right now.
+  ///
+  /// True when the identity has a local private key (can sign locally)
+  /// OR when RPC is fully ready. False for pubkey-only identities that
+  /// are still waiting for RPC warmup.
+  bool get canPublishNostrWritesNow {
+    final identity = _currentIdentity;
+    if (identity == null) return false;
+    // Local signing is always available if we have a private key.
+    if (identity is LocalNostrIdentity) return true;
+    if (identity is KeycastNostrIdentity) return true;
+    // Amber and Bunker identities can always sign via their remote signer.
+    if (identity is AmberNostrIdentity) return true;
+    if (identity is BunkerNostrIdentity) return true;
+    return false;
+  }
 
   /// True when a divineOAuth user's session expired and refresh failed.
   /// The user's identity is intact but remote signing is unavailable.
@@ -2374,6 +2405,7 @@ class AuthService implements BackgroundAwareService {
 
       final keyContainer = SecureKeyContainer.fromPublicKey(publicKeyHex);
       await _setupUserSession(keyContainer, AuthenticationSource.divineOAuth);
+      _setRpcCapability(AuthRpcCapability.rpcReady);
 
       Log.info(
         '✅ Divine oauth session successfully integrated for $publicKeyHex',
@@ -3688,6 +3720,20 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
+  void _setRpcCapability(AuthRpcCapability capability) {
+    if (_authRpcCapability != capability) {
+      final previous = _authRpcCapability;
+      _authRpcCapability = capability;
+      _rpcCapabilityController.add(capability);
+
+      Log.info(
+        'RPC capability: ${previous.name} -> ${capability.name}',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+  }
+
   /// Get user statistics
   Map<String, dynamic> get userStats => {
     'is_authenticated': isAuthenticated,
@@ -3785,6 +3831,7 @@ class AuthService implements BackgroundAwareService {
 
     await _authStateController.close();
     await _profileController.close();
+    await _rpcCapabilityController.close();
     _keyStorage.dispose();
   }
 }

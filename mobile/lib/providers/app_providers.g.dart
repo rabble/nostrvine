@@ -2324,6 +2324,68 @@ final class CurrentAuthStateProvider
 
 String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+
+@ProviderFor(currentAuthRpcCapability)
+const currentAuthRpcCapabilityProvider = CurrentAuthRpcCapabilityProvider._();
+
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+
+final class CurrentAuthRpcCapabilityProvider
+    extends
+        $FunctionalProvider<
+          AuthRpcCapability,
+          AuthRpcCapability,
+          AuthRpcCapability
+        >
+    with $Provider<AuthRpcCapability> {
+  /// Provider that returns current RPC capability and rebuilds on changes.
+  ///
+  /// Widgets and repositories should watch this instead of polling
+  /// [AuthService.authRpcCapability] directly.
+  const CurrentAuthRpcCapabilityProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'currentAuthRpcCapabilityProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$currentAuthRpcCapabilityHash();
+
+  @$internal
+  @override
+  $ProviderElement<AuthRpcCapability> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AuthRpcCapability create(Ref ref) {
+    return currentAuthRpcCapability(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AuthRpcCapability value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AuthRpcCapability>(value),
+    );
+  }
+}
+
+String _$currentAuthRpcCapabilityHash() =>
+    r'cb273f3377e25d0c88104df14a38d2b502c3f7de';
+
 /// Provider that fetches the list of known accounts from the auth service.
 ///
 /// Invalidate this provider after sign-in or sign-out to refresh the list.

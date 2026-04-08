@@ -97,6 +97,7 @@ import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -990,6 +991,23 @@ AuthState currentAuthState(Ref ref) {
 
   // Return current state
   return authService.authState;
+}
+
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+@Riverpod(keepAlive: true)
+AuthRpcCapability currentAuthRpcCapability(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  final subscription = authService.authRpcCapabilityStream.listen((_) {
+    ref.invalidateSelf();
+  });
+
+  ref.onDispose(subscription.cancel);
+
+  return authService.authRpcCapability;
 }
 
 /// Provider that fetches the list of known accounts from the auth service.
