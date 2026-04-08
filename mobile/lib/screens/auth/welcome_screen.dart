@@ -15,6 +15,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
+import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/widgets/error_message.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -132,6 +133,10 @@ class _WelcomeView extends StatelessWidget {
         }
       },
       builder: (context, state) {
+        if (state.status == WelcomeStatus.loaded) {
+          StartupPerformanceService.instance.markAuthShellReady();
+        }
+
         final isLoading = isAuthLoading || state.isAccepting;
 
         final isReturningUser = state.hasReturningUsers;
