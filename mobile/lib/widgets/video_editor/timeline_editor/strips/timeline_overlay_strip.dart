@@ -173,13 +173,17 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     return Positioned(
       left: x,
       top: y,
-      child: GestureDetector(
-        onTap: () => widget.onItemTapped?.call(item.id),
-        onLongPressStart: (_) => _onLongPressStart(item),
-        onLongPressMoveUpdate: (details) =>
-            _onLongPressMoveUpdate(details, item, displayRowCount),
-        onLongPressEnd: (_) => _onLongPressEnd(item),
-        child: tile,
+      child: Semantics(
+        label: item.label,
+        hint: 'Long press to drag',
+        child: GestureDetector(
+          onTap: () => widget.onItemTapped?.call(item.id),
+          onLongPressStart: (_) => _onLongPressStart(item),
+          onLongPressMoveUpdate: (details) =>
+              _onLongPressMoveUpdate(details, item, displayRowCount),
+          onLongPressEnd: (_) => _onLongPressEnd(item),
+          child: tile,
+        ),
       ),
     );
   }
@@ -261,8 +265,11 @@ class _OverlayItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 150),
       width: width,
       height: height - 2, // 2px vertical gap between rows
       decoration: BoxDecoration(

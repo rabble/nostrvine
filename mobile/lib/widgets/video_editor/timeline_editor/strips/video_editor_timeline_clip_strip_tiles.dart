@@ -350,6 +350,7 @@ class _ThumbnailImage extends StatelessWidget {
         ? Image.file(
             File(thumbnailPath!),
             fit: BoxFit.cover,
+            excludeFromSemantics: true,
             errorBuilder: (_, _, _) =>
                 const ColoredBox(color: VineTheme.surfaceContainerHigh),
           )
@@ -361,6 +362,7 @@ class _ThumbnailImage extends StatelessWidget {
       File(stripThumbnailPath!),
       fit: BoxFit.cover,
       gaplessPlayback: true,
+      excludeFromSemantics: true,
       errorBuilder: (_, _, _) => fallback,
     );
   }

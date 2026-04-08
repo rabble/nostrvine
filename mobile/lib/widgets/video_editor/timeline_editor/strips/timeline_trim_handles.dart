@@ -184,11 +184,14 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
             top: 0,
             width: handleW + widget.hitAreaExtra + widget.borderWidth,
             height: widget.height,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragStart: _onDragStart,
-              onHorizontalDragUpdate: _onLeftDragUpdate,
-              onHorizontalDragEnd: _onDragEnd,
+            child: Semantics(
+              label: 'Trim start',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: _onDragStart,
+                onHorizontalDragUpdate: _onLeftDragUpdate,
+                onHorizontalDragEnd: _onDragEnd,
+              ),
             ),
           ),
           // Right hit area — covers the outer handle + extra grab zone.
@@ -197,11 +200,14 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
             top: 0,
             width: handleW + widget.hitAreaExtra + widget.borderWidth,
             height: widget.height,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragStart: _onDragStart,
-              onHorizontalDragUpdate: _onRightDragUpdate,
-              onHorizontalDragEnd: _onDragEnd,
+            child: Semantics(
+              label: 'Trim end',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: _onDragStart,
+                onHorizontalDragUpdate: _onRightDragUpdate,
+                onHorizontalDragEnd: _onDragEnd,
+              ),
             ),
           ),
         ],
