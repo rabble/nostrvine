@@ -170,6 +170,13 @@ void main() {
         ),
       ).thenAnswer((_) async {});
       when(
+        () => mockApiService.setParticipantRole(
+          roomId: room.id,
+          pubkey: any(named: 'pubkey'),
+          role: any(named: 'role'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
         () => mockMediaService.watchState(),
       ).thenAnswer((_) => mediaController.stream);
       when(() => mockMediaService.connect(joinToken)).thenAnswer((_) async {});
@@ -423,6 +430,35 @@ void main() {
 
         expect(bloc.state.speakerPubkeys, isNot(contains(audiencePubkey)));
         expect(bloc.state.speakerPubkeys, contains(audienceThreePubkey));
+
+        verify(
+          () => mockApiService.setParticipantRole(
+            roomId: room.id,
+            pubkey: audiencePubkey,
+            role: LiveRole.speaker,
+          ),
+        ).called(1);
+        verify(
+          () => mockApiService.setParticipantRole(
+            roomId: room.id,
+            pubkey: audienceTwoPubkey,
+            role: LiveRole.speaker,
+          ),
+        ).called(1);
+        verify(
+          () => mockApiService.setParticipantRole(
+            roomId: room.id,
+            pubkey: audiencePubkey,
+            role: LiveRole.audience,
+          ),
+        ).called(1);
+        verify(
+          () => mockApiService.setParticipantRole(
+            roomId: room.id,
+            pubkey: audienceThreePubkey,
+            role: LiveRole.speaker,
+          ),
+        ).called(1);
 
         await bloc.close();
       },

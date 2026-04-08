@@ -1,3 +1,4 @@
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/repositories/live_chat_repository.dart';
 import 'package:openvine/repositories/live_repository.dart';
@@ -15,7 +16,8 @@ LiveNostrCodec liveNostrCodec(Ref ref) {
 
 @Riverpod(keepAlive: true)
 LiveApiService liveApiService(Ref ref) {
-  return LiveApiService();
+  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
+  return LiveApiService(nip98AuthService: nip98AuthService);
 }
 
 @Riverpod(keepAlive: true)

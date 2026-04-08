@@ -3,33 +3,62 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/services/live_api_service.dart';
+import 'package:openvine/services/nip98_auth_service.dart';
 
 class _MockHttpClient extends Mock implements http.Client {}
 
+class _MockNip98AuthService extends Mock implements Nip98AuthService {}
+
 void main() {
   late _MockHttpClient mockClient;
+  late _MockNip98AuthService mockNip98AuthService;
   late LiveApiService service;
+  late Nip98Token authToken;
 
   setUpAll(() {
     registerFallbackValue(Uri.parse('https://example.com'));
     registerFallbackValue(<String, String>{});
+    registerFallbackValue(HttpMethod.get);
   });
 
   setUp(() {
     mockClient = _MockHttpClient();
+    mockNip98AuthService = _MockNip98AuthService();
+    when(() => mockNip98AuthService.canCreateTokens).thenReturn(true);
+    authToken = Nip98Token(
+      token: 'mock-token-base64',
+      signedEvent: _createMockEvent(),
+      createdAt: DateTime.now(),
+      expiresAt: DateTime.now().add(const Duration(minutes: 10)),
+    );
     service = LiveApiService(
       client: mockClient,
-      baseUrl: 'https://api.example.com',
+      baseUrl: 'https://live.api.example.com',
+      nip98AuthService: mockNip98AuthService,
     );
   });
 
   group('LiveApiService', () {
     test(
-      'createRoomDraft posts room metadata and parses the response',
+      'createRoomDraft signs the exact request URL and attaches NIP-98 auth',
       () async {
+        const payload = {
+          'title': 'Divine Live',
+          'summary': 'Public room for mobile creators',
+          'imageUrl': 'https://example.com/cover.jpg',
+          'relays': ['wss://relay.example.com'],
+        };
+        when(
+          () => mockNip98AuthService.createAuthToken(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async => authToken);
         when(
           () => mockClient.post(
             any(),
@@ -63,21 +92,35 @@ void main() {
         expect(room.summary, 'Public room for mobile creators');
 
         verify(
+          () => mockNip98AuthService.createAuthToken(
+            url: 'https://live.api.example.com/v1/live/rooms',
+            method: HttpMethod.post,
+            payload: jsonEncode(payload),
+          ),
+        ).called(1);
+        verify(
           () => mockClient.post(
-            Uri.parse('https://api.example.com/v1/live/rooms'),
-            headers: any(named: 'headers'),
-            body: jsonEncode({
-              'title': 'Divine Live',
-              'summary': 'Public room for mobile creators',
-              'imageUrl': 'https://example.com/cover.jpg',
-              'relays': ['wss://relay.example.com'],
-            }),
+            Uri.parse('https://live.api.example.com/v1/live/rooms'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'User-Agent': 'divine-Mobile/1.0',
+              'Authorization': authToken.authorizationHeader,
+            },
+            body: jsonEncode(payload),
           ),
         ).called(1);
       },
     );
 
-    test('startSession posts a backend start request', () async {
+    test('startSession signs the request body before posting', () async {
+      when(
+        () => mockNip98AuthService.createAuthToken(
+          url: any(named: 'url'),
+          method: any(named: 'method'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => authToken);
       when(
         () => mockClient.post(
           any(),
@@ -89,15 +132,36 @@ void main() {
       await service.startSession(roomId: 'room-abc', sessionId: 'session-abc');
 
       verify(
+        () => mockNip98AuthService.createAuthToken(
+          url: 'https://live.api.example.com/v1/live/rooms/room-abc/sessions',
+          method: HttpMethod.post,
+          payload: jsonEncode({'sessionId': 'session-abc'}),
+        ),
+      ).called(1);
+      verify(
         () => mockClient.post(
-          Uri.parse('https://api.example.com/v1/live/rooms/room-abc/sessions'),
-          headers: any(named: 'headers'),
+          Uri.parse(
+            'https://live.api.example.com/v1/live/rooms/room-abc/sessions',
+          ),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'divine-Mobile/1.0',
+            'Authorization': authToken.authorizationHeader,
+          },
           body: jsonEncode({'sessionId': 'session-abc'}),
         ),
       ).called(1);
     });
 
-    test('fetchJoinToken returns a publish token for hosts', () async {
+    test('fetchJoinToken signs the exact join URL and role payload', () async {
+      when(
+        () => mockNip98AuthService.createAuthToken(
+          url: any(named: 'url'),
+          method: any(named: 'method'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => authToken);
       when(
         () => mockClient.post(
           any(),
@@ -127,9 +191,24 @@ void main() {
       expect(token.participantIdentity, 'host-pubkey');
       expect(token.serverUrl, 'wss://livekit.example.com');
       expect(token.canPublish, isTrue);
+
+      verify(
+        () => mockNip98AuthService.createAuthToken(
+          url: 'https://live.api.example.com/v1/live/rooms/room-abc/join',
+          method: HttpMethod.post,
+          payload: jsonEncode({'role': 'host'}),
+        ),
+      ).called(1);
     });
 
-    test('endSession posts a backend end request', () async {
+    test('endSession signs the empty JSON body it posts', () async {
+      when(
+        () => mockNip98AuthService.createAuthToken(
+          url: any(named: 'url'),
+          method: any(named: 'method'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => authToken);
       when(
         () => mockClient.post(
           any(),
@@ -141,12 +220,71 @@ void main() {
       await service.endSession(roomId: 'room-abc', sessionId: 'session-abc');
 
       verify(
+        () => mockNip98AuthService.createAuthToken(
+          url:
+              'https://live.api.example.com/v1/live/rooms/room-abc/sessions/session-abc/end',
+          method: HttpMethod.post,
+          payload: jsonEncode(const <String, dynamic>{}),
+        ),
+      ).called(1);
+      verify(
         () => mockClient.post(
           Uri.parse(
-            'https://api.example.com/v1/live/rooms/room-abc/sessions/session-abc/end',
+            'https://live.api.example.com/v1/live/rooms/room-abc/sessions/session-abc/end',
           ),
-          headers: any(named: 'headers'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'divine-Mobile/1.0',
+            'Authorization': authToken.authorizationHeader,
+          },
           body: jsonEncode(const <String, dynamic>{}),
+        ),
+      ).called(1);
+    });
+
+    test('setParticipantRole signs the exact PUT URL and body', () async {
+      when(
+        () => mockNip98AuthService.createAuthToken(
+          url: any(named: 'url'),
+          method: any(named: 'method'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => authToken);
+      when(
+        () => mockClient.put(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => http.Response('', 200));
+
+      await service.setParticipantRole(
+        roomId: 'room-abc',
+        pubkey: 'speaker-pubkey',
+        role: LiveRole.speaker,
+      );
+
+      verify(
+        () => mockNip98AuthService.createAuthToken(
+          url:
+              'https://live.api.example.com/v1/live/rooms/room-abc/participants/speaker-pubkey/role',
+          method: HttpMethod.put,
+          payload: jsonEncode({'role': 'speaker'}),
+        ),
+      ).called(1);
+      verify(
+        () => mockClient.put(
+          Uri.parse(
+            'https://live.api.example.com/v1/live/rooms/room-abc/participants/speaker-pubkey/role',
+          ),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'divine-Mobile/1.0',
+            'Authorization': authToken.authorizationHeader,
+          },
+          body: jsonEncode({'role': 'speaker'}),
         ),
       ).called(1);
     });
@@ -169,6 +307,13 @@ void main() {
       expect(recording, isNotNull);
       expect(recording!.status, RecordingStatus.ready);
       expect(recording.playbackUrl, 'https://example.com/replay.m3u8');
+      verifyNever(
+        () => mockNip98AuthService.createAuthToken(
+          url: any(named: 'url'),
+          method: any(named: 'method'),
+          payload: any(named: 'payload'),
+        ),
+      );
     });
 
     test(
@@ -183,5 +328,26 @@ void main() {
         expect(recording, isNull);
       },
     );
+  });
+}
+
+Event _createMockEvent() {
+  final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  return Event.fromJson({
+    'id': 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+    'kind': 27235,
+    'pubkey':
+        'aabbccdd0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+    'created_at': timestamp,
+    'content': '',
+    'tags': [
+      ['u', 'https://live.api.example.com/v1/live/rooms'],
+      ['method', 'POST'],
+      ['created_at', '$timestamp'],
+    ],
+    'sig':
+        'deadbeef0123456789abcdef0123456789abcdef0123456789abcdef01234567'
+        '89abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567'
+        '89ab',
   });
 }

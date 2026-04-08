@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/repositories/live_chat_repository.dart';
@@ -10,12 +11,16 @@ import 'package:openvine/repositories/live_repository.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/live_nostr_codec.dart';
 import 'package:openvine/services/livekit_room_service.dart';
+import 'package:openvine/services/nip98_auth_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockNip98AuthService extends Mock implements Nip98AuthService {}
 
 void main() {
   group('live providers', () {
     late _MockNostrClient mockNostrClient;
+    late _MockNip98AuthService mockNip98AuthService;
 
     setUpAll(() {
       registerFallbackValue(<Filter>[]);
@@ -24,6 +29,7 @@ void main() {
 
     setUp(() {
       mockNostrClient = _MockNostrClient();
+      mockNip98AuthService = _MockNip98AuthService();
       when(
         () => mockNostrClient.queryEvents(
           any(),
@@ -55,6 +61,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             nostrServiceProvider.overrideWithValue(mockNostrClient),
+            nip98AuthServiceProvider.overrideWithValue(mockNip98AuthService),
           ],
         );
         addTearDown(container.dispose);

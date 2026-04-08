@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:openvine/blocs/live_room/live_room_event.dart';
 import 'package:openvine/blocs/live_room/live_room_state.dart';
 import 'package:openvine/models/live/live_presence.dart';
@@ -34,14 +35,26 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     on<ToggleMicrophoneRequested>(_onToggleMicrophoneRequested);
     on<ToggleCameraRequested>(_onToggleCameraRequested);
     on<SwitchCameraRequested>(_onSwitchCameraRequested);
-    on<PromoteSpeakerRequested>(_onPromoteSpeakerRequested);
-    on<DemoteSpeakerRequested>(_onDemoteSpeakerRequested);
+    on<PromoteSpeakerRequested>(
+      _onPromoteSpeakerRequested,
+      transformer: sequential(),
+    );
+    on<DemoteSpeakerRequested>(
+      _onDemoteSpeakerRequested,
+      transformer: sequential(),
+    );
     on<EnableAudioOnlyRequested>(_onEnableAudioOnlyRequested);
     on<ToggleHandRaiseRequested>(_onToggleHandRaiseRequested);
     on<EndSessionRequested>(_onEndSessionRequested);
     on<UpdateRoomMetadataRequested>(_onUpdateRoomMetadataRequested);
-    on<ApproveRaisedHandRequested>(_onApproveRaisedHandRequested);
-    on<DenyRaisedHandRequested>(_onDenyRaisedHandRequested);
+    on<ApproveRaisedHandRequested>(
+      _onApproveRaisedHandRequested,
+      transformer: sequential(),
+    );
+    on<DenyRaisedHandRequested>(
+      _onDenyRaisedHandRequested,
+      transformer: sequential(),
+    );
     on<MuteParticipantRequested>(_onMuteParticipantRequested);
     on<MuteChatParticipantRequested>(_onMuteChatParticipantRequested);
     on<RemoveParticipantRequested>(_onRemoveParticipantRequested);
@@ -706,6 +719,11 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     }
 
     final nextSession = session.copyWith(speakerPubkeys: nextSpeakerPubkeys);
+    await _liveApiService.setParticipantRole(
+      roomId: room.id,
+      pubkey: pubkey,
+      role: shouldPromote ? LiveRole.speaker : LiveRole.audience,
+    );
     await _liveRepository.publishSession(
       session: nextSession,
       roomAddress: room.address,

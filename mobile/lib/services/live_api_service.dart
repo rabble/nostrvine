@@ -8,18 +8,25 @@ import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/models/live/live_room_token.dart';
 import 'package:openvine/services/api_service.dart';
+import 'package:openvine/services/nip98_auth_service.dart';
 
 class LiveApiService {
   LiveApiService({
     http.Client? client,
     String? baseUrl,
+    Nip98AuthService? nip98AuthService,
   }) : _client = client ?? http.Client(),
-       _baseUrl = baseUrl ?? AppConfig.backendBaseUrl;
+       _baseUrl = (baseUrl ?? AppConfig.liveApiBaseUrl).replaceFirst(
+         RegExp(r'/+$'),
+         '',
+       ),
+       _nip98AuthService = nip98AuthService;
 
   static const Duration _defaultTimeout = Duration(seconds: 20);
 
   final http.Client _client;
   final String _baseUrl;
+  final Nip98AuthService? _nip98AuthService;
 
   Future<LiveRoom> createRoomDraft({
     required String title,
@@ -36,8 +43,9 @@ class LiveApiService {
     }
     payload['relays'] = relays;
 
-    final json = await _post(
+    final json = await _sendJson(
       '/v1/live/rooms',
+      method: HttpMethod.post,
       body: payload,
       actionLabel: 'create live room draft',
     );
@@ -62,8 +70,9 @@ class LiveApiService {
     required String roomId,
     required String sessionId,
   }) async {
-    await _post(
+    await _sendJson(
       '/v1/live/rooms/$roomId/sessions',
+      method: HttpMethod.post,
       body: <String, dynamic>{'sessionId': sessionId},
       actionLabel: 'start live session',
     );
@@ -73,8 +82,9 @@ class LiveApiService {
     required String roomId,
     required LiveRole role,
   }) async {
-    final json = await _post(
+    final json = await _sendJson(
       '/v1/live/rooms/$roomId/join',
+      method: HttpMethod.post,
       body: <String, dynamic>{'role': role.name},
       actionLabel: 'fetch live room join token',
     );
@@ -86,10 +96,24 @@ class LiveApiService {
     required String roomId,
     required String sessionId,
   }) async {
-    await _post(
+    await _sendJson(
       '/v1/live/rooms/$roomId/sessions/$sessionId/end',
+      method: HttpMethod.post,
       body: const <String, dynamic>{},
       actionLabel: 'end live session',
+    );
+  }
+
+  Future<void> setParticipantRole({
+    required String roomId,
+    required String pubkey,
+    required LiveRole role,
+  }) async {
+    await _sendJson(
+      '/v1/live/rooms/$roomId/participants/$pubkey/role',
+      method: HttpMethod.put,
+      body: <String, dynamic>{'role': role.name},
+      actionLabel: 'update live participant role',
     );
   }
 
@@ -100,7 +124,7 @@ class LiveApiService {
 
     try {
       final response = await _client
-          .get(uri, headers: _headers())
+          .get(uri, headers: await _headers())
           .timeout(_defaultTimeout);
 
       if (response.statusCode == 204 || response.statusCode == 404) {
@@ -131,21 +155,45 @@ class LiveApiService {
     }
   }
 
-  Future<Map<String, dynamic>> _post(
+  Future<Map<String, dynamic>> _sendJson(
     String path, {
+    required HttpMethod method,
     required Map<String, dynamic> body,
     required String actionLabel,
   }) async {
     final uri = _uri(path);
+    final payload = jsonEncode(body);
 
     try {
-      final response = await _client
-          .post(
-            uri,
-            headers: _headers(),
-            body: jsonEncode(body),
-          )
-          .timeout(_defaultTimeout);
+      final headers = await _headers(
+        url: uri.toString(),
+        method: method,
+        payload: payload,
+        requiresAuth: true,
+      );
+      final response = switch (method) {
+        HttpMethod.post =>
+          await _client
+              .post(
+                uri,
+                headers: headers,
+                body: payload,
+              )
+              .timeout(_defaultTimeout),
+        HttpMethod.put =>
+          await _client
+              .put(
+                uri,
+                headers: headers,
+                body: payload,
+              )
+              .timeout(_defaultTimeout),
+        HttpMethod.get ||
+        HttpMethod.delete ||
+        HttpMethod.patch => throw ApiException(
+          'Unsupported live API method for $actionLabel: ${method.value}',
+        ),
+      };
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw ApiException(
@@ -179,11 +227,45 @@ class LiveApiService {
     throw const ApiException('Live API returned an invalid response body');
   }
 
-  Map<String, String> _headers() => const <String, String>{
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'User-Agent': 'divine-Mobile/1.0',
-  };
+  Future<Map<String, String>> _headers({
+    String? url,
+    HttpMethod method = HttpMethod.get,
+    String? payload,
+    bool requiresAuth = false,
+  }) async {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'divine-Mobile/1.0',
+    };
+
+    if (!requiresAuth) {
+      return headers;
+    }
+
+    final nip98AuthService = _nip98AuthService;
+    if (url == null ||
+        nip98AuthService == null ||
+        !nip98AuthService.canCreateTokens) {
+      throw const ApiException(
+        'Live API request requires NIP-98 authentication',
+      );
+    }
+
+    final authToken = await nip98AuthService.createAuthToken(
+      url: url,
+      method: method,
+      payload: payload,
+    );
+    if (authToken == null) {
+      throw const ApiException(
+        'Failed to create NIP-98 auth token for live API request',
+      );
+    }
+
+    headers['Authorization'] = authToken.authorizationHeader;
+    return headers;
+  }
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
