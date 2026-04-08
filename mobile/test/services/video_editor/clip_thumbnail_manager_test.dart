@@ -43,7 +43,10 @@ void main() {
 
       test('removes stale notifiers when clips change', () {
         manager.sync(
-          clips: [_createTestClip(id: 'a'), _createTestClip(id: 'b')],
+          clips: [
+            _createTestClip(id: 'a'),
+            _createTestClip(id: 'b'),
+          ],
           devicePixelRatio: 1,
         );
 
