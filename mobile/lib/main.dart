@@ -26,6 +26,7 @@ import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
@@ -1515,6 +1516,11 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             create: (context) => EmailVerificationCubit(
               oauthClient: ref.read(oauthClientProvider),
               authService: ref.read(authServiceProvider),
+              inviteApiService: context.read<InviteApiService>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => InviteStatusCubit(
               inviteApiService: context.read<InviteApiService>(),
             ),
           ),
