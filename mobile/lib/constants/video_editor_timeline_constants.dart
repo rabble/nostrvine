@@ -1,5 +1,8 @@
 /// Sizing and layout constants for the video editor timeline.
 abstract class TimelineConstants {
+  /// Height of the timeline.
+  static const double height = 400;
+
   /// Height of the ruler bar with time labels.
   static const double rulerHeight = 32;
 
