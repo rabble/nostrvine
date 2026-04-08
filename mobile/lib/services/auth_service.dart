@@ -312,6 +312,179 @@ class AuthService implements BackgroundAwareService {
   /// UI should prompt re-login instead of "Secure Your Account".
   bool get hasExpiredOAuthSession => _hasExpiredOAuthSession;
 
+  /// Timeout for background RPC refresh during local-first startup.
+  @visibleForTesting
+  static const rpcRefreshTimeout = Duration(seconds: 10);
+
+  /// Local-first Divine OAuth initialization.
+  ///
+  /// Loads the Keycast session and local keys. If a matching local private
+  /// key exists, authenticates immediately and attempts RPC refresh in the
+  /// background. If no local key exists, falls back to the previous
+  /// synchronous refresh-or-fallback behavior.
+  Future<void> _initializeDivineOAuth() async {
+    Log.info(
+      'initialize: restoring Divine OAuth session (local-first)...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    final session = await KeycastSession.load(_flutterSecureStorage);
+    SecureKeyContainer? localKey;
+    try {
+      if (await _keyStorage.hasKeys()) {
+        localKey = await _keyStorage.getKeyContainer();
+      }
+    } catch (e, stack) {
+      _reportStorageError(e, stack, 'divineOAuth local key load');
+    }
+
+    final targetPubkey = session?.userPubkey ?? localKey?.publicKeyHex;
+
+    // Fast path: matching local key → authenticate immediately.
+    if (_canUseLocalDivineIdentity(localKey, targetPubkey)) {
+      _hasExpiredOAuthSession = session == null || !session.hasRpcAccess;
+      _setRpcCapability(
+        _hasExpiredOAuthSession
+            ? AuthRpcCapability.upgrading
+            : AuthRpcCapability.rpcReady,
+      );
+
+      // If we already have a valid session with RPC access, set up the
+      // Keycast signer before building the identity so we get a
+      // KeycastNostrIdentity instead of a LocalNostrIdentity.
+      if (session != null && session.hasRpcAccess) {
+        _keycastSigner = KeycastRpc.fromSession(_oauthConfig, session);
+      }
+
+      await _setupUserSession(localKey!, AuthenticationSource.divineOAuth);
+
+      Log.info(
+        'initialize: local divine identity restored immediately '
+        '(rpc=${_authRpcCapability.name})',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+
+      // If RPC isn't ready yet, try to upgrade in background.
+      if (_authRpcCapability != AuthRpcCapability.rpcReady) {
+        unawaited(_upgradeDivineRpcInBackground(session));
+      }
+      return;
+    }
+
+    // Slow path: no local key — try RPC refresh synchronously.
+    await _restoreDivineRpcOrFallbackUnauthenticated(session);
+  }
+
+  /// Whether [localKey] can be used for immediate Divine OAuth identity.
+  bool _canUseLocalDivineIdentity(
+    SecureKeyContainer? localKey,
+    String? targetPubkey,
+  ) {
+    if (localKey == null || !localKey.hasPrivateKey) return false;
+    if (targetPubkey == null) return true; // No session to compare against.
+    return localKey.publicKeyHex == targetPubkey;
+  }
+
+  /// Background RPC refresh with bounded timeout.
+  ///
+  /// On success: rebuilds identity to [KeycastNostrIdentity] and sets
+  /// [AuthRpcCapability.rpcReady]. On failure: preserves the local identity
+  /// and sets capability back to [AuthRpcCapability.unavailable].
+  Future<void> _upgradeDivineRpcInBackground(
+    KeycastSession? session,
+  ) async {
+    Log.info(
+      'initialize: starting background RPC refresh...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    try {
+      if (_oauthClient == null) {
+        _setRpcCapability(AuthRpcCapability.unavailable);
+        return;
+      }
+
+      final refreshed = await _oauthClient.refreshSession().timeout(
+        rpcRefreshTimeout,
+      );
+
+      if (refreshed != null && refreshed.hasRpcAccess) {
+        Log.info(
+          'initialize: background RPC refresh succeeded',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        await refreshed.save(_flutterSecureStorage);
+        await _clearDismissedDivineLoginBannerForCurrentUser();
+        _keycastSigner = KeycastRpc.fromSession(_oauthConfig, refreshed);
+        _currentIdentity = _buildIdentity();
+        _hasExpiredOAuthSession = false;
+        _setRpcCapability(AuthRpcCapability.rpcReady);
+        return;
+      }
+    } on TimeoutException {
+      Log.warning(
+        'initialize: background RPC refresh timed out '
+        '(${rpcRefreshTimeout.inSeconds}s)',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'initialize: background RPC refresh failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+
+    _setRpcCapability(AuthRpcCapability.unavailable);
+  }
+
+  /// Synchronous fallback for Divine OAuth when no local key is available.
+  ///
+  /// Attempts RPC refresh, then falls back to unauthenticated.
+  Future<void> _restoreDivineRpcOrFallbackUnauthenticated(
+    KeycastSession? session,
+  ) async {
+    // If session is valid with RPC access, sign in directly.
+    if (session != null && session.hasRpcAccess) {
+      Log.info(
+        'initialize: Divine OAuth session found with RPC access '
+        '(no local key)',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      await signInWithDivineOAuth(session);
+      return;
+    }
+
+    // Try refresh.
+    Log.info(
+      'initialize: no local key, attempting synchronous refresh...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    if (_oauthClient != null) {
+      final refreshed = await _tryRefreshOAuthSession(
+        caller: 'initialize',
+      );
+      if (refreshed) return;
+    }
+
+    // Refresh failed, no local keys — unauthenticated.
+    _hasExpiredOAuthSession = true;
+    Log.info(
+      'initialize: refresh failed, no local keys — '
+      'unauthenticated with expired session flag',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    _setAuthState(AuthState.unauthenticated);
+  }
+
   /// Attempt to silently refresh an expired OAuth session.
   ///
   /// Returns true if the refresh succeeded and the user is now fully
@@ -488,70 +661,7 @@ class AuthService implements BackgroundAwareService {
           return;
 
         case AuthenticationSource.divineOAuth:
-          // Try to load authorized session from secure storage
-          Log.info(
-            'initialize: restoring Divine OAuth session...',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          final session = await KeycastSession.load(_flutterSecureStorage);
-          if (session != null && session.hasRpcAccess) {
-            Log.info(
-              'initialize: Divine OAuth session found with RPC access',
-              name: 'AuthService',
-              category: LogCategory.auth,
-            );
-            await signInWithDivineOAuth(session);
-            return;
-          }
-          // Session expired or missing — attempt token refresh
-          Log.info(
-            'initialize: Divine OAuth session expired or missing '
-            '(session=${session != null}, '
-            'hasRpcAccess=${session?.hasRpcAccess}), '
-            'attempting refresh...',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          if (_oauthClient != null) {
-            final refreshed = await _tryRefreshOAuthSession(
-              caller: 'initialize',
-            );
-            if (refreshed) return;
-          }
-          // Refresh failed — mark expired session so UI shows
-          // "Session Expired" instead of "Secure Your Account"
-          _hasExpiredOAuthSession = true;
-          // Try to fall back to local keys while preserving
-          // divineOAuth source so future launches can retry refresh
-          try {
-            final hasKeys = await _keyStorage.hasKeys();
-            if (hasKeys) {
-              final keyContainer = await _keyStorage.getKeyContainer();
-              if (keyContainer != null) {
-                Log.info(
-                  'initialize: refresh failed, using local keys '
-                  'with divineOAuth source preserved',
-                  name: 'AuthService',
-                  category: LogCategory.auth,
-                );
-                await _setupUserSession(
-                  keyContainer,
-                  AuthenticationSource.divineOAuth,
-                );
-                return;
-              }
-            }
-          } catch (e, stack) {
-            _reportStorageError(e, stack, 'divineOAuth fallback to local keys');
-          }
-          Log.info(
-            'initialize: refresh failed, no local keys — '
-            'unauthenticated with expired session flag',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          _setAuthState(AuthState.unauthenticated);
+          await _initializeDivineOAuth();
           return;
 
         case AuthenticationSource.importedKeys:

@@ -240,5 +240,116 @@ void main() {
         expect(authService.canPublishNostrWritesNow, isFalse);
       },
     );
+
+    test(
+      'matching local key authenticates before refresh completes',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        final pubkey = arrangeExpiredSessionWithMatchingLocalKeys();
+
+        // refreshSession hangs forever (simulates slow network)
+        when(
+          () => mockOAuthClient.refreshSession(),
+        ).thenAnswer((_) => Completer<KeycastSession?>().future);
+
+        final authService = createAuthService();
+
+        await runZonedGuarded(
+          () async {
+            await authService.initialize();
+
+            // Should be authenticated immediately from local keys
+            expect(authService.isAuthenticated, isTrue);
+            expect(authService.currentPublicKeyHex, equals(pubkey));
+            expect(
+              authService.authenticationSource,
+              equals(AuthenticationSource.divineOAuth),
+            );
+            // RPC is upgrading (refresh is still in-flight)
+            expect(
+              authService.authRpcCapability,
+              equals(AuthRpcCapability.upgrading),
+            );
+          },
+          (error, stack) {
+            // Ignore background errors
+          },
+        );
+      },
+    );
+
+    test(
+      'refresh timeout does not block local authenticated startup',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        arrangeExpiredSessionWithMatchingLocalKeys();
+
+        // refreshSession hangs forever — will be timed out
+        when(
+          () => mockOAuthClient.refreshSession(),
+        ).thenAnswer((_) => Completer<KeycastSession?>().future);
+
+        final authService = createAuthService();
+
+        await runZonedGuarded(
+          () async {
+            await authService.initialize();
+
+            // User is authenticated immediately — not waiting on refresh
+            expect(authService.isAuthenticated, isTrue);
+          },
+          (error, stack) {
+            // Ignore background errors
+          },
+        );
+      },
+    );
+
+    test(
+      'no local key + no valid session → unauthenticated',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        // Expired session, no local keys
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+
+        when(
+          () => mockOAuthClient.refreshSession(),
+        ).thenAnswer((_) async => null);
+
+        final authService = createAuthService();
+
+        await runZonedGuarded(
+          () async {
+            await authService.initialize();
+
+            expect(
+              authService.authState,
+              equals(AuthState.unauthenticated),
+            );
+            expect(authService.hasExpiredOAuthSession, isTrue);
+          },
+          (error, stack) {
+            // Ignore background errors
+          },
+        );
+      },
+    );
   });
 }
