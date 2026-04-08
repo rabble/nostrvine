@@ -11,7 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// aesthetic with proper color scheme and typography.
 class VineTheme {
   // ==========================================================================
-  // Typography - Google Fonts
+  // Typography
   // ==========================================================================
 
   /// Font family name for Bricolage Grotesque.
@@ -27,7 +27,7 @@ class VineTheme {
 
   /// Display large: Bricolage Grotesque 700 57/64/0
   static TextStyle displayLargeFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 57,
         fontWeight: FontWeight.w700,
         height: 64 / 57,
@@ -37,7 +37,7 @@ class VineTheme {
 
   /// Display medium: Bricolage Grotesque 700 45/52/0
   static TextStyle displayMediumFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 45,
         fontWeight: FontWeight.w700,
         height: 52 / 45,
@@ -47,7 +47,7 @@ class VineTheme {
 
   /// Display small: Bricolage Grotesque 700 36/44/0
   static TextStyle displaySmallFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 36,
         fontWeight: FontWeight.w700,
         height: 44 / 36,
@@ -61,7 +61,7 @@ class VineTheme {
 
   /// Headline large: Bricolage Grotesque 700 32/40/0
   static TextStyle headlineLargeFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 32,
         fontWeight: FontWeight.w700,
         height: 40 / 32,
@@ -71,7 +71,7 @@ class VineTheme {
 
   /// Headline medium: Bricolage Grotesque 700 28/36/0
   static TextStyle headlineMediumFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 28,
         fontWeight: FontWeight.w700,
         height: 36 / 28,
@@ -81,7 +81,7 @@ class VineTheme {
 
   /// Headline small: Bricolage Grotesque 700 24/32/0
   static TextStyle headlineSmallFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w700,
         height: 32 / 24,
@@ -95,7 +95,7 @@ class VineTheme {
 
   /// Title large: Bricolage Grotesque 800 22/28/0
   static TextStyle titleLargeFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 22,
         fontWeight: FontWeight.w800,
         height: 28 / 22,
@@ -117,7 +117,7 @@ class VineTheme {
 
   /// Title medium: Bricolage Grotesque 800 16/24/0.15
   static TextStyle titleMediumFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w800,
         height: 24 / 16,
@@ -127,7 +127,7 @@ class VineTheme {
 
   /// Title small: Bricolage Grotesque 800 14/20/0.1
   static TextStyle titleSmallFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w800,
         height: 20 / 14,
@@ -137,7 +137,7 @@ class VineTheme {
 
   /// Title tiny: Bricolage Grotesque 800 12/20/0.1
   static TextStyle titleTinyFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w800,
         height: 20 / 12,
@@ -150,30 +150,28 @@ class VineTheme {
   // --------------------------------------------------------------------------
 
   /// Body large: Inter 400 16/24/0.15
-  static TextStyle bodyLargeFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        height: 24 / 16,
-        letterSpacing: 0.15,
-        color: color,
-      );
+  static TextStyle bodyLargeFont({Color color = whiteText}) => _interTextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    height: 24 / 16,
+    letterSpacing: 0.15,
+    color: color,
+  );
 
   /// Body medium: Inter 400 14/20/0.25
-  static TextStyle bodyMediumFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 20 / 14,
-        letterSpacing: 0.25,
-        color: color,
-      );
+  static TextStyle bodyMediumFont({Color color = whiteText}) => _interTextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 20 / 14,
+    letterSpacing: 0.25,
+    color: color,
+  );
 
   /// Body small: Inter 400 12/16/0.4
   static TextStyle bodySmallFont({
     Color color = whiteText,
     List<FontFeature>? fontFeatures,
-  }) => GoogleFonts.inter(
+  }) => _interTextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 16 / 12,
@@ -187,20 +185,19 @@ class VineTheme {
   // --------------------------------------------------------------------------
 
   /// Label large: Inter 600 14/20/0.1
-  static TextStyle labelLargeFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        height: 20 / 14,
-        letterSpacing: 0.1,
-        color: color,
-      );
+  static TextStyle labelLargeFont({Color color = whiteText}) => _interTextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    height: 20 / 14,
+    letterSpacing: 0.1,
+    color: color,
+  );
 
   /// Label medium: Inter 600 12/16/0.5
   static TextStyle labelMediumFont({
     Color color = whiteText,
     List<FontFeature>? fontFeatures,
-  }) => GoogleFonts.inter(
+  }) => _interTextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w600,
     height: 16 / 12,
@@ -210,14 +207,13 @@ class VineTheme {
   );
 
   /// Label small: Inter 600 11/16/0.5
-  static TextStyle labelSmallFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        height: 16 / 11,
-        letterSpacing: 0.5,
-        color: color,
-      );
+  static TextStyle labelSmallFont({Color color = whiteText}) => _interTextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    height: 16 / 11,
+    letterSpacing: 0.5,
+    color: color,
+  );
 
   /// Caption pill: Chivo Mono 300 16/24/0.5 — used by the inline subtitle
   /// pill above the author row in the home / fullscreen video overlays.
@@ -407,12 +403,51 @@ class VineTheme {
 
   /// Tab text style using Bricolage Grotesque bold.
   static TextStyle tabTextStyle({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
+      _bricolageTextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w800,
         height: 24 / 18,
+        letterSpacing: 0,
         color: color,
       );
+
+  static TextStyle _bricolageTextStyle({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required double height,
+    required double letterSpacing,
+    required Color color,
+    List<FontFeature>? fontFeatures,
+  }) {
+    return TextStyle(
+      fontFamily: fontFamilyBricolage,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      height: height,
+      letterSpacing: letterSpacing,
+      color: color,
+      fontFeatures: fontFeatures,
+    );
+  }
+
+  static TextStyle _interTextStyle({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required double height,
+    required double letterSpacing,
+    required Color color,
+    List<FontFeature>? fontFeatures,
+  }) {
+    return TextStyle(
+      fontFamily: 'Inter',
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      height: height,
+      letterSpacing: letterSpacing,
+      color: color,
+      fontFeatures: fontFeatures,
+    );
+  }
 
   // Background colors
 
