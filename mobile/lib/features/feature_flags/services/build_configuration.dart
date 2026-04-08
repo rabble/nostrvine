@@ -50,6 +50,8 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
       case FeatureFlag.advancedRelaySettings:
         return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
+      case FeatureFlag.c2paVerifiedImport:
+        return const bool.fromEnvironment('FF_C2PA_VERIFIED_IMPORT');
     }
   }
 
@@ -96,6 +98,8 @@ class BuildConfiguration {
         return 'FF_CONTENT_POLICY_V2';
       case FeatureFlag.advancedRelaySettings:
         return 'FF_ADVANCED_RELAY_SETTINGS';
+      case FeatureFlag.c2paVerifiedImport:
+        return 'FF_C2PA_VERIFIED_IMPORT';
     }
   }
 }

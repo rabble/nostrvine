@@ -60,8 +60,12 @@ enum FeatureFlag {
     'Show Nostr relay configuration and diagnostics in Settings. '
         'Changing relays can break publishing and discovery — only turn '
         'this on if you know what you are doing.',
-  )
-  ;
+  ),
+  c2paVerifiedImport(
+    'C2PA Verified Import',
+    'Import videos from other apps via share sheet, gated by C2PA '
+        'Content Credentials verification',
+  );
 
   const FeatureFlag(this.displayName, this.description);
 

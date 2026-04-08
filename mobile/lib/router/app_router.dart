@@ -462,10 +462,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // IMPORT VERIFICATION route (shared file C2PA validation, no bottom nav)
+      // Gated by c2paVerifiedImport feature flag
       GoRoute(
         path: ImportVerificationPage.path,
         name: ImportVerificationPage.routeName,
         parentNavigatorKey: NavigatorKeys.root,
+        redirect: (context, state) {
+          final isEnabled = ref.read(
+            isFeatureEnabledProvider(FeatureFlag.c2paVerifiedImport),
+          );
+          if (!isEnabled) return '/';
+          return null;
+        },
         builder: (context, state) {
           final filePath = state.uri.queryParameters['path'] ?? '';
           return ImportVerificationPage(filePath: filePath);
