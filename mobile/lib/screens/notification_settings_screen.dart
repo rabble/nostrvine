@@ -5,6 +5,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/models/notification_preferences.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -23,15 +25,73 @@ class NotificationSettingsScreen extends ConsumerStatefulWidget {
 
 class _NotificationSettingsScreenState
     extends ConsumerState<NotificationSettingsScreen> {
-  bool _likesEnabled = true;
-  bool _commentsEnabled = true;
-  bool _followsEnabled = true;
-  bool _mentionsEnabled = true;
-  bool _repostsEnabled = true;
+  NotificationPreferences _preferences = const NotificationPreferences();
   bool _systemEnabled = true;
   bool _pushNotificationsEnabled = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await ref
+        .read(notificationPreferencesServiceProvider)
+        .loadPreferences();
+    if (!mounted) return;
+
+    setState(() {
+      _preferences = prefs;
+    });
+  }
+
+  Future<void> _applyPreferences(NotificationPreferences newPrefs) async {
+    setState(() {
+      _preferences = newPrefs;
+    });
+
+    await ref
+        .read(notificationPreferencesServiceProvider)
+        .updatePreferences(newPrefs);
+  }
+
+  Future<void> _resetToDefaults() async {
+    await _applyPreferences(const NotificationPreferences());
+    if (!mounted) return;
+
+    setState(() {
+      _systemEnabled = true;
+      _pushNotificationsEnabled = true;
+      _soundEnabled = true;
+      _vibrationEnabled = true;
+    });
+  }
+
+  Future<void> _markAllAsRead() async {
+    await ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All notifications marked as read'),
+        duration: Duration(seconds: 2),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
+  }
+
+  void _showResetSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Settings reset to defaults'),
+        duration: Duration(seconds: 2),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -44,26 +104,10 @@ class _NotificationSettingsScreenState
         DiVineAppBarAction(
           icon: const MaterialIconSource(Icons.refresh),
           tooltip: 'Reset to defaults',
-          onPressed: () {
-            setState(() {
-              _likesEnabled = true;
-              _commentsEnabled = true;
-              _followsEnabled = true;
-              _mentionsEnabled = true;
-              _repostsEnabled = true;
-              _systemEnabled = true;
-              _pushNotificationsEnabled = true;
-              _soundEnabled = true;
-              _vibrationEnabled = true;
-            });
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Settings reset to defaults'),
-                duration: Duration(seconds: 2),
-                backgroundColor: VineTheme.vineGreen,
-              ),
-            );
+          onPressed: () async {
+            await _resetToDefaults();
+            if (!mounted) return;
+            _showResetSnackBar();
           },
         ),
       ],
@@ -88,40 +132,50 @@ class _NotificationSettingsScreenState
               iconColor: VineTheme.likeRed,
               title: 'Likes',
               subtitle: 'When someone likes your videos',
-              value: _likesEnabled,
-              onChanged: (value) => setState(() => _likesEnabled = value),
+              value: _preferences.likesEnabled,
+              onChanged: (value) => _applyPreferences(
+                _preferences.copyWith(likesEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.chat_bubble,
               iconColor: VineTheme.commentBlue,
               title: 'Comments',
               subtitle: 'When someone comments on your videos',
-              value: _commentsEnabled,
-              onChanged: (value) => setState(() => _commentsEnabled = value),
+              value: _preferences.commentsEnabled,
+              onChanged: (value) => _applyPreferences(
+                _preferences.copyWith(commentsEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.person_add,
               iconColor: VineTheme.vineGreen,
               title: 'Follows',
               subtitle: 'When someone follows you',
-              value: _followsEnabled,
-              onChanged: (value) => setState(() => _followsEnabled = value),
+              value: _preferences.followsEnabled,
+              onChanged: (value) => _applyPreferences(
+                _preferences.copyWith(followsEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.alternate_email,
               iconColor: VineTheme.warning,
               title: 'Mentions',
               subtitle: 'When you are mentioned',
-              value: _mentionsEnabled,
-              onChanged: (value) => setState(() => _mentionsEnabled = value),
+              value: _preferences.mentionsEnabled,
+              onChanged: (value) => _applyPreferences(
+                _preferences.copyWith(mentionsEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.repeat,
               iconColor: VineTheme.vineGreenLight,
               title: 'Reposts',
               subtitle: 'When someone reposts your videos',
-              value: _repostsEnabled,
-              onChanged: (value) => setState(() => _repostsEnabled = value),
+              value: _preferences.repostsEnabled,
+              onChanged: (value) => _applyPreferences(
+                _preferences.copyWith(repostsEnabled: value),
+              ),
             ),
             _buildNotificationCard(
               icon: Icons.phone_android,
@@ -174,20 +228,7 @@ class _NotificationSettingsScreenState
               iconColor: VineTheme.vineGreenLight,
               title: 'Mark All as Read',
               subtitle: 'Mark all notifications as read',
-              onTap: () async {
-                await ref
-                    .read(relayNotificationsProvider.notifier)
-                    .markAllAsRead();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All notifications marked as read'),
-                      duration: Duration(seconds: 2),
-                      backgroundColor: VineTheme.vineGreen,
-                    ),
-                  );
-                }
-              },
+              onTap: _markAllAsRead,
             ),
 
             const SizedBox(height: 24),

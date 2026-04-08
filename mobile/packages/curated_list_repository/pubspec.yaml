@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   models:
+  nostr_client:
   nostr_sdk:
   rxdart: ^0.28.0
 

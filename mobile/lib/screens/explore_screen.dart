@@ -41,6 +41,7 @@ import 'package:openvine/widgets/for_you_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
 import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 /// Pure ExploreScreen using revolutionary Riverpod architecture
 class ExploreScreen extends ConsumerStatefulWidget {
@@ -436,64 +437,67 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         if (kDebugMode)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: DivineSearchBar(
-              controller: _searchController,
-            ),
+            child: DivineSearchBar(controller: _searchController),
           ),
         // Tabs only visible in grid mode
         // Material widget is required for TabBar to render ink splashes
-        Material(
-          color: VineTheme.navGreen,
-          child: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            padding: const EdgeInsets.only(left: 16),
-            indicatorColor: VineTheme.tabIndicatorGreen,
-            indicatorWeight: 4,
-            indicatorSize: TabBarIndicatorSize.tab,
-            dividerColor: VineTheme.transparent,
-            labelColor: VineTheme.whiteText,
-            unselectedLabelColor: VineTheme.tabIconInactive,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-            labelStyle: VineTheme.tabTextStyle(),
-            unselectedLabelStyle: VineTheme.tabTextStyle(
-              color: VineTheme.tabIconInactive,
-            ),
-            onTap: (index) {
-              // If tapping the currently active tab, reset to default state (exit feed/hashtag mode)
-              // But only if we're actually in feed or hashtag mode - otherwise do nothing
-              if (index == _tabController?.index) {
-                final pageContext = ref.read(pageContextProvider);
-                final isInFeedMode =
-                    pageContext.whenOrNull(
-                      data: (ctx) => ctx.videoIndex != null,
-                    ) ??
-                    false;
-                final isInHashtagMode = _hashtagMode != null;
+        // PointerInterceptor ensures tabs receive taps on web even when
+        // HTML platform views (video elements) overlap the area.
+        PointerInterceptor(
+          intercepting: kIsWeb,
+          child: Material(
+            color: VineTheme.navGreen,
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              padding: const EdgeInsets.only(left: 16),
+              indicatorColor: VineTheme.tabIndicatorGreen,
+              indicatorWeight: 4,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: VineTheme.transparent,
+              labelColor: VineTheme.whiteText,
+              unselectedLabelColor: VineTheme.tabIconInactive,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+              labelStyle: VineTheme.tabTextStyle(),
+              unselectedLabelStyle: VineTheme.tabTextStyle(
+                color: VineTheme.tabIconInactive,
+              ),
+              onTap: (index) {
+                // If tapping the currently active tab, reset to default state (exit feed/hashtag mode)
+                // But only if we're actually in feed or hashtag mode - otherwise do nothing
+                if (index == _tabController?.index) {
+                  final pageContext = ref.read(pageContextProvider);
+                  final isInFeedMode =
+                      pageContext.whenOrNull(
+                        data: (ctx) => ctx.videoIndex != null,
+                      ) ??
+                      false;
+                  final isInHashtagMode = _hashtagMode != null;
 
-                if (isInFeedMode || isInHashtagMode) {
-                  _resetToDefaultState();
+                  if (isInFeedMode || isInHashtagMode) {
+                    _resetToDefaultState();
+                  } else {
+                    Log.debug(
+                      '🎯 ExploreScreen: Already in grid mode for tab $index, ignoring tap',
+                      category: LogCategory.video,
+                    );
+                  }
                 } else {
-                  Log.debug(
-                    '🎯 ExploreScreen: Already in grid mode for tab $index, ignoring tap',
-                    category: LogCategory.video,
-                  );
+                  // Switching to a different tab - reset to grid mode if needed
+                  _resetToDefaultState();
                 }
-              } else {
-                // Switching to a different tab - reset to grid mode if needed
-                _resetToDefaultState();
-              }
-            },
-            tabs: [
-              if (_classicsAvailable) const Tab(text: 'Classics'),
-              const Tab(text: 'New'),
-              const Tab(text: 'Popular'),
-              const Tab(text: 'Categories'),
-              if (_forYouAvailable) const Tab(text: 'For You'),
-              const Tab(text: 'Lists'),
-              if (_appsAvailable) const Tab(text: 'Integrated Apps'),
-            ],
+              },
+              tabs: [
+                if (_classicsAvailable) const Tab(text: 'Classics'),
+                const Tab(text: 'New'),
+                const Tab(text: 'Popular'),
+                const Tab(text: 'Categories'),
+                if (_forYouAvailable) const Tab(text: 'For You'),
+                const Tab(text: 'Lists'),
+                if (_appsAvailable) const Tab(text: 'Integrated Apps'),
+              ],
+            ),
           ),
         ),
         // Content changes based on mode

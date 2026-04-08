@@ -8,7 +8,6 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

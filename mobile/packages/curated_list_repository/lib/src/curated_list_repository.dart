@@ -3,8 +3,14 @@
 // ABOUTME(WIP): read-only query methods, and in-memory state populated by the
 // ABOUTME(WIP): Page layer. Persistence and relay sync come in later phases.
 
+import 'package:curated_list_repository/src/curated_list_converter.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:rxdart/rxdart.dart';
+
+/// NIP-51 kind for curated video lists.
+const _curatedListKind = 30005;
 
 /// Well-known d-tag for the user's default "My List".
 const defaultListId = 'my_vine_list';
@@ -23,8 +29,10 @@ const defaultListId = 'my_vine_list';
 /// {@endtemplate}
 class CuratedListRepository {
   /// {@macro curated_list_repository}
-  CuratedListRepository();
+  CuratedListRepository({required NostrClient nostrClient})
+    : _nostrClient = nostrClient;
 
+  final NostrClient _nostrClient;
   final Map<String, CuratedList> _subscribedLists = {};
 
   // BehaviorSubject replays last value to late subscribers, fixing race
@@ -196,6 +204,88 @@ class CuratedListRepository {
     }
 
     return 'In ${listsContaining.length} lists';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Relay search
+  // ---------------------------------------------------------------------------
+
+  /// Searches for curated lists from Nostr relays matching [query].
+  ///
+  /// Queries kind 30005 events via [NostrClient.queryEvents], converts each
+  /// with [CuratedListConverter], filters client-side by name/description/tags,
+  /// and deduplicates by d-tag (keeps newest).
+  ///
+  /// Pass [excludeIds] to omit already-known lists.
+  ///
+  /// Returns an empty list if no [NostrClient] was provided or [query] is
+  /// blank.
+  Future<List<CuratedList>> searchListsFromRelays({
+    required String query,
+    int limit = 50,
+    Set<String>? excludeIds,
+  }) async {
+    if (query.trim().isEmpty) return [];
+
+    final lowerQuery = query.toLowerCase();
+    final excluded = excludeIds ?? const {};
+
+    final events = await _nostrClient.queryEvents(
+      [
+        Filter(kinds: [_curatedListKind], limit: limit),
+      ],
+    );
+
+    final seen = <String, CuratedList>{};
+    for (final event in events) {
+      final list = CuratedListConverter.fromEvent(event);
+      if (list == null) continue;
+      if (excluded.contains(list.id)) continue;
+      if (!list.isPublic) continue;
+      if (list.videoEventIds.isEmpty) continue;
+
+      // Client-side query filter
+      final matches =
+          list.name.toLowerCase().contains(lowerQuery) ||
+          (list.description?.toLowerCase().contains(lowerQuery) ?? false) ||
+          list.tags.any((tag) => tag.toLowerCase().contains(lowerQuery));
+      if (!matches) continue;
+
+      // Dedup by d-tag, keep newest
+      final existing = seen[list.id];
+      if (existing != null && existing.updatedAt.isAfter(list.updatedAt)) {
+        continue;
+      }
+      seen[list.id] = list;
+    }
+
+    return List.unmodifiable(seen.values.toList());
+  }
+
+  /// Searches both local subscribed lists and relay lists for [query].
+  ///
+  /// Yields local results first (instant), then merges relay results and
+  /// yields the combined set. Deduplicates by list ID.
+  Stream<List<CuratedList>> searchAllLists(String query) async* {
+    if (query.trim().isEmpty) return;
+
+    final localResults = searchLists(query);
+    final merged = <String, CuratedList>{
+      for (final list in localResults) list.id: list,
+    };
+
+    // Yield local results immediately
+    yield List.unmodifiable(merged.values.toList());
+
+    // Await relay results and merge
+    final relayResults = await searchListsFromRelays(
+      query: query,
+      excludeIds: merged.keys.toSet(),
+    );
+    for (final list in relayResults) {
+      merged[list.id] = list;
+    }
+    yield List.unmodifiable(merged.values.toList());
   }
 
   // ---------------------------------------------------------------------------
