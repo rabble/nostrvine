@@ -329,5 +329,315 @@ void main() {
         ),
       );
     });
+
+    group('joinWaitlist', () {
+      test('returns result on 201', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(201);
+        when(() => response.body).thenReturn(
+          jsonEncode({'id': 'wl-123', 'message': 'Added to waitlist'}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.joinWaitlist(contact: 'user@test.com');
+
+        expect(result.id, 'wl-123');
+        expect(result.message, 'Added to waitlist');
+      });
+
+      test('returns result on 200', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(200);
+        when(() => response.body).thenReturn(
+          jsonEncode({'id': 'wl-456', 'message': 'Already on waitlist'}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.joinWaitlist(contact: 'user@test.com');
+
+        expect(result.id, 'wl-456');
+      });
+
+      test('includes pubkey when provided', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(201);
+        when(() => response.body).thenReturn(
+          jsonEncode({'id': 'wl-789', 'message': 'Added'}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        await client.joinWaitlist(
+          contact: 'user@test.com',
+          pubkey: 'abc123',
+        );
+
+        final captured = verify(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: captureAny(named: 'body'),
+          ),
+        ).captured.last as String;
+        final body = jsonDecode(captured) as Map<String, dynamic>;
+        expect(body['contact'], 'user@test.com');
+        expect(body['pubkey'], 'abc123');
+      });
+
+      test('throws on server error', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(500);
+        when(() => response.body).thenReturn(
+          jsonEncode({'error': 'Internal error'}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        await expectLater(
+          client.joinWaitlist(contact: 'user@test.com'),
+          throwsA(isA<InviteApiException>()),
+        );
+      });
+
+      test('throws on timeout', () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('timed out'),
+        );
+
+        await expectLater(
+          client.joinWaitlist(contact: 'user@test.com'),
+          throwsA(
+            isA<InviteApiException>().having(
+              (e) => e.message,
+              'message',
+              'Waitlist request timed out',
+            ),
+          ),
+        );
+      });
+    });
+
+    group('validateCode', () {
+      test('maps 400 rejection to invalid result', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(400);
+        when(() => response.body).thenReturn(
+          jsonEncode({'valid': false, 'used': false, 'code': 'AB12-EF34'}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.validateCode('ab12ef34');
+
+        expect(result.valid, isFalse);
+        expect(result.canContinue, isFalse);
+      });
+
+      test('maps 403 rejection to invalid result', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(403);
+        when(() => response.body).thenReturn(
+          jsonEncode({'valid': false, 'used': false}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.validateCode('ab12ef34');
+
+        expect(result.valid, isFalse);
+      });
+
+      test('maps 404 rejection to invalid result', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(404);
+        when(() => response.body).thenReturn(
+          jsonEncode({'valid': false, 'used': false}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.validateCode('ab12ef34');
+
+        expect(result.valid, isFalse);
+      });
+
+      test('maps 409 used code to used result', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(409);
+        when(() => response.body).thenReturn(
+          jsonEncode({'valid': true, 'used': true, 'code': 'AB12-EF34'}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.validateCode('ab12ef34');
+
+        expect(result.valid, isTrue);
+        expect(result.used, isTrue);
+        expect(result.canContinue, isFalse);
+      });
+
+      test('handles malformed rejection body gracefully', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(400);
+        when(() => response.body).thenReturn('not json');
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.validateCode('ab12ef34');
+
+        expect(result.valid, isFalse);
+        expect(result.code, 'AB12-EF34');
+      });
+
+      test('throws on non-rejection server error', () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(500);
+        when(() => response.body).thenReturn(
+          jsonEncode({'error': 'Internal server error'}),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        await expectLater(
+          client.validateCode('ab12ef34'),
+          throwsA(
+            isA<InviteApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              500,
+            ),
+          ),
+        );
+      });
+
+      test('throws on timeout', () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('timed out'),
+        );
+
+        await expectLater(
+          client.validateCode('ab12ef34'),
+          throwsA(
+            isA<InviteApiException>().having(
+              (e) => e.message,
+              'message',
+              'Invite code validation timed out',
+            ),
+          ),
+        );
+      });
+
+      test('wraps unexpected errors as InviteApiException', () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(Exception('network failure'));
+
+        await expectLater(
+          client.validateCode('ab12ef34'),
+          throwsA(isA<InviteApiException>()),
+        );
+      });
+    });
+
+    group('getClientConfig', () {
+      test('throws on timeout', () async {
+        when(
+          () => mockClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('timed out'),
+        );
+
+        await expectLater(
+          client.getClientConfig(),
+          throwsA(
+            isA<InviteApiException>().having(
+              (e) => e.message,
+              'message',
+              'Invite configuration request timed out',
+            ),
+          ),
+        );
+      });
+
+      test('wraps unexpected errors as InviteApiException', () async {
+        when(
+          () => mockClient.get(any(), headers: any(named: 'headers')),
+        ).thenThrow(Exception('connection refused'));
+
+        await expectLater(
+          client.getClientConfig(),
+          throwsA(isA<InviteApiException>()),
+        );
+      });
+    });
   });
 }
