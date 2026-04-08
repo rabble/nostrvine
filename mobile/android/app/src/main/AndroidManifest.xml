@@ -139,8 +139,12 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="divine" />
             </intent-filter>
-
-
+            <!-- Share target: receive video files from other apps -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
         </activity>
         <activity
             android:name="zendesk.support.request.RequestActivity"
