@@ -32,11 +32,12 @@ class ProfileCollabsGrid extends StatefulWidget {
 
 class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
     with GridPrefetchMixin, ScrollPaginationMixin {
-  final ScrollController _scrollController = ScrollController();
+  /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
+  ScrollController? _primaryScrollController;
   List<VideoEvent>? _lastPrefetchedVideos;
 
   @override
-  ScrollController get paginationScrollController => _scrollController;
+  ScrollController get paginationScrollController => _primaryScrollController!;
 
   @override
   bool canLoadMore() {
@@ -52,15 +53,19 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
   }
 
   @override
-  void initState() {
-    super.initState();
-    initPagination();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final primary = PrimaryScrollController.of(context);
+    if (_primaryScrollController != primary) {
+      if (_primaryScrollController != null) disposePagination();
+      _primaryScrollController = primary;
+      initPagination();
+    }
   }
 
   @override
   void dispose() {
     disposePagination();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -134,7 +139,6 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
         _prefetchIfNeeded(collabVideos);
 
         return CustomScrollView(
-          controller: _scrollController,
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.all(2),

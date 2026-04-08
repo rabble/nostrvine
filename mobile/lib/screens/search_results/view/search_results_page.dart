@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
@@ -46,6 +47,11 @@ class SearchResultsPage extends ConsumerWidget {
         BlocProvider(
           create: (_) => HashtagSearchBloc(
             hashtagRepository: ref.read(hashtagRepositoryProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => ListSearchBloc(
+            curatedListRepository: ref.read(curatedListRepositoryProvider),
           ),
         ),
       ],

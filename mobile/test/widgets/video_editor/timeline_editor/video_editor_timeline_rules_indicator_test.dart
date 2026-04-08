@@ -120,12 +120,9 @@ void main() {
 
     group('zoom levels', () {
       testWidgets('scales width with pixelsPerSecond', (tester) async {
-        const duration = Duration(seconds: 10);
-
         // Low zoom
         await tester.pumpWidget(
           buildWidget(
-            totalDuration: duration,
             pixelsPerSecond: 50,
           ),
         );
@@ -141,7 +138,6 @@ void main() {
         // High zoom
         await tester.pumpWidget(
           buildWidget(
-            totalDuration: duration,
             pixelsPerSecond: 200,
           ),
         );

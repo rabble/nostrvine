@@ -117,5 +117,31 @@ void main() {
       expect(result, contains('info-50'));
       expect(result, contains('info-99'));
     });
+
+    test('truncates individual entries longer than 500 characters', () {
+      final longMessage = 'x' * 1000;
+      final logs = [_log(0, LogLevel.error, longMessage)];
+
+      final result = buildLogsSummary(logs)!;
+      // Full 1000-char message should not appear
+      expect(result, isNot(contains(longMessage)));
+      // Should be truncated with marker
+      expect(result, contains('... [truncated]'));
+      // Total line length should be capped (500 + truncation marker)
+      expect(result.length, lessThan(600));
+    });
+
+    test('caps total summary length at 32KB', () {
+      // 300 errors with 400-char messages -- would exceed 32KB without cap
+      final logs = <LogEntry>[
+        for (var i = 0; i < 300; i++)
+          _log(i, LogLevel.error, '${'e' * 390}-$i'),
+      ];
+
+      final result = buildLogsSummary(logs)!;
+      expect(result.length, lessThanOrEqualTo(32 * 1024 + 100));
+      // Should contain truncation notice
+      expect(result, contains('entries truncated'));
+    });
   });
 }

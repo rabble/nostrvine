@@ -382,6 +382,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               profile: headerProfile,
               displayName: displayName,
               videos: value.videos,
+              totalVideoCount: value.totalVideoCount,
               scrollController: _scrollController,
               onBlockedTap: _showUnblockConfirmation,
               displayNameHint: widget.displayNameHint,

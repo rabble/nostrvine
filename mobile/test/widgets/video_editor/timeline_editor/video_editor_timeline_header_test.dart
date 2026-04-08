@@ -132,7 +132,7 @@ void main() {
     group('play/pause', () {
       testWidgets('shows play label when not playing', (tester) async {
         await tester.pumpWidget(
-          buildWidget(mainState: const VideoEditorMainState(isPlaying: false)),
+          buildWidget(mainState: const VideoEditorMainState()),
         );
 
         expect(find.bySemanticsLabel('Play'), findsOneWidget);
@@ -163,7 +163,7 @@ void main() {
     group('mute', () {
       testWidgets('shows mute label when not muted', (tester) async {
         await tester.pumpWidget(
-          buildWidget(mainState: const VideoEditorMainState(isMuted: false)),
+          buildWidget(mainState: const VideoEditorMainState()),
         );
 
         expect(find.bySemanticsLabel('Mute audio'), findsOneWidget);
@@ -194,7 +194,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildWidget(mainState: const VideoEditorMainState(canUndo: false)),
+          buildWidget(mainState: const VideoEditorMainState()),
         );
 
         final undoButtons = tester.widgetList<DivineIconButton>(
@@ -223,7 +223,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildWidget(mainState: const VideoEditorMainState(canRedo: false)),
+          buildWidget(mainState: const VideoEditorMainState()),
         );
 
         final redoButtons = tester.widgetList<DivineIconButton>(

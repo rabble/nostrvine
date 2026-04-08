@@ -9,11 +9,14 @@ import 'package:audio_session/audio_session.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -69,6 +72,48 @@ import 'package:permissions_service/permissions_service.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
+
+/// Top-level background message handler required by Firebase.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+
+  final data = message.data;
+  final title = data['title'] as String? ?? 'diVine';
+  final body = data['body'] as String? ?? '';
+
+  if (body.isEmpty) return;
+
+  final plugin = FlutterLocalNotificationsPlugin();
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const darwinInit = DarwinInitializationSettings();
+  const initSettings = InitializationSettings(
+    android: androidInit,
+    iOS: darwinInit,
+    macOS: darwinInit,
+  );
+  await plugin.initialize(initSettings);
+
+  const androidDetails = AndroidNotificationDetails(
+    'openvine_push',
+    'Push Notifications',
+    channelDescription: 'Notifications from diVine',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
+  const details = NotificationDetails(
+    android: androidDetails,
+    iOS: DarwinNotificationDetails(),
+  );
+
+  await plugin.show(
+    DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title,
+    body,
+    details,
+    payload: data['referencedEventId'] as String?,
+  );
+}
 
 @visibleForTesting
 bool handleKnownFrameworkError(
@@ -278,6 +323,45 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     name: 'ZendeskSupport',
     phase: StartupPhase.deferred,
     initialize: _initializeZendeskSupport,
+    optional: true,
+  );
+
+  coordinator.registerService(
+    name: 'PushNotifications',
+    phase: StartupPhase.deferred,
+    initialize: () async {
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
+
+      // Check if app was launched from a push notification tap (cold start)
+      final initialMessage = await FirebaseMessaging.instance
+          .getInitialMessage();
+      if (initialMessage != null) {
+        final referencedEventId =
+            initialMessage.data['referencedEventId'] as String?;
+        if (referencedEventId != null) {
+          Log.info(
+            'App launched from push notification, target: $referencedEventId',
+            name: 'main',
+            category: LogCategory.system,
+          );
+        }
+      }
+
+      // Handle taps on notifications while app is in background
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        final referencedEventId = message.data['referencedEventId'] as String?;
+        if (referencedEventId != null) {
+          Log.info(
+            'Push notification tapped (background), '
+            'target: $referencedEventId',
+            name: 'main',
+            category: LogCategory.system,
+          );
+        }
+      });
+    },
     optional: true,
   );
 

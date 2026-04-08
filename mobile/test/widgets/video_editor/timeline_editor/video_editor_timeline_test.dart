@@ -110,7 +110,7 @@ void main() {
     group('empty state', () {
       testWidgets('renders $SizedBox when clips are empty', (tester) async {
         await tester.pumpWidget(
-          buildWidget(clipState: const ClipEditorState(clips: [])),
+          buildWidget(clipState: const ClipEditorState()),
         );
 
         // Should shrink — no header, no strip, no playhead
@@ -137,7 +137,7 @@ void main() {
       });
 
       testWidgets('renders $VideoEditorTimelineHeader', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),
@@ -147,7 +147,7 @@ void main() {
       });
 
       testWidgets('renders $VideoEditorTimelinePlayhead', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),
@@ -157,7 +157,7 @@ void main() {
       });
 
       testWidgets('renders $VideoEditorTimelineRulesIndicator', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),
@@ -170,7 +170,7 @@ void main() {
       });
 
       testWidgets('renders $VideoEditorTimelineClipStrip', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),
@@ -183,7 +183,7 @@ void main() {
       });
 
       testWidgets('uses background camera color', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),
@@ -200,11 +200,11 @@ void main() {
 
     group('playhead visibility', () {
       testWidgets('playhead is visible when not reordering', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(
-            mainState: const VideoEditorMainState(isReordering: false),
+            mainState: const VideoEditorMainState(),
             clipState: ClipEditorState(clips: clips),
           ),
         );
@@ -216,7 +216,7 @@ void main() {
       });
 
       testWidgets('playhead is hidden when reordering', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(
@@ -235,7 +235,7 @@ void main() {
     group('ruler visibility', () {
       testWidgets('ruler fades out when reordering', (tester) async {
         final clips = [
-          _createTestClip(id: 'a', seconds: 2),
+          _createTestClip(id: 'a'),
           _createTestClip(id: 'b', seconds: 3),
         ];
 
@@ -256,11 +256,11 @@ void main() {
       });
 
       testWidgets('ruler is visible when not reordering', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(
-            mainState: const VideoEditorMainState(isReordering: false),
+            mainState: const VideoEditorMainState(),
             clipState: ClipEditorState(clips: clips),
           ),
         );
@@ -277,7 +277,7 @@ void main() {
 
     group('accessibility', () {
       testWidgets('has Video timeline semantics label', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),
@@ -292,7 +292,7 @@ void main() {
 
     group('scrollable content', () {
       testWidgets('uses horizontal SingleChildScrollView', (tester) async {
-        final clips = [_createTestClip(id: 'a', seconds: 2)];
+        final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),

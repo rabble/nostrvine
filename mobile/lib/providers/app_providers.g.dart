@@ -2501,6 +2501,62 @@ final class ZendeskIdentitySyncProvider
 String _$zendeskIdentitySyncHash() =>
     r'e49d4f9cedf56ec4131b30a6f1d9d45dada68bed';
 
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+
+@ProviderFor(pushNotificationSync)
+const pushNotificationSyncProvider = PushNotificationSyncProvider._();
+
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+
+final class PushNotificationSyncProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridges auth state changes to push notification registration.
+  ///
+  /// Registers FCM token on login, deregisters on logout.
+  /// Same pattern as [zendeskIdentitySync].
+  const PushNotificationSyncProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pushNotificationSyncProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pushNotificationSyncHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return pushNotificationSync(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$pushNotificationSyncHash() =>
+    r'fed5d3b0d5d729c415c77b8d0a88c090abf4095d';
+
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
 
@@ -2960,7 +3016,7 @@ final class CuratedListRepositoryProvider
 }
 
 String _$curatedListRepositoryHash() =>
-    r'ac877d48b81aebf77fb573cbeaf70a123ea843d4';
+    r'bdaf3db0294147c0a4d79ab16cba37bd7ea1f29c';
 
 /// Provider for HashtagRepository instance.
 ///

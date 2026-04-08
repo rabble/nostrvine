@@ -16,32 +16,45 @@ class SearchResultsView extends StatelessWidget {
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
-      child: CustomScrollView(
-        // Reset scroll position when filter changes.
-        key: ValueKey(filter),
-        slivers: switch (filter) {
-          SearchResultsFilter.all => [
+      child: switch (filter) {
+        SearchResultsFilter.all => CustomScrollView(
+          // Reset scroll position when filter changes.
+          key: ValueKey(filter),
+          slivers: [
             PeopleSection(
               onSeeAll: () => context
                   .read<SearchResultsFilterCubit>()
-                  .filterChanged(SearchResultsFilter.people),
+                  .filterChanged(.people),
             ),
             TagsSection(
+              onSeeAll: () =>
+                  context.read<SearchResultsFilterCubit>().filterChanged(.tags),
+            ),
+            ListsSection(
               onSeeAll: () => context
                   .read<SearchResultsFilterCubit>()
-                  .filterChanged(SearchResultsFilter.tags),
+                  .filterChanged(.lists),
             ),
             VideosSection(
               onSeeAll: () => context
                   .read<SearchResultsFilterCubit>()
-                  .filterChanged(SearchResultsFilter.videos),
+                  .filterChanged(.videos),
             ),
           ],
-          SearchResultsFilter.people => const [PeopleSection(showAll: true)],
-          SearchResultsFilter.tags => const [TagsSection(showAll: true)],
-          SearchResultsFilter.videos => const [VideosSection(showAll: true)],
-        },
-      ),
+        ),
+        SearchResultsFilter.people => const CustomScrollView(
+          slivers: [PeopleSection(showAll: true)],
+        ),
+        SearchResultsFilter.tags => const CustomScrollView(
+          slivers: [TagsSection(showAll: true)],
+        ),
+        SearchResultsFilter.lists => const CustomScrollView(
+          slivers: [ListsSection(showAll: true)],
+        ),
+        SearchResultsFilter.videos => const CustomScrollView(
+          slivers: [VideosSection(showAll: true)],
+        ),
+      },
     );
   }
 }

@@ -1,3 +1,4 @@
+export 'lists_section.dart';
 export 'people_section.dart';
 export 'search_filter_pill.dart';
 export 'search_filter_sheet.dart';
