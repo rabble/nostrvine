@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -110,6 +112,119 @@ void main() {
       expect(result.code, 'AB12-EF34');
     });
 
+    test('maps validation rejection responses to an invalid result', () async {
+      final rejectionStatuses = [400, 403, 404, 409];
+
+      for (final status in rejectionStatuses) {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(status);
+        when(() => response.body).thenReturn(
+          jsonEncode({
+            'valid': false,
+            'used': status == 409,
+            'code': 'AB12-EF34',
+          }),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.validateCode('ab12ef34');
+
+        expect(result.valid, isFalse);
+        expect(result.used, status == 409);
+        expect(result.code, 'AB12-EF34');
+      }
+    });
+
+    test(
+      'surfaces validateCode timeout failures as InviteApiException',
+      () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) => Future<http.Response>.error(
+            TimeoutException('timed out'),
+          ),
+        );
+
+        await expectLater(
+          client.validateCode('ab12ef34'),
+          throwsA(
+            isA<InviteApiException>().having(
+              (error) => error.message,
+              'message',
+              'Invite code validation timed out',
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'surfaces validateCode transport failures as InviteApiException',
+      () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(const SocketException('Connection failed'));
+
+        await expectLater(
+          client.validateCode('ab12ef34'),
+          throwsA(
+            isA<InviteApiException>().having(
+              (error) => error.message,
+              'message',
+              contains('Failed to validate invite code'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('joins waitlist and passes pubkey when provided', () async {
+      final waitlistClient = InviteApiClient(
+        baseUrl: 'https://invites.divine.video',
+        client: MockClient((request) async {
+          expect(request.method, 'POST');
+          expect(request.url.path, contains('/v1/waitlist'));
+          expect(
+            jsonDecode(request.body),
+            {
+              'contact': 'test@example.com',
+              'pubkey': 'pubkey-123',
+            },
+          );
+          return http.Response(
+            jsonEncode({
+              'id': 'waitlist-entry-1',
+              'message': 'You are on the waitlist',
+            }),
+            201,
+          );
+        }),
+      );
+
+      final result = await waitlistClient.joinWaitlist(
+        contact: 'test@example.com',
+        pubkey: 'pubkey-123',
+      );
+
+      expect(result.id, 'waitlist-entry-1');
+      expect(result.message, 'You are on the waitlist');
+    });
+
     test('returns invite status on 200', () async {
       final statusClient = InviteApiClient(
         baseUrl: 'https://invites.divine.video',
@@ -128,12 +243,8 @@ void main() {
             200,
           );
         }),
-        authHeaderProvider:
-            ({
-              required String url,
-              required InviteRequestMethod method,
-              String? payload,
-            }) async => null,
+        authHeaderProvider: ({required url, required method, payload}) async =>
+            null,
       );
 
       final result = await statusClient.getInviteStatus();
@@ -153,12 +264,8 @@ void main() {
             201,
           );
         }),
-        authHeaderProvider:
-            ({
-              required String url,
-              required InviteRequestMethod method,
-              String? payload,
-            }) async => null,
+        authHeaderProvider: ({required url, required method, payload}) async =>
+            null,
       );
 
       final result = await generateClient.generateInvite();

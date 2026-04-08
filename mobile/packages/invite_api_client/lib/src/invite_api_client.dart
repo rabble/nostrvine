@@ -421,7 +421,7 @@ class InviteApiClient {
           'code': decoded['code'] ?? fallbackCode,
         });
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Fall back to a generic invalid result if the server body is malformed.
     }
 
@@ -438,7 +438,7 @@ class InviteApiClient {
       if (decoded is Map<String, dynamic>) {
         return decoded['error'] as String? ?? decoded['message'] as String?;
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Ignore malformed bodies and fall back to the caller's default message.
     }
     return null;
