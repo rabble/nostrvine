@@ -3010,7 +3010,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'1f41b9c42e06c287a43fe235a3b3774d1a759a49';
+String _$followRepositoryHash() => r'5eb08600816786c7447419fa0202c5532dd24678';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -4835,7 +4835,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'66aaef86246fb3bb43815502ca215b16454387b7';
+String _$likesRepositoryHash() => r'96460364fea5b82e9717a420d542f8a2a865da48';
 
 /// Provider for RepostsRepository instance
 ///
@@ -4908,4 +4908,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'03658f5c9263b40e6279c5dd325fdbcfd54b4068';
+String _$repostsRepositoryHash() => r'057ff5e60002499eee0dffa809e1ddb72f7c817c';
