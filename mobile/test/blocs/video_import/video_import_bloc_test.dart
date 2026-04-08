@@ -273,7 +273,7 @@ void main() {
     });
 
     test('copyWith overrides all parameters when provided', () {
-      final original = const VideoImportState();
+      const original = VideoImportState();
 
       final newResult = C2paImportResult.noCredentials();
       final copied = original.copyWith(
