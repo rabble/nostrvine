@@ -15,6 +15,8 @@ void main() {
   group('GoLiveCubit', () {
     late _MockLiveApiService mockApiService;
     late _MockLiveRepository mockRepository;
+    late LiveRoomDraftResponse createdRoomDraftResponse;
+    late LiveRoomDraftResponse existingActiveRoomDraftResponse;
 
     const hostPubkey =
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -46,13 +48,31 @@ void main() {
     setUp(() {
       mockApiService = _MockLiveApiService();
       mockRepository = _MockLiveRepository();
+      createdRoomDraftResponse = const LiveRoomDraftResponse(
+        status: LiveRoomDraftStatus.created,
+        room: roomDraft,
+        activeSession: null,
+      );
+      existingActiveRoomDraftResponse = LiveRoomDraftResponse(
+        status: LiveRoomDraftStatus.existingActive,
+        room: roomDraft,
+        activeSession: LiveSession(
+          id: 'session-existing',
+          roomId: roomDraft.id,
+          status: LiveSessionStatus.live,
+          startedAt: DateTime.utc(2026, 4, 6, 12),
+          endedAt: null,
+          speakerPubkeys: const <String>[hostPubkey],
+          audienceCount: 7,
+        ),
+      );
 
       when(
         () => mockApiService.createRoomDraft(
           title: 'Divine Live',
           summary: 'Public room for creators',
         ),
-      ).thenAnswer((_) async => roomDraft);
+      ).thenAnswer((_) async => createdRoomDraftResponse);
       when(
         () => mockRepository.publishRoom(roomDraft),
       ).thenAnswer((_) async => null);
@@ -156,6 +176,67 @@ void main() {
             sessionId: 'session-abc',
           ),
         ).called(1);
+      },
+    );
+
+    blocTest<GoLiveCubit, GoLiveState>(
+      'submit skips publish and start when the API reports an existing active session',
+      build: () {
+        when(
+          () => mockApiService.createRoomDraft(
+            title: 'Divine Live',
+            summary: 'Public room for creators',
+          ),
+        ).thenAnswer((_) async => existingActiveRoomDraftResponse);
+
+        final cubit = GoLiveCubit(
+          liveApiService: mockApiService,
+          liveRepository: mockRepository,
+          currentUserPubkey: hostPubkey,
+          now: () => DateTime.utc(2026, 4, 6, 12),
+          sessionIdBuilder: () => 'session-should-not-be-used',
+        );
+        cubit.titleChanged('Divine Live');
+        cubit.summaryChanged('Public room for creators');
+        return cubit;
+      },
+      act: (cubit) => cubit.submit(),
+      expect: () => <dynamic>[
+        isA<GoLiveState>().having(
+          (state) => state.status,
+          'status',
+          GoLiveStatus.submitting,
+        ),
+        isA<GoLiveState>()
+            .having((state) => state.status, 'status', GoLiveStatus.success)
+            .having((state) => state.room, 'room', roomDraft)
+            .having(
+              (state) => state.session?.id,
+              'session.id',
+              'session-existing',
+            ),
+      ],
+      verify: (_) {
+        verify(
+          () => mockApiService.createRoomDraft(
+            title: 'Divine Live',
+            summary: 'Public room for creators',
+          ),
+        ).called(1);
+        verifyNever(() => mockRepository.publishRoom(any()));
+        verifyNever(
+          () => mockRepository.publishSession(
+            session: any(named: 'session'),
+            roomAddress: any(named: 'roomAddress'),
+            hostPubkey: any(named: 'hostPubkey'),
+          ),
+        );
+        verifyNever(
+          () => mockApiService.startSession(
+            roomId: any(named: 'roomId'),
+            sessionId: any(named: 'sessionId'),
+          ),
+        );
       },
     );
   });

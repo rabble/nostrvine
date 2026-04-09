@@ -7,6 +7,7 @@ import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/models/live/live_room_token.dart';
+import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 
@@ -28,7 +29,7 @@ class LiveApiService {
   final String _baseUrl;
   final Nip98AuthService? _nip98AuthService;
 
-  Future<LiveRoom> createRoomDraft({
+  Future<LiveRoomDraftResponse> createRoomDraft({
     required String title,
     required String summary,
     String? imageUrl,
@@ -50,20 +51,7 @@ class LiveApiService {
       actionLabel: 'create live room draft',
     );
 
-    return LiveRoom(
-      id: json['id'] as String? ?? '',
-      hostPubkey:
-          json['hostPubkey'] as String? ?? json['host_pubkey'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      summary: json['summary'] as String? ?? '',
-      imageUrl: json['imageUrl'] as String? ?? json['image_url'] as String?,
-      relays: (json['relays'] as List<dynamic>? ?? const <dynamic>[])
-          .whereType<String>()
-          .toList(growable: false),
-      visibility: LiveRoomVisibility.fromNostrStatus(
-        json['visibility'] as String? ?? json['status'] as String?,
-      ),
-    );
+    return LiveRoomDraftResponse.fromJson(json);
   }
 
   Future<void> startSession({
@@ -276,4 +264,122 @@ class LiveApiService {
 
     return '${value[0].toUpperCase()}${value.substring(1)}';
   }
+}
+
+enum LiveRoomDraftStatus { created, existingActive }
+
+class LiveRoomDraftResponse {
+  const LiveRoomDraftResponse({
+    required this.status,
+    required this.room,
+    required this.activeSession,
+  });
+
+  factory LiveRoomDraftResponse.fromJson(Map<String, dynamic> json) {
+    final status = _parseRoomDraftStatus(json['status'] as String?);
+    final room = _liveRoomFromJson(json);
+    final activeSession = _liveSessionFromJson(
+      json['activeSession'] as Map<String, dynamic>? ??
+          json['active_session'] as Map<String, dynamic>?,
+    );
+
+    if (status == LiveRoomDraftStatus.existingActive && activeSession == null) {
+      throw const ApiException(
+        'Live API returned existing_active without an activeSession',
+      );
+    }
+
+    return LiveRoomDraftResponse(
+      status: status,
+      room: room,
+      activeSession: activeSession,
+    );
+  }
+
+  final LiveRoomDraftStatus status;
+  final LiveRoom room;
+  final LiveSession? activeSession;
+}
+
+LiveRoom _liveRoomFromJson(Map<String, dynamic> json) {
+  return LiveRoom(
+    id: json['id'] as String? ?? '',
+    hostPubkey:
+        json['hostPubkey'] as String? ?? json['host_pubkey'] as String? ?? '',
+    title: json['title'] as String? ?? '',
+    summary: json['summary'] as String? ?? '',
+    imageUrl: json['imageUrl'] as String? ?? json['image_url'] as String?,
+    relays: (json['relays'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<String>()
+        .toList(growable: false),
+    visibility: LiveRoomVisibility.fromNostrStatus(
+      json['visibility'] as String? ?? json['room_visibility'] as String?,
+    ),
+  );
+}
+
+LiveSession? _liveSessionFromJson(Map<String, dynamic>? json) {
+  if (json == null) {
+    return null;
+  }
+
+  final startedAt = _parseDateTime(json['startedAt'] as String?);
+  if (startedAt == null) {
+    throw const ApiException(
+      'Live API returned an invalid activeSession.startedAt value',
+    );
+  }
+
+  return LiveSession(
+    id: json['id'] as String? ?? '',
+    roomId: json['roomId'] as String? ?? json['room_id'] as String? ?? '',
+    status: LiveSessionStatus.fromTagValue(json['status'] as String?),
+    startedAt: startedAt,
+    endedAt: _parseDateTime(json['endedAt'] as String?),
+    speakerPubkeys:
+        (json['speakerPubkeys'] as List<dynamic>? ??
+                json['speaker_pubkeys'] as List<dynamic>? ??
+                const <dynamic>[])
+            .whereType<String>()
+            .toList(growable: false),
+    audienceCount:
+        _parseInt(json['audienceCount']) ??
+        _parseInt(json['audience_count']) ??
+        0,
+  );
+}
+
+LiveRoomDraftStatus _parseRoomDraftStatus(String? rawStatus) {
+  switch (rawStatus) {
+    case 'created':
+      return LiveRoomDraftStatus.created;
+    case 'existing_active':
+      return LiveRoomDraftStatus.existingActive;
+    default:
+      throw ApiException(
+        'Live API returned an invalid room draft status: ${rawStatus ?? 'null'}',
+      );
+  }
+}
+
+DateTime? _parseDateTime(String? rawDateTime) {
+  if (rawDateTime == null || rawDateTime.isEmpty) {
+    return null;
+  }
+
+  return DateTime.tryParse(rawDateTime);
+}
+
+int? _parseInt(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value);
+  }
+
+  return null;
 }

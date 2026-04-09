@@ -92,7 +92,7 @@ class GoLiveCubit extends Cubit<GoLiveState> {
     );
 
     try {
-      final draftRoom = await _liveApiService.createRoomDraft(
+      final roomDraft = await _liveApiService.createRoomDraft(
         title: trimmedTitle,
         summary: trimmedSummary,
         imageUrl: trimmedImageUrl == null || trimmedImageUrl.isEmpty
@@ -100,11 +100,26 @@ class GoLiveCubit extends Cubit<GoLiveState> {
             : trimmedImageUrl,
       );
       final room = _normalizeRoom(
-        draftRoom: draftRoom,
+        draftRoom: roomDraft.room,
         title: trimmedTitle,
         summary: trimmedSummary,
         imageUrl: trimmedImageUrl,
       );
+
+      if (roomDraft.status == LiveRoomDraftStatus.existingActive) {
+        final session = roomDraft.activeSession!;
+        emit(
+          state.copyWith(
+            status: GoLiveStatus.success,
+            room: room,
+            session: session,
+            clearTitleError: true,
+            clearErrorMessage: true,
+          ),
+        );
+        return;
+      }
+
       final session = LiveSession(
         id: _sessionIdBuilder(),
         roomId: room.id,

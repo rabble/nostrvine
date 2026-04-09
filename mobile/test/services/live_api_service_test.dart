@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room_recording.dart';
+import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 
@@ -68,6 +69,7 @@ void main() {
         ).thenAnswer(
           (_) async => http.Response(
             jsonEncode({
+              'status': 'created',
               'id': 'room-abc',
               'hostPubkey': 'host-pubkey',
               'title': 'Divine Live',
@@ -80,16 +82,18 @@ void main() {
           ),
         );
 
-        final room = await service.createRoomDraft(
+        final roomDraft = await service.createRoomDraft(
           title: 'Divine Live',
           summary: 'Public room for mobile creators',
           imageUrl: 'https://example.com/cover.jpg',
           relays: const ['wss://relay.example.com'],
         );
 
-        expect(room.id, 'room-abc');
-        expect(room.title, 'Divine Live');
-        expect(room.summary, 'Public room for mobile creators');
+        expect(roomDraft.status, LiveRoomDraftStatus.created);
+        expect(roomDraft.room.id, 'room-abc');
+        expect(roomDraft.room.title, 'Divine Live');
+        expect(roomDraft.room.summary, 'Public room for mobile creators');
+        expect(roomDraft.activeSession, isNull);
 
         verify(
           () => mockNip98AuthService.createAuthToken(
@@ -110,6 +114,71 @@ void main() {
             body: jsonEncode(payload),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'createRoomDraft parses an existing active session response',
+      () async {
+        when(
+          () => mockNip98AuthService.createAuthToken(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async => authToken);
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'status': 'existing_active',
+              'id': 'room-abc',
+              'hostPubkey': 'host-pubkey',
+              'title': 'Divine Live',
+              'summary': 'Public room for mobile creators',
+              'imageUrl': 'https://example.com/cover.jpg',
+              'relays': ['wss://relay.example.com'],
+              'visibility': 'public',
+              'activeSession': {
+                'id': 'session-abc',
+                'roomId': 'room-abc',
+                'status': 'live',
+                'startedAt': '2026-04-06T12:00:00.000Z',
+                'endedAt': null,
+                'speakerPubkeys': ['host-pubkey'],
+                'audienceCount': 7,
+              },
+            }),
+            200,
+          ),
+        );
+
+        final roomDraft = await service.createRoomDraft(
+          title: 'Divine Live',
+          summary: 'Public room for mobile creators',
+          imageUrl: 'https://example.com/cover.jpg',
+          relays: const ['wss://relay.example.com'],
+        );
+
+        expect(roomDraft.status, LiveRoomDraftStatus.existingActive);
+        expect(roomDraft.room.id, 'room-abc');
+        expect(roomDraft.activeSession, isNotNull);
+        expect(roomDraft.activeSession!.id, 'session-abc');
+        expect(roomDraft.activeSession!.roomId, 'room-abc');
+        expect(roomDraft.activeSession!.status, LiveSessionStatus.live);
+        expect(
+          roomDraft.activeSession!.startedAt,
+          DateTime.parse(
+            '2026-04-06T12:00:00.000Z',
+          ),
+        );
+        expect(roomDraft.activeSession!.speakerPubkeys, ['host-pubkey']);
+        expect(roomDraft.activeSession!.audienceCount, 7);
       },
     );
 
