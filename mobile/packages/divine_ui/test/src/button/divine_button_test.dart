@@ -173,7 +173,7 @@ void main() {
         expect(divineIcon.size, 24);
       });
 
-      testWidgets('small size renders 20px icon', (tester) async {
+      testWidgets('small size renders 24px icon', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
             size: DivineButtonSize.small,
@@ -185,7 +185,7 @@ void main() {
         final divineIcon = tester.widget<DivineIcon>(
           find.byType(DivineIcon),
         );
-        expect(divineIcon.size, 20);
+        expect(divineIcon.size, 24);
       });
     });
 

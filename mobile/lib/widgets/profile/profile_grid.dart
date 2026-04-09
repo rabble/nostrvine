@@ -289,131 +289,131 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       length: 5,
       child: NestedScrollView(
         controller: widget.scrollController,
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          // Profile Header
-          SliverToBoxAdapter(
-            child: ProfileHeaderWidget(
-              userIdHex: widget.userIdHex,
-              isOwnProfile: widget.isOwnProfile,
-              videoCount: widget.videos.length,
-              profile: widget.profile,
-              profileStats: widget.profileStats,
-              onEditProfile: widget.onEditProfile,
-              displayNameHint: widget.displayNameHint,
-              avatarUrlHint: widget.avatarUrlHint,
-            ),
-          ),
-
-          // Action Buttons
-          SliverToBoxAdapter(
-            child: ProfileActionButtons(
-              userIdHex: widget.userIdHex,
-              isOwnProfile: widget.isOwnProfile,
-              displayName: widget.displayName,
-              onOpenClips: widget.onOpenClips,
-              onMessageUser: widget.onMessageUser,
-              onShareProfile: widget.onShareProfile,
-              onBlockedTap: widget.onBlockedTap,
-            ),
-          ),
-
-          // Sticky Tab Bar
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SliverAppBarDelegate(
-              TabBar(
-                controller: _tabController,
-                indicatorColor: VineTheme.tabIndicatorGreen,
-                indicatorWeight: 4,
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: VineTheme.transparent,
-                tabs: [
-                  Tab(
-                    icon: Semantics(
-                      label: 'videos_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.play.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 0
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    icon: Semantics(
-                      label: 'liked_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.heart.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 1
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    icon: Semantics(
-                      label: 'reposted_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.repeat.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 2
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    icon: Semantics(
-                      label: 'collabs_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.user.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 3
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    icon: Semantics(
-                      label: 'comments_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.chatCircle.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 4
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            // Profile Header
+            SliverToBoxAdapter(
+              child: ProfileHeaderWidget(
+                userIdHex: widget.userIdHex,
+                isOwnProfile: widget.isOwnProfile,
+                videoCount: widget.videos.length,
+                profile: widget.profile,
+                profileStats: widget.profileStats,
+                onEditProfile: widget.onEditProfile,
+                displayNameHint: widget.displayNameHint,
+                avatarUrlHint: widget.avatarUrlHint,
               ),
             ),
-          ),
-        ],
-        body: tabContent,
+
+            // Action Buttons
+            SliverToBoxAdapter(
+              child: ProfileActionButtons(
+                userIdHex: widget.userIdHex,
+                isOwnProfile: widget.isOwnProfile,
+                displayName: widget.displayName,
+                onOpenClips: widget.onOpenClips,
+                onMessageUser: widget.onMessageUser,
+                onShareProfile: widget.onShareProfile,
+                onBlockedTap: widget.onBlockedTap,
+              ),
+            ),
+
+            // Sticky Tab Bar
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverAppBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  indicatorColor: VineTheme.tabIndicatorGreen,
+                  indicatorWeight: 4,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: VineTheme.transparent,
+                  tabs: [
+                    Tab(
+                      icon: Semantics(
+                        label: 'videos_tab',
+                        child: SvgPicture.asset(
+                          DivineIconName.play.assetPath,
+                          width: 28,
+                          height: 28,
+                          colorFilter: ColorFilter.mode(
+                            _tabController.index == 0
+                                ? VineTheme.whiteText
+                                : VineTheme.onSurfaceMuted,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      icon: Semantics(
+                        label: 'liked_tab',
+                        child: SvgPicture.asset(
+                          DivineIconName.heart.assetPath,
+                          width: 28,
+                          height: 28,
+                          colorFilter: ColorFilter.mode(
+                            _tabController.index == 1
+                                ? VineTheme.whiteText
+                                : VineTheme.onSurfaceMuted,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      icon: Semantics(
+                        label: 'reposted_tab',
+                        child: SvgPicture.asset(
+                          DivineIconName.repeat.assetPath,
+                          width: 28,
+                          height: 28,
+                          colorFilter: ColorFilter.mode(
+                            _tabController.index == 2
+                                ? VineTheme.whiteText
+                                : VineTheme.onSurfaceMuted,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      icon: Semantics(
+                        label: 'collabs_tab',
+                        child: SvgPicture.asset(
+                          DivineIconName.user.assetPath,
+                          width: 28,
+                          height: 28,
+                          colorFilter: ColorFilter.mode(
+                            _tabController.index == 3
+                                ? VineTheme.whiteText
+                                : VineTheme.onSurfaceMuted,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      icon: Semantics(
+                        label: 'comments_tab',
+                        child: SvgPicture.asset(
+                          DivineIconName.chatCircle.assetPath,
+                          width: 28,
+                          height: 28,
+                          colorFilter: ColorFilter.mode(
+                            _tabController.index == 4
+                                ? VineTheme.whiteText
+                                : VineTheme.onSurfaceMuted,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          body: tabContent,
       ),
     );
 
