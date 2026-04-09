@@ -14,6 +14,7 @@ import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
@@ -183,6 +184,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     if (!widget.selectionMode) {
       await ref.read(videoPublishProvider.notifier).clearAll();
 
+      final hasRecorderLimit = ref
+          .read(videoRecorderProvider)
+          .recorderMode
+          .hasRecordingLimit;
       final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
       for (final clip in selectedClips) {
         clipManagerNotifier.addClip(
@@ -192,6 +197,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           targetAspectRatio: clip.targetAspectRatio,
           originalAspectRatio: clip.targetAspectRatio.value,
           lensMetadata: clip.lensMetadata,
+          limitClipDuration: hasRecorderLimit,
         );
       }
     }

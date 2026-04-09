@@ -171,6 +171,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     required EditorVideo video,
     required double originalAspectRatio,
     required model.AspectRatio targetAspectRatio,
+    required bool limitClipDuration,
     Duration? duration,
     String? thumbnailPath,
     CameraLensMetadata? lensMetadata,
@@ -181,7 +182,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     final remainingDuration = this.remainingDuration;
 
     // Check if clip needs to be trimmed to fit within max duration
-    final isClipToLong = clipDuration > remainingDuration;
+    final isClipToLong = limitClipDuration && clipDuration > remainingDuration;
 
     // Create a completer to track async trimming progress only when needed.
     // Proof generation runs independently and does not block the UI.

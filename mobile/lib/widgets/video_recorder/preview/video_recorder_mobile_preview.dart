@@ -5,7 +5,9 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 
 /// Camera preview widget for mobile platforms with touch gestures.
 class VideoRecorderMobilePreview extends ConsumerWidget {
-  const VideoRecorderMobilePreview({super.key});
+  const VideoRecorderMobilePreview({required this.enableTapToFocus, super.key});
+
+  final bool enableTapToFocus;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -14,11 +16,13 @@ class VideoRecorderMobilePreview extends ConsumerWidget {
     return CameraPreviewWidget(
       onScaleStart: notifier.handleScaleStart,
       onScaleUpdate: notifier.handleScaleUpdate,
-      onTap: (localPosition, normalizedPosition) async {
-        // setFocusPoint already combines AF + AE metering.
-        // No need to call setExposurePoint separately.
-        await notifier.setFocusPoint(normalizedPosition);
-      },
+      onTap: enableTapToFocus
+          ? (localPosition, normalizedPosition) async {
+              // setFocusPoint already combines AF + AE metering.
+              // No need to call setExposurePoint separately.
+              await notifier.setFocusPoint(normalizedPosition);
+            }
+          : null,
       loadingWidget: Container(color: const Color(0xFF141414)),
     );
   }
