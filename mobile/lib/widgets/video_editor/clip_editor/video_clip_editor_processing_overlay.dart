@@ -26,7 +26,9 @@ class VideoClipEditorProcessingOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final draftId = ref.watch(videoEditorProvider.notifier).draftId;
+    // draftId is set once during initialization and does not change within a
+    // session, so a one-time read is sufficient.
+    final draftId = ref.read(videoEditorProvider.notifier).draftId;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       child: isProcessing || clip.isProcessing
