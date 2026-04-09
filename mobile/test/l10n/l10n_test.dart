@@ -51,7 +51,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          locale: const Locale('es'),
+          locale: const Locale('tr'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
@@ -63,7 +63,8 @@ void main() {
         ),
       );
 
-      // Spanish ARB doesn't have this key, should fall back to English
+      // Turkish ARB only has settingsTitle, rest falls back to English
+      expect(l10n.settingsTitle, equals('Ayarlar'));
       expect(
         l10n.settingsCreatorAnalytics,
         equals('Creator Analytics'),
