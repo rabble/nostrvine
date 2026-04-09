@@ -160,7 +160,10 @@ class _OriginalSoundSection extends ConsumerWidget {
       if (!hostContext.mounted) return;
       hostContext.pushWithVideoPause(
         SoundDetailScreen.pathForId(syntheticAudio.id),
-        extra: syntheticAudio,
+        extra: <String, dynamic>{
+          'sound': syntheticAudio,
+          'sourceVideo': video,
+        },
       );
     });
   }

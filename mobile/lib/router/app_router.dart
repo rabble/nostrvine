@@ -861,17 +861,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: SoundDetailScreen.routeName,
         builder: (ctx, st) {
           final soundId = st.pathParameters['id'];
-          final sound = st.extra as AudioEvent?;
           if (soundId == null || soundId.isEmpty) {
             return const Scaffold(
               appBar: DiVineAppBar(title: 'Error'),
               body: Center(child: Text('Invalid sound ID')),
             );
           }
-          // If sound was passed via extra, use it directly
-          // Otherwise, SoundDetailScreen will need to fetch it
+          // Extra can be an AudioEvent directly or a Map with both
+          // sound and sourceVideo (for original sounds).
+          final extra = st.extra;
+          AudioEvent? sound;
+          VideoEvent? sourceVideo;
+          if (extra is AudioEvent) {
+            sound = extra;
+          } else if (extra is Map<String, dynamic>) {
+            sound = extra['sound'] as AudioEvent?;
+            sourceVideo = extra['sourceVideo'] as VideoEvent?;
+          }
           if (sound != null) {
-            return SoundDetailScreen(sound: sound);
+            return SoundDetailScreen(
+              sound: sound,
+              sourceVideo: sourceVideo,
+            );
           }
           // Wrap in a loader that fetches the sound by ID
           return SoundDetailLoader(soundId: soundId);
