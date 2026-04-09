@@ -142,6 +142,7 @@ class AuthService implements BackgroundAwareService {
     PreFetchFollowingCallback? preFetchFollowing,
     String? profileCheckIndexerUrl,
     List<String>? indexerRelays,
+    RelayDiscoveryService? relayDiscoveryService,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _nostrKeyManager = nostrKeyManager,
        _userDataCleanupService = userDataCleanupService,
@@ -150,9 +151,9 @@ class AuthService implements BackgroundAwareService {
        _pendingVerificationService = pendingVerificationService,
        _preFetchFollowing = preFetchFollowing,
        _profileCheckIndexerUrl = profileCheckIndexerUrl,
-       _relayDiscoveryService = RelayDiscoveryService(
-         indexerRelays: indexerRelays,
-       ),
+       _relayDiscoveryService =
+           relayDiscoveryService ??
+           RelayDiscoveryService(indexerRelays: indexerRelays),
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
@@ -3687,6 +3688,14 @@ class AuthService implements BackgroundAwareService {
   /// Always runs discovery (with 24h cache to avoid redundant indexer queries).
   /// Discovered relays are ADDED to the main client's existing connections,
   /// so user's manual relay edits are preserved (addRelay skips duplicates).
+  ///
+  /// When discovery returns empty or fails (e.g. imported account that
+  /// never published a kind 10002 list), [IndexerRelayConfig.safeFallbackRelays]
+  /// is added to the client's connected pool so DM reachability degrades
+  /// gracefully instead of leaving the client connected only to the Divine
+  /// relay. The fallback set is NOT stored in [userRelays] — that getter
+  /// continues to report only the user's own published relays so embedded
+  /// Nostr apps querying via the bridge see accurate data. See #2931.
   Future<void> _discoverUserRelays(String npub) async {
     try {
       final result = await _relayDiscoveryService.discoverRelays(npub);
@@ -3717,21 +3726,55 @@ class AuthService implements BackgroundAwareService {
         _userRelays = [];
 
         Log.warning(
-          '⚠️ No relay list found for user on any indexer',
+          '⚠️ No relay list found for user on any indexer — '
+          'connecting to safe DM-friendly fallback relay set',
           name: 'AuthService',
           category: LogCategory.auth,
         );
+        _connectToFallbackRelays();
       }
     } catch (e) {
       _userRelays = [];
 
       Log.error(
-        '❌ Relay discovery failed: $e - falling back to Divine relay only',
+        '❌ Relay discovery failed: $e — '
+        'connecting to safe DM-friendly fallback relay set',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _connectToFallbackRelays();
+    }
+  }
+
+  /// Notify the NostrService callback to connect the client to
+  /// [IndexerRelayConfig.safeFallbackRelays].
+  ///
+  /// Used when NIP-65 discovery returns empty or fails. Without this, the
+  /// client stays connected only to the Divine relay, which silently
+  /// breaks NIP-17 DM delivery for peers writing on other relays.
+  ///
+  /// Intentionally does NOT mutate [_userRelays]: that field semantically
+  /// represents the user's *own* published relay list (kind 10002) and is
+  /// surfaced to embedded Nostr apps via the bridge. The fallback set is a
+  /// reachability mechanism, not a relay list the user has chosen. See #2931.
+  void _connectToFallbackRelays() {
+    for (final url in IndexerRelayConfig.safeFallbackRelays) {
+      Log.info(
+        '  - $url (fallback)',
         name: 'AuthService',
         category: LogCategory.auth,
       );
     }
+    _onUserRelaysDiscovered?.call(IndexerRelayConfig.safeFallbackRelays);
   }
+
+  /// Test seam exposing the private NIP-65 discovery routine so unit
+  /// tests can drive the fallback path with a mocked discovery service.
+  /// Production callers should not invoke this — discovery runs as part
+  /// of the normal sign-in flow via [_setupUserSession].
+  @visibleForTesting
+  Future<void> debugDiscoverUserRelays(String npub) =>
+      _discoverUserRelays(npub);
 
   /// Check if user has an existing profile (kind 0) on indexer relays.
   ///

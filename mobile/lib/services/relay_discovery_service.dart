@@ -22,6 +22,29 @@ class IndexerRelayConfig {
     // nos-event-service, giving it broad NIP-65 coverage.
     'wss://relay.nos.social',
   ];
+
+  /// Safe fallback relay set for users without a discoverable NIP-65 relay
+  /// list (kind 10002).
+  ///
+  /// Imported accounts that have never published a relay list — or whose
+  /// relay list is hosted on a non-indexed relay — would otherwise stay
+  /// connected only to the Divine relay, which makes NIP-17 DMs invisible
+  /// to peers writing on other relays. This list is added to the user's
+  /// connected pool whenever NIP-65 discovery returns empty or fails, so
+  /// DM reachability degrades gracefully instead of silently breaking.
+  ///
+  /// These are general-purpose public Nostr relays that accept gift wraps
+  /// (kind 1059). The set is intentionally small to bound bandwidth and
+  /// keep first-connect latency reasonable. Users can still override this
+  /// by adding their own relays via Settings → Relays.
+  ///
+  /// See #2931.
+  static const List<String> safeFallbackRelays = [
+    'wss://relay.nos.social',
+    'wss://relay.damus.io',
+    'wss://nos.lol',
+    'wss://relay.primal.net',
+  ];
 }
 
 /// Represents a discovered relay with read/write permissions
