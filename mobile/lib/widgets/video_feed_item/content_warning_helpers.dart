@@ -114,7 +114,11 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    labels.map(humanizeContentLabel).join(', '),
+                    labels
+                        .map(
+                          (l) => humanizeContentLabel(context, l),
+                        )
+                        .join(', '),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: VineTheme.secondaryText,
@@ -145,40 +149,42 @@ class ContentWarningBlurOverlay extends StatelessWidget {
   );
 }
 
-/// Convert a NIP-32 content-warning label value to a human-readable string.
-String humanizeContentLabel(String label) {
+/// Convert a NIP-32 content-warning label value to a localized
+/// human-readable string.
+String humanizeContentLabel(BuildContext context, String label) {
+  final l10n = context.l10n;
   switch (label) {
     case 'nudity':
-      return 'Nudity';
+      return l10n.contentWarningNudity;
     case 'sexual':
-      return 'Sexual Content';
+      return l10n.contentWarningSexualContent;
     case 'porn':
-      return 'Pornography';
+      return l10n.contentWarningPornography;
     case 'graphic-media':
-      return 'Graphic Media';
+      return l10n.contentWarningGraphicMedia;
     case 'violence':
-      return 'Violence';
+      return l10n.contentWarningViolence;
     case 'self-harm':
-      return 'Self-Harm';
+      return l10n.contentWarningSelfHarm;
     case 'drugs':
-      return 'Drug Use';
+      return l10n.contentWarningDrugUse;
     case 'alcohol':
-      return 'Alcohol';
+      return l10n.contentWarningAlcohol;
     case 'tobacco':
-      return 'Tobacco';
+      return l10n.contentWarningTobacco;
     case 'gambling':
-      return 'Gambling';
+      return l10n.contentWarningGambling;
     case 'profanity':
-      return 'Profanity';
+      return l10n.contentWarningProfanity;
     case 'flashing-lights':
-      return 'Flashing Lights';
+      return l10n.contentWarningFlashingLights;
     case 'ai-generated':
-      return 'AI-Generated';
+      return l10n.contentWarningAiGenerated;
     case 'spoiler':
-      return 'Spoiler';
+      return l10n.contentWarningSpoiler;
     case 'content-warning':
-      return 'Sensitive Content';
+      return l10n.contentWarningSensitiveContent;
     default:
-      return 'Content Warning';
+      return l10n.contentWarningLabel;
   }
 }

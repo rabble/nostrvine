@@ -58,7 +58,6 @@ void main() {
         expect(bloc.state.status, equals(ProfileCommentsStatus.initial));
         expect(bloc.state.videoReplies, isEmpty);
         expect(bloc.state.textComments, isEmpty);
-        expect(bloc.state.error, isNull);
         expect(bloc.state.isLoadingMore, isFalse);
         expect(bloc.state.hasMoreContent, isTrue);
         expect(bloc.state.paginationCursor, isNull);
@@ -72,16 +71,6 @@ void main() {
         expect(updated.status, equals(ProfileCommentsStatus.success));
         expect(updated.videoReplies, isEmpty);
         expect(updated.textComments, isEmpty);
-      });
-
-      test('copyWith with clearError sets error to null', () {
-        final state = const ProfileCommentsState().copyWith(
-          error: 'some error',
-        );
-        expect(state.error, equals('some error'));
-
-        final cleared = state.copyWith(clearError: true);
-        expect(cleared.error, isNull);
       });
 
       test('isLoaded returns true when status is success', () {
@@ -190,13 +179,11 @@ void main() {
             'status',
             ProfileCommentsStatus.loading,
           ),
-          isA<ProfileCommentsState>()
-              .having((s) => s.status, 'status', ProfileCommentsStatus.failure)
-              .having(
-                (s) => s.error,
-                'error',
-                equals('Failed to load comments'),
-              ),
+          isA<ProfileCommentsState>().having(
+            (s) => s.status,
+            'status',
+            ProfileCommentsStatus.failure,
+          ),
         ],
       );
 

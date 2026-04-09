@@ -66,6 +66,22 @@
   "settingsCancel": "Cancel",
   "settingsSwitchAnyway": "Switch Anyway",
   "settingsAppVersionLabel": "App version",
+  "settingsAppLanguage": "App Language",
+  "settingsAppLanguageDeviceDefault": "{language} (device default)",
+  "@settingsAppLanguageDeviceDefault": {
+    "description": "Subtitle for app language tile when using device default",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAppLanguageTitle": "App Language",
+  "@settingsAppLanguageTitle": {
+    "description": "Title shown at top of locale picker bottom sheet"
+  },
+  "settingsAppLanguageDescription": "Choose the language for the app interface",
+  "settingsAppLanguageUseDeviceLanguage": "Use device language",
 
   "contentPreferencesTitle": "Content Preferences",
   "@contentPreferencesTitle": {
@@ -1434,5 +1450,12 @@
     "placeholders": { "name": { "type": "String" } }
   },
   "shareMenuUseThisSound": "Use this sound",
-  "shareMenuOriginalSound": "Original sound"
+  "shareMenuOriginalSound": "Original sound",
+
+  "authSessionExpired": "Your session has expired. Please sign in again.",
+  "authSignInFailed": "Failed to sign in. Please try again.",
+
+  "localeAppLanguage": "App Language",
+  "localeDeviceDefault": "Device default",
+  "localeSelectLanguage": "Select Language"
 }

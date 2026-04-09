@@ -102,7 +102,6 @@ void main() {
         when(() => mockBloc.state).thenReturn(
           const ProfileCommentsState(
             status: ProfileCommentsStatus.failure,
-            error: 'Failed to load comments',
           ),
         );
 

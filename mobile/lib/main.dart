@@ -28,6 +28,7 @@ import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
@@ -56,6 +57,7 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/openvine_media_cache.dart';
@@ -1445,31 +1447,38 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       return false; // Not handled - let PopScope handle it (may exit app)
     }
 
-    // On iOS/macOS/Windows, use PopScope. On Android, platform channel handles it
-    final app = (!kIsWeb && io.Platform.isAndroid)
-        ? MaterialApp.router(
-            title: 'Divine',
-            debugShowCheckedModeBanner: false,
-            theme: VineTheme.theme,
-            routerConfig: router,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          )
-        : PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, result) async {
-              if (didPop) return;
-              await handleBackNavigation(router, ref);
-            },
-            child: MaterialApp.router(
-              title: 'Divine',
-              debugShowCheckedModeBanner: false,
-              theme: VineTheme.theme,
-              routerConfig: router,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-            ),
-          );
+    // Build MaterialApp with locale from LocaleCubit.
+    // The BlocBuilder is used because the cubit is provided further down
+    // in the widget tree by MultiBlocProvider.
+    Widget buildApp(Locale? locale) {
+      if (!kIsWeb && io.Platform.isAndroid) {
+        return MaterialApp.router(
+          title: 'Divine',
+          debugShowCheckedModeBanner: false,
+          theme: VineTheme.theme,
+          routerConfig: router,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        );
+      }
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await handleBackNavigation(router, ref);
+        },
+        child: MaterialApp.router(
+          title: 'Divine',
+          debugShowCheckedModeBanner: false,
+          theme: VineTheme.theme,
+          routerConfig: router,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      );
+    }
 
     /// Creates the publish service with callbacks wired to this notifier.
     Future<VideoPublishService> createPublishService({
@@ -1536,6 +1545,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
+            create: (_) => LocaleCubit(
+              localePreferenceService: LocalePreferenceService(
+                sharedPreferences: ref.read(sharedPreferencesProvider),
+              ),
+            ),
+          ),
+          BlocProvider(
             create: (_) => BackgroundPublishBloc(
               videoPublishServiceFactory: createPublishService,
               draftStorageService: ref.read(draftStorageServiceProvider),
@@ -1595,7 +1611,14 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           },
           child: UpdateDialogListener(
             child: _UploadFailureListener(
-              child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+              child: GeoBlockingGate(
+                child: AppLifecycleHandler(
+                  child: BlocBuilder<LocaleCubit, LocaleState>(
+                    builder: (context, localeState) =>
+                        buildApp(localeState.locale),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

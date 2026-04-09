@@ -138,6 +138,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsAppVersionLabel => 'Versión de la app';
 
   @override
+  String get settingsAppLanguage => 'App Language';
+
+  @override
+  String settingsAppLanguageDeviceDefault(String language) {
+    return '$language (device default)';
+  }
+
+  @override
+  String get settingsAppLanguageTitle => 'App Language';
+
+  @override
+  String get settingsAppLanguageDescription =>
+      'Choose the language for the app interface';
+
+  @override
+  String get settingsAppLanguageUseDeviceLanguage => 'Use device language';
+
+  @override
   String get contentPreferencesTitle => 'Preferencias de contenido';
 
   @override
@@ -3054,4 +3072,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareMenuOriginalSound => 'Original sound';
+
+  @override
+  String get authSessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get authSignInFailed => 'Failed to sign in. Please try again.';
+
+  @override
+  String get localeAppLanguage => 'App Language';
+
+  @override
+  String get localeDeviceDefault => 'Device default';
+
+  @override
+  String get localeSelectLanguage => 'Select Language';
 }

@@ -322,6 +322,36 @@ abstract class AppLocalizations {
   /// **'App version'**
   String get settingsAppVersionLabel;
 
+  /// No description provided for @settingsAppLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'App Language'**
+  String get settingsAppLanguage;
+
+  /// Subtitle for app language tile when using device default
+  ///
+  /// In en, this message translates to:
+  /// **'{language} (device default)'**
+  String settingsAppLanguageDeviceDefault(String language);
+
+  /// Title shown at top of locale picker bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'App Language'**
+  String get settingsAppLanguageTitle;
+
+  /// No description provided for @settingsAppLanguageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the language for the app interface'**
+  String get settingsAppLanguageDescription;
+
+  /// No description provided for @settingsAppLanguageUseDeviceLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use device language'**
+  String get settingsAppLanguageUseDeviceLanguage;
+
   /// Content preferences screen app bar title
   ///
   /// In en, this message translates to:
@@ -5407,6 +5437,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Original sound'**
   String get shareMenuOriginalSound;
+
+  /// No description provided for @authSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Please sign in again.'**
+  String get authSessionExpired;
+
+  /// No description provided for @authSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to sign in. Please try again.'**
+  String get authSignInFailed;
+
+  /// No description provided for @localeAppLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'App Language'**
+  String get localeAppLanguage;
+
+  /// No description provided for @localeDeviceDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Device default'**
+  String get localeDeviceDefault;
+
+  /// No description provided for @localeSelectLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Language'**
+  String get localeSelectLanguage;
 }
 
 class _AppLocalizationsDelegate

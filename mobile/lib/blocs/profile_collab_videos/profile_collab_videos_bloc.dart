@@ -91,21 +91,16 @@ class ProfileCollabVideosBloc
           videos: collabVideos,
           hasMoreContent: videos.length >= _pageSize,
           paginationCursor: cursor,
-          clearError: true,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'ProfileCollabVideosBloc: Failed to fetch collab videos - $e',
         name: 'ProfileCollabVideosBloc',
         category: LogCategory.video,
       );
-      emit(
-        state.copyWith(
-          status: ProfileCollabVideosStatus.failure,
-          error: 'Failed to load collab videos',
-        ),
-      );
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ProfileCollabVideosStatus.failure));
     }
   }
 

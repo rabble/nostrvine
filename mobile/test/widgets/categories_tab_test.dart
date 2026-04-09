@@ -51,7 +51,6 @@ void main() {
         buildSubject(
           state: const CategoriesState(
             categoriesStatus: CategoriesStatus.error,
-            errorMessage: 'Network error',
           ),
           onRetry: () => retries += 1,
         ),

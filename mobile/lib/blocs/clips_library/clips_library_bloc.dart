@@ -65,7 +65,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
-          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
@@ -75,12 +74,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-          errorMessage: e.toString(),
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 
@@ -151,7 +145,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           selectedClipIds: const {},
           selectedDuration: Duration.zero,
           lastDeletedCount: deletedCount,
-          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
@@ -161,12 +154,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-          errorMessage: 'Failed to delete clips: $e',
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 
@@ -203,7 +191,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           selectedClipIds: selectedIds,
           selectedDuration: selectedDuration,
           lastDeletedCount: 1,
-          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
@@ -213,12 +200,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-          errorMessage: 'Failed to delete clip: $e',
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 

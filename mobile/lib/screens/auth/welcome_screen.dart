@@ -115,17 +115,25 @@ class _WelcomeView extends StatelessWidget {
       listenWhen: (prev, current) =>
           current.status == WelcomeStatus.navigatingToLoginOptions ||
           current.status == WelcomeStatus.navigatingToCreateAccount ||
-          (current.status == WelcomeStatus.error && current.error != null),
+          current.status == WelcomeStatus.error ||
+          current.status == WelcomeStatus.sessionExpired,
       listener: (context, state) {
         switch (state.status) {
           case WelcomeStatus.navigatingToCreateAccount:
             context.push(WelcomeScreen.inviteGatePath);
           case WelcomeStatus.navigatingToLoginOptions:
             context.push(WelcomeScreen.loginOptionsPath);
-          case WelcomeStatus.error when state.error != null:
+          case WelcomeStatus.sessionExpired:
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.error!),
+                content: Text(context.l10n.authSessionExpired),
+                backgroundColor: VineTheme.error,
+              ),
+            );
+          case WelcomeStatus.error:
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(context.l10n.authSignInFailed),
                 backgroundColor: VineTheme.error,
               ),
             );
