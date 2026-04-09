@@ -294,9 +294,10 @@ void main() {
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
         find.text('Integrated Apps'),
-        100,
+        200,
         scrollable: scrollable,
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Integrated Apps'));
       await tester.pumpAndSettle();
 
