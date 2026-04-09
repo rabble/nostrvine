@@ -2059,9 +2059,16 @@ BugReportService bugReportService(Ref ref) {
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Sets auth credentials eagerly so read/send operations work immediately.
-/// The relay subscription is NOT started here — it is driven by the inbox
-/// UI lifecycle via [ConversationListBloc] (#2766).
+/// Sets auth credentials eagerly so read/send operations work immediately,
+/// then starts the gift-wrap subscription so DMs are ingested for the whole
+/// authenticated session — not just while [InboxPage] is mounted (#2931).
+///
+/// Cold-start cost is bounded by two existing mechanisms that landed with
+/// the original lazy-inbox work (#2766):
+/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+///   limits the relay backlog to recent events on every open after the first.
+/// - Decryption is offloaded to a background isolate via
+///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
 /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -2084,18 +2091,15 @@ DmRepository dmRepository(Ref ref) {
 
   ref.onDispose(repository.stopListening);
 
-  // Set credentials when the signer's public key is available.
-  // This does NOT start the relay subscription — that is lazy (#2766).
+  // Set credentials and open the gift-wrap subscription as soon as the
+  // signer is ready. The subscription is auth-session-scoped (not inbox-
+  // scoped) so DMs are ingested even when the user never visits /inbox.
+  // See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
   if (ref.watch(isNostrReadyProvider)) {
     final publicKey = nostrService.publicKey;
     if (publicKey.isNotEmpty) {
       final signer = nostrService.signer;
 
-      // initialize() wires credentials only — it does NOT open the
-      // gift-wrap subscription. The inbox screen (InboxPage) starts the
-      // subscription via startListening() on mount and tears it down on
-      // dispose so cold start does no DM network/decrypt work.
-      // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
       repository.setCredentials(
         userPubkey: publicKey,
         signer: signer,
@@ -2105,6 +2109,11 @@ DmRepository dmRepository(Ref ref) {
           nostrService: nostrService,
         ),
       );
+
+      // Open the gift-wrap subscription for the whole authenticated
+      // session. Bounded by `since: newestSyncedAt - 2d` and isolate
+      // decrypt so cold start stays cheap regardless of lifetime DM count.
+      unawaited(repository.startListening());
     }
   }
 

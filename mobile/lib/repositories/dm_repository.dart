@@ -123,10 +123,15 @@ class DmRepository {
 
   /// Set auth credentials on the repository.
   ///
-  /// Called by the provider when the user's keys become available. Read
-  /// methods work before this; send requires it. The relay subscription
-  /// is NOT started here — callers (the inbox screen) are responsible for
-  /// invoking [startListening] when they need live gift-wrap delivery.
+  /// Called by `dmRepositoryProvider` when the user's keys become
+  /// available. Read methods work before this; send requires it.
+  ///
+  /// This wires credentials only — the gift-wrap subscription is opened
+  /// separately by the provider via [startListening] right after this
+  /// returns, so DM ingestion runs for the whole authenticated session.
+  /// Cold-start cost stays bounded thanks to the count-based windowing
+  /// (`since: newestSyncedAt - 2d`) and the isolate decryption worker.
+  /// See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
   /// no-ops. If called with a different user, resets and re-initializes.
@@ -153,10 +158,6 @@ class DmRepository {
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
-    // Subscription is started by the inbox screen via startListening().
-    // Do NOT start it here — doing so would replay the full gift-wrap
-    // backlog onto the UI isolate at app launch and scale linearly with
-    // lifetime DM count. See docs/plans/2026-04-05-dm-scaling-fix-design.md.
 
     // Run post-auth maintenance sequentially so each step operates on the
     // final state of the previous one (e.g. backfill runs after merge).
@@ -278,10 +279,10 @@ class DmRepository {
       },
     );
 
-    // No poll timer: the live subscription is the sole event source while
-    // the inbox is open. Poller was removed because it re-fetched duplicate
-    // events every 10s forever on the UI isolate. See
-    // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+    // No poll timer: the live WebSocket subscription is the sole event
+    // source for the entire authenticated session. Poller was removed
+    // because it re-fetched duplicate events every 10s forever on the UI
+    // isolate. See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
   }
 
   /// Fetches an older page of DM events (gift wraps, NIP-04, deletions)
@@ -326,8 +327,9 @@ class DmRepository {
   Future<void> stopListening() async {
     // Don't set _disposed = true here — _disposed is reserved for
     // _resetState() (user switch). Setting it would make a subsequent
-    // startListening() call a silent no-op, breaking re-open flows like
-    // "user leaves the inbox tab and comes back later".
+    // startListening() call a silent no-op, breaking re-open flows such
+    // as the post-signOut cleanup in UserDataCleanupService that may be
+    // followed by a fresh sign-in on the same repository instance.
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _eventLock = null;
