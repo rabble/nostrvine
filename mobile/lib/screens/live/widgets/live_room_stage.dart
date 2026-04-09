@@ -24,16 +24,31 @@ class LiveRoomStage extends StatelessWidget {
     final LiveMediaState resolvedMediaState =
         mediaState ??
         context.select((LiveRoomBloc bloc) => bloc.state.mediaState);
+    final localParticipantIdentity = resolvedMediaState.localParticipantIdentity;
+    final hasLocalStagePlaceholder =
+        resolvedMediaState.canPublish &&
+        localParticipantIdentity != null &&
+        speakerPubkeys.contains(localParticipantIdentity);
+    final localStageParticipantIdentity = hasLocalStagePlaceholder
+        ? localParticipantIdentity
+        : null;
     final stageParticipants = resolvedMediaState.stageParticipants.isNotEmpty
         ? resolvedMediaState.stageParticipants
-        : speakerPubkeys
-              .map(
-                (pubkey) => LiveStageParticipant(
-                  identity: pubkey,
-                  isLocal: false,
+        : <LiveStageParticipant>[
+            if (localStageParticipantIdentity != null)
+              LiveStageParticipant(
+                identity: localStageParticipantIdentity,
+                isLocal: true,
+              ),
+            ...speakerPubkeys
+                .where((pubkey) => pubkey != localParticipantIdentity)
+                .map(
+                  (pubkey) => LiveStageParticipant(
+                    identity: pubkey,
+                    isLocal: false,
+                  ),
                 ),
-              )
-              .toList(growable: false);
+          ];
 
     return Container(
       decoration: BoxDecoration(

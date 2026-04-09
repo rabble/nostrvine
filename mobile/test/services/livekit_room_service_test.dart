@@ -47,6 +47,7 @@ void main() {
           LiveMediaConnectionStatus.connected,
         );
         expect(service.currentState.canPublish, isTrue);
+        expect(service.currentState.localParticipantIdentity, 'host-pubkey');
         expect(
           states.map((state) => state.status),
           containsAll([
@@ -271,6 +272,7 @@ void main() {
         LiveMediaConnectionStatus.disconnected,
       );
       expect(service.currentState.canPublish, isFalse);
+      expect(service.currentState.localParticipantIdentity, isNull);
       expect(service.currentState.cameraEnabled, isFalse);
       expect(service.currentState.microphoneEnabled, isFalse);
     });

@@ -47,6 +47,7 @@ class LiveMediaState extends Equatable {
     this.canPublish = false,
     this.cameraEnabled = false,
     this.microphoneEnabled = false,
+    this.localParticipantIdentity,
     this.stageParticipants = const <LiveStageParticipant>[],
   });
 
@@ -54,6 +55,7 @@ class LiveMediaState extends Equatable {
   final bool canPublish;
   final bool cameraEnabled;
   final bool microphoneEnabled;
+  final String? localParticipantIdentity;
   final List<LiveStageParticipant> stageParticipants;
 
   LiveMediaState copyWith({
@@ -61,6 +63,8 @@ class LiveMediaState extends Equatable {
     bool? canPublish,
     bool? cameraEnabled,
     bool? microphoneEnabled,
+    String? localParticipantIdentity,
+    bool clearLocalParticipantIdentity = false,
     List<LiveStageParticipant>? stageParticipants,
   }) {
     return LiveMediaState(
@@ -68,6 +72,9 @@ class LiveMediaState extends Equatable {
       canPublish: canPublish ?? this.canPublish,
       cameraEnabled: cameraEnabled ?? this.cameraEnabled,
       microphoneEnabled: microphoneEnabled ?? this.microphoneEnabled,
+      localParticipantIdentity: clearLocalParticipantIdentity
+          ? null
+          : (localParticipantIdentity ?? this.localParticipantIdentity),
       stageParticipants: stageParticipants ?? this.stageParticipants,
     );
   }
@@ -78,6 +85,7 @@ class LiveMediaState extends Equatable {
     canPublish,
     cameraEnabled,
     microphoneEnabled,
+    localParticipantIdentity,
     stageParticipants,
   ];
 }
@@ -163,6 +171,7 @@ class LiveKitRoomService {
       LiveMediaState(
         status: LiveMediaConnectionStatus.connecting,
         canPublish: token.canPublish,
+        localParticipantIdentity: token.participantIdentity,
       ),
     );
 
@@ -183,6 +192,7 @@ class LiveKitRoomService {
         LiveMediaState(
           status: LiveMediaConnectionStatus.failed,
           canPublish: token.canPublish,
+          localParticipantIdentity: token.participantIdentity,
         ),
       );
       rethrow;

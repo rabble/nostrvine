@@ -96,6 +96,49 @@ void main() {
       expect(find.text('24 listeners in the room'), findsOneWidget);
     });
 
+    testWidgets(
+      'shows the local host tile as camera and mic off before tracks publish',
+      (tester) async {
+        const hostPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final profile = UserProfile(
+          pubkey: hostPubkey,
+          rawData: const <String, dynamic>{},
+          createdAt: DateTime.utc(2026, 4, 9),
+          eventId: 'profile-event',
+          displayName: 'Alice Stage',
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockNip05VerificationService: createMockNip05VerificationService(),
+            additionalOverrides: [
+              userProfileReactiveProvider(hostPubkey).overrideWith(
+                (ref) => Stream.value(profile),
+              ),
+            ],
+            home: const Scaffold(
+              body: LiveRoomStage(
+                speakerPubkeys: <String>[hostPubkey],
+                audienceCount: 0,
+                statusLabel: 'connected',
+                mediaState: LiveMediaState(
+                  canPublish: true,
+                  localParticipantIdentity: hostPubkey,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LiveRoomStageMediaTile), findsOneWidget);
+        expect(find.text('Alice Stage'), findsOneWidget);
+        expect(find.text('Camera and mic are off'), findsOneWidget);
+        expect(find.text('Waiting for media'), findsNothing);
+      },
+    );
+
     testWidgets('shows the empty state when nobody is on stage', (
       tester,
     ) async {
