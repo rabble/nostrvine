@@ -318,6 +318,7 @@ class VineTheme {
   static const Color neutral10 = Color(0xFF1B1C1C);
 
   // Skeleton / shimmer loading
+  // TODO(design): Confirm skeleton colors and duration with design team.
 
   /// Base color for skeleton shimmer effects.
   static const Color skeletonBase = iconButtonBackground;
