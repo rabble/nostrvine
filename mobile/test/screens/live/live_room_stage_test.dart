@@ -27,6 +27,7 @@ void main() {
 
         await tester.pumpWidget(
           testMaterialApp(
+            mockNip05VerificationService: createMockNip05VerificationService(),
             additionalOverrides: [
               userProfileReactiveProvider(hostPubkey).overrideWith(
                 (ref) => Stream.value(profile),

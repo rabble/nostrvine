@@ -109,6 +109,7 @@ void main() {
 
       await tester.pumpWidget(
         testMaterialApp(
+          mockNip05VerificationService: createMockNip05VerificationService(),
           additionalOverrides: [
             userProfileReactiveProvider(authorPubkey).overrideWith(
               (ref) => Stream.value(profile),
@@ -190,6 +191,7 @@ void main() {
 
       await tester.pumpWidget(
         testMaterialApp(
+          mockNip05VerificationService: createMockNip05VerificationService(),
           additionalOverrides: [
             userProfileReactiveProvider(authorPubkey).overrideWith(
               (ref) => Stream.value(profile),
