@@ -65,6 +65,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         testMaterialApp(
+          mockNip05VerificationService: createMockNip05VerificationService(),
           home: const Scaffold(
             body: LiveRoomStage(
               speakerPubkeys: <String>['stale-speaker-pubkey'],
@@ -100,6 +101,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         testMaterialApp(
+          mockNip05VerificationService: createMockNip05VerificationService(),
           home: const Scaffold(
             body: LiveRoomStage(
               speakerPubkeys: <String>[],
