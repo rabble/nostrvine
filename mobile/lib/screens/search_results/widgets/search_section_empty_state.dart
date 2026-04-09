@@ -18,14 +18,13 @@ class SearchSectionEmptyState extends StatelessWidget {
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 8,
+          spacing: 16,
           children: [
             const DivineIcon(
               icon: DivineIconName.search,
               color: VineTheme.secondaryText,
               size: 48,
             ),
-            const SizedBox(height: 8),
             Text(
               'No results found for "$query"',
               style: VineTheme.titleSmallFont(),
