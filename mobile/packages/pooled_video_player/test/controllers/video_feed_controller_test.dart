@@ -1898,6 +1898,7 @@ void main() {
           videos: videos,
           pool: evictionPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         // Grab notifier before load-state updates propagate.
@@ -1934,6 +1935,7 @@ void main() {
           videos: videos,
           pool: evictionPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         // Wait for serialized current load + concurrent preloads.
@@ -1962,6 +1964,7 @@ void main() {
           videos: videos,
           pool: evictionPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         final notifier0 = controller.getIndexNotifier(0);
@@ -2151,6 +2154,7 @@ void main() {
           videos: videos,
           pool: callbackPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         final notifier0 = controller.getIndexNotifier(0);
@@ -2223,6 +2227,7 @@ void main() {
           videos: videos,
           pool: callbackPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         final notifier0 = controller.getIndexNotifier(0);
@@ -2253,6 +2258,7 @@ void main() {
           videos: videos,
           pool: callbackPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         final notifier1 = controller.getIndexNotifier(1);
@@ -3235,6 +3241,85 @@ void main() {
             const Duration(milliseconds: 50),
           );
 
+          verify(setup.player.play).called(greaterThanOrEqualTo(1));
+        },
+      );
+      test(
+        'loop-boundary rebuffer skips redundant play() when player '
+        'is already playing with known duration',
+        () async {
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(videos: videos, pool: pool);
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup = playerSetups[videos[0].url]!;
+
+          // Initial buffer ready — video starts playing normally.
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+
+          clearInteractions(setup.player);
+
+          // Simulate loop boundary: position resets to 0, duration is
+          // known (6.5s video), player reports playing=true. mpv emits
+          // a brief buffering=true→false cycle when it loops.
+          when(() => setup.state.playing).thenReturn(true);
+          when(
+            () => setup.state.position,
+          ).thenReturn(Duration.zero);
+          when(
+            () => setup.state.duration,
+          ).thenReturn(const Duration(milliseconds: 6500));
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // player.play() should NOT be called — the player is already
+          // playing and this is a loop boundary (position≈0, duration>0,
+          // playing=true). Calling play() causes a visible micro-stutter.
+          verifyNever(setup.player.play);
+        },
+      );
+
+      test(
+        'mid-stream rebuffer still calls play() even when position '
+        'is non-zero and player reports playing',
+        () async {
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(videos: videos, pool: pool);
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup = playerSetups[videos[0].url]!;
+
+          // Initial buffer ready
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          clearInteractions(setup.player);
+
+          // Simulate mid-stream network rebuffer: position at 3s into a
+          // 6.5s video, player reports playing=true. This is a real stall
+          // and play() must be called to nudge the decoder.
+          when(() => setup.state.playing).thenReturn(true);
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 3000));
+          when(
+            () => setup.state.duration,
+          ).thenReturn(const Duration(milliseconds: 6500));
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // play() MUST be called for real network stalls.
           verify(setup.player.play).called(greaterThanOrEqualTo(1));
         },
       );

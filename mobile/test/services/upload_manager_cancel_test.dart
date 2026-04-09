@@ -47,7 +47,11 @@ void main() {
   tearDown(() async {
     // Clean up
     uploadManager.dispose();
-    await Hive.close();
+    try {
+      await Hive.close();
+    } on PathNotFoundException catch (_) {
+      // Hive may already have removed the lock file during async shutdown.
+    }
 
     // Delete test directory
     try {

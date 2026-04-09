@@ -84,6 +84,7 @@ class VideoFeedController extends ChangeNotifier {
     this.positionCallback,
     this.positionCallbackInterval = const Duration(milliseconds: 250),
     this.slowLoadThreshold = const Duration(seconds: 8),
+    this.preloadGracePeriod = const Duration(seconds: 3),
     this.maxLoopDuration,
     this.onLog,
   }) : pool = pool ?? PlayerPool.instance,
@@ -187,6 +188,7 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, int> _stallRetryCount = {};
   final Set<int> _readyVideosAwaitingRecovery = {};
   final Set<int> _slowLoadIndices = {};
+  final Map<int, Completer<void>> _readyCompleters = {};
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
 
@@ -195,6 +197,14 @@ class VideoFeedController extends ChangeNotifier {
   /// immediately kill playback — but a genuinely broken stream still fails
   /// within a few seconds.
   static const _maxStallRetries = 2;
+
+  /// Grace period after the current video starts buffering before preloads
+  /// fire. Gives the visible video exclusive bandwidth so it buffers faster.
+  ///
+  /// When the current video's buffer fills before this period elapses,
+  /// preloads fire immediately. Defaults to 3 seconds — long enough for
+  /// most videos to fully buffer on a reasonable connection.
+  final Duration preloadGracePeriod;
 
   /// Stale-position recovery: tracks the last observed position and how many
   /// consecutive heartbeats it has remained unchanged while the player reports
@@ -501,6 +511,17 @@ class VideoFeedController extends ChangeNotifier {
     return VideoErrorType.generic;
   }
 
+  /// Completes the ready completer for [index] if one is pending.
+  ///
+  /// Called from [_onBufferReady] and [_markLoadError] so that
+  /// [_loadCurrentThenPreloads] is unblocked regardless of outcome.
+  void _completeReady(int index) {
+    final completer = _readyCompleters.remove(index);
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
   void _markLoadError({
     required int index,
     String? errorMessage,
@@ -509,6 +530,7 @@ class VideoFeedController extends ChangeNotifier {
     if (_isDisposed) return;
     _stallRetryCount.remove(index);
     _readyVideosAwaitingRecovery.remove(index);
+    _completeReady(index);
     _loadStates[index] = LoadState.error;
     if (errorMessage != null) {
       _errorTypes[index] = _classifyError(errorMessage, index);
@@ -798,6 +820,13 @@ class VideoFeedController extends ChangeNotifier {
   /// The [generation] parameter is compared against [_preloadGeneration]
   /// after the current video loads. If the user scrolled again in the
   /// meantime, the preloads are skipped (a newer window superseded them).
+  ///
+  /// Preloads are deferred until the current video reaches
+  /// [LoadState.ready] (or a short grace period elapses), giving the
+  /// visible video bandwidth priority. Without this, concurrent preloads
+  /// starve the current video — in production logs the current video took
+  /// 2.8s to buffer while a preloaded video finished in 650ms because
+  /// all streams competed equally for bandwidth.
   Future<void> _loadCurrentThenPreloads(
     int index,
     List<int> preloadIndices,
@@ -805,7 +834,29 @@ class VideoFeedController extends ChangeNotifier {
   ) async {
     // Load the current (visible) video first.
     if (_shouldLoad(index)) {
+      // Register a completer so we can detect when the buffer fills.
+      final completer = _readyCompleters[index] = Completer<void>();
+
       await _loadPlayer(index);
+
+      // Bail if a newer preload window was requested while loading.
+      if (_isDisposed || _preloadGeneration != generation) {
+        _readyCompleters.remove(index);
+        return;
+      }
+
+      // _loadPlayer returns after open()+play(), not after the buffer
+      // fills. Give the current video a bandwidth head-start before
+      // firing preloads. If the buffer fills quickly (< grace period),
+      // preloads fire immediately after.
+      if (_loadStates[index] == LoadState.loading) {
+        await Future.any([
+          completer.future,
+          Future<void>.delayed(preloadGracePeriod),
+        ]);
+      }
+
+      _readyCompleters.remove(index);
     }
 
     // Bail if a newer preload window was requested while loading.
@@ -1053,6 +1104,9 @@ class VideoFeedController extends ChangeNotifier {
       'elapsedMs=$elapsedMs',
     );
 
+    // Unblock preloads that were waiting for this video to buffer.
+    _completeReady(index);
+
     // Call onVideoReady hook
     onVideoReady?.call(index, player);
 
@@ -1161,19 +1215,30 @@ class VideoFeedController extends ChangeNotifier {
             }
           }
 
-          // Always call play() on rebuffer completion — even when
-          // player.state.playing reports true. mpv can report
-          // playing=true while the decoder is actually stalled with no
-          // frame output, especially after a seek or network hiccup.
-          // The play() call nudges the decoder to resume frame output.
+          // Detect loop-boundary rebuffers: when the player is already
+          // playing, position is near the start (≤100ms), and duration
+          // is known, mpv just auto-looped via PlaylistMode.single.
+          // Calling play() in this case causes a visible micro-stutter
+          // because it interrupts the decoder's seamless loop. Skip it.
+          final isPlaying = player.state.playing;
+          final currentPositionMs = player.state.position.inMilliseconds;
+          final currentDurationMs = player.state.duration.inMilliseconds;
+          final isLoopBoundary =
+              isPlaying && currentPositionMs <= 100 && currentDurationMs > 0;
+
           _logDebug(
             'rebuffer_auto_play index=$index '
-            'positionMs=${player.state.position.inMilliseconds} '
-            'playing=${player.state.playing} '
+            'positionMs=$currentPositionMs '
+            'durationMs=$currentDurationMs '
+            'playing=$isPlaying '
             'wasRecovering=$wasRecovering '
+            'isLoopBoundary=$isLoopBoundary '
             '${_videoDebugDetails(index)}',
           );
-          unawaited(player.play());
+
+          if (!isLoopBoundary) {
+            unawaited(player.play());
+          }
         }
       }
     });
@@ -1526,6 +1591,9 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   void _releasePlayer(int index) {
+    // Unblock any pending preload wait for this index.
+    _completeReady(index);
+
     // Stop audio before removing from tracking to prevent audio leaks.
     // The player stays in the pool for reuse, but must be silent.
     final player = _loadedPlayers[index]?.player;
@@ -1570,6 +1638,12 @@ class VideoFeedController extends ChangeNotifier {
     _loadWatchdogTimers.clear();
 
     _stuckPlaybackTimer?.cancel();
+
+    // Complete any pending ready completers so awaiting futures resolve.
+    for (final completer in _readyCompleters.values) {
+      if (!completer.isCompleted) completer.complete();
+    }
+    _readyCompleters.clear();
 
     // Cancel all buffer subscriptions.
     for (final subscription in _bufferSubscriptions.values) {

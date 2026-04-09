@@ -3,25 +3,24 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/services/invite_api_service.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 
 part 'invite_status_state.dart';
 
 class InviteStatusCubit extends Cubit<InviteStatusState> {
   InviteStatusCubit({
-    required InviteApiService inviteApiService,
-  }) : _inviteApiService = inviteApiService,
+    required InviteApiClient inviteApiClient,
+  }) : _inviteApiClient = inviteApiClient,
        super(const InviteStatusState());
 
-  final InviteApiService _inviteApiService;
+  final InviteApiClient _inviteApiClient;
 
   Future<void> load() async {
     if (state.status == InviteStatusLoadingStatus.loading) return;
 
     emit(state.copyWith(status: InviteStatusLoadingStatus.loading));
     try {
-      final inviteStatus = await _inviteApiService.getInviteStatus();
+      final inviteStatus = await _inviteApiClient.getInviteStatus();
       emit(
         state.copyWith(
           status: InviteStatusLoadingStatus.loaded,
