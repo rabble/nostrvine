@@ -13,6 +13,7 @@ import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/repositories/live_chat_repository.dart';
 import 'package:openvine/repositories/live_repository.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/screens/live/live_room_detail_page.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/live_api_service.dart';
@@ -360,5 +361,59 @@ void main() {
         ),
       );
     });
+
+    testWidgets(
+      'shows a back button that falls back to live discovery when opened directly',
+      (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final router = GoRouter(
+          initialLocation: LiveRoomDetailPage.pathFor(room.id),
+          routes: <RouteBase>[
+            GoRoute(
+              path: LiveDiscoveryPage.path,
+              builder: (context, state) => const Scaffold(
+                body: Center(child: Text('live discovery')),
+              ),
+            ),
+            GoRoute(
+              path: LiveRoomDetailPage.pathPattern,
+              builder: (context, state) => LiveRoomDetailPage(
+                roomId: room.id,
+                initialRoom: room,
+                initialSession: session,
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+              liveChatRepositoryProvider.overrideWithValue(
+                mockLiveChatRepository,
+              ),
+              liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+              liveKitRoomServiceProvider.overrideWithValue(
+                mockLiveKitRoomService,
+              ),
+            ],
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BackButton), findsOneWidget);
+
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('live discovery'), findsOneWidget);
+      },
+    );
   });
 }

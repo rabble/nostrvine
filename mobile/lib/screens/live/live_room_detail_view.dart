@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/models/live/live_session.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/screens/live/live_route_data.dart';
 import 'package:openvine/screens/live/widgets/live_replay_banner.dart';
 import 'package:share_plus/share_plus.dart';
@@ -32,6 +33,16 @@ class LiveRoomDetailView extends StatelessWidget {
       backgroundColor: VineTheme.surfaceBackground,
       appBar: AppBar(
         backgroundColor: VineTheme.surfaceBackground,
+        leading: BackButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+              return;
+            }
+
+            context.go(LiveDiscoveryPage.path);
+          },
+        ),
         title: Text(
           'Room detail',
           style: VineTheme.titleLargeFont(),

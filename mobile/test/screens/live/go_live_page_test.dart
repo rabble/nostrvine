@@ -7,6 +7,7 @@ import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/repositories/live_repository.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/live/go_live_page.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -174,5 +175,61 @@ void main() {
       expect(editableTexts, everyElement(isEmpty));
       expect(find.byType(UserAvatar), findsNothing);
     });
+
+    testWidgets(
+      'shows a back button that falls back to live discovery when opened directly',
+      (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final mockLiveRepository = _MockLiveRepository();
+        final mockLiveApiService = _MockLiveApiService();
+        final mockProfileRepository = _MockProfileRepository();
+        final mockAuthService = createMockAuthService();
+        when(() => mockAuthService.currentPublicKeyHex).thenReturn(
+          'host-pubkey',
+        );
+        when(
+          () => mockProfileRepository.getCachedProfile(pubkey: 'host-pubkey'),
+        ).thenAnswer((_) async => null);
+
+        final router = GoRouter(
+          initialLocation: GoLivePage.path,
+          routes: <RouteBase>[
+            GoRoute(
+              path: LiveDiscoveryPage.path,
+              builder: (context, state) => const Scaffold(
+                body: Center(child: Text('live discovery')),
+              ),
+            ),
+            GoRoute(
+              path: GoLivePage.path,
+              builder: (context, state) => const GoLivePage(),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: mockAuthService,
+            mockProfileRepository: mockProfileRepository,
+            additionalOverrides: [
+              liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+              liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+            ],
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BackButton), findsOneWidget);
+
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('live discovery'), findsOneWidget);
+      },
+    );
   });
 }

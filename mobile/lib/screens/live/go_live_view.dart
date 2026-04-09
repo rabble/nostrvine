@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/go_live/go_live_cubit.dart';
 import 'package:openvine/models/live/live_role.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/screens/live/live_room_page.dart';
 import 'package:openvine/screens/live/live_route_data.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -65,6 +66,16 @@ class _GoLiveViewState extends State<GoLiveView> {
         backgroundColor: VineTheme.surfaceBackground,
         appBar: AppBar(
           backgroundColor: VineTheme.surfaceBackground,
+          leading: BackButton(
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+                return;
+              }
+
+              context.go(LiveDiscoveryPage.path);
+            },
+          ),
           title: Text(
             'Go live',
             style: VineTheme.headlineSmallFont(),

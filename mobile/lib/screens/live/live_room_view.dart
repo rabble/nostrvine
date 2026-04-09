@@ -2,10 +2,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/live_chat/live_chat_bloc.dart';
 import 'package:openvine/blocs/live_room/live_room_bloc.dart';
 import 'package:openvine/models/live/live_presence.dart';
 import 'package:openvine/models/live/live_role.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/screens/live/widgets/live_chat_panel.dart';
 import 'package:openvine/screens/live/widgets/live_host_controls_sheet.dart';
 import 'package:openvine/screens/live/widgets/live_local_media_controls.dart';
@@ -27,6 +29,16 @@ class _LiveRoomViewState extends State<LiveRoomView> {
       backgroundColor: VineTheme.surfaceBackground,
       appBar: AppBar(
         backgroundColor: VineTheme.surfaceBackground,
+        leading: BackButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+              return;
+            }
+
+            context.go(LiveDiscoveryPage.path);
+          },
+        ),
         title: BlocBuilder<LiveRoomBloc, LiveRoomState>(
           builder: (context, state) {
             return Text(

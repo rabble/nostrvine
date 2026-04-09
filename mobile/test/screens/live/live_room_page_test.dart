@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/live/live_chat_message.dart';
 import 'package:openvine/models/live/live_presence.dart';
@@ -13,7 +14,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/live_providers.dart';
 import 'package:openvine/repositories/live_chat_repository.dart';
 import 'package:openvine/repositories/live_repository.dart';
+import 'package:openvine/screens/live/live_discovery_page.dart';
 import 'package:openvine/screens/live/live_room_page.dart';
+import 'package:openvine/screens/live/live_route_data.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
@@ -101,6 +104,13 @@ void main() {
       role: LiveRole.audience,
       handRaised: true,
       updatedAt: DateTime.utc(2026, 4, 6, 8, 2),
+    );
+    final liveMessage = LiveChatMessage(
+      id: 'chat-1',
+      sessionAddress: sessionAddress,
+      pubkey: 'audience-pubkey',
+      content: 'This room is live.',
+      createdAt: DateTime.utc(2026, 4, 6, 8, 1),
     );
 
     setUpAll(() {
@@ -285,6 +295,185 @@ void main() {
     });
 
     testWidgets(
+      'chat starts for the current session even when the room is ready immediately',
+      (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final audienceAuth = createMockAuthService();
+        when(() => audienceAuth.currentPublicKeyHex).thenReturn(
+          'audience-pubkey',
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: audienceAuth,
+            additionalOverrides: [
+              liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+              liveChatRepositoryProvider.overrideWithValue(
+                mockLiveChatRepository,
+              ),
+              liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+              liveKitRoomServiceProvider.overrideWithValue(
+                mockLiveKitRoomService,
+              ),
+            ],
+            home: LiveRoomPage(
+              roomId: room.id,
+              sessionId: session.id,
+              initialRoom: room,
+              initialSession: session,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Chat'), findsOneWidget);
+        expect(find.text('This room is live.'), findsOneWidget);
+
+        verify(
+          () => mockLiveChatRepository.watchChatMessages(
+            sessionAddress: sessionAddress,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets('chat re-scopes when the active session changes', (
+      tester,
+    ) async {
+      final sessionsController = StreamController<List<LiveSession>>.broadcast(
+        sync: true,
+      );
+      final sessionTwo = LiveSession(
+        id: 'session-456',
+        roomId: room.id,
+        status: LiveSessionStatus.live,
+        startedAt: DateTime.utc(2026, 4, 6, 9),
+        endedAt: null,
+        speakerPubkeys: const <String>['host-pubkey'],
+        audienceCount: 22,
+      );
+      const sessionOneAddress = '30313:host-pubkey:session-123';
+      const sessionTwoAddress = '30313:host-pubkey:session-456';
+      final messageControllers =
+          <String, StreamController<List<LiveChatMessage>>>{};
+
+      when(
+        () => mockLiveRepository.watchSessions(roomAddress: room.address),
+      ).thenAnswer((_) => sessionsController.stream);
+      when(
+        () => mockLiveRepository.watchPresence(
+          sessionAddress: any(named: 'sessionAddress'),
+        ),
+      ).thenAnswer((_) => const Stream<List<LivePresence>>.empty());
+      when(
+        () => mockLiveChatRepository.watchChatMessages(
+          sessionAddress: any(named: 'sessionAddress'),
+        ),
+      ).thenAnswer((invocation) {
+        final sessionAddress =
+            invocation.namedArguments[#sessionAddress] as String;
+        return messageControllers
+            .putIfAbsent(
+              sessionAddress,
+              () => StreamController<List<LiveChatMessage>>.broadcast(
+                sync: true,
+              ),
+            )
+            .stream;
+      });
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final audienceAuth = createMockAuthService();
+      when(() => audienceAuth.currentPublicKeyHex).thenReturn(
+        'audience-pubkey',
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockSharedPreferences: sharedPreferences,
+          mockAuthService: audienceAuth,
+          additionalOverrides: [
+            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+            liveChatRepositoryProvider.overrideWithValue(
+              mockLiveChatRepository,
+            ),
+            liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+            liveKitRoomServiceProvider.overrideWithValue(
+              mockLiveKitRoomService,
+            ),
+          ],
+          home: LiveRoomPage(
+            roomId: room.id,
+            sessionId: session.id,
+            initialRoom: room,
+            initialSession: session,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      sessionsController.add(<LiveSession>[session]);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      messageControllers[sessionOneAddress]!.add(<LiveChatMessage>[
+        liveMessage,
+      ]);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('This room is live.'), findsOneWidget);
+
+      sessionsController.add(<LiveSession>[sessionTwo]);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      messageControllers[sessionTwoAddress]!.add(
+        <LiveChatMessage>[
+          LiveChatMessage(
+            id: 'chat-2',
+            sessionAddress: sessionTwoAddress,
+            pubkey: 'speaker-pubkey',
+            content: 'Fresh room, fresh chat.',
+            createdAt: DateTime.utc(2026, 4, 6, 9, 1),
+          ),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('This room is live.'), findsNothing);
+      expect(find.text('Fresh room, fresh chat.'), findsOneWidget);
+
+      verify(
+        () => mockLiveChatRepository.watchChatMessages(
+          sessionAddress: sessionOneAddress,
+        ),
+      ).called(1);
+      verify(
+        () => mockLiveChatRepository.watchChatMessages(
+          sessionAddress: sessionTwoAddress,
+        ),
+      ).called(1);
+
+      await sessionsController.close();
+      for (final controller in messageControllers.values) {
+        await controller.close();
+      }
+    });
+
+    testWidgets(
       'host console can report, block, and mute live chat participants',
       (tester) async {
         SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -432,6 +621,92 @@ void main() {
         ),
       ).called(1);
     });
+
+    testWidgets(
+      'shows a back button that pops to the previous live route when opened from live discovery',
+      (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final audienceAuth = createMockAuthService();
+        when(() => audienceAuth.currentPublicKeyHex).thenReturn(
+          'audience-pubkey',
+        );
+        final router = GoRouter(
+          initialLocation: LiveDiscoveryPage.path,
+          routes: <RouteBase>[
+            GoRoute(
+              path: LiveDiscoveryPage.path,
+              builder: (context, state) => Scaffold(
+                body: Builder(
+                  builder: (context) => Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('live discovery'),
+                      TextButton(
+                        onPressed: () => context.push(
+                          LiveRoomPage.pathFor(room.id, session.id),
+                          extra: LiveRoomRouteData(
+                            room: room,
+                            session: session,
+                          ),
+                        ),
+                        child: const Text('open room'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            GoRoute(
+              path: LiveRoomPage.pathPattern,
+              builder: (context, state) => LiveRoomPage(
+                roomId: room.id,
+                sessionId: session.id,
+                initialRoom: room,
+                initialSession: session,
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: audienceAuth,
+            additionalOverrides: [
+              liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+              liveChatRepositoryProvider.overrideWithValue(
+                mockLiveChatRepository,
+              ),
+              liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+              liveKitRoomServiceProvider.overrideWithValue(
+                mockLiveKitRoomService,
+              ),
+              contentReportingServiceProvider.overrideWith(
+                (ref) async => mockContentReportingService,
+              ),
+              contentBlocklistServiceProvider.overrideWithValue(
+                mockContentBlocklistService,
+              ),
+            ],
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('open room'));
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BackButton), findsOneWidget);
+
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('live discovery'), findsOneWidget);
+        expect(find.text('open room'), findsOneWidget);
+      },
+    );
 
     testWidgets('listed speakers get local publishing controls', (
       tester,
