@@ -1518,22 +1518,68 @@ class AuthService implements BackgroundAwareService {
         final session = await KeycastSession.load(_flutterSecureStorage);
         if (session != null && session.hasRpcAccess) {
           await signInWithDivineOAuth(session);
-        } else if (session != null && session.isExpired) {
-          Log.warning(
-            'signInForAccount: OAuth session expired for $pubkeyHex',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          throw SessionExpiredException();
         } else {
-          Log.error(
-            'signInForAccount: no archived OAuth session for $pubkeyHex '
+          // Session is expired, missing, or has no RPC access.
+          // Try to refresh, then fall back to local keys — same
+          // recovery strategy as _initializeDivineOAuth.
+          Log.info(
+            'signInForAccount: OAuth session not usable for $pubkeyHex '
             '(session=${session != null}, '
-            'hasRpcAccess=${session?.hasRpcAccess})',
+            'hasRpcAccess=${session?.hasRpcAccess}, '
+            'isExpired=${session?.isExpired}), attempting refresh...',
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          throw Exception('No archived OAuth session found for $pubkeyHex');
+          if (_oauthClient != null) {
+            final refreshed = await _tryRefreshOAuthSession(
+              caller: 'signInForAccount',
+            );
+            if (refreshed) break;
+          }
+
+          // Refresh failed — try local keys so the user can at least
+          // read their feed while RPC catches up in the background.
+          final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
+          SecureKeyContainer? localKey;
+          try {
+            localKey = await _keyStorage.getIdentityKeyContainer(npub);
+            if (localKey == null && await _keyStorage.hasKeys()) {
+              final primary = await _keyStorage.getKeyContainer();
+              if (primary?.publicKeyHex == pubkeyHex) {
+                localKey = primary;
+              }
+            }
+          } catch (e) {
+            Log.warning(
+              'signInForAccount: local key lookup failed: $e',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+          }
+
+          if (localKey != null) {
+            Log.info(
+              'signInForAccount: using local keys for $pubkeyHex '
+              'with expired OAuth session flag',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            _hasExpiredOAuthSession = true;
+            _setRpcCapability(AuthRpcCapability.upgrading);
+            await _setupUserSession(
+              localKey,
+              AuthenticationSource.divineOAuth,
+            );
+            unawaited(_upgradeDivineRpcInBackground(session));
+          } else {
+            Log.warning(
+              'signInForAccount: no refresh, no local keys for '
+              '$pubkeyHex — session expired',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            throw SessionExpiredException();
+          }
         }
 
       case AuthenticationSource.importedKeys:

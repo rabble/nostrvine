@@ -1019,9 +1019,18 @@ void main() {
     });
 
     test(
-      'throws when OAuth session not found for divineOAuth source',
+      'throws $SessionExpiredException when OAuth session not found '
+      'and no local keys',
       () async {
         final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        // No local keys available for fallback
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
 
         await expectLater(
           _ignoringDiscoveryErrors(
@@ -1030,19 +1039,13 @@ void main() {
               AuthenticationSource.divineOAuth,
             ),
           ),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('No archived OAuth session found'),
-            ),
-          ),
+          throwsA(isA<SessionExpiredException>()),
         );
       },
     );
 
     test(
-      'throws $SessionExpiredException when OAuth session is expired',
+      'recovers with local keys when OAuth session is expired',
       () async {
         final pubkeyHex = testKeyContainer.publicKeyHex;
 
@@ -1055,6 +1058,50 @@ void main() {
         when(
           () => mockSecureStorage.read(key: 'keycast_session'),
         ).thenAnswer((_) async => jsonEncode(expiredSession.toJson()));
+
+        // Local keys are available for fallback
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => testKeyContainer);
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            pubkeyHex,
+            AuthenticationSource.divineOAuth,
+          ),
+        );
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(authService.hasExpiredOAuthSession, isTrue);
+      },
+    );
+
+    test(
+      'throws $SessionExpiredException when OAuth session is expired '
+      'and no local keys',
+      () async {
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        // Store an expired session (expired 1 hour ago)
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'wss://relay.example.com',
+          accessToken: 'expired-token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session'),
+        ).thenAnswer((_) async => jsonEncode(expiredSession.toJson()));
+
+        // No local keys available for fallback
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
 
         await expectLater(
           _ignoringDiscoveryErrors(
