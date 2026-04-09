@@ -241,7 +241,7 @@ void main() {
         );
       });
 
-      testWidgets('is marked as button for tap interaction', (tester) async {
+      testWidgets('is not marked as button (display only)', (tester) async {
         final video = createVideoWithoutAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));
@@ -256,7 +256,7 @@ void main() {
               .first,
         );
 
-        expect(semantics.properties.button, isTrue);
+        expect(semantics.properties.button, isNull);
       });
     });
 

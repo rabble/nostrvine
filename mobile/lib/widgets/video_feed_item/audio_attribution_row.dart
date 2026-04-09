@@ -8,7 +8,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -96,59 +95,40 @@ class _OriginalSoundAttribution extends ConsumerWidget {
         video.authorName ??
         UserProfile.generatedNameFor(video.pubkey);
 
-    return GestureDetector(
-      onTap: () => _navigateToOriginalSound(context),
-      child: Semantics(
-        identifier: 'audio_attribution_row_original',
-        button: true,
-        label:
-            'Original sound by $creatorName. '
-            'Tap to view sound details.',
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.music_note,
-                size: 14,
-                color: VineTheme.vineGreen,
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  'Original sound - $creatorName',
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    shadows: [Shadow(blurRadius: 4)],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    return Semantics(
+      identifier: 'audio_attribution_row_original',
+      label: 'Original sound by $creatorName.',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: VineTheme.backgroundColor.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.music_note,
+              size: 14,
+              color: VineTheme.vineGreen,
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                'Original sound - $creatorName',
+                style: const TextStyle(
+                  color: VineTheme.whiteText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  shadows: [Shadow(blurRadius: 4)],
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  void _navigateToOriginalSound(BuildContext context) {
-    Log.info(
-      'Navigating to original sound for video: ${video.id}',
-      name: 'AudioAttributionRow',
-      category: LogCategory.ui,
-    );
-
-    context.pushWithVideoPause(
-      OriginalSoundDetailScreen.pathForPubkey(video.pubkey),
-      extra: video,
     );
   }
 }
