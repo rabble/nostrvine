@@ -304,7 +304,6 @@ class _ProfileScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      extendBodyBehindAppBar: true,
       body: body,
       bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );

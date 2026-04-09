@@ -154,8 +154,8 @@ class ProfileHeaderWidget extends ConsumerWidget {
           ),
 
           // Foreground: all profile content (z-index 1)
-          Transform.translate(
-            offset: Offset(0, safeAreaTop),
+          Padding(
+            padding: EdgeInsets.only(top: safeAreaTop),
             child: Column(
               children: [
                 // Navigation buttons
@@ -430,8 +430,9 @@ class _AboutTextState extends State<_AboutText> {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle =
-        VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant);
+    final textStyle = VineTheme.bodyMediumFont(
+      color: VineTheme.onSurfaceVariant,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -555,14 +556,17 @@ class _ProfileStatsRow extends StatelessWidget {
     final hasLoops = profileStats?.totalViews != null;
 
     final columns = <Widget>[
-      if (hasFollowers)
+      if (hasLoops)
         ProfileStatColumn(
-          count: profileStats!.followers,
-          label: 'Followers',
+          count: profileStats!.totalViews,
+          label: 'Loops',
           isLoading: false,
-          onTap: () => context.push(
-            FollowersScreenRouter.pathForPubkey(userIdHex),
-          ),
+        ),
+      if (hasLikes)
+        ProfileStatColumn(
+          count: profileStats!.totalLikes,
+          label: 'Likes',
+          isLoading: false,
         ),
       if (hasFollowing)
         ProfileStatColumn(
@@ -573,17 +577,14 @@ class _ProfileStatsRow extends StatelessWidget {
             FollowingScreenRouter.pathForPubkey(userIdHex),
           ),
         ),
-      if (hasLikes)
+      if (hasFollowers)
         ProfileStatColumn(
-          count: profileStats!.totalLikes,
-          label: 'Likes',
+          count: profileStats!.followers,
+          label: 'Followers',
           isLoading: false,
-        ),
-      if (hasLoops)
-        ProfileStatColumn(
-          count: profileStats!.totalViews,
-          label: 'Loops',
-          isLoading: false,
+          onTap: () => context.push(
+            FollowersScreenRouter.pathForPubkey(userIdHex),
+          ),
         ),
     ];
 

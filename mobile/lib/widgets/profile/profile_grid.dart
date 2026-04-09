@@ -304,19 +304,16 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
             ),
           ),
 
-          // Action Buttons — shifted down to absorb tab bar safe area gap
+          // Action Buttons
           SliverToBoxAdapter(
-            child: Transform.translate(
-              offset: Offset(0, MediaQuery.paddingOf(context).top),
-              child: ProfileActionButtons(
-                userIdHex: widget.userIdHex,
-                isOwnProfile: widget.isOwnProfile,
-                displayName: widget.displayName,
-                onOpenClips: widget.onOpenClips,
-                onMessageUser: widget.onMessageUser,
-                onShareProfile: widget.onShareProfile,
-                onBlockedTap: widget.onBlockedTap,
-              ),
+            child: ProfileActionButtons(
+              userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
+              displayName: widget.displayName,
+              onOpenClips: widget.onOpenClips,
+              onMessageUser: widget.onMessageUser,
+              onShareProfile: widget.onShareProfile,
+              onBlockedTap: widget.onBlockedTap,
             ),
           ),
 
@@ -324,7 +321,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           SliverPersistentHeader(
             pinned: true,
             delegate: _SliverAppBarDelegate(
-              MediaQuery.paddingOf(context).top,
               TabBar(
                 controller: _tabController,
                 indicatorColor: VineTheme.tabIndicatorGreen,
@@ -449,33 +445,25 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 }
 
 /// Custom delegate for sticky tab bar.
-/// Sticky tab bar delegate with safe area top padding.
+/// Sticky tab bar delegate.
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._topPadding, this._tabBar);
+  _SliverAppBarDelegate(this._tabBar);
 
-  final double _topPadding;
   final TabBar _tabBar;
 
   @override
-  double get minExtent => _topPadding + _tabBar.preferredSize.height;
+  double get minExtent => _tabBar.preferredSize.height;
 
   @override
-  double get maxExtent => _topPadding + _tabBar.preferredSize.height;
+  double get maxExtent => _tabBar.preferredSize.height;
 
   @override
   Widget build(
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) => ColoredBox(
-    color: VineTheme.surfaceBackground,
-    child: Padding(
-      padding: EdgeInsets.only(top: _topPadding),
-      child: _tabBar,
-    ),
-  );
+  ) => ColoredBox(color: VineTheme.surfaceBackground, child: _tabBar);
 
   @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) =>
-      _topPadding != oldDelegate._topPadding;
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }
