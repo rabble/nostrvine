@@ -4459,9 +4459,16 @@ String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Sets auth credentials eagerly so read/send operations work immediately.
-/// The relay subscription is NOT started here — it is driven by the inbox
-/// UI lifecycle via [ConversationListBloc] (#2766).
+/// Sets auth credentials eagerly so read/send operations work immediately,
+/// then starts the gift-wrap subscription so DMs are ingested for the whole
+/// authenticated session — not just while [InboxPage] is mounted (#2931).
+///
+/// Cold-start cost is bounded by two existing mechanisms that landed with
+/// the original lazy-inbox work (#2766):
+/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+///   limits the relay backlog to recent events on every open after the first.
+/// - Decryption is offloaded to a background isolate via
+///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
 /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4479,9 +4486,16 @@ const dmRepositoryProvider = DmRepositoryProvider._();
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Sets auth credentials eagerly so read/send operations work immediately.
-/// The relay subscription is NOT started here — it is driven by the inbox
-/// UI lifecycle via [ConversationListBloc] (#2766).
+/// Sets auth credentials eagerly so read/send operations work immediately,
+/// then starts the gift-wrap subscription so DMs are ingested for the whole
+/// authenticated session — not just while [InboxPage] is mounted (#2931).
+///
+/// Cold-start cost is bounded by two existing mechanisms that landed with
+/// the original lazy-inbox work (#2766):
+/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+///   limits the relay backlog to recent events on every open after the first.
+/// - Decryption is offloaded to a background isolate via
+///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
 /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4499,9 +4513,16 @@ final class DmRepositoryProvider
   /// and sending encrypted direct messages. Works with any [NostrSigner]
   /// (local keys, Keycast RPC, Amber, etc.).
   ///
-  /// Sets auth credentials eagerly so read/send operations work immediately.
-  /// The relay subscription is NOT started here — it is driven by the inbox
-  /// UI lifecycle via [ConversationListBloc] (#2766).
+  /// Sets auth credentials eagerly so read/send operations work immediately,
+  /// then starts the gift-wrap subscription so DMs are ingested for the whole
+  /// authenticated session — not just while [InboxPage] is mounted (#2931).
+  ///
+  /// Cold-start cost is bounded by two existing mechanisms that landed with
+  /// the original lazy-inbox work (#2766):
+  /// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+  ///   limits the relay backlog to recent events on every open after the first.
+  /// - Decryption is offloaded to a background isolate via
+  ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
   ///
   /// Uses `keepAlive: true` because the repository must survive transient
   /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4542,7 +4563,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'30503db56d4371ec8d639cebcaf711fa372966bd';
+String _$dmRepositoryHash() => r'a2fa1b080fa8ff0db62cc19074de841115603487';
 
 /// Provider for CommentsRepository instance
 ///
