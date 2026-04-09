@@ -168,6 +168,31 @@ class CameraController(
     private var maxDurationRunnable: Runnable? = null
     private var autoStopCallback: ((Map<String, Any?>?, String?) -> Unit)? = null
 
+    // Quality fallback: when the hardware encoder rejects the requested quality
+    // (e.g. device falsely reports FHD support), retry with lower quality.
+    private var encoderRetryCount: Int = 0
+    private var pendingRecordingParams: RecordingParams? = null
+
+    private data class RecordingParams(
+        val maxDurationMs: Int?,
+        val useCache: Boolean,
+        val outputDirectory: String?,
+        val callback: (String?) -> Unit
+    )
+
+    companion object {
+        private const val MAX_ENCODER_RETRIES = 2
+
+        /** Returns the next lower quality, or null if already at minimum. */
+        fun lowerQuality(current: Quality): Quality? = when (current) {
+            Quality.UHD -> Quality.FHD
+            Quality.FHD -> Quality.HD
+            Quality.HIGHEST -> Quality.FHD
+            Quality.HD -> Quality.SD
+            else -> null
+        }
+    }
+
     /** Listener for auto-stop events, set by the plugin. */
     var onAutoStopListener: ((Map<String, Any?>) -> Unit)? = null
 
@@ -1542,6 +1567,10 @@ class CameraController(
             return
         }
 
+        // Reset retry counter for a fresh recording attempt initiated by the user
+        encoderRetryCount = 0
+        pendingRecordingParams = RecordingParams(maxDurationMs, useCache, outputDirectory, callback)
+
         // Check audio permission
         if (ActivityCompat.checkSelfPermission(
                 context,
@@ -1549,6 +1578,24 @@ class CameraController(
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             callback("Audio permission not granted")
+            return
+        }
+
+        startRecordingInternal(maxDurationMs, useCache, outputDirectory, callback)
+    }
+
+    /**
+     * Internal recording start — also used for encoder-fallback retries.
+     */
+    @SuppressLint("MissingPermission")
+    private fun startRecordingInternal(
+        maxDurationMs: Int?,
+        useCache: Boolean,
+        outputDirectory: String?,
+        callback: (String?) -> Unit
+    ) {
+        val videoCap = videoCapture ?: run {
+            callback("Video capture not initialized")
             return
         }
 
@@ -1597,6 +1644,9 @@ class CameraController(
                             if (startRecordingCallback != null && durationNanos > 0) {
                                 recordingTrulyStarted = true
                                 recordingStartTime = System.currentTimeMillis()
+                                // Encoder succeeded — clear retry state
+                                encoderRetryCount = 0
+                                pendingRecordingParams = null
                                 Log.d(
                                     TAG,
                                     "Recording truly started - first frame recorded (duration: ${durationNanos / 1_000_000}ms)"
@@ -1636,12 +1686,59 @@ class CameraController(
                                 Log.d(TAG, "Recording finalized")
                             }
 
-                            // If startRecordingCallback is still set, recording was stopped before first keyframe
-                            // We need to notify Flutter that recording failed to start properly
-                            startRecordingCallback?.let { startCallback ->
-                                Log.w(TAG, "Recording stopped before first keyframe - notifying Flutter")
-                                startCallback("Recording stopped before first keyframe")
-                                startRecordingCallback = null
+                            // If startRecordingCallback is still set, recording was stopped before first keyframe.
+                            // This typically means the hardware encoder rejected the resolution.
+                            // Try to reinitialize with a lower quality before giving up.
+                            if (startRecordingCallback != null && event.hasError()) {
+                                val lower = lowerQuality(videoQuality)
+                                if (lower != null && encoderRetryCount < MAX_ENCODER_RETRIES) {
+                                    encoderRetryCount++
+                                    Log.w(TAG, "Encoder failed at $videoQuality, retrying with $lower (attempt $encoderRetryCount/$MAX_ENCODER_RETRIES)")
+                                    videoQuality = lower
+
+                                    // Clean up failed recording file
+                                    currentRecordingFile?.let { f ->
+                                        if (f.exists()) f.delete()
+                                    }
+                                    currentRecordingFile = null
+                                    recording = null
+
+                                    // Consume the startRecordingCallback so it is not called yet
+                                    val savedCallback = startRecordingCallback!!
+                                    startRecordingCallback = null
+
+                                    // Re-initialize camera with lower quality, then retry recording
+                                    val params = pendingRecordingParams
+                                    startCamera { _, error ->
+                                        if (error != null) {
+                                            Log.e(TAG, "Failed to reinitialize camera at $lower: $error")
+                                            savedCallback("Recording failed: encoder not supported")
+                                        } else {
+                                            Log.d(TAG, "Camera reinitialized at $lower, retrying recording")
+                                            startRecordingInternal(
+                                                params?.maxDurationMs,
+                                                params?.useCache ?: true,
+                                                params?.outputDirectory,
+                                                savedCallback
+                                            )
+                                        }
+                                    }
+                                    return@start
+                                }
+
+                                // No more fallback options — report failure
+                                startRecordingCallback?.let { startCallback ->
+                                    Log.w(TAG, "Recording stopped before first keyframe - no more quality fallbacks")
+                                    startCallback("Recording stopped before first keyframe")
+                                    startRecordingCallback = null
+                                }
+                            } else {
+                                // Normal finalize — either successful or user-stopped
+                                startRecordingCallback?.let { startCallback ->
+                                    Log.w(TAG, "Recording stopped before first keyframe - notifying Flutter")
+                                    startCallback("Recording stopped before first keyframe")
+                                    startRecordingCallback = null
+                                }
                             }
 
                             // Build the result map once
