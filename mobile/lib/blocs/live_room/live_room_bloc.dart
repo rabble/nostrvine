@@ -368,21 +368,19 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
 
   Future<String?> _ensureCameraPermission() async {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
-      if (await _nativeCameraPermissionService.hasPermission()) {
-        return null;
-      }
-
       final nativeStatus = await _nativeCameraPermissionService
-          .requestPermission();
+          .authorizationStatus();
       switch (nativeStatus) {
-        case NativeCameraPermissionStatus.granted:
+        case NativeCameraAuthorizationStatus.authorized:
           return null;
-        case NativeCameraPermissionStatus.requiresSettings:
+        case NativeCameraAuthorizationStatus.denied:
+        case NativeCameraAuthorizationStatus.restricted:
           return 'Camera access is blocked. Allow it in system settings.';
-        case NativeCameraPermissionStatus.denied:
-          return 'Camera access is required to turn video on.';
-        case NativeCameraPermissionStatus.unavailable:
-          break;
+        case NativeCameraAuthorizationStatus.notDetermined:
+        case NativeCameraAuthorizationStatus.unavailable:
+          // Match the recorder flow on macOS: let the real camera stack touch
+          // hardware so the OS can show its native permission prompt.
+          return null;
       }
     }
 

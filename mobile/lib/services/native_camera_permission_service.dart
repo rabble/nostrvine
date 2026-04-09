@@ -8,8 +8,18 @@ enum NativeCameraPermissionStatus {
   unavailable,
 }
 
+enum NativeCameraAuthorizationStatus {
+  authorized,
+  notDetermined,
+  denied,
+  restricted,
+  unavailable,
+}
+
 abstract class NativeCameraPermissionService {
   Future<bool> hasPermission();
+
+  Future<NativeCameraAuthorizationStatus> authorizationStatus();
 
   Future<NativeCameraPermissionStatus> requestPermission();
 
@@ -27,6 +37,18 @@ class MethodChannelNativeCameraPermissionService
   Future<bool> hasPermission() async {
     final hasPermission = await channel.invokeMethod<bool>('hasPermission');
     return hasPermission ?? false;
+  }
+
+  @override
+  Future<NativeCameraAuthorizationStatus> authorizationStatus() async {
+    final status = await channel.invokeMethod<String>('getAuthorizationStatus');
+    return switch (status) {
+      'authorized' => NativeCameraAuthorizationStatus.authorized,
+      'notDetermined' => NativeCameraAuthorizationStatus.notDetermined,
+      'denied' => NativeCameraAuthorizationStatus.denied,
+      'restricted' => NativeCameraAuthorizationStatus.restricted,
+      _ => NativeCameraAuthorizationStatus.unavailable,
+    };
   }
 
   @override

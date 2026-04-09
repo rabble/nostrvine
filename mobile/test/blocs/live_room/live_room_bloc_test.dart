@@ -378,7 +378,7 @@ void main() {
     });
 
     test(
-      'turning the host camera on requests macOS camera permission before publishing',
+      'turning the host camera on on macOS does not block not-determined permission behind preflight checks',
       () async {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
         addTearDown(() => debugDefaultTargetPlatformOverride = null);
@@ -387,12 +387,9 @@ void main() {
         final mockNativeCameraPermissionService =
             _MockNativeCameraPermissionService();
         when(
-          mockNativeCameraPermissionService.hasPermission,
-        ).thenAnswer((_) async => false);
-        when(
-          mockNativeCameraPermissionService.requestPermission,
+          mockNativeCameraPermissionService.authorizationStatus,
         ).thenAnswer(
-          (_) async => NativeCameraPermissionStatus.requiresSettings,
+          (_) async => NativeCameraAuthorizationStatus.notDetermined,
         );
         when(
           mockPermissionsService.checkMicrophoneStatus,
@@ -426,13 +423,9 @@ void main() {
         bloc.add(const ToggleCameraRequested());
         await _flush();
 
-        verify(mockNativeCameraPermissionService.hasPermission).called(1);
-        verify(mockNativeCameraPermissionService.requestPermission).called(1);
-        verifyNever(() => mockMediaService.setCameraEnabled(true));
-        expect(
-          bloc.state.errorMessage,
-          'Camera access is blocked. Allow it in system settings.',
-        );
+        verify(mockNativeCameraPermissionService.authorizationStatus).called(1);
+        verify(() => mockMediaService.setCameraEnabled(true)).called(1);
+        expect(bloc.state.errorMessage, isNull);
 
         await bloc.close();
       },

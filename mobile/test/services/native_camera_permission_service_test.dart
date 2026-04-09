@@ -32,6 +32,22 @@ void main() {
     expect(methodCalls.single.method, 'requestPermission');
   });
 
+  test('maps native authorization status values', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (methodCall) async {
+          methodCalls.add(methodCall);
+          if (methodCall.method == 'getAuthorizationStatus') {
+            return 'notDetermined';
+          }
+          return null;
+        });
+
+    final result = await service.authorizationStatus();
+
+    expect(result, NativeCameraAuthorizationStatus.notDetermined);
+    expect(methodCalls.single.method, 'getAuthorizationStatus');
+  });
+
   test('maps native permission denied into requires settings', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (methodCall) async {
