@@ -7,13 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
-import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:openvine/services/api_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
@@ -43,7 +41,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     _inviteCodeController = TextEditingController(
       text: widget.initialCode == null
           ? ''
-          : InviteApiService.normalizeCode(widget.initialCode!),
+          : InviteApiClient.normalizeCode(widget.initialCode!),
     );
     final inviteGateBloc = context.read<InviteGateBloc>();
     inviteGateBloc.add(const InviteGateTransientCleared());
@@ -60,7 +58,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
   }
 
   void _validateInviteCode() {
-    final normalizedCode = InviteApiService.normalizeCode(
+    final normalizedCode = InviteApiClient.normalizeCode(
       _inviteCodeController.text,
     );
     _inviteCodeController.value = TextEditingValue(
@@ -76,7 +74,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _WaitlistEntrySheet(
-        inviteApiService: context.read<InviteApiService>(),
+        inviteApiClient: context.read<InviteApiClient>(),
         supportEmail: config.supportEmail,
       ),
     );
@@ -600,11 +598,11 @@ class _InviteSheetPage extends StatelessWidget {
 
 class _WaitlistEntrySheet extends StatefulWidget {
   const _WaitlistEntrySheet({
-    required this.inviteApiService,
+    required this.inviteApiClient,
     required this.supportEmail,
   });
 
-  final InviteApiService inviteApiService;
+  final InviteApiClient inviteApiClient;
   final String supportEmail;
 
   @override
@@ -642,10 +640,10 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
     });
 
     try {
-      await widget.inviteApiService.joinWaitlist(contact: email);
+      await widget.inviteApiClient.joinWaitlist(contact: email);
       if (!mounted) return;
       Navigator.of(context).pop(email);
-    } on ApiException catch (error) {
+    } on InviteApiException catch (error) {
       if (!mounted) return;
       setState(() {
         _generalError = error.message;
@@ -782,7 +780,7 @@ class _InviteCodeTextInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    final normalized = InviteApiService.normalizeCode(newValue.text);
+    final normalized = InviteApiClient.normalizeCode(newValue.text);
     return TextEditingValue(
       text: normalized,
       selection: TextSelection.collapsed(offset: normalized.length),

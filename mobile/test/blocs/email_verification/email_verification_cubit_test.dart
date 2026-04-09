@@ -4,19 +4,17 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _MockInviteApiService extends Mock implements InviteApiService {}
+class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 class _FakeKeycastSession extends Fake implements KeycastSession {}
 
@@ -35,7 +33,7 @@ void main() {
   group('EmailVerificationCubit', () {
     late _MockKeycastOAuth mockOAuth;
     late _MockAuthService mockAuthService;
-    late _MockInviteApiService mockInviteApiService;
+    late _MockInviteApiClient mockInviteApiClient;
 
     const testDeviceCode = 'test-device-code-abc123';
     const testVerifier = 'test-verifier-xyz789';
@@ -44,7 +42,7 @@ void main() {
     setUp(() {
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
-      mockInviteApiService = _MockInviteApiService();
+      mockInviteApiClient = _MockInviteApiClient();
       // Reset static state to ensure test isolation
       EmailVerificationCubit.resetCompletedDeviceCode();
     });
@@ -53,7 +51,7 @@ void main() {
       return EmailVerificationCubit(
         oauthClient: mockOAuth,
         authService: mockAuthService,
-        inviteApiService: mockInviteApiService,
+        inviteApiClient: mockInviteApiClient,
       );
     }
 
@@ -126,7 +124,7 @@ void main() {
           (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
         );
         when(
-          () => mockInviteApiService.consumeInviteWithSession(
+          () => mockInviteApiClient.consumeInviteWithSession(
             code: any(named: 'code'),
             oauthConfig: any(named: 'oauthConfig'),
             session: any(named: 'session'),
@@ -158,7 +156,7 @@ void main() {
               code: testCode,
               verifier: testVerifier,
             ),
-            () => mockInviteApiService.consumeInviteWithSession(
+            () => mockInviteApiClient.consumeInviteWithSession(
               code: 'AB12-EF34',
               oauthConfig: any(named: 'oauthConfig'),
               session: any(named: 'session'),
@@ -190,12 +188,14 @@ void main() {
           (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
         );
         when(
-          () => mockInviteApiService.consumeInviteWithSession(
+          () => mockInviteApiClient.consumeInviteWithSession(
             code: any(named: 'code'),
             oauthConfig: any(named: 'oauthConfig'),
             session: any(named: 'session'),
           ),
-        ).thenThrow(const ApiException('Invite activation failed'));
+        ).thenThrow(
+          const InviteApiException('Invite activation failed'),
+        );
 
         fakeAsync((fake) {
           final cubit = buildCubit();

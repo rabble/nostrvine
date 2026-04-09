@@ -84,6 +84,7 @@ class VideoFeedController extends ChangeNotifier {
     this.positionCallback,
     this.positionCallbackInterval = const Duration(milliseconds: 250),
     this.slowLoadThreshold = const Duration(seconds: 8),
+    this.preloadGracePeriod = const Duration(seconds: 3),
     this.maxLoopDuration,
     this.onLog,
   }) : pool = pool ?? PlayerPool.instance,
@@ -187,6 +188,7 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, int> _stallRetryCount = {};
   final Set<int> _readyVideosAwaitingRecovery = {};
   final Set<int> _slowLoadIndices = {};
+  final Map<int, Completer<void>> _readyCompleters = {};
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
 
@@ -195,6 +197,14 @@ class VideoFeedController extends ChangeNotifier {
   /// immediately kill playback — but a genuinely broken stream still fails
   /// within a few seconds.
   static const _maxStallRetries = 2;
+
+  /// Grace period after the current video starts buffering before preloads
+  /// fire. Gives the visible video exclusive bandwidth so it buffers faster.
+  ///
+  /// When the current video's buffer fills before this period elapses,
+  /// preloads fire immediately. Defaults to 3 seconds — long enough for
+  /// most videos to fully buffer on a reasonable connection.
+  final Duration preloadGracePeriod;
 
   /// Stale-position recovery: tracks the last observed position and how many
   /// consecutive heartbeats it has remained unchanged while the player reports
@@ -206,6 +216,20 @@ class VideoFeedController extends ChangeNotifier {
   /// Remaining heartbeats to skip after a play/resume before stale-position
   /// detection activates. Gives the decoder time to start producing frames.
   int _staleGraceHeartbeats = 0;
+
+  /// Whether the current video's position has ever advanced from its initial
+  /// value. media_kit reports `playing=true` and `buffering=false` before the
+  /// decoder produces its first frame, so position can stay at 0 (or wherever
+  /// it was on resume) for hundreds of milliseconds during normal startup.
+  /// Stale-position detection is deferred until this flag is `true` to avoid
+  /// false recovery cycles (pause→seek→play) that cause a visible stutter on
+  /// nearly every video.
+  bool _positionHasAdvanced = false;
+
+  /// The position value recorded when stale tracking began for the current
+  /// video. Used together with [_positionHasAdvanced] to detect the first
+  /// real position change.
+  int? _initialPositionMs;
 
   /// Number of consecutive stale heartbeats before triggering recovery.
   /// With a 100ms heartbeat interval, this means ~800ms of confirmed
@@ -228,6 +252,14 @@ class VideoFeedController extends ChangeNotifier {
   /// Number of heartbeats to skip after play/resume before stale detection
   /// kicks in. With 100ms intervals this is ~500ms grace.
   static const _staleGraceAfterPlay = 5;
+
+  /// Maximum position (in milliseconds) to consider a rebuffer event as a
+  /// loop-boundary seek rather than a real network stall. When mpv loops
+  /// via [PlaylistMode.single], it briefly emits buffering=true→false with
+  /// position reset near zero. If the duration is known (>0) and position
+  /// is within this threshold, we skip the redundant `play()` nudge that
+  /// otherwise causes a visible micro-stutter every loop cycle.
+  static const _loopBoundaryThresholdMs = 500;
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -501,6 +533,17 @@ class VideoFeedController extends ChangeNotifier {
     return VideoErrorType.generic;
   }
 
+  /// Completes the ready completer for [index] if one is pending.
+  ///
+  /// Called from [_onBufferReady] and [_markLoadError] so that
+  /// [_loadCurrentThenPreloads] is unblocked regardless of outcome.
+  void _completeReady(int index) {
+    final completer = _readyCompleters.remove(index);
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
   void _markLoadError({
     required int index,
     String? errorMessage,
@@ -509,6 +552,7 @@ class VideoFeedController extends ChangeNotifier {
     if (_isDisposed) return;
     _stallRetryCount.remove(index);
     _readyVideosAwaitingRecovery.remove(index);
+    _completeReady(index);
     _loadStates[index] = LoadState.error;
     if (errorMessage != null) {
       _errorTypes[index] = _classifyError(errorMessage, index);
@@ -798,6 +842,13 @@ class VideoFeedController extends ChangeNotifier {
   /// The [generation] parameter is compared against [_preloadGeneration]
   /// after the current video loads. If the user scrolled again in the
   /// meantime, the preloads are skipped (a newer window superseded them).
+  ///
+  /// Preloads are deferred until the current video reaches
+  /// [LoadState.ready] (or a short grace period elapses), giving the
+  /// visible video bandwidth priority. Without this, concurrent preloads
+  /// starve the current video — in production logs the current video took
+  /// 2.8s to buffer while a preloaded video finished in 650ms because
+  /// all streams competed equally for bandwidth.
   Future<void> _loadCurrentThenPreloads(
     int index,
     List<int> preloadIndices,
@@ -805,7 +856,29 @@ class VideoFeedController extends ChangeNotifier {
   ) async {
     // Load the current (visible) video first.
     if (_shouldLoad(index)) {
+      // Register a completer so we can detect when the buffer fills.
+      final completer = _readyCompleters[index] = Completer<void>();
+
       await _loadPlayer(index);
+
+      // Bail if a newer preload window was requested while loading.
+      if (_isDisposed || _preloadGeneration != generation) {
+        _readyCompleters.remove(index);
+        return;
+      }
+
+      // _loadPlayer returns after open()+play(), not after the buffer
+      // fills. Give the current video a bandwidth head-start before
+      // firing preloads. If the buffer fills quickly (< grace period),
+      // preloads fire immediately after.
+      if (_loadStates[index] == LoadState.loading) {
+        await Future.any([
+          completer.future,
+          Future<void>.delayed(preloadGracePeriod),
+        ]);
+      }
+
+      _readyCompleters.remove(index);
     }
 
     // Bail if a newer preload window was requested while loading.
@@ -1053,6 +1126,16 @@ class VideoFeedController extends ChangeNotifier {
       'elapsedMs=$elapsedMs',
     );
 
+    // For the current video, defer preload unblocking until the decoder
+    // has actually started producing frames (position advances). This
+    // prevents preloads from competing for CPU/bandwidth during the
+    // critical decoder warm-up window. The completer is completed in
+    // _checkStalePosition when _positionHasAdvanced becomes true.
+    // For non-current videos, unblock immediately.
+    if (index != _currentIndex) {
+      _completeReady(index);
+    }
+
     // Call onVideoReady hook
     onVideoReady?.call(index, player);
 
@@ -1159,21 +1242,47 @@ class VideoFeedController extends ChangeNotifier {
             } else {
               _stallRetryCount.remove(index);
             }
+
+            // Loop-boundary detection: when mpv loops via
+            // PlaylistMode.single it emits a brief buffering=true→false
+            // cycle with position reset to 0 while the duration is
+            // already known (>0). Calling play() here is redundant —
+            // mpv is already playing — and causes a visible
+            // micro-stutter every loop cycle. Skip the nudge.
+            if (positionMs <= _loopBoundaryThresholdMs && durationMs > 0) {
+              _logDebug(
+                'loop_boundary_skip index=$index '
+                'positionMs=$positionMs durationMs=$durationMs '
+                '${_videoDebugDetails(index)}',
+              );
+              return;
+            }
           }
 
-          // Always call play() on rebuffer completion — even when
-          // player.state.playing reports true. mpv can report
-          // playing=true while the decoder is actually stalled with no
-          // frame output, especially after a seek or network hiccup.
-          // The play() call nudges the decoder to resume frame output.
+          // Detect loop-boundary rebuffers: when the player is already
+          // playing, position is near the start (≤100ms), and duration
+          // is known, mpv just auto-looped via PlaylistMode.single.
+          // Calling play() in this case causes a visible micro-stutter
+          // because it interrupts the decoder's seamless loop. Skip it.
+          final isPlaying = player.state.playing;
+          final currentPositionMs = player.state.position.inMilliseconds;
+          final currentDurationMs = player.state.duration.inMilliseconds;
+          final isLoopBoundary =
+              isPlaying && currentPositionMs <= 100 && currentDurationMs > 0;
+
           _logDebug(
             'rebuffer_auto_play index=$index '
-            'positionMs=${player.state.position.inMilliseconds} '
-            'playing=${player.state.playing} '
+            'positionMs=$currentPositionMs '
+            'durationMs=$currentDurationMs '
+            'playing=$isPlaying '
             'wasRecovering=$wasRecovering '
+            'isLoopBoundary=$isLoopBoundary '
             '${_videoDebugDetails(index)}',
           );
-          unawaited(player.play());
+
+          if (!isLoopBoundary) {
+            unawaited(player.play());
+          }
         }
       }
     });
@@ -1337,6 +1446,8 @@ class VideoFeedController extends ChangeNotifier {
     _staleHeartbeatCount = 0;
     _staleRecoveryAttempts = 0;
     _staleGraceHeartbeats = _staleGraceAfterPlay;
+    _positionHasAdvanced = false;
+    _initialPositionMs = null;
 
     // Use the shorter of the caller's interval and the stale-detection
     // interval so both position callbacks and recovery work correctly.
@@ -1398,6 +1509,27 @@ class VideoFeedController extends ChangeNotifier {
       _staleHeartbeatCount = 0;
       _lastHeartbeatPositionMs = null;
       return;
+    }
+
+    // Track whether position has ever advanced from its initial value.
+    // media_kit reports playing+not-buffering before the decoder produces
+    // its first frame, so position legitimately stays frozen during
+    // startup. Stale detection only activates after the first real
+    // position change, preventing false recovery on every video.
+    if (!_positionHasAdvanced) {
+      _initialPositionMs ??= positionMs;
+      if (positionMs != _initialPositionMs) {
+        _positionHasAdvanced = true;
+        _logDebug(
+          'STUTTER_DEBUG position_first_advance index=$index '
+          'initialMs=$_initialPositionMs newMs=$positionMs',
+        );
+        // Also unblock preloads now that playback is confirmed.
+        _completeReady(index);
+      } else {
+        // Still waiting for first frame — don't count as stale.
+        return;
+      }
     }
 
     if (_lastHeartbeatPositionMs != null &&
@@ -1526,6 +1658,9 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   void _releasePlayer(int index) {
+    // Unblock any pending preload wait for this index.
+    _completeReady(index);
+
     // Stop audio before removing from tracking to prevent audio leaks.
     // The player stays in the pool for reuse, but must be silent.
     final player = _loadedPlayers[index]?.player;
@@ -1570,6 +1705,12 @@ class VideoFeedController extends ChangeNotifier {
     _loadWatchdogTimers.clear();
 
     _stuckPlaybackTimer?.cancel();
+
+    // Complete any pending ready completers so awaiting futures resolve.
+    for (final completer in _readyCompleters.values) {
+      if (!completer.isCompleted) completer.complete();
+    }
+    _readyCompleters.clear();
 
     // Cancel all buffer subscriptions.
     for (final subscription in _bufferSubscriptions.values) {

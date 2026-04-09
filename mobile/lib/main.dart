@@ -20,6 +20,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
@@ -27,6 +28,7 @@ import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
@@ -53,8 +55,8 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
@@ -1481,13 +1483,45 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       );
     }
 
+    const forceOpenOnboarding = AppConfig.isGhActionsPrPreviewBuild;
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [
         RepositoryProvider(
-          create: (_) =>
-              InviteApiService(authService: ref.read(nip98AuthServiceProvider)),
-          dispose: (service) => service.dispose(),
+          create: (_) => InviteApiClient(
+            baseUrl: AppConfig.inviteServerBaseUrl,
+            // ignore: avoid_redundant_argument_values
+            forceOpenOnboarding: forceOpenOnboarding,
+            authHeaderProvider:
+                ({
+                  required String url,
+                  required InviteRequestMethod method,
+                  String? payload,
+                }) async {
+                  final authService = ref.read(nip98AuthServiceProvider);
+                  if (!authService.canCreateTokens) return null;
+                  final token = await authService.createAuthToken(
+                    url: url,
+                    method: switch (method) {
+                      InviteRequestMethod.get => HttpMethod.get,
+                      InviteRequestMethod.post => HttpMethod.post,
+                      InviteRequestMethod.put => HttpMethod.put,
+                      InviteRequestMethod.patch => HttpMethod.patch,
+                    },
+                    payload: payload,
+                  );
+                  return token?.authorizationHeader;
+                },
+            warningLogger: (message) {
+              Log.warning(
+                message,
+                name: 'InviteApiClient',
+                category: LogCategory.api,
+              );
+            },
+          ),
+          dispose: (client) => client.dispose(),
         ),
         BlocProvider(
           create: (_) =>
@@ -1509,19 +1543,19 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           ),
           BlocProvider(
             create: (context) => InviteGateBloc(
-              inviteApiService: context.read<InviteApiService>(),
+              inviteApiClient: context.read<InviteApiClient>(),
             ),
           ),
           BlocProvider(
             create: (context) => EmailVerificationCubit(
               oauthClient: ref.read(oauthClientProvider),
               authService: ref.read(authServiceProvider),
-              inviteApiService: context.read<InviteApiService>(),
+              inviteApiClient: context.read<InviteApiClient>(),
             ),
           ),
           BlocProvider(
             create: (context) => InviteStatusCubit(
-              inviteApiService: context.read<InviteApiService>(),
+              inviteApiClient: context.read<InviteApiClient>(),
             ),
           ),
           BlocProvider(

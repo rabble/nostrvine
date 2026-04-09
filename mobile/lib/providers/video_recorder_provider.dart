@@ -2,6 +2,7 @@
 // ABOUTME: Provides reactive state updates for recording UI without ChangeNotifier
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:divine_camera/divine_camera.dart'
     show DivineCameraLens, DivineVideoQuality;
@@ -752,14 +753,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
-    /// We used the stopwatch as a temporary timer to set an expected duration.
-    /// However, we now read the exact video duration in the background and
-    /// update it.
-    // Extract video metadata and resolve file path in parallel.
-    final (metadata, videoPath) = await (
-      ProVideoEditor.instance.getMetadata(videoResult),
-      videoResult.safeFilePath(),
-    ).wait;
+    // Resolve file path and create a working copy for metadata/thumbnail
+    // extraction. The original file may be replaced by async trimming
+    // (limitClipDuration) that addClip triggers, so all read operations
+    // must use this copy to avoid racing with the file swap.
+    final videoPath = await videoResult.safeFilePath();
+    final workCopyPath = '$videoPath.work.mp4';
+    await File(videoPath).copy(workCopyPath);
+
+    // Extract video metadata from the stable copy.
+    final metadata = await ProVideoEditor.instance.getMetadata(
+      EditorVideo.file(File(workCopyPath)),
+    );
     clipProvider.updateClipDuration(clip.id, metadata.duration);
     Log.debug(
       '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
@@ -769,10 +774,21 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     // Preload the first clip into the native player cache so the video
     // editor can start playback instantly when the user opens it.
+    // Wait for trimming to finish so the player reads the final file.
     if (clipProvider.clips.length == 1) {
-      unawaited(
-        DivineVideoPlayerController.preload([VideoClip.file(videoPath)]),
-      );
+      if (clip.processingCompleter != null) {
+        unawaited(
+          clip.processingCompleter!.future.then((_) {
+            DivineVideoPlayerController.preload(
+              [VideoClip.file(videoPath)],
+            );
+          }),
+        );
+      } else {
+        unawaited(
+          DivineVideoPlayerController.preload([VideoClip.file(videoPath)]),
+        );
+      }
     }
 
     // Generate and attach thumbnail.
@@ -789,7 +805,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     // Running both in parallel causes "Cannot Open" on iOS because
     // AVAssetImageGenerator holds an exclusive lock on the video file.
     final thumbnailResult = await VideoThumbnailService.extractThumbnail(
-      videoPath: videoPath,
+      videoPath: workCopyPath,
       targetTimestamp: targetTimestamp,
     );
 
@@ -813,7 +829,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     }
 
     final ghostFramePath = await VideoThumbnailService.extractLastFrame(
-      videoPath: videoPath,
+      videoPath: workCopyPath,
       videoDuration: metadata.duration,
     );
 
@@ -834,6 +850,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
     }
+
+    // Fire and forget. Clean up the working copy.
+    try {
+      await File(workCopyPath).delete();
+    } catch (_) {}
   }
 
   /// Adjust zoom by vertical drag distance during long press.

@@ -1,34 +1,48 @@
-// ABOUTME: HTTP service for invite gate config, code validation, and waitlist
-
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
+import 'package:invite_api_client/src/invite_api_exception.dart';
+import 'package:invite_api_client/src/invite_models.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/config/app_config.dart';
-import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/services/api_service.dart';
-import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 
-class InviteApiService {
-  InviteApiService({
+enum InviteRequestMethod { get, post, put, patch }
+
+extension on InviteRequestMethod {
+  String get value => name.toUpperCase();
+}
+
+typedef InviteAuthHeaderProvider =
+    Future<String?> Function({
+      required String url,
+      required InviteRequestMethod method,
+      String? payload,
+    });
+
+typedef InviteWarningLogger = void Function(String message);
+
+class InviteApiClient {
+  InviteApiClient({
+    required String baseUrl,
     http.Client? client,
-    Nip98AuthService? authService,
-    bool? forceOpenOnboarding,
-  }) : _client = client ?? http.Client(),
-       _authService = authService,
-       _forceOpenOnboarding =
-           forceOpenOnboarding ?? AppConfig.isGhActionsPrPreviewBuild;
+    InviteAuthHeaderProvider? authHeaderProvider,
+    InviteWarningLogger? warningLogger,
+    bool forceOpenOnboarding = false,
+  }) : _baseUrl = baseUrl,
+       _client = client ?? http.Client(),
+       _authHeaderProvider = authHeaderProvider,
+       _warningLogger = warningLogger,
+       _forceOpenOnboarding = forceOpenOnboarding;
 
-  static String get _baseUrl => AppConfig.inviteServerBaseUrl;
   static const Duration _defaultTimeout = Duration(seconds: 20);
 
+  final String _baseUrl;
   final http.Client _client;
-  final Nip98AuthService? _authService;
+  final InviteAuthHeaderProvider? _authHeaderProvider;
+  final InviteWarningLogger? _warningLogger;
   final bool _forceOpenOnboarding;
 
   static String normalizeCode(String raw) {
@@ -76,10 +90,10 @@ class InviteApiService {
         supportEmail: config.supportEmail,
       );
     } on TimeoutException {
-      throw const ApiException('Invite configuration request timed out');
+      throw const InviteApiException('Invite configuration request timed out');
     } catch (error) {
-      if (error is ApiException) rethrow;
-      throw ApiException('Failed to load invite configuration: $error');
+      if (error is InviteApiException) rethrow;
+      throw InviteApiException('Failed to load invite configuration: $error');
     }
   }
 
@@ -93,7 +107,7 @@ class InviteApiService {
             uri,
             headers: await _headers(
               url: uri.toString(),
-              method: HttpMethod.post,
+              method: InviteRequestMethod.post,
             ),
             body: jsonEncode({'code': normalizedCode}),
           )
@@ -116,10 +130,10 @@ class InviteApiService {
         response: response,
       );
     } on TimeoutException {
-      throw const ApiException('Invite code validation timed out');
+      throw const InviteApiException('Invite code validation timed out');
     } catch (error) {
-      if (error is ApiException) rethrow;
-      throw ApiException('Failed to validate invite code: $error');
+      if (error is InviteApiException) rethrow;
+      throw InviteApiException('Failed to validate invite code: $error');
     }
   }
 
@@ -139,7 +153,7 @@ class InviteApiService {
             uri,
             headers: await _headers(
               url: uri.toString(),
-              method: HttpMethod.post,
+              method: InviteRequestMethod.post,
             ),
             body: jsonEncode(payload),
           )
@@ -155,10 +169,10 @@ class InviteApiService {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return WaitlistJoinResult.fromJson(json);
     } on TimeoutException {
-      throw const ApiException('Waitlist request timed out');
+      throw const InviteApiException('Waitlist request timed out');
     } catch (error) {
-      if (error is ApiException) rethrow;
-      throw ApiException('Failed to join waitlist: $error');
+      if (error is InviteApiException) rethrow;
+      throw InviteApiException('Failed to join waitlist: $error');
     }
   }
 
@@ -209,7 +223,7 @@ class InviteApiService {
             uri,
             headers: await _headers(
               url: uri.toString(),
-              method: HttpMethod.post,
+              method: InviteRequestMethod.post,
               payload: payload,
               requiresAuth: signer == null,
               signer: signer,
@@ -228,16 +242,80 @@ class InviteApiService {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return InviteConsumeResult.fromJson(json);
     } on TimeoutException {
-      throw const ApiException('Invite activation timed out');
+      throw const InviteApiException('Invite activation timed out');
     } catch (error) {
-      if (error is ApiException) rethrow;
-      throw ApiException('Failed to activate invite code: $error');
+      if (error is InviteApiException) rethrow;
+      throw InviteApiException('Failed to activate invite code: $error');
     }
+  }
+
+  Future<InviteStatus> getInviteStatus() async {
+    final uri = Uri.parse('$_baseUrl/v1/invite-status');
+
+    try {
+      final response = await _client
+          .get(
+            uri,
+            headers: await _headers(url: uri.toString(), requiresAuth: true),
+          )
+          .timeout(_defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw _requestFailed(
+          message: 'Failed to fetch invite status',
+          response: response,
+        );
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return InviteStatus.fromJson(json);
+    } on TimeoutException {
+      throw const InviteApiException('Invite status request timed out');
+    } catch (error) {
+      if (error is InviteApiException) rethrow;
+      throw InviteApiException('Failed to fetch invite status: $error');
+    }
+  }
+
+  Future<GenerateInviteResult> generateInvite() async {
+    final uri = Uri.parse('$_baseUrl/v1/generate-invite');
+
+    try {
+      final response = await _client
+          .post(
+            uri,
+            headers: await _headers(
+              url: uri.toString(),
+              method: InviteRequestMethod.post,
+              requiresAuth: true,
+            ),
+          )
+          .timeout(_defaultTimeout);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw _requestFailed(
+          message: 'Failed to generate invite code',
+          response: response,
+        );
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return GenerateInviteResult.fromJson(json);
+    } on TimeoutException {
+      throw const InviteApiException('Generate invite request timed out');
+    } catch (error) {
+      if (error is InviteApiException) rethrow;
+      throw InviteApiException('Failed to generate invite code: $error');
+    }
+  }
+
+  void dispose() {
+    _client.close();
   }
 
   Future<Map<String, String>> _headers({
     required String url,
-    HttpMethod method = HttpMethod.get,
+    InviteRequestMethod method = InviteRequestMethod.get,
     String? payload,
     bool requiresAuth = false,
     NostrSigner? signer,
@@ -255,21 +333,17 @@ class InviteApiService {
         method: method,
         payload: payload,
       );
-    } else if (requiresAuth && _authService?.canCreateTokens == true) {
-      final token = await _authService!.createAuthToken(
+    } else if (requiresAuth && _authHeaderProvider != null) {
+      final header = await _authHeaderProvider(
         url: url,
         method: method,
         payload: payload,
       );
 
-      if (token != null) {
-        headers['Authorization'] = token.authorizationHeader;
+      if (header != null) {
+        headers['Authorization'] = header;
       } else {
-        Log.warning(
-          'Failed to attach invite auth token',
-          name: 'InviteApiService',
-          category: LogCategory.api,
-        );
+        _warningLogger?.call('Failed to attach invite auth token');
       }
     }
 
@@ -279,7 +353,7 @@ class InviteApiService {
   Future<String> _createAuthorizationHeader({
     required NostrSigner signer,
     required String url,
-    required HttpMethod method,
+    required InviteRequestMethod method,
     String? payload,
   }) async {
     final normalizedUrl = url.contains('#')
@@ -288,7 +362,7 @@ class InviteApiService {
     final publicKeyHex = await signer.getPublicKey();
 
     if (publicKeyHex == null || publicKeyHex.isEmpty) {
-      throw const ApiException('Failed to authenticate invite request');
+      throw const InviteApiException('Failed to authenticate invite request');
     }
 
     final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -298,35 +372,29 @@ class InviteApiService {
       ['created_at', timestamp.toString()],
     ];
 
-    if (method == HttpMethod.post ||
-        method == HttpMethod.put ||
-        method == HttpMethod.patch) {
+    if (method == InviteRequestMethod.post ||
+        method == InviteRequestMethod.put ||
+        method == InviteRequestMethod.patch) {
       final payloadHash = sha256.convert(utf8.encode(payload ?? ''));
       tags.add(['payload', payloadHash.toString()]);
     }
 
-    final event = Event(
-      publicKeyHex,
-      27235,
-      tags,
-      '',
-      createdAt: timestamp,
-    );
+    final event = Event(publicKeyHex, 27235, tags, '', createdAt: timestamp);
     final signedEvent = await signer.signEvent(event);
 
     if (signedEvent == null || !signedEvent.isSigned) {
-      throw const ApiException('Failed to authenticate invite request');
+      throw const InviteApiException('Failed to authenticate invite request');
     }
 
     final eventJson = jsonEncode(signedEvent.toJson());
     return 'Nostr ${base64Encode(utf8.encode(eventJson))}';
   }
 
-  ApiException _requestFailed({
+  InviteApiException _requestFailed({
     required String message,
     required http.Response response,
   }) {
-    return ApiException(
+    return InviteApiException(
       _extractErrorMessage(response.body) ?? message,
       statusCode: response.statusCode,
       responseBody: response.body,
@@ -353,7 +421,7 @@ class InviteApiService {
           'code': decoded['code'] ?? fallbackCode,
         });
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Fall back to a generic invalid result if the server body is malformed.
     }
 
@@ -370,76 +438,9 @@ class InviteApiService {
       if (decoded is Map<String, dynamic>) {
         return decoded['error'] as String? ?? decoded['message'] as String?;
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Ignore malformed bodies and fall back to the caller's default message.
     }
     return null;
-  }
-
-  Future<InviteStatus> getInviteStatus() async {
-    final uri = Uri.parse('$_baseUrl/v1/invite-status');
-
-    try {
-      final response = await _client
-          .get(
-            uri,
-            headers: await _headers(
-              url: uri.toString(),
-              requiresAuth: true,
-            ),
-          )
-          .timeout(_defaultTimeout);
-
-      if (response.statusCode != 200) {
-        throw _requestFailed(
-          message: 'Failed to fetch invite status',
-          response: response,
-        );
-      }
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return InviteStatus.fromJson(json);
-    } on TimeoutException {
-      throw const ApiException('Invite status request timed out');
-    } catch (error) {
-      if (error is ApiException) rethrow;
-      throw ApiException('Failed to fetch invite status: $error');
-    }
-  }
-
-  Future<GenerateInviteResult> generateInvite() async {
-    final uri = Uri.parse('$_baseUrl/v1/generate-invite');
-
-    try {
-      final response = await _client
-          .post(
-            uri,
-            headers: await _headers(
-              url: uri.toString(),
-              method: HttpMethod.post,
-              requiresAuth: true,
-            ),
-          )
-          .timeout(_defaultTimeout);
-
-      if (response.statusCode != 201 && response.statusCode != 200) {
-        throw _requestFailed(
-          message: 'Failed to generate invite code',
-          response: response,
-        );
-      }
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return GenerateInviteResult.fromJson(json);
-    } on TimeoutException {
-      throw const ApiException('Generate invite request timed out');
-    } catch (error) {
-      if (error is ApiException) rethrow;
-      throw ApiException('Failed to generate invite code: $error');
-    }
-  }
-
-  void dispose() {
-    _client.close();
   }
 }
