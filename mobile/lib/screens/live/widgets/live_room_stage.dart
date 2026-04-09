@@ -109,6 +109,7 @@ class LiveRoomStage extends StatelessWidget {
                           width: 160,
                           child: LiveRoomStageMediaTile(
                             participant: participant,
+                            mediaState: resolvedMediaState,
                           ),
                         ),
                       )

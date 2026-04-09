@@ -48,6 +48,26 @@ class _LiveHostControlsSheetState extends ConsumerState<LiveHostControlsSheet> {
       top: false,
       child: BlocBuilder<LiveRoomBloc, LiveRoomState>(
         builder: (context, state) {
+          final cameraButtonLabel = _cameraMediaButtonLabel(
+            cameraEnabled: state.mediaState.cameraEnabled,
+            cameraBusy: state.mediaState.cameraBusy,
+            requestedCameraEnabled: state.mediaState.requestedCameraEnabled,
+          );
+          final microphoneButtonLabel = _microphoneMediaButtonLabel(
+            microphoneEnabled: state.mediaState.microphoneEnabled,
+            microphoneBusy: state.mediaState.microphoneBusy,
+            requestedMicrophoneEnabled:
+                state.mediaState.requestedMicrophoneEnabled,
+          );
+          final cameraBusy = _isCameraStarting(
+            state.mediaState.cameraBusy,
+            state.mediaState.requestedCameraEnabled,
+          );
+          final microphoneBusy = _isMicrophoneStarting(
+            state.mediaState.microphoneBusy,
+            state.mediaState.requestedMicrophoneEnabled,
+          );
+
           return SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -131,22 +151,20 @@ class _LiveHostControlsSheetState extends ConsumerState<LiveHostControlsSheet> {
                   const SizedBox(height: 16),
                   if (state.canPublish) ...[
                     LiveLocalMediaControls(
-                      cameraButtonLabel: state.mediaState.canPublish
-                          ? (state.mediaState.cameraEnabled
-                                ? 'Camera on'
-                                : 'Camera off')
-                          : 'Camera off',
-                      microphoneButtonLabel: state.mediaState.canPublish
-                          ? (state.mediaState.microphoneEnabled
-                                ? 'Mic on'
-                                : 'Mic off')
-                          : 'Mic off',
+                      cameraButtonLabel: cameraButtonLabel,
+                      microphoneButtonLabel: microphoneButtonLabel,
                       onToggleCamera: () {
+                        if (cameraBusy) {
+                          return;
+                        }
                         context.read<LiveRoomBloc>().add(
                           const ToggleCameraRequested(),
                         );
                       },
                       onToggleMicrophone: () {
+                        if (microphoneBusy) {
+                          return;
+                        }
                         context.read<LiveRoomBloc>().add(
                           const ToggleMicrophoneRequested(),
                         );
@@ -288,6 +306,41 @@ class _LiveHostControlsSheetState extends ConsumerState<LiveHostControlsSheet> {
         },
       ),
     );
+  }
+
+  String _cameraMediaButtonLabel({
+    required bool cameraEnabled,
+    required bool cameraBusy,
+    required bool requestedCameraEnabled,
+  }) {
+    if (_isCameraStarting(cameraBusy, requestedCameraEnabled)) {
+      return 'Starting camera...';
+    }
+
+    return cameraEnabled ? 'Turn camera off' : 'Turn camera on';
+  }
+
+  String _microphoneMediaButtonLabel({
+    required bool microphoneEnabled,
+    required bool microphoneBusy,
+    required bool requestedMicrophoneEnabled,
+  }) {
+    if (_isMicrophoneStarting(microphoneBusy, requestedMicrophoneEnabled)) {
+      return 'Starting microphone...';
+    }
+
+    return microphoneEnabled ? 'Turn mic off' : 'Turn mic on';
+  }
+
+  bool _isCameraStarting(bool cameraBusy, bool requestedCameraEnabled) {
+    return cameraBusy && requestedCameraEnabled;
+  }
+
+  bool _isMicrophoneStarting(
+    bool microphoneBusy,
+    bool requestedMicrophoneEnabled,
+  ) {
+    return microphoneBusy && requestedMicrophoneEnabled;
   }
 
   Future<void> _reportUser(String pubkey) async {

@@ -12,26 +12,26 @@ import 'package:openvine/widgets/user_name.dart';
 class LiveRoomStageMediaTile extends ConsumerWidget {
   const LiveRoomStageMediaTile({
     required this.participant,
+    this.mediaState,
     super.key,
   });
 
   final LiveStageParticipant participant;
+  final LiveMediaState? mediaState;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final resolvedMediaState = mediaState ?? const LiveMediaState();
     final profile = ref
         .watch(userProfileReactiveProvider(participant.identity))
         .value;
     final displayName =
         profile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(participant.identity);
-    final stageStatus = participant.hasVideo
-        ? 'Live video'
-        : participant.isMicrophoneEnabled
-        ? 'Audio only'
-        : participant.isLocal
-        ? 'Camera and mic are off'
-        : 'Waiting for media';
+    final stageStatus = _liveStageStatusLabel(
+      participant: participant,
+      mediaState: resolvedMediaState,
+    );
 
     return widgets.AspectRatio(
       aspectRatio: 3 / 4,
@@ -154,4 +154,42 @@ class LiveRoomStageMediaTile extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _liveStageStatusLabel({
+  required LiveStageParticipant participant,
+  required LiveMediaState mediaState,
+}) {
+  if (participant.isLocal) {
+    if (mediaState.cameraBusy &&
+        mediaState.requestedCameraEnabled &&
+        mediaState.microphoneBusy &&
+        mediaState.requestedMicrophoneEnabled) {
+      return 'Starting camera and microphone...';
+    }
+    if (mediaState.cameraBusy && mediaState.requestedCameraEnabled) {
+      return 'Starting camera...';
+    }
+    if (mediaState.microphoneBusy && mediaState.requestedMicrophoneEnabled) {
+      return 'Starting microphone...';
+    }
+  }
+
+  if (participant.hasVideo && participant.isMicrophoneEnabled) {
+    return 'Live video and audio';
+  }
+
+  if (participant.hasVideo) {
+    return 'Live video';
+  }
+
+  if (participant.isMicrophoneEnabled) {
+    return 'Live audio only';
+  }
+
+  if (participant.isLocal) {
+    return 'Camera and mic are off';
+  }
+
+  return 'Waiting for media';
 }

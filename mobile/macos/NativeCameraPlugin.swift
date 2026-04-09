@@ -52,6 +52,8 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             hasPermission(result: result)
         case "getAuthorizationStatus":
             permissionStatus(for: .video, result: result)
+        case "getMicrophoneAuthorizationStatus":
+            permissionStatus(for: .audio, result: result)
         case "openSystemSettings":
             openSystemSettings(result: result)
         default:

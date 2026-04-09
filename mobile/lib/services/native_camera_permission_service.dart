@@ -21,6 +21,8 @@ abstract class NativeCameraPermissionService {
 
   Future<NativeCameraAuthorizationStatus> authorizationStatus();
 
+  Future<NativeCameraAuthorizationStatus> microphoneAuthorizationStatus();
+
   Future<NativeCameraPermissionStatus> requestPermission();
 
   Future<bool> openSystemSettings();
@@ -42,6 +44,21 @@ class MethodChannelNativeCameraPermissionService
   @override
   Future<NativeCameraAuthorizationStatus> authorizationStatus() async {
     final status = await channel.invokeMethod<String>('getAuthorizationStatus');
+    return switch (status) {
+      'authorized' => NativeCameraAuthorizationStatus.authorized,
+      'notDetermined' => NativeCameraAuthorizationStatus.notDetermined,
+      'denied' => NativeCameraAuthorizationStatus.denied,
+      'restricted' => NativeCameraAuthorizationStatus.restricted,
+      _ => NativeCameraAuthorizationStatus.unavailable,
+    };
+  }
+
+  @override
+  Future<NativeCameraAuthorizationStatus>
+  microphoneAuthorizationStatus() async {
+    final status = await channel.invokeMethod<String>(
+      'getMicrophoneAuthorizationStatus',
+    );
     return switch (status) {
       'authorized' => NativeCameraAuthorizationStatus.authorized,
       'notDetermined' => NativeCameraAuthorizationStatus.notDetermined,

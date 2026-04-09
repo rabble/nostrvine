@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:livekit_client/livekit_client.dart' as lk;
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/live/live_room_token.dart';
 import 'package:openvine/services/livekit_room_service.dart';
 
@@ -162,8 +164,47 @@ void main() {
 
         expect(client.cameraEnabledCalls, [true]);
         expect(client.microphoneEnabledCalls, [false]);
-        expect(service.currentState.cameraEnabled, isTrue);
+        expect(service.currentState.requestedCameraEnabled, isTrue);
+        expect(service.currentState.requestedMicrophoneEnabled, isFalse);
+        expect(service.currentState.cameraEnabled, isFalse);
         expect(service.currentState.microphoneEnabled, isFalse);
+      },
+    );
+
+    test(
+      'camera enable only marks video live when a local video track actually exists',
+      () async {
+        await service.connect(
+          const LiveRoomToken(
+            token: 'jwt-token',
+            roomName: 'room-abc',
+            participantIdentity: 'host-pubkey',
+            serverUrl: 'wss://livekit.example.com',
+            canPublish: true,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        await service.setCameraEnabled(true);
+        await _flush();
+
+        expect(service.currentState.requestedCameraEnabled, isTrue);
+        expect(service.currentState.cameraEnabled, isFalse);
+
+        final videoTrack = _MockVideoTrack();
+        client.stageParticipants = <LiveStageParticipant>[
+          LiveStageParticipant(
+            identity: 'host-pubkey',
+            isLocal: true,
+            videoTrack: videoTrack,
+          ),
+        ];
+
+        client.emit(LiveKitRoomClientEvent.participantsChanged);
+        await _flush();
+
+        expect(service.currentState.requestedCameraEnabled, isTrue);
+        expect(service.currentState.cameraEnabled, isTrue);
       },
     );
 
@@ -207,6 +248,14 @@ void main() {
     });
 
     test('enableAudioOnly disables camera and keeps microphone live', () async {
+      client.stageParticipants = const <LiveStageParticipant>[
+        LiveStageParticipant(
+          identity: 'host-pubkey',
+          isLocal: true,
+          isMicrophoneEnabled: true,
+        ),
+      ];
+
       await service.connect(
         const LiveRoomToken(
           token: 'jwt-token',
@@ -227,6 +276,8 @@ void main() {
 
       expect(client.cameraEnabledCalls, [true, false]);
       expect(client.microphoneEnabledCalls, [true, true]);
+      expect(service.currentState.requestedCameraEnabled, isFalse);
+      expect(service.currentState.requestedMicrophoneEnabled, isTrue);
       expect(service.currentState.cameraEnabled, isFalse);
       expect(service.currentState.microphoneEnabled, isTrue);
       expect(service.currentState.status, LiveMediaConnectionStatus.audioOnly);
@@ -273,6 +324,8 @@ void main() {
       );
       expect(service.currentState.canPublish, isFalse);
       expect(service.currentState.localParticipantIdentity, isNull);
+      expect(service.currentState.requestedCameraEnabled, isFalse);
+      expect(service.currentState.requestedMicrophoneEnabled, isFalse);
       expect(service.currentState.cameraEnabled, isFalse);
       expect(service.currentState.microphoneEnabled, isFalse);
     });
@@ -292,6 +345,8 @@ class _FakeLiveKitRoomClient implements LiveKitRoomClient {
   int disconnectCalls = 0;
   int switchCameraCalls = 0;
   bool failConnect = false;
+  bool cameraEnableSucceeds = true;
+  bool microphoneEnableSucceeds = true;
   String? lastUrl;
   String? lastToken;
   bool? lastDisableFastConnectPublish;
@@ -345,13 +400,15 @@ class _FakeLiveKitRoomClient implements LiveKitRoomClient {
   }
 
   @override
-  Future<void> setCameraEnabled(bool enabled) async {
+  Future<bool> setCameraEnabled(bool enabled) async {
     cameraEnabledCalls.add(enabled);
+    return !enabled || cameraEnableSucceeds;
   }
 
   @override
-  Future<void> setMicrophoneEnabled(bool enabled) async {
+  Future<bool> setMicrophoneEnabled(bool enabled) async {
     microphoneEnabledCalls.add(enabled);
+    return !enabled || microphoneEnableSucceeds;
   }
 
   @override
@@ -366,3 +423,5 @@ class _FakeLiveKitRoomClient implements LiveKitRoomClient {
     }
   }
 }
+
+class _MockVideoTrack extends Mock implements lk.VideoTrack {}

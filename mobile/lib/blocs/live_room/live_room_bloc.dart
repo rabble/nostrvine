@@ -272,8 +272,12 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
       return;
     }
 
+    if (state.mediaState.microphoneBusy) {
+      return;
+    }
+
     try {
-      final enableMicrophone = !state.mediaState.microphoneEnabled;
+      final enableMicrophone = !state.mediaState.requestedMicrophoneEnabled;
       if (enableMicrophone) {
         final permissionError = await _ensureMicrophonePermission();
         if (permissionError != null) {
@@ -298,8 +302,12 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
       return;
     }
 
+    if (state.mediaState.cameraBusy) {
+      return;
+    }
+
     try {
-      final enableCamera = !state.mediaState.cameraEnabled;
+      final enableCamera = !state.mediaState.requestedCameraEnabled;
       if (enableCamera) {
         final permissionError = await _ensureCameraPermission();
         if (permissionError != null) {
@@ -404,6 +412,23 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
   }
 
   Future<String?> _ensureMicrophonePermission() async {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
+      final nativeStatus = await _nativeCameraPermissionService
+          .microphoneAuthorizationStatus();
+      switch (nativeStatus) {
+        case NativeCameraAuthorizationStatus.authorized:
+          return null;
+        case NativeCameraAuthorizationStatus.denied:
+        case NativeCameraAuthorizationStatus.restricted:
+          return 'Microphone access is blocked. Allow it in system settings.';
+        case NativeCameraAuthorizationStatus.notDetermined:
+        case NativeCameraAuthorizationStatus.unavailable:
+          // Match the camera flow on macOS: let the real media stack request
+          // access so the OS can show its native microphone prompt.
+          return null;
+      }
+    }
+
     try {
       final status = await _permissionsService.checkMicrophoneStatus();
       if (status == PermissionStatus.granted) {

@@ -48,6 +48,22 @@ void main() {
     expect(methodCalls.single.method, 'getAuthorizationStatus');
   });
 
+  test('maps native microphone authorization status values', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (methodCall) async {
+          methodCalls.add(methodCall);
+          if (methodCall.method == 'getMicrophoneAuthorizationStatus') {
+            return 'restricted';
+          }
+          return null;
+        });
+
+    final result = await service.microphoneAuthorizationStatus();
+
+    expect(result, NativeCameraAuthorizationStatus.restricted);
+    expect(methodCalls.single.method, 'getMicrophoneAuthorizationStatus');
+  });
+
   test('maps native permission denied into requires settings', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (methodCall) async {

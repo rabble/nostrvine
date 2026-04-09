@@ -45,6 +45,10 @@ class LiveMediaState extends Equatable {
   const LiveMediaState({
     this.status = LiveMediaConnectionStatus.disconnected,
     this.canPublish = false,
+    this.requestedCameraEnabled = false,
+    this.requestedMicrophoneEnabled = false,
+    this.cameraBusy = false,
+    this.microphoneBusy = false,
     this.cameraEnabled = false,
     this.microphoneEnabled = false,
     this.localParticipantIdentity,
@@ -53,6 +57,10 @@ class LiveMediaState extends Equatable {
 
   final LiveMediaConnectionStatus status;
   final bool canPublish;
+  final bool requestedCameraEnabled;
+  final bool requestedMicrophoneEnabled;
+  final bool cameraBusy;
+  final bool microphoneBusy;
   final bool cameraEnabled;
   final bool microphoneEnabled;
   final String? localParticipantIdentity;
@@ -61,6 +69,10 @@ class LiveMediaState extends Equatable {
   LiveMediaState copyWith({
     LiveMediaConnectionStatus? status,
     bool? canPublish,
+    bool? requestedCameraEnabled,
+    bool? requestedMicrophoneEnabled,
+    bool? cameraBusy,
+    bool? microphoneBusy,
     bool? cameraEnabled,
     bool? microphoneEnabled,
     String? localParticipantIdentity,
@@ -70,6 +82,12 @@ class LiveMediaState extends Equatable {
     return LiveMediaState(
       status: status ?? this.status,
       canPublish: canPublish ?? this.canPublish,
+      requestedCameraEnabled:
+          requestedCameraEnabled ?? this.requestedCameraEnabled,
+      requestedMicrophoneEnabled:
+          requestedMicrophoneEnabled ?? this.requestedMicrophoneEnabled,
+      cameraBusy: cameraBusy ?? this.cameraBusy,
+      microphoneBusy: microphoneBusy ?? this.microphoneBusy,
       cameraEnabled: cameraEnabled ?? this.cameraEnabled,
       microphoneEnabled: microphoneEnabled ?? this.microphoneEnabled,
       localParticipantIdentity: clearLocalParticipantIdentity
@@ -83,6 +101,10 @@ class LiveMediaState extends Equatable {
   List<Object?> get props => [
     status,
     canPublish,
+    requestedCameraEnabled,
+    requestedMicrophoneEnabled,
+    cameraBusy,
+    microphoneBusy,
     cameraEnabled,
     microphoneEnabled,
     localParticipantIdentity,
@@ -112,9 +134,9 @@ abstract class LiveKitRoomClient {
 
   Future<void> disconnect();
 
-  Future<void> setCameraEnabled(bool enabled);
+  Future<bool> setCameraEnabled(bool enabled);
 
-  Future<void> setMicrophoneEnabled(bool enabled);
+  Future<bool> setMicrophoneEnabled(bool enabled);
 
   Future<void> switchCamera();
 
@@ -182,9 +204,20 @@ class LiveKitRoomService {
         token.token,
         disableFastConnectPublish: true,
       );
+      final localStageParticipant = _localStageParticipantSnapshot();
+      final publishedCameraEnabled = localStageParticipant?.hasVideo ?? false;
+      final publishedMicrophoneEnabled =
+          localStageParticipant?.isMicrophoneEnabled ?? false;
       _refreshStageParticipants(
         _currentState.copyWith(
-          status: _connectedStatusForCurrentTracks(),
+          status: _connectedStatusForTracks(
+            cameraEnabled: publishedCameraEnabled,
+            microphoneEnabled: publishedMicrophoneEnabled,
+          ),
+          requestedCameraEnabled: publishedCameraEnabled,
+          requestedMicrophoneEnabled: publishedMicrophoneEnabled,
+          cameraBusy: false,
+          microphoneBusy: false,
         ),
       );
     } catch (_) {
@@ -216,14 +249,38 @@ class LiveKitRoomService {
       return;
     }
 
-    await _client.setCameraEnabled(enabled);
+    if (enabled) {
+      _updateState(
+        _currentState.copyWith(
+          requestedCameraEnabled: true,
+          cameraBusy: true,
+        ),
+      );
+    }
+
+    final applied = await _client.setCameraEnabled(enabled);
+    if (enabled && !applied) {
+      _refreshStageParticipants(
+        _currentState.copyWith(
+          requestedCameraEnabled: false,
+          cameraBusy: false,
+          status: _connectedStatusForTracks(
+            cameraEnabled: false,
+            microphoneEnabled: _currentState.microphoneEnabled,
+          ),
+        ),
+      );
+      throw StateError('Unable to start the camera right now.');
+    }
+
     _refreshStageParticipants(
       _currentState.copyWith(
         status: _localTrackStatus(
           cameraEnabled: enabled,
-          microphoneEnabled: _currentState.microphoneEnabled,
+          microphoneEnabled: _currentState.requestedMicrophoneEnabled,
         ),
-        cameraEnabled: enabled,
+        requestedCameraEnabled: enabled,
+        cameraBusy: enabled,
       ),
     );
   }
@@ -233,14 +290,38 @@ class LiveKitRoomService {
       return;
     }
 
-    await _client.setMicrophoneEnabled(enabled);
+    if (enabled) {
+      _updateState(
+        _currentState.copyWith(
+          requestedMicrophoneEnabled: true,
+          microphoneBusy: true,
+        ),
+      );
+    }
+
+    final applied = await _client.setMicrophoneEnabled(enabled);
+    if (enabled && !applied) {
+      _refreshStageParticipants(
+        _currentState.copyWith(
+          requestedMicrophoneEnabled: false,
+          microphoneBusy: false,
+          status: _connectedStatusForTracks(
+            cameraEnabled: _currentState.cameraEnabled,
+            microphoneEnabled: false,
+          ),
+        ),
+      );
+      throw StateError('Unable to start the microphone right now.');
+    }
+
     _refreshStageParticipants(
       _currentState.copyWith(
         status: _localTrackStatus(
-          cameraEnabled: _currentState.cameraEnabled,
+          cameraEnabled: _currentState.requestedCameraEnabled,
           microphoneEnabled: enabled,
         ),
-        microphoneEnabled: enabled,
+        requestedMicrophoneEnabled: enabled,
+        microphoneBusy: enabled,
       ),
     );
   }
@@ -263,8 +344,10 @@ class LiveKitRoomService {
     _refreshStageParticipants(
       _currentState.copyWith(
         status: LiveMediaConnectionStatus.audioOnly,
-        cameraEnabled: false,
-        microphoneEnabled: true,
+        requestedCameraEnabled: false,
+        requestedMicrophoneEnabled: true,
+        cameraBusy: false,
+        microphoneBusy: false,
       ),
     );
   }
@@ -295,7 +378,10 @@ class LiveKitRoomService {
         _disconnectRequested = false;
         _refreshStageParticipants(
           _currentState.copyWith(
-            status: _connectedStatusForCurrentTracks(),
+            status: _connectedStatusForTracks(
+              cameraEnabled: _currentState.requestedCameraEnabled,
+              microphoneEnabled: _currentState.requestedMicrophoneEnabled,
+            ),
           ),
         );
       case LiveKitRoomClientEvent.reconnecting:
@@ -312,7 +398,13 @@ class LiveKitRoomService {
         _updateState(
           _currentState.copyWith(
             status: LiveMediaConnectionStatus.failed,
+            requestedCameraEnabled: false,
+            requestedMicrophoneEnabled: false,
+            cameraBusy: false,
+            microphoneBusy: false,
             cameraEnabled: false,
+            microphoneEnabled: false,
+            stageParticipants: const <LiveStageParticipant>[],
           ),
         );
       case LiveKitRoomClientEvent.participantsChanged:
@@ -321,8 +413,22 @@ class LiveKitRoomService {
   }
 
   void _refreshStageParticipants(LiveMediaState nextState) {
+    final localStageParticipant = _localStageParticipantSnapshot();
+    final publishedCameraEnabled = localStageParticipant?.hasVideo ?? false;
+    final publishedMicrophoneEnabled =
+        localStageParticipant?.isMicrophoneEnabled ?? false;
     _updateState(
       nextState.copyWith(
+        cameraBusy:
+            nextState.cameraBusy &&
+            nextState.requestedCameraEnabled &&
+            !publishedCameraEnabled,
+        microphoneBusy:
+            nextState.microphoneBusy &&
+            nextState.requestedMicrophoneEnabled &&
+            !publishedMicrophoneEnabled,
+        cameraEnabled: publishedCameraEnabled,
+        microphoneEnabled: publishedMicrophoneEnabled,
         stageParticipants: List<LiveStageParticipant>.unmodifiable(
           _client.currentStageParticipants,
         ),
@@ -358,8 +464,21 @@ class LiveKitRoomService {
     return LiveMediaConnectionStatus.connected;
   }
 
-  LiveMediaConnectionStatus _connectedStatusForCurrentTracks() {
-    if (!_currentState.cameraEnabled && _currentState.microphoneEnabled) {
+  LiveStageParticipant? _localStageParticipantSnapshot() {
+    for (final participant in _client.currentStageParticipants) {
+      if (participant.isLocal) {
+        return participant;
+      }
+    }
+
+    return null;
+  }
+
+  LiveMediaConnectionStatus _connectedStatusForTracks({
+    required bool cameraEnabled,
+    required bool microphoneEnabled,
+  }) {
+    if (!cameraEnabled && microphoneEnabled) {
       return LiveMediaConnectionStatus.audioOnly;
     }
 
@@ -476,23 +595,33 @@ class _SdkLiveKitRoomClient implements LiveKitRoomClient {
   }
 
   @override
-  Future<void> setCameraEnabled(bool enabled) async {
+  Future<bool> setCameraEnabled(bool enabled) async {
     final participant = _room.localParticipant;
     if (participant == null) {
-      return;
+      return false;
     }
 
-    await participant.setCameraEnabled(enabled);
+    final publication = await participant.setCameraEnabled(enabled);
+    if (!enabled) {
+      return true;
+    }
+
+    return publication != null;
   }
 
   @override
-  Future<void> setMicrophoneEnabled(bool enabled) async {
+  Future<bool> setMicrophoneEnabled(bool enabled) async {
     final participant = _room.localParticipant;
     if (participant == null) {
-      return;
+      return false;
     }
 
-    await participant.setMicrophoneEnabled(enabled);
+    final publication = await participant.setMicrophoneEnabled(enabled);
+    if (!enabled) {
+      return true;
+    }
+
+    return publication != null;
   }
 
   @override

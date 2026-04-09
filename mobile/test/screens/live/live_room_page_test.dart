@@ -719,6 +719,72 @@ void main() {
       expect(find.text('Audio only'), findsOneWidget);
     });
 
+    testWidgets(
+      'hosts see starting labels while camera and microphone are still publishing',
+      (tester) async {
+        final mediaController = StreamController<LiveMediaState>.broadcast(
+          sync: true,
+        );
+
+        when(() => mockLiveKitRoomService.watchState()).thenAnswer(
+          (_) => mediaController.stream,
+        );
+
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final hostAuth = createMockAuthService();
+        when(() => hostAuth.currentPublicKeyHex).thenReturn('host-pubkey');
+
+        addTearDown(() async {
+          await mediaController.close();
+        });
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: hostAuth,
+            additionalOverrides: [
+              liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+              liveChatRepositoryProvider.overrideWithValue(
+                mockLiveChatRepository,
+              ),
+              liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+              liveKitRoomServiceProvider.overrideWithValue(
+                mockLiveKitRoomService,
+              ),
+            ],
+            home: LiveRoomPage(
+              roomId: room.id,
+              sessionId: session.id,
+              initialRoom: room,
+              initialSession: session,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+            requestedCameraEnabled: true,
+            requestedMicrophoneEnabled: true,
+            cameraBusy: true,
+            microphoneBusy: true,
+            localParticipantIdentity: 'host-pubkey',
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Starting camera...'), findsOneWidget);
+        expect(find.text('Starting microphone...'), findsOneWidget);
+        expect(find.text('Turn camera on'), findsNothing);
+        expect(find.text('Turn mic on'), findsNothing);
+      },
+    );
+
     testWidgets('audience members promoted on stage gain publishing controls', (
       tester,
     ) async {

@@ -139,6 +139,51 @@ void main() {
       },
     );
 
+    testWidgets(
+      'shows the local host tile as starting camera while publish is pending',
+      (tester) async {
+        const hostPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final profile = UserProfile(
+          pubkey: hostPubkey,
+          rawData: const <String, dynamic>{},
+          createdAt: DateTime.utc(2026, 4, 9),
+          eventId: 'profile-event',
+          displayName: 'Alice Stage',
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockNip05VerificationService: createMockNip05VerificationService(),
+            additionalOverrides: [
+              userProfileReactiveProvider(hostPubkey).overrideWith(
+                (ref) => Stream.value(profile),
+              ),
+            ],
+            home: const Scaffold(
+              body: LiveRoomStage(
+                speakerPubkeys: <String>[hostPubkey],
+                audienceCount: 0,
+                statusLabel: 'connecting',
+                mediaState: LiveMediaState(
+                  canPublish: true,
+                  localParticipantIdentity: hostPubkey,
+                  requestedCameraEnabled: true,
+                  cameraBusy: true,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LiveRoomStageMediaTile), findsOneWidget);
+        expect(find.text('Alice Stage'), findsOneWidget);
+        expect(find.text('Starting camera...'), findsOneWidget);
+        expect(find.text('Camera and mic are off'), findsNothing);
+      },
+    );
+
     testWidgets('shows the empty state when nobody is on stage', (
       tester,
     ) async {

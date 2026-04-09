@@ -122,6 +122,8 @@ void main() {
     const connectedMediaState = LiveMediaState(
       status: LiveMediaConnectionStatus.connected,
       canPublish: true,
+      requestedCameraEnabled: true,
+      requestedMicrophoneEnabled: true,
       cameraEnabled: true,
       microphoneEnabled: true,
     );
@@ -378,6 +380,102 @@ void main() {
     });
 
     test(
+      'camera toggle follows requested state while local publish is still in flight',
+      () async {
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+            requestedCameraEnabled: true,
+            cameraBusy: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleCameraRequested());
+        await _flush();
+
+        verifyNever(() => mockMediaService.setCameraEnabled(any()));
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+            requestedCameraEnabled: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleCameraRequested());
+        await _flush();
+
+        verify(() => mockMediaService.setCameraEnabled(false)).called(1);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'microphone toggle follows requested state while local publish is still in flight',
+      () async {
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+            requestedMicrophoneEnabled: true,
+            microphoneBusy: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleMicrophoneRequested());
+        await _flush();
+
+        verifyNever(() => mockMediaService.setMicrophoneEnabled(any()));
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+            requestedMicrophoneEnabled: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleMicrophoneRequested());
+        await _flush();
+
+        verify(() => mockMediaService.setMicrophoneEnabled(false)).called(1);
+
+        await bloc.close();
+      },
+    );
+
+    test(
       'turning the host camera on on macOS does not block not-determined permission behind preflight checks',
       () async {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
@@ -426,6 +524,139 @@ void main() {
         verify(mockNativeCameraPermissionService.authorizationStatus).called(1);
         verify(() => mockMediaService.setCameraEnabled(true)).called(1);
         expect(bloc.state.errorMessage, isNull);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'turning the host microphone on on macOS does not block not-determined permission behind preflight checks',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        final mockPermissionsService = _MockPermissionsService();
+        final mockNativeCameraPermissionService =
+            _MockNativeCameraPermissionService();
+        when(
+          mockNativeCameraPermissionService.microphoneAuthorizationStatus,
+        ).thenAnswer(
+          (_) async => NativeCameraAuthorizationStatus.notDetermined,
+        );
+        when(
+          mockPermissionsService.checkCameraStatus,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          mockPermissionsService.requestCameraPermission,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          mockPermissionsService.checkMicrophoneStatus,
+        ).thenAnswer((_) async => PermissionStatus.canRequest);
+        when(
+          mockPermissionsService.requestMicrophonePermission,
+        ).thenAnswer((_) async => PermissionStatus.canRequest);
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          permissionsService: mockPermissionsService,
+          nativeCameraPermissionService: mockNativeCameraPermissionService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleMicrophoneRequested());
+        await _flush();
+
+        verify(
+          mockNativeCameraPermissionService.microphoneAuthorizationStatus,
+        ).called(1);
+        verifyNever(
+          mockPermissionsService.checkMicrophoneStatus,
+        );
+        verifyNever(
+          mockPermissionsService.requestMicrophonePermission,
+        );
+        verify(() => mockMediaService.setMicrophoneEnabled(true)).called(1);
+        expect(bloc.state.errorMessage, isNull);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'turning the host microphone on on macOS surfaces a settings message when access is denied',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        final mockPermissionsService = _MockPermissionsService();
+        final mockNativeCameraPermissionService =
+            _MockNativeCameraPermissionService();
+        when(
+          mockNativeCameraPermissionService.microphoneAuthorizationStatus,
+        ).thenAnswer(
+          (_) async => NativeCameraAuthorizationStatus.denied,
+        );
+        when(
+          mockPermissionsService.checkMicrophoneStatus,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          mockPermissionsService.requestMicrophonePermission,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          permissionsService: mockPermissionsService,
+          nativeCameraPermissionService: mockNativeCameraPermissionService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleMicrophoneRequested());
+        await _flush();
+
+        verify(
+          mockNativeCameraPermissionService.microphoneAuthorizationStatus,
+        ).called(1);
+        verifyNever(
+          mockPermissionsService.checkMicrophoneStatus,
+        );
+        verifyNever(
+          mockPermissionsService.requestMicrophonePermission,
+        );
+        verifyNever(() => mockMediaService.setMicrophoneEnabled(true));
+        expect(
+          bloc.state.errorMessage,
+          'Microphone access is blocked. Allow it in system settings.',
+        );
 
         await bloc.close();
       },

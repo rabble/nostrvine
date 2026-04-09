@@ -50,8 +50,11 @@ class _LiveRoomViewState extends State<LiveRoomView> {
       ),
       body: BlocBuilder<LiveRoomBloc, LiveRoomState>(
         builder: (context, roomState) {
-          final cameraEnabled = roomState.mediaState.cameraEnabled;
-          final microphoneEnabled = roomState.mediaState.microphoneEnabled;
+          final mediaState = roomState.mediaState;
+          final cameraButtonLabel = _cameraMediaButtonLabel(mediaState);
+          final microphoneButtonLabel = _microphoneMediaButtonLabel(mediaState);
+          final cameraBusy = _isCameraStarting(mediaState);
+          final microphoneBusy = _isMicrophoneStarting(mediaState);
 
           return switch (roomState.status) {
             LiveRoomStatus.initial || LiveRoomStatus.loading => const Center(
@@ -116,18 +119,20 @@ class _LiveRoomViewState extends State<LiveRoomView> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: LiveLocalMediaControls(
-                        cameraButtonLabel: cameraEnabled
-                            ? 'Turn camera off'
-                            : 'Turn camera on',
-                        microphoneButtonLabel: microphoneEnabled
-                            ? 'Turn mic off'
-                            : 'Turn mic on',
+                        cameraButtonLabel: cameraButtonLabel,
+                        microphoneButtonLabel: microphoneButtonLabel,
                         onToggleCamera: () {
+                          if (cameraBusy) {
+                            return;
+                          }
                           context.read<LiveRoomBloc>().add(
                             const ToggleCameraRequested(),
                           );
                         },
                         onToggleMicrophone: () {
+                          if (microphoneBusy) {
+                            return;
+                          }
                           context.read<LiveRoomBloc>().add(
                             const ToggleMicrophoneRequested(),
                           );
@@ -208,6 +213,30 @@ class _LiveRoomViewState extends State<LiveRoomView> {
       const SnackBar(content: Text('Room link copied to clipboard')),
     );
   }
+}
+
+String _cameraMediaButtonLabel(LiveMediaState mediaState) {
+  if (_isCameraStarting(mediaState)) {
+    return 'Starting camera...';
+  }
+
+  return mediaState.cameraEnabled ? 'Turn camera off' : 'Turn camera on';
+}
+
+String _microphoneMediaButtonLabel(LiveMediaState mediaState) {
+  if (_isMicrophoneStarting(mediaState)) {
+    return 'Starting microphone...';
+  }
+
+  return mediaState.microphoneEnabled ? 'Turn mic off' : 'Turn mic on';
+}
+
+bool _isCameraStarting(LiveMediaState mediaState) {
+  return mediaState.cameraBusy && mediaState.requestedCameraEnabled;
+}
+
+bool _isMicrophoneStarting(LiveMediaState mediaState) {
+  return mediaState.microphoneBusy && mediaState.requestedMicrophoneEnabled;
 }
 
 class _LiveRoomErrorBanner extends StatelessWidget {
