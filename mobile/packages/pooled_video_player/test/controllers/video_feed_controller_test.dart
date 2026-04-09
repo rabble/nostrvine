@@ -1898,6 +1898,7 @@ void main() {
           videos: videos,
           pool: evictionPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         // Grab notifier before load-state updates propagate.
@@ -1934,6 +1935,7 @@ void main() {
           videos: videos,
           pool: evictionPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         // Wait for serialized current load + concurrent preloads.
@@ -1962,6 +1964,7 @@ void main() {
           videos: videos,
           pool: evictionPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         final notifier0 = controller.getIndexNotifier(0);
@@ -2151,6 +2154,7 @@ void main() {
           videos: videos,
           pool: callbackPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         final notifier0 = controller.getIndexNotifier(0);
@@ -2223,6 +2227,7 @@ void main() {
           videos: videos,
           pool: callbackPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         final notifier0 = controller.getIndexNotifier(0);
@@ -2253,6 +2258,7 @@ void main() {
           videos: videos,
           pool: callbackPool,
           preloadBehind: 0,
+          preloadGracePeriod: Duration.zero,
         );
 
         final notifier1 = controller.getIndexNotifier(1);
