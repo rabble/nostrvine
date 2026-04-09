@@ -117,6 +117,20 @@ void main() {
       expect(status.unclaimedCodes.first.code, equals('AAAA-BBBB'));
     });
 
+    test('claimedCodes returns only claimed', () {
+      const status = InviteStatus(
+        canInvite: true,
+        remaining: 1,
+        total: 2,
+        codes: [
+          InviteCode(code: 'AAAA-BBBB', claimed: false),
+          InviteCode(code: 'CCCC-DDDD', claimed: true, claimedBy: 'abc'),
+        ],
+      );
+      expect(status.claimedCodes, hasLength(1));
+      expect(status.claimedCodes.first.code, equals('CCCC-DDDD'));
+    });
+
     test('hasUnclaimedCodes is true when unclaimed exist', () {
       const status = InviteStatus(
         canInvite: true,

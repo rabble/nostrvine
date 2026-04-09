@@ -3,16 +3,14 @@
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
-import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/services/api_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
-  InviteGateBloc({required InviteApiService inviteApiService})
-    : _inviteApiService = inviteApiService,
+  InviteGateBloc({required InviteApiClient inviteApiClient})
+    : _inviteApiClient = inviteApiClient,
       super(const InviteGateState()) {
     on<InviteGateConfigRequested>(
       _onConfigRequested,
@@ -28,7 +26,7 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     on<InviteGateAccessCleared>(_onAccessCleared);
   }
 
-  final InviteApiService _inviteApiService;
+  final InviteApiClient _inviteApiClient;
 
   Future<void> _onConfigRequested(
     InviteGateConfigRequested event,
@@ -52,14 +50,14 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     );
 
     try {
-      final config = await _inviteApiService.getClientConfig();
+      final config = await _inviteApiClient.getClientConfig();
       emit(
         state.copyWith(
           configStatus: InviteGateConfigStatus.success,
           config: config,
         ),
       );
-    } on ApiException catch (error) {
+    } on InviteApiException catch (error) {
       Log.error(
         'Failed to load invite config: ${error.message}',
         name: 'InviteGateBloc',
@@ -90,9 +88,9 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     InviteGateCodeSubmitted event,
     Emitter<InviteGateState> emit,
   ) async {
-    final normalizedCode = InviteApiService.normalizeCode(event.rawCode);
+    final normalizedCode = InviteApiClient.normalizeCode(event.rawCode);
 
-    if (!InviteApiService.looksLikeInviteCode(normalizedCode)) {
+    if (!InviteApiClient.looksLikeInviteCode(normalizedCode)) {
       emit(
         state.copyWith(
           inviteCodeError: 'Enter an invite code like ABCD-EFGH.',
@@ -111,7 +109,7 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     );
 
     try {
-      final result = await _inviteApiService.validateCode(normalizedCode);
+      final result = await _inviteApiClient.validateCode(normalizedCode);
 
       if (result.canContinue) {
         emit(
@@ -137,7 +135,7 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
           clearGeneralError: true,
         ),
       );
-    } on ApiException catch (error) {
+    } on InviteApiException catch (error) {
       emit(
         state.copyWith(
           isValidatingCode: false,
