@@ -221,10 +221,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             final opacity = scrollDrivenOpacity(distance);
             return Opacity(
               opacity: opacity,
-              child: IgnorePointer(
-                ignoring: opacity < 0.01,
-                child: child,
-              ),
+              child: IgnorePointer(ignoring: opacity < 0.01, child: child),
             );
           },
           child: Stack(
@@ -368,11 +365,9 @@ class _AuthorInfoSection extends ConsumerWidget {
             const SizedBox(height: 4),
             InspiredByAttributionRow(video: video, isActive: true),
           ],
-          // Audio attribution
-          if (video.hasAudioReference) ...[
-            const SizedBox(height: 4),
-            AudioAttributionRow(video: video),
-          ],
+          // Audio attribution (shown on all videos)
+          const SizedBox(height: 4),
+          AudioAttributionRow(video: video),
           // List attribution (curated lists)
           if (listSources != null && listSources!.isNotEmpty) ...[
             const SizedBox(height: 4),

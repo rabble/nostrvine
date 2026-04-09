@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_category.dart';
@@ -50,6 +51,7 @@ import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -645,10 +647,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ? state.extra! as NostrAppDirectoryEntry
               : null;
           final appId = state.pathParameters['appId'] ?? '';
-          return ResolvedSandboxRouteScreen(
-            appId: appId,
-            initialApp: app,
-          );
+          return ResolvedSandboxRouteScreen(appId: appId, initialApp: app);
         },
       ),
       GoRoute(
@@ -659,10 +658,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final initialEntry = state.extra is NostrAppDirectoryEntry
               ? state.extra! as NostrAppDirectoryEntry
               : null;
-          return AppDetailScreen(
-            slug: slug,
-            initialEntry: initialEntry,
-          );
+          return AppDetailScreen(slug: slug, initialEntry: initialEntry);
         },
       ),
       GoRoute(
@@ -881,6 +877,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return SoundDetailLoader(soundId: soundId);
         },
       ),
+      // Original sound detail route (for videos without shared audio)
+      GoRoute(
+        path: OriginalSoundDetailScreen.path,
+        name: OriginalSoundDetailScreen.routeName,
+        builder: (ctx, st) {
+          final pubkey = st.pathParameters['pubkey'];
+          final video = st.extra as VideoEvent?;
+          if (pubkey == null || pubkey.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid creator')),
+            );
+          }
+          return OriginalSoundDetailScreen(
+            creatorPubkey: pubkey,
+            sourceVideo: video,
+          );
+        },
+      ),
       // Video editor route (requires video passed via extra)
       GoRoute(
         path: VideoRecorderScreen.path,
@@ -927,10 +942,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final categoryName = st.pathParameters['categoryName'];
           final category =
               st.extra as VideoCategory? ??
-              VideoCategory(
-                name: categoryName ?? '',
-                videoCount: 0,
-              );
+              VideoCategory(name: categoryName ?? '', videoCount: 0);
 
           if (category.name.isEmpty) {
             return const Scaffold(

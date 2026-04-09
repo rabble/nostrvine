@@ -1,5 +1,5 @@
-// ABOUTME: Tests for AudioAttributionRow widget - displays sound attribution on videos.
-// ABOUTME: Verifies dark theme colors, tap navigation, loading states, and graceful errors.
+// ABOUTME: Tests for AudioAttributionRow widget - displays sound attribution
+// ABOUTME: on videos. Tests both explicit audio and original sound modes.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +11,7 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 
 void main() {
-  group('AudioAttributionRow', () {
+  group(AudioAttributionRow, () {
     // Full 64-character Nostr IDs as required by CLAUDE.md
     const testAudioEventId =
         'audio0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
@@ -48,7 +48,7 @@ void main() {
       );
     }
 
-    VideoEvent createVideoWithoutAudio() {
+    VideoEvent createVideoWithoutAudio({String? authorName}) {
       final now = DateTime.now();
       return VideoEvent(
         id: testVideoId,
@@ -58,6 +58,7 @@ void main() {
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
         title: 'Test Video',
+        authorName: authorName,
       );
     }
 
@@ -82,49 +83,7 @@ void main() {
       );
     }
 
-    group('Visibility', () {
-      testWidgets('shows nothing when video has no audio reference', (
-        tester,
-      ) async {
-        final video = createVideoWithoutAudio();
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        // Should render nothing (SizedBox.shrink)
-        expect(find.byType(AudioAttributionRow), findsOneWidget);
-        expect(find.byIcon(Icons.music_note), findsNothing);
-        expect(find.textContaining('sound'), findsNothing);
-      });
-
-      testWidgets('shows nothing when audio event is null', (tester) async {
-        final video = createVideoWithAudio();
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              soundByIdProvider(testAudioEventId).overrideWith((ref) async {
-                return null;
-              }),
-            ],
-            child: MaterialApp(
-              theme: VineTheme.theme,
-              home: Scaffold(
-                backgroundColor: Colors.black,
-                body: AudioAttributionRow(video: video),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Should hide when audio not found
-        expect(find.byIcon(Icons.music_note), findsNothing);
-      });
-    });
-
-    group('Content display', () {
+    group('Explicit audio reference', () {
       testWidgets('displays music note icon with vineGreen color', (
         tester,
       ) async {
@@ -189,20 +148,125 @@ void main() {
         );
         expect(text.style?.color, equals(Colors.white));
       });
+
+      testWidgets('falls back to original sound when audio event is null', (
+        tester,
+      ) async {
+        final video = createVideoWithAudio();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              soundByIdProvider(testAudioEventId).overrideWith((ref) async {
+                return null;
+              }),
+            ],
+            child: MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                backgroundColor: Colors.black,
+                body: AudioAttributionRow(video: video),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should fall back to original sound display
+        expect(find.byIcon(Icons.music_note), findsOneWidget);
+        expect(find.textContaining('Original sound'), findsOneWidget);
+      });
+    });
+
+    group('Original sound (no audio reference)', () {
+      testWidgets('shows music note icon', (tester) async {
+        final video = createVideoWithoutAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.music_note), findsOneWidget);
+      });
+
+      testWidgets('renders "Original sound" text', (tester) async {
+        final video = createVideoWithoutAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Original sound'), findsOneWidget);
+      });
+
+      testWidgets('shows author name when available', (tester) async {
+        final video = createVideoWithoutAudio(authorName: 'Jake Lara');
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Original sound - Jake Lara'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('does not show chevron right icon', (tester) async {
+        final video = createVideoWithoutAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        // Original sound row has no chevron (simpler display)
+        expect(find.byIcon(Icons.chevron_right), findsNothing);
+      });
+
+      testWidgets('has correct semantics identifier', (tester) async {
+        final video = createVideoWithoutAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        final semantics = tester.widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(AudioAttributionRow),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+
+        expect(
+          semantics.properties.identifier,
+          equals('audio_attribution_row_original'),
+        );
+      });
+
+      testWidgets('is marked as button for tap interaction', (tester) async {
+        final video = createVideoWithoutAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        final semantics = tester.widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(AudioAttributionRow),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+
+        expect(semantics.properties.button, isTrue);
+      });
     });
 
     group('Loading state', () {
       testWidgets('shows skeleton during loading', (tester) async {
         final video = createVideoWithAudio();
 
-        // Use a Completer to control when the Future resolves
-        // This avoids timer issues in tests
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              // Override with a provider that stays in loading state
-              // by returning a Future that resolves immediately but
-              // we check the skeleton before pumpAndSettle
               soundByIdProvider(testAudioEventId).overrideWith((ref) async {
                 return testAudio;
               }),
@@ -230,7 +294,9 @@ void main() {
     });
 
     group('Accessibility', () {
-      testWidgets('has correct semantics identifier', (tester) async {
+      testWidgets('explicit audio has correct semantics identifier', (
+        tester,
+      ) async {
         final video = createVideoWithAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));
@@ -251,7 +317,9 @@ void main() {
         );
       });
 
-      testWidgets('has semantic label with sound info', (tester) async {
+      testWidgets('explicit audio has semantic label with sound info', (
+        tester,
+      ) async {
         final video = createVideoWithAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));
@@ -272,7 +340,7 @@ void main() {
         );
       });
 
-      testWidgets('is marked as button for tap interaction', (tester) async {
+      testWidgets('explicit audio is marked as button', (tester) async {
         final video = createVideoWithAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));
@@ -312,14 +380,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(
-          find.textContaining('Oh No No No Crowd'),
-          findsOneWidget,
-        );
-        expect(
-          find.textContaining('ThePauny via Freesound'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Oh No No No Crowd'), findsOneWidget);
+        expect(find.textContaining('ThePauny via Freesound'), findsOneWidget);
       });
 
       testWidgets('does not try to fetch profile for bundled sounds', (
