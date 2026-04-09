@@ -16,12 +16,20 @@ void main() {
     const hostPubkey =
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
     const sessionAddress = '30313:$hostPubkey:session-abc';
+    const nextSessionAddress = '30313:$hostPubkey:session-def';
     final firstMessage = LiveChatMessage(
       id: '1' * 64,
       sessionAddress: sessionAddress,
       pubkey: hostPubkey,
       content: 'First message',
       createdAt: DateTime.utc(2026, 4, 6, 12),
+    );
+    final secondMessage = LiveChatMessage(
+      id: '2' * 64,
+      sessionAddress: nextSessionAddress,
+      pubkey: hostPubkey,
+      content: 'Second message',
+      createdAt: DateTime.utc(2026, 4, 6, 12, 1),
     );
 
     setUp(() {
@@ -33,6 +41,11 @@ void main() {
       when(
         () => mockRepository.watchChatMessages(sessionAddress: sessionAddress),
       ).thenAnswer((_) => messagesController.stream);
+      when(
+        () => mockRepository.watchChatMessages(
+          sessionAddress: nextSessionAddress,
+        ),
+      ).thenAnswer((_) => const Stream<List<LiveChatMessage>>.empty());
       when(
         () => mockRepository.publishMessage(
           sessionAddress: sessionAddress,
@@ -88,6 +101,49 @@ void main() {
 
       await bloc.close();
     });
+
+    test(
+      'session switches clear stale messages and ignore late updates for the old session',
+      () async {
+        final bloc = LiveChatBloc(liveChatRepository: mockRepository);
+
+        bloc.add(const LiveChatStarted(sessionAddress: sessionAddress));
+        await _flush();
+
+        messagesController.add(<LiveChatMessage>[firstMessage]);
+        await _flush();
+        expect(bloc.state.messages, <LiveChatMessage>[firstMessage]);
+
+        bloc.add(const LiveChatStarted(sessionAddress: nextSessionAddress));
+        await _flush();
+
+        expect(bloc.state.sessionAddress, nextSessionAddress);
+        expect(bloc.state.messages, isEmpty);
+
+        bloc.add(
+          LiveChatMessagesUpdated(
+            sessionAddress: sessionAddress,
+            messages: <LiveChatMessage>[firstMessage],
+          ),
+        );
+        await _flush();
+
+        expect(bloc.state.sessionAddress, nextSessionAddress);
+        expect(bloc.state.messages, isEmpty);
+
+        bloc.add(
+          LiveChatMessagesUpdated(
+            sessionAddress: nextSessionAddress,
+            messages: <LiveChatMessage>[secondMessage],
+          ),
+        );
+        await _flush();
+
+        expect(bloc.state.messages, <LiveChatMessage>[secondMessage]);
+
+        await bloc.close();
+      },
+    );
   });
 }
 

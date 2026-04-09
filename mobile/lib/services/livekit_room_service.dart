@@ -6,6 +6,31 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 import 'package:openvine/models/live/live_room_token.dart';
 
 @immutable
+class LiveStageParticipant extends Equatable {
+  const LiveStageParticipant({
+    required this.identity,
+    required this.isLocal,
+    this.videoTrack,
+    this.isMicrophoneEnabled = false,
+  });
+
+  final String identity;
+  final bool isLocal;
+  final lk.VideoTrack? videoTrack;
+  final bool isMicrophoneEnabled;
+
+  bool get hasVideo => videoTrack != null;
+
+  @override
+  List<Object?> get props => <Object?>[
+    identity,
+    isLocal,
+    videoTrack,
+    isMicrophoneEnabled,
+  ];
+}
+
+@immutable
 enum LiveMediaConnectionStatus {
   disconnected,
   connecting,
@@ -22,24 +47,28 @@ class LiveMediaState extends Equatable {
     this.canPublish = false,
     this.cameraEnabled = false,
     this.microphoneEnabled = false,
+    this.stageParticipants = const <LiveStageParticipant>[],
   });
 
   final LiveMediaConnectionStatus status;
   final bool canPublish;
   final bool cameraEnabled;
   final bool microphoneEnabled;
+  final List<LiveStageParticipant> stageParticipants;
 
   LiveMediaState copyWith({
     LiveMediaConnectionStatus? status,
     bool? canPublish,
     bool? cameraEnabled,
     bool? microphoneEnabled,
+    List<LiveStageParticipant>? stageParticipants,
   }) {
     return LiveMediaState(
       status: status ?? this.status,
       canPublish: canPublish ?? this.canPublish,
       cameraEnabled: cameraEnabled ?? this.cameraEnabled,
       microphoneEnabled: microphoneEnabled ?? this.microphoneEnabled,
+      stageParticipants: stageParticipants ?? this.stageParticipants,
     );
   }
 
@@ -49,13 +78,21 @@ class LiveMediaState extends Equatable {
     canPublish,
     cameraEnabled,
     microphoneEnabled,
+    stageParticipants,
   ];
 }
 
-enum LiveKitRoomClientEvent { connected, reconnecting, disconnected }
+enum LiveKitRoomClientEvent {
+  connected,
+  reconnecting,
+  disconnected,
+  participantsChanged,
+}
 
 abstract class LiveKitRoomClient {
   Stream<LiveKitRoomClientEvent> get events;
+
+  List<LiveStageParticipant> get currentStageParticipants;
 
   Future<void> prepareConnection(String serverUrl, String token);
 
@@ -136,7 +173,7 @@ class LiveKitRoomService {
         token.token,
         disableFastConnectPublish: true,
       );
-      _updateState(
+      _refreshStageParticipants(
         _currentState.copyWith(
           status: _connectedStatusForCurrentTracks(),
         ),
@@ -170,7 +207,7 @@ class LiveKitRoomService {
     }
 
     await _client.setCameraEnabled(enabled);
-    _updateState(
+    _refreshStageParticipants(
       _currentState.copyWith(
         status: _localTrackStatus(
           cameraEnabled: enabled,
@@ -187,7 +224,7 @@ class LiveKitRoomService {
     }
 
     await _client.setMicrophoneEnabled(enabled);
-    _updateState(
+    _refreshStageParticipants(
       _currentState.copyWith(
         status: _localTrackStatus(
           cameraEnabled: _currentState.cameraEnabled,
@@ -213,7 +250,7 @@ class LiveKitRoomService {
 
     await _client.setCameraEnabled(false);
     await _client.setMicrophoneEnabled(true);
-    _updateState(
+    _refreshStageParticipants(
       _currentState.copyWith(
         status: LiveMediaConnectionStatus.audioOnly,
         cameraEnabled: false,
@@ -246,7 +283,7 @@ class LiveKitRoomService {
     switch (event) {
       case LiveKitRoomClientEvent.connected:
         _disconnectRequested = false;
-        _updateState(
+        _refreshStageParticipants(
           _currentState.copyWith(
             status: _connectedStatusForCurrentTracks(),
           ),
@@ -268,7 +305,19 @@ class LiveKitRoomService {
             cameraEnabled: false,
           ),
         );
+      case LiveKitRoomClientEvent.participantsChanged:
+        _refreshStageParticipants(_currentState);
     }
+  }
+
+  void _refreshStageParticipants(LiveMediaState nextState) {
+    _updateState(
+      nextState.copyWith(
+        stageParticipants: List<LiveStageParticipant>.unmodifiable(
+          _client.currentStageParticipants,
+        ),
+      ),
+    );
   }
 
   void _updateState(LiveMediaState nextState) {
@@ -325,6 +374,36 @@ class _SdkLiveKitRoomClient implements LiveKitRoomClient {
     _roomEventsListener.on<lk.RoomDisconnectedEvent>(
       (_) => _eventsController.add(LiveKitRoomClientEvent.disconnected),
     );
+    _roomEventsListener.on<lk.ParticipantConnectedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.ParticipantDisconnectedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.TrackPublishedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.TrackUnpublishedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.LocalTrackPublishedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.LocalTrackUnpublishedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.TrackSubscribedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.TrackUnsubscribedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.TrackMutedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
+    _roomEventsListener.on<lk.TrackUnmutedEvent>(
+      (_) => _eventsController.add(LiveKitRoomClientEvent.participantsChanged),
+    );
   }
 
   final lk.Room _room;
@@ -334,6 +413,32 @@ class _SdkLiveKitRoomClient implements LiveKitRoomClient {
 
   @override
   Stream<LiveKitRoomClientEvent> get events => _eventsController.stream;
+
+  @override
+  List<LiveStageParticipant> get currentStageParticipants {
+    final participants = <LiveStageParticipant>[];
+    final localParticipant = _room.localParticipant;
+    if (localParticipant != null) {
+      final localSnapshot = _toStageParticipant(
+        localParticipant,
+        isLocal: true,
+      );
+      if (localSnapshot != null) {
+        participants.add(localSnapshot);
+      }
+    }
+
+    final remoteParticipants = _room.remoteParticipants.values.toList()
+      ..sort((left, right) => left.identity.compareTo(right.identity));
+    for (final participant in remoteParticipants) {
+      final snapshot = _toStageParticipant(participant, isLocal: false);
+      if (snapshot != null) {
+        participants.add(snapshot);
+      }
+    }
+
+    return participants;
+  }
 
   @override
   Future<void> prepareConnection(String serverUrl, String token) {
@@ -418,5 +523,59 @@ class _SdkLiveKitRoomClient implements LiveKitRoomClient {
       await _eventsController.close();
     }
     await _room.dispose();
+  }
+
+  LiveStageParticipant? _toStageParticipant(
+    lk.Participant participant, {
+    required bool isLocal,
+  }) {
+    final videoTrack = _firstEnabledVideoTrack(participant);
+    final microphoneEnabled = _hasEnabledMicrophone(participant);
+    if (videoTrack == null && !microphoneEnabled) {
+      return null;
+    }
+
+    return LiveStageParticipant(
+      identity: participant.identity,
+      isLocal: isLocal,
+      videoTrack: videoTrack,
+      isMicrophoneEnabled: microphoneEnabled,
+    );
+  }
+
+  lk.VideoTrack? _firstEnabledVideoTrack(lk.Participant participant) {
+    for (final publication in participant.videoTrackPublications) {
+      final track = publication.track;
+      if (publication.source == lk.TrackSource.camera &&
+          track is lk.VideoTrack &&
+          !publication.muted) {
+        return track;
+      }
+    }
+
+    for (final publication in participant.videoTrackPublications) {
+      final track = publication.track;
+      if (track is lk.VideoTrack && !publication.muted) {
+        return track;
+      }
+    }
+
+    return null;
+  }
+
+  bool _hasEnabledMicrophone(lk.Participant participant) {
+    for (final publication in participant.audioTrackPublications) {
+      if (publication.source == lk.TrackSource.microphone) {
+        return publication.track != null && !publication.muted;
+      }
+    }
+
+    for (final publication in participant.audioTrackPublications) {
+      if (publication.track != null && !publication.muted) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

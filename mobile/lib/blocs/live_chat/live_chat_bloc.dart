@@ -29,11 +29,12 @@ class LiveChatBloc extends Bloc<LiveChatEvent, LiveChatState> {
     Emitter<LiveChatState> emit,
   ) async {
     await _messagesSubscription?.cancel();
+    final sessionAddress = event.sessionAddress;
 
     emit(
       state.copyWith(
         status: LiveChatStatus.loading,
-        sessionAddress: event.sessionAddress,
+        sessionAddress: sessionAddress,
         messages: const <LiveChatMessage>[],
         isSending: false,
         clearErrorMessage: true,
@@ -41,11 +42,21 @@ class LiveChatBloc extends Bloc<LiveChatEvent, LiveChatState> {
     );
 
     _messagesSubscription = _liveChatRepository
-        .watchChatMessages(sessionAddress: event.sessionAddress)
+        .watchChatMessages(sessionAddress: sessionAddress)
         .listen(
-          (messages) => add(LiveChatMessagesUpdated(messages)),
+          (messages) => add(
+            LiveChatMessagesUpdated(
+              sessionAddress: sessionAddress,
+              messages: messages,
+            ),
+          ),
           onError: (Object error, StackTrace _) {
-            add(LiveChatSubscriptionFailed(error));
+            add(
+              LiveChatSubscriptionFailed(
+                sessionAddress: sessionAddress,
+                error: error,
+              ),
+            );
           },
         );
   }
@@ -54,6 +65,10 @@ class LiveChatBloc extends Bloc<LiveChatEvent, LiveChatState> {
     LiveChatMessagesUpdated event,
     Emitter<LiveChatState> emit,
   ) {
+    if (event.sessionAddress != state.sessionAddress) {
+      return;
+    }
+
     emit(
       state.copyWith(
         status: LiveChatStatus.ready,
@@ -106,6 +121,10 @@ class LiveChatBloc extends Bloc<LiveChatEvent, LiveChatState> {
     LiveChatSubscriptionFailed event,
     Emitter<LiveChatState> emit,
   ) {
+    if (event.sessionAddress != state.sessionAddress) {
+      return;
+    }
+
     emit(
       state.copyWith(
         status: LiveChatStatus.failure,

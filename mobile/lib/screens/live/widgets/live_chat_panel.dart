@@ -52,12 +52,14 @@ class _LiveChatPanelState extends State<LiveChatPanel> {
                       );
                     }
 
+                    final activeSessionAddress = state.sessionAddress;
                     final visibleMessages = state.messages
                         .where((message) {
-                          return !roomState.mutedChatParticipantPubkeys
-                                  .contains(
-                                    message.pubkey,
-                                  ) &&
+                          return message.sessionAddress ==
+                                  activeSessionAddress &&
+                              !roomState.mutedChatParticipantPubkeys.contains(
+                                message.pubkey,
+                              ) &&
                               !roomState.removedParticipantPubkeys.contains(
                                 message.pubkey,
                               );
@@ -67,7 +69,13 @@ class _LiveChatPanelState extends State<LiveChatPanel> {
                     if (visibleMessages.isEmpty) {
                       return Center(
                         child: Text(
-                          state.messages.isEmpty
+                          state.messages
+                                  .where(
+                                    (message) =>
+                                        message.sessionAddress ==
+                                        activeSessionAddress,
+                                  )
+                                  .isEmpty
                               ? 'No messages yet. Break the silence.'
                               : 'Muted messages are hidden from the room.',
                           style: VineTheme.bodyMediumFont(

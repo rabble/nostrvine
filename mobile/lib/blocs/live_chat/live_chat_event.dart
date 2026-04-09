@@ -27,19 +27,27 @@ class LiveChatMessageSendRequested extends LiveChatEvent {
 }
 
 class LiveChatMessagesUpdated extends LiveChatEvent {
-  const LiveChatMessagesUpdated(this.messages);
+  const LiveChatMessagesUpdated({
+    required this.sessionAddress,
+    required this.messages,
+  });
 
+  final String sessionAddress;
   final List<LiveChatMessage> messages;
 
   @override
-  List<Object?> get props => <Object?>[messages];
+  List<Object?> get props => <Object?>[sessionAddress, messages];
 }
 
 class LiveChatSubscriptionFailed extends LiveChatEvent {
-  const LiveChatSubscriptionFailed(this.error);
+  const LiveChatSubscriptionFailed({
+    required this.sessionAddress,
+    required this.error,
+  });
 
+  final String sessionAddress;
   final Object error;
 
   @override
-  List<Object?> get props => <Object?>[error];
+  List<Object?> get props => <Object?>[sessionAddress, error];
 }

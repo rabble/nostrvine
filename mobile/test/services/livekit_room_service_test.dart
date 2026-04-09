@@ -61,6 +61,86 @@ void main() {
     );
 
     test(
+      'connect snapshots local and remote stage participants for rendering',
+      () async {
+        client.stageParticipants = <LiveStageParticipant>[
+          const LiveStageParticipant(
+            identity: 'host-pubkey',
+            isLocal: true,
+            isMicrophoneEnabled: true,
+          ),
+          const LiveStageParticipant(
+            identity: 'speaker-pubkey',
+            isLocal: false,
+            isMicrophoneEnabled: true,
+          ),
+        ];
+
+        await service.connect(
+          const LiveRoomToken(
+            token: 'jwt-token',
+            roomName: 'room-abc',
+            participantIdentity: 'host-pubkey',
+            serverUrl: 'wss://livekit.example.com',
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        expect(
+          service.currentState.stageParticipants,
+          client.stageParticipants,
+        );
+      },
+    );
+
+    test(
+      'participant updates refresh the stage snapshot without reconnecting',
+      () async {
+        client.stageParticipants = const <LiveStageParticipant>[
+          LiveStageParticipant(
+            identity: 'host-pubkey',
+            isLocal: true,
+            isMicrophoneEnabled: true,
+          ),
+        ];
+
+        await service.connect(
+          const LiveRoomToken(
+            token: 'jwt-token',
+            roomName: 'room-abc',
+            participantIdentity: 'host-pubkey',
+            serverUrl: 'wss://livekit.example.com',
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        client.stageParticipants = const <LiveStageParticipant>[
+          LiveStageParticipant(
+            identity: 'host-pubkey',
+            isLocal: true,
+            isMicrophoneEnabled: true,
+          ),
+          LiveStageParticipant(
+            identity: 'speaker-pubkey',
+            isLocal: false,
+            isMicrophoneEnabled: true,
+          ),
+        ];
+
+        client.emit(LiveKitRoomClientEvent.participantsChanged);
+        await _flush();
+
+        expect(
+          service.currentState.stageParticipants,
+          client.stageParticipants,
+        );
+        expect(client.connectCalls, 1);
+      },
+    );
+
+    test(
       'publishLocalTracks delegates camera and microphone toggles',
       () async {
         await service.connect(
@@ -213,11 +293,15 @@ class _FakeLiveKitRoomClient implements LiveKitRoomClient {
   String? lastUrl;
   String? lastToken;
   bool? lastDisableFastConnectPublish;
+  List<LiveStageParticipant> stageParticipants = const <LiveStageParticipant>[];
   final List<bool> cameraEnabledCalls = <bool>[];
   final List<bool> microphoneEnabledCalls = <bool>[];
 
   @override
   Stream<LiveKitRoomClientEvent> get events => _eventsController.stream;
+
+  @override
+  List<LiveStageParticipant> get currentStageParticipants => stageParticipants;
 
   void emit(LiveKitRoomClientEvent event) {
     _eventsController.add(event);

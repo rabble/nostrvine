@@ -1,20 +1,40 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/live_room/live_room_bloc.dart';
+import 'package:openvine/screens/live/widgets/live_room_stage_media_tile.dart';
+import 'package:openvine/services/livekit_room_service.dart';
 
 class LiveRoomStage extends StatelessWidget {
   const LiveRoomStage({
     required this.speakerPubkeys,
     required this.audienceCount,
     required this.statusLabel,
+    this.mediaState,
     super.key,
   });
 
   final List<String> speakerPubkeys;
   final int audienceCount;
   final String statusLabel;
+  final LiveMediaState? mediaState;
 
   @override
   Widget build(BuildContext context) {
+    final LiveMediaState resolvedMediaState =
+        mediaState ??
+        context.select((LiveRoomBloc bloc) => bloc.state.mediaState);
+    final stageParticipants = resolvedMediaState.stageParticipants.isNotEmpty
+        ? resolvedMediaState.stageParticipants
+        : speakerPubkeys
+              .map(
+                (pubkey) => LiveStageParticipant(
+                  identity: pubkey,
+                  isLocal: false,
+                ),
+              )
+              .toList(growable: false);
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
@@ -58,7 +78,7 @@ class LiveRoomStage extends StatelessWidget {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: speakerPubkeys.isEmpty
+            children: stageParticipants.isEmpty
                 ? <Widget>[
                     Text(
                       'Waiting for speakers to join the stage.',
@@ -67,33 +87,12 @@ class LiveRoomStage extends StatelessWidget {
                       ),
                     ),
                   ]
-                : speakerPubkeys
+                : stageParticipants
                       .map(
-                        (pubkey) => Container(
-                          width: 150,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: VineTheme.scrim15,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: VineTheme.outlineMuted),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Speaker',
-                                style: VineTheme.labelLargeFont(
-                                  color: VineTheme.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                pubkey,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: VineTheme.bodySmallFont(),
-                              ),
-                            ],
+                        (participant) => SizedBox(
+                          width: 160,
+                          child: LiveRoomStageMediaTile(
+                            participant: participant,
                           ),
                         ),
                       )

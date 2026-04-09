@@ -13,7 +13,6 @@ import 'package:openvine/models/live/live_role.dart';
 import 'package:openvine/models/live/live_room.dart';
 import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/repositories/live_chat_repository.dart';
 import 'package:openvine/screens/live/widgets/live_chat_panel.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -24,8 +23,6 @@ class _MockLiveRoomBloc extends MockBloc<LiveRoomEvent, LiveRoomState>
 
 class _MockLiveChatBloc extends MockBloc<LiveChatEvent, LiveChatState>
     implements LiveChatBloc {}
-
-class _MockLiveChatRepository extends Mock implements LiveChatRepository {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -165,47 +162,31 @@ void main() {
         createdAt: DateTime.utc(2026, 4, 6, 8, 2),
       );
       final roomBloc = _MockLiveRoomBloc();
-      final chatRepository = _MockLiveChatRepository();
-      final chatBloc = LiveChatBloc(liveChatRepository: chatRepository);
+      final chatBloc = _MockLiveChatBloc();
       final roomState = LiveRoomState(
         status: LiveRoomStatus.ready,
         room: room,
         session: session,
         role: LiveRole.audience,
       );
-      final sessionTwo = session.copyWith(
-        id: 'session-456',
-        startedAt: DateTime.utc(2026, 4, 6, 8, 30),
+      final chatState = LiveChatState(
+        status: LiveChatStatus.ready,
+        sessionAddress: sessionTwoAddress,
+        messages: <LiveChatMessage>[messageOne, messageTwo],
       );
-      final sessionStates = Stream<LiveRoomState>.fromIterable(<LiveRoomState>[
-        roomState,
-        roomState.copyWith(session: sessionTwo),
-      ]);
-      final sessionOneController =
-          StreamController<List<LiveChatMessage>>.broadcast(sync: true);
-      final sessionTwoController =
-          StreamController<List<LiveChatMessage>>.broadcast(sync: true);
 
       when(() => roomBloc.state).thenReturn(roomState);
-      whenListen(roomBloc, sessionStates, initialState: roomState);
-      when(
-        () => chatRepository.watchChatMessages(
-          sessionAddress: any(named: 'sessionAddress'),
-        ),
-      ).thenAnswer((invocation) {
-        final sessionAddress =
-            invocation.namedArguments[#sessionAddress] as String;
-        if (sessionAddress == sessionOneAddress) {
-          return sessionOneController.stream;
-        }
-        if (sessionAddress == sessionTwoAddress) {
-          return sessionTwoController.stream;
-        }
-        throw StateError('Unexpected session address: $sessionAddress');
-      });
-      addTearDown(sessionOneController.close);
-      addTearDown(sessionTwoController.close);
-      addTearDown(chatBloc.close);
+      whenListen(
+        roomBloc,
+        Stream<LiveRoomState>.value(roomState),
+        initialState: roomState,
+      );
+      when(() => chatBloc.state).thenReturn(chatState);
+      whenListen(
+        chatBloc,
+        Stream<LiveChatState>.value(chatState),
+        initialState: chatState,
+      );
 
       await tester.pumpWidget(
         testMaterialApp(
@@ -228,23 +209,7 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
-
-      chatBloc.add(const LiveChatStarted(sessionAddress: sessionOneAddress));
-      await tester.pump();
-      await tester.pump();
-      sessionOneController.add(<LiveChatMessage>[messageOne]);
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text('First session message.'), findsOneWidget);
-
-      chatBloc.add(const LiveChatStarted(sessionAddress: sessionTwoAddress));
-      await tester.pump();
-      await tester.pump();
-      sessionTwoController.add(<LiveChatMessage>[messageTwo]);
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('First session message.'), findsNothing);
       expect(find.text('Second session message.'), findsOneWidget);
