@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 enum AgeVerificationType {
   creation, // 16+ for creating content
@@ -38,8 +39,8 @@ class AgeVerificationDialog extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             type == AgeVerificationType.adultContent
-                ? 'Content Warning'
-                : 'Age Verification',
+                ? context.l10n.ageVerificationContentWarning
+                : context.l10n.ageVerificationTitle,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: VineTheme.whiteText,
               fontWeight: FontWeight.bold,
@@ -48,8 +49,8 @@ class AgeVerificationDialog extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             type == AgeVerificationType.adultContent
-                ? 'This content has been flagged as potentially containing adult material. You must be 18 or older to view it.'
-                : 'To use the camera and create content, you must be at least 16 years old.',
+                ? context.l10n.ageVerificationAdultDescription
+                : context.l10n.ageVerificationCreationDescription,
             style: Theme.of(
               context,
             ).textTheme.bodyLarge?.copyWith(color: VineTheme.onSurfaceVariant),
@@ -58,8 +59,8 @@ class AgeVerificationDialog extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             type == AgeVerificationType.adultContent
-                ? 'Are you 18 years of age or older?'
-                : 'Are you 16 years of age or older?',
+                ? context.l10n.ageVerificationAdultQuestion
+                : context.l10n.ageVerificationCreationQuestion,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: VineTheme.whiteText,
               fontWeight: FontWeight.w600,
@@ -81,7 +82,7 @@ class AgeVerificationDialog extends StatelessWidget {
                       vertical: 12,
                     ),
                   ),
-                  child: const Text('No'),
+                  child: Text(context.l10n.ageVerificationNo),
                 ),
               ),
               const SizedBox(width: 16),
@@ -99,7 +100,7 @@ class AgeVerificationDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  child: const Text('Yes'),
+                  child: Text(context.l10n.ageVerificationYes),
                 ),
               ),
             ],

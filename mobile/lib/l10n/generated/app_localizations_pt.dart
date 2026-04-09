@@ -3084,4 +3084,872 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get localeSelectLanguage => 'Select Language';
+
+  @override
+  String get webAuthNotSupportedSecureMode =>
+      'Web authentication not supported in secure mode. Please use mobile app for secure key management.';
+
+  @override
+  String webAuthIntegrationFailed(String error) {
+    return 'Authentication integration failed: $error';
+  }
+
+  @override
+  String webAuthUnexpectedError(String error) {
+    return 'Unexpected error: $error';
+  }
+
+  @override
+  String get webAuthEnterBunkerUri => 'Please enter a bunker URI';
+
+  @override
+  String get webAuthConnectTitle => 'Connect to Divine';
+
+  @override
+  String get webAuthChooseMethod =>
+      'Choose your preferred Nostr authentication method';
+
+  @override
+  String get webAuthBrowserExtension => 'Browser Extension';
+
+  @override
+  String get webAuthRecommended => 'RECOMMENDED';
+
+  @override
+  String get webAuthNsecBunker => 'nsec bunker';
+
+  @override
+  String get webAuthConnectRemoteSigner => 'Connect to a remote signer';
+
+  @override
+  String get webAuthBunkerHint => 'bunker://pubkey?relay=wss://...';
+
+  @override
+  String get webAuthPasteFromClipboard => 'Paste from clipboard';
+
+  @override
+  String get webAuthConnectToBunker => 'Connect to Bunker';
+
+  @override
+  String get webAuthNewToNostr => 'New to Nostr?';
+
+  @override
+  String get webAuthNostrHelp =>
+      'Install a browser extension like Alby or nos2x for the easiest experience, or use nsec bunker for secure remote signing.';
+
+  @override
+  String get soundsTitle => 'Sounds';
+
+  @override
+  String get soundsSearchHint => 'Search sounds...';
+
+  @override
+  String get soundsPreviewUnavailable =>
+      'Unable to preview sound - no audio available';
+
+  @override
+  String soundsPreviewFailed(String error) {
+    return 'Failed to play preview: $error';
+  }
+
+  @override
+  String get soundsFeaturedSounds => 'Featured Sounds';
+
+  @override
+  String get soundsTrendingSounds => 'Trending Sounds';
+
+  @override
+  String get soundsAllSounds => 'All Sounds';
+
+  @override
+  String get soundsSearchResults => 'Search Results';
+
+  @override
+  String get soundsNoSoundsAvailable => 'No sounds available';
+
+  @override
+  String get soundsNoSoundsDescription =>
+      'Sounds will appear here when creators share audio';
+
+  @override
+  String get soundsNoSoundsFound => 'No sounds found';
+
+  @override
+  String get soundsNoSoundsFoundDescription => 'Try a different search term';
+
+  @override
+  String get soundsFailedToLoad => 'Failed to load sounds';
+
+  @override
+  String get soundsRetry => 'Retry';
+
+  @override
+  String get soundsScreenLabel => 'Sounds screen';
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get profileRefresh => 'Refresh';
+
+  @override
+  String get profileRefreshLabel => 'Refresh profile';
+
+  @override
+  String get profileMoreOptions => 'More options';
+
+  @override
+  String profileBlockedUser(String name) {
+    return 'Blocked $name';
+  }
+
+  @override
+  String profileUnblockedUser(String name) {
+    return 'Unblocked $name';
+  }
+
+  @override
+  String profileUnfollowedUser(String name) {
+    return 'Unfollowed $name';
+  }
+
+  @override
+  String profileError(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get notificationsTabAll => 'All';
+
+  @override
+  String get notificationsTabLikes => 'Likes';
+
+  @override
+  String get notificationsTabComments => 'Comments';
+
+  @override
+  String get notificationsTabFollows => 'Follows';
+
+  @override
+  String get notificationsTabReposts => 'Reposts';
+
+  @override
+  String get notificationsFailedToLoad => 'Failed to load notifications';
+
+  @override
+  String get notificationsRetry => 'Retry';
+
+  @override
+  String get notificationsCheckingNew => 'checking for new notifications';
+
+  @override
+  String get notificationsNoneYet => 'No notifications yet';
+
+  @override
+  String notificationsNoneForType(String type) {
+    return 'No $type notifications';
+  }
+
+  @override
+  String get notificationsEmptyDescription =>
+      'When people interact with your content, you\'ll see it here';
+
+  @override
+  String notificationsLoadingType(String type) {
+    return 'Loading $type notifications...';
+  }
+
+  @override
+  String get notificationsInviteSingular =>
+      'You have 1 invite to share with a friend!';
+
+  @override
+  String notificationsInvitePlural(int count) {
+    return 'You have $count invites to share with friends!';
+  }
+
+  @override
+  String get notificationsVideoNotFound => 'Video not found';
+
+  @override
+  String get notificationsVideoUnavailable => 'Video unavailable';
+
+  @override
+  String get notificationsFromNotification => 'From Notification';
+
+  @override
+  String get feedFailedToLoadVideos => 'Failed to load videos';
+
+  @override
+  String get feedRetry => 'Retry';
+
+  @override
+  String get feedNoFollowedUsers =>
+      'No followed users.\nFollow someone to see their videos here.';
+
+  @override
+  String feedNoVideosForMode(String mode) {
+    return 'No videos found for $mode feed.';
+  }
+
+  @override
+  String get feedExploreVideos => 'Explore Videos';
+
+  @override
+  String get feedExternalVideoSlow => 'External video loading slowly';
+
+  @override
+  String get feedSkip => 'Skip';
+
+  @override
+  String get uploadWaitingToUpload => 'Waiting to upload';
+
+  @override
+  String get uploadUploadingVideo => 'Uploading video';
+
+  @override
+  String get uploadProcessingVideo => 'Processing video';
+
+  @override
+  String get uploadProcessingComplete => 'Processing complete';
+
+  @override
+  String get uploadPublishedSuccessfully => 'Published successfully';
+
+  @override
+  String get uploadFailed => 'Upload failed';
+
+  @override
+  String get uploadRetrying => 'Retrying upload';
+
+  @override
+  String get uploadPaused => 'Upload paused';
+
+  @override
+  String uploadPercentComplete(int percent) {
+    return '$percent% complete';
+  }
+
+  @override
+  String get uploadQueuedMessage => 'Your video is queued for upload';
+
+  @override
+  String get uploadUploadingMessage => 'Uploading to server...';
+
+  @override
+  String get uploadProcessingMessage =>
+      'Processing video - this may take a few minutes';
+
+  @override
+  String get uploadReadyToPublishMessage =>
+      'Video processed successfully and ready to publish';
+
+  @override
+  String get uploadPublishedMessage => 'Video published to your profile';
+
+  @override
+  String get uploadFailedMessage => 'Upload failed - please try again';
+
+  @override
+  String get uploadRetryingMessage => 'Retrying upload...';
+
+  @override
+  String get uploadPausedMessage => 'Upload paused by user';
+
+  @override
+  String get uploadRetryButton => 'RETRY';
+
+  @override
+  String uploadRetryFailed(String error) {
+    return 'Failed to retry upload: $error';
+  }
+
+  @override
+  String get userSearchPrompt => 'Search for users';
+
+  @override
+  String get userSearchNoResults => 'No users found';
+
+  @override
+  String get userSearchFailed => 'Search failed';
+
+  @override
+  String get forgotPasswordTitle => 'Reset Password';
+
+  @override
+  String get forgotPasswordDescription =>
+      'Enter your email address and we\'ll send you a link to reset your password.';
+
+  @override
+  String get forgotPasswordEmailLabel => 'Email Address';
+
+  @override
+  String get forgotPasswordCancel => 'Cancel';
+
+  @override
+  String get forgotPasswordSendLink => 'Email Reset Link';
+
+  @override
+  String get ageVerificationContentWarning => 'Content Warning';
+
+  @override
+  String get ageVerificationTitle => 'Age Verification';
+
+  @override
+  String get ageVerificationAdultDescription =>
+      'This content has been flagged as potentially containing adult material. You must be 18 or older to view it.';
+
+  @override
+  String get ageVerificationCreationDescription =>
+      'To use the camera and create content, you must be at least 16 years old.';
+
+  @override
+  String get ageVerificationAdultQuestion =>
+      'Are you 18 years of age or older?';
+
+  @override
+  String get ageVerificationCreationQuestion =>
+      'Are you 16 years of age or older?';
+
+  @override
+  String get ageVerificationNo => 'No';
+
+  @override
+  String get ageVerificationYes => 'Yes';
+
+  @override
+  String get shareLinkCopied => 'Link copied to clipboard';
+
+  @override
+  String get shareFailedToCopy => 'Failed to copy link';
+
+  @override
+  String get shareVideoSubject => 'Check out this video on Divine';
+
+  @override
+  String get shareFailedToShare => 'Failed to share';
+
+  @override
+  String get shareVideoTitle => 'Share Video';
+
+  @override
+  String get shareToApps => 'Share to Apps';
+
+  @override
+  String get shareToAppsSubtitle => 'Share via messaging, social apps';
+
+  @override
+  String get shareCopyWebLink => 'Copy Web Link';
+
+  @override
+  String get shareCopyWebLinkSubtitle => 'Copy shareable web link';
+
+  @override
+  String get shareCopyNostrLink => 'Copy Nostr Link';
+
+  @override
+  String get shareCopyNostrLinkSubtitle => 'Copy nevent link for Nostr clients';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navExplore => 'Explore';
+
+  @override
+  String get navInbox => 'Inbox';
+
+  @override
+  String get navProfile => 'Profile';
+
+  @override
+  String get navMyProfile => 'My Profile';
+
+  @override
+  String get navSearch => 'Search';
+
+  @override
+  String get navNotifications => 'Notifications';
+
+  @override
+  String get navSearchTooltip => 'Search';
+
+  @override
+  String get navOpenCamera => 'Open camera';
+
+  @override
+  String get navUnknown => 'Unknown';
+
+  @override
+  String get navExploreClassics => 'Classics';
+
+  @override
+  String get navExploreNewVideos => 'New Videos';
+
+  @override
+  String get navExploreTrending => 'Trending';
+
+  @override
+  String get navExploreForYou => 'For You';
+
+  @override
+  String get navExploreLists => 'Lists';
+
+  @override
+  String get routeErrorTitle => 'Error';
+
+  @override
+  String get routeInvalidHashtag => 'Invalid hashtag';
+
+  @override
+  String get routeInvalidConversationId => 'Invalid conversation ID';
+
+  @override
+  String get routeInvalidRequestId => 'Invalid request ID';
+
+  @override
+  String get routeInvalidListId => 'Invalid list ID';
+
+  @override
+  String get routeInvalidUserId => 'Invalid user ID';
+
+  @override
+  String get routeInvalidVideoId => 'Invalid video ID';
+
+  @override
+  String get routeInvalidSoundId => 'Invalid sound ID';
+
+  @override
+  String get routeInvalidCategory => 'Invalid category';
+
+  @override
+  String get routeNoVideosToDisplay => 'No videos to display';
+
+  @override
+  String get routeInvalidProfileId => 'Invalid profile ID';
+
+  @override
+  String get routeDefaultListName => 'List';
+
+  @override
+  String get supportTitle => 'Support Center';
+
+  @override
+  String get supportContactSupport => 'Contact Support';
+
+  @override
+  String get supportContactSupportSubtitle =>
+      'Start a conversation or view past messages';
+
+  @override
+  String get supportReportBug => 'Report a Bug';
+
+  @override
+  String get supportReportBugSubtitle => 'Technical issues with the app';
+
+  @override
+  String get supportRequestFeature => 'Request a Feature';
+
+  @override
+  String get supportRequestFeatureSubtitle =>
+      'Suggest an improvement or new feature';
+
+  @override
+  String get supportSaveLogs => 'Save Logs';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'Export logs to file for manual sending';
+
+  @override
+  String get supportFaq => 'FAQ';
+
+  @override
+  String get supportFaqSubtitle => 'Common questions & answers';
+
+  @override
+  String get supportProofMode => 'ProofMode';
+
+  @override
+  String get supportProofModeSubtitle =>
+      'Learn about verification and authenticity';
+
+  @override
+  String get supportLoginRequired => 'Log in to contact support';
+
+  @override
+  String get supportExportingLogs => 'Exporting logs...';
+
+  @override
+  String get supportExportLogsFailed => 'Failed to export logs';
+
+  @override
+  String get supportChatNotAvailable => 'Support chat not available';
+
+  @override
+  String get supportCouldNotOpenMessages => 'Could not open support messages';
+
+  @override
+  String supportCouldNotOpenPage(String pageName) {
+    return 'Could not open $pageName';
+  }
+
+  @override
+  String supportErrorOpeningPage(String pageName, Object error) {
+    return 'Error opening $pageName: $error';
+  }
+
+  @override
+  String get reportTitle => 'Report Content';
+
+  @override
+  String get reportWhyReporting => 'Why are you reporting this content?';
+
+  @override
+  String get reportPolicyNotice =>
+      'Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.';
+
+  @override
+  String get reportAdditionalDetails => 'Additional details (optional)';
+
+  @override
+  String get reportBlockUser => 'Block this user';
+
+  @override
+  String get reportCancel => 'Cancel';
+
+  @override
+  String get reportSubmit => 'Report';
+
+  @override
+  String get reportSelectReason =>
+      'Please select a reason for reporting this content';
+
+  @override
+  String get reportReasonSpam => 'Spam or Unwanted Content';
+
+  @override
+  String get reportReasonHarassment => 'Harassment, Bullying, or Threats';
+
+  @override
+  String get reportReasonViolence => 'Violent or Extremist Content';
+
+  @override
+  String get reportReasonSexualContent => 'Sexual or Adult Content';
+
+  @override
+  String get reportReasonCopyright => 'Copyright Violation';
+
+  @override
+  String get reportReasonFalseInfo => 'False Information';
+
+  @override
+  String get reportReasonCsam => 'Child Safety Violation';
+
+  @override
+  String get reportReasonAiGenerated => 'AI-Generated Content';
+
+  @override
+  String get reportReasonOther => 'Other Policy Violation';
+
+  @override
+  String reportFailed(Object error) {
+    return 'Failed to report content: $error';
+  }
+
+  @override
+  String get reportReceivedTitle => 'Report Received';
+
+  @override
+  String get reportReceivedThankYou =>
+      'Thank you for helping keep Divine safe.';
+
+  @override
+  String get reportReceivedReviewNotice =>
+      'Our team will review your report and take appropriate action. You may receive updates via direct message.';
+
+  @override
+  String get reportLearnMore => 'Learn More';
+
+  @override
+  String get reportSafetyUrl => 'divine.video/safety';
+
+  @override
+  String get reportClose => 'Close';
+
+  @override
+  String get listAddToList => 'Add to List';
+
+  @override
+  String listVideoCount(int count) {
+    return '$count videos';
+  }
+
+  @override
+  String get listNewList => 'New List';
+
+  @override
+  String get listDone => 'Done';
+
+  @override
+  String get listErrorLoading => 'Error loading lists';
+
+  @override
+  String listRemovedFrom(String name) {
+    return 'Removed from $name';
+  }
+
+  @override
+  String listAddedTo(String name) {
+    return 'Added to $name';
+  }
+
+  @override
+  String get listCreateNewList => 'Create New List';
+
+  @override
+  String get listNameLabel => 'List Name';
+
+  @override
+  String get listDescriptionLabel => 'Description (optional)';
+
+  @override
+  String get listPublicList => 'Public List';
+
+  @override
+  String get listPublicListSubtitle => 'Others can follow and see this list';
+
+  @override
+  String get listCancel => 'Cancel';
+
+  @override
+  String get listCreate => 'Create';
+
+  @override
+  String get listCreateFailed => 'Failed to create list';
+
+  @override
+  String get keyManagementTitle => 'Nostr Keys';
+
+  @override
+  String get keyManagementWhatAreKeys => 'What are Nostr keys?';
+
+  @override
+  String get keyManagementExplanation =>
+      'Your Nostr identity is a cryptographic key pair:\n\n• Your public key (npub) is like your username - share it freely\n• Your private key (nsec) is like your password - keep it secret!\n\nYour nsec lets you access your account on any Nostr app.';
+
+  @override
+  String get keyManagementImportTitle => 'Import Existing Key';
+
+  @override
+  String get keyManagementImportSubtitle =>
+      'Already have a Nostr account? Paste your private key (nsec) to access it here.';
+
+  @override
+  String get keyManagementImportButton => 'Import Key';
+
+  @override
+  String get keyManagementImportWarning =>
+      'This will replace your current key!';
+
+  @override
+  String get keyManagementBackupTitle => 'Backup Your Key';
+
+  @override
+  String get keyManagementBackupSubtitle =>
+      'Save your private key (nsec) to use your account in other Nostr apps.';
+
+  @override
+  String get keyManagementCopyNsec => 'Copy My Private Key (nsec)';
+
+  @override
+  String get keyManagementNeverShare => 'Never share your nsec with anyone!';
+
+  @override
+  String get keyManagementPasteKey => 'Please paste your private key';
+
+  @override
+  String get keyManagementInvalidFormat =>
+      'Invalid key format. Must start with \"nsec1\"';
+
+  @override
+  String get keyManagementConfirmImportTitle => 'Import This Key?';
+
+  @override
+  String get keyManagementConfirmImportBody =>
+      'This will replace your current identity with the imported one.\n\nYour current key will be lost unless you backed it up first.';
+
+  @override
+  String get keyManagementImportConfirm => 'Import';
+
+  @override
+  String get keyManagementImportSuccess => 'Key imported successfully!';
+
+  @override
+  String keyManagementImportFailed(Object error) {
+    return 'Failed to import key: $error';
+  }
+
+  @override
+  String get keyManagementExportSuccess =>
+      'Private key copied to clipboard!\n\nStore it somewhere safe.';
+
+  @override
+  String keyManagementExportFailed(Object error) {
+    return 'Failed to export key: $error';
+  }
+
+  @override
+  String get saveOriginalSavedToCameraRoll => 'Saved to Camera Roll';
+
+  @override
+  String get saveOriginalShare => 'Share';
+
+  @override
+  String get saveOriginalDone => 'Done';
+
+  @override
+  String get saveOriginalPhotosAccessNeeded => 'Photos Access Needed';
+
+  @override
+  String get saveOriginalPhotosAccessMessage =>
+      'To save videos, allow Photos access in Settings.';
+
+  @override
+  String get saveOriginalOpenSettings => 'Open Settings';
+
+  @override
+  String get saveOriginalNotNow => 'Not Now';
+
+  @override
+  String get saveOriginalDownloadFailed => 'Download Failed';
+
+  @override
+  String get saveOriginalDismiss => 'Dismiss';
+
+  @override
+  String get saveOriginalDownloadingVideo => 'Downloading Video';
+
+  @override
+  String get saveOriginalSavingToCameraRoll => 'Saving to Camera Roll';
+
+  @override
+  String get saveOriginalFetchingVideo =>
+      'Fetching the video from the network...';
+
+  @override
+  String get saveOriginalSavingVideo =>
+      'Saving the original video to your camera roll...';
+
+  @override
+  String get soundTitle => 'Sound';
+
+  @override
+  String get soundOriginalSound => 'Original sound';
+
+  @override
+  String get soundVideosUsingThisSound => 'Videos using this sound';
+
+  @override
+  String get soundNoVideosYet => 'No videos yet';
+
+  @override
+  String get soundBeFirstToUse => 'Be the first to use this sound!';
+
+  @override
+  String get soundFailedToLoadVideos => 'Failed to load videos';
+
+  @override
+  String get soundRetry => 'Retry';
+
+  @override
+  String get soundVideosUnavailable => 'Videos unavailable';
+
+  @override
+  String get soundCouldNotLoadDetails => 'Could not load video details';
+
+  @override
+  String get soundPreview => 'Preview';
+
+  @override
+  String get soundStop => 'Stop';
+
+  @override
+  String get soundUseSound => 'Use Sound';
+
+  @override
+  String get soundNoVideoCount => 'No videos yet';
+
+  @override
+  String get soundOneVideo => '1 video';
+
+  @override
+  String soundVideoCount(int count) {
+    return '$count videos';
+  }
+
+  @override
+  String get soundUnableToPreview =>
+      'Unable to preview sound - no audio available';
+
+  @override
+  String soundPreviewFailed(Object error) {
+    return 'Failed to play preview: $error';
+  }
+
+  @override
+  String get soundViewSource => 'View source';
+
+  @override
+  String get soundCloseTooltip => 'Close';
+
+  @override
+  String get exploreNotExploreRoute => 'Not an explore route';
+
+  @override
+  String get legalTitle => 'Legal';
+
+  @override
+  String get legalTermsOfService => 'Terms of Service';
+
+  @override
+  String get legalTermsOfServiceSubtitle => 'Usage terms and conditions';
+
+  @override
+  String get legalPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get legalPrivacyPolicySubtitle => 'How we handle your data';
+
+  @override
+  String get legalSafetyStandards => 'Safety Standards';
+
+  @override
+  String get legalSafetyStandardsSubtitle => 'Community guidelines and safety';
+
+  @override
+  String get legalDmca => 'DMCA';
+
+  @override
+  String get legalDmcaSubtitle => 'Copyright and takedown policy';
+
+  @override
+  String get legalOpenSourceLicenses => 'Open Source Licenses';
+
+  @override
+  String get legalOpenSourceLicensesSubtitle =>
+      'Third-party package attributions';
+
+  @override
+  String get legalAppName => 'Divine';
+
+  @override
+  String legalCouldNotOpenPage(String pageName) {
+    return 'Could not open $pageName';
+  }
+
+  @override
+  String legalErrorOpeningPage(String pageName, Object error) {
+    return 'Error opening $pageName: $error';
+  }
 }

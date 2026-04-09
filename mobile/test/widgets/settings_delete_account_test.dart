@@ -1,10 +1,13 @@
 // ABOUTME: Tests for Delete Account integration in Settings screen
 // ABOUTME: Verifies Account section appears and delete flow triggers correctly
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -18,10 +21,13 @@ class _MockAccountDeletionService extends Mock
 
 class _MockAuthService extends Mock implements AuthService {}
 
+class _MockLocaleCubit extends MockCubit<LocaleState> implements LocaleCubit {}
+
 void main() {
   group('SettingsScreen - Delete Account', () {
     late _MockAccountDeletionService mockDeletionService;
     late _MockAuthService mockAuthService;
+    late _MockLocaleCubit mockLocaleCubit;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
@@ -29,6 +35,8 @@ void main() {
       sharedPreferences = await SharedPreferences.getInstance();
       mockDeletionService = _MockAccountDeletionService();
       mockAuthService = _MockAuthService();
+      mockLocaleCubit = _MockLocaleCubit();
+      when(() => mockLocaleCubit.state).thenReturn(const LocaleState());
     });
 
     testWidgets('should show Delete Account option when authenticated', (
@@ -46,10 +54,13 @@ void main() {
             authServiceProvider.overrideWithValue(mockAuthService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: SettingsScreen(),
+            home: BlocProvider<LocaleCubit>.value(
+              value: mockLocaleCubit,
+              child: const SettingsScreen(),
+            ),
           ),
         ),
       );
@@ -82,10 +93,13 @@ void main() {
               AuthState.unauthenticated,
             ),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: SettingsScreen(),
+            home: BlocProvider<LocaleCubit>.value(
+              value: mockLocaleCubit,
+              child: const SettingsScreen(),
+            ),
           ),
         ),
       );
@@ -115,10 +129,13 @@ void main() {
             authServiceProvider.overrideWithValue(mockAuthService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: SettingsScreen(),
+            home: BlocProvider<LocaleCubit>.value(
+              value: mockLocaleCubit,
+              child: const SettingsScreen(),
+            ),
           ),
         ),
       );
@@ -148,10 +165,13 @@ void main() {
             authServiceProvider.overrideWithValue(mockAuthService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: SettingsScreen(),
+            home: BlocProvider<LocaleCubit>.value(
+              value: mockLocaleCubit,
+              child: const SettingsScreen(),
+            ),
           ),
         ),
       );

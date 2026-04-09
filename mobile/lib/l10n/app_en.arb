@@ -1457,5 +1457,389 @@
 
   "localeAppLanguage": "App Language",
   "localeDeviceDefault": "Device default",
-  "localeSelectLanguage": "Select Language"
+  "localeSelectLanguage": "Select Language",
+
+  "webAuthNotSupportedSecureMode": "Web authentication not supported in secure mode. Please use mobile app for secure key management.",
+  "webAuthIntegrationFailed": "Authentication integration failed: {error}",
+  "@webAuthIntegrationFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "webAuthUnexpectedError": "Unexpected error: {error}",
+  "@webAuthUnexpectedError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "webAuthEnterBunkerUri": "Please enter a bunker URI",
+  "webAuthConnectTitle": "Connect to Divine",
+  "webAuthChooseMethod": "Choose your preferred Nostr authentication method",
+  "webAuthBrowserExtension": "Browser Extension",
+  "webAuthRecommended": "RECOMMENDED",
+  "webAuthNsecBunker": "nsec bunker",
+  "webAuthConnectRemoteSigner": "Connect to a remote signer",
+  "webAuthBunkerHint": "bunker://pubkey?relay=wss://...",
+  "webAuthPasteFromClipboard": "Paste from clipboard",
+  "webAuthConnectToBunker": "Connect to Bunker",
+  "webAuthNewToNostr": "New to Nostr?",
+  "webAuthNostrHelp": "Install a browser extension like Alby or nos2x for the easiest experience, or use nsec bunker for secure remote signing.",
+
+  "soundsTitle": "Sounds",
+  "soundsSearchHint": "Search sounds...",
+  "soundsPreviewUnavailable": "Unable to preview sound - no audio available",
+  "soundsPreviewFailed": "Failed to play preview: {error}",
+  "@soundsPreviewFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "soundsFeaturedSounds": "Featured Sounds",
+  "soundsTrendingSounds": "Trending Sounds",
+  "soundsAllSounds": "All Sounds",
+  "soundsSearchResults": "Search Results",
+  "soundsNoSoundsAvailable": "No sounds available",
+  "soundsNoSoundsDescription": "Sounds will appear here when creators share audio",
+  "soundsNoSoundsFound": "No sounds found",
+  "soundsNoSoundsFoundDescription": "Try a different search term",
+  "soundsFailedToLoad": "Failed to load sounds",
+  "soundsRetry": "Retry",
+  "soundsScreenLabel": "Sounds screen",
+
+  "profileInvalidId": "Invalid profile ID",
+  "profileTitle": "Profile",
+  "profileRefresh": "Refresh",
+  "profileRefreshLabel": "Refresh profile",
+  "profileMoreOptions": "More options",
+  "profileBlockedUser": "Blocked {name}",
+  "@profileBlockedUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "profileUnblockedUser": "Unblocked {name}",
+  "@profileUnblockedUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "profileUnfollowedUser": "Unfollowed {name}",
+  "@profileUnfollowedUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "profileError": "Error: {error}",
+  "@profileError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "notificationsTabAll": "All",
+  "notificationsTabLikes": "Likes",
+  "notificationsTabComments": "Comments",
+  "notificationsTabFollows": "Follows",
+  "notificationsTabReposts": "Reposts",
+  "notificationsFailedToLoad": "Failed to load notifications",
+  "notificationsRetry": "Retry",
+  "notificationsCheckingNew": "checking for new notifications",
+  "notificationsNoneYet": "No notifications yet",
+  "notificationsNoneForType": "No {type} notifications",
+  "@notificationsNoneForType": {
+    "placeholders": { "type": { "type": "String" } }
+  },
+  "notificationsEmptyDescription": "When people interact with your content, you'll see it here",
+  "notificationsLoadingType": "Loading {type} notifications...",
+  "@notificationsLoadingType": {
+    "placeholders": { "type": { "type": "String" } }
+  },
+  "notificationsInviteSingular": "You have 1 invite to share with a friend!",
+  "notificationsInvitePlural": "You have {count} invites to share with friends!",
+  "@notificationsInvitePlural": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notificationsVideoNotFound": "Video not found",
+  "notificationsVideoUnavailable": "Video unavailable",
+  "notificationsFromNotification": "From Notification",
+
+  "feedFailedToLoadVideos": "Failed to load videos",
+  "feedRetry": "Retry",
+  "feedNoFollowedUsers": "No followed users.\nFollow someone to see their videos here.",
+  "feedNoVideosForMode": "No videos found for {mode} feed.",
+  "@feedNoVideosForMode": {
+    "placeholders": { "mode": { "type": "String" } }
+  },
+  "feedExploreVideos": "Explore Videos",
+  "feedExternalVideoSlow": "External video loading slowly",
+  "feedSkip": "Skip",
+
+  "uploadWaitingToUpload": "Waiting to upload",
+  "uploadUploadingVideo": "Uploading video",
+  "uploadProcessingVideo": "Processing video",
+  "uploadProcessingComplete": "Processing complete",
+  "uploadPublishedSuccessfully": "Published successfully",
+  "uploadFailed": "Upload failed",
+  "uploadRetrying": "Retrying upload",
+  "uploadPaused": "Upload paused",
+  "uploadPercentComplete": "{percent}% complete",
+  "@uploadPercentComplete": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "uploadQueuedMessage": "Your video is queued for upload",
+  "uploadUploadingMessage": "Uploading to server...",
+  "uploadProcessingMessage": "Processing video - this may take a few minutes",
+  "uploadReadyToPublishMessage": "Video processed successfully and ready to publish",
+  "uploadPublishedMessage": "Video published to your profile",
+  "uploadFailedMessage": "Upload failed - please try again",
+  "uploadRetryingMessage": "Retrying upload...",
+  "uploadPausedMessage": "Upload paused by user",
+  "uploadRetryButton": "RETRY",
+  "uploadRetryFailed": "Failed to retry upload: {error}",
+  "@uploadRetryFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "userSearchPrompt": "Search for users",
+  "userSearchNoResults": "No users found",
+  "userSearchFailed": "Search failed",
+
+  "forgotPasswordTitle": "Reset Password",
+  "forgotPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
+  "forgotPasswordEmailLabel": "Email Address",
+  "forgotPasswordCancel": "Cancel",
+  "forgotPasswordSendLink": "Email Reset Link",
+
+  "ageVerificationContentWarning": "Content Warning",
+  "ageVerificationTitle": "Age Verification",
+  "ageVerificationAdultDescription": "This content has been flagged as potentially containing adult material. You must be 18 or older to view it.",
+  "ageVerificationCreationDescription": "To use the camera and create content, you must be at least 16 years old.",
+  "ageVerificationAdultQuestion": "Are you 18 years of age or older?",
+  "ageVerificationCreationQuestion": "Are you 16 years of age or older?",
+  "ageVerificationNo": "No",
+  "ageVerificationYes": "Yes",
+
+  "shareLinkCopied": "Link copied to clipboard",
+  "shareFailedToCopy": "Failed to copy link",
+  "shareVideoSubject": "Check out this video on Divine",
+  "shareFailedToShare": "Failed to share",
+  "shareVideoTitle": "Share Video",
+  "shareToApps": "Share to Apps",
+  "shareToAppsSubtitle": "Share via messaging, social apps",
+  "shareCopyWebLink": "Copy Web Link",
+  "shareCopyWebLinkSubtitle": "Copy shareable web link",
+  "shareCopyNostrLink": "Copy Nostr Link",
+  "shareCopyNostrLinkSubtitle": "Copy nevent link for Nostr clients",
+
+  "navHome": "Home",
+  "navExplore": "Explore",
+  "navInbox": "Inbox",
+  "navProfile": "Profile",
+  "navMyProfile": "My Profile",
+  "navSearch": "Search",
+  "navNotifications": "Notifications",
+  "navSearchTooltip": "Search",
+  "navOpenCamera": "Open camera",
+  "navUnknown": "Unknown",
+  "navExploreClassics": "Classics",
+  "navExploreNewVideos": "New Videos",
+  "navExploreTrending": "Trending",
+  "navExploreForYou": "For You",
+  "navExploreLists": "Lists",
+
+  "routeErrorTitle": "Error",
+  "routeInvalidHashtag": "Invalid hashtag",
+  "routeInvalidConversationId": "Invalid conversation ID",
+  "routeInvalidRequestId": "Invalid request ID",
+  "routeInvalidListId": "Invalid list ID",
+  "routeInvalidUserId": "Invalid user ID",
+  "routeInvalidVideoId": "Invalid video ID",
+  "routeInvalidSoundId": "Invalid sound ID",
+  "routeInvalidCategory": "Invalid category",
+  "routeNoVideosToDisplay": "No videos to display",
+  "routeInvalidProfileId": "Invalid profile ID",
+  "routeDefaultListName": "List",
+
+  "supportTitle": "Support Center",
+  "supportContactSupport": "Contact Support",
+  "supportContactSupportSubtitle": "Start a conversation or view past messages",
+  "supportReportBug": "Report a Bug",
+  "supportReportBugSubtitle": "Technical issues with the app",
+  "supportRequestFeature": "Request a Feature",
+  "supportRequestFeatureSubtitle": "Suggest an improvement or new feature",
+  "supportSaveLogs": "Save Logs",
+  "supportSaveLogsSubtitle": "Export logs to file for manual sending",
+  "supportFaq": "FAQ",
+  "supportFaqSubtitle": "Common questions & answers",
+  "supportProofMode": "ProofMode",
+  "supportProofModeSubtitle": "Learn about verification and authenticity",
+  "supportLoginRequired": "Log in to contact support",
+  "supportExportingLogs": "Exporting logs...",
+  "supportExportLogsFailed": "Failed to export logs",
+  "supportChatNotAvailable": "Support chat not available",
+  "supportCouldNotOpenMessages": "Could not open support messages",
+  "supportCouldNotOpenPage": "Could not open {pageName}",
+  "@supportCouldNotOpenPage": {
+    "placeholders": {
+      "pageName": { "type": "String" }
+    }
+  },
+  "supportErrorOpeningPage": "Error opening {pageName}: {error}",
+  "@supportErrorOpeningPage": {
+    "placeholders": {
+      "pageName": { "type": "String" },
+      "error": { "type": "Object" }
+    }
+  },
+
+  "reportTitle": "Report Content",
+  "reportWhyReporting": "Why are you reporting this content?",
+  "reportPolicyNotice": "Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.",
+  "reportAdditionalDetails": "Additional details (optional)",
+  "reportBlockUser": "Block this user",
+  "reportCancel": "Cancel",
+  "reportSubmit": "Report",
+  "reportSelectReason": "Please select a reason for reporting this content",
+  "reportReasonSpam": "Spam or Unwanted Content",
+  "reportReasonHarassment": "Harassment, Bullying, or Threats",
+  "reportReasonViolence": "Violent or Extremist Content",
+  "reportReasonSexualContent": "Sexual or Adult Content",
+  "reportReasonCopyright": "Copyright Violation",
+  "reportReasonFalseInfo": "False Information",
+  "reportReasonCsam": "Child Safety Violation",
+  "reportReasonAiGenerated": "AI-Generated Content",
+  "reportReasonOther": "Other Policy Violation",
+  "reportFailed": "Failed to report content: {error}",
+  "@reportFailed": {
+    "placeholders": {
+      "error": { "type": "Object" }
+    }
+  },
+  "reportReceivedTitle": "Report Received",
+  "reportReceivedThankYou": "Thank you for helping keep Divine safe.",
+  "reportReceivedReviewNotice": "Our team will review your report and take appropriate action. You may receive updates via direct message.",
+  "reportLearnMore": "Learn More",
+  "reportSafetyUrl": "divine.video/safety",
+  "reportClose": "Close",
+
+  "listAddToList": "Add to List",
+  "listVideoCount": "{count} videos",
+  "@listVideoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "listNewList": "New List",
+  "listDone": "Done",
+  "listErrorLoading": "Error loading lists",
+  "listRemovedFrom": "Removed from {name}",
+  "@listRemovedFrom": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "listAddedTo": "Added to {name}",
+  "@listAddedTo": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "listCreateNewList": "Create New List",
+  "listNameLabel": "List Name",
+  "listDescriptionLabel": "Description (optional)",
+  "listPublicList": "Public List",
+  "listPublicListSubtitle": "Others can follow and see this list",
+  "listCancel": "Cancel",
+  "listCreate": "Create",
+  "listCreateFailed": "Failed to create list",
+
+  "keyManagementTitle": "Nostr Keys",
+  "keyManagementWhatAreKeys": "What are Nostr keys?",
+  "keyManagementExplanation": "Your Nostr identity is a cryptographic key pair:\n\n\u2022 Your public key (npub) is like your username - share it freely\n\u2022 Your private key (nsec) is like your password - keep it secret!\n\nYour nsec lets you access your account on any Nostr app.",
+  "keyManagementImportTitle": "Import Existing Key",
+  "keyManagementImportSubtitle": "Already have a Nostr account? Paste your private key (nsec) to access it here.",
+  "keyManagementImportButton": "Import Key",
+  "keyManagementImportWarning": "This will replace your current key!",
+  "keyManagementBackupTitle": "Backup Your Key",
+  "keyManagementBackupSubtitle": "Save your private key (nsec) to use your account in other Nostr apps.",
+  "keyManagementCopyNsec": "Copy My Private Key (nsec)",
+  "keyManagementNeverShare": "Never share your nsec with anyone!",
+  "keyManagementPasteKey": "Please paste your private key",
+  "keyManagementInvalidFormat": "Invalid key format. Must start with \"nsec1\"",
+  "keyManagementConfirmImportTitle": "Import This Key?",
+  "keyManagementConfirmImportBody": "This will replace your current identity with the imported one.\n\nYour current key will be lost unless you backed it up first.",
+  "keyManagementImportConfirm": "Import",
+  "keyManagementImportSuccess": "Key imported successfully!",
+  "keyManagementImportFailed": "Failed to import key: {error}",
+  "@keyManagementImportFailed": {
+    "placeholders": {
+      "error": { "type": "Object" }
+    }
+  },
+  "keyManagementExportSuccess": "Private key copied to clipboard!\n\nStore it somewhere safe.",
+  "keyManagementExportFailed": "Failed to export key: {error}",
+  "@keyManagementExportFailed": {
+    "placeholders": {
+      "error": { "type": "Object" }
+    }
+  },
+
+  "saveOriginalSavedToCameraRoll": "Saved to Camera Roll",
+  "saveOriginalShare": "Share",
+  "saveOriginalDone": "Done",
+  "saveOriginalPhotosAccessNeeded": "Photos Access Needed",
+  "saveOriginalPhotosAccessMessage": "To save videos, allow Photos access in Settings.",
+  "saveOriginalOpenSettings": "Open Settings",
+  "saveOriginalNotNow": "Not Now",
+  "saveOriginalDownloadFailed": "Download Failed",
+  "saveOriginalDismiss": "Dismiss",
+  "saveOriginalDownloadingVideo": "Downloading Video",
+  "saveOriginalSavingToCameraRoll": "Saving to Camera Roll",
+  "saveOriginalFetchingVideo": "Fetching the video from the network...",
+  "saveOriginalSavingVideo": "Saving the original video to your camera roll...",
+
+  "soundTitle": "Sound",
+  "soundOriginalSound": "Original sound",
+  "soundVideosUsingThisSound": "Videos using this sound",
+  "soundNoVideosYet": "No videos yet",
+  "soundBeFirstToUse": "Be the first to use this sound!",
+  "soundFailedToLoadVideos": "Failed to load videos",
+  "soundRetry": "Retry",
+  "soundVideosUnavailable": "Videos unavailable",
+  "soundCouldNotLoadDetails": "Could not load video details",
+  "soundPreview": "Preview",
+  "soundStop": "Stop",
+  "soundUseSound": "Use Sound",
+  "soundNoVideoCount": "No videos yet",
+  "soundOneVideo": "1 video",
+  "soundVideoCount": "{count} videos",
+  "@soundVideoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "soundUnableToPreview": "Unable to preview sound - no audio available",
+  "soundPreviewFailed": "Failed to play preview: {error}",
+  "@soundPreviewFailed": {
+    "placeholders": {
+      "error": { "type": "Object" }
+    }
+  },
+  "soundViewSource": "View source",
+  "soundCloseTooltip": "Close",
+
+  "exploreNotExploreRoute": "Not an explore route",
+  "exploreNoVideosAvailable": "No videos available",
+
+  "legalTitle": "Legal",
+  "legalTermsOfService": "Terms of Service",
+  "legalTermsOfServiceSubtitle": "Usage terms and conditions",
+  "legalPrivacyPolicy": "Privacy Policy",
+  "legalPrivacyPolicySubtitle": "How we handle your data",
+  "legalSafetyStandards": "Safety Standards",
+  "legalSafetyStandardsSubtitle": "Community guidelines and safety",
+  "legalDmca": "DMCA",
+  "legalDmcaSubtitle": "Copyright and takedown policy",
+  "legalOpenSourceLicenses": "Open Source Licenses",
+  "legalOpenSourceLicensesSubtitle": "Third-party package attributions",
+  "legalAppName": "Divine",
+  "legalCouldNotOpenPage": "Could not open {pageName}",
+  "@legalCouldNotOpenPage": {
+    "placeholders": {
+      "pageName": { "type": "String" }
+    }
+  },
+  "legalErrorOpeningPage": "Error opening {pageName}: {error}",
+  "@legalErrorOpeningPage": {
+    "placeholders": {
+      "pageName": { "type": "String" },
+      "error": { "type": "Object" }
+    }
+  }
 }

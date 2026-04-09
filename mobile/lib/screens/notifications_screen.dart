@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -141,12 +142,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
               color: VineTheme.tabIconInactive,
             ),
             labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-            tabs: const [
-              Tab(text: 'All'),
-              Tab(text: 'Likes'),
-              Tab(text: 'Comments'),
-              Tab(text: 'Follows'),
-              Tab(text: 'Reposts'),
+            tabs: [
+              Tab(text: context.l10n.notificationsTabAll),
+              Tab(text: context.l10n.notificationsTabLikes),
+              Tab(text: context.l10n.notificationsTabComments),
+              Tab(text: context.l10n.notificationsTabFollows),
+              Tab(text: context.l10n.notificationsTabReposts),
             ],
           ),
         ),
@@ -257,18 +258,21 @@ class _NotificationTabContentState
                 color: VineTheme.lightText,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Failed to load notifications',
-                style: TextStyle(fontSize: 18, color: VineTheme.secondaryText),
+              Text(
+                context.l10n.notificationsFailedToLoad,
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: VineTheme.secondaryText,
+                ),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
                   ref.read(relayNotificationsProvider.notifier).refresh();
                 },
-                child: const Text(
-                  'Retry',
-                  style: TextStyle(color: VineTheme.vineGreen),
+                child: Text(
+                  context.l10n.notificationsRetry,
+                  style: const TextStyle(color: VineTheme.vineGreen),
                 ),
               ),
             ],
@@ -294,7 +298,7 @@ class _NotificationTabContentState
           return ColoredBox(
             color: VineTheme.backgroundColor,
             child: RefreshIndicator(
-              semanticsLabel: 'checking for new notifications',
+              semanticsLabel: context.l10n.notificationsCheckingNew,
               color: VineTheme.onPrimary,
               backgroundColor: VineTheme.vineGreen,
               onRefresh: () async {
@@ -321,20 +325,20 @@ class _NotificationTabContentState
                                 const SizedBox(height: 16),
                                 Text(
                                   widget.filter == null
-                                      ? 'No notifications yet'
-                                      : 'No ${_getFilterName(widget.filter!)}'
-                                            ' notifications',
+                                      ? context.l10n.notificationsNoneYet
+                                      : context.l10n.notificationsNoneForType(
+                                          _getFilterName(widget.filter!),
+                                        ),
                                   style: const TextStyle(
                                     fontSize: 18,
                                     color: VineTheme.secondaryText,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                const Text(
-                                  'When people interact with your content,\n'
-                                  "you'll see it here",
+                                Text(
+                                  context.l10n.notificationsEmptyDescription,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: VineTheme.lightText,
                                   ),
@@ -571,7 +575,9 @@ class _NotificationTabContentState
 
           if (resolvedVideoEventId == null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Video not found')),
+              SnackBar(
+                content: Text(context.l10n.notificationsVideoNotFound),
+              ),
             );
             return;
           }
@@ -642,9 +648,9 @@ class _NotificationTabContentState
 
     if (video == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Video not found'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.notificationsVideoNotFound),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -652,9 +658,9 @@ class _NotificationTabContentState
 
     if (videoEventService.shouldHideVideo(video)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Video unavailable'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.notificationsVideoUnavailable),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -677,7 +683,7 @@ class _NotificationTabContentState
           return ExploreVideoScreenPure(
             startingVideo: videoForNav,
             videoList: [videoForNav],
-            contextTitle: 'From Notification',
+            contextTitle: context.l10n.notificationsFromNotification,
             startingIndex: 0,
             useLocalActiveState: true,
           );
@@ -711,7 +717,7 @@ class _FilteredTabLoadingState extends StatelessWidget {
         const CircularProgressIndicator(color: VineTheme.vineGreen),
         const SizedBox(height: 16),
         Text(
-          'Loading $filterName notifications...',
+          context.l10n.notificationsLoadingType(filterName),
           style: const TextStyle(
             fontSize: 18,
             color: VineTheme.secondaryText,
@@ -730,8 +736,8 @@ class _InviteNotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = count == 1
-        ? 'You have 1 invite to share with a friend!'
-        : 'You have $count invites to share with friends!';
+        ? context.l10n.notificationsInviteSingular
+        : context.l10n.notificationsInvitePlural(count);
 
     return InkWell(
       onTap: () => context.push(InvitesScreen.path),

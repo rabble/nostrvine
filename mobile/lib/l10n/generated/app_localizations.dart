@@ -5467,6 +5467,1572 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select Language'**
   String get localeSelectLanguage;
+
+  /// No description provided for @webAuthNotSupportedSecureMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Web authentication not supported in secure mode. Please use mobile app for secure key management.'**
+  String get webAuthNotSupportedSecureMode;
+
+  /// No description provided for @webAuthIntegrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication integration failed: {error}'**
+  String webAuthIntegrationFailed(String error);
+
+  /// No description provided for @webAuthUnexpectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected error: {error}'**
+  String webAuthUnexpectedError(String error);
+
+  /// No description provided for @webAuthEnterBunkerUri.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a bunker URI'**
+  String get webAuthEnterBunkerUri;
+
+  /// No description provided for @webAuthConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to Divine'**
+  String get webAuthConnectTitle;
+
+  /// No description provided for @webAuthChooseMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your preferred Nostr authentication method'**
+  String get webAuthChooseMethod;
+
+  /// No description provided for @webAuthBrowserExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser Extension'**
+  String get webAuthBrowserExtension;
+
+  /// No description provided for @webAuthRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'RECOMMENDED'**
+  String get webAuthRecommended;
+
+  /// No description provided for @webAuthNsecBunker.
+  ///
+  /// In en, this message translates to:
+  /// **'nsec bunker'**
+  String get webAuthNsecBunker;
+
+  /// No description provided for @webAuthConnectRemoteSigner.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to a remote signer'**
+  String get webAuthConnectRemoteSigner;
+
+  /// No description provided for @webAuthBunkerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'bunker://pubkey?relay=wss://...'**
+  String get webAuthBunkerHint;
+
+  /// No description provided for @webAuthPasteFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from clipboard'**
+  String get webAuthPasteFromClipboard;
+
+  /// No description provided for @webAuthConnectToBunker.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to Bunker'**
+  String get webAuthConnectToBunker;
+
+  /// No description provided for @webAuthNewToNostr.
+  ///
+  /// In en, this message translates to:
+  /// **'New to Nostr?'**
+  String get webAuthNewToNostr;
+
+  /// No description provided for @webAuthNostrHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a browser extension like Alby or nos2x for the easiest experience, or use nsec bunker for secure remote signing.'**
+  String get webAuthNostrHelp;
+
+  /// No description provided for @soundsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds'**
+  String get soundsTitle;
+
+  /// No description provided for @soundsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search sounds...'**
+  String get soundsSearchHint;
+
+  /// No description provided for @soundsPreviewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to preview sound - no audio available'**
+  String get soundsPreviewUnavailable;
+
+  /// No description provided for @soundsPreviewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to play preview: {error}'**
+  String soundsPreviewFailed(String error);
+
+  /// No description provided for @soundsFeaturedSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured Sounds'**
+  String get soundsFeaturedSounds;
+
+  /// No description provided for @soundsTrendingSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Trending Sounds'**
+  String get soundsTrendingSounds;
+
+  /// No description provided for @soundsAllSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'All Sounds'**
+  String get soundsAllSounds;
+
+  /// No description provided for @soundsSearchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Results'**
+  String get soundsSearchResults;
+
+  /// No description provided for @soundsNoSoundsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No sounds available'**
+  String get soundsNoSoundsAvailable;
+
+  /// No description provided for @soundsNoSoundsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds will appear here when creators share audio'**
+  String get soundsNoSoundsDescription;
+
+  /// No description provided for @soundsNoSoundsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No sounds found'**
+  String get soundsNoSoundsFound;
+
+  /// No description provided for @soundsNoSoundsFoundDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search term'**
+  String get soundsNoSoundsFoundDescription;
+
+  /// No description provided for @soundsFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load sounds'**
+  String get soundsFailedToLoad;
+
+  /// No description provided for @soundsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get soundsRetry;
+
+  /// No description provided for @soundsScreenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds screen'**
+  String get soundsScreenLabel;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @profileRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get profileRefresh;
+
+  /// No description provided for @profileRefreshLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh profile'**
+  String get profileRefreshLabel;
+
+  /// No description provided for @profileMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get profileMoreOptions;
+
+  /// No description provided for @profileBlockedUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked {name}'**
+  String profileBlockedUser(String name);
+
+  /// No description provided for @profileUnblockedUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblocked {name}'**
+  String profileUnblockedUser(String name);
+
+  /// No description provided for @profileUnfollowedUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollowed {name}'**
+  String profileUnfollowedUser(String name);
+
+  /// No description provided for @profileError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String profileError(String error);
+
+  /// No description provided for @notificationsTabAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get notificationsTabAll;
+
+  /// No description provided for @notificationsTabLikes.
+  ///
+  /// In en, this message translates to:
+  /// **'Likes'**
+  String get notificationsTabLikes;
+
+  /// No description provided for @notificationsTabComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get notificationsTabComments;
+
+  /// No description provided for @notificationsTabFollows.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows'**
+  String get notificationsTabFollows;
+
+  /// No description provided for @notificationsTabReposts.
+  ///
+  /// In en, this message translates to:
+  /// **'Reposts'**
+  String get notificationsTabReposts;
+
+  /// No description provided for @notificationsFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load notifications'**
+  String get notificationsFailedToLoad;
+
+  /// No description provided for @notificationsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get notificationsRetry;
+
+  /// No description provided for @notificationsCheckingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'checking for new notifications'**
+  String get notificationsCheckingNew;
+
+  /// No description provided for @notificationsNoneYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get notificationsNoneYet;
+
+  /// No description provided for @notificationsNoneForType.
+  ///
+  /// In en, this message translates to:
+  /// **'No {type} notifications'**
+  String notificationsNoneForType(String type);
+
+  /// No description provided for @notificationsEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When people interact with your content, you\'ll see it here'**
+  String get notificationsEmptyDescription;
+
+  /// No description provided for @notificationsLoadingType.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading {type} notifications...'**
+  String notificationsLoadingType(String type);
+
+  /// No description provided for @notificationsInviteSingular.
+  ///
+  /// In en, this message translates to:
+  /// **'You have 1 invite to share with a friend!'**
+  String get notificationsInviteSingular;
+
+  /// No description provided for @notificationsInvitePlural.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {count} invites to share with friends!'**
+  String notificationsInvitePlural(int count);
+
+  /// No description provided for @notificationsVideoNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Video not found'**
+  String get notificationsVideoNotFound;
+
+  /// No description provided for @notificationsVideoUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Video unavailable'**
+  String get notificationsVideoUnavailable;
+
+  /// No description provided for @notificationsFromNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'From Notification'**
+  String get notificationsFromNotification;
+
+  /// No description provided for @feedFailedToLoadVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load videos'**
+  String get feedFailedToLoadVideos;
+
+  /// No description provided for @feedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get feedRetry;
+
+  /// No description provided for @feedNoFollowedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'No followed users.\nFollow someone to see their videos here.'**
+  String get feedNoFollowedUsers;
+
+  /// No description provided for @feedNoVideosForMode.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos found for {mode} feed.'**
+  String feedNoVideosForMode(String mode);
+
+  /// No description provided for @feedExploreVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Videos'**
+  String get feedExploreVideos;
+
+  /// No description provided for @feedExternalVideoSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'External video loading slowly'**
+  String get feedExternalVideoSlow;
+
+  /// No description provided for @feedSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get feedSkip;
+
+  /// No description provided for @uploadWaitingToUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to upload'**
+  String get uploadWaitingToUpload;
+
+  /// No description provided for @uploadUploadingVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading video'**
+  String get uploadUploadingVideo;
+
+  /// No description provided for @uploadProcessingVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing video'**
+  String get uploadProcessingVideo;
+
+  /// No description provided for @uploadProcessingComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing complete'**
+  String get uploadProcessingComplete;
+
+  /// No description provided for @uploadPublishedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Published successfully'**
+  String get uploadPublishedSuccessfully;
+
+  /// No description provided for @uploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed'**
+  String get uploadFailed;
+
+  /// No description provided for @uploadRetrying.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying upload'**
+  String get uploadRetrying;
+
+  /// No description provided for @uploadPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload paused'**
+  String get uploadPaused;
+
+  /// No description provided for @uploadPercentComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% complete'**
+  String uploadPercentComplete(int percent);
+
+  /// No description provided for @uploadQueuedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your video is queued for upload'**
+  String get uploadQueuedMessage;
+
+  /// No description provided for @uploadUploadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading to server...'**
+  String get uploadUploadingMessage;
+
+  /// No description provided for @uploadProcessingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing video - this may take a few minutes'**
+  String get uploadProcessingMessage;
+
+  /// No description provided for @uploadReadyToPublishMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Video processed successfully and ready to publish'**
+  String get uploadReadyToPublishMessage;
+
+  /// No description provided for @uploadPublishedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Video published to your profile'**
+  String get uploadPublishedMessage;
+
+  /// No description provided for @uploadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed - please try again'**
+  String get uploadFailedMessage;
+
+  /// No description provided for @uploadRetryingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying upload...'**
+  String get uploadRetryingMessage;
+
+  /// No description provided for @uploadPausedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload paused by user'**
+  String get uploadPausedMessage;
+
+  /// No description provided for @uploadRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'RETRY'**
+  String get uploadRetryButton;
+
+  /// No description provided for @uploadRetryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to retry upload: {error}'**
+  String uploadRetryFailed(String error);
+
+  /// No description provided for @userSearchPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for users'**
+  String get userSearchPrompt;
+
+  /// No description provided for @userSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found'**
+  String get userSearchNoResults;
+
+  /// No description provided for @userSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed'**
+  String get userSearchFailed;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email address and we\'ll send you a link to reset your password.'**
+  String get forgotPasswordDescription;
+
+  /// No description provided for @forgotPasswordEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get forgotPasswordEmailLabel;
+
+  /// No description provided for @forgotPasswordCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get forgotPasswordCancel;
+
+  /// No description provided for @forgotPasswordSendLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Reset Link'**
+  String get forgotPasswordSendLink;
+
+  /// No description provided for @ageVerificationContentWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Warning'**
+  String get ageVerificationContentWarning;
+
+  /// No description provided for @ageVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Age Verification'**
+  String get ageVerificationTitle;
+
+  /// No description provided for @ageVerificationAdultDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This content has been flagged as potentially containing adult material. You must be 18 or older to view it.'**
+  String get ageVerificationAdultDescription;
+
+  /// No description provided for @ageVerificationCreationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'To use the camera and create content, you must be at least 16 years old.'**
+  String get ageVerificationCreationDescription;
+
+  /// No description provided for @ageVerificationAdultQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you 18 years of age or older?'**
+  String get ageVerificationAdultQuestion;
+
+  /// No description provided for @ageVerificationCreationQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you 16 years of age or older?'**
+  String get ageVerificationCreationQuestion;
+
+  /// No description provided for @ageVerificationNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get ageVerificationNo;
+
+  /// No description provided for @ageVerificationYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get ageVerificationYes;
+
+  /// No description provided for @shareLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied to clipboard'**
+  String get shareLinkCopied;
+
+  /// No description provided for @shareFailedToCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to copy link'**
+  String get shareFailedToCopy;
+
+  /// No description provided for @shareVideoSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out this video on Divine'**
+  String get shareVideoSubject;
+
+  /// No description provided for @shareFailedToShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to share'**
+  String get shareFailedToShare;
+
+  /// No description provided for @shareVideoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Video'**
+  String get shareVideoTitle;
+
+  /// No description provided for @shareToApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Share to Apps'**
+  String get shareToApps;
+
+  /// No description provided for @shareToAppsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share via messaging, social apps'**
+  String get shareToAppsSubtitle;
+
+  /// No description provided for @shareCopyWebLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Web Link'**
+  String get shareCopyWebLink;
+
+  /// No description provided for @shareCopyWebLinkSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy shareable web link'**
+  String get shareCopyWebLinkSubtitle;
+
+  /// No description provided for @shareCopyNostrLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Nostr Link'**
+  String get shareCopyNostrLink;
+
+  /// No description provided for @shareCopyNostrLinkSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy nevent link for Nostr clients'**
+  String get shareCopyNostrLinkSubtitle;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navExplore.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore'**
+  String get navExplore;
+
+  /// No description provided for @navInbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get navInbox;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfile;
+
+  /// No description provided for @navMyProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'My Profile'**
+  String get navMyProfile;
+
+  /// No description provided for @navSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get navSearch;
+
+  /// No description provided for @navNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get navNotifications;
+
+  /// No description provided for @navSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get navSearchTooltip;
+
+  /// No description provided for @navOpenCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Open camera'**
+  String get navOpenCamera;
+
+  /// No description provided for @navUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get navUnknown;
+
+  /// No description provided for @navExploreClassics.
+  ///
+  /// In en, this message translates to:
+  /// **'Classics'**
+  String get navExploreClassics;
+
+  /// No description provided for @navExploreNewVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'New Videos'**
+  String get navExploreNewVideos;
+
+  /// No description provided for @navExploreTrending.
+  ///
+  /// In en, this message translates to:
+  /// **'Trending'**
+  String get navExploreTrending;
+
+  /// No description provided for @navExploreForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For You'**
+  String get navExploreForYou;
+
+  /// No description provided for @navExploreLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get navExploreLists;
+
+  /// No description provided for @routeErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get routeErrorTitle;
+
+  /// No description provided for @routeInvalidHashtag.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid hashtag'**
+  String get routeInvalidHashtag;
+
+  /// No description provided for @routeInvalidConversationId.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid conversation ID'**
+  String get routeInvalidConversationId;
+
+  /// No description provided for @routeInvalidRequestId.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid request ID'**
+  String get routeInvalidRequestId;
+
+  /// No description provided for @routeInvalidListId.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid list ID'**
+  String get routeInvalidListId;
+
+  /// No description provided for @routeInvalidUserId.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid user ID'**
+  String get routeInvalidUserId;
+
+  /// No description provided for @routeInvalidVideoId.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid video ID'**
+  String get routeInvalidVideoId;
+
+  /// No description provided for @routeInvalidSoundId.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid sound ID'**
+  String get routeInvalidSoundId;
+
+  /// No description provided for @routeInvalidCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid category'**
+  String get routeInvalidCategory;
+
+  /// No description provided for @routeNoVideosToDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos to display'**
+  String get routeNoVideosToDisplay;
+
+  /// No description provided for @routeInvalidProfileId.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid profile ID'**
+  String get routeInvalidProfileId;
+
+  /// No description provided for @routeDefaultListName.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get routeDefaultListName;
+
+  /// No description provided for @supportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support Center'**
+  String get supportTitle;
+
+  /// No description provided for @supportContactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Support'**
+  String get supportContactSupport;
+
+  /// No description provided for @supportContactSupportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation or view past messages'**
+  String get supportContactSupportSubtitle;
+
+  /// No description provided for @supportReportBug.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a Bug'**
+  String get supportReportBug;
+
+  /// No description provided for @supportReportBugSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical issues with the app'**
+  String get supportReportBugSubtitle;
+
+  /// No description provided for @supportRequestFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a Feature'**
+  String get supportRequestFeature;
+
+  /// No description provided for @supportRequestFeatureSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest an improvement or new feature'**
+  String get supportRequestFeatureSubtitle;
+
+  /// No description provided for @supportSaveLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Logs'**
+  String get supportSaveLogs;
+
+  /// No description provided for @supportSaveLogsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export logs to file for manual sending'**
+  String get supportSaveLogsSubtitle;
+
+  /// No description provided for @supportFaq.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQ'**
+  String get supportFaq;
+
+  /// No description provided for @supportFaqSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Common questions & answers'**
+  String get supportFaqSubtitle;
+
+  /// No description provided for @supportProofMode.
+  ///
+  /// In en, this message translates to:
+  /// **'ProofMode'**
+  String get supportProofMode;
+
+  /// No description provided for @supportProofModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn about verification and authenticity'**
+  String get supportProofModeSubtitle;
+
+  /// No description provided for @supportLoginRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in to contact support'**
+  String get supportLoginRequired;
+
+  /// No description provided for @supportExportingLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting logs...'**
+  String get supportExportingLogs;
+
+  /// No description provided for @supportExportLogsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export logs'**
+  String get supportExportLogsFailed;
+
+  /// No description provided for @supportChatNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Support chat not available'**
+  String get supportChatNotAvailable;
+
+  /// No description provided for @supportCouldNotOpenMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open support messages'**
+  String get supportCouldNotOpenMessages;
+
+  /// No description provided for @supportCouldNotOpenPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open {pageName}'**
+  String supportCouldNotOpenPage(String pageName);
+
+  /// No description provided for @supportErrorOpeningPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error opening {pageName}: {error}'**
+  String supportErrorOpeningPage(String pageName, Object error);
+
+  /// No description provided for @reportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Content'**
+  String get reportTitle;
+
+  /// No description provided for @reportWhyReporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are you reporting this content?'**
+  String get reportWhyReporting;
+
+  /// No description provided for @reportPolicyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.'**
+  String get reportPolicyNotice;
+
+  /// No description provided for @reportAdditionalDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional details (optional)'**
+  String get reportAdditionalDetails;
+
+  /// No description provided for @reportBlockUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Block this user'**
+  String get reportBlockUser;
+
+  /// No description provided for @reportCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get reportCancel;
+
+  /// No description provided for @reportSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportSubmit;
+
+  /// No description provided for @reportSelectReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a reason for reporting this content'**
+  String get reportSelectReason;
+
+  /// No description provided for @reportReasonSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Spam or Unwanted Content'**
+  String get reportReasonSpam;
+
+  /// No description provided for @reportReasonHarassment.
+  ///
+  /// In en, this message translates to:
+  /// **'Harassment, Bullying, or Threats'**
+  String get reportReasonHarassment;
+
+  /// No description provided for @reportReasonViolence.
+  ///
+  /// In en, this message translates to:
+  /// **'Violent or Extremist Content'**
+  String get reportReasonViolence;
+
+  /// No description provided for @reportReasonSexualContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sexual or Adult Content'**
+  String get reportReasonSexualContent;
+
+  /// No description provided for @reportReasonCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright Violation'**
+  String get reportReasonCopyright;
+
+  /// No description provided for @reportReasonFalseInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'False Information'**
+  String get reportReasonFalseInfo;
+
+  /// No description provided for @reportReasonCsam.
+  ///
+  /// In en, this message translates to:
+  /// **'Child Safety Violation'**
+  String get reportReasonCsam;
+
+  /// No description provided for @reportReasonAiGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-Generated Content'**
+  String get reportReasonAiGenerated;
+
+  /// No description provided for @reportReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Policy Violation'**
+  String get reportReasonOther;
+
+  /// No description provided for @reportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to report content: {error}'**
+  String reportFailed(Object error);
+
+  /// No description provided for @reportReceivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Received'**
+  String get reportReceivedTitle;
+
+  /// No description provided for @reportReceivedThankYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for helping keep Divine safe.'**
+  String get reportReceivedThankYou;
+
+  /// No description provided for @reportReceivedReviewNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Our team will review your report and take appropriate action. You may receive updates via direct message.'**
+  String get reportReceivedReviewNotice;
+
+  /// No description provided for @reportLearnMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn More'**
+  String get reportLearnMore;
+
+  /// No description provided for @reportSafetyUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'divine.video/safety'**
+  String get reportSafetyUrl;
+
+  /// No description provided for @reportClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get reportClose;
+
+  /// No description provided for @listAddToList.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to List'**
+  String get listAddToList;
+
+  /// No description provided for @listVideoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos'**
+  String listVideoCount(int count);
+
+  /// No description provided for @listNewList.
+  ///
+  /// In en, this message translates to:
+  /// **'New List'**
+  String get listNewList;
+
+  /// No description provided for @listDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get listDone;
+
+  /// No description provided for @listErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading lists'**
+  String get listErrorLoading;
+
+  /// No description provided for @listRemovedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from {name}'**
+  String listRemovedFrom(String name);
+
+  /// No description provided for @listAddedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to {name}'**
+  String listAddedTo(String name);
+
+  /// No description provided for @listCreateNewList.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New List'**
+  String get listCreateNewList;
+
+  /// No description provided for @listNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'List Name'**
+  String get listNameLabel;
+
+  /// No description provided for @listDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get listDescriptionLabel;
+
+  /// No description provided for @listPublicList.
+  ///
+  /// In en, this message translates to:
+  /// **'Public List'**
+  String get listPublicList;
+
+  /// No description provided for @listPublicListSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Others can follow and see this list'**
+  String get listPublicListSubtitle;
+
+  /// No description provided for @listCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get listCancel;
+
+  /// No description provided for @listCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get listCreate;
+
+  /// No description provided for @listCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create list'**
+  String get listCreateFailed;
+
+  /// No description provided for @keyManagementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nostr Keys'**
+  String get keyManagementTitle;
+
+  /// No description provided for @keyManagementWhatAreKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'What are Nostr keys?'**
+  String get keyManagementWhatAreKeys;
+
+  /// No description provided for @keyManagementExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Nostr identity is a cryptographic key pair:\n\n• Your public key (npub) is like your username - share it freely\n• Your private key (nsec) is like your password - keep it secret!\n\nYour nsec lets you access your account on any Nostr app.'**
+  String get keyManagementExplanation;
+
+  /// No description provided for @keyManagementImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Existing Key'**
+  String get keyManagementImportTitle;
+
+  /// No description provided for @keyManagementImportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have a Nostr account? Paste your private key (nsec) to access it here.'**
+  String get keyManagementImportSubtitle;
+
+  /// No description provided for @keyManagementImportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Key'**
+  String get keyManagementImportButton;
+
+  /// No description provided for @keyManagementImportWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This will replace your current key!'**
+  String get keyManagementImportWarning;
+
+  /// No description provided for @keyManagementBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup Your Key'**
+  String get keyManagementBackupTitle;
+
+  /// No description provided for @keyManagementBackupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save your private key (nsec) to use your account in other Nostr apps.'**
+  String get keyManagementBackupSubtitle;
+
+  /// No description provided for @keyManagementCopyNsec.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy My Private Key (nsec)'**
+  String get keyManagementCopyNsec;
+
+  /// No description provided for @keyManagementNeverShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Never share your nsec with anyone!'**
+  String get keyManagementNeverShare;
+
+  /// No description provided for @keyManagementPasteKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Please paste your private key'**
+  String get keyManagementPasteKey;
+
+  /// No description provided for @keyManagementInvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid key format. Must start with \"nsec1\"'**
+  String get keyManagementInvalidFormat;
+
+  /// No description provided for @keyManagementConfirmImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import This Key?'**
+  String get keyManagementConfirmImportTitle;
+
+  /// No description provided for @keyManagementConfirmImportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will replace your current identity with the imported one.\n\nYour current key will be lost unless you backed it up first.'**
+  String get keyManagementConfirmImportBody;
+
+  /// No description provided for @keyManagementImportConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get keyManagementImportConfirm;
+
+  /// No description provided for @keyManagementImportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Key imported successfully!'**
+  String get keyManagementImportSuccess;
+
+  /// No description provided for @keyManagementImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to import key: {error}'**
+  String keyManagementImportFailed(Object error);
+
+  /// No description provided for @keyManagementExportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Private key copied to clipboard!\n\nStore it somewhere safe.'**
+  String get keyManagementExportSuccess;
+
+  /// No description provided for @keyManagementExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export key: {error}'**
+  String keyManagementExportFailed(Object error);
+
+  /// No description provided for @saveOriginalSavedToCameraRoll.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Camera Roll'**
+  String get saveOriginalSavedToCameraRoll;
+
+  /// No description provided for @saveOriginalShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get saveOriginalShare;
+
+  /// No description provided for @saveOriginalDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get saveOriginalDone;
+
+  /// No description provided for @saveOriginalPhotosAccessNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos Access Needed'**
+  String get saveOriginalPhotosAccessNeeded;
+
+  /// No description provided for @saveOriginalPhotosAccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'To save videos, allow Photos access in Settings.'**
+  String get saveOriginalPhotosAccessMessage;
+
+  /// No description provided for @saveOriginalOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get saveOriginalOpenSettings;
+
+  /// No description provided for @saveOriginalNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Now'**
+  String get saveOriginalNotNow;
+
+  /// No description provided for @saveOriginalDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Failed'**
+  String get saveOriginalDownloadFailed;
+
+  /// No description provided for @saveOriginalDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get saveOriginalDismiss;
+
+  /// No description provided for @saveOriginalDownloadingVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading Video'**
+  String get saveOriginalDownloadingVideo;
+
+  /// No description provided for @saveOriginalSavingToCameraRoll.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving to Camera Roll'**
+  String get saveOriginalSavingToCameraRoll;
+
+  /// No description provided for @saveOriginalFetchingVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching the video from the network...'**
+  String get saveOriginalFetchingVideo;
+
+  /// No description provided for @saveOriginalSavingVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the original video to your camera roll...'**
+  String get saveOriginalSavingVideo;
+
+  /// No description provided for @soundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get soundTitle;
+
+  /// No description provided for @soundOriginalSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Original sound'**
+  String get soundOriginalSound;
+
+  /// No description provided for @soundVideosUsingThisSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos using this sound'**
+  String get soundVideosUsingThisSound;
+
+  /// No description provided for @soundNoVideosYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos yet'**
+  String get soundNoVideosYet;
+
+  /// No description provided for @soundBeFirstToUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to use this sound!'**
+  String get soundBeFirstToUse;
+
+  /// No description provided for @soundFailedToLoadVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load videos'**
+  String get soundFailedToLoadVideos;
+
+  /// No description provided for @soundRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get soundRetry;
+
+  /// No description provided for @soundVideosUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos unavailable'**
+  String get soundVideosUnavailable;
+
+  /// No description provided for @soundCouldNotLoadDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load video details'**
+  String get soundCouldNotLoadDetails;
+
+  /// No description provided for @soundPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get soundPreview;
+
+  /// No description provided for @soundStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get soundStop;
+
+  /// No description provided for @soundUseSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Sound'**
+  String get soundUseSound;
+
+  /// No description provided for @soundNoVideoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos yet'**
+  String get soundNoVideoCount;
+
+  /// No description provided for @soundOneVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'1 video'**
+  String get soundOneVideo;
+
+  /// No description provided for @soundVideoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos'**
+  String soundVideoCount(int count);
+
+  /// No description provided for @soundUnableToPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to preview sound - no audio available'**
+  String get soundUnableToPreview;
+
+  /// No description provided for @soundPreviewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to play preview: {error}'**
+  String soundPreviewFailed(Object error);
+
+  /// No description provided for @soundViewSource.
+  ///
+  /// In en, this message translates to:
+  /// **'View source'**
+  String get soundViewSource;
+
+  /// No description provided for @soundCloseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get soundCloseTooltip;
+
+  /// No description provided for @exploreNotExploreRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Not an explore route'**
+  String get exploreNotExploreRoute;
+
+  /// No description provided for @legalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get legalTitle;
+
+  /// No description provided for @legalTermsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get legalTermsOfService;
+
+  /// No description provided for @legalTermsOfServiceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage terms and conditions'**
+  String get legalTermsOfServiceSubtitle;
+
+  /// No description provided for @legalPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get legalPrivacyPolicy;
+
+  /// No description provided for @legalPrivacyPolicySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How we handle your data'**
+  String get legalPrivacyPolicySubtitle;
+
+  /// No description provided for @legalSafetyStandards.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Standards'**
+  String get legalSafetyStandards;
+
+  /// No description provided for @legalSafetyStandardsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community guidelines and safety'**
+  String get legalSafetyStandardsSubtitle;
+
+  /// No description provided for @legalDmca.
+  ///
+  /// In en, this message translates to:
+  /// **'DMCA'**
+  String get legalDmca;
+
+  /// No description provided for @legalDmcaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright and takedown policy'**
+  String get legalDmcaSubtitle;
+
+  /// No description provided for @legalOpenSourceLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Source Licenses'**
+  String get legalOpenSourceLicenses;
+
+  /// No description provided for @legalOpenSourceLicensesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party package attributions'**
+  String get legalOpenSourceLicensesSubtitle;
+
+  /// No description provided for @legalAppName.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine'**
+  String get legalAppName;
+
+  /// No description provided for @legalCouldNotOpenPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open {pageName}'**
+  String legalCouldNotOpenPage(String pageName);
+
+  /// No description provided for @legalErrorOpeningPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error opening {pageName}: {error}'**
+  String legalErrorOpeningPage(String pageName, Object error);
 }
 
 class _AppLocalizationsDelegate
