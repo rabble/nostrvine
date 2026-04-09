@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -81,8 +82,8 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
         }
 
         if (state.status == ProfileRepostedVideosStatus.failure) {
-          return const ProfileTabErrorState(
-            message: 'Error loading reposted videos',
+          return ProfileTabErrorState(
+            message: context.l10n.profileErrorLoadingReposts,
           );
         }
 
@@ -91,10 +92,10 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
         if (repostedVideos.isEmpty) {
           return ProfileTabEmptyState(
             icon: DivineIconName.repeat,
-            title: 'No Reposts Yet',
+            title: context.l10n.profileNoRepostsTitle,
             subtitle: widget.isOwnProfile
-                ? 'Videos you repost will appear here'
-                : 'Videos they repost will appear here',
+                ? context.l10n.profileRepostsOwnEmpty
+                : context.l10n.profileRepostsOtherEmpty,
           );
         }
 

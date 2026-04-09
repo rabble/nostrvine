@@ -17,6 +17,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -191,6 +192,7 @@ class _EmailVerificationScreenState
       category: LogCategory.auth,
     );
 
+    final l10n = context.l10n;
     final oauth = ref.read(oauthClientProvider);
     try {
       final result = await oauth.verifyEmail(token: token);
@@ -209,7 +211,7 @@ class _EmailVerificationScreenState
           category: LogCategory.auth,
         );
         _cubit.emitFailure(
-          result.error ?? 'This verification link is no longer valid.',
+          result.error ?? l10n.authVerificationLinkExpired,
         );
       }
     } catch (e) {
@@ -218,9 +220,7 @@ class _EmailVerificationScreenState
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      _cubit.emitFailure(
-        'Unable to verify email. Please check your connection and try again.',
-      );
+      _cubit.emitFailure(l10n.authVerificationConnectionError);
     }
   }
 
@@ -289,10 +289,10 @@ class _EmailVerificationScreenState
     ref.read(pendingVerificationServiceProvider).clear();
     // Show feedback message before redirecting to login
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Email verified! Please log in to continue.'),
+      SnackBar(
+        content: Text(context.l10n.authEmailVerifiedLogin),
         backgroundColor: VineTheme.vineGreen,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
     // Redirect to login screen
@@ -555,7 +555,9 @@ class _PollingContent extends StatelessWidget {
 
         // Title
         Text(
-          isPollingMode ? 'Complete your registration' : 'Verifying...',
+          isPollingMode
+              ? context.l10n.authCompleteRegistration
+              : context.l10n.authVerifying,
           style: const TextStyle(
             fontFamily: VineTheme.fontFamilyBricolage,
             fontSize: 28,
@@ -567,9 +569,9 @@ class _PollingContent extends StatelessWidget {
         const SizedBox(height: 16),
 
         if (isPollingMode && email != null && email!.isNotEmpty) ...[
-          const Text(
-            'We sent a verification link to:',
-            style: TextStyle(
+          Text(
+            context.l10n.authVerificationLinkSent,
+            style: const TextStyle(
               fontSize: 16,
               color: VineTheme.secondaryText,
               height: 1.4,
@@ -587,10 +589,9 @@ class _PollingContent extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Please click the link in your email to\ncomplete your '
-            'registration.',
-            style: TextStyle(
+          Text(
+            context.l10n.authClickVerificationLink,
+            style: const TextStyle(
               fontSize: 14,
               color: VineTheme.secondaryText,
               height: 1.4,
@@ -598,9 +599,9 @@ class _PollingContent extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ] else ...[
-          const Text(
-            'Please wait while we verify your email...',
-            style: TextStyle(
+          Text(
+            context.l10n.authPleaseWaitVerifying,
+            style: const TextStyle(
               fontSize: 16,
               color: VineTheme.secondaryText,
               height: 1.4,
@@ -616,12 +617,14 @@ class _PollingContent extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 32),
           child: Column(
             children: [
-              const _StatusButton(label: 'Waiting for verification'),
+              _StatusButton(
+                label: context.l10n.authWaitingForVerification,
+              ),
               if (isPollingMode) ...[
                 const SizedBox(height: 20),
                 DivineButton(
                   expanded: true,
-                  label: 'Open email app',
+                  label: context.l10n.authOpenEmailApp,
                   onPressed: _openEmailApp,
                 ),
               ],
@@ -641,17 +644,20 @@ class _SuccessContent extends StatelessWidget {
   Widget build(BuildContext context) {
     // Navigation happens automatically via BlocConsumer listener
     // This UI is shown briefly during the transition
-    return const Column(
+    return Column(
       children: [
-        Spacer(),
+        const Spacer(),
 
         // Shaka sticker (celebration)
-        DivineSticker(sticker: DivineStickerName.hangLoose, size: 120),
-        SizedBox(height: 32),
+        const DivineSticker(
+          sticker: DivineStickerName.hangLoose,
+          size: 120,
+        ),
+        const SizedBox(height: 32),
 
         Text(
-          'Welcome to Divine!',
-          style: TextStyle(
+          context.l10n.authWelcomeToDivine,
+          style: const TextStyle(
             fontFamily: VineTheme.fontFamilyBricolage,
             fontSize: 28,
             fontWeight: FontWeight.w700,
@@ -659,10 +665,10 @@ class _SuccessContent extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         Text(
-          'Your email has been verified.',
-          style: TextStyle(
+          context.l10n.authEmailVerified,
+          style: const TextStyle(
             fontSize: 16,
             color: VineTheme.secondaryText,
             height: 1.4,
@@ -670,12 +676,12 @@ class _SuccessContent extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
 
-        Spacer(),
+        const Spacer(),
 
         // Signing you in status button
         Padding(
-          padding: EdgeInsets.only(bottom: 32),
-          child: _StatusButton(label: 'Signing you in'),
+          padding: const EdgeInsets.only(bottom: 32),
+          child: _StatusButton(label: context.l10n.authSigningYouIn),
         ),
       ],
     );
@@ -704,9 +710,9 @@ class _ErrorContent extends StatelessWidget {
         const DivineSticker(sticker: DivineStickerName.policeSiren, size: 120),
         const SizedBox(height: 32),
 
-        const Text(
-          'Uh oh.',
-          style: TextStyle(
+        Text(
+          context.l10n.authErrorTitle,
+          style: const TextStyle(
             fontFamily: VineTheme.fontFamilyBricolage,
             fontSize: 28,
             fontWeight: FontWeight.w700,
@@ -716,7 +722,7 @@ class _ErrorContent extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          error ?? 'We failed to verify your email.\nPlease try again.',
+          error ?? context.l10n.authVerificationFailed,
           style: const TextStyle(
             fontSize: 16,
             color: VineTheme.secondaryText,
@@ -733,8 +739,8 @@ class _ErrorContent extends StatelessWidget {
           child: DivineButton(
             expanded: true,
             label: onReturnToInviteGate == null
-                ? 'Start over'
-                : 'Back to invite code',
+                ? context.l10n.authStartOver
+                : context.l10n.authBackToInviteCode,
             onPressed: onReturnToInviteGate ?? onStartOver,
           ),
         ),

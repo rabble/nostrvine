@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
@@ -41,27 +42,27 @@ class VideoErrorOverlay extends ConsumerWidget {
   }
 
   /// Translate error messages to user-friendly text
-  String get _errorMessage {
+  String _errorMessage(BuildContext context) {
     final lowerError = errorDescription.toLowerCase();
 
     if (lowerError.contains('404') || lowerError.contains('not found')) {
-      return 'Video not found';
+      return context.l10n.videoErrorNotFound;
     }
     if (lowerError.contains('network') || lowerError.contains('connection')) {
-      return 'Network error';
+      return context.l10n.videoErrorNetwork;
     }
     if (lowerError.contains('timeout')) {
-      return 'Loading timeout';
+      return context.l10n.videoErrorTimeout;
     }
     if (lowerError.contains('byte range') ||
         lowerError.contains('coremediaerrordomain')) {
-      return 'Video format error\n(Try again or use different browser)';
+      return context.l10n.videoErrorFormat;
     }
     if (lowerError.contains('format') || lowerError.contains('codec')) {
-      return 'Unsupported video format';
+      return context.l10n.videoErrorUnsupportedFormat;
     }
 
-    return 'Video playback error';
+    return context.l10n.videoErrorPlayback;
   }
 
   @override
@@ -86,7 +87,9 @@ class VideoErrorOverlay extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _is401Error ? 'Age-restricted content' : _errorMessage,
+                    _is401Error
+                        ? context.l10n.videoErrorAgeRestricted
+                        : _errorMessage(context),
                     style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 14,
@@ -225,7 +228,11 @@ class VideoErrorOverlay extends ConsumerWidget {
                       backgroundColor: VineTheme.whiteText,
                       foregroundColor: VineTheme.backgroundColor,
                     ),
-                    child: Text(_is401Error ? 'Verify Age' : 'Retry'),
+                    child: Text(
+                      _is401Error
+                          ? context.l10n.videoErrorVerifyAge
+                          : context.l10n.videoErrorRetry,
+                    ),
                   ),
                 ],
               ),

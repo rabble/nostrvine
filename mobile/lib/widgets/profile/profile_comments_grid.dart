@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
@@ -79,8 +80,8 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
         }
 
         if (state.status == ProfileCommentsStatus.failure) {
-          return const ProfileTabErrorState(
-            message: 'Error loading comments',
+          return ProfileTabErrorState(
+            message: context.l10n.profileErrorLoadingComments,
           );
         }
 
@@ -88,12 +89,12 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
           return ProfileTabEmptyState(
             icon: DivineIconName.chat,
             iconColor: VineTheme.onSurfaceMuted,
-            title: widget.isOwnProfile ? 'No Comments Yet' : 'No Comments',
+            title: widget.isOwnProfile
+                ? context.l10n.profileNoCommentsOwnTitle
+                : context.l10n.profileNoCommentsOtherTitle,
             subtitle: widget.isOwnProfile
-                ? 'Your comments and replies will '
-                      'appear here'
-                : 'Their comments and replies will '
-                      'appear here',
+                ? context.l10n.profileCommentsOwnEmpty
+                : context.l10n.profileCommentsOtherEmpty,
             subtitleColor: VineTheme.onSurfaceMuted,
           );
         }
@@ -101,8 +102,10 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
         return CustomScrollView(
           slivers: [
             if (state.videoReplies.isNotEmpty) ...[
-              const SliverToBoxAdapter(
-                child: _SectionHeader(title: 'Video Replies'),
+              SliverToBoxAdapter(
+                child: _SectionHeader(
+                  title: context.l10n.profileVideoRepliesSection,
+                ),
               ),
               SliverPadding(
                 padding: const EdgeInsets.all(2),
@@ -124,8 +127,10 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
               ),
             ],
             if (state.textComments.isNotEmpty) ...[
-              const SliverToBoxAdapter(
-                child: _SectionHeader(title: 'Comments'),
+              SliverToBoxAdapter(
+                child: _SectionHeader(
+                  title: context.l10n.profileCommentsSection,
+                ),
               ),
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {

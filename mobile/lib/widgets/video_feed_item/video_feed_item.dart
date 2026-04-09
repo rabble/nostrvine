@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
@@ -996,17 +997,17 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         fit: StackFit.expand,
                         children: [
                           VideoThumbnailWidget(video: video),
-                          const ColoredBox(
+                          ColoredBox(
                             color: VineTheme.scrim50,
                             child: Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  BrandedLoadingIndicator(size: 60),
-                                  SizedBox(height: 16),
+                                  const BrandedLoadingIndicator(size: 60),
+                                  const SizedBox(height: 16),
                                   Text(
-                                    'Loading video...',
-                                    style: TextStyle(
+                                    context.l10n.videoPlayerLoadingVideo,
+                                    style: const TextStyle(
                                       color: VineTheme.whiteText,
                                       fontSize: 14,
                                     ),
@@ -1142,9 +1143,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             if (isActive &&
                                 value.isInitialized &&
                                 !value.isPlaying)
-                              const CenterPlaybackControl(
+                              CenterPlaybackControl(
                                 state: CenterPlaybackControlState.play,
-                                semanticsLabel: 'Play video',
+                                semanticsLabel:
+                                    context.l10n.videoPlayerPlayVideo,
                               ),
                             // Fading pause button when resuming playback
                             if (_showFadingPauseButton &&
@@ -1851,7 +1853,7 @@ class _VideoEditButton extends ConsumerWidget {
           container: true,
           explicitChildNodes: true,
           button: true,
-          label: 'Edit video',
+          label: context.l10n.videoPlayerEditVideo,
           child: IconButton(
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints.tightFor(width: 48, height: 48),
@@ -1869,7 +1871,7 @@ class _VideoEditButton extends ConsumerWidget {
               // Show edit dialog directly (works on all platforms)
               showEditDialogForVideo(context, video);
             },
-            tooltip: 'Edit video',
+            tooltip: context.l10n.videoPlayerEditVideoTooltip,
             icon: DecoratedBox(
               decoration: BoxDecoration(
                 boxShadow: [
@@ -2075,7 +2077,9 @@ class _ContentWarningBadge extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            labels.length == 1 ? _humanize(labels.first) : 'Content Warning',
+            labels.length == 1
+                ? _humanize(labels.first)
+                : context.l10n.contentWarningLabel,
             style: const TextStyle(
               color: VineTheme.contentWarningAmber,
               fontSize: 11,
@@ -2191,15 +2195,18 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Content Warnings',
+                  context.l10n.contentWarningDetailsTitle,
                   style: VineTheme.titleMediumFont(),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
-              'The creator applied these labels:',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+            Text(
+              context.l10n.contentWarningDetailsSubtitle,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 16),
             // Label list
@@ -2261,9 +2268,9 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                   size: 18,
                   color: VineTheme.vineGreen,
                 ),
-                label: const Text(
-                  'Manage content filters',
-                  style: TextStyle(
+                label: Text(
+                  context.l10n.contentWarningManageFilters,
+                  style: const TextStyle(
                     color: VineTheme.vineGreen,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

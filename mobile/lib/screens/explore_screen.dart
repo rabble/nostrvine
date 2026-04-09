@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -489,13 +490,15 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 }
               },
               tabs: [
-                if (_classicsAvailable) const Tab(text: 'Classics'),
-                const Tab(text: 'New'),
-                const Tab(text: 'Popular'),
-                const Tab(text: 'Categories'),
-                if (_forYouAvailable) const Tab(text: 'For You'),
-                const Tab(text: 'Lists'),
-                if (_appsAvailable) const Tab(text: 'Integrated Apps'),
+                if (_classicsAvailable)
+                  Tab(text: context.l10n.exploreTabClassics),
+                Tab(text: context.l10n.exploreTabNew),
+                Tab(text: context.l10n.exploreTabPopular),
+                Tab(text: context.l10n.exploreTabCategories),
+                if (_forYouAvailable) Tab(text: context.l10n.exploreTabForYou),
+                Tab(text: context.l10n.exploreTabLists),
+                if (_appsAvailable)
+                  Tab(text: context.l10n.exploreTabIntegratedApps),
               ],
             ),
           ),
@@ -594,7 +597,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       loading: () => const Center(child: BrandedLoadingIndicator()),
       error: (e, s) => Center(
         child: Text(
-          'Error: $e',
+          context.l10n.exploreErrorPrefix(e),
           style: const TextStyle(color: VineTheme.likeRed),
         ),
       ),
@@ -616,10 +619,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     // Safety check: ensure we have videos and valid index
     if (videos.isEmpty || startIndex >= videos.length) {
-      return const Center(
+      return Center(
         child: Text(
-          'No videos available',
-          style: TextStyle(color: VineTheme.whiteText),
+          context.l10n.exploreNoVideosAvailable,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
       );
     }
@@ -669,7 +672,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             padding: const EdgeInsets.all(16),
             child: DivineButton(
               leadingIcon: .search,
-              label: 'Discover Lists',
+              label: context.l10n.exploreDiscoverLists,
               onPressed: () {
                 Log.info(
                   'Tapped Discover Lists button',
@@ -693,20 +696,20 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 color: VineTheme.vineGreen.withValues(alpha: 0.3),
               ),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.info_outline,
                       color: VineTheme.vineGreen,
                       size: 20,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
-                      'About Lists',
-                      style: TextStyle(
+                      context.l10n.exploreAboutLists,
+                      style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -714,37 +717,41 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     ),
                   ],
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
-                  'Lists help you organize and curate Divine content in two ways:',
-                  style: TextStyle(
+                  context.l10n.exploreAboutListsDescription,
+                  style: const TextStyle(
                     color: VineTheme.primaryText,
                     fontSize: 14,
                     height: 1.5,
                   ),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.group, color: VineTheme.vineGreen, size: 18),
-                    SizedBox(width: 8),
+                    const Icon(
+                      Icons.group,
+                      color: VineTheme.vineGreen,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'People Lists',
-                            style: TextStyle(
+                            context.l10n.explorePeopleLists,
+                            style: const TextStyle(
                               color: VineTheme.whiteText,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            'Follow groups of creators and see their latest videos',
-                            style: TextStyle(
+                            context.l10n.explorePeopleListsDescription,
+                            style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,
                               height: 1.4,
@@ -755,32 +762,32 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     ),
                   ],
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.video_library,
                       color: VineTheme.vineGreen,
                       size: 18,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Video Lists',
-                            style: TextStyle(
+                            context.l10n.exploreVideoLists,
+                            style: const TextStyle(
                               color: VineTheme.whiteText,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            'Create playlists of your favorite videos to watch later',
-                            style: TextStyle(
+                            context.l10n.exploreVideoListsDescription,
+                            style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,
                               height: 1.4,
@@ -812,22 +819,22 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 children: [
                   // My Lists section
                   if (myLists.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
                       ),
                       child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.video_library,
                             color: VineTheme.vineGreen,
                             size: 20,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
-                            'My Lists',
-                            style: TextStyle(
+                            context.l10n.exploreMyLists,
+                            style: const TextStyle(
                               color: VineTheme.primaryText,
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -860,22 +867,22 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
                   // People Lists section
                   if (userLists.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
                       ),
                       child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.group,
                             color: VineTheme.vineGreen,
                             size: 20,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
-                            'People Lists',
-                            style: TextStyle(
+                            context.l10n.explorePeopleLists,
+                            style: const TextStyle(
                               color: VineTheme.primaryText,
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -915,7 +922,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             error: (error, stack) => Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Error loading lists: $error',
+                context.l10n.exploreErrorLoadingLists(error),
                 style: const TextStyle(color: VineTheme.likeRed),
               ),
             ),
@@ -935,22 +942,22 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     final service = ref.read(curatedListsStateProvider.notifier).service;
     // Wait for both to load subscribed lists
     if (!allListsAsync.hasValue || !serviceAsync.hasValue) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.playlist_add_check,
                   color: VineTheme.vineGreen,
                   size: 20,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
-                  'Subscribed Lists',
-                  style: TextStyle(
+                  context.l10n.exploreSubscribedLists,
+                  style: const TextStyle(
                     color: VineTheme.primaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -958,8 +965,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 ),
               ],
             ),
-            SizedBox(height: 8),
-            Center(child: BrandedLoadingIndicator(size: 60)),
+            const SizedBox(height: 8),
+            const Center(child: BrandedLoadingIndicator(size: 60)),
           ],
         ),
       );
@@ -979,19 +986,19 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.playlist_add_check,
                 color: VineTheme.vineGreen,
                 size: 20,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Subscribed Lists',
-                style: TextStyle(
+                context.l10n.exploreSubscribedLists,
+                style: const TextStyle(
                   color: VineTheme.primaryText,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -1073,8 +1080,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       right: 0,
       child: Center(
         child: Semantics(
-          label:
-              'Load $bufferedCount new ${bufferedCount == 1 ? 'video' : 'videos'}',
+          label: context.l10n.exploreLoadNewVideosLabel(bufferedCount),
           button: true,
           child: GestureDetector(
             onTap: () {
@@ -1108,7 +1114,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '$bufferedCount new ${bufferedCount == 1 ? 'video' : 'videos'}',
+                    context.l10n.exploreNewVideosCount(bufferedCount),
                     style: const TextStyle(
                       color: VineTheme.backgroundColor,
                       fontSize: 14,

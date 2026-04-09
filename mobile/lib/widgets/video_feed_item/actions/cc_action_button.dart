@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 
 /// CC action button that toggles subtitle overlay visibility.
@@ -27,7 +28,9 @@ class CcActionButton extends ConsumerWidget {
       container: true,
       explicitChildNodes: true,
       button: true,
-      label: isActive ? 'Hide subtitles' : 'Show subtitles',
+      label: isActive
+          ? context.l10n.videoActionHideSubtitles
+          : context.l10n.videoActionShowSubtitles,
       child: IconButton(
         padding: const EdgeInsets.all(8),
         constraints: const BoxConstraints.tightFor(width: 48, height: 48),

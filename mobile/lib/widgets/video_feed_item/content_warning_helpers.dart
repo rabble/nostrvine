@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -47,8 +48,8 @@ Future<void> hideContentWarningsLikeThese({
   if (matchedLabels.isEmpty) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No saved filter for this warning yet.'),
+      SnackBar(
+        content: Text(context.l10n.contentWarningNoFilterYet),
       ),
     );
     return;
@@ -60,8 +61,8 @@ Future<void> hideContentWarningsLikeThese({
 
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text("We'll hide posts like this from now on."),
+    SnackBar(
+      content: Text(context.l10n.contentWarningHiddenConfirmation),
     ),
   );
 }
@@ -103,9 +104,9 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                     size: 48,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Sensitive Content',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.contentWarningSensitiveContent,
+                    style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -122,14 +123,14 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   DivineButton(
-                    label: 'View Anyway',
+                    label: context.l10n.contentWarningViewAnyway,
                     type: DivineButtonType.tertiary,
                     onPressed: onReveal,
                   ),
                   if (onHideSimilar != null) ...[
                     const SizedBox(height: 12),
                     DivineButton(
-                      label: 'Hide all content like this',
+                      label: context.l10n.contentWarningHideAllLikeThis,
                       type: DivineButtonType.ghost,
                       onPressed: onHideSimilar,
                     ),

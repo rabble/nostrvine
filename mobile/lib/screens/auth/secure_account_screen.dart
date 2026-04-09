@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -69,6 +70,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       _generalError = null;
     });
 
+    final l10n = context.l10n;
     try {
       final oauth = ref.read(oauthClientProvider);
       final email = _emailController.text.trim();
@@ -80,7 +82,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       final nsec = await authService.exportNsec();
 
       if (nsec == null) {
-        _setGeneralError('Unable to access your keys. Please try again.');
+        _setGeneralError(l10n.authUnableToAccessKeys);
         return;
       }
 
@@ -96,7 +98,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
         name: 'SecureAccountScreen',
         category: LogCategory.auth,
       );
-      _setGeneralError('An unexpected error occurred. Please try again.');
+      _setGeneralError(l10n.authUnexpectedError);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -118,7 +120,9 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     );
 
     if (!result.success) {
-      _setGeneralError(result.errorDescription ?? 'Registration failed');
+      _setGeneralError(
+        result.errorDescription ?? context.l10n.authRegistrationFailed,
+      );
       return;
     }
 

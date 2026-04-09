@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
@@ -142,7 +143,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     final content = switch (pageContext) {
       AsyncLoading() => const ProfileLoadingView(),
-      AsyncError(:final error) => Center(child: Text('Error: $error')),
+      AsyncError(:final error) => Center(
+        child: Text(context.l10n.profileErrorPrefix(error)),
+      ),
       AsyncData(:final value) => _ProfileContentView(
         routeContext: value,
         scrollController: _scrollController,
@@ -231,13 +234,14 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final npub = NostrKeyUtils.encodePubKey(userIdHex);
 
       // Create share text with divine.video URL format
-      final shareText =
-          'Check out $displayName on Divine!\n\n'
-          'https://divine.video/profile/$npub';
+      final shareText = context.l10n.profileShareText(displayName, npub);
 
       // Use share_plus to show native share sheet
       final result = await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: '$displayName on Divine'),
+        ShareParams(
+          text: shareText,
+          subject: context.l10n.profileShareSubject(displayName),
+        ),
       );
 
       if (result.status == ShareResultStatus.success) {
@@ -255,9 +259,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to share profile: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.profileShareFailed(e))),
+        );
       }
     }
   }
@@ -297,7 +301,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                   ),
                 ),
                 const SizedBox(width: 16),
-                Text('Edit profile', style: VineTheme.titleMediumFont()),
+                Text(
+                  context.l10n.profileEditProfile,
+                  style: VineTheme.titleMediumFont(),
+                ),
               ],
             ),
           ),
@@ -314,7 +321,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                   color: VineTheme.whiteText,
                 ),
                 const SizedBox(width: 16),
-                Text('Creator analytics', style: VineTheme.titleMediumFont()),
+                Text(
+                  context.l10n.profileCreatorAnalytics,
+                  style: VineTheme.titleMediumFont(),
+                ),
               ],
             ),
           ),
@@ -335,7 +345,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                   ),
                 ),
                 const SizedBox(width: 16),
-                Text('Share profile', style: VineTheme.titleMediumFont()),
+                Text(
+                  context.l10n.profileShareProfile,
+                  style: VineTheme.titleMediumFont(),
+                ),
               ],
             ),
           ),
@@ -357,7 +370,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 ),
                 const SizedBox(width: 16),
                 Text(
-                  'Copy public key (npub)',
+                  context.l10n.profileCopyPublicKey,
                   style: VineTheme.titleMediumFont(),
                 ),
               ],
@@ -372,7 +385,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
               children: [
                 const Icon(Icons.code, size: 24, color: VineTheme.whiteText),
                 const SizedBox(width: 16),
-                Text('Get embed code', style: VineTheme.titleMediumFont()),
+                Text(
+                  context.l10n.profileGetEmbedCode,
+                  style: VineTheme.titleMediumFont(),
+                ),
               ],
             ),
           ),
@@ -401,7 +417,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Public key copied to clipboard')),
+        SnackBar(content: Text(context.l10n.profilePublicKeyCopied)),
       );
     }
   }
@@ -420,7 +436,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Embed code copied to clipboard')),
+        SnackBar(content: Text(context.l10n.profileEmbedCodeCopied)),
       );
     }
   }
@@ -470,16 +486,16 @@ class _ProfileScaffold extends ConsumerWidget {
                     DivineIconName.arrowsCounterClockwise.assetPath,
                   ),
             onPressed: isRefreshing ? null : onRefreshPressed,
-            tooltip: 'Refresh',
-            semanticLabel: 'Refresh profile',
+            tooltip: context.l10n.profileRefreshTooltip,
+            semanticLabel: context.l10n.profileRefreshSemanticLabel,
           ),
           DiVineAppBarAction(
             icon: SvgIconSource(
               DivineIconName.dotsThree.assetPath,
             ),
             onPressed: onMorePressed,
-            tooltip: 'More',
-            semanticLabel: 'More options',
+            tooltip: context.l10n.profileMoreTooltip,
+            semanticLabel: context.l10n.profileMoreSemanticLabel,
           ),
         ],
       ),
@@ -530,7 +546,7 @@ class _ProfileContentView extends ConsumerWidget {
     final userIdHex = npubToHexOrNull(npub);
 
     if (userIdHex == null) {
-      return const Center(child: Text('Invalid profile ID'));
+      return Center(child: Text(context.l10n.profileInvalidId));
     }
 
     // Get current user for comparison
@@ -678,7 +694,9 @@ class _ProfileDataView extends ConsumerWidget {
       },
       child: switch (videosAsync) {
         AsyncLoading() => const ProfileLoadingView(),
-        AsyncError(:final error) => Center(child: Text('Error: $error')),
+        AsyncError(:final error) => Center(
+          child: Text(context.l10n.profileErrorPrefix(error)),
+        ),
         AsyncData(:final value) => ProfileViewSwitcher(
           npub: npub,
           userIdHex: userIdHex,

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -148,9 +149,9 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('URL copied to clipboard'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.l10n.authUrlCopied),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -159,7 +160,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     if (_connectUrl == null) return;
 
     await SharePlus.instance.share(
-      ShareParams(text: _connectUrl, title: 'Connect to Divine'),
+      ShareParams(text: _connectUrl, title: context.l10n.authConnectToDivine),
     );
   }
 
@@ -193,9 +194,9 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Paste bunker:// URL',
-              style: TextStyle(
+            Text(
+              context.l10n.authPasteBunkerUrl,
+              style: const TextStyle(
                 color: VineTheme.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -210,7 +211,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
                 fontSize: 16,
               ),
               decoration: InputDecoration(
-                hintText: 'bunker:// URL',
+                hintText: context.l10n.authBunkerUrlHint,
                 hintStyle: const TextStyle(color: VineTheme.vineGreen),
                 filled: true,
                 fillColor: VineTheme.surfaceContainer,
@@ -244,8 +245,8 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     if (!NostrRemoteSignerInfo.isBunkerUrl(result)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid bunker URL. It should start with bunker://'),
+        SnackBar(
+          content: Text(context.l10n.authInvalidBunkerUrl),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -277,7 +278,8 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       } else {
         setState(() {
           _sessionState = NostrConnectState.error;
-          _errorMessage = authResult.errorMessage ?? 'Failed to connect';
+          _errorMessage =
+              authResult.errorMessage ?? context.l10n.authFailedToConnect;
         });
       }
     } catch (e) {
@@ -295,8 +297,10 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       backgroundColor: VineTheme.backgroundColor,
       body: SafeArea(
         child: switch (_sessionState) {
-          NostrConnectState.idle || NostrConnectState.generating =>
-            const _LoadingContent(message: 'Generating connection...'),
+          NostrConnectState.idle ||
+          NostrConnectState.generating => _LoadingContent(
+            message: context.l10n.authGeneratingConnection,
+          ),
           NostrConnectState.listening => _QrContent(
             connectUrl: _connectUrl ?? '',
             elapsedSeconds: _elapsedTimer.elapsed.inSeconds,
@@ -305,25 +309,24 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
             onShareUrl: _shareUrl,
             onAddBunker: _showPasteBunkerDialog,
           ),
-          NostrConnectState.connected => const _LoadingContent(
-            message: 'Connected! Authenticating...',
+          NostrConnectState.connected => _LoadingContent(
+            message: context.l10n.authConnectedAuthenticating,
           ),
           NostrConnectState.timeout => _ErrorContent(
-            title: 'Connection timed out',
-            message:
-                'Make sure you approved the connection in your signer app.',
+            title: context.l10n.authConnectionTimedOut,
+            message: context.l10n.authApproveConnection,
             onRetry: _retry,
             onBack: () => context.pop(),
           ),
           NostrConnectState.cancelled => _ErrorContent(
-            title: 'Connection cancelled',
-            message: 'The connection was cancelled.',
+            title: context.l10n.authConnectionCancelled,
+            message: context.l10n.authConnectionCancelledMessage,
             onRetry: _retry,
             onBack: () => context.pop(),
           ),
           NostrConnectState.error => _ErrorContent(
-            title: 'Connection failed',
-            message: _errorMessage ?? 'An unknown error occurred.',
+            title: context.l10n.authConnectionFailed,
+            message: _errorMessage ?? context.l10n.authUnknownError,
             onRetry: _retry,
             onBack: () => context.pop(),
           ),
@@ -348,7 +351,7 @@ class _LoadingContent extends StatelessWidget {
           // Space for close button overlay
           const SizedBox(height: 72),
           Text(
-            'Scan with your\nsigner app to connect.',
+            context.l10n.authScanSignerApp,
             style: VineTheme.headlineLargeFont(),
           ),
           const Spacer(),
@@ -400,9 +403,9 @@ class _QrContent extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Title
-          const Text(
-            'Scan with your\nsigner app to connect.',
-            style: TextStyle(
+          Text(
+            context.l10n.authScanSignerApp,
+            style: const TextStyle(
               fontFamily: VineTheme.fontFamilyBricolage,
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -497,7 +500,7 @@ class _WaitingIndicator extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Waiting for connection... ${elapsedSeconds}s',
+            context.l10n.authWaitingForConnection(elapsedSeconds),
             style: const TextStyle(
               color: VineTheme.secondaryText,
               fontSize: 14,
@@ -545,7 +548,7 @@ class _ActionBar extends StatelessWidget {
                     color: VineTheme.vineGreen,
                     size: MediaQuery.textScalerOf(context).scale(24),
                   ),
-                  label: 'Copy URL',
+                  label: context.l10n.authCopyUrl,
                   onTap: onCopyUrl,
                 ),
                 _ActionButton(
@@ -554,7 +557,7 @@ class _ActionBar extends StatelessWidget {
                     color: VineTheme.vineGreen,
                     size: MediaQuery.textScalerOf(context).scale(24),
                   ),
-                  label: 'Share',
+                  label: context.l10n.authShare,
                   onTap: onShareUrl,
                 ),
                 _ActionButton(
@@ -563,7 +566,7 @@ class _ActionBar extends StatelessWidget {
                     color: VineTheme.vineGreen,
                     size: MediaQuery.textScalerOf(context).scale(24),
                   ),
-                  label: 'Add bunker',
+                  label: context.l10n.authAddBunker,
                   onTap: onAddBunker,
                 ),
               ],
@@ -628,10 +631,10 @@ class _CompatibilityTable extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Compatible Signer apps',
-                  style: TextStyle(
+                  context.l10n.authCompatibleSignerApps,
+                  style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 14,
                   ),
@@ -792,9 +795,9 @@ class _ErrorContent extends StatelessWidget {
                       size: MediaQuery.textScalerOf(context).scale(16),
                       color: VineTheme.backgroundColor,
                     ),
-                    label: const Text(
-                      'Try Again',
-                      style: TextStyle(
+                    label: Text(
+                      context.l10n.authTryAgain,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

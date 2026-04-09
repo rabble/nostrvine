@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/api_service.dart';
@@ -92,8 +93,8 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     final uri = Uri(
       scheme: 'mailto',
       path: supportEmail,
-      queryParameters: const {
-        'subject': 'Invite access help',
+      queryParameters: {
+        'subject': context.l10n.authInviteAccessHelp,
       },
     );
 
@@ -105,7 +106,9 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not open $supportEmail'),
+          content: Text(
+            context.l10n.authCouldNotOpenEmail(supportEmail),
+          ),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -134,37 +137,21 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
       return _InviteSheetPage(
         showBackButton: false,
         illustrationAsset: 'assets/stickers/confetti.svg',
-        title: "You're in!",
-        body: RichText(
+        title: context.l10n.authWaitlistConfirmTitle,
+        body: Text(
+          context.l10n.authWaitlistUpdatesAt(waitlistEmail),
           textAlign: TextAlign.center,
-          text: TextSpan(
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 16,
-              height: 1.5,
-              letterSpacing: 0.15,
-              color: VineTheme.lightText,
-            ),
-            children: [
-              const TextSpan(text: "We'll share updates at "),
-              TextSpan(
-                text: waitlistEmail,
-                style: const TextStyle(
-                  fontFamily: VineTheme.fontFamilyBricolage,
-                  fontWeight: FontWeight.w800,
-                  color: VineTheme.whiteText,
-                ),
-              ),
-              const TextSpan(
-                text:
-                    ".\nWhen more invite codes are available, we'll send them your way.",
-              ),
-            ],
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 16,
+            height: 1.5,
+            letterSpacing: 0.15,
+            color: VineTheme.lightText,
           ),
         ),
         primaryButton: DivineButton(
           type: .secondary,
-          label: 'OK',
+          label: context.l10n.authOk,
           onPressed: () => context.go(WelcomeScreen.path),
         ),
       );
@@ -187,10 +174,10 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
             state.config == null) {
           return _InviteSheetPage(
             illustrationAsset: 'assets/stickers/alert.svg',
-            title: 'Invite access is temporarily unavailable.',
-            body: const Text(
-              'Try again in a moment, or contact support if you need help getting in.',
-              style: TextStyle(
+            title: context.l10n.authInviteUnavailable,
+            body: Text(
+              context.l10n.authInviteUnavailableBody,
+              style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 16,
                 height: 1.5,
@@ -201,13 +188,13 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
             ),
             primaryButton: DivineButton(
               expanded: true,
-              label: 'Try again',
+              label: context.l10n.authTryAgain,
               onPressed: _retryConfigLoad,
             ),
             secondaryButton: DivineButton(
               expanded: true,
               type: .secondary,
-              label: 'Contact support',
+              label: context.l10n.authContactSupport,
               onPressed: () => _contactSupport('support@divine.video'),
             ),
           );
@@ -315,9 +302,9 @@ class _InviteCodeEntryPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 32),
-                              const Text(
-                                'Add your invite code',
-                                style: TextStyle(
+                              Text(
+                                context.l10n.authAddInviteCode,
+                                style: const TextStyle(
                                   fontFamily: VineTheme.fontFamilyBricolage,
                                   fontSize: 32,
                                   fontWeight: FontWeight.w700,
@@ -343,7 +330,7 @@ class _InviteCodeEntryPage extends StatelessWidget {
                               const SizedBox(height: 24),
                               DivineButton(
                                 expanded: true,
-                                label: 'Next',
+                                label: context.l10n.authNext,
                                 isLoading: state.isValidatingCode,
                                 onPressed: state.isValidatingCode
                                     ? null
@@ -353,7 +340,7 @@ class _InviteCodeEntryPage extends StatelessWidget {
                               DivineButton(
                                 expanded: true,
                                 type: DivineButtonType.secondary,
-                                label: 'Join waitlist',
+                                label: context.l10n.authJoinWaitlist,
                                 onPressed: state.isValidatingCode
                                     ? null
                                     : onShowWaitlist,
@@ -363,9 +350,9 @@ class _InviteCodeEntryPage extends StatelessWidget {
                                 onPressed: state.isValidatingCode
                                     ? null
                                     : onContactSupport,
-                                child: const Text(
-                                  'Contact support',
-                                  style: TextStyle(
+                                child: Text(
+                                  context.l10n.authContactSupport,
+                                  style: const TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 15,
                                     color: VineTheme.lightText,
@@ -428,7 +415,7 @@ class _InviteCodeInput extends StatelessWidget {
             letterSpacing: 0.15,
           ),
           decoration: InputDecoration(
-            labelText: 'Invite code',
+            labelText: context.l10n.authInviteCodeLabel,
             labelStyle: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -436,7 +423,7 @@ class _InviteCodeInput extends StatelessWidget {
               color: hasError ? VineTheme.error : VineTheme.vineGreen,
             ),
             floatingLabelBehavior: FloatingLabelBehavior.always,
-            hintText: 'Enter your code',
+            hintText: context.l10n.authEnterYourCode,
             hintStyle: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w400,
@@ -664,7 +651,9 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
       Uri(
         scheme: 'mailto',
         path: widget.supportEmail,
-        queryParameters: const {'subject': 'Invite access help'},
+        queryParameters: {
+          'subject': context.l10n.authInviteAccessHelp,
+        },
       ),
       mode: LaunchMode.externalApplication,
     );
@@ -672,7 +661,9 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not open ${widget.supportEmail}'),
+          content: Text(
+            context.l10n.authCouldNotOpenEmail(widget.supportEmail),
+          ),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -705,9 +696,9 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Join the waitlist',
-                style: TextStyle(
+              Text(
+                context.l10n.authJoinWaitlistTitle,
+                style: const TextStyle(
                   fontFamily: VineTheme.fontFamilyBricolage,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -715,9 +706,9 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                "Share your email and we'll send updates as access opens up.",
-                style: TextStyle(
+              Text(
+                context.l10n.authJoinWaitlistDescription,
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
                   height: 1.5,
@@ -728,7 +719,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
               ),
               const SizedBox(height: 24),
               DivineAuthTextField(
-                label: 'Email',
+                label: context.l10n.authEmailLabel,
                 controller: _emailController,
                 enabled: !_isSubmitting,
                 keyboardType: TextInputType.emailAddress,
@@ -752,16 +743,16 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
               ],
               DivineButton(
                 type: .secondary,
-                label: 'Join waitlist',
+                label: context.l10n.authJoinWaitlist,
                 isLoading: _isSubmitting,
                 onPressed: _isSubmitting ? null : _submit,
               ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: _isSubmitting ? null : _contactSupport,
-                child: const Text(
-                  'Contact support',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.authContactSupport,
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
                     color: VineTheme.lightText,
