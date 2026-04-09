@@ -8,12 +8,12 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -225,13 +225,11 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     // Use Stack with back button overlay to exit video mode
     return Stack(
       children: [
-        ExploreVideoScreenPure(
-          startingVideo: videos[_activeVideoIndex!],
-          videoList: videos,
+        PooledFullscreenVideoFeedScreen(
+          videosStream: Stream.value(videos),
+          initialIndex: _activeVideoIndex!,
           contextTitle: widget.listName,
-          startingIndex: _activeVideoIndex,
-          useLocalActiveState:
-              true, // Use local state since not using URL routing
+          trafficSource: ViewTrafficSource.search,
         ),
         // Back button overlay to exit video mode
         Positioned(
@@ -248,8 +246,6 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 child: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
               ),
               onPressed: () {
-                // Stop all videos before switching to grid
-                disposeAllVideoControllers(ref);
                 setState(() {
                   _activeVideoIndex = null;
                 });

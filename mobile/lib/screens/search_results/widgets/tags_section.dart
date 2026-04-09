@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
@@ -26,13 +28,25 @@ class TagsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final status = context.select(
+      (HashtagSearchBloc bloc) => bloc.state.status,
+    );
+    final results = context.select(
+      (HashtagSearchBloc bloc) => bloc.state.results,
+    );
+
+    // In the All tab, hide entire section when results are empty and loaded.
+    if (!showAll && status == .success && results.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverMainAxisGroup(
       slivers: [
         if (!showAll)
           SliverToBoxAdapter(
             child: SectionHeader(title: 'Tags', onTap: onSeeAll),
           ),
-        SliverToBoxAdapter(child: _TagsContent(showAll: showAll)),
+        _TagsContent(showAll: showAll),
       ],
     );
   }
@@ -51,27 +65,43 @@ class _TagsContent extends StatelessWidget {
     final results = context.select(
       (HashtagSearchBloc bloc) => bloc.state.results,
     );
+    final query = context.select(
+      (HashtagSearchBloc bloc) => bloc.state.query,
+    );
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _TagsSkeletonLoader();
     }
 
-    if (results.isEmpty) return const SizedBox.shrink();
+    if (status == .failure) {
+      return SearchSectionErrorState(
+        onRetry: () => context.read<HashtagSearchBloc>().add(
+          HashtagSearchQueryChanged(query),
+        ),
+      );
+    }
+
+    if (results.isEmpty) {
+      if (showAll) return SearchSectionEmptyState(query: query);
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     final tags = showAll ? results : results.take(_maxTagsPreview).toList();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final tag in tags)
-            SearchTagChip(
-              tag: tag,
-              onTap: () => context.push(HashtagScreenRouter.pathForTag(tag)),
-            ),
-        ],
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final tag in tags)
+              SearchTagChip(
+                tag: tag,
+                onTap: () => context.push(HashtagScreenRouter.pathForTag(tag)),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -85,20 +115,22 @@ class _TagsSkeletonLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      identifier: 'tags_loading_indicator',
-      label: 'Loading tag results',
-      child: Skeletonizer(
-        effect: searchSkeletonEffect,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (var i = 0; i < _maxTagsPreview; i++)
-                _TagChipSkeletonItem(width: _tagSkeletonWidths[i]),
-            ],
+    return SliverToBoxAdapter(
+      child: Semantics(
+        identifier: 'tags_loading_indicator',
+        label: 'Loading tag results',
+        child: Skeletonizer(
+          effect: searchSkeletonEffect,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < _maxTagsPreview; i++)
+                  _TagChipSkeletonItem(width: _tagSkeletonWidths[i]),
+              ],
+            ),
           ),
         ),
       ),

@@ -38,7 +38,6 @@ import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -942,26 +941,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return CategoryGalleryScreen(category: category);
         },
       ),
-      // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
-      GoRoute(
-        path: FullscreenVideoFeedScreen.path,
-        name: FullscreenVideoFeedScreen.routeName,
-        builder: (ctx, st) {
-          final args = st.extra as FullscreenVideoFeedArgs?;
-          if (args == null) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('No videos to display')),
-            );
-          }
-          return FullscreenVideoFeedScreen(
-            source: args.source,
-            initialIndex: args.initialIndex,
-            contextTitle: args.contextTitle,
-            trafficSource: args.trafficSource,
-          );
-        },
-      ),
       // Pooled fullscreen video feed (uses pooled_video_player package)
       GoRoute(
         path: PooledFullscreenVideoFeedScreen.path,
@@ -981,6 +960,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             contextTitle: args.contextTitle,
             trafficSource: args.trafficSource,
             sourceDetail: args.sourceDetail,
+            autoOpenComments: args.autoOpenComments,
+            onPageChanged: args.onPageChanged,
           );
         },
       ),

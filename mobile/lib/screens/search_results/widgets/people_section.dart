@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
@@ -28,13 +30,25 @@ class PeopleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final status = context.select(
+      (UserSearchBloc bloc) => bloc.state.status,
+    );
+    final results = context.select(
+      (UserSearchBloc bloc) => bloc.state.results,
+    );
+
+    // In the All tab, hide entire section when results are empty and loaded.
+    if (!showAll && status == .success && results.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverMainAxisGroup(
       slivers: [
         if (!showAll)
           SliverToBoxAdapter(
             child: SectionHeader(title: 'People', onTap: onSeeAll),
           ),
-        SliverToBoxAdapter(child: _PeopleContent(showAll: showAll)),
+        _PeopleContent(showAll: showAll),
       ],
     );
   }
@@ -47,30 +61,50 @@ class _PeopleContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.select((UserSearchBloc bloc) => bloc.state.status);
-    final results = context.select((UserSearchBloc bloc) => bloc.state.results);
+    final status = context.select(
+      (UserSearchBloc bloc) => bloc.state.status,
+    );
+    final results = context.select(
+      (UserSearchBloc bloc) => bloc.state.results,
+    );
+    final query = context.select(
+      (UserSearchBloc bloc) => bloc.state.query,
+    );
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _PeopleSkeletonLoader();
     }
 
-    if (results.isEmpty) return const SizedBox.shrink();
+    if (status == .failure) {
+      return SearchSectionErrorState(
+        onRetry: () => context.read<UserSearchBloc>().add(
+          UserSearchQueryChanged(query),
+        ),
+      );
+    }
+
+    if (results.isEmpty) {
+      if (showAll) return SearchSectionEmptyState(query: query);
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     final profiles = showAll
         ? results
         : results.take(_maxPeoplePreview).toList();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final profile in profiles)
-            SearchUserTile(
-              profile: profile,
-              onTap: () => _navigateToProfile(context, profile),
-            ),
-        ],
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final profile in profiles)
+              SearchUserTile(
+                profile: profile,
+                onTap: () => _navigateToProfile(context, profile),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -88,18 +122,20 @@ class _PeopleSkeletonLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      identifier: 'people_loading_indicator',
-      label: 'Loading people results',
-      child: Skeletonizer(
-        effect: searchSkeletonEffect,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              _maxPeoplePreview,
-              (_) => const _UserTileSkeletonItem(),
+    return SliverToBoxAdapter(
+      child: Semantics(
+        identifier: 'people_loading_indicator',
+        label: 'Loading people results',
+        child: Skeletonizer(
+          effect: searchSkeletonEffect,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                _maxPeoplePreview,
+                (_) => const _UserTileSkeletonItem(),
+              ),
             ),
           ),
         ),

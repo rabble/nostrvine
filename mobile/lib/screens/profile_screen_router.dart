@@ -1,6 +1,8 @@
 // ABOUTME: Router-driven Instagram-style profile screen implementation
 // ABOUTME: Uses CustomScrollView with slivers for smooth scrolling, URL is source of truth
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,11 +19,13 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -31,7 +35,6 @@ import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
-import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:openvine/widgets/vine_bottom_nav.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -744,10 +747,10 @@ class ProfileViewSwitcher extends StatelessWidget {
     // Note: videoIndex maps directly to list index (0 = first video, etc.)
     // When videoIndex is null, show grid mode
     return (videoIndex != null && videos.isNotEmpty)
-        ? ProfileVideoFeedView(
+        ? _ProfilePooledFeedView(
+            key: ValueKey('profile-feed-$userIdHex'),
             npub: npub,
             userIdHex: userIdHex,
-            isOwnProfile: isOwnProfile,
             videos: videos,
             videoIndex: videoIndex!,
             onPageChanged: (newIndex) {
@@ -769,5 +772,90 @@ class ProfileViewSwitcher extends StatelessWidget {
             onOpenAnalytics: onOpenAnalytics,
             refreshNotifier: refreshNotifier,
           );
+  }
+}
+
+/// Embedded pooled video feed for a user's profile.
+///
+/// Streams video list updates from [profileFeedProvider] into
+/// [PooledFullscreenVideoFeedScreen] and keeps the URL in sync via
+/// [onPageChanged].
+class _ProfilePooledFeedView extends ConsumerStatefulWidget {
+  const _ProfilePooledFeedView({
+    required this.npub,
+    required this.userIdHex,
+    required this.videos,
+    required this.videoIndex,
+    required this.onPageChanged,
+    super.key,
+  });
+
+  final String npub;
+  final String userIdHex;
+  final List<VideoEvent> videos;
+  final int videoIndex;
+  final void Function(int index) onPageChanged;
+
+  @override
+  ConsumerState<_ProfilePooledFeedView> createState() =>
+      _ProfilePooledFeedViewState();
+}
+
+class _ProfilePooledFeedViewState
+    extends ConsumerState<_ProfilePooledFeedView> {
+  late final StreamController<List<VideoEvent>> _streamController;
+  List<VideoEvent>? _lastVideos;
+
+  @override
+  void initState() {
+    super.initState();
+    _streamController = StreamController<List<VideoEvent>>.broadcast();
+    // Seed with initial videos so the BLoC receives them on first subscription.
+    _pushVideos(widget.videos);
+  }
+
+  @override
+  void didUpdateWidget(_ProfilePooledFeedView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.videos, oldWidget.videos)) {
+      _pushVideos(widget.videos);
+    }
+  }
+
+  @override
+  void dispose() {
+    _streamController.close();
+    super.dispose();
+  }
+
+  void _pushVideos(List<VideoEvent> videos) {
+    if (videos.isEmpty) return;
+    if (identical(videos, _lastVideos)) return;
+    _lastVideos = videos;
+    if (!_streamController.isClosed) _streamController.add(videos);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Watch feed state only for the hasMoreContent flag; do not push to
+    // stream here — that is handled in initState / didUpdateWidget.
+    final feedState = ref
+        .watch(profileFeedProvider(widget.userIdHex))
+        .asData
+        ?.value;
+    final safeIndex = widget.videoIndex.clamp(0, widget.videos.length - 1);
+
+    return PooledFullscreenVideoFeedScreen(
+      // Pass the raw broadcast stream — startWith already happened in initState.
+      videosStream: _streamController.stream,
+      initialIndex: safeIndex,
+      trafficSource: ViewTrafficSource.profile,
+      onLoadMore: (feedState?.hasMoreContent ?? false)
+          ? () => ref
+                .read(profileFeedProvider(widget.userIdHex).notifier)
+                .loadMore()
+          : null,
+      onPageChanged: widget.onPageChanged,
+    );
   }
 }

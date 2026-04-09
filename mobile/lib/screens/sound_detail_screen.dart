@@ -11,10 +11,10 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -894,9 +894,9 @@ class _ThumbnailPlaceholder extends StatelessWidget {
 
 /// Full-screen video feed overlay for browsing videos using a sound.
 ///
-/// Shows a swipeable PageView of videos with a header showing sound info
+/// Shows a swipeable pooled feed with a header showing sound info
 /// and a close button to return to the grid view.
-class _SoundVideoFeedOverlay extends StatefulWidget {
+class _SoundVideoFeedOverlay extends StatelessWidget {
   const _SoundVideoFeedOverlay({
     required this.videos,
     required this.startIndex,
@@ -910,126 +910,77 @@ class _SoundVideoFeedOverlay extends StatefulWidget {
   final VoidCallback onClose;
 
   @override
-  State<_SoundVideoFeedOverlay> createState() => _SoundVideoFeedOverlayState();
-}
-
-class _SoundVideoFeedOverlayState extends State<_SoundVideoFeedOverlay> {
-  late PageController _pageController;
-  int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.startIndex;
-    _pageController = PageController(initialPage: widget.startIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: VineTheme.backgroundColor,
-      child: SafeArea(
-        child: Stack(
-          children: [
-            // Video PageView
-            PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              itemCount: widget.videos.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                final video = widget.videos[index];
-                return VideoFeedItem(
-                  key: ValueKey('sound-video-${video.id}'),
-                  video: video,
-                  index: index,
-                  hasBottomNavigation: false,
-                  contextTitle: widget.soundTitle,
-                );
-              },
-            ),
+    return Stack(
+      children: [
+        PooledFullscreenVideoFeedScreen(
+          videosStream: Stream.value(videos),
+          initialIndex: startIndex,
+          contextTitle: soundTitle,
+        ),
 
-            // Header with close button and sound title
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      VineTheme.backgroundColor.withValues(alpha: 0.7),
-                      VineTheme.transparent,
-                    ],
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    // Close button
-                    IconButton(
-                      icon: const Icon(Icons.close, color: VineTheme.whiteText),
-                      onPressed: widget.onClose,
-                      tooltip: 'Close',
-                    ),
-
-                    // Sound title
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.music_note,
-                            color: VineTheme.vineGreen,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              widget.soundTitle,
-                              style: const TextStyle(
-                                color: VineTheme.whiteText,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Video counter
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Text(
-                        '${_currentIndex + 1}/${widget.videos.length}',
-                        style: const TextStyle(
-                          color: VineTheme.secondaryText,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+        // Header with close button and sound title
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    VineTheme.backgroundColor.withValues(alpha: 0.7),
+                    VineTheme.transparent,
                   ],
                 ),
               ),
+              child: Row(
+                children: [
+                  // Close button
+                  IconButton(
+                    icon: const Icon(Icons.close, color: VineTheme.whiteText),
+                    onPressed: onClose,
+                    tooltip: 'Close',
+                  ),
+
+                  // Sound title
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.music_note,
+                          color: VineTheme.vineGreen,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            soundTitle,
+                            style: const TextStyle(
+                              color: VineTheme.whiteText,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Spacer to balance the close button on the left
+                  const SizedBox(width: 48),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
