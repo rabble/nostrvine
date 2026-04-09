@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -50,6 +51,7 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
@@ -376,7 +378,18 @@ Future<void> _startOpenVineApp() async {
   final startTime = DateTime.now();
 
   // Ensure bindings are initialized first (required for everything)
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Keep the native splash screen visible until `DivineApp` removes it
+  // from its state (after auth resolves or a 2s timeout fires). This
+  // hides the brief welcome-screen flash returning users would otherwise
+  // see between `runApp()` and the router's auth-state-driven redirect.
+  // See #2749 and #2953 for the investigation. `FlutterNativeSplash.preserve`
+  // is a thin wrapper around `widgetsBinding.deferFirstFrame()`, which
+  // tells Flutter not to signal the native side that the first frame is
+  // ready — so the native splash auto-dismiss is delayed until we call
+  // `FlutterNativeSplash.remove()` (mobile) or `allowFirstFrame()` (web).
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   // Lock app to portrait mode only (portrait up and portrait down)
   // Skip on desktop platforms where orientation lock doesn't apply
@@ -943,13 +956,133 @@ class DivineApp extends ConsumerStatefulWidget {
   ConsumerState<DivineApp> createState() => _DivineAppState();
 }
 
+/// Hard cap on how long the native splash stays visible while auth is
+/// resolving. After this, the splash is force-removed even if auth has
+/// not reported a state transition — the worst case the user sees is a
+/// brief welcome flash, which is strictly better than an infinite splash.
+@visibleForTesting
+const splashRemovalTimeout = Duration(seconds: 2);
+
+/// Releases the native splash screen that was preserved at startup via
+/// [FlutterNativeSplash.preserve].
+///
+/// On mobile, delegates to [FlutterNativeSplash.remove] which in turn calls
+/// `WidgetsBinding.instance.allowFirstFrame()`. On web, calls
+/// `allowFirstFrame()` directly because the package's web path invokes a
+/// `MethodChannel` that only exists after running
+/// `dart run flutter_native_splash:create` — which this repo intentionally
+/// does not do (the custom HTML loader in `web/index.html` is hand-authored
+/// and listens for the `flutter-first-frame` event, which is fired once
+/// [WidgetsBinding.allowFirstFrame] is called).
+void _releaseNativeSplash() {
+  if (kIsWeb) {
+    WidgetsBinding.instance.allowFirstFrame();
+  } else {
+    FlutterNativeSplash.remove();
+  }
+}
+
+/// Controls the lifecycle of the preserved native splash, holding it on
+/// screen until auth resolves (or a timeout fires).
+///
+/// Splash removal is triggered by the first of:
+///   1. [authStateStream] emits anything other than [AuthState.checking] —
+///      the happy path. This means `AuthService.initialize()` has hydrated
+///      the user's identity (or concluded they have none) and the router
+///      is about to `refreshListenable` itself to the correct initial
+///      route. Releasing the first frame at this point means the first
+///      rasterized frame is already the correct screen, hiding the brief
+///      welcome-screen flash returning users would otherwise see.
+///   2. [timeout] fires — the fallback. Protects against a catastrophic
+///      hang in `_initializeCoreServices` or any auth init path that
+///      never produces a state transition. On timeout, the splash is
+///      force-removed; the user may briefly see the welcome screen, but
+///      that is strictly better than an infinite splash.
+///
+/// If [initialAuthState] is already non-checking when [start] is called
+/// (e.g. hot-reload, or a synchronous sign-out transition), removal is
+/// scheduled immediately — the caller does not need to handle that edge
+/// case separately.
+///
+/// The class is idempotent: [onRemove] is invoked at most once, even if
+/// multiple stream events arrive, the timer fires after a manual trigger,
+/// or [start] is called before [dispose].
+///
+/// See #2749 and #2953 for the full investigation behind this pattern.
+@visibleForTesting
+class SplashLifecycleController {
+  SplashLifecycleController({
+    required this.authStateStream,
+    required this.initialAuthState,
+    required this.onRemove,
+    this.timeout = splashRemovalTimeout,
+  });
+
+  final Stream<AuthState> authStateStream;
+  final AuthState initialAuthState;
+  final VoidCallback onRemove;
+  final Duration timeout;
+
+  StreamSubscription<AuthState>? _subscription;
+  Timer? _timer;
+  bool _removed = false;
+
+  /// Whether [onRemove] has already fired. Exposed for test assertions.
+  @visibleForTesting
+  bool get debugRemoved => _removed;
+
+  /// Begin watching for the first non-checking auth state, or schedule
+  /// immediate removal if auth is already resolved.
+  void start() {
+    if (initialAuthState != AuthState.checking) {
+      _fire();
+      return;
+    }
+    _subscription = authStateStream.listen((state) {
+      if (state != AuthState.checking) {
+        _fire();
+      }
+    });
+    _timer = Timer(timeout, () {
+      if (_removed) return;
+      Log.warning(
+        '[STARTUP] Splash removal timeout after '
+        '${timeout.inSeconds}s — auth state has not left checking, '
+        'forcing splash removal',
+        name: 'Main',
+        category: LogCategory.system,
+      );
+      _fire();
+    });
+  }
+
+  void _fire() {
+    if (_removed) return;
+    _removed = true;
+    _subscription?.cancel();
+    _timer?.cancel();
+    onRemove();
+  }
+
+  /// Cancel any in-flight subscription or timer. Safe to call multiple
+  /// times and safe to call before [start].
+  void dispose() {
+    _subscription?.cancel();
+    _timer?.cancel();
+    _subscription = null;
+    _timer = null;
+  }
+}
+
 class _DivineAppState extends ConsumerState<DivineApp> {
   bool _backgroundInitDone = false;
   StreamSubscription<void>? _shakeSubscription;
+  SplashLifecycleController? _splashLifecycle;
 
   @override
   void initState() {
     super.initState();
+    _splashLifecycle = _buildSplashLifecycle()..start();
     // Start deferred startup after the first frame so the shell can paint first.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -965,7 +1098,29 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   @override
   void dispose() {
     _shakeSubscription?.cancel();
+    _splashLifecycle?.dispose();
     super.dispose();
+  }
+
+  SplashLifecycleController _buildSplashLifecycle() {
+    final authService = ref.read(authServiceProvider);
+    return SplashLifecycleController(
+      authStateStream: authService.authStateStream,
+      initialAuthState: authService.authState,
+      onRemove: _schedulePostFrameSplashRelease,
+    );
+  }
+
+  /// Wraps [_releaseNativeSplash] in a post-frame callback so GoRouter has
+  /// a chance to process the `refreshListenable` notification and redirect
+  /// to the correct initial route before Flutter is allowed to paint its
+  /// first frame. One post-frame is sufficient in practice; if on-device
+  /// testing ever exposes a single-frame welcome flash at this boundary,
+  /// upgrade to a chained `endOfFrame` wait.
+  void _schedulePostFrameSplashRelease() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _releaseNativeSplash();
+    });
   }
 
   void _initializeDeepLinkServices() {
