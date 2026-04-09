@@ -33,6 +33,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.profileStats,
     this.displayName,
     this.onEditProfile,
+    this.onBack,
+    this.onMore,
     this.onOpenClips,
     this.onMessageUser,
     this.onShareProfile,
@@ -66,6 +68,12 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// Callback when edit profile is tapped (own profile only).
   final VoidCallback? onEditProfile;
+
+  /// Callback for back navigation (other profiles only).
+  final VoidCallback? onBack;
+
+  /// Callback for more options menu (other profiles only).
+  final VoidCallback? onMore;
 
   /// Callback when "Clips" button is tapped (own profile only).
   final VoidCallback? onOpenClips;
@@ -299,6 +307,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               profile: widget.profile,
               profileStats: widget.profileStats,
               onEditProfile: widget.onEditProfile,
+              onBack: widget.onBack,
+              onMore: widget.onMore,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,
             ),

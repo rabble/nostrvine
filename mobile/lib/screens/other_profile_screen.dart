@@ -315,20 +315,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
         return Scaffold(
           backgroundColor: VineTheme.surfaceBackground,
-          extendBodyBehindAppBar: true,
-          appBar: DiVineAppBar(
-            title: '',
-            showBackButton: true,
-            onBackPressed: context.pop,
-            backgroundMode: DiVineAppBarBackgroundMode.transparent,
-            actions: [
-              DiVineAppBarAction(
-                icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
-                onPressed: _more,
-                semanticLabel: 'More options',
-              ),
-            ],
-          ),
           body: switch (videosAsync) {
             AsyncLoading() => const ProfileLoadingView(),
             AsyncError(:final error) => Center(
@@ -345,6 +331,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               displayName: displayName,
               videos: value.videos,
               scrollController: _scrollController,
+              onBack: context.pop,
+              onMore: _more,
               onMessageUser: _messageUser,
               onShareProfile: _more,
               onBlockedTap: _showUnblockConfirmation,

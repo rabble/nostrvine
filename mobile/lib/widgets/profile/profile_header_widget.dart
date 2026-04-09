@@ -35,6 +35,8 @@ class ProfileHeaderWidget extends ConsumerWidget {
     this.profile,
     this.profileStats,
     this.onEditProfile,
+    this.onBack,
+    this.onMore,
     this.displayNameHint,
     this.avatarUrlHint,
     super.key,
@@ -58,6 +60,12 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   /// Callback when edit profile is tapped (own profile only).
   final VoidCallback? onEditProfile;
+
+  /// Callback for back navigation (other profiles only).
+  final VoidCallback? onBack;
+
+  /// Callback for more options menu (other profiles only).
+  final VoidCallback? onMore;
 
   /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
   final String? displayNameHint;
@@ -159,28 +167,42 @@ class ProfileHeaderWidget extends ConsumerWidget {
             child: Column(
               children: [
                 // Navigation buttons
-                if (isOwnProfile)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (isOwnProfile)
                         DivineIconButton(
                           icon: DivineIconName.gear,
                           type: DivineIconButtonType.ghostSecondary,
                           size: DivineIconButtonSize.small,
                           onPressed: () => context.push(SettingsScreen.path),
+                        )
+                      else if (onBack != null)
+                        DivineIconButton(
+                          icon: DivineIconName.caretLeft,
+                          type: DivineIconButtonType.ghostSecondary,
+                          size: DivineIconButtonSize.small,
+                          onPressed: onBack,
                         ),
-                        if (onEditProfile != null)
-                          DivineIconButton(
-                            icon: DivineIconName.pencilSimpleLine,
-                            type: DivineIconButtonType.ghostSecondary,
-                            size: DivineIconButtonSize.small,
-                            onPressed: onEditProfile,
-                          ),
-                      ],
-                    ),
+                      if (isOwnProfile && onEditProfile != null)
+                        DivineIconButton(
+                          icon: DivineIconName.pencilSimpleLine,
+                          type: DivineIconButtonType.ghostSecondary,
+                          size: DivineIconButtonSize.small,
+                          onPressed: onEditProfile,
+                        )
+                      else if (!isOwnProfile && onMore != null)
+                        DivineIconButton(
+                          icon: DivineIconName.dotsThree,
+                          type: DivineIconButtonType.ghostSecondary,
+                          size: DivineIconButtonSize.small,
+                          onPressed: onMore,
+                        ),
+                    ],
                   ),
+                ),
 
                 // Centered avatar with action label pill
                 Center(
