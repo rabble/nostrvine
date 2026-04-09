@@ -3238,6 +3238,80 @@ void main() {
           verify(setup.player.play).called(greaterThanOrEqualTo(1));
         },
       );
+
+      test(
+        'skips play() on loop-boundary rebuffer when duration is known',
+        () async {
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(videos: videos, pool: pool);
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup = playerSetups[videos[0].url]!;
+
+          // Initial buffer ready
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+          clearInteractions(setup.player);
+
+          // Simulate loop boundary: position resets to 0, duration
+          // is known (6500ms). mpv emits buffering=true→false.
+          when(() => setup.state.position).thenReturn(Duration.zero);
+          when(
+            () => setup.state.duration,
+          ).thenReturn(const Duration(milliseconds: 6500));
+
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // play() should NOT be called — it's a loop boundary, not a
+          // real stall.
+          verifyNever(setup.player.play);
+          // Video should still be in ready state.
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+        },
+      );
+
+      test(
+        'calls play() on mid-stream rebuffer even when duration is known',
+        () async {
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(videos: videos, pool: pool);
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup = playerSetups[videos[0].url]!;
+
+          // Initial buffer ready
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.ready));
+          clearInteractions(setup.player);
+
+          // Simulate mid-stream rebuffer: position is well past 0.
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 3200));
+          when(
+            () => setup.state.duration,
+          ).thenReturn(const Duration(milliseconds: 6500));
+
+          setup.bufferingController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // play() SHOULD be called — real network rebuffer.
+          verify(setup.player.play).called(greaterThanOrEqualTo(1));
+        },
+      );
     });
 
     group('fast-path reuse of pooled player', () {

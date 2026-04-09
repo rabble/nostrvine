@@ -229,6 +229,14 @@ class VideoFeedController extends ChangeNotifier {
   /// kicks in. With 100ms intervals this is ~500ms grace.
   static const _staleGraceAfterPlay = 5;
 
+  /// Maximum position (in milliseconds) to consider a rebuffer event as a
+  /// loop-boundary seek rather than a real network stall. When mpv loops
+  /// via [PlaylistMode.single], it briefly emits buffering=true→false with
+  /// position reset near zero. If the duration is known (>0) and position
+  /// is within this threshold, we skip the redundant `play()` nudge that
+  /// otherwise causes a visible micro-stutter every loop cycle.
+  static const _loopBoundaryThresholdMs = 500;
+
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
 
@@ -1158,6 +1166,21 @@ class VideoFeedController extends ChangeNotifier {
               }
             } else {
               _stallRetryCount.remove(index);
+            }
+
+            // Loop-boundary detection: when mpv loops via
+            // PlaylistMode.single it emits a brief buffering=true→false
+            // cycle with position reset to 0 while the duration is
+            // already known (>0). Calling play() here is redundant —
+            // mpv is already playing — and causes a visible
+            // micro-stutter every loop cycle. Skip the nudge.
+            if (positionMs <= _loopBoundaryThresholdMs && durationMs > 0) {
+              _logDebug(
+                'loop_boundary_skip index=$index '
+                'positionMs=$positionMs durationMs=$durationMs '
+                '${_videoDebugDetails(index)}',
+              );
+              return;
             }
           }
 
