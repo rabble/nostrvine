@@ -766,7 +766,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       limitClipDuration: state.recorderMode.hasRecordingLimit,
     );
     // Persist immediately so the clip is visible in the library right away.
-    clipProvider.saveClipToLibrary(clip);
+    unawaited(clipProvider.saveClipToLibrary(clip));
 
     Log.debug(
       '📷 Lens metadata: ${_cameraService.currentLensMetadata?.toMap()}',
@@ -1041,8 +1041,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     await Future.wait([
       context.push(LibraryScreen.clipsPath),
       // We delay camera dispose so that the screen animation can finish
-      // before the editor open. Without that it will look weird to the user
-      // because the initialization screen will show up quickly.
+      // before the library opens. Without that it will look weird to the
+      // user because the initialization screen will show up quickly.
       Future.delayed(const Duration(milliseconds: 300), () {
         return _cameraService.dispose();
       }),
