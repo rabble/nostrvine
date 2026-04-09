@@ -1215,19 +1215,30 @@ class VideoFeedController extends ChangeNotifier {
             }
           }
 
-          // Always call play() on rebuffer completion — even when
-          // player.state.playing reports true. mpv can report
-          // playing=true while the decoder is actually stalled with no
-          // frame output, especially after a seek or network hiccup.
-          // The play() call nudges the decoder to resume frame output.
+          // Detect loop-boundary rebuffers: when the player is already
+          // playing, position is near the start (≤100ms), and duration
+          // is known, mpv just auto-looped via PlaylistMode.single.
+          // Calling play() in this case causes a visible micro-stutter
+          // because it interrupts the decoder's seamless loop. Skip it.
+          final isPlaying = player.state.playing;
+          final currentPositionMs = player.state.position.inMilliseconds;
+          final currentDurationMs = player.state.duration.inMilliseconds;
+          final isLoopBoundary =
+              isPlaying && currentPositionMs <= 100 && currentDurationMs > 0;
+
           _logDebug(
             'rebuffer_auto_play index=$index '
-            'positionMs=${player.state.position.inMilliseconds} '
-            'playing=${player.state.playing} '
+            'positionMs=$currentPositionMs '
+            'durationMs=$currentDurationMs '
+            'playing=$isPlaying '
             'wasRecovering=$wasRecovering '
+            'isLoopBoundary=$isLoopBoundary '
             '${_videoDebugDetails(index)}',
           );
-          unawaited(player.play());
+
+          if (!isLoopBoundary) {
+            unawaited(player.play());
+          }
         }
       }
     });
