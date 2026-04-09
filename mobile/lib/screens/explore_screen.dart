@@ -1135,10 +1135,10 @@ class _ExploreFeedContentState extends ConsumerState<_ExploreFeedContent> {
     );
 
     if (videos.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No videos available',
-          style: TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.bodyMediumFont(),
         ),
       );
     }
