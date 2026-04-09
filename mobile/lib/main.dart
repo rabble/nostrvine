@@ -30,6 +30,7 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
@@ -1449,6 +1450,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             debugShowCheckedModeBanner: false,
             theme: VineTheme.theme,
             routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
           )
         : PopScope(
             canPop: false,
@@ -1461,6 +1464,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               debugShowCheckedModeBanner: false,
               theme: VineTheme.theme,
               routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
             ),
           );
 

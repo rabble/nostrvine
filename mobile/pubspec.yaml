@@ -168,11 +168,15 @@ dependencies:
   # Divine UI - Shared UI components
   divine_ui:
 
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+
   # Logging
   logging: ^1.2.0
 
   # Date formatting
-  intl: ^0.19.0
+  intl: ">=0.19.0 <1.0.0"
 
   # Missing dependencies required by nostr_sdk
   equatable: ^2.0.5
@@ -268,6 +272,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

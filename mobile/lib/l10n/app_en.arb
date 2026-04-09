@@ -1,0 +1,108 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Divine",
+  "@appTitle": {
+    "description": "App title shown in task switcher"
+  },
+
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Settings screen app bar title"
+  },
+  "settingsSecureAccount": "Secure Your Account",
+  "settingsSessionExpired": "Session Expired",
+  "settingsSessionExpiredSubtitle": "Sign in again to restore full access",
+  "settingsCreatorAnalytics": "Creator Analytics",
+  "settingsSupportCenter": "Support Center",
+  "settingsNotifications": "Notifications",
+  "settingsContentPreferences": "Content Preferences",
+  "settingsModerationControls": "Moderation Controls",
+  "settingsBlueskyPublishing": "Bluesky Publishing",
+  "settingsBlueskyPublishingSubtitle": "Manage crossposting to Bluesky",
+  "settingsNostrSettings": "Nostr Settings",
+  "settingsIntegratedApps": "Integrated Apps",
+  "settingsIntegratedAppsSubtitle": "Approved third-party apps that run inside Divine",
+  "settingsExperimentalFeatures": "Experimental Features",
+  "settingsExperimentalFeaturesSubtitle": "Tweaks that may hiccup\u2014try them if you are curious.",
+  "settingsLegal": "Legal",
+  "settingsIntegrationPermissions": "Integration Permissions",
+  "settingsIntegrationPermissionsSubtitle": "Review and revoke remembered integration approvals",
+  "settingsVersion": "Version {version}",
+  "@settingsVersion": {
+    "description": "App version label in settings footer",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsVersionEmpty": "Version",
+  "@settingsVersionEmpty": {
+    "description": "Version label when version string is not yet loaded"
+  },
+  "settingsDeveloperModeAlreadyEnabled": "Developer mode is already enabled",
+  "settingsDeveloperModeEnabled": "Developer mode enabled!",
+  "settingsDeveloperModeTapsRemaining": "{count} more taps to enable developer mode",
+  "@settingsDeveloperModeTapsRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsInvites": "Invites",
+  "settingsSwitchAccount": "Switch account",
+  "settingsAddAnotherAccount": "Add another account",
+  "settingsUnsavedDraftsTitle": "Unsaved Drafts",
+  "settingsUnsavedDraftsMessage": "You have {count} unsaved {count, plural, =1{draft} other{drafts}}. Switching accounts will keep your {count, plural, =1{draft} other{drafts}}, but you may want to publish or review {count, plural, =1{it} other{them}} first.",
+  "@settingsUnsavedDraftsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsCancel": "Cancel",
+  "settingsSwitchAnyway": "Switch Anyway",
+  "settingsAppVersionLabel": "App version",
+
+  "contentPreferencesTitle": "Content Preferences",
+  "@contentPreferencesTitle": {
+    "description": "Content preferences screen app bar title"
+  },
+  "contentPreferencesContentFilters": "Content Filters",
+  "contentPreferencesContentFiltersSubtitle": "Manage content warning filters",
+  "contentPreferencesContentLanguage": "Content Language",
+  "contentPreferencesContentLanguageDeviceDefault": "{language} (device default)",
+  "@contentPreferencesContentLanguageDeviceDefault": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "contentPreferencesTagYourVideos": "Tag your videos with a language so viewers can filter content.",
+  "contentPreferencesUseDeviceLanguage": "Use device language (default)",
+  "contentPreferencesAudioSharing": "Make my audio available for reuse",
+  "contentPreferencesAudioSharingSubtitle": "When enabled, others can use audio from your videos",
+  "contentPreferencesAccountLabels": "Account Labels",
+  "contentPreferencesAccountLabelsEmpty": "Self-label your content",
+  "contentPreferencesAccountContentLabels": "Account Content Labels",
+  "contentPreferencesClearAll": "Clear All",
+  "contentPreferencesSelectAllThatApply": "Select all that apply to your account",
+  "contentPreferencesDoneNoLabels": "Done (No Labels)",
+  "contentPreferencesDoneCount": "Done ({count} selected)",
+  "@contentPreferencesDoneCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "contentPreferencesAudioInputDevice": "Audio Input Device",
+  "contentPreferencesAutoRecommended": "Auto (recommended)",
+  "contentPreferencesAutoSelectsBest": "Automatically selects the best microphone",
+  "contentPreferencesSelectAudioInput": "Select Audio Input",
+  "contentPreferencesUnknownMicrophone": "Unknown Microphone"
+}
