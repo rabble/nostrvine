@@ -97,12 +97,14 @@ class _RulerPainter extends CustomPainter {
     // Convert scroll offset to the ruler's local coordinate space.
     // The ruler starts at [scrollPadding] within the scroll view,
     // so subtract it to get the visible range in ruler-local pixels.
-    final scrollOffset = scrollController.hasClients
-        ? scrollController.offset
-        : 0.0;
-    final viewportWidth = scrollController.hasClients
-        ? scrollController.position.viewportDimension
-        : size.width;
+    //
+    // Use [positions] instead of [position] to avoid the assertion
+    // "ScrollController attached to multiple scroll views" that can
+    // trigger during rebuilds when old and new Scrollable briefly
+    // coexist.
+    final pos = scrollController.positions.lastOrNull;
+    final scrollOffset = pos?.pixels ?? 0.0;
+    final viewportWidth = pos?.viewportDimension ?? size.width;
 
     final rulerStart = scrollOffset - scrollPadding;
 

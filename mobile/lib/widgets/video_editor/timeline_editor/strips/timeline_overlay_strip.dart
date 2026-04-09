@@ -2,6 +2,7 @@
 // ABOUTME: Renders layer / filter / sound items in rows with long-press
 // ABOUTME: drag to reposition (time + row) and trim handles on selection.
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
@@ -113,20 +114,34 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
   static const double _rowHeight = TimelineConstants.overlayRowHeight;
 
+  double get _trimExpansion => widget.selectedItemId != null
+      ? TimelineConstants.trimHandleWidth + 12.0
+      : 0.0;
+
   @override
   Widget build(BuildContext context) {
     if (widget.items.isEmpty) return const SizedBox.shrink();
 
     final displayRowCount = widget.isCollapsed ? 1 : widget.rowCount;
+    final trimExp = _trimExpansion;
 
-    return SizedBox(
-      width: widget.totalWidth,
-      height: displayRowCount * _rowHeight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          for (final item in widget.items) _buildItem(item, displayRowCount),
-        ],
+    return _HitExpandedBox(
+      expandLeft: trimExp,
+      expandRight: trimExp,
+      child: SizedBox(
+        width: widget.totalWidth,
+        height: displayRowCount * _rowHeight,
+        child: _HitExpandedBox(
+          expandLeft: trimExp,
+          expandRight: trimExp,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (final item in widget.items)
+                _buildItem(item, displayRowCount),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -159,6 +174,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
     // Wrap selected (non-dragging) items with trim handles.
     if (isSelected && !isDragging) {
+      final trimExp = _trimExpansion;
       tile = _TrimmableOverlayTile(
         item: item,
         width: itemWidth,
@@ -167,6 +183,25 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
         pixelsPerSecond: widget.pixelsPerSecond,
         onTrimChanged: widget.onTrimChanged,
         onTrimDragChanged: widget.onTrimDragChanged,
+        trimExpansion: trimExp,
+      );
+
+      return Positioned(
+        left: x - trimExp,
+        top: y,
+        width: itemWidth + trimExp * 2,
+        child: Semantics(
+          label: item.label,
+          hint: 'Long press to drag',
+          child: GestureDetector(
+            onTap: () => widget.onItemTapped?.call(item.id),
+            onLongPressStart: (_) => _onLongPressStart(item),
+            onLongPressMoveUpdate: (details) =>
+                _onLongPressMoveUpdate(details, item, displayRowCount),
+            onLongPressEnd: (_) => _onLongPressEnd(item),
+            child: tile,
+          ),
+        ),
       );
     }
 
@@ -318,6 +353,7 @@ class _TrimmableOverlayTile extends StatelessWidget {
     required this.pixelsPerSecond,
     this.onTrimChanged,
     this.onTrimDragChanged,
+    this.trimExpansion = 0,
   });
 
   final TimelineOverlayItem item;
@@ -327,21 +363,25 @@ class _TrimmableOverlayTile extends StatelessWidget {
   final double pixelsPerSecond;
   final OverlayTrimCallback? onTrimChanged;
   final ValueChanged<bool>? onTrimDragChanged;
+  final double trimExpansion;
 
   @override
   Widget build(BuildContext context) {
-    return TimelineTrimHandles(
-      height: height - 2,
-      handleColor: color,
-      onDragStart: () => onTrimDragChanged?.call(true),
-      onDragEnd: () => onTrimDragChanged?.call(false),
-      onLeftDragUpdate: _onLeftTrim,
-      onRightDragUpdate: _onRightTrim,
-      child: _OverlayItemTile(
-        item: item,
-        width: width - TimelineConstants.trimHandleWidth * 2,
-        height: height,
-        color: color,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: trimExpansion),
+      child: TimelineTrimHandles(
+        height: height - 2,
+        handleColor: color,
+        onDragStart: () => onTrimDragChanged?.call(true),
+        onDragEnd: () => onTrimDragChanged?.call(false),
+        onLeftDragUpdate: _onLeftTrim,
+        onRightDragUpdate: _onRightTrim,
+        child: _OverlayItemTile(
+          item: item,
+          width: width - TimelineConstants.trimHandleWidth * 2,
+          height: height,
+          color: color,
+        ),
       ),
     );
   }
@@ -400,5 +440,90 @@ class _TrimmableOverlayTile extends StatelessWidget {
       trimEnd: clamped,
       isStart: false,
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Hit-test expansion
+// ---------------------------------------------------------------------------
+
+/// Expands the hit-test area horizontally so that trim handles positioned
+/// outside the child's layout bounds can still receive touches.
+///
+/// Mirrors [_HitExpandedBox] in the clip strip.
+class _HitExpandedBox extends SingleChildRenderObjectWidget {
+  const _HitExpandedBox({
+    required super.child,
+    this.expandLeft = 0,
+    this.expandRight = 0,
+  });
+
+  final double expandLeft;
+  final double expandRight;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderHitExpandedBox(
+      expandLeft: expandLeft,
+      expandRight: expandRight,
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderHitExpandedBox renderObject,
+  ) {
+    renderObject
+      ..expandLeft = expandLeft
+      ..expandRight = expandRight;
+  }
+}
+
+class _RenderHitExpandedBox extends RenderProxyBox {
+  _RenderHitExpandedBox({
+    required double expandLeft,
+    required double expandRight,
+  }) : _expandLeft = expandLeft,
+       _expandRight = expandRight;
+
+  double _expandLeft;
+  double get expandLeft => _expandLeft;
+  set expandLeft(double value) {
+    if (_expandLeft == value) return;
+    _expandLeft = value;
+  }
+
+  double _expandRight;
+  double get expandRight => _expandRight;
+  set expandRight(double value) {
+    if (_expandRight == value) return;
+    _expandRight = value;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (position.dx >= -_expandLeft &&
+        position.dx < size.width + _expandRight &&
+        position.dy >= 0 &&
+        position.dy < size.height) {
+      if (size.contains(position)) {
+        if (hitTestChildren(result, position: position) ||
+            hitTestSelf(position)) {
+          result.add(BoxHitTestEntry(this, position));
+          return true;
+        }
+      } else {
+        // Expanded margin — bypass child's size.contains() so
+        // touches reach the trim handles.
+        final childHit =
+            child?.hitTestChildren(result, position: position) ?? false;
+        if (childHit || hitTestSelf(position)) {
+          result.add(BoxHitTestEntry(this, position));
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

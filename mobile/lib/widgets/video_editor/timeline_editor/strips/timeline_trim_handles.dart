@@ -85,7 +85,7 @@ class TimelineTrimHandles extends StatefulWidget {
 }
 
 class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
-  void _onDragStart(DragStartDetails _) {
+  void _onDragStart(DragStartDetails details) {
     widget.onDragStart?.call();
   }
 
@@ -306,13 +306,12 @@ class _RenderExpandedHitSizedBox extends RenderConstrainedBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (position.dx >= -_expandLeft &&
+    final inBounds =
+        position.dx >= -_expandLeft &&
         position.dx < size.width + _expandRight &&
         position.dy >= 0 &&
-        position.dy < size.height) {
-      // Bypass the child's own size.contains() check by calling
-      // hitTestChildren directly.  This lets Positioned children that
-      // sit outside the Stack's bounds still receive touches.
+        position.dy < size.height;
+    if (inBounds) {
       final childHit =
           child?.hitTestChildren(result, position: position) ?? false;
       if (childHit || hitTestSelf(position)) {

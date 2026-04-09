@@ -10,6 +10,9 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show EmojiLayer, PaintLayer, TextLayer, WidgetLayer;
+import 'package:pro_image_editor/pro_image_editor.dart' as pie;
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
@@ -112,15 +115,27 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
         final halfScreen = screenWidth / 2;
         final totalWidth = _contentWidth(totalDuration);
 
-        // Sync scroll to playback position while not user-scrolling.
-        return BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
-          listenWhen: (prev, curr) =>
-              !_isUserScrolling && prev.currentPosition != curr.currentPosition,
-          listener: (context, state) => _syncScrollToPosition(
-            state.currentPosition,
-            totalDuration,
-            totalWidth,
-          ),
+        // Sync layers from main editor to timeline overlay bloc, and
+        // sync scroll to playback position while not user-scrolling.
+        return MultiBlocListener(
+          listeners: [
+            BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+              listenWhen: (prev, curr) => prev.layers != curr.layers,
+              listener: (context, state) {
+                _syncLayersToOverlay(context, state.layers, totalDuration);
+              },
+            ),
+            BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+              listenWhen: (prev, curr) =>
+                  !_isUserScrolling &&
+                  prev.currentPosition != curr.currentPosition,
+              listener: (context, state) => _syncScrollToPosition(
+                state.currentPosition,
+                totalDuration,
+                totalWidth,
+              ),
+            ),
+          ],
           child: GestureDetector(
             onTap: isEditing ? _onBackgroundTapped : null,
             behavior: HitTestBehavior.translucent,
@@ -503,6 +518,52 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
     _playheadPosition.value = Duration(milliseconds: ms);
   }
 
+  /// Synchronises [VideoEditorMainState.layers] with the
+  /// [TimelineOverlayBloc] by diffing IDs and dispatching add/remove events.
+  void _syncLayersToOverlay(
+    BuildContext context,
+    List<pie.Layer> layers,
+    Duration totalDuration,
+  ) {
+    final overlayBloc = context.read<TimelineOverlayBloc>();
+    final existingIds = overlayBloc.state.items
+        .where((i) => i.type == TimelineOverlayType.layer)
+        .map((i) => i.id)
+        .toSet();
+    final currentIds = layers.map((l) => l.id).toSet();
+
+    // Remove layers no longer present.
+    for (final id in existingIds.difference(currentIds)) {
+      overlayBloc.add(TimelineOverlayItemRemoved(id));
+    }
+
+    // Add new layers.
+    for (final layer in layers) {
+      if (!existingIds.contains(layer.id)) {
+        overlayBloc.add(
+          TimelineOverlayItemAdded(
+            TimelineOverlayItem(
+              id: layer.id,
+              type: TimelineOverlayType.layer,
+              startTime: Duration.zero,
+              duration: totalDuration,
+              label: _labelForLayer(layer),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Returns a human-readable label based on the layer type.
+  static String _labelForLayer(pie.Layer layer) => switch (layer) {
+    TextLayer(:final text) => text,
+    PaintLayer() => 'Drawing',
+    EmojiLayer(:final emoji) => emoji,
+    WidgetLayer() => 'Sticker',
+    _ => 'Layer',
+  };
+
   void _syncScrollToPosition(
     Duration position,
     Duration totalDuration,
@@ -589,9 +650,21 @@ class _TimelineScrollContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trimExpand = trimmingClipId != null
+    final clipTrimExpand = trimmingClipId != null
         ? TimelineConstants.trimHandleWidth + 12.0
         : 0.0;
+
+    // Also expand for overlay trim handles when an overlay item is selected.
+    final overlaySelectedId = context.select(
+      (TimelineOverlayBloc b) => b.state.selectedItemId,
+    );
+    final overlayTrimExpand = overlaySelectedId != null
+        ? TimelineConstants.trimHandleWidth + 12.0
+        : 0.0;
+
+    final trimExpand = clipTrimExpand > overlayTrimExpand
+        ? clipTrimExpand
+        : overlayTrimExpand;
 
     return _ColumnHitExpander(
       expandLeft: trimExpand,
@@ -672,92 +745,112 @@ class _TimelineOverlayStrips extends StatelessWidget {
   Widget build(BuildContext context) {
     final overlayState = context.watch<TimelineOverlayBloc>().state;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Layer strip (pink) — text, drawings, stickers.
-        if (overlayState.hasItemsOfType(TimelineOverlayType.layer))
-          Padding(
-            padding: const EdgeInsets.only(
-              top: TimelineConstants.overlayStripTopGap,
-            ),
-            child: TimelineOverlayStrip(
-              items: overlayState.itemsOfType(TimelineOverlayType.layer),
-              rowCount: overlayState.rowCountForType(
-                TimelineOverlayType.layer,
+    final trimExp = overlayState.selectedItemId != null
+        ? TimelineConstants.trimHandleWidth + 12.0
+        : 0.0;
+
+    return _ColumnHitExpander(
+      expandLeft: trimExp,
+      expandRight: trimExp,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Layer strip (pink) — text, drawings, stickers.
+          if (overlayState.hasItemsOfType(TimelineOverlayType.layer))
+            _ColumnHitExpander(
+              expandLeft: trimExp,
+              expandRight: trimExp,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: TimelineConstants.overlayStripTopGap,
+                ),
+                child: TimelineOverlayStrip(
+                  items: overlayState.itemsOfType(TimelineOverlayType.layer),
+                  rowCount: overlayState.rowCountForType(
+                    TimelineOverlayType.layer,
+                  ),
+                  totalWidth: totalWidth,
+                  pixelsPerSecond: pixelsPerSecond,
+                  totalDuration: totalDuration,
+                  color: const Color(0xFFE91E8C),
+                  isCollapsed: overlayState.isTypeCollapsed(
+                    TimelineOverlayType.layer,
+                  ),
+                  selectedItemId: overlayState.selectedItemId,
+                  onItemTapped: onItemTapped,
+                  onItemMoved: onItemMoved,
+                  onTrimChanged: onItemTrimmed,
+                  onTrimDragChanged: onTrimDragChanged,
+                  onDragStarted: onDragStarted,
+                  onDragEnded: onDragEnded,
+                ),
               ),
-              totalWidth: totalWidth,
-              pixelsPerSecond: pixelsPerSecond,
-              totalDuration: totalDuration,
-              color: const Color(0xFFE91E8C),
-              isCollapsed: overlayState.isTypeCollapsed(
-                TimelineOverlayType.layer,
-              ),
-              selectedItemId: overlayState.selectedItemId,
-              onItemTapped: onItemTapped,
-              onItemMoved: onItemMoved,
-              onTrimChanged: onItemTrimmed,
-              onTrimDragChanged: onTrimDragChanged,
-              onDragStarted: onDragStarted,
-              onDragEnded: onDragEnded,
             ),
-          ),
-        // Sound strip (red) — audio tracks.
-        if (overlayState.hasItemsOfType(TimelineOverlayType.sound))
-          Padding(
-            padding: const EdgeInsets.only(
-              top: TimelineConstants.overlayStripGap,
-            ),
-            child: TimelineOverlayStrip(
-              items: overlayState.itemsOfType(TimelineOverlayType.sound),
-              rowCount: overlayState.rowCountForType(
-                TimelineOverlayType.sound,
+          // Sound strip (red) — audio tracks.
+          if (overlayState.hasItemsOfType(TimelineOverlayType.sound))
+            _ColumnHitExpander(
+              expandLeft: trimExp,
+              expandRight: trimExp,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: TimelineConstants.overlayStripGap,
+                ),
+                child: TimelineOverlayStrip(
+                  items: overlayState.itemsOfType(TimelineOverlayType.sound),
+                  rowCount: overlayState.rowCountForType(
+                    TimelineOverlayType.sound,
+                  ),
+                  totalWidth: totalWidth,
+                  pixelsPerSecond: pixelsPerSecond,
+                  totalDuration: totalDuration,
+                  color: const Color(0xFFE53935),
+                  isCollapsed: overlayState.isTypeCollapsed(
+                    TimelineOverlayType.sound,
+                  ),
+                  selectedItemId: overlayState.selectedItemId,
+                  onItemTapped: onItemTapped,
+                  onItemMoved: onItemMoved,
+                  onTrimChanged: onItemTrimmed,
+                  onTrimDragChanged: onTrimDragChanged,
+                  onDragStarted: onDragStarted,
+                  onDragEnded: onDragEnded,
+                ),
               ),
-              totalWidth: totalWidth,
-              pixelsPerSecond: pixelsPerSecond,
-              totalDuration: totalDuration,
-              color: const Color(0xFFE53935),
-              isCollapsed: overlayState.isTypeCollapsed(
-                TimelineOverlayType.sound,
-              ),
-              selectedItemId: overlayState.selectedItemId,
-              onItemTapped: onItemTapped,
-              onItemMoved: onItemMoved,
-              onTrimChanged: onItemTrimmed,
-              onTrimDragChanged: onTrimDragChanged,
-              onDragStarted: onDragStarted,
-              onDragEnded: onDragEnded,
             ),
-          ),
-        // Filter strip (green) — visual effects.
-        if (overlayState.hasItemsOfType(TimelineOverlayType.filter))
-          Padding(
-            padding: const EdgeInsets.only(
-              top: TimelineConstants.overlayStripGap,
-            ),
-            child: TimelineOverlayStrip(
-              items: overlayState.itemsOfType(TimelineOverlayType.filter),
-              rowCount: overlayState.rowCountForType(
-                TimelineOverlayType.filter,
+          // Filter strip (green) — visual effects.
+          if (overlayState.hasItemsOfType(TimelineOverlayType.filter))
+            _ColumnHitExpander(
+              expandLeft: trimExp,
+              expandRight: trimExp,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: TimelineConstants.overlayStripGap,
+                ),
+                child: TimelineOverlayStrip(
+                  items: overlayState.itemsOfType(TimelineOverlayType.filter),
+                  rowCount: overlayState.rowCountForType(
+                    TimelineOverlayType.filter,
+                  ),
+                  totalWidth: totalWidth,
+                  pixelsPerSecond: pixelsPerSecond,
+                  totalDuration: totalDuration,
+                  color: const Color(0xFF43A047),
+                  isCollapsed: overlayState.isTypeCollapsed(
+                    TimelineOverlayType.filter,
+                  ),
+                  selectedItemId: overlayState.selectedItemId,
+                  onItemTapped: onItemTapped,
+                  onItemMoved: onItemMoved,
+                  onTrimChanged: onItemTrimmed,
+                  onTrimDragChanged: onTrimDragChanged,
+                  onDragStarted: onDragStarted,
+                  onDragEnded: onDragEnded,
+                ),
               ),
-              totalWidth: totalWidth,
-              pixelsPerSecond: pixelsPerSecond,
-              totalDuration: totalDuration,
-              color: const Color(0xFF43A047),
-              isCollapsed: overlayState.isTypeCollapsed(
-                TimelineOverlayType.filter,
-              ),
-              selectedItemId: overlayState.selectedItemId,
-              onItemTapped: onItemTapped,
-              onItemMoved: onItemMoved,
-              onTrimChanged: onItemTrimmed,
-              onTrimDragChanged: onTrimDragChanged,
-              onDragStarted: onDragStarted,
-              onDragEnded: onDragEnded,
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -818,10 +911,12 @@ class _RenderColumnHitExpander extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (position.dx >= -_expandLeft &&
+    final inBounds =
+        position.dx >= -_expandLeft &&
         position.dx < size.width + _expandRight &&
         position.dy >= 0 &&
-        position.dy < size.height) {
+        position.dy < size.height;
+    if (inBounds) {
       if (size.contains(position)) {
         if (hitTestChildren(result, position: position) ||
             hitTestSelf(position)) {

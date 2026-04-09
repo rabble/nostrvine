@@ -13,6 +13,7 @@ import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_over
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_actions_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 
@@ -38,6 +39,14 @@ class VideoEditorScaffold extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: VineTheme.surfaceContainerHigh,
         resizeToAvoidBottomInset: false,
+        floatingActionButton: Semantics(
+          label: 'Add element',
+          child: FloatingActionButton(
+            backgroundColor: VineTheme.primary,
+            onPressed: () => VideoEditorMainActionsSheet.show(context),
+            child: const DivineIcon(icon: .plus, color: VineTheme.onPrimary),
+          ),
+        ),
         body: Column(
           spacing: 16,
           children: [
