@@ -2,6 +2,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/services/native_camera_permission_service.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -31,9 +32,15 @@ class CameraPermissionBloc
     extends Bloc<CameraPermissionEvent, CameraPermissionState> {
   CameraPermissionBloc({
     required PermissionsService permissionsService,
+    NativeCameraPermissionService? nativeCameraPermissionService,
     @visibleForTesting bool? skipLinuxBypass,
+    @visibleForTesting bool? skipMacOSBypass,
   }) : _permissionsService = permissionsService,
        _skipLinuxBypass = skipLinuxBypass ?? false,
+       _nativeCameraPermissionService =
+           nativeCameraPermissionService ??
+           const MethodChannelNativeCameraPermissionService(),
+       _skipMacOSBypass = skipMacOSBypass ?? false,
        super(const CameraPermissionInitial()) {
     on<CameraPermissionRequest>(_onRequest, transformer: droppable());
     on<CameraPermissionRefresh>(_onRefresh, transformer: droppable());
@@ -42,6 +49,8 @@ class CameraPermissionBloc
 
   final PermissionsService _permissionsService;
   final bool _skipLinuxBypass;
+  final NativeCameraPermissionService _nativeCameraPermissionService;
+  final bool _skipMacOSBypass;
 
   Future<void> _onRequest(
     CameraPermissionRequest event,
@@ -58,6 +67,30 @@ class CameraPermissionBloc
     }
 
     try {
+      if (!kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.macOS &&
+          !_skipMacOSBypass) {
+        final cameraResult = await _nativeCameraPermissionService
+            .requestPermission();
+        final cameraState = _mapNativeRequestResult(cameraResult);
+        if (cameraState != null) {
+          emit(cameraState);
+          return;
+        }
+
+        final microphoneResult = await _nativeCameraPermissionService
+            .requestMicrophonePermission();
+        final microphoneState = _mapNativeRequestResult(microphoneResult);
+        if (microphoneState != null) {
+          emit(microphoneState);
+          return;
+        }
+
+        await _permissionsService.requestGalleryPermission();
+        emit(const CameraPermissionLoaded(CameraPermissionStatus.authorized));
+        return;
+      }
+
       final cameraStatus = await _permissionsService.requestCameraPermission();
 
       if (cameraStatus != PermissionStatus.granted) {
@@ -99,14 +132,34 @@ class CameraPermissionBloc
       category: LogCategory.video,
     );
 
-    // Linux has no camera support yet, so permissions are irrelevant and we
-    // assume authorized. macOS now goes through the real permission check
-    // backed by the native AVFoundation channel (see PermissionsService).
+    if (!kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.macOS &&
+        !_skipMacOSBypass) {
+      try {
+        final status = await _checkMacOSPermissions();
+        Log.info(
+          '🔐 Native macOS permission check result: $status',
+          name: 'CameraPermissionBloc',
+          category: LogCategory.video,
+        );
+        emit(CameraPermissionLoaded(status));
+      } catch (e) {
+        Log.error(
+          '🔐 Native macOS permission check failed: $e',
+          name: 'CameraPermissionBloc',
+          category: LogCategory.video,
+        );
+        emit(const CameraPermissionError());
+      }
+      return;
+    }
+
+    // Linux has no camera support yet, so permissions are irrelevant.
     if (!kIsWeb &&
         defaultTargetPlatform == TargetPlatform.linux &&
         !_skipLinuxBypass) {
       Log.info(
-        '🔐 Linux detected - bypassing permission check, assuming authorized',
+        '🔐 Linux detected - bypassing permission checks',
         name: 'CameraPermissionBloc',
         category: LogCategory.video,
       );
@@ -152,6 +205,12 @@ class CameraPermissionBloc
 
   /// Check the status of camera, microphone, and gallery permissions.
   Future<CameraPermissionStatus> checkPermissions() async {
+    if (!kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.macOS &&
+        !_skipMacOSBypass) {
+      return _checkMacOSPermissions();
+    }
+
     final (cameraStatus, micStatus) = await (
       _permissionsService.checkCameraStatus(),
       _permissionsService.checkMicrophoneStatus(),
@@ -168,5 +227,40 @@ class CameraPermissionBloc
     }
 
     return CameraPermissionStatus.canRequest;
+  }
+
+  Future<CameraPermissionStatus> _checkMacOSPermissions() async {
+    final cameraStatus = await _nativeCameraPermissionService
+        .authorizationStatus();
+    final microphoneStatus = await _nativeCameraPermissionService
+        .microphoneAuthorizationStatus();
+
+    if (cameraStatus == NativeCameraAuthorizationStatus.authorized &&
+        microphoneStatus == NativeCameraAuthorizationStatus.authorized) {
+      return CameraPermissionStatus.authorized;
+    }
+
+    if (cameraStatus == NativeCameraAuthorizationStatus.denied ||
+        cameraStatus == NativeCameraAuthorizationStatus.restricted ||
+        microphoneStatus == NativeCameraAuthorizationStatus.denied ||
+        microphoneStatus == NativeCameraAuthorizationStatus.restricted) {
+      return CameraPermissionStatus.requiresSettings;
+    }
+
+    return CameraPermissionStatus.canRequest;
+  }
+
+  CameraPermissionState? _mapNativeRequestResult(
+    NativeCameraPermissionStatus status,
+  ) {
+    return switch (status) {
+      NativeCameraPermissionStatus.granted => null,
+      NativeCameraPermissionStatus.denied ||
+      NativeCameraPermissionStatus.requiresSettings =>
+        const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
+      NativeCameraPermissionStatus.promptBlocked =>
+        const CameraPermissionLoaded(CameraPermissionStatus.launchBlocked),
+      NativeCameraPermissionStatus.unavailable => const CameraPermissionError(),
+    };
   }
 }

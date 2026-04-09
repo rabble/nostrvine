@@ -96,6 +96,59 @@ void main() {
     expect(methodCalls.single.method, 'requestPermission');
   });
 
+  test(
+    'maps a false native camera request that stays not determined into prompt blocked',
+    () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            methodCalls.add(methodCall);
+            if (methodCall.method == 'requestPermission') {
+              return false;
+            }
+            if (methodCall.method == 'getAuthorizationStatus') {
+              return 'notDetermined';
+            }
+            return null;
+          });
+
+      final result = await service.requestPermission();
+
+      expect(result, NativeCameraPermissionStatus.promptBlocked);
+      expect(
+        methodCalls.map((call) => call.method),
+        <String>['requestPermission', 'getAuthorizationStatus'],
+      );
+    },
+  );
+
+  test(
+    'maps a false native microphone request that stays not determined into prompt blocked',
+    () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            methodCalls.add(methodCall);
+            if (methodCall.method == 'requestMicrophonePermission') {
+              return false;
+            }
+            if (methodCall.method == 'getMicrophoneAuthorizationStatus') {
+              return 'notDetermined';
+            }
+            return null;
+          });
+
+      final result = await service.requestMicrophonePermission();
+
+      expect(result, NativeCameraPermissionStatus.promptBlocked);
+      expect(
+        methodCalls.map((call) => call.method),
+        <String>[
+          'requestMicrophonePermission',
+          'getMicrophoneAuthorizationStatus',
+        ],
+      );
+    },
+  );
+
   test('opens native camera system settings', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (methodCall) async {

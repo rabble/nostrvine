@@ -26,6 +26,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// - loading: Shows a loading indicator
 /// - canRequest: Shows the prompt with a Continue button that requests access
 /// - requiresSettings: Shows the prompt with a Go to Settings button
+/// - launchBlocked: Explains that the terminal launch path blocked the prompt
 /// - authorized: Renders the [child] (camera screen)
 /// - error: Shows an error screen with a Retry button
 ///
@@ -177,6 +178,16 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
                   const CameraPermissionOpenSettings(),
                 );
               },
+              onClose: _popBack,
+            ),
+            CameraPermissionStatus.launchBlocked => _PermissionScreen(
+              title: 'Open Divine directly for camera access',
+              description:
+                  'macOS blocked the camera & microphone prompt for this '
+                  'terminal-launched build. Open Divine directly from Finder '
+                  'or Xcode, then try again.',
+              buttonLabel: 'Go back',
+              onAction: _popBack,
               onClose: _popBack,
             ),
           },

@@ -3,16 +3,22 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/services/native_camera_permission_service.dart';
 import 'package:permissions_service/permissions_service.dart';
 
 class _MockPermissionsService extends Mock implements PermissionsService {}
 
+class _MockNativeCameraPermissionService extends Mock
+    implements NativeCameraPermissionService {}
+
 void main() {
   group('CameraPermissionBloc', () {
     late _MockPermissionsService mockPermissionsService;
+    late _MockNativeCameraPermissionService mockNativeCameraPermissionService;
 
     setUp(() {
       mockPermissionsService = _MockPermissionsService();
+      mockNativeCameraPermissionService = _MockNativeCameraPermissionService();
     });
 
     tearDown(() {
@@ -29,6 +35,27 @@ void main() {
     });
 
     group('CameraPermissionRequest', () {
+      blocTest<CameraPermissionBloc, CameraPermissionState>(
+        'emits [Loaded(launchBlocked)] when a macOS native camera request is blocked by the launch environment',
+        setUp: () {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+          when(
+            () => mockNativeCameraPermissionService.requestPermission(),
+          ).thenAnswer((_) async => NativeCameraPermissionStatus.promptBlocked);
+        },
+        build: () => CameraPermissionBloc(
+          permissionsService: mockPermissionsService,
+          nativeCameraPermissionService: mockNativeCameraPermissionService,
+        ),
+        seed: () =>
+            const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+        act: (bloc) => bloc.add(const CameraPermissionRequest()),
+        expect: () => [
+          const CameraPermissionLoaded(CameraPermissionStatus.launchBlocked),
+        ],
+        tearDown: () => debugDefaultTargetPlatformOverride = null,
+      );
+
       blocTest<CameraPermissionBloc, CameraPermissionState>(
         'does nothing when state is CameraPermissionInitial',
         build: () => CameraPermissionBloc(
@@ -360,28 +387,29 @@ void main() {
 
     group('CameraPermissionRefresh', () {
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'checks permissions on macOS instead of bypassing to authorized',
+        'emits [Loaded(canRequest)] on macOS when native camera and microphone prompts have not been shown yet',
         setUp: () {
           debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
           when(
-            () => mockPermissionsService.checkCameraStatus(),
-          ).thenAnswer((_) async => PermissionStatus.requiresSettings);
+            () => mockNativeCameraPermissionService.authorizationStatus(),
+          ).thenAnswer(
+            (_) async => NativeCameraAuthorizationStatus.notDetermined,
+          );
           when(
-            () => mockPermissionsService.checkMicrophoneStatus(),
-          ).thenAnswer((_) async => PermissionStatus.granted);
+            () => mockNativeCameraPermissionService
+                .microphoneAuthorizationStatus(),
+          ).thenAnswer(
+            (_) async => NativeCameraAuthorizationStatus.notDetermined,
+          );
         },
-        build: () =>
-            CameraPermissionBloc(permissionsService: mockPermissionsService),
+        build: () => CameraPermissionBloc(
+          permissionsService: mockPermissionsService,
+          nativeCameraPermissionService: mockNativeCameraPermissionService,
+        ),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [
-          const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
+          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         ],
-        verify: (_) {
-          verify(() => mockPermissionsService.checkCameraStatus()).called(1);
-          verify(
-            () => mockPermissionsService.checkMicrophoneStatus(),
-          ).called(1);
-        },
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(

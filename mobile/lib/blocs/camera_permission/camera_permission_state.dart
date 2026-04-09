@@ -10,6 +10,10 @@ enum CameraPermissionStatus {
 
   /// Permanently denied - user must enable in Settings.
   requiresSettings,
+
+  /// macOS blocked the prompt because the app was launched from a
+  /// terminal-owned context that cannot request camera/mic access.
+  launchBlocked,
 }
 
 /// State for camera permission bloc.

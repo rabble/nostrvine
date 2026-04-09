@@ -457,6 +457,8 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
         'Camera access is required to turn video on.',
       NativeCameraPermissionStatus.requiresSettings =>
         'Camera access is blocked. Allow it in system settings.',
+      NativeCameraPermissionStatus.promptBlocked =>
+        'macOS blocked the camera prompt for this terminal-launched build. Open Divine directly from Finder or Xcode, then try again.',
       NativeCameraPermissionStatus.unavailable =>
         'Unable to access the camera right now.',
     };
@@ -469,6 +471,8 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
         'Microphone access is required to speak in the room.',
       NativeCameraPermissionStatus.requiresSettings =>
         'Microphone access is blocked. Allow it in system settings.',
+      NativeCameraPermissionStatus.promptBlocked =>
+        'macOS blocked the microphone prompt for this terminal-launched build. Open Divine directly from Finder or Xcode, then try again.',
       NativeCameraPermissionStatus.unavailable =>
         'Unable to access the microphone right now.',
     };

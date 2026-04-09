@@ -5,6 +5,7 @@ enum NativeCameraPermissionStatus {
   granted,
   denied,
   requiresSettings,
+  promptBlocked,
   unavailable,
 }
 
@@ -74,9 +75,22 @@ class MethodChannelNativeCameraPermissionService
   Future<NativeCameraPermissionStatus> requestPermission() async {
     try {
       final granted = await channel.invokeMethod<bool>('requestPermission');
-      return granted == true
-          ? NativeCameraPermissionStatus.granted
-          : NativeCameraPermissionStatus.denied;
+      if (granted == true) {
+        return NativeCameraPermissionStatus.granted;
+      }
+
+      final status = await authorizationStatus();
+      return switch (status) {
+        NativeCameraAuthorizationStatus.authorized =>
+          NativeCameraPermissionStatus.granted,
+        NativeCameraAuthorizationStatus.denied ||
+        NativeCameraAuthorizationStatus.restricted =>
+          NativeCameraPermissionStatus.requiresSettings,
+        NativeCameraAuthorizationStatus.notDetermined =>
+          NativeCameraPermissionStatus.promptBlocked,
+        NativeCameraAuthorizationStatus.unavailable =>
+          NativeCameraPermissionStatus.unavailable,
+      };
     } on PlatformException catch (error) {
       if (error.code == 'PERMISSION_DENIED') {
         return NativeCameraPermissionStatus.requiresSettings;
@@ -92,9 +106,22 @@ class MethodChannelNativeCameraPermissionService
       final granted = await channel.invokeMethod<bool>(
         'requestMicrophonePermission',
       );
-      return granted == true
-          ? NativeCameraPermissionStatus.granted
-          : NativeCameraPermissionStatus.denied;
+      if (granted == true) {
+        return NativeCameraPermissionStatus.granted;
+      }
+
+      final status = await microphoneAuthorizationStatus();
+      return switch (status) {
+        NativeCameraAuthorizationStatus.authorized =>
+          NativeCameraPermissionStatus.granted,
+        NativeCameraAuthorizationStatus.denied ||
+        NativeCameraAuthorizationStatus.restricted =>
+          NativeCameraPermissionStatus.requiresSettings,
+        NativeCameraAuthorizationStatus.notDetermined =>
+          NativeCameraPermissionStatus.promptBlocked,
+        NativeCameraAuthorizationStatus.unavailable =>
+          NativeCameraPermissionStatus.unavailable,
+      };
     } on PlatformException catch (error) {
       if (error.code == 'PERMISSION_DENIED') {
         return NativeCameraPermissionStatus.requiresSettings;

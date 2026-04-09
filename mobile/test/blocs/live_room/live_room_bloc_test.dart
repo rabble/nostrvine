@@ -534,6 +534,61 @@ void main() {
     );
 
     test(
+      'turning the host camera on on macOS surfaces a launch-environment message when macOS blocks the prompt',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        final mockPermissionsService = _MockPermissionsService();
+        final mockNativeCameraPermissionService =
+            _MockNativeCameraPermissionService();
+        when(
+          mockNativeCameraPermissionService.authorizationStatus,
+        ).thenAnswer(
+          (_) async => NativeCameraAuthorizationStatus.notDetermined,
+        );
+        when(
+          mockNativeCameraPermissionService.requestPermission,
+        ).thenAnswer((_) async => NativeCameraPermissionStatus.promptBlocked);
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          permissionsService: mockPermissionsService,
+          nativeCameraPermissionService: mockNativeCameraPermissionService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleCameraRequested());
+        await _flush();
+
+        verify(mockNativeCameraPermissionService.authorizationStatus).called(1);
+        verify(mockNativeCameraPermissionService.requestPermission).called(1);
+        verifyNever(() => mockMediaService.setCameraEnabled(true));
+        expect(
+          bloc.state.errorMessage,
+          'macOS blocked the camera prompt for this terminal-launched build. Open Divine directly from Finder or Xcode, then try again.',
+        );
+
+        await bloc.close();
+      },
+    );
+
+    test(
       'turning the host microphone on on macOS explicitly requests native permission before publishing',
       () async {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
@@ -660,6 +715,65 @@ void main() {
         expect(
           bloc.state.errorMessage,
           'Microphone access is required to speak in the room.',
+        );
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'turning the host microphone on on macOS surfaces a launch-environment message when macOS blocks the prompt',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        final mockPermissionsService = _MockPermissionsService();
+        final mockNativeCameraPermissionService =
+            _MockNativeCameraPermissionService();
+        when(
+          mockNativeCameraPermissionService.microphoneAuthorizationStatus,
+        ).thenAnswer(
+          (_) async => NativeCameraAuthorizationStatus.notDetermined,
+        );
+        when(
+          mockNativeCameraPermissionService.requestMicrophonePermission,
+        ).thenAnswer((_) async => NativeCameraPermissionStatus.promptBlocked);
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          permissionsService: mockPermissionsService,
+          nativeCameraPermissionService: mockNativeCameraPermissionService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleMicrophoneRequested());
+        await _flush();
+
+        verify(
+          mockNativeCameraPermissionService.microphoneAuthorizationStatus,
+        ).called(1);
+        verify(
+          mockNativeCameraPermissionService.requestMicrophonePermission,
+        ).called(1);
+        verifyNever(() => mockMediaService.setMicrophoneEnabled(true));
+        expect(
+          bloc.state.errorMessage,
+          'macOS blocked the microphone prompt for this terminal-launched build. Open Divine directly from Finder or Xcode, then try again.',
         );
 
         await bloc.close();
