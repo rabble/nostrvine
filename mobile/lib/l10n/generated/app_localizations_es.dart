@@ -15,199 +15,203 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsTitle => 'Configuración';
 
   @override
-  String get settingsSecureAccount => 'Secure Your Account';
+  String get settingsSecureAccount => 'Asegurá tu cuenta';
 
   @override
-  String get settingsSessionExpired => 'Session Expired';
+  String get settingsSessionExpired => 'Sesión expirada';
 
   @override
   String get settingsSessionExpiredSubtitle =>
-      'Sign in again to restore full access';
+      'Iniciá sesión de nuevo para restaurar el acceso completo';
 
   @override
-  String get settingsCreatorAnalytics => 'Creator Analytics';
+  String get settingsCreatorAnalytics => 'Estadísticas de creador';
 
   @override
-  String get settingsSupportCenter => 'Support Center';
+  String get settingsSupportCenter => 'Centro de soporte';
 
   @override
-  String get settingsNotifications => 'Notifications';
+  String get settingsNotifications => 'Notificaciones';
 
   @override
-  String get settingsContentPreferences => 'Content Preferences';
+  String get settingsContentPreferences => 'Preferencias de contenido';
 
   @override
-  String get settingsModerationControls => 'Moderation Controls';
+  String get settingsModerationControls => 'Controles de moderación';
 
   @override
-  String get settingsBlueskyPublishing => 'Bluesky Publishing';
+  String get settingsBlueskyPublishing => 'Publicación en Bluesky';
 
   @override
   String get settingsBlueskyPublishingSubtitle =>
-      'Manage crossposting to Bluesky';
+      'Gestioná la publicación cruzada a Bluesky';
 
   @override
-  String get settingsNostrSettings => 'Nostr Settings';
+  String get settingsNostrSettings => 'Configuración de Nostr';
 
   @override
-  String get settingsIntegratedApps => 'Integrated Apps';
+  String get settingsIntegratedApps => 'Apps integradas';
 
   @override
   String get settingsIntegratedAppsSubtitle =>
-      'Approved third-party apps that run inside Divine';
+      'Apps de terceros aprobadas que corren dentro de Divine';
 
   @override
-  String get settingsExperimentalFeatures => 'Experimental Features';
+  String get settingsExperimentalFeatures => 'Funciones experimentales';
 
   @override
   String get settingsExperimentalFeaturesSubtitle =>
-      'Tweaks that may hiccup—try them if you are curious.';
+      'Ajustes que pueden fallar—probalos si tenés curiosidad.';
 
   @override
   String get settingsLegal => 'Legal';
 
   @override
-  String get settingsIntegrationPermissions => 'Integration Permissions';
+  String get settingsIntegrationPermissions => 'Permisos de integración';
 
   @override
   String get settingsIntegrationPermissionsSubtitle =>
-      'Review and revoke remembered integration approvals';
+      'Revisá y revocá las aprobaciones de integración guardadas';
 
   @override
   String settingsVersion(String version) {
-    return 'Version $version';
+    return 'Versión $version';
   }
 
   @override
-  String get settingsVersionEmpty => 'Version';
+  String get settingsVersionEmpty => 'Versión';
 
   @override
   String get settingsDeveloperModeAlreadyEnabled =>
-      'Developer mode is already enabled';
+      'El modo desarrollador ya está habilitado';
 
   @override
-  String get settingsDeveloperModeEnabled => 'Developer mode enabled!';
+  String get settingsDeveloperModeEnabled => '¡Modo desarrollador activado!';
 
   @override
   String settingsDeveloperModeTapsRemaining(int count) {
-    return '$count more taps to enable developer mode';
+    return '$count toques más para habilitar el modo desarrollador';
   }
 
   @override
-  String get settingsInvites => 'Invites';
+  String get settingsInvites => 'Invitaciones';
 
   @override
-  String get settingsSwitchAccount => 'Switch account';
+  String get settingsSwitchAccount => 'Cambiar cuenta';
 
   @override
-  String get settingsAddAnotherAccount => 'Add another account';
+  String get settingsAddAnotherAccount => 'Agregar otra cuenta';
 
   @override
-  String get settingsUnsavedDraftsTitle => 'Unsaved Drafts';
+  String get settingsUnsavedDraftsTitle => 'Borradores sin guardar';
 
   @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'drafts',
-      one: 'draft',
+      other: 'borradores',
+      one: 'borrador',
     );
     String _temp1 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'drafts',
-      one: 'draft',
+      other: 'borradores',
+      one: 'borrador',
     );
     String _temp2 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'them',
-      one: 'it',
+      other: 'los',
+      one: 'lo',
     );
-    return 'You have $count unsaved $_temp0. Switching accounts will keep your $_temp1, but you may want to publish or review $_temp2 first.';
+    return 'Tenés $count $_temp0 sin guardar. Cambiar de cuenta va a mantener tus $_temp1, pero quizás querás publicar o revisar$_temp2 primero.';
   }
 
   @override
-  String get settingsCancel => 'Cancel';
+  String get settingsCancel => 'Cancelar';
 
   @override
-  String get settingsSwitchAnyway => 'Switch Anyway';
+  String get settingsSwitchAnyway => 'Cambiar igual';
 
   @override
-  String get settingsAppVersionLabel => 'App version';
+  String get settingsAppVersionLabel => 'Versión de la app';
 
   @override
-  String get contentPreferencesTitle => 'Content Preferences';
+  String get contentPreferencesTitle => 'Preferencias de contenido';
 
   @override
-  String get contentPreferencesContentFilters => 'Content Filters';
+  String get contentPreferencesContentFilters => 'Filtros de contenido';
 
   @override
   String get contentPreferencesContentFiltersSubtitle =>
-      'Manage content warning filters';
+      'Gestioná los filtros de advertencia de contenido';
 
   @override
-  String get contentPreferencesContentLanguage => 'Content Language';
+  String get contentPreferencesContentLanguage => 'Idioma del contenido';
 
   @override
   String contentPreferencesContentLanguageDeviceDefault(String language) {
-    return '$language (device default)';
+    return '$language (por defecto del dispositivo)';
   }
 
   @override
   String get contentPreferencesTagYourVideos =>
-      'Tag your videos with a language so viewers can filter content.';
+      'Etiquetá tus videos con un idioma para que los espectadores puedan filtrar contenido.';
 
   @override
   String get contentPreferencesUseDeviceLanguage =>
-      'Use device language (default)';
+      'Usar idioma del dispositivo (por defecto)';
 
   @override
   String get contentPreferencesAudioSharing =>
-      'Make my audio available for reuse';
+      'Hacer mi audio disponible para reutilización';
 
   @override
   String get contentPreferencesAudioSharingSubtitle =>
-      'When enabled, others can use audio from your videos';
+      'Cuando está habilitado, otros pueden usar el audio de tus videos';
 
   @override
-  String get contentPreferencesAccountLabels => 'Account Labels';
+  String get contentPreferencesAccountLabels => 'Etiquetas de cuenta';
 
   @override
-  String get contentPreferencesAccountLabelsEmpty => 'Self-label your content';
+  String get contentPreferencesAccountLabelsEmpty =>
+      'Autoetiquetá tu contenido';
 
   @override
-  String get contentPreferencesAccountContentLabels => 'Account Content Labels';
+  String get contentPreferencesAccountContentLabels =>
+      'Etiquetas de contenido de la cuenta';
 
   @override
-  String get contentPreferencesClearAll => 'Clear All';
+  String get contentPreferencesClearAll => 'Limpiar todo';
 
   @override
   String get contentPreferencesSelectAllThatApply =>
-      'Select all that apply to your account';
+      'Seleccioná todas las que apliquen a tu cuenta';
 
   @override
-  String get contentPreferencesDoneNoLabels => 'Done (No Labels)';
+  String get contentPreferencesDoneNoLabels => 'Listo (Sin etiquetas)';
 
   @override
   String contentPreferencesDoneCount(int count) {
-    return 'Done ($count selected)';
+    return 'Listo ($count seleccionadas)';
   }
 
   @override
-  String get contentPreferencesAudioInputDevice => 'Audio Input Device';
+  String get contentPreferencesAudioInputDevice =>
+      'Dispositivo de entrada de audio';
 
   @override
-  String get contentPreferencesAutoRecommended => 'Auto (recommended)';
+  String get contentPreferencesAutoRecommended => 'Automático (recomendado)';
 
   @override
   String get contentPreferencesAutoSelectsBest =>
-      'Automatically selects the best microphone';
+      'Selecciona automáticamente el mejor micrófono';
 
   @override
-  String get contentPreferencesSelectAudioInput => 'Select Audio Input';
+  String get contentPreferencesSelectAudioInput =>
+      'Seleccionar entrada de audio';
 
   @override
-  String get contentPreferencesUnknownMicrophone => 'Unknown Microphone';
+  String get contentPreferencesUnknownMicrophone => 'Micrófono desconocido';
 }
