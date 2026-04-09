@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/models/live/live_chat_message.dart';
 import 'package:openvine/models/live/live_presence.dart';
 import 'package:openvine/models/live/live_role.dart';
@@ -8,6 +9,7 @@ import 'package:openvine/models/live/live_room_recording.dart';
 import 'package:openvine/models/live/live_room_token.dart';
 import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/providers/live_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/live_chat_repository.dart';
 import 'package:openvine/repositories/live_repository.dart';
 import 'package:openvine/screens/live/go_live_page.dart';
@@ -31,9 +33,13 @@ class _MockLiveApiService extends Mock implements LiveApiService {}
 class _MockLiveKitRoomService extends Mock implements LiveKitRoomService {}
 
 class LiveGoldenFixtures {
+  static const hostPubkey = 'host-pubkey';
+  static const speakerPubkey = 'speaker-pubkey';
+  static const audiencePubkey = 'audience-pubkey';
+
   static const room = LiveRoom(
     id: 'room-123',
-    hostPubkey: 'host-pubkey',
+    hostPubkey: hostPubkey,
     title: 'Signal from the stage',
     summary: 'A live room for creators and the people following along.',
     imageUrl: null,
@@ -49,7 +55,7 @@ class LiveGoldenFixtures {
     // machines even though the UI formats these values with toLocal().
     startedAt: DateTime(2026, 4, 6, 8),
     endedAt: null,
-    speakerPubkeys: const <String>['host-pubkey', 'speaker-pubkey'],
+    speakerPubkeys: const <String>[hostPubkey, speakerPubkey],
     audienceCount: 64,
   );
 
@@ -59,7 +65,7 @@ class LiveGoldenFixtures {
     status: LiveSessionStatus.ended,
     startedAt: DateTime(2026, 4, 6, 7),
     endedAt: DateTime(2026, 4, 6, 9),
-    speakerPubkeys: const <String>['host-pubkey'],
+    speakerPubkeys: const <String>[hostPubkey],
     audienceCount: 64,
   );
 
@@ -74,6 +80,76 @@ class LiveGoldenFixtures {
   );
 
   static const sessionAddress = '30313:host-pubkey:session-123';
+
+  static final _hostProfile = UserProfile(
+    pubkey: hostPubkey,
+    rawData: const <String, dynamic>{},
+    createdAt: DateTime(2026, 4, 9),
+    eventId: 'profile-host',
+    displayName: 'Signal Host',
+  );
+
+  static final _speakerProfile = UserProfile(
+    pubkey: speakerPubkey,
+    rawData: const <String, dynamic>{},
+    createdAt: DateTime(2026, 4, 9),
+    eventId: 'profile-speaker',
+    displayName: 'Kite',
+  );
+
+  static final _audienceProfile = UserProfile(
+    pubkey: audiencePubkey,
+    rawData: const <String, dynamic>{},
+    createdAt: DateTime(2026, 4, 9),
+    eventId: 'profile-audience',
+    displayName: 'Mira',
+  );
+
+  static MockProfileRepository _buildProfileRepository() {
+    final profileRepository = createMockProfileRepository();
+
+    when(
+      () => profileRepository.getCachedProfile(pubkey: hostPubkey),
+    ).thenAnswer((_) async => _hostProfile);
+    when(
+      () => profileRepository.getCachedProfile(pubkey: speakerPubkey),
+    ).thenAnswer((_) async => _speakerProfile);
+    when(
+      () => profileRepository.getCachedProfile(pubkey: audiencePubkey),
+    ).thenAnswer((_) async => _audienceProfile);
+
+    when(
+      () => profileRepository.fetchFreshProfile(pubkey: hostPubkey),
+    ).thenAnswer((_) async => _hostProfile);
+    when(
+      () => profileRepository.fetchFreshProfile(pubkey: speakerPubkey),
+    ).thenAnswer((_) async => _speakerProfile);
+    when(
+      () => profileRepository.fetchFreshProfile(pubkey: audiencePubkey),
+    ).thenAnswer((_) async => _audienceProfile);
+
+    when(
+      () => profileRepository.watchProfile(pubkey: hostPubkey),
+    ).thenAnswer((_) => Stream<UserProfile?>.value(_hostProfile));
+    when(
+      () => profileRepository.watchProfile(pubkey: speakerPubkey),
+    ).thenAnswer((_) => Stream<UserProfile?>.value(_speakerProfile));
+    when(
+      () => profileRepository.watchProfile(pubkey: audiencePubkey),
+    ).thenAnswer((_) => Stream<UserProfile?>.value(_audienceProfile));
+
+    return profileRepository;
+  }
+
+  static Stream<UserProfile?> _profileStreamFor(String pubkey) {
+    final profile = switch (pubkey) {
+      hostPubkey => _hostProfile,
+      speakerPubkey => _speakerProfile,
+      audiencePubkey => _audienceProfile,
+      _ => null,
+    };
+    return Stream<UserProfile?>.value(profile);
+  }
 
   static Widget buildDiscoveryCards() {
     return ListView(
@@ -125,6 +201,7 @@ class LiveGoldenFixtures {
 
     return testMaterialApp(
       mockSharedPreferences: sharedPreferences,
+      mockNip05VerificationService: createMockNip05VerificationService(),
       additionalOverrides: [
         liveRepositoryProvider.overrideWithValue(liveRepository),
       ],
@@ -151,6 +228,7 @@ class LiveGoldenFixtures {
     final sharedPreferences = await SharedPreferences.getInstance();
     final authService = createMockAuthService();
     when(() => authService.currentPublicKeyHex).thenReturn(currentUserPubkey);
+    final profileRepository = _buildProfileRepository();
 
     final liveRepository = _MockLiveRepository();
     final liveChatRepository = _MockLiveChatRepository();
@@ -263,7 +341,12 @@ class LiveGoldenFixtures {
     return testMaterialApp(
       mockSharedPreferences: sharedPreferences,
       mockAuthService: authService,
+      mockProfileRepository: profileRepository,
+      mockNip05VerificationService: createMockNip05VerificationService(),
       additionalOverrides: [
+        userProfileReactiveProvider.overrideWith(
+          (ref, pubkey) => _profileStreamFor(pubkey),
+        ),
         liveRepositoryProvider.overrideWithValue(liveRepository),
         liveChatRepositoryProvider.overrideWithValue(liveChatRepository),
         liveApiServiceProvider.overrideWithValue(liveApiService),
@@ -283,6 +366,7 @@ class LiveGoldenFixtures {
     final sharedPreferences = await SharedPreferences.getInstance();
     final authService = createMockAuthService();
     when(() => authService.currentPublicKeyHex).thenReturn('host-pubkey');
+    final profileRepository = _buildProfileRepository();
 
     final liveRepository = _MockLiveRepository();
     final liveApiService = _MockLiveApiService();
@@ -290,6 +374,8 @@ class LiveGoldenFixtures {
     return testMaterialApp(
       mockSharedPreferences: sharedPreferences,
       mockAuthService: authService,
+      mockProfileRepository: profileRepository,
+      mockNip05VerificationService: createMockNip05VerificationService(),
       additionalOverrides: [
         liveRepositoryProvider.overrideWithValue(liveRepository),
         liveApiServiceProvider.overrideWithValue(liveApiService),
