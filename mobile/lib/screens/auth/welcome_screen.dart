@@ -176,7 +176,7 @@ class _WelcomeView extends StatelessWidget {
           StartupPerformanceService.instance.markAuthShellReady();
         }
 
-        final isLoading = isAuthLoading || state.isAccepting;
+        final isLoading = isAuthenticating || state.isAccepting;
 
         final isReturningUser = state.hasReturningUsers;
         return Scaffold(
