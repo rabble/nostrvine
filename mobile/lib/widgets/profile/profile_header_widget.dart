@@ -134,38 +134,34 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final bannerUrl = hasBannerImage ? effectiveProfile!.banner : null;
 
     const bannerHeight = 334.0;
-    const avatarSize = 144.0;
-    const actionLabelHeight = 16.0;
 
-    // The avatar's top edge sits below the status bar + toolbar area,
-    // leaving room for the nav buttons above.
-    final appBarBottom = MediaQuery.paddingOf(context).top + kToolbarHeight;
-    final totalHeight = appBarBottom + avatarSize + actionLabelHeight;
+    final safeAreaTop = MediaQuery.paddingOf(context).top;
 
     return ColoredBox(
       color: VineTheme.surfaceBackground,
-      child: Column(
+      child: Stack(
         children: [
-          // Banner + avatar area
-          SizedBox(
-            width: double.infinity,
-            height: totalHeight,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Background: banner image or color, fades to transparent
-                _ProfileBanner(
-                  bannerUrl: bannerUrl,
-                  profileColor: profileColor,
-                  height: bannerHeight,
-                ),
+          // Background: banner image or color gradient (z-index 0)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _ProfileBanner(
+              bannerUrl: bannerUrl,
+              profileColor: profileColor,
+              height: bannerHeight,
+            ),
+          ),
 
-                // Navigation buttons (scrolls with content)
+          // Foreground: all profile content (z-index 1)
+          Transform.translate(
+            offset: Offset(0, safeAreaTop),
+            child: Column(
+              children: [
+                // Navigation buttons
                 if (isOwnProfile)
-                  Positioned(
-                    top: MediaQuery.paddingOf(context).top + 12,
-                    left: 12,
-                    right: 12,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -186,46 +182,41 @@ class ProfileHeaderWidget extends ConsumerWidget {
                     ),
                   ),
 
-                // Centered avatar — top edge aligns with app bar bottom
-                Positioned(
-                  top: appBarBottom,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: _ProfileAvatarWithColor(
-                      imageUrl: profilePictureUrl,
-                      profileColor: profileColor,
-                      pendingActions: pendingActions,
-                      onActionTap: pendingActions.isNotEmpty
-                          ? () => _showActionsSheet(context, pendingActions)
-                          : null,
-                    ),
+                // Centered avatar with action label pill
+                Center(
+                  child: _ProfileAvatarWithColor(
+                    imageUrl: profilePictureUrl,
+                    profileColor: profileColor,
+                    pendingActions: pendingActions,
+                    onActionTap: pendingActions.isNotEmpty
+                        ? () => _showActionsSheet(context, pendingActions)
+                        : null,
+                  ),
+                ),
+
+                // Name, NIP-05, and bio
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+                  child: _ProfileNameAndBio(
+                    profile: effectiveProfile,
+                    userIdHex: userIdHex,
+                    nip05: nip05,
+                    about: about,
+                    displayNameHint: displayNameHint,
+                    accentColor: profileColor,
+                    isOwnProfile: isOwnProfile,
+                  ),
+                ),
+
+                // Stats row: Followers | Following | Likes | Loops
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _ProfileStatsRow(
+                    userIdHex: userIdHex,
+                    profileStats: profileStats,
                   ),
                 ),
               ],
-            ),
-          ),
-
-          // Name, NIP-05, and bio (centered text)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-            child: _ProfileNameAndBio(
-              profile: effectiveProfile,
-              userIdHex: userIdHex,
-              nip05: nip05,
-              about: about,
-              displayNameHint: displayNameHint,
-              accentColor: profileColor,
-              isOwnProfile: isOwnProfile,
-            ),
-          ),
-
-          // Stats row: Followers | Following | Likes | Loops
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _ProfileStatsRow(
-              userIdHex: userIdHex,
-              profileStats: profileStats,
             ),
           ),
         ],

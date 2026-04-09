@@ -321,11 +321,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             showBackButton: true,
             onBackPressed: context.pop,
             backgroundMode: DiVineAppBarBackgroundMode.transparent,
-            style: DiVineAppBarStyle.transparentStyle.copyWith(
-              iconSize: 24,
-              iconButtonSize: 40,
-              iconButtonBorderRadius: 16,
-            ),
             actions: [
               DiVineAppBarAction(
                 icon: SvgIconSource(DivineIconName.dotsThree.assetPath),

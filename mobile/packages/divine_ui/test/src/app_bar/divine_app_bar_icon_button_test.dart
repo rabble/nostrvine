@@ -12,9 +12,9 @@ void main() {
       String? semanticLabel,
       Color? backgroundColor,
       Color? iconColor,
-      double size = 48,
-      double iconSize = 32,
-      double borderRadius = 20,
+      double size = 40,
+      double iconSize = 24,
+      double borderRadius = 16,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,

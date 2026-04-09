@@ -284,28 +284,30 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       ),
     );
 
-    // Build the main content
     Widget content = DefaultTabController(
       length: 5,
       child: NestedScrollView(
         controller: widget.scrollController,
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            // Profile Header
-            SliverToBoxAdapter(
-              child: ProfileHeaderWidget(
-                userIdHex: widget.userIdHex,
-                isOwnProfile: widget.isOwnProfile,
-                videoCount: widget.videos.length,
-                profile: widget.profile,
-                profileStats: widget.profileStats,
-                onEditProfile: widget.onEditProfile,
-                displayNameHint: widget.displayNameHint,
-                avatarUrlHint: widget.avatarUrlHint,
-              ),
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          // Profile Header
+          // Profile Header
+          SliverToBoxAdapter(
+            child: ProfileHeaderWidget(
+              userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
+              videoCount: widget.videos.length,
+              profile: widget.profile,
+              profileStats: widget.profileStats,
+              onEditProfile: widget.onEditProfile,
+              displayNameHint: widget.displayNameHint,
+              avatarUrlHint: widget.avatarUrlHint,
             ),
+          ),
 
-            // Action Buttons
-            SliverToBoxAdapter(
+          // Action Buttons — shifted down to absorb tab bar safe area gap
+          SliverToBoxAdapter(
+            child: Transform.translate(
+              offset: Offset(0, MediaQuery.paddingOf(context).top),
               child: ProfileActionButtons(
                 userIdHex: widget.userIdHex,
                 isOwnProfile: widget.isOwnProfile,
@@ -316,104 +318,106 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 onBlockedTap: widget.onBlockedTap,
               ),
             ),
+          ),
 
-            // Sticky Tab Bar
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverAppBarDelegate(
-                TabBar(
-                  controller: _tabController,
-                  indicatorColor: VineTheme.tabIndicatorGreen,
-                  indicatorWeight: 4,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: VineTheme.transparent,
-                  tabs: [
-                    Tab(
-                      icon: Semantics(
-                        label: 'videos_tab',
-                        child: SvgPicture.asset(
-                          DivineIconName.play.assetPath,
-                          width: 28,
-                          height: 28,
-                          colorFilter: ColorFilter.mode(
-                            _tabController.index == 0
-                                ? VineTheme.whiteText
-                                : VineTheme.onSurfaceMuted,
-                            BlendMode.srcIn,
-                          ),
+          // Sticky Tab Bar
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SliverAppBarDelegate(
+              MediaQuery.paddingOf(context).top,
+              TabBar(
+                controller: _tabController,
+                indicatorColor: VineTheme.tabIndicatorGreen,
+                indicatorWeight: 4,
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: VineTheme.transparent,
+                tabs: [
+                  Tab(
+                    icon: Semantics(
+                      label: 'videos_tab',
+                      child: SvgPicture.asset(
+                        DivineIconName.play.assetPath,
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 0
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
                         ),
                       ),
                     ),
-                    Tab(
-                      icon: Semantics(
-                        label: 'liked_tab',
-                        child: SvgPicture.asset(
-                          DivineIconName.heart.assetPath,
-                          width: 28,
-                          height: 28,
-                          colorFilter: ColorFilter.mode(
-                            _tabController.index == 1
-                                ? VineTheme.whiteText
-                                : VineTheme.onSurfaceMuted,
-                            BlendMode.srcIn,
-                          ),
+                  ),
+                  Tab(
+                    icon: Semantics(
+                      label: 'liked_tab',
+                      child: SvgPicture.asset(
+                        DivineIconName.heart.assetPath,
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 1
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
                         ),
                       ),
                     ),
-                    Tab(
-                      icon: Semantics(
-                        label: 'reposted_tab',
-                        child: SvgPicture.asset(
-                          DivineIconName.repeat.assetPath,
-                          width: 28,
-                          height: 28,
-                          colorFilter: ColorFilter.mode(
-                            _tabController.index == 2
-                                ? VineTheme.whiteText
-                                : VineTheme.onSurfaceMuted,
-                            BlendMode.srcIn,
-                          ),
+                  ),
+                  Tab(
+                    icon: Semantics(
+                      label: 'reposted_tab',
+                      child: SvgPicture.asset(
+                        DivineIconName.repeat.assetPath,
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 2
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
                         ),
                       ),
                     ),
-                    Tab(
-                      icon: Semantics(
-                        label: 'collabs_tab',
-                        child: SvgPicture.asset(
-                          DivineIconName.user.assetPath,
-                          width: 28,
-                          height: 28,
-                          colorFilter: ColorFilter.mode(
-                            _tabController.index == 3
-                                ? VineTheme.whiteText
-                                : VineTheme.onSurfaceMuted,
-                            BlendMode.srcIn,
-                          ),
+                  ),
+                  Tab(
+                    icon: Semantics(
+                      label: 'collabs_tab',
+                      child: SvgPicture.asset(
+                        DivineIconName.user.assetPath,
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 3
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
                         ),
                       ),
                     ),
-                    Tab(
-                      icon: Semantics(
-                        label: 'comments_tab',
-                        child: SvgPicture.asset(
-                          DivineIconName.chatCircle.assetPath,
-                          width: 28,
-                          height: 28,
-                          colorFilter: ColorFilter.mode(
-                            _tabController.index == 4
-                                ? VineTheme.whiteText
-                                : VineTheme.onSurfaceMuted,
-                            BlendMode.srcIn,
-                          ),
+                  ),
+                  Tab(
+                    icon: Semantics(
+                      label: 'comments_tab',
+                      child: SvgPicture.asset(
+                        DivineIconName.chatCircle.assetPath,
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 4
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-          body: tabContent,
+          ),
+        ],
+        body: tabContent,
       ),
     );
 
@@ -445,24 +449,33 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 }
 
 /// Custom delegate for sticky tab bar.
+/// Sticky tab bar delegate with safe area top padding.
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._tabBar);
+  _SliverAppBarDelegate(this._topPadding, this._tabBar);
 
+  final double _topPadding;
   final TabBar _tabBar;
 
   @override
-  double get minExtent => _tabBar.preferredSize.height;
+  double get minExtent => _topPadding + _tabBar.preferredSize.height;
 
   @override
-  double get maxExtent => _tabBar.preferredSize.height;
+  double get maxExtent => _topPadding + _tabBar.preferredSize.height;
 
   @override
   Widget build(
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) => ColoredBox(color: VineTheme.surfaceBackground, child: _tabBar);
+  ) => ColoredBox(
+    color: VineTheme.surfaceBackground,
+    child: Padding(
+      padding: EdgeInsets.only(top: _topPadding),
+      child: _tabBar,
+    ),
+  );
 
   @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) =>
+      _topPadding != oldDelegate._topPadding;
 }
