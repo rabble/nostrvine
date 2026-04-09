@@ -249,7 +249,12 @@ void main() {
 
         expect(
           stats.createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(
+              1700000000 * 1000,
+              isUtc: true,
+            ),
+          ),
         );
       });
 
@@ -274,6 +279,40 @@ void main() {
         expect(stats.createdAt.year, equals(2024));
         expect(stats.createdAt.month, equals(1));
         expect(stats.createdAt.day, equals(15));
+        expect(stats.createdAt.isUtc, isTrue);
+      });
+
+      test('falls back to UTC now when created_at string is invalid', () {
+        final before = DateTime.now().toUtc();
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 'not-a-date',
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+        final after = DateTime.now().toUtc();
+
+        expect(stats.createdAt.isUtc, isTrue);
+        expect(
+          stats.createdAt.isAfter(before) ||
+              stats.createdAt.isAtSameMomentAs(before),
+          isTrue,
+        );
+        expect(
+          stats.createdAt.isBefore(after) ||
+              stats.createdAt.isAtSameMomentAs(after),
+          isTrue,
+        );
       });
 
       test('extracts fields from tags array', () {

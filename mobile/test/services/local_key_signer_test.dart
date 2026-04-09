@@ -1,11 +1,11 @@
-// ABOUTME: Tests for AuthServiceSigner that bridges AuthService with NostrSigner
+// ABOUTME: Tests for LocalKeySigner backed by a local SecureKeyContainer
 // ABOUTME: Validates event signing, encryption, and key access through secure container
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/auth_service_signer.dart';
+import 'package:openvine/services/local_key_signer.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 
@@ -27,10 +27,10 @@ void main() {
     when(() => mockKeyContainer.isDisposed).thenReturn(false);
   });
 
-  group('AuthServiceSigner', () {
+  group('LocalKeySigner', () {
     group('getPublicKey', () {
       test('returns public key from secure container', () async {
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
 
         final publicKey = await signer.getPublicKey();
 
@@ -39,7 +39,7 @@ void main() {
       });
 
       test('returns empty string when container is null', () async {
-        final signer = AuthServiceSigner(null);
+        final signer = LocalKeySigner(null);
 
         final publicKey = await signer.getPublicKey();
 
@@ -57,7 +57,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
         final event = Event(
           testPublicKey,
           EventKind.textNote,
@@ -77,7 +77,7 @@ void main() {
           () => mockKeyContainer.withPrivateKey<Event>(any()),
         ).thenThrow(const SecureKeyException('Failed to sign'));
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
         final event = Event(
           testPublicKey,
           EventKind.textNote,
@@ -93,7 +93,7 @@ void main() {
 
     group('getRelays', () {
       test('returns null (no relay config)', () async {
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
 
         final relays = await signer.getRelays();
 
@@ -111,7 +111,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
         const plaintext = 'Hello, World!';
 
         final ciphertext = await signer.encrypt(testPublicKey, plaintext);
@@ -129,7 +129,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
         const plaintext = 'Hello, World!';
 
         // First encrypt
@@ -154,7 +154,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
         const plaintext = 'Hello, NIP-44!';
 
         final ciphertext = await signer.nip44Encrypt(testPublicKey, plaintext);
@@ -173,7 +173,7 @@ void main() {
           return callback(testPrivateKey);
         });
 
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
         const plaintext = 'Hello, NIP-44!';
 
         // First encrypt
@@ -189,7 +189,7 @@ void main() {
 
     group('close', () {
       test('closes without error', () {
-        final signer = AuthServiceSigner(mockKeyContainer);
+        final signer = LocalKeySigner(mockKeyContainer);
 
         expect(signer.close, returnsNormally);
       });

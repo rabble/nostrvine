@@ -3,11 +3,10 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/utils/invite_error_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -27,21 +26,21 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     required KeycastOAuth oauthClient,
     required AuthService authService,
     required PendingVerificationService pendingVerificationService,
-    InviteApiService? inviteApiService,
+    InviteApiClient? inviteApiClient,
     String? inviteCode,
   }) : _oauthClient = oauthClient,
        _authService = authService,
        _pendingVerificationService = pendingVerificationService,
-       _inviteApiService = inviteApiService,
+       _inviteApiClient = inviteApiClient,
        _inviteCode = inviteCode == null
            ? null
-           : InviteApiService.normalizeCode(inviteCode),
+           : InviteApiClient.normalizeCode(inviteCode),
        super(const DivineAuthInitial());
 
   final KeycastOAuth _oauthClient;
   final AuthService _authService;
   final PendingVerificationService _pendingVerificationService;
-  final InviteApiService? _inviteApiService;
+  final InviteApiClient? _inviteApiClient;
   final String? _inviteCode;
 
   /// Initialize form with default state (sign up mode)
@@ -268,7 +267,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       emit(const DivineAuthSuccess());
-    } on ApiException catch (e) {
+    } on InviteApiException catch (e) {
       Log.error(
         'Invite activation failed: ${e.message}',
         name: 'DivineAuthCubit',
@@ -361,11 +360,11 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
 
     try {
       final inviteCode = _inviteCode;
-      final inviteApiService = _inviteApiService;
-      if (inviteCode != null && inviteApiService != null) {
+      final inviteApiClient = _inviteApiClient;
+      if (inviteCode != null && inviteApiClient != null) {
         final pendingKey = await SecureKeyContainer.generate();
         try {
-          await inviteApiService.consumeInviteWithKeyContainer(
+          await inviteApiClient.consumeInviteWithKeyContainer(
             code: inviteCode,
             keyContainer: pendingKey,
           );
@@ -386,7 +385,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       emit(const DivineAuthSuccess());
-    } on ApiException catch (e) {
+    } on InviteApiException catch (e) {
       Log.error(
         'Anonymous account invite activation failed: ${e.message}',
         name: 'DivineAuthCubit',
@@ -425,12 +424,12 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
 
   Future<void> _consumeInviteWithSessionIfNeeded(KeycastSession session) async {
     final inviteCode = _inviteCode;
-    final inviteApiService = _inviteApiService;
-    if (inviteCode == null || inviteApiService == null) {
+    final inviteApiClient = _inviteApiClient;
+    if (inviteCode == null || inviteApiClient == null) {
       return;
     }
 
-    await inviteApiService.consumeInviteWithSession(
+    await inviteApiClient.consumeInviteWithSession(
       code: inviteCode,
       oauthConfig: _oauthClient.config,
       session: session,

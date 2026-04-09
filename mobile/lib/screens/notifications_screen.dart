@@ -6,9 +6,11 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -16,6 +18,7 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -70,6 +73,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_bootstrapFreshFeed());
+      // Check invite status when notifications tab opens
+      context.read<InviteStatusCubit>().load();
     });
   }
 
@@ -353,81 +358,98 @@ class _NotificationTabContentState
             onRefresh: () async {
               await ref.read(relayNotificationsProvider.notifier).refresh();
             },
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              controller: _scrollController,
-              itemCount:
-                  notifications.length +
-                  (feedState.hasMoreContent &&
-                          feedState.isLoadingMore &&
-                          !feedState.isRefreshing
-                      ? 1
-                      : 0),
-              itemBuilder: (context, index) {
-                // Loading indicator at bottom
-                if (index >= notifications.length) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                      ),
-                    ),
-                  );
-                }
+            child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
+              builder: (context, inviteState) {
+                final showInviteCard =
+                    widget.filter == null && inviteState.hasUnclaimedCodes;
+                final inviteCardOffset = showInviteCard ? 1 : 0;
+                final hasLoadingIndicator =
+                    feedState.hasMoreContent &&
+                    feedState.isLoadingMore &&
+                    !feedState.isRefreshing;
 
-                final notification = notifications[index];
-                final showDateHeader = _shouldShowDateHeader(
-                  index,
-                  notifications,
-                );
+                return ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  controller: _scrollController,
+                  itemCount:
+                      notifications.length +
+                      inviteCardOffset +
+                      (hasLoadingIndicator ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    // Invite card at top of All tab
+                    if (showInviteCard && index == 0) {
+                      return _InviteNotificationCard(
+                        count: inviteState.unclaimedCount,
+                      );
+                    }
+                    final adjustedIndex = index - inviteCardOffset;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (showDateHeader)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text(
-                          TimeFormatter.formatDateLabel(
-                            notification.timestamp.millisecondsSinceEpoch ~/
-                                1000,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: VineTheme.secondaryText,
+                    // Loading indicator at bottom
+                    if (adjustedIndex >= notifications.length) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: VineTheme.vineGreen,
                           ),
                         ),
-                      ),
-                    NotificationListItem(
-                      notification: notification,
-                      onTap: () async {
-                        // Mark as read
-                        await ref
-                            .read(relayNotificationsProvider.notifier)
-                            .markAsRead(notification.id);
+                      );
+                    }
 
-                        // Navigate to appropriate screen based on type
-                        if (context.mounted) {
-                          await _navigateToTarget(context, notification);
-                        }
-                      },
-                      onProfileTap: () {
-                        _navigateToProfile(
-                          context,
-                          notification.actorPubkey,
-                        );
-                      },
-                    ),
-                    if (index < notifications.length - 1)
-                      const Divider(
-                        height: 1,
-                        thickness: 0.5,
-                        color: VineTheme.onSurfaceMuted,
-                        indent: 72,
-                      ),
-                  ],
+                    final notification = notifications[adjustedIndex];
+                    final showDateHeader = _shouldShowDateHeader(
+                      adjustedIndex,
+                      notifications,
+                    );
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (showDateHeader)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            child: Text(
+                              TimeFormatter.formatDateLabel(
+                                notification.timestamp.millisecondsSinceEpoch ~/
+                                    1000,
+                              ),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: VineTheme.secondaryText,
+                              ),
+                            ),
+                          ),
+                        NotificationListItem(
+                          notification: notification,
+                          onTap: () async {
+                            // Mark as read
+                            await ref
+                                .read(relayNotificationsProvider.notifier)
+                                .markAsRead(notification.id);
+
+                            // Navigate to appropriate screen based on type
+                            if (context.mounted) {
+                              await _navigateToTarget(context, notification);
+                            }
+                          },
+                          onProfileTap: () {
+                            _navigateToProfile(
+                              context,
+                              notification.actorPubkey,
+                            );
+                          },
+                        ),
+                        if (adjustedIndex < notifications.length - 1)
+                          const Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: VineTheme.onSurfaceMuted,
+                            indent: 72,
+                          ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -696,6 +718,54 @@ class _FilteredTabLoadingState extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _InviteNotificationCard extends StatelessWidget {
+  const _InviteNotificationCard({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count == 1
+        ? 'You have 1 invite to share with a friend!'
+        : 'You have $count invites to share with friends!';
+
+    return InkWell(
+      onTap: () => context.push(InvitesScreen.path),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        color: VineTheme.cardBackground,
+        child: Row(
+          spacing: 12,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: VineTheme.vineGreen,
+                shape: BoxShape.circle,
+              ),
+              child: const DivineIcon(
+                icon: DivineIconName.shareNetwork,
+                color: VineTheme.backgroundColor,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                label,
+                style: VineTheme.bodyMediumFont(),
+              ),
+            ),
+            const DivineIcon(
+              icon: DivineIconName.caretRight,
+              color: VineTheme.lightText,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

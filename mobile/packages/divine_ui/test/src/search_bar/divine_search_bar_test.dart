@@ -40,9 +40,7 @@ void main() {
     });
 
     testWidgets('renders with custom hint text', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(hintText: 'Search videos...'),
-      );
+      await tester.pumpWidget(buildTestWidget(hintText: 'Search videos...'));
 
       expect(find.text('Search videos...'), findsOneWidget);
     });
@@ -103,12 +101,29 @@ void main() {
 
     testWidgets('renders suffixIcon when provided', (tester) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          suffixIcon: const Icon(Icons.filter_list),
-        ),
+        buildTestWidget(suffixIcon: const Icon(Icons.filter_list)),
       );
 
       expect(find.byIcon(Icons.filter_list), findsOneWidget);
+    });
+
+    testWidgets('does not force suffixIcon to default minimum constraints', (
+      tester,
+    ) async {
+      const suffixKey = Key('suffix');
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          suffixIcon: const SizedBox(
+            key: suffixKey,
+            width: 20,
+            height: 12,
+            child: ColoredBox(color: Colors.red),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byKey(suffixKey)), const Size(20, 12));
     });
 
     testWidgets('renders no suffix when suffixIcon is null', (tester) async {

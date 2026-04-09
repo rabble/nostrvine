@@ -47,15 +47,9 @@ class _ListsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.select(
-      (ListSearchBloc bloc) => bloc.state.status,
-    );
-    final results = context.select(
-      (ListSearchBloc bloc) => bloc.state.results,
-    );
-    final query = context.select(
-      (ListSearchBloc bloc) => bloc.state.query,
-    );
+    final status = context.select((ListSearchBloc bloc) => bloc.state.status);
+    final results = context.select((ListSearchBloc bloc) => bloc.state.results);
+    final query = context.select((ListSearchBloc bloc) => bloc.state.query);
 
     if (status == .initial && showAll) {
       return const _InitialState();
@@ -78,37 +72,67 @@ class _ListsContent extends StatelessWidget {
 
     final displayCount = showAll ? results.length : results.take(2).length;
 
-    return _ResultsGrid(results: results, displayCount: displayCount);
+    return _ResultsGrid(
+      results: results,
+      displayCount: displayCount,
+      showAll: showAll,
+    );
   }
 }
 
 // TODO(#2853): Display both video and people list cards in the grid.
 class _ResultsGrid extends StatelessWidget {
-  const _ResultsGrid({required this.results, required this.displayCount});
+  const _ResultsGrid({
+    required this.results,
+    required this.displayCount,
+    required this.showAll,
+  });
 
   final List<CuratedList> results;
   final int displayCount;
+  final bool showAll;
 
   @override
   Widget build(BuildContext context) {
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.85,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
+    if (showAll) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.85,
+          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
             final list = results[index];
             return CuratedListSearchCard(
               curatedList: list,
               onTap: () => _navigateToCuratedList(context, list),
             );
-          },
-          childCount: displayCount,
+          }, childCount: displayCount),
+        ),
+      );
+    }
+
+    final displayResults = results.take(displayCount).toList();
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          spacing: 12,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final list in displayResults)
+              Expanded(
+                child: CuratedListSearchCard(
+                  curatedList: list,
+                  onTap: () => _navigateToCuratedList(context, list),
+                ),
+              ),
+            if (displayResults.length == 1) const Expanded(child: SizedBox()),
+          ],
         ),
       ),
     );

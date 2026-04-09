@@ -23,6 +23,7 @@ import 'package:nostr_client/nostr_client.dart'
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -43,7 +44,6 @@ import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
@@ -223,9 +223,7 @@ final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
   return NostrAppBridgeService(
     authProvider: _AuthServiceBridgeAdapter(authService),
     policy: policy,
-    signerFactory: () =>
-        authService.rpcSigner ??
-        AuthServiceSigner(authService.currentKeyContainer),
+    signerFactory: () => authService.requireIdentity,
     auditService: auditService,
   );
 });
@@ -995,6 +993,23 @@ AuthState currentAuthState(Ref ref) {
   return authService.authState;
 }
 
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+@Riverpod(keepAlive: true)
+AuthRpcCapability currentAuthRpcCapability(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  final subscription = authService.authRpcCapabilityStream.listen((_) {
+    ref.invalidateSelf();
+  });
+
+  ref.onDispose(subscription.cancel);
+
+  return authService.authRpcCapability;
+}
+
 /// Provider that fetches the list of known accounts from the auth service.
 ///
 /// Invalidate this provider after sign-in or sign-out to refresh the list.
@@ -1006,18 +1021,12 @@ Future<List<KnownAccount>> knownAccounts(Ref ref) {
   return authService.getKnownAccounts();
 }
 
-/// Provider for the local auth-backed signer used by creator-binding flows.
-final authServiceSignerProvider = Provider<AuthServiceSigner>((ref) {
-  ref.watch(currentAuthStateProvider);
-  final authService = ref.watch(authServiceProvider);
-  return AuthServiceSigner(authService.currentKeyContainer);
-});
-
 /// Provider for user-signed creator-binding assertions.
 final nostrCreatorBindingServiceProvider = Provider<NostrCreatorBindingService>(
   (ref) {
-    final signer = ref.watch(authServiceSignerProvider);
-    return NostrCreatorBindingService(signer: signer);
+    ref.watch(currentAuthStateProvider);
+    final authService = ref.watch(authServiceProvider);
+    return NostrCreatorBindingService(identity: authService.currentIdentity);
   },
 );
 
@@ -1391,6 +1400,7 @@ FollowRepository followRepository(Ref ref) {
   // Get connection status and pending action service for offline support
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
+  final authService = ref.watch(authServiceProvider);
 
   // Get FunnelcakeApiClient for direct API access
   final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
@@ -1405,7 +1415,8 @@ FollowRepository followRepository(Ref ref) {
     funnelcakeApiClient: funnelcakeApiClient,
     profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({required bool isFollow, required String pubkey}) async {
             await pendingActionService.queueAction(
@@ -1473,6 +1484,7 @@ FollowRepository followRepository(Ref ref) {
 CuratedListRepository curatedListRepository(Ref ref) {
   final repository = CuratedListRepository(
     nostrClient: ref.watch(nostrServiceProvider),
+    funnelcakeApiClient: ref.watch(funnelcakeApiClientProvider),
   );
 
   // Bridge: push curated list updates from legacy service into repository
@@ -2225,7 +2237,8 @@ LikesRepository likesRepository(Ref ref) {
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({
             required bool isLike,
@@ -2313,7 +2326,8 @@ RepostsRepository repostsRepository(Ref ref) {
   final repository = RepostsRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({
             required bool isRepost,

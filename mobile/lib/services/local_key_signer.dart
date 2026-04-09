@@ -1,5 +1,5 @@
-// ABOUTME: NostrSigner implementation that bridges AuthService's SecureKeyContainer
-// ABOUTME: Provides secure event signing and encryption using the auth service's keys
+// ABOUTME: NostrSigner implementation backed by a local SecureKeyContainer
+// ABOUTME: Provides secure event signing and encryption using locally stored keys
 
 import 'dart:typed_data';
 
@@ -13,14 +13,20 @@ const _canonicalPayloadAux =
     '00000000000000000000000000000000'
     '00000000000000000000000000000000';
 
-/// NostrSigner implementation that uses SecureKeyContainer from AuthService
+/// Optional capability for signers that can expose a local private key to an
+/// isolate-safe decrypt pipeline.
+abstract interface class IsolateDecryptSigner implements NostrSigner {
+  bool get canDecryptInIsolate;
+  T withPrivateKeyHex<T>(T Function(String hex) operation);
+}
+
+/// NostrSigner implementation backed by a local [SecureKeyContainer].
 ///
-/// This signer holds a reference to the key container provided at construction.
-/// Since the nostrServiceProvider rebuilds when auth state changes, the signer
-/// always has the current key container.
-class AuthServiceSigner implements NostrSigner {
-  /// Creates an AuthServiceSigner with the current key container
-  AuthServiceSigner(this._keyContainer);
+/// Used internally by [LocalNostrIdentity] and [KeycastNostrIdentity]'s
+/// local signing optimization. Not used directly by consumers.
+class LocalKeySigner implements IsolateDecryptSigner {
+  /// Creates a [LocalKeySigner] with the given key container.
+  LocalKeySigner(this._keyContainer);
 
   final SecureKeyContainer? _keyContainer;
 
@@ -32,16 +38,18 @@ class AuthServiceSigner implements NostrSigner {
   /// Whether this signer can expose its private key bytes to a
   /// [compute()] isolate for batch decryption. True only for local
   /// signers that already keep the key in memory.
+  @override
   bool get canDecryptInIsolate =>
       _keyContainer != null && _keyContainer.hasPrivateKey;
 
   /// Runs [operation] with the raw private key hex. Mirrors
   /// [SecureKeyContainer.withPrivateKey] but scoped to this signer so
   /// callers never need to reach into the container directly.
+  @override
   T withPrivateKeyHex<T>(T Function(String hex) operation) {
     final container = _keyContainer;
     if (container == null) {
-      throw StateError('AuthServiceSigner has no key container');
+      throw StateError('LocalKeySigner has no key container');
     }
     return container.withPrivateKey(operation);
   }
@@ -65,7 +73,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'Failed to sign canonical payload: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -83,7 +91,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'Failed to sign event: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -104,7 +112,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'NIP-04 encryption failed: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -122,7 +130,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'NIP-04 decryption failed: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -142,7 +150,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'NIP-44 encryption failed: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;
@@ -162,7 +170,7 @@ class AuthServiceSigner implements NostrSigner {
     } on Exception catch (e) {
       Log.error(
         'NIP-44 decryption failed: $e',
-        name: 'AuthServiceSigner',
+        name: 'LocalKeySigner',
         category: LogCategory.relay,
       );
       return null;

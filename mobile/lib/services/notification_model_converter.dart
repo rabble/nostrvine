@@ -30,7 +30,7 @@ NotificationModel notificationModelFromRelayApi(
     actorName: actorName,
     actorPictureUrl: actorPictureUrl,
     message: message,
-    timestamp: relay.createdAt,
+    timestamp: relay.sourceCreatedAt ?? relay.createdAt,
     isRead: relay.read,
     targetEventId: relay.referencedEventId,
     targetVideoUrl: targetVideoUrl,

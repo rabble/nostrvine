@@ -114,6 +114,11 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
+      // Stub backfillCurrentUserHasSent for _backfillCurrentUserHasSent().
+      when(
+        () => mockConversationsDao.backfillCurrentUserHasSent(any()),
+      ).thenAnswer((_) async => 0);
+
       // Global stub for runInTransaction — executes the callback directly.
       // Stub both <void> and <Null> since Dart infers different type args
       // depending on whether the callback returns or is void-typed.
@@ -1416,6 +1421,29 @@ void main() {
         );
         // But the repository should still be initialized so send() works.
         expect(repository.isInitialized, isTrue);
+      });
+
+      test('setCredentials triggers backfillCurrentUserHasSent', () async {
+        final repository = DmRepository(
+          nostrClient: mockNostrClient,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+        );
+
+        repository.setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        // Let the unawaited _runPostAuthMaintenance() settle.
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockConversationsDao.backfillCurrentUserHasSent(
+            _validPubkeyA,
+          ),
+        ).called(1);
       });
 
       test('startListening does not poll the relay', () async {

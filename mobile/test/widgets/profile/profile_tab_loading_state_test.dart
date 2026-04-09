@@ -1,0 +1,48 @@
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
+
+void main() {
+  group(ProfileTabLoadingState, () {
+    Widget buildSubject({String? message}) {
+      return MaterialApp(
+        theme: VineTheme.theme,
+        home: Scaffold(
+          body: ProfileTabLoadingState(message: message),
+        ),
+      );
+    }
+
+    group('renders', () {
+      testWidgets('$CircularProgressIndicator', (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('$CustomScrollView with $SliverFillRemaining', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+
+        expect(find.byType(CustomScrollView), findsOneWidget);
+        expect(find.byType(SliverFillRemaining), findsOneWidget);
+      });
+
+      testWidgets('no text when message is null', (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        expect(find.byType(Text), findsNothing);
+      });
+
+      testWidgets('message text when provided', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(message: 'Loading videos...'),
+        );
+
+        expect(find.text('Loading videos...'), findsOneWidget);
+      });
+    });
+  });
+}
