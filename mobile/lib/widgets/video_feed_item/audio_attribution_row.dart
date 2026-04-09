@@ -1,5 +1,5 @@
-// ABOUTME: Audio attribution row shown on every video in the feed.
-// ABOUTME: Navigates to SoundDetailScreen (shared audio) or OriginalSoundDetailScreen.
+// ABOUTME: Audio attribution row widget for displaying sound info on video feed.
+// ABOUTME: Shows sound name and creator with tap navigation to SoundDetailScreen.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -12,17 +12,18 @@ import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-/// A tappable row showing audio attribution on every video.
+/// A tappable row showing audio attribution when a video uses external audio.
 ///
-/// Two modes:
-/// - **Explicit audio**: When [VideoEvent.hasAudioReference] is true, fetches
-///   the Kind 1063 audio event and displays "♪ Sound name · creator".
-///   Tapping navigates to [SoundDetailScreen].
-/// - **Original sound**: When no audio reference exists, displays
-///   "♪ Original sound - @creator" using the video author's profile.
-///   Tapping navigates to [SoundDetailScreen] in view-only mode.
+/// Displays the sound name and creator info in the format:
+/// "♪ Sound name · creator"
+///
+/// Tapping navigates to [SoundDetailScreen] for that audio.
+/// Shows nothing if the video has no audio reference or if audio is unavailable.
 class AudioAttributionRow extends ConsumerWidget {
   /// Creates an AudioAttributionRow.
+  ///
+  /// [video] must have a non-null [VideoEvent.audioEventId] for this widget
+  /// to display anything.
   const AudioAttributionRow({required this.video, super.key});
 
   /// The video event to display audio attribution for.
@@ -30,24 +31,12 @@ class AudioAttributionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // If video has an explicit audio reference, show the fetched audio info
-    if (video.hasAudioReference && video.audioEventId != null) {
-      return _ExplicitAudioAttribution(video: video);
+    // Only show if video has an audio reference
+    if (!video.hasAudioReference || video.audioEventId == null) {
+      return const SizedBox.shrink();
     }
 
-    // Otherwise show "Original sound - @creator"
-    return _OriginalSoundAttribution(video: video);
-  }
-}
-
-/// Displays attribution for a video with an explicit Kind 1063 audio reference.
-class _ExplicitAudioAttribution extends ConsumerWidget {
-  const _ExplicitAudioAttribution({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the audio event asynchronously
     final audioAsync = ref.watch(soundByIdProvider(video.audioEventId!));
 
     return audioAsync.when(
@@ -59,8 +48,7 @@ class _ExplicitAudioAttribution extends ConsumerWidget {
             name: 'AudioAttributionRow',
             category: LogCategory.ui,
           );
-          // Fall back to original sound display
-          return _OriginalSoundAttribution(video: video);
+          return const SizedBox.shrink();
         }
 
         return _AudioAttributionContent(audio: audio);
@@ -72,68 +60,13 @@ class _ExplicitAudioAttribution extends ConsumerWidget {
           name: 'AudioAttributionRow',
           category: LogCategory.ui,
         );
-        // Fall back to original sound display on error
-        return _OriginalSoundAttribution(video: video);
+        return const SizedBox.shrink();
       },
     );
   }
 }
 
-/// Displays "Original sound - @creator" for videos without explicit audio.
-class _OriginalSoundAttribution extends ConsumerWidget {
-  const _OriginalSoundAttribution({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final creatorProfile = ref
-        .watch(userProfileReactiveProvider(video.pubkey))
-        .value;
-    final creatorName =
-        creatorProfile?.bestDisplayName ??
-        video.authorName ??
-        UserProfile.generatedNameFor(video.pubkey);
-
-    return Semantics(
-      identifier: 'audio_attribution_row_original',
-      label: 'Original sound by $creatorName.',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: VineTheme.backgroundColor.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.music_note,
-              size: 14,
-              color: VineTheme.vineGreen,
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                'Original sound - $creatorName',
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  shadows: [Shadow(blurRadius: 4)],
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The actual content showing audio attribution for an explicit audio event.
+/// The actual content showing audio attribution.
 class _AudioAttributionContent extends ConsumerWidget {
   const _AudioAttributionContent({required this.audio});
 
