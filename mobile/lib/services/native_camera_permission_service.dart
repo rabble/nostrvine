@@ -25,6 +25,8 @@ abstract class NativeCameraPermissionService {
 
   Future<NativeCameraPermissionStatus> requestPermission();
 
+  Future<NativeCameraPermissionStatus> requestMicrophonePermission();
+
   Future<bool> openSystemSettings();
 }
 
@@ -72,6 +74,24 @@ class MethodChannelNativeCameraPermissionService
   Future<NativeCameraPermissionStatus> requestPermission() async {
     try {
       final granted = await channel.invokeMethod<bool>('requestPermission');
+      return granted == true
+          ? NativeCameraPermissionStatus.granted
+          : NativeCameraPermissionStatus.denied;
+    } on PlatformException catch (error) {
+      if (error.code == 'PERMISSION_DENIED') {
+        return NativeCameraPermissionStatus.requiresSettings;
+      }
+
+      return NativeCameraPermissionStatus.unavailable;
+    }
+  }
+
+  @override
+  Future<NativeCameraPermissionStatus> requestMicrophonePermission() async {
+    try {
+      final granted = await channel.invokeMethod<bool>(
+        'requestMicrophonePermission',
+      );
       return granted == true
           ? NativeCameraPermissionStatus.granted
           : NativeCameraPermissionStatus.denied;

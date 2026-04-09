@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -292,15 +293,21 @@ void main() {
     });
 
     testWidgets(
-      'camera enable on macOS defers prompting to the camera stack when authorization is not determined',
+      'camera enable on macOS explicitly requests native permission before publishing',
       (tester) async {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        final nativeMethodCalls = <MethodCall>[];
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
               MethodChannelNativeCameraPermissionService.channel,
               (methodCall) async {
+                nativeMethodCalls.add(methodCall);
                 if (methodCall.method == 'getAuthorizationStatus') {
                   return 'notDetermined';
+                }
+                if (methodCall.method == 'requestPermission') {
+                  return true;
                 }
                 return null;
               },
@@ -383,6 +390,13 @@ void main() {
 
         verify(() => mockLiveKitRoomService.setCameraEnabled(true)).called(1);
         verifyNever(mockPermissionsService.checkCameraStatus);
+        expect(
+          nativeMethodCalls.map((call) => call.method),
+          containsAllInOrder(<String>[
+            'getAuthorizationStatus',
+            'requestPermission',
+          ]),
+        );
         expect(
           find.text('Camera access is blocked. Allow it in system settings.'),
           findsNothing,

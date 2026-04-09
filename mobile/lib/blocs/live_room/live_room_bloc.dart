@@ -385,10 +385,11 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
         case NativeCameraAuthorizationStatus.restricted:
           return 'Camera access is blocked. Allow it in system settings.';
         case NativeCameraAuthorizationStatus.notDetermined:
+          return _mapCameraPermissionRequest(
+            await _nativeCameraPermissionService.requestPermission(),
+          );
         case NativeCameraAuthorizationStatus.unavailable:
-          // Match the recorder flow on macOS: let the real camera stack touch
-          // hardware so the OS can show its native permission prompt.
-          return null;
+          break;
       }
     }
 
@@ -422,10 +423,11 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
         case NativeCameraAuthorizationStatus.restricted:
           return 'Microphone access is blocked. Allow it in system settings.';
         case NativeCameraAuthorizationStatus.notDetermined:
+          return _mapMicrophonePermissionRequest(
+            await _nativeCameraPermissionService.requestMicrophonePermission(),
+          );
         case NativeCameraAuthorizationStatus.unavailable:
-          // Match the camera flow on macOS: let the real media stack request
-          // access so the OS can show its native microphone prompt.
-          return null;
+          break;
       }
     }
 
@@ -446,6 +448,30 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     } catch (_) {
       return 'Unable to access the microphone right now.';
     }
+  }
+
+  String? _mapCameraPermissionRequest(NativeCameraPermissionStatus status) {
+    return switch (status) {
+      NativeCameraPermissionStatus.granted => null,
+      NativeCameraPermissionStatus.denied =>
+        'Camera access is required to turn video on.',
+      NativeCameraPermissionStatus.requiresSettings =>
+        'Camera access is blocked. Allow it in system settings.',
+      NativeCameraPermissionStatus.unavailable =>
+        'Unable to access the camera right now.',
+    };
+  }
+
+  String? _mapMicrophonePermissionRequest(NativeCameraPermissionStatus status) {
+    return switch (status) {
+      NativeCameraPermissionStatus.granted => null,
+      NativeCameraPermissionStatus.denied =>
+        'Microphone access is required to speak in the room.',
+      NativeCameraPermissionStatus.requiresSettings =>
+        'Microphone access is blocked. Allow it in system settings.',
+      NativeCameraPermissionStatus.unavailable =>
+        'Unable to access the microphone right now.',
+    };
   }
 
   Future<void> _onToggleHandRaiseRequested(

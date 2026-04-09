@@ -476,7 +476,7 @@ void main() {
     );
 
     test(
-      'turning the host camera on on macOS does not block not-determined permission behind preflight checks',
+      'turning the host camera on on macOS explicitly requests native permission before publishing',
       () async {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
         addTearDown(() => debugDefaultTargetPlatformOverride = null);
@@ -489,6 +489,9 @@ void main() {
         ).thenAnswer(
           (_) async => NativeCameraAuthorizationStatus.notDetermined,
         );
+        when(
+          mockNativeCameraPermissionService.requestPermission,
+        ).thenAnswer((_) async => NativeCameraPermissionStatus.granted);
         when(
           mockPermissionsService.checkMicrophoneStatus,
         ).thenAnswer((_) async => PermissionStatus.granted);
@@ -522,6 +525,7 @@ void main() {
         await _flush();
 
         verify(mockNativeCameraPermissionService.authorizationStatus).called(1);
+        verify(mockNativeCameraPermissionService.requestPermission).called(1);
         verify(() => mockMediaService.setCameraEnabled(true)).called(1);
         expect(bloc.state.errorMessage, isNull);
 
@@ -530,7 +534,7 @@ void main() {
     );
 
     test(
-      'turning the host microphone on on macOS does not block not-determined permission behind preflight checks',
+      'turning the host microphone on on macOS explicitly requests native permission before publishing',
       () async {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
         addTearDown(() => debugDefaultTargetPlatformOverride = null);
@@ -543,6 +547,9 @@ void main() {
         ).thenAnswer(
           (_) async => NativeCameraAuthorizationStatus.notDetermined,
         );
+        when(
+          mockNativeCameraPermissionService.requestMicrophonePermission,
+        ).thenAnswer((_) async => NativeCameraPermissionStatus.granted);
         when(
           mockPermissionsService.checkCameraStatus,
         ).thenAnswer((_) async => PermissionStatus.granted);
@@ -584,6 +591,9 @@ void main() {
         verify(
           mockNativeCameraPermissionService.microphoneAuthorizationStatus,
         ).called(1);
+        verify(
+          mockNativeCameraPermissionService.requestMicrophonePermission,
+        ).called(1);
         verifyNever(
           mockPermissionsService.checkMicrophoneStatus,
         );
@@ -592,6 +602,65 @@ void main() {
         );
         verify(() => mockMediaService.setMicrophoneEnabled(true)).called(1);
         expect(bloc.state.errorMessage, isNull);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'turning the host microphone on on macOS surfaces a clear error when the native request is denied',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        final mockPermissionsService = _MockPermissionsService();
+        final mockNativeCameraPermissionService =
+            _MockNativeCameraPermissionService();
+        when(
+          mockNativeCameraPermissionService.microphoneAuthorizationStatus,
+        ).thenAnswer(
+          (_) async => NativeCameraAuthorizationStatus.notDetermined,
+        );
+        when(
+          mockNativeCameraPermissionService.requestMicrophonePermission,
+        ).thenAnswer((_) async => NativeCameraPermissionStatus.denied);
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          permissionsService: mockPermissionsService,
+          nativeCameraPermissionService: mockNativeCameraPermissionService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleMicrophoneRequested());
+        await _flush();
+
+        verify(
+          mockNativeCameraPermissionService.microphoneAuthorizationStatus,
+        ).called(1);
+        verify(
+          mockNativeCameraPermissionService.requestMicrophonePermission,
+        ).called(1);
+        verifyNever(() => mockMediaService.setMicrophoneEnabled(true));
+        expect(
+          bloc.state.errorMessage,
+          'Microphone access is required to speak in the room.',
+        );
 
         await bloc.close();
       },

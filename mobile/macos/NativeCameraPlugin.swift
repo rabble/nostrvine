@@ -39,9 +39,9 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
 
         switch call.method {
         case "requestCameraPermission":
-            requestPermission(for: .video, result: result)
+            requestCameraPermission(result: result)
         case "requestMicrophonePermission":
-            requestPermission(for: .audio, result: result)
+            requestMicrophonePermission(result: result)
         case "cameraPermissionStatus":
             permissionStatus(for: .video, result: result)
         case "microphonePermissionStatus":
@@ -115,6 +115,29 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             ))
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    result(granted)
+                }
+            }
+        @unknown default:
+            result(false)
+        }
+    }
+
+    private func requestMicrophonePermission(result: @escaping FlutterResult) {
+        let currentStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+
+        switch currentStatus {
+        case .authorized:
+            result(true)
+        case .denied, .restricted:
+            result(FlutterError(
+                code: "PERMISSION_DENIED",
+                message: "Microphone access denied",
+                details: nil
+            ))
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
                 DispatchQueue.main.async {
                     result(granted)
                 }

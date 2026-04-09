@@ -64,6 +64,22 @@ void main() {
     expect(methodCalls.single.method, 'getMicrophoneAuthorizationStatus');
   });
 
+  test('maps a granted native microphone request correctly', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (methodCall) async {
+          methodCalls.add(methodCall);
+          if (methodCall.method == 'requestMicrophonePermission') {
+            return true;
+          }
+          return null;
+        });
+
+    final result = await service.requestMicrophonePermission();
+
+    expect(result, NativeCameraPermissionStatus.granted);
+    expect(methodCalls.single.method, 'requestMicrophonePermission');
+  });
+
   test('maps native permission denied into requires settings', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (methodCall) async {
