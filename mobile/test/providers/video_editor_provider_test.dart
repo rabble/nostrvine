@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for EditorProvider (Riverpod) validating state mutations and provider behavior
 // ABOUTME: Tests all EditorNotifier methods and state transitions using ProviderContainer
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -8,6 +10,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
@@ -342,6 +345,10 @@ void main() {
     });
 
     group('startRenderVideo', () {
+      tearDown(() {
+        VideoEditorRenderService.renderVideoToClipOverride = null;
+      });
+
       test(
         'resets isProcessing to false when finalRenderedClip '
         'already exists',
@@ -382,6 +389,367 @@ void main() {
           );
         },
       );
+
+      test(
+        'sets finalRenderedClip when render completes',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/clip.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          final renderedClip = DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                originalAudioVolume = 1.0,
+                customAudioVolume = 1.0,
+                aiTrainingOptOut = true,
+                parameters,
+                taskId,
+              }) async => (renderedClip, null);
+
+          await notifier.startRenderVideo();
+
+          final state = container.read(videoEditorProvider);
+          expect(state.finalRenderedClip, equals(renderedClip));
+          expect(state.isProcessing, isFalse);
+        },
+      );
+
+      test(
+        'sets isProcessing to false when render returns null',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/clip.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                originalAudioVolume = 1.0,
+                customAudioVolume = 1.0,
+                aiTrainingOptOut = true,
+                parameters,
+                taskId,
+              }) async => null;
+
+          await notifier.startRenderVideo();
+
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isFalse,
+          );
+          expect(
+            container.read(videoEditorProvider).finalRenderedClip,
+            isNull,
+          );
+        },
+      );
+
+      test(
+        'discards stale render when a newer render was started',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/clip.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          final slowCompleter = Completer<(DivineVideoClip, String?)?>();
+          final fastCompleter = Completer<(DivineVideoClip, String?)?>();
+
+          var callCount = 0;
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                originalAudioVolume = 1.0,
+                customAudioVolume = 1.0,
+                aiTrainingOptOut = true,
+                parameters,
+                taskId,
+              }) {
+                callCount++;
+                // First call = slow render, second call = fast render
+                return callCount == 1
+                    ? slowCompleter.future
+                    : fastCompleter.future;
+              };
+
+          final staleClip = DivineVideoClip(
+            id: 'stale',
+            video: EditorVideo.file('/docs/stale.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          final freshClip = DivineVideoClip(
+            id: 'fresh',
+            video: EditorVideo.file('/docs/fresh.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          // Start first (slow) render
+          final render1 = notifier.startRenderVideo();
+          // Start second (fast) render — increments _renderGeneration
+          final render2 = notifier.startRenderVideo();
+
+          expect(callCount, equals(2));
+
+          // Fast render completes first
+          fastCompleter.complete((freshClip, null));
+          await render2;
+
+          // Slow render completes after — should be discarded
+          slowCompleter.complete((staleClip, null));
+          await render1;
+
+          final state = container.read(videoEditorProvider);
+          expect(
+            state.finalRenderedClip?.id,
+            equals('fresh'),
+            reason:
+                'should keep the result from the latest render, '
+                'not the stale one',
+          );
+        },
+      );
+
+      test(
+        'stale render does not reset isProcessing',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/clip.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          final slowCompleter = Completer<(DivineVideoClip, String?)?>();
+          final fastCompleter = Completer<(DivineVideoClip, String?)?>();
+
+          var callCount = 0;
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                originalAudioVolume = 1.0,
+                customAudioVolume = 1.0,
+                aiTrainingOptOut = true,
+                parameters,
+                taskId,
+              }) {
+                callCount++;
+                return callCount == 1
+                    ? slowCompleter.future
+                    : fastCompleter.future;
+              };
+
+          // Start first (slow) render
+          final render1 = notifier.startRenderVideo();
+          // Start second render — will complete with null (cancelled)
+          final render2 = notifier.startRenderVideo();
+
+          // Second render returns null (simulating cancellation)
+          fastCompleter.complete(null);
+          await render2;
+
+          // isProcessing should be false after the latest render
+          // returned null
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isFalse,
+          );
+
+          // Now the stale render completes — should be silently
+          // discarded without touching state
+          final staleClip = DivineVideoClip(
+            id: 'stale',
+            video: EditorVideo.file('/docs/stale.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          slowCompleter.complete((staleClip, null));
+          await render1;
+
+          expect(
+            container.read(videoEditorProvider).finalRenderedClip,
+            isNull,
+            reason:
+                'stale render result must not set '
+                'finalRenderedClip',
+          );
+        },
+      );
+
+      test(
+        'passes draftId as taskId to render service',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/clip.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          notifier.setDraftId('my-draft-123');
+
+          String? capturedTaskId;
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                originalAudioVolume = 1.0,
+                customAudioVolume = 1.0,
+                aiTrainingOptOut = true,
+                parameters,
+                taskId,
+              }) async {
+                capturedTaskId = taskId;
+                return null;
+              };
+
+          await notifier.startRenderVideo();
+
+          expect(
+            capturedTaskId,
+            equals('my-draft-123'),
+            reason: 'draftId should be used as the render taskId',
+          );
+        },
+      );
+
+      test(
+        'uses autoSaveId as taskId when no draftId is set',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/clip.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          String? capturedTaskId;
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                originalAudioVolume = 1.0,
+                customAudioVolume = 1.0,
+                aiTrainingOptOut = true,
+                parameters,
+                taskId,
+              }) async {
+                capturedTaskId = taskId;
+                return null;
+              };
+
+          await notifier.startRenderVideo();
+
+          expect(
+            capturedTaskId,
+            equals(VideoEditorConstants.autoSaveId),
+            reason:
+                'should fall back to autoSaveId when '
+                'no draftId is set',
+          );
+        },
+      );
+    });
+
+    group('invalidateFinalRenderedClip', () {
+      test(
+        'is a no-op when finalRenderedClip is null',
+        () {
+          final notifier = container.read(videoEditorProvider.notifier);
+          final stateBefore = container.read(videoEditorProvider);
+
+          expect(stateBefore.finalRenderedClip, isNull);
+
+          notifier.invalidateFinalRenderedClip();
+
+          expect(
+            identical(container.read(videoEditorProvider), stateBefore),
+            isTrue,
+            reason:
+                'state should be the exact same instance '
+                'when clip is already null',
+          );
+        },
+      );
+
+      test(
+        'is a no-op when finalRenderedClip is null even if '
+        'isProcessing is true',
+        () {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          notifier.setProcessing(true);
+          final stateBefore = container.read(videoEditorProvider);
+
+          expect(stateBefore.finalRenderedClip, isNull);
+          expect(stateBefore.isProcessing, isTrue);
+
+          notifier.invalidateFinalRenderedClip();
+
+          // isProcessing should still be true — cancelRenderVideo was
+          // never called because clip was null.
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isTrue,
+            reason:
+                'isProcessing should remain true because '
+                'invalidate is a no-op when clip is null',
+          );
+        },
+      );
     });
 
     group('cancelRenderVideo', () {
@@ -410,50 +778,72 @@ void main() {
           );
         },
       );
-    });
-
-    group('resolveRenderTaskId', () {
-      test('prefers the active render task id when clips are empty', () {
-        expect(
-          resolveRenderTaskId(
-            activeRenderTaskId: 'render-123',
-            clips: const [],
-          ),
-          'render-123',
-        );
-      });
 
       test(
-        'falls back to the first clip id when no active task is tracked',
-        () {
-          final clip = DivineVideoClip(
-            id: 'clip-123',
-            video: EditorVideo.file('/docs/original.mp4'),
-            duration: const Duration(seconds: 2),
-            recordedAt: DateTime.now(),
-            targetAspectRatio: .vertical,
-            originalAspectRatio: 9 / 16,
+        'resets isProcessing to false without clips',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          notifier.setProcessing(true);
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isTrue,
           );
 
+          await notifier.cancelRenderVideo();
+
           expect(
-            resolveRenderTaskId(
-              activeRenderTaskId: null,
-              clips: [clip],
-            ),
-            'clip-123',
+            container.read(videoEditorProvider).isProcessing,
+            isFalse,
+            reason:
+                'isProcessing should always reset to false '
+                'after cancel, regardless of clip state',
           );
         },
       );
 
-      test('returns null when there is no active task and no clips', () {
-        expect(
-          resolveRenderTaskId(
-            activeRenderTaskId: null,
-            clips: const [],
-          ),
-          isNull,
-        );
-      });
+      test(
+        'uses draftId as taskId for cancel',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          notifier.setDraftId('custom-draft-id');
+          notifier.setProcessing(true);
+
+          // cancelRenderVideo should not throw — it uses
+          // draftId internally as the task identifier
+          await notifier.cancelRenderVideo();
+
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isFalse,
+          );
+          expect(notifier.draftId, equals('custom-draft-id'));
+        },
+      );
+
+      test(
+        'uses default autoSaveId when no draftId is set',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          notifier.setProcessing(true);
+
+          // Without setting a custom draftId, it should fall back
+          // to VideoEditorConstants.autoSaveId
+          expect(
+            notifier.draftId,
+            equals(VideoEditorConstants.autoSaveId),
+          );
+
+          await notifier.cancelRenderVideo();
+
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isFalse,
+          );
+        },
+      );
     });
   });
 

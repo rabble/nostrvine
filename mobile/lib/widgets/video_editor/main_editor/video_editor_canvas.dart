@@ -402,8 +402,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     final notifier = ref.read(videoEditorProvider.notifier);
-    if (parameters.image.isNotEmpty) {
+    if (parameters.layers.isNotEmpty && parameters.image.isNotEmpty) {
       try {
+        // We only precache the image for the preview on the metadata screen,
+        // which is not relevant for rendering.
         await precacheImage(MemoryImage(parameters.image), context);
       } catch (e) {
         Log.warning(
