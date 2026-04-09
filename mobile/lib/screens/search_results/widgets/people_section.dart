@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -6,7 +7,6 @@ import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
-import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
@@ -127,7 +127,7 @@ class _PeopleSkeletonLoader extends StatelessWidget {
         identifier: 'people_loading_indicator',
         label: 'Loading people results',
         child: Skeletonizer(
-          effect: searchSkeletonEffect,
+          effect: vineSkeletonEffect,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -159,7 +159,7 @@ class _UserTileSkeletonItem extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: searchSkeletonSurface,
+                color: VineTheme.skeletonSurface,
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
@@ -174,7 +174,7 @@ class _UserTileSkeletonItem extends StatelessWidget {
                     width: 140,
                     height: 18,
                     decoration: BoxDecoration(
-                      color: searchSkeletonSurface,
+                      color: VineTheme.skeletonSurface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -184,7 +184,7 @@ class _UserTileSkeletonItem extends StatelessWidget {
                     width: 100,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: searchSkeletonSurface,
+                      color: VineTheme.skeletonSurface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),

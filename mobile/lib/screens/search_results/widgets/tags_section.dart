@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -5,7 +6,6 @@ import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
-import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -120,7 +120,7 @@ class _TagsSkeletonLoader extends StatelessWidget {
         identifier: 'tags_loading_indicator',
         label: 'Loading tag results',
         child: Skeletonizer(
-          effect: searchSkeletonEffect,
+          effect: vineSkeletonEffect,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Wrap(
@@ -150,7 +150,7 @@ class _TagChipSkeletonItem extends StatelessWidget {
         width: width,
         height: 36,
         decoration: BoxDecoration(
-          color: searchSkeletonSurface,
+          color: VineTheme.skeletonSurface,
           borderRadius: BorderRadius.circular(16),
         ),
       ),

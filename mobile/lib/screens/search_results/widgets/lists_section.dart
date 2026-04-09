@@ -11,7 +11,6 @@ import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
-import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/widgets/list_search_card.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -206,7 +205,7 @@ class _ListsSkeletonLoader extends StatelessWidget {
       identifier: 'lists_loading_indicator',
       label: 'Loading list results',
       child: const Skeletonizer(
-        effect: searchSkeletonEffect,
+        effect: vineSkeletonEffect,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
@@ -237,7 +236,7 @@ class _ListCardSkeletonItem extends StatelessWidget {
             aspectRatio: 0.85,
             child: Container(
               decoration: BoxDecoration(
-                color: searchSkeletonSurface,
+                color: VineTheme.skeletonSurface,
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
@@ -249,7 +248,7 @@ class _ListCardSkeletonItem extends StatelessWidget {
             width: 100,
             height: 16,
             decoration: BoxDecoration(
-              color: searchSkeletonSurface,
+              color: VineTheme.skeletonSurface,
               borderRadius: BorderRadius.circular(8),
             ),
           ),
@@ -260,7 +259,7 @@ class _ListCardSkeletonItem extends StatelessWidget {
             width: 140,
             height: 12,
             decoration: BoxDecoration(
-              color: searchSkeletonSurface,
+              color: VineTheme.skeletonSurface,
               borderRadius: BorderRadius.circular(8),
             ),
           ),

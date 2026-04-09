@@ -10,7 +10,6 @@ import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
-import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -237,7 +236,7 @@ class _VideosSkeletonLoader extends StatelessWidget {
         identifier: 'videos_loading_indicator',
         label: 'Loading video results',
         child: Skeletonizer(
-          effect: searchSkeletonEffect,
+          effect: vineSkeletonEffect,
           child: GridView.count(
             crossAxisCount: 2,
             mainAxisSpacing: 4,
@@ -250,7 +249,7 @@ class _VideosSkeletonLoader extends StatelessWidget {
               (_) => Skeleton.leaf(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: searchSkeletonSurface,
+                    color: VineTheme.skeletonSurface,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),

@@ -16,13 +16,7 @@ class CommentsSkeletonLoader extends StatelessWidget {
       identifier: 'comments_loading_indicator',
       label: 'Loading comments',
       child: Skeletonizer(
-        effect: ShimmerEffect(
-          baseColor: VineTheme.iconButtonBackground,
-          highlightColor: VineTheme.iconButtonBackground.withValues(
-            alpha: VineTheme.iconButtonBackground.a * 0.6,
-          ),
-          duration: const Duration(milliseconds: 1500),
-        ),
+        effect: vineSkeletonEffect,
         child: ListView.builder(
           padding: EdgeInsets.zero,
           itemCount: 6,
@@ -40,7 +34,7 @@ class _CommentSkeletonItem extends StatelessWidget {
   const _CommentSkeletonItem();
 
   // Surface container color from Figma (green tint)
-  static const Color _surfaceColor = VineTheme.outlinedDisabled;
+  static const Color _surfaceColor = VineTheme.skeletonSurface;
 
   @override
   Widget build(BuildContext context) {
