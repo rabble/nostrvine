@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -30,6 +32,18 @@ class VideosSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final status = context.select(
+      (VideoSearchBloc bloc) => bloc.state.status,
+    );
+    final videos = context.select(
+      (VideoSearchBloc bloc) => bloc.state.videos,
+    );
+
+    // In the All tab, hide entire section when results are empty and loaded.
+    if (!showAll && status == VideoSearchStatus.success && videos.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverMainAxisGroup(
       slivers: [
         if (!showAll)
@@ -39,14 +53,16 @@ class VideosSection extends StatelessWidget {
               child: SectionHeader(title: 'Videos', onTap: onSeeAll),
             ),
           ),
-        const _VideosContent(),
+        _VideosContent(showAll: showAll),
       ],
     );
   }
 }
 
 class _VideosContent extends StatefulWidget {
-  const _VideosContent();
+  const _VideosContent({this.showAll = false});
+
+  final bool showAll;
 
   @override
   State<_VideosContent> createState() => _VideosContentState();
@@ -90,14 +106,15 @@ class _VideosContentState extends State<_VideosContent> {
       listener: (context, state) {
         _videosStreamController.add(state.videos);
       },
-      child: _VideosGrid(onVideoTap: _onVideoTap),
+      child: _VideosGrid(showAll: widget.showAll, onVideoTap: _onVideoTap),
     );
   }
 }
 
 class _VideosGrid extends StatelessWidget {
-  const _VideosGrid({required this.onVideoTap});
+  const _VideosGrid({required this.showAll, required this.onVideoTap});
 
+  final bool showAll;
   final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   @override
@@ -107,6 +124,9 @@ class _VideosGrid extends StatelessWidget {
     );
     final videos = context.select(
       (VideoSearchBloc bloc) => bloc.state.videos,
+    );
+    final query = context.select(
+      (VideoSearchBloc bloc) => bloc.state.query,
     );
 
     if ((status == VideoSearchStatus.initial ||
@@ -122,7 +142,16 @@ class _VideosGrid extends StatelessWidget {
       );
     }
 
+    if (status == VideoSearchStatus.failure) {
+      return SearchSectionErrorState(
+        onRetry: () => context.read<VideoSearchBloc>().add(
+          VideoSearchQueryChanged(query),
+        ),
+      );
+    }
+
     if (videos.isEmpty) {
+      if (showAll) return SearchSectionEmptyState(query: query);
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 

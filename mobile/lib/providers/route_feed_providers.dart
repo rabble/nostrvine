@@ -9,9 +9,9 @@ import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
-/// Temporary provider to hold the explore tab's current video list
-/// This is set by ExploreScreen when entering feed mode and consumed by both
-/// ExploreVideoScreenPure and activeVideoIdProvider to ensure they use the same list
+/// Provider to hold the explore tab's current video list.
+/// Set by ExploreScreen when entering feed mode and consumed by
+/// activeVideoIdProvider for deep-link-aware active video resolution.
 final exploreTabVideosProvider = StateProvider<List<VideoEvent>?>(
   (ref) => null,
 );
@@ -80,7 +80,7 @@ final videosForExploreRouteProvider = Provider<AsyncValue<VideoFeedState>>((
         final videoEventService = ref.read(videoEventServiceProvider);
         final visibleTabVideos = videoEventService.filterVideoList(tabVideos);
 
-        // Filter broken videos to match ExploreVideoScreenPure's PageView.
+        // Filter broken videos to match the pooled feed's video list.
         // Both must use the same filtered list so URL indices align with
         // the videos actually shown on screen.
         final filteredTabVideos = brokenTrackerAsync.maybeWhen(

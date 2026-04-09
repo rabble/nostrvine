@@ -1,6 +1,8 @@
 // ABOUTME: Pure search screen using revolutionary Riverpod architecture
 // ABOUTME: Searches for videos, users, and hashtags using composition architecture
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,11 +16,12 @@ import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/hashtag_search_view.dart';
 import 'package:openvine/widgets/user_search_view.dart';
+import 'package:rxdart/rxdart.dart' show StartWithExtension;
 
 /// Pure search screen using revolutionary single-controller Riverpod architecture
 class SearchScreenPure extends ConsumerStatefulWidget {
@@ -173,7 +176,10 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       return BlocBuilder<VideoSearchBloc, VideoSearchState>(
         bloc: _videoSearchBloc,
         builder: (context, videoState) {
-          return _SearchFeedModeContent(searchTerm: videoState.query);
+          return _SearchFeedModeContent(
+            key: const Key('search-feed'),
+            searchTerm: videoState.query,
+          );
         },
       );
     }
@@ -391,13 +397,42 @@ class _VideosTab extends StatelessWidget {
   }
 }
 
-class _SearchFeedModeContent extends ConsumerWidget {
-  const _SearchFeedModeContent({required this.searchTerm});
+class _SearchFeedModeContent extends ConsumerStatefulWidget {
+  const _SearchFeedModeContent({required this.searchTerm, super.key});
 
   final String searchTerm;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SearchFeedModeContent> createState() =>
+      _SearchFeedModeContentState();
+}
+
+class _SearchFeedModeContentState
+    extends ConsumerState<_SearchFeedModeContent> {
+  late final StreamController<List<VideoEvent>> _streamController;
+  List<VideoEvent>? _lastVideos;
+
+  @override
+  void initState() {
+    super.initState();
+    _streamController = StreamController<List<VideoEvent>>.broadcast();
+  }
+
+  @override
+  void dispose() {
+    _streamController.close();
+    super.dispose();
+  }
+
+  void _pushVideos(List<VideoEvent> videos) {
+    if (videos.isEmpty) return;
+    if (identical(videos, _lastVideos)) return;
+    _lastVideos = videos;
+    if (!_streamController.isClosed) _streamController.add(videos);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(divineHostFilterVersionProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
     final videos = videoEventService.filterVideoList(
@@ -407,7 +442,7 @@ class _SearchFeedModeContent extends ConsumerWidget {
     final startIndex =
         pageContext.whenOrNull(data: (ctx) => ctx.videoIndex ?? 0) ?? 0;
 
-    if (videos.isEmpty || startIndex >= videos.length) {
+    if (videos.isEmpty) {
       return const ColoredBox(
         color: VineTheme.backgroundColor,
         child: Center(
@@ -416,16 +451,18 @@ class _SearchFeedModeContent extends ConsumerWidget {
       );
     }
 
-    return ExploreVideoScreenPure(
-      startingVideo: videos[startIndex],
-      videoList: videos,
+    _pushVideos(videos);
+
+    final safeIndex = startIndex.clamp(0, videos.length - 1);
+
+    return PooledFullscreenVideoFeedScreen(
+      videosStream: _streamController.stream.startWith(videos),
+      initialIndex: safeIndex,
       contextTitle: 'Search',
-      startingIndex: startIndex,
-      useLocalActiveState: true,
-      onNavigate: (index) {
+      onPageChanged: (index) {
         context.go(
           SearchScreenPure.pathForTerm(
-            term: searchTerm.isNotEmpty ? searchTerm : null,
+            term: widget.searchTerm.isNotEmpty ? widget.searchTerm : null,
             index: index,
           ),
         );

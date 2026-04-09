@@ -9,6 +9,8 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/widgets/list_search_card.dart';
 
@@ -28,6 +30,18 @@ class ListsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final status = context.select(
+      (ListSearchBloc bloc) => bloc.state.status,
+    );
+    final results = context.select(
+      (ListSearchBloc bloc) => bloc.state.results,
+    );
+
+    // In the All tab, hide entire section when results are empty and loaded.
+    if (!showAll && status == .success && results.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverMainAxisGroup(
       slivers: [
         if (!showAll)
@@ -59,13 +73,17 @@ class _ListsContent extends StatelessWidget {
       return const _LoadingState();
     }
 
-    if (status == .failure && showAll) {
-      return const _FailureState();
+    if (status == .failure) {
+      return SearchSectionErrorState(
+        onRetry: () => context.read<ListSearchBloc>().add(
+          ListSearchQueryChanged(query),
+        ),
+      );
     }
 
     if (results.isEmpty) {
       if (showAll && status == .success) {
-        return _NoResultsState(query: query);
+        return SearchSectionEmptyState(query: query);
       }
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -179,66 +197,6 @@ class _LoadingState extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 24),
         child: Center(
           child: CircularProgressIndicator(color: VineTheme.vineGreen),
-        ),
-      ),
-    );
-  }
-}
-
-// TODO(#2856): Improve empty state design with better guidance for users.
-class _NoResultsState extends StatelessWidget {
-  const _NoResultsState({required this.query});
-
-  final String query;
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverFillRemaining(
-      hasScrollBody: false,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 16,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.search,
-              color: VineTheme.secondaryText,
-              size: 64,
-            ),
-            Text(
-              'No lists found for "$query"',
-              style: VineTheme.titleSmallFont(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// TODO(#2856): Improve error state design with retry action.
-class _FailureState extends StatelessWidget {
-  const _FailureState();
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverFillRemaining(
-      hasScrollBody: false,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 16,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.warningCircle,
-              color: VineTheme.error,
-              size: 64,
-            ),
-            Text(
-              'Search failed',
-              style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
-            ),
-          ],
         ),
       ),
     );

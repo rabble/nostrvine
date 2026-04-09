@@ -15,9 +15,8 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:openvine/screens/comments/comments_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
@@ -663,25 +662,14 @@ class _NotificationTabContentState
     final shouldAutoOpenComments = notificationType == NotificationType.comment;
     final videoForNav = video;
 
-    // Navigate to video player with this specific video
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (navContext) {
-          if (shouldAutoOpenComments) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (navContext.mounted) {
-                CommentsScreen.show(navContext, videoForNav);
-              }
-            });
-          }
-          return ExploreVideoScreenPure(
-            startingVideo: videoForNav,
-            videoList: [videoForNav],
-            contextTitle: 'From Notification',
-            startingIndex: 0,
-            useLocalActiveState: true,
-          );
-        },
+    // Navigate to video player using the pooled playback path
+    context.push(
+      PooledFullscreenVideoFeedScreen.path,
+      extra: PooledFullscreenVideoFeedArgs(
+        videosStream: Stream.value([videoForNav]),
+        initialIndex: 0,
+        contextTitle: 'From Notification',
+        autoOpenComments: shouldAutoOpenComments,
       ),
     );
   }
