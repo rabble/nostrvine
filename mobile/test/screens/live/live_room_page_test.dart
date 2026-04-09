@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,6 +23,8 @@ import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/livekit_room_service.dart';
+import 'package:openvine/services/native_camera_permission_service.dart';
+import 'package:permissions_service/permissions_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -33,6 +36,8 @@ class _MockLiveChatRepository extends Mock implements LiveChatRepository {}
 class _MockLiveApiService extends Mock implements LiveApiService {}
 
 class _MockLiveKitRoomService extends Mock implements LiveKitRoomService {}
+
+class _MockPermissionsService extends Mock implements PermissionsService {}
 
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
@@ -285,6 +290,109 @@ void main() {
       expect(find.text('Report user'), findsWidgets);
       expect(find.text('Block user'), findsWidgets);
     });
+
+    testWidgets(
+      'camera permission failures surface inline in the live room',
+      (tester) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              MethodChannelNativeCameraPermissionService.channel,
+              (methodCall) async {
+                if (methodCall.method == 'hasPermission') {
+                  return false;
+                }
+                if (methodCall.method == 'requestPermission') {
+                  throw PlatformException(
+                    code: 'PERMISSION_DENIED',
+                    message: 'Camera access denied',
+                  );
+                }
+                return null;
+              },
+            );
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                MethodChannelNativeCameraPermissionService.channel,
+                null,
+              );
+        });
+
+        final mockPermissionsService = _MockPermissionsService();
+        when(
+          mockPermissionsService.checkCameraStatus,
+        ).thenAnswer((_) async => PermissionStatus.canRequest);
+        when(
+          mockPermissionsService.requestCameraPermission,
+        ).thenAnswer((_) async => PermissionStatus.requiresSettings);
+        when(
+          mockPermissionsService.checkMicrophoneStatus,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          mockPermissionsService.requestMicrophonePermission,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          mockPermissionsService.openAppSettings,
+        ).thenAnswer((_) async => true);
+        when(
+          mockPermissionsService.checkGalleryStatus,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          mockPermissionsService.requestGalleryPermission,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          () => mockLiveKitRoomService.setCameraEnabled(any()),
+        ).thenAnswer((_) async {});
+
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final hostAuth = createMockAuthService();
+        when(() => hostAuth.currentPublicKeyHex).thenReturn('host-pubkey');
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: hostAuth,
+            additionalOverrides: [
+              liveRepositoryProvider.overrideWithValue(mockLiveRepository),
+              liveChatRepositoryProvider.overrideWithValue(
+                mockLiveChatRepository,
+              ),
+              liveApiServiceProvider.overrideWithValue(mockLiveApiService),
+              liveKitRoomServiceProvider.overrideWithValue(
+                mockLiveKitRoomService,
+              ),
+              permissionsServiceProvider.overrideWithValue(
+                mockPermissionsService,
+              ),
+            ],
+            home: LiveRoomPage(
+              roomId: room.id,
+              sessionId: session.id,
+              initialRoom: room,
+              initialSession: session,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        await tester.scrollUntilVisible(
+          find.text('Turn camera on'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Turn camera on'));
+        await tester.pump();
+        await tester.pump();
+
+        verifyNever(() => mockLiveKitRoomService.setCameraEnabled(true));
+        expect(
+          find.text('Camera access is blocked. Allow it in system settings.'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets(
       'chat starts for the current session even when the room is ready immediately',

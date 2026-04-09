@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/live_room/live_room_bloc.dart';
@@ -11,12 +12,19 @@ import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/repositories/live_repository.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/livekit_room_service.dart';
+import 'package:openvine/services/native_camera_permission_service.dart';
+import 'package:permissions_service/permissions_service.dart';
 
 class _MockLiveRepository extends Mock implements LiveRepository {}
 
 class _MockLiveApiService extends Mock implements LiveApiService {}
 
 class _MockLiveKitRoomService extends Mock implements LiveKitRoomService {}
+
+class _MockPermissionsService extends Mock implements PermissionsService {}
+
+class _MockNativeCameraPermissionService extends Mock
+    implements NativeCameraPermissionService {}
 
 void main() {
   group('LiveRoomBloc', () {
@@ -368,6 +376,67 @@ void main() {
 
       await bloc.close();
     });
+
+    test(
+      'turning the host camera on requests macOS camera permission before publishing',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        final mockPermissionsService = _MockPermissionsService();
+        final mockNativeCameraPermissionService =
+            _MockNativeCameraPermissionService();
+        when(
+          mockNativeCameraPermissionService.hasPermission,
+        ).thenAnswer((_) async => false);
+        when(
+          mockNativeCameraPermissionService.requestPermission,
+        ).thenAnswer(
+          (_) async => NativeCameraPermissionStatus.requiresSettings,
+        );
+        when(
+          mockPermissionsService.checkMicrophoneStatus,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+        when(
+          mockPermissionsService.requestMicrophonePermission,
+        ).thenAnswer((_) async => PermissionStatus.granted);
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          permissionsService: mockPermissionsService,
+          nativeCameraPermissionService: mockNativeCameraPermissionService,
+        );
+
+        bloc.add(const LiveRoomJoinRequested(room: room, role: LiveRole.host));
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        mediaController.add(
+          const LiveMediaState(
+            status: LiveMediaConnectionStatus.connected,
+            canPublish: true,
+          ),
+        );
+        await _flush();
+
+        bloc.add(const ToggleCameraRequested());
+        await _flush();
+
+        verify(mockNativeCameraPermissionService.hasPermission).called(1);
+        verify(mockNativeCameraPermissionService.requestPermission).called(1);
+        verifyNever(() => mockMediaService.setCameraEnabled(true));
+        expect(
+          bloc.state.errorMessage,
+          'Camera access is blocked. Allow it in system settings.',
+        );
+
+        await bloc.close();
+      },
+    );
 
     test(
       'audience members promoted onto the stage reconnect as speakers and gain publish access',

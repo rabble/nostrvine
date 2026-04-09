@@ -68,6 +68,10 @@ class _LiveRoomViewState extends State<LiveRoomView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (roomState.errorMessage != null) ...[
+                    _LiveRoomErrorBanner(message: roomState.errorMessage!),
+                    const SizedBox(height: 16),
+                  ],
                   LiveRoomStage(
                     speakerPubkeys: roomState.speakerPubkeys,
                     audienceCount:
@@ -202,6 +206,31 @@ class _LiveRoomViewState extends State<LiveRoomView> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Room link copied to clipboard')),
+    );
+  }
+}
+
+class _LiveRoomErrorBanner extends StatelessWidget {
+  const _LiveRoomErrorBanner({
+    required this.message,
+  });
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: VineTheme.errorContainer,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: VineTheme.error),
+      ),
+      child: Text(
+        message,
+        style: VineTheme.bodyMediumFont(color: VineTheme.onErrorContainer),
+      ),
     );
   }
 }

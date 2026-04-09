@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:flutter/foundation.dart';
 import 'package:openvine/blocs/live_room/live_room_event.dart';
 import 'package:openvine/blocs/live_room/live_room_state.dart';
 import 'package:openvine/models/live/live_presence.dart';
@@ -12,6 +13,8 @@ import 'package:openvine/models/live/live_session.dart';
 import 'package:openvine/repositories/live_repository.dart';
 import 'package:openvine/services/live_api_service.dart';
 import 'package:openvine/services/livekit_room_service.dart';
+import 'package:openvine/services/native_camera_permission_service.dart';
+import 'package:permissions_service/permissions_service.dart';
 
 export 'package:openvine/blocs/live_room/live_room_event.dart';
 export 'package:openvine/blocs/live_room/live_room_state.dart';
@@ -21,10 +24,17 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     required LiveRepository liveRepository,
     required LiveApiService liveApiService,
     required LiveKitRoomService liveKitRoomService,
+    PermissionsService? permissionsService,
+    NativeCameraPermissionService? nativeCameraPermissionService,
     String currentUserPubkey = '',
   }) : _liveRepository = liveRepository,
        _liveApiService = liveApiService,
        _liveKitRoomService = liveKitRoomService,
+       _permissionsService =
+           permissionsService ?? const PermissionHandlerPermissionsService(),
+       _nativeCameraPermissionService =
+           nativeCameraPermissionService ??
+           const MethodChannelNativeCameraPermissionService(),
        _currentUserPubkey = currentUserPubkey,
        super(const LiveRoomState()) {
     on<LiveRoomJoinRequested>(_onJoinRequested);
@@ -71,6 +81,8 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
   final LiveRepository _liveRepository;
   final LiveApiService _liveApiService;
   final LiveKitRoomService _liveKitRoomService;
+  final PermissionsService _permissionsService;
+  final NativeCameraPermissionService _nativeCameraPermissionService;
   final String _currentUserPubkey;
 
   StreamSubscription<List<LiveSession>>? _sessionsSubscription;
@@ -261,8 +273,17 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     }
 
     try {
+      final enableMicrophone = !state.mediaState.microphoneEnabled;
+      if (enableMicrophone) {
+        final permissionError = await _ensureMicrophonePermission();
+        if (permissionError != null) {
+          emit(state.copyWith(errorMessage: permissionError));
+          return;
+        }
+      }
+
       await _liveKitRoomService.setMicrophoneEnabled(
-        !state.mediaState.microphoneEnabled,
+        enableMicrophone,
       );
     } catch (error) {
       emit(state.copyWith(errorMessage: '$error'));
@@ -278,9 +299,16 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     }
 
     try {
-      await _liveKitRoomService.setCameraEnabled(
-        !state.mediaState.cameraEnabled,
-      );
+      final enableCamera = !state.mediaState.cameraEnabled;
+      if (enableCamera) {
+        final permissionError = await _ensureCameraPermission();
+        if (permissionError != null) {
+          emit(state.copyWith(errorMessage: permissionError));
+          return;
+        }
+      }
+
+      await _liveKitRoomService.setCameraEnabled(enableCamera);
     } catch (error) {
       emit(state.copyWith(errorMessage: '$error'));
     }
@@ -335,6 +363,65 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
       await _liveKitRoomService.enableAudioOnly();
     } catch (error) {
       emit(state.copyWith(errorMessage: '$error'));
+    }
+  }
+
+  Future<String?> _ensureCameraPermission() async {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
+      if (await _nativeCameraPermissionService.hasPermission()) {
+        return null;
+      }
+
+      final nativeStatus = await _nativeCameraPermissionService
+          .requestPermission();
+      switch (nativeStatus) {
+        case NativeCameraPermissionStatus.granted:
+          return null;
+        case NativeCameraPermissionStatus.requiresSettings:
+          return 'Camera access is blocked. Allow it in system settings.';
+        case NativeCameraPermissionStatus.denied:
+          return 'Camera access is required to turn video on.';
+        case NativeCameraPermissionStatus.unavailable:
+          break;
+      }
+    }
+
+    try {
+      final status = await _permissionsService.checkCameraStatus();
+      if (status == PermissionStatus.granted) {
+        return null;
+      }
+
+      final requested = await _permissionsService.requestCameraPermission();
+      return switch (requested) {
+        PermissionStatus.granted => null,
+        PermissionStatus.requiresSettings =>
+          'Camera access is blocked. Allow it in system settings.',
+        PermissionStatus.canRequest =>
+          'Camera access is required to turn video on.',
+      };
+    } catch (_) {
+      return 'Unable to access the camera right now.';
+    }
+  }
+
+  Future<String?> _ensureMicrophonePermission() async {
+    try {
+      final status = await _permissionsService.checkMicrophoneStatus();
+      if (status == PermissionStatus.granted) {
+        return null;
+      }
+
+      final requested = await _permissionsService.requestMicrophonePermission();
+      return switch (requested) {
+        PermissionStatus.granted => null,
+        PermissionStatus.requiresSettings =>
+          'Microphone access is blocked. Allow it in system settings.',
+        PermissionStatus.canRequest =>
+          'Microphone access is required to speak in the room.',
+      };
+    } catch (_) {
+      return 'Unable to access the microphone right now.';
     }
   }
 

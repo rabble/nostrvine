@@ -150,6 +150,7 @@ class _LiveRoomPageState extends ConsumerState<LiveRoomPage> {
           liveRepository: ref.read(liveRepositoryProvider),
           liveApiService: ref.read(liveApiServiceProvider),
           liveKitRoomService: ref.read(liveKitRoomServiceProvider),
+          permissionsService: ref.read(permissionsServiceProvider),
           currentUserPubkey:
               ref.read(authServiceProvider).currentPublicKeyHex ?? '',
         )..add(
