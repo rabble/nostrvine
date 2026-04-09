@@ -1,13 +1,20 @@
 // ABOUTME: Test for notifications screen pull-to-refresh functionality
 // ABOUTME: Ensures RefreshIndicator is present and relay provider refresh works
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
+
+class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
+    implements InviteStatusCubit {}
 
 /// Tracks how many times refresh was called across all instances
 int _globalRefreshCount = 0;
@@ -39,10 +46,22 @@ class _MockRelayNotifications extends RelayNotifications {
 }
 
 void main() {
-  Widget shell(ProviderContainer c) => UncontrolledProviderScope(
-    container: c,
-    child: const MaterialApp(home: Scaffold(body: NotificationsScreen())),
-  );
+  Widget shell(ProviderContainer c) {
+    final mockInviteCubit = _MockInviteStatusCubit();
+    when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
+    when(mockInviteCubit.load).thenAnswer((_) async {});
+    return UncontrolledProviderScope(
+      container: c,
+      child: MaterialApp(
+        home: BlocProvider<InviteStatusCubit>.value(
+          value: mockInviteCubit,
+          child: const Scaffold(
+            body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+          ),
+        ),
+      ),
+    );
+  }
 
   group('NotificationsScreen Refresh', () {
     setUp(() {

@@ -2,11 +2,14 @@
 // ABOUTME: with all dependencies (API client, profile repo, DAO, auth).
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 
 /// Riverpod provider that creates and exposes a [NotificationRepository].
 ///
@@ -16,7 +19,15 @@ import 'package:openvine/services/nip98_auth_service.dart';
 /// Returns `null` when the [ProfileRepository] is not yet available
 /// (e.g. during early auth when the NostrClient hasn't been initialised).
 final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
-  final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
+  final environmentConfig = ref.watch(currentEnvironmentProvider);
+  final nostrService = ref.watch(nostrServiceProvider);
+  final notificationsBaseUrl = resolvePinnedApiBaseUrlFromRelays(
+    configuredRelays: nostrService.configuredRelays,
+    fallbackBaseUrl: relayWsToHttpBase(environmentConfig.relayUrl),
+  );
+  final funnelcakeApiClient = FunnelcakeApiClient(
+    baseUrl: notificationsBaseUrl,
+  );
   final profileRepository = ref.watch(profileRepositoryProvider);
 
   // ProfileRepository is nullable during early auth. Return null so the

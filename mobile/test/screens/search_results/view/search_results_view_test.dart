@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
@@ -24,22 +25,28 @@ class _MockHashtagSearchBloc
     extends MockBloc<HashtagSearchEvent, HashtagSearchState>
     implements HashtagSearchBloc {}
 
+class _MockListSearchBloc extends MockBloc<ListSearchEvent, ListSearchState>
+    implements ListSearchBloc {}
+
 void main() {
   group(SearchResultsView, () {
     late _MockSearchResultsFilterCubit mockFilterCubit;
     late _MockVideoSearchBloc mockVideoBloc;
     late _MockUserSearchBloc mockUserBloc;
     late _MockHashtagSearchBloc mockHashtagBloc;
+    late _MockListSearchBloc mockListBloc;
 
     setUp(() {
       mockFilterCubit = _MockSearchResultsFilterCubit();
       mockVideoBloc = _MockVideoSearchBloc();
       mockUserBloc = _MockUserSearchBloc();
       mockHashtagBloc = _MockHashtagSearchBloc();
+      mockListBloc = _MockListSearchBloc();
 
       when(() => mockVideoBloc.state).thenReturn(const VideoSearchState());
       when(() => mockUserBloc.state).thenReturn(const UserSearchState());
       when(() => mockHashtagBloc.state).thenReturn(const HashtagSearchState());
+      when(() => mockListBloc.state).thenReturn(const ListSearchState());
     });
 
     tearDown(() {
@@ -47,6 +54,7 @@ void main() {
       mockVideoBloc.close();
       mockUserBloc.close();
       mockHashtagBloc.close();
+      mockListBloc.close();
     });
 
     Widget buildSubject() {
@@ -59,6 +67,7 @@ void main() {
             BlocProvider<VideoSearchBloc>.value(value: mockVideoBloc),
             BlocProvider<UserSearchBloc>.value(value: mockUserBloc),
             BlocProvider<HashtagSearchBloc>.value(value: mockHashtagBloc),
+            BlocProvider<ListSearchBloc>.value(value: mockListBloc),
           ],
           child: const Scaffold(body: SearchResultsView()),
         ),
@@ -71,6 +80,7 @@ void main() {
 
       expect(find.byType(PeopleSection), findsOneWidget);
       expect(find.byType(TagsSection), findsOneWidget);
+      expect(find.byType(ListsSection), findsOneWidget);
       expect(find.byType(VideosSection), findsOneWidget);
     });
 
@@ -82,6 +92,7 @@ void main() {
 
       expect(find.byType(PeopleSection), findsOneWidget);
       expect(find.byType(TagsSection), findsNothing);
+      expect(find.byType(ListsSection), findsNothing);
       expect(find.byType(VideosSection), findsNothing);
     });
 
@@ -93,6 +104,7 @@ void main() {
 
       expect(find.byType(PeopleSection), findsNothing);
       expect(find.byType(TagsSection), findsOneWidget);
+      expect(find.byType(ListsSection), findsNothing);
       expect(find.byType(VideosSection), findsNothing);
     });
 
@@ -104,7 +116,20 @@ void main() {
 
       expect(find.byType(PeopleSection), findsNothing);
       expect(find.byType(TagsSection), findsNothing);
+      expect(find.byType(ListsSection), findsNothing);
       expect(find.byType(VideosSection), findsOneWidget);
+    });
+
+    testWidgets('renders only $ListsSection when filter is lists', (
+      tester,
+    ) async {
+      when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.lists);
+      await tester.pumpWidget(buildSubject());
+
+      expect(find.byType(PeopleSection), findsNothing);
+      expect(find.byType(TagsSection), findsNothing);
+      expect(find.byType(ListsSection), findsOneWidget);
+      expect(find.byType(VideosSection), findsNothing);
     });
 
     testWidgets('renders $ColoredBox with background color', (tester) async {

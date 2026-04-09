@@ -376,6 +376,69 @@ class InviteApiService {
     return null;
   }
 
+  Future<InviteStatus> getInviteStatus() async {
+    final uri = Uri.parse('$_baseUrl/v1/invite-status');
+
+    try {
+      final response = await _client
+          .get(
+            uri,
+            headers: await _headers(
+              url: uri.toString(),
+              requiresAuth: true,
+            ),
+          )
+          .timeout(_defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw _requestFailed(
+          message: 'Failed to fetch invite status',
+          response: response,
+        );
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return InviteStatus.fromJson(json);
+    } on TimeoutException {
+      throw const ApiException('Invite status request timed out');
+    } catch (error) {
+      if (error is ApiException) rethrow;
+      throw ApiException('Failed to fetch invite status: $error');
+    }
+  }
+
+  Future<GenerateInviteResult> generateInvite() async {
+    final uri = Uri.parse('$_baseUrl/v1/generate-invite');
+
+    try {
+      final response = await _client
+          .post(
+            uri,
+            headers: await _headers(
+              url: uri.toString(),
+              method: HttpMethod.post,
+              requiresAuth: true,
+            ),
+          )
+          .timeout(_defaultTimeout);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw _requestFailed(
+          message: 'Failed to generate invite code',
+          response: response,
+        );
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return GenerateInviteResult.fromJson(json);
+    } on TimeoutException {
+      throw const ApiException('Generate invite request timed out');
+    } catch (error) {
+      if (error is ApiException) rethrow;
+      throw ApiException('Failed to generate invite code: $error');
+    }
+  }
+
   void dispose() {
     _client.close();
   }

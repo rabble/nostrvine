@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_linux_service.dart';
-import 'package:openvine/services/video_recorder/camera/camera_macos_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_mobile_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -23,12 +22,6 @@ abstract class CameraService {
     required void Function({bool? forceCameraRebuild}) onUpdateState,
     required void Function(EditorVideo video) onAutoStopped,
   }) {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
-      return CameraMacOSService(
-        onUpdateState: onUpdateState,
-        onAutoStopped: onAutoStopped,
-      );
-    }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
       return CameraLinuxService(
         onUpdateState: onUpdateState,

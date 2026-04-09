@@ -7,6 +7,7 @@ import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -22,6 +23,7 @@ import 'package:nostr_client/nostr_client.dart'
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -42,7 +44,6 @@ import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
@@ -75,12 +76,15 @@ import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
+import 'package:openvine/services/notification_preferences_service.dart';
+import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
@@ -129,6 +133,54 @@ final nostrAppGrantStoreProvider = Provider<NostrAppGrantStore>((ref) {
   return NostrAppGrantStore(sharedPreferences: prefs);
 });
 
+final firebaseMessagingProvider = Provider<FirebaseMessaging>(
+  (ref) => FirebaseMessaging.instance,
+);
+
+final firebaseOnMessageProvider = Provider<Stream<RemoteMessage>>(
+  (ref) => FirebaseMessaging.onMessage,
+);
+
+final notificationServiceProvider = Provider<NotificationService>(
+  (ref) => NotificationService(),
+);
+
+final pushNotificationServiceProvider = Provider<PushNotificationService>((
+  ref,
+) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final notificationService = ref.watch(notificationServiceProvider);
+  final envConfig = ref.watch(currentEnvironmentProvider);
+  final firebaseMessaging = ref.watch(firebaseMessagingProvider);
+
+  final pushService = PushNotificationService(
+    authService: authService,
+    nostrClient: nostrClient,
+    notificationService: notificationService,
+    environmentConfig: envConfig,
+    getToken: firebaseMessaging.getToken,
+    onTokenRefresh: firebaseMessaging.onTokenRefresh,
+  );
+
+  ref.onDispose(pushService.dispose);
+  return pushService;
+});
+
+final notificationPreferencesServiceProvider =
+    Provider<NotificationPreferencesService>((ref) {
+      return NotificationPreferencesService(
+        openBox: NotificationPreferencesService.openBox,
+        publishPreferences: (prefs) {
+          return ref
+              .read(pushNotificationServiceProvider)
+              .updatePreferences(
+                prefs,
+              );
+        },
+      );
+    });
+
 final nostrAppBridgePolicyProvider = Provider<NostrAppBridgePolicy>((ref) {
   final authService = ref.watch(authServiceProvider);
   final grantStore = ref.watch(nostrAppGrantStoreProvider);
@@ -171,9 +223,7 @@ final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
   return NostrAppBridgeService(
     authProvider: _AuthServiceBridgeAdapter(authService),
     policy: policy,
-    signerFactory: () =>
-        authService.rpcSigner ??
-        AuthServiceSigner(authService.currentKeyContainer),
+    signerFactory: () => authService.requireIdentity,
     auditService: auditService,
   );
 });
@@ -943,6 +993,23 @@ AuthState currentAuthState(Ref ref) {
   return authService.authState;
 }
 
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+@Riverpod(keepAlive: true)
+AuthRpcCapability currentAuthRpcCapability(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  final subscription = authService.authRpcCapabilityStream.listen((_) {
+    ref.invalidateSelf();
+  });
+
+  ref.onDispose(subscription.cancel);
+
+  return authService.authRpcCapability;
+}
+
 /// Provider that fetches the list of known accounts from the auth service.
 ///
 /// Invalidate this provider after sign-in or sign-out to refresh the list.
@@ -954,18 +1021,12 @@ Future<List<KnownAccount>> knownAccounts(Ref ref) {
   return authService.getKnownAccounts();
 }
 
-/// Provider for the local auth-backed signer used by creator-binding flows.
-final authServiceSignerProvider = Provider<AuthServiceSigner>((ref) {
-  ref.watch(currentAuthStateProvider);
-  final authService = ref.watch(authServiceProvider);
-  return AuthServiceSigner(authService.currentKeyContainer);
-});
-
 /// Provider for user-signed creator-binding assertions.
 final nostrCreatorBindingServiceProvider = Provider<NostrCreatorBindingService>(
   (ref) {
-    final signer = ref.watch(authServiceSignerProvider);
-    return NostrCreatorBindingService(signer: signer);
+    ref.watch(currentAuthStateProvider);
+    final authService = ref.watch(authServiceProvider);
+    return NostrCreatorBindingService(identity: authService.currentIdentity);
   },
 );
 
@@ -1070,6 +1131,64 @@ void zendeskIdentitySync(Ref ref) {
   });
 
   ref.onDispose(subscription.cancel);
+}
+
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+@Riverpod(keepAlive: true)
+void pushNotificationSync(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  Future<void> requestPermissionAndRegister(String pubkey) async {
+    final firebaseMessaging = ref.read(firebaseMessagingProvider);
+    final pushService = ref.read(pushNotificationServiceProvider);
+    final settings = await firebaseMessaging.requestPermission();
+    if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      Log.info(
+        'Push notification permission denied by user',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    await pushService.register(pubkey);
+  }
+
+  String? lastAuthenticatedPubkey = authService.currentPublicKeyHex;
+  if (authService.authState == AuthState.authenticated &&
+      lastAuthenticatedPubkey != null) {
+    unawaited(requestPermissionAndRegister(lastAuthenticatedPubkey));
+  }
+
+  // React to auth state changes
+  final subscription = authService.authStateStream.listen((authState) async {
+    final currentPubkey = authService.currentPublicKeyHex;
+    if (authState == AuthState.authenticated && currentPubkey != null) {
+      lastAuthenticatedPubkey = currentPubkey;
+      await requestPermissionAndRegister(currentPubkey);
+    } else if (authState == AuthState.unauthenticated &&
+        lastAuthenticatedPubkey != null) {
+      await ref
+          .read(pushNotificationServiceProvider)
+          .deregister(lastAuthenticatedPubkey!);
+    }
+  });
+
+  // Set up foreground message handler
+  final onMessageSubscription = ref.read(firebaseOnMessageProvider).listen((
+    message,
+  ) {
+    final pushService = ref.read(pushNotificationServiceProvider);
+    pushService.handleForegroundMessage(message.data);
+  });
+
+  ref.onDispose(() {
+    subscription.cancel();
+    onMessageSubscription.cancel();
+  });
 }
 
 /// Helper to set Zendesk identity from pubkey
@@ -1281,6 +1400,7 @@ FollowRepository followRepository(Ref ref) {
   // Get connection status and pending action service for offline support
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
+  final authService = ref.watch(authServiceProvider);
 
   // Get FunnelcakeApiClient for direct API access
   final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
@@ -1295,7 +1415,8 @@ FollowRepository followRepository(Ref ref) {
     funnelcakeApiClient: funnelcakeApiClient,
     profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({required bool isFollow, required String pubkey}) async {
             await pendingActionService.queueAction(
@@ -1361,7 +1482,10 @@ FollowRepository followRepository(Ref ref) {
 /// until the repository owns its own persistence (Phase 1b).
 @Riverpod(keepAlive: true)
 CuratedListRepository curatedListRepository(Ref ref) {
-  final repository = CuratedListRepository();
+  final repository = CuratedListRepository(
+    nostrClient: ref.watch(nostrServiceProvider),
+    funnelcakeApiClient: ref.watch(funnelcakeApiClientProvider),
+  );
 
   // Bridge: push curated list updates from legacy service into repository
   ref.listen(curatedListsStateProvider, (_, next) {
@@ -2113,7 +2237,8 @@ LikesRepository likesRepository(Ref ref) {
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({
             required bool isLike,
@@ -2201,7 +2326,8 @@ RepostsRepository repostsRepository(Ref ref) {
   final repository = RepostsRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isOnline: () => connectionStatus.isOnline,
+    isOnline: () =>
+        connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
         ? ({
             required bool isRepost,

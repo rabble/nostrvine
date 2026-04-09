@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -79,7 +80,7 @@ class ServiceInitHelper {
       final keyContainer = await SecureKeyContainer.generate();
 
       final nostrService = NostrServiceFactory.create(
-        keyContainer: keyContainer,
+        signer: LocalNostrIdentity(keyContainer: keyContainer),
       );
       final subscriptionManager = SubscriptionManager(nostrService);
       final videoEventService = VideoEventService(

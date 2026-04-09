@@ -1,9 +1,86 @@
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nostr_sdk.dart' show Event;
 import 'package:test/test.dart';
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
+
+/// 64-char hex pubkey for test events.
+const _testPubkey =
+    'aabbccddaabbccddaabbccddaabbccdd'
+    'aabbccddaabbccddaabbccddaabbccdd';
+
+/// A second 64-char hex ID used as a video event reference.
+const _videoEventId =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+
+/// Additional hex IDs for multi-ref thumbnail tests.
+const _videoEventId2 =
+    '2222222222222222222222222222222222222222222222222222222222222222';
+const _videoEventId3 =
+    '3333333333333333333333333333333333333333333333333333333333333333';
+
+/// Creates a kind 30005 Nostr event with the given [tags] and [content].
+Event _makeEvent({
+  List<List<String>> tags = const [],
+  String content = '',
+  int? createdAt,
+}) {
+  return Event(
+    _testPubkey,
+    30005,
+    tags.map(List<String>.from).toList(),
+    content,
+    createdAt: createdAt ?? 1718400000,
+  );
+}
+
+/// Creates a kind 34236 (addressable short video) Nostr event with a
+/// thumbnail tag.
+Event _makeVideoEvent({String? thumbnail}) {
+  return Event(
+    _testPubkey,
+    34236,
+    [
+      ['d', 'test-video'],
+      ['title', 'Test Video'],
+      ['url', 'https://example.com/video.mp4'],
+      if (thumbnail != null) ['thumb', thumbnail],
+    ],
+    '',
+    createdAt: 1718400000,
+  );
+}
+
+/// Creates a kind 34236 video event with a specific [id] for relay
+/// batching tests where the returned event must match the queried hex ID.
+Event _makeVideoEventWithId(String id, {String? thumbnail}) {
+  return Event.fromJson({
+    'id': id,
+    'pubkey': _testPubkey,
+    'created_at': 1718400000,
+    'kind': 34236,
+    'tags': [
+      ['d', 'test-video'],
+      ['title', 'Test Video'],
+      ['url', 'https://example.com/video.mp4'],
+      if (thumbnail != null) ['thumb', thumbnail],
+    ],
+    'content': '',
+    'sig': '',
+  });
+}
 
 void main() {
   group(CuratedListRepository, () {
+    late _MockNostrClient nostrClient;
+    late _MockFunnelcakeApiClient funnelcakeApiClient;
     late CuratedListRepository repository;
 
     final now = DateTime(2025, 6, 15);
@@ -31,7 +108,12 @@ void main() {
     }
 
     setUp(() {
-      repository = CuratedListRepository();
+      nostrClient = _MockNostrClient();
+      funnelcakeApiClient = _MockFunnelcakeApiClient();
+      repository = CuratedListRepository(
+        nostrClient: nostrClient,
+        funnelcakeApiClient: funnelcakeApiClient,
+      );
     });
 
     tearDown(() async {
@@ -39,7 +121,13 @@ void main() {
     });
 
     test('can be instantiated', () {
-      expect(CuratedListRepository(), isNotNull);
+      expect(
+        CuratedListRepository(
+          nostrClient: _MockNostrClient(),
+          funnelcakeApiClient: _MockFunnelcakeApiClient(),
+        ),
+        isNotNull,
+      );
     });
 
     group('subscribedListsStream', () {
@@ -532,6 +620,590 @@ void main() {
         // Original list is unchanged.
         final list = repository.getListById('list')!;
         expect(list.videoEventIds, equals(['v1', 'v2', 'v3']));
+      });
+    });
+
+    group('searchAllLists', () {
+      setUp(() {
+        registerFallbackValue(<Filter>[]);
+      });
+
+      test('emits nothing for blank query', () async {
+        await expectLater(
+          repository.searchAllLists(''),
+          emitsDone,
+        );
+      });
+
+      test('emits nothing for whitespace-only query', () async {
+        await expectLater(
+          repository.searchAllLists('   '),
+          emitsDone,
+        );
+      });
+
+      test('emits 4 progressive yields with thumbnails', () async {
+        // Set up local subscribed lists
+        repository.setSubscribedLists([
+          createList(id: 'local-1', name: 'Dance Local'),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'relay-1'],
+                ['title', 'Dance Relay'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions, hasLength(4));
+
+        // Yield 1: local results immediately (no thumbnails)
+        expect(emissions[0], hasLength(1));
+        expect(emissions[0].first.id, equals('local-1'));
+
+        // Yield 2: local results with thumbnails resolved
+        expect(emissions[1], hasLength(1));
+        expect(emissions[1].first.id, equals('local-1'));
+
+        // Yield 3: local + relay merged (relay without thumbnails)
+        expect(emissions[2], hasLength(2));
+        expect(
+          emissions[2].map((l) => l.id),
+          containsAll(['local-1', 'relay-1']),
+        );
+
+        // Yield 4: fully enriched
+        expect(emissions[3], hasLength(2));
+        expect(
+          emissions[3].map((l) => l.id),
+          containsAll(['local-1', 'relay-1']),
+        );
+      });
+
+      test('excludes local IDs from relay search', () async {
+        repository.setSubscribedLists([
+          createList(id: 'shared-id', name: 'Dance Local'),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [],
+        );
+
+        await repository.searchAllLists('dance').toList();
+
+        // Verify queryEvents was called (relay search happened)
+        verify(() => nostrClient.queryEvents(any())).called(1);
+      });
+
+      test('deduplicates relay results with local results', () async {
+        repository.setSubscribedLists([
+          createList(id: 'shared-id', name: 'Dance Local'),
+        ]);
+
+        // Relay returns a list with the same ID — but excludeIds
+        // should prevent it. Return a different one instead.
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'new-relay'],
+                ['title', 'Dance Relay'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions, hasLength(4));
+        // Yield 3: local + relay (no duplicates)
+        expect(emissions[2], hasLength(2));
+      });
+
+      test('resolves thumbnails from FunnelCake API', () async {
+        repository.setSubscribedLists([
+          createList(
+            id: 'local-1',
+            name: 'Dance Local',
+            videoEventIds: [_videoEventId],
+          ),
+        ]);
+
+        when(() => funnelcakeApiClient.getVideoStats(_videoEventId)).thenAnswer(
+          (_) async => VideoStats(
+            id: _videoEventId,
+            pubkey: _testPubkey,
+            createdAt: DateTime(2025),
+            kind: 34236,
+            dTag: 'd',
+            title: 'Test',
+            thumbnail: 'https://example.com/thumb.jpg',
+            videoUrl: 'https://example.com/video.mp4',
+            reactions: 0,
+            comments: 0,
+            reposts: 0,
+            engagementScore: 0,
+          ),
+        );
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        // Yield 2 should have thumbnail resolved via FunnelCake
+        expect(emissions[1].first.thumbnailUrls, isNotEmpty);
+        expect(
+          emissions[1].first.thumbnailUrls.first,
+          equals('https://example.com/thumb.jpg'),
+        );
+      });
+
+      test('falls back to relay when FunnelCake fails', () async {
+        repository.setSubscribedLists([
+          createList(
+            id: 'local-1',
+            name: 'Dance Local',
+            videoEventIds: [_videoEventId],
+          ),
+        ]);
+
+        when(
+          () => funnelcakeApiClient.getVideoStats(_videoEventId),
+        ).thenThrow(Exception('API down'));
+
+        // Batched relay fallback returns event matching _videoEventId,
+        // then relay search returns empty.
+        when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments[0] as List<dynamic>;
+          final filter = filters.first;
+
+          // Relay search for curated lists (kind 30005)
+          if (filter is Filter && filter.kinds?.contains(30005) == true) {
+            return Future.value(<Event>[]);
+          }
+
+          // Batched thumbnail fallback
+          return Future.value([
+            _makeVideoEventWithId(
+              _videoEventId,
+              thumbnail: 'https://relay.com/thumb.jpg',
+            ),
+          ]);
+        });
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions[1].first.thumbnailUrls, isNotEmpty);
+        expect(
+          emissions[1].first.thumbnailUrls.first,
+          equals('https://relay.com/thumb.jpg'),
+        );
+      });
+
+      test('resolves addressable coordinate thumbnails', () async {
+        const addressableCoord = '34236:$_testPubkey:my-video';
+        repository.setSubscribedLists([
+          createList(
+            id: 'local-1',
+            name: 'Dance Local',
+            videoEventIds: [addressableCoord],
+          ),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeVideoEvent(thumbnail: 'https://relay.com/addr-thumb.jpg'),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions[1].first.thumbnailUrls, isNotEmpty);
+        expect(
+          emissions[1].first.thumbnailUrls.first,
+          equals('https://relay.com/addr-thumb.jpg'),
+        );
+      });
+
+      test('skips invalid addressable coordinates', () async {
+        repository.setSubscribedLists([
+          createList(
+            id: 'local-1',
+            name: 'Dance Local',
+            videoEventIds: ['invalid-coord'],
+          ),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        // Thumbnail resolution returns null for bad coord, list stays empty
+        expect(emissions[1].first.thumbnailUrls, isEmpty);
+      });
+
+      test('filters null thumbnails from results', () async {
+        repository.setSubscribedLists([
+          createList(
+            id: 'local-1',
+            name: 'Dance Local',
+            videoEventIds: [_videoEventId],
+          ),
+        ]);
+
+        // FunnelCake returns null (not found)
+        when(
+          () => funnelcakeApiClient.getVideoStats(_videoEventId),
+        ).thenAnswer((_) async => null);
+
+        // Relay also returns empty
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions[1].first.thumbnailUrls, isEmpty);
+      });
+
+      test('matches relay lists by description', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'relay-1'],
+                ['title', 'My List'],
+                ['description', 'Great dance videos'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        // Yield 3 should include the relay list matched by description
+        expect(emissions[2].any((l) => l.id == 'relay-1'), isTrue);
+      });
+
+      test('matches relay lists by tag', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'relay-1'],
+                ['title', 'My List'],
+                ['t', 'dance'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions[2].any((l) => l.id == 'relay-1'), isTrue);
+      });
+
+      test('keeps newer relay duplicate over older', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'dup-id'],
+                ['title', 'Dance Old'],
+                ['e', 'video-1'],
+              ],
+              createdAt: 1718400000,
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'dup-id'],
+                ['title', 'Dance New'],
+                ['e', 'video-1'],
+              ],
+              createdAt: 1718500000,
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        final relayList = emissions[2].where((l) => l.id == 'dup-id').toList();
+        expect(relayList, hasLength(1));
+        expect(relayList.first.name, equals('Dance New'));
+      });
+
+      test('returns empty thumbnails when relay batch throws', () async {
+        repository.setSubscribedLists([
+          createList(
+            id: 'local-1',
+            name: 'Dance Local',
+            videoEventIds: [_videoEventId],
+          ),
+        ]);
+
+        when(
+          () => funnelcakeApiClient.getVideoStats(_videoEventId),
+        ).thenAnswer((_) async => null);
+
+        // Batched relay fallback throws, relay search returns empty.
+        when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments[0] as List<dynamic>;
+          final filter = filters.first;
+
+          // Relay search for curated lists (kind 30005)
+          if (filter is Filter && filter.kinds?.contains(30005) == true) {
+            return Future.value(<Event>[]);
+          }
+
+          // Batched thumbnail fallback throws
+          throw Exception('relay timeout');
+        });
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        // Yield 2: relay batch failed, thumbnails empty
+        expect(emissions[1].first.thumbnailUrls, isEmpty);
+      });
+
+      test(
+        'skips unparseable relay events during thumbnail resolution',
+        () async {
+          repository.setSubscribedLists([
+            createList(
+              id: 'local-1',
+              name: 'Dance Local',
+              videoEventIds: [_videoEventId],
+            ),
+          ]);
+
+          when(
+            () => funnelcakeApiClient.getVideoStats(_videoEventId),
+          ).thenAnswer((_) async => null);
+
+          // Relay returns an event with kind 1 (text note) which causes
+          // VideoEvent.fromNostrEvent to throw — exercises the on Exception
+          // catch in _batchRelayThumbnails.
+          when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) {
+            final filters = invocation.positionalArguments[0] as List<dynamic>;
+            final filter = filters.first;
+
+            if (filter is Filter && filter.kinds?.contains(30005) == true) {
+              return Future.value(<Event>[]);
+            }
+
+            // Non-video event that will fail parsing
+            return Future.value([
+              Event.fromJson({
+                'id': _videoEventId,
+                'pubkey': _testPubkey,
+                'created_at': 1718400000,
+                'kind': 1, // text note — not a video kind
+                'tags': <List<String>>[],
+                'content': 'hello',
+                'sig': '',
+              }),
+            ]);
+          });
+
+          final emissions = await repository.searchAllLists('dance').toList();
+
+          // Thumbnail resolution skipped the unparseable event
+          expect(emissions[1].first.thumbnailUrls, isEmpty);
+        },
+      );
+
+      test('filters out private lists from all emissions', () async {
+        repository.setSubscribedLists([
+          createList(
+            id: 'private-1',
+            name: 'Dance Secret',
+            isPublic: false,
+          ),
+          createList(id: 'public-1', name: 'Dance Public'),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        for (final emission in emissions) {
+          expect(
+            emission.every((l) => l.id != 'private-1'),
+            isTrue,
+          );
+        }
+      });
+
+      test('excludes relay lists with empty videoEventIds', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            _makeEvent(
+              tags: [
+                ['d', 'empty-list'],
+                ['title', 'Dance Empty'],
+                // No 'e' or 'a' tags → videoEventIds is empty
+              ],
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'good-list'],
+                ['title', 'Dance Good'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        final relayIds = emissions[2].map((l) => l.id).toList();
+        expect(relayIds, isNot(contains('empty-list')));
+        expect(relayIds, contains('good-list'));
+      });
+
+      test('skips malformed relay events without d-tag', () async {
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            // Valid event
+            _makeEvent(
+              tags: [
+                ['d', 'good-list'],
+                ['title', 'Dance Good'],
+                ['e', 'video-1'],
+              ],
+            ),
+            // Malformed — no d-tag → fromEvent returns null
+            _makeEvent(
+              tags: [
+                ['title', 'Dance Bad'],
+                ['e', 'video-2'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        // Yield 3 (merged) should contain only the valid relay list
+        final relayIds = emissions[2].map((l) => l.id).toList();
+        expect(relayIds, contains('good-list'));
+        expect(relayIds, isNot(contains(null)));
+        expect(emissions[2], hasLength(1));
+      });
+
+      test('emissions are unmodifiable', () async {
+        repository.setSubscribedLists([
+          createList(id: 'local-1', name: 'Dance Local'),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        for (final emission in emissions) {
+          expect(
+            () => emission.add(createList(id: 'hack')),
+            throwsA(isA<UnsupportedError>()),
+          );
+        }
+      });
+
+      test('partial thumbnail resolution across sources', () async {
+        repository.setSubscribedLists([
+          createList(
+            id: 'local-1',
+            name: 'Dance Local',
+            videoEventIds: [_videoEventId, _videoEventId2, _videoEventId3],
+          ),
+        ]);
+
+        // FunnelCake: ref1 → thumbnail, ref2 → null, ref3 → throws
+        when(
+          () => funnelcakeApiClient.getVideoStats(_videoEventId),
+        ).thenAnswer(
+          (_) async => VideoStats(
+            id: _videoEventId,
+            pubkey: _testPubkey,
+            createdAt: DateTime(2025),
+            kind: 34236,
+            dTag: 'd',
+            title: 'Test',
+            thumbnail: 'https://fc.com/thumb1.jpg',
+            videoUrl: 'https://example.com/video.mp4',
+            reactions: 0,
+            comments: 0,
+            reposts: 0,
+            engagementScore: 0,
+          ),
+        );
+
+        when(
+          () => funnelcakeApiClient.getVideoStats(_videoEventId2),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => funnelcakeApiClient.getVideoStats(_videoEventId3),
+        ).thenThrow(Exception('API error'));
+
+        // Batched relay fallback: ref2 and ref3 go in one query.
+        // Only ref3 returns a video with a thumbnail (ref2 has no match).
+        // Relay search call returns empty.
+        when(() => nostrClient.queryEvents(any())).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments[0] as List<dynamic>;
+          final filter = filters.first;
+
+          // Relay search for curated lists (kind 30005)
+          if (filter is Filter && filter.kinds?.contains(30005) == true) {
+            return Future.value(<Event>[]);
+          }
+
+          // Batched thumbnail fallback — only ref3 resolves
+          return Future.value([
+            _makeVideoEventWithId(
+              _videoEventId3,
+              thumbnail: 'https://relay.com/thumb3.jpg',
+            ),
+          ]);
+        });
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        // Yield 2: thumbnails resolved — ref1 from FC, ref3 from relay
+        final thumbs = emissions[1].first.thumbnailUrls;
+        expect(thumbs, hasLength(2));
+        expect(thumbs, contains('https://fc.com/thumb1.jpg'));
+        expect(thumbs, contains('https://relay.com/thumb3.jpg'));
+      });
+
+      test('emits 4 yields even when relay returns empty', () async {
+        repository.setSubscribedLists([
+          createList(id: 'local-1', name: 'Dance Local'),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [],
+        );
+
+        final emissions = await repository.searchAllLists('dance').toList();
+
+        expect(emissions, hasLength(4));
+        // All yields contain only the local result
+        for (final emission in emissions) {
+          expect(emission, hasLength(1));
+          expect(emission.first.id, equals('local-1'));
+        }
       });
     });
 

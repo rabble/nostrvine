@@ -60,6 +60,7 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -613,6 +614,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: SettingsScreen.path,
         name: SettingsScreen.routeName,
         builder: (_, _) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: InvitesScreen.path,
+        name: InvitesScreen.routeName,
+        builder: (_, _) => const InvitesScreen(),
       ),
       GoRoute(
         path: AppsDirectoryScreen.path,

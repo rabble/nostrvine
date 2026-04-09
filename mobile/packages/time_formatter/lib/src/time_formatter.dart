@@ -11,7 +11,10 @@ abstract class TimeFormatter {
   /// Examples: "now", "3m", "2h", "14h", "3d", "2w"
   static String formatRelative(int unixSeconds) {
     final now = DateTime.now();
-    final then = DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000);
+    final then = DateTime.fromMillisecondsSinceEpoch(
+      unixSeconds * 1000,
+      isUtc: true,
+    ).toLocal();
     final difference = now.difference(then);
 
     if (difference.inMinutes < 1) return 'now';
@@ -38,7 +41,10 @@ abstract class TimeFormatter {
   /// or "Month Day" for older dates.
   static String formatDateLabel(int unixSeconds) {
     final now = DateTime.now();
-    final date = DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000);
+    final date = DateTime.fromMillisecondsSinceEpoch(
+      unixSeconds * 1000,
+      isUtc: true,
+    ).toLocal();
     final today = DateTime(now.year, now.month, now.day);
     final messageDay = DateTime(date.year, date.month, date.day);
     final diff = today.difference(messageDay).inDays;
@@ -60,7 +66,10 @@ abstract class TimeFormatter {
   /// - 1+ years ago: "Mar 3, 2025"
   static String formatConversationTimestamp(int unixSeconds) {
     final now = DateTime.now();
-    final date = DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000);
+    final date = DateTime.fromMillisecondsSinceEpoch(
+      unixSeconds * 1000,
+      isUtc: true,
+    ).toLocal();
     final diff = now.difference(date);
 
     if (diff.inMinutes < 1) return 'now';
@@ -78,7 +87,10 @@ abstract class TimeFormatter {
   /// "Mar 3, 2025" for older.
   static String formatMessageTime(int unixSeconds) {
     final now = DateTime.now();
-    final date = DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000);
+    final date = DateTime.fromMillisecondsSinceEpoch(
+      unixSeconds * 1000,
+      isUtc: true,
+    ).toLocal();
     final diff = now.difference(date);
 
     if (diff.inSeconds < 60) return 'Now';

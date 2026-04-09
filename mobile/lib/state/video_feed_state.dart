@@ -39,6 +39,11 @@ sealed class VideoFeedState with _$VideoFeedState {
     /// Set of video IDs that appear ONLY from subscribed lists (not from follows)
     /// These videos should show the list attribution chip in the UI
     @Default({}) Set<String> listOnlyVideoIds,
+
+    /// Total video count from the server's X-Total-Count header.
+    /// When available, this is more accurate than `videos.length` which
+    /// only reflects the number of loaded videos.
+    int? totalVideoCount,
   }) = _VideoFeedState;
 
   const VideoFeedState._();

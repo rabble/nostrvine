@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -29,6 +30,7 @@ import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -317,6 +319,67 @@ class _AccountHeader extends StatelessWidget {
             spacing: 16,
             children: [
               _AccountHeaderProfile(pubkey: pubkey),
+              BlocBuilder<InviteStatusCubit, InviteStatusState>(
+                builder: (context, inviteState) {
+                  if (!inviteState.hasUnclaimedCodes) {
+                    return const SizedBox.shrink();
+                  }
+                  return Semantics(
+                    button: true,
+                    label: 'Invites',
+                    child: InkWell(
+                      onTap: () => context.push(InvitesScreen.path),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: VineTheme.surfaceContainer,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: VineTheme.outlineMuted,
+                            width: 2,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: 8,
+                          children: [
+                            const DivineIcon(
+                              icon: DivineIconName.shareNetwork,
+                              color: VineTheme.vineGreen,
+                            ),
+                            Text(
+                              'Invites',
+                              style: VineTheme.titleMediumFont(
+                                color: VineTheme.vineGreen,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: VineTheme.vineGreen,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${inviteState.unclaimedCount}',
+                                style: VineTheme.labelSmallFont(
+                                  color: VineTheme.backgroundColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
               Semantics(
                 button: true,
                 label: buttonLabel,

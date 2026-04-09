@@ -1,4 +1,7 @@
-// ABOUTME: Models for the invite gate, waitlist, and onboarding mode
+// ABOUTME: Models for the invite gate, waitlist, onboarding mode, and invite status
+// ABOUTME: InviteCode/InviteStatus are Equatable for use in BLoC state
+
+import 'package:equatable/equatable.dart';
 
 enum OnboardingMode { open, inviteCodeRequired }
 
@@ -107,4 +110,87 @@ class InviteAccessGrant {
 
   final String code;
   final DateTime validatedAt;
+}
+
+class InviteCode extends Equatable {
+  const InviteCode({
+    required this.code,
+    required this.claimed,
+    this.claimedAt,
+    this.claimedBy,
+  });
+
+  factory InviteCode.fromJson(Map<String, dynamic> json) {
+    return InviteCode(
+      code: json['code'] as String? ?? '',
+      claimed: json['claimed'] == true,
+      claimedAt: json['claimedAt'] != null
+          ? DateTime.tryParse(json['claimedAt'] as String)
+          : null,
+      claimedBy: json['claimedBy'] as String?,
+    );
+  }
+
+  final String code;
+  final bool claimed;
+  final DateTime? claimedAt;
+  final String? claimedBy;
+
+  @override
+  List<Object?> get props => [code, claimed, claimedAt, claimedBy];
+}
+
+class InviteStatus extends Equatable {
+  const InviteStatus({
+    required this.canInvite,
+    required this.remaining,
+    required this.total,
+    required this.codes,
+  });
+
+  factory InviteStatus.fromJson(Map<String, dynamic> json) {
+    final rawCodes = json['codes'] as List<dynamic>? ?? [];
+    return InviteStatus(
+      canInvite: json['canInvite'] == true,
+      remaining: (json['remaining'] ?? 0) as int,
+      total: (json['total'] ?? 0) as int,
+      codes: rawCodes
+          .cast<Map<String, dynamic>>()
+          .map(InviteCode.fromJson)
+          .toList(),
+    );
+  }
+
+  final bool canInvite;
+  final int remaining;
+  final int total;
+  final List<InviteCode> codes;
+
+  List<InviteCode> get unclaimedCodes =>
+      codes.where((c) => !c.claimed).toList();
+
+  bool get hasUnclaimedCodes => codes.any((c) => !c.claimed);
+
+  @override
+  List<Object?> get props => [canInvite, remaining, total, codes];
+}
+
+class GenerateInviteResult extends Equatable {
+  const GenerateInviteResult({
+    required this.code,
+    required this.remaining,
+  });
+
+  factory GenerateInviteResult.fromJson(Map<String, dynamic> json) {
+    return GenerateInviteResult(
+      code: json['code'] as String? ?? '',
+      remaining: (json['remaining'] ?? 0) as int,
+    );
+  }
+
+  final String code;
+  final int remaining;
+
+  @override
+  List<Object?> get props => [code, remaining];
 }

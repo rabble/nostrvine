@@ -447,21 +447,16 @@ void main() {
               value: backgroundPublishBloc,
               child: MaterialApp(
                 home: Scaffold(
-                  body: CustomScrollView(
-                    slivers: [
+                  body: NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 200, child: Placeholder()),
                       ),
-                      SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: 600,
-                          child: ProfileVideosGrid(
-                            videos: videos,
-                            userIdHex: testUserHex,
-                          ),
-                        ),
-                      ),
                     ],
+                    body: ProfileVideosGrid(
+                      videos: videos,
+                      userIdHex: testUserHex,
+                    ),
                   ),
                 ),
               ),
@@ -476,7 +471,7 @@ void main() {
         await tester.scrollUntilVisible(
           find.bySemanticsLabel('Video thumbnail 60'),
           800,
-          scrollable: find.byType(Scrollable).first,
+          scrollable: find.byType(Scrollable).last,
         );
         await tester.pump();
 
@@ -522,21 +517,16 @@ void main() {
               value: backgroundPublishBloc,
               child: MaterialApp(
                 home: Scaffold(
-                  body: CustomScrollView(
-                    slivers: [
+                  body: NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 200, child: Placeholder()),
                       ),
-                      SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: 600,
-                          child: ProfileVideosGrid(
-                            videos: videos,
-                            userIdHex: testUserHex,
-                          ),
-                        ),
-                      ),
                     ],
+                    body: ProfileVideosGrid(
+                      videos: videos,
+                      userIdHex: testUserHex,
+                    ),
                   ),
                 ),
               ),
@@ -547,7 +537,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Scroll to the end
-        final scrollable = find.byType(Scrollable).first;
+        final scrollable = find.byType(Scrollable).last;
         await tester.drag(scrollable, const Offset(0, -3000));
         await tester.pump();
 

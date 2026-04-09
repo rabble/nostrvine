@@ -8,7 +8,9 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  funnelcake_api_client:
   models:
+  nostr_client:
   nostr_sdk:
   rxdart: ^0.28.0
 

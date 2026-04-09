@@ -32,6 +32,27 @@ void main() {
     profileRepository = _MockProfileRepository();
     notificationsDao = _MockNotificationsDao();
     nostrClient = _MockNostrClient();
+    when(
+      () => funnelcakeApiClient.notificationsUri(
+        pubkey: any(named: 'pubkey'),
+        limit: any(named: 'limit'),
+        cursor: any(named: 'cursor'),
+      ),
+    ).thenAnswer((invocation) {
+      final pubkey = invocation.namedArguments[#pubkey] as String;
+      final limit = invocation.namedArguments[#limit] as int? ?? 50;
+      final cursor = invocation.namedArguments[#cursor] as String?;
+      final effectiveBefore =
+          cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
+      return Uri.parse(
+        'https://api.example.com/api/users/$pubkey/notifications',
+      ).replace(
+        queryParameters: <String, String>{
+          'limit': '$limit',
+          'before': effectiveBefore,
+        },
+      );
+    });
     repository = NotificationRepository(
       funnelcakeApiClient: funnelcakeApiClient,
       profileRepository: profileRepository,
@@ -87,6 +108,7 @@ void main() {
       () => funnelcakeApiClient.getNotifications(
         pubkey: any(named: 'pubkey'),
         cursor: any(named: 'cursor'),
+        requestUri: any(named: 'requestUri'),
         authHeaders: any(named: 'authHeaders'),
         limit: any(named: 'limit'),
       ),
@@ -117,6 +139,72 @@ void main() {
 
   group(NotificationRepository, () {
     group('getNotifications', () {
+      test('signs the full first-page notifications URL', () async {
+        var signedUrl = '';
+        var signedMethod = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          nostrClient: nostrClient,
+          authHeadersProvider: (url, method) async {
+            signedUrl = url;
+            signedMethod = method;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([]);
+        stubProfiles({});
+
+        await repository.getNotifications();
+
+        final signedUri = Uri.parse(signedUrl);
+        expect(
+          '${signedUri.scheme}://${signedUri.host}${signedUri.path}',
+          equals(
+            'https://api.example.com/api/users/$userPubkey/notifications',
+          ),
+        );
+        expect(signedUri.queryParameters['limit'], equals('50'));
+        expect(signedUri.queryParameters['before'], isNotNull);
+        expect(
+          int.tryParse(signedUri.queryParameters['before']!),
+          isNotNull,
+        );
+        expect(signedMethod, equals('GET'));
+      });
+
+      test('signs the full paginated notifications URL with cursor', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          nostrClient: nostrClient,
+          authHeadersProvider: (url, method) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([], nextCursor: 'cursor_abc', hasMore: true);
+        stubProfiles({});
+
+        await repository.getNotifications();
+        stubNotifications([], nextCursor: 'cursor_def');
+
+        await repository.getNotifications();
+
+        expect(
+          signedUrl,
+          equals(
+            'https://api.example.com/api/users/$userPubkey/notifications'
+            '?limit=50&before=cursor_abc',
+          ),
+        );
+      });
+
       test('returns enriched items with real profile data', () async {
         stubNotifications([
           makeNotification(
@@ -162,6 +250,7 @@ void main() {
           () => funnelcakeApiClient.getNotifications(
             pubkey: any(named: 'pubkey'),
             cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
             authHeaders: any(named: 'authHeaders'),
             limit: any(named: 'limit'),
           ),
@@ -190,11 +279,89 @@ void main() {
           () => funnelcakeApiClient.getNotifications(
             pubkey: userPubkey,
             cursor: 'cursor_abc',
+            requestUri: any(named: 'requestUri'),
             authHeaders: any(named: 'authHeaders'),
             limit: any(named: 'limit'),
           ),
         ).called(1);
       });
+
+      test(
+        'passes the same first-page URI to signing and request execution',
+        () async {
+          var signedUrl = '';
+          Uri? requestedUri;
+          repository = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            nostrClient: nostrClient,
+            authHeadersProvider: (url, method) async {
+              signedUrl = url;
+              return {'Authorization': 'Nostr test-token'};
+            },
+          );
+          stubNotifications([]);
+          stubProfiles({});
+
+          await repository.getNotifications();
+
+          requestedUri =
+              verify(
+                    () => funnelcakeApiClient.getNotifications(
+                      pubkey: userPubkey,
+                      cursor: any(named: 'cursor'),
+                      requestUri: captureAny(named: 'requestUri'),
+                      authHeaders: any(named: 'authHeaders'),
+                      limit: any(named: 'limit'),
+                    ),
+                  ).captured.single
+                  as Uri;
+
+          expect(requestedUri.toString(), equals(signedUrl));
+        },
+      );
+
+      test(
+        'passes the same paginated URI to signing and request execution',
+        () async {
+          var signedUrl = '';
+          Uri? requestedUri;
+          repository = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            nostrClient: nostrClient,
+            authHeadersProvider: (url, method) async {
+              signedUrl = url;
+              return {'Authorization': 'Nostr test-token'};
+            },
+          );
+          stubNotifications([], nextCursor: 'cursor_abc', hasMore: true);
+          stubProfiles({});
+
+          await repository.getNotifications();
+          stubNotifications([], nextCursor: 'cursor_def');
+
+          await repository.getNotifications();
+
+          requestedUri =
+              verify(
+                    () => funnelcakeApiClient.getNotifications(
+                      pubkey: userPubkey,
+                      cursor: 'cursor_abc',
+                      requestUri: captureAny(named: 'requestUri'),
+                      authHeaders: any(named: 'authHeaders'),
+                      limit: any(named: 'limit'),
+                    ),
+                  ).captured.single
+                  as Uri;
+
+          expect(requestedUri.toString(), equals(signedUrl));
+        },
+      );
     });
 
     group('like grouping', () {
@@ -590,6 +757,8 @@ void main() {
         verify(
           () => funnelcakeApiClient.getNotifications(
             pubkey: userPubkey,
+            cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
             authHeaders: any(named: 'authHeaders'),
             limit: any(named: 'limit'),
           ),
@@ -683,6 +852,7 @@ void main() {
           () => funnelcakeApiClient.getNotifications(
             pubkey: userPubkey,
             cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
             authHeaders: {'Authorization': 'Nostr abc123'},
             limit: any(named: 'limit'),
           ),

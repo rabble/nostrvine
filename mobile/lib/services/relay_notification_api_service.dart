@@ -20,6 +20,7 @@ class RelayNotification {
     required this.read,
     this.referencedEventId,
     this.content,
+    this.sourceCreatedAt,
   });
 
   factory RelayNotification.fromJson(Map<String, dynamic> json) {
@@ -30,9 +31,12 @@ class RelayNotification {
       sourceKind: json['source_kind'] as int? ?? 0,
       referencedEventId: json['referenced_event_id']?.toString(),
       notificationType: json['notification_type']?.toString() ?? 'unknown',
-      createdAt: _parseDateTime(json['created_at']),
+      createdAt: _parseDateTimeUtc(json['created_at']),
       read: json['read'] as bool? ?? false,
       content: json['content']?.toString(),
+      sourceCreatedAt: json['source_created_at'] != null
+          ? _parseDateTimeUtc(json['source_created_at'])
+          : null,
     );
   }
 
@@ -46,21 +50,22 @@ class RelayNotification {
   final DateTime createdAt;
   final bool read;
   final String? content;
+  final DateTime? sourceCreatedAt;
 
   /// Stable key for local deduplication and filtering.
   /// Falls back to sourceEventId if API doesn't provide an id field.
   /// Note: Use [id] (not this) for API write operations like markAsRead.
   String get dedupeKey => id.isNotEmpty ? id : sourceEventId;
 
-  static DateTime _parseDateTime(dynamic value) {
-    if (value == null) return DateTime.now();
+  static DateTime _parseDateTimeUtc(dynamic value) {
+    if (value == null) return DateTime.now().toUtc();
     if (value is int) {
-      return DateTime.fromMillisecondsSinceEpoch(value * 1000);
+      return DateTime.fromMillisecondsSinceEpoch(value * 1000, isUtc: true);
     }
     if (value is String) {
-      return DateTime.tryParse(value) ?? DateTime.now();
+      return DateTime.tryParse(value)?.toUtc() ?? DateTime.now().toUtc();
     }
-    return DateTime.now();
+    return DateTime.now().toUtc();
   }
 
   RelayNotification copyWith({
@@ -73,6 +78,7 @@ class RelayNotification {
     DateTime? createdAt,
     bool? read,
     String? content,
+    DateTime? sourceCreatedAt,
   }) {
     return RelayNotification(
       id: id ?? this.id,
@@ -84,12 +90,13 @@ class RelayNotification {
       createdAt: createdAt ?? this.createdAt,
       read: read ?? this.read,
       content: content ?? this.content,
+      sourceCreatedAt: sourceCreatedAt ?? this.sourceCreatedAt,
     );
   }
 
   @override
   String toString() =>
-      'RelayNotification(id: $id, type: $notificationType, from: $sourcePubkey)';
+      'RelayNotification(id: $id, type: $notificationType, from: $sourcePubkey, sourceCreatedAt: $sourceCreatedAt)';
 }
 
 /// Response from GET /api/users/{pubkey}/notifications

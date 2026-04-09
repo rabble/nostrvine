@@ -1,12 +1,15 @@
 // ABOUTME: Test notification navigation for resolved and missing video targets.
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
@@ -39,20 +42,31 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
+class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
+    implements InviteStatusCubit {}
+
 void main() {
   Widget buildScreen(
     RelayNotifications Function() notifierFactory, {
     required VideoEventService videoEventService,
     required NostrClient nostrClient,
   }) {
+    final mockInviteCubit = _MockInviteStatusCubit();
+    when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
+    when(mockInviteCubit.load).thenAnswer((_) async {});
     return ProviderScope(
       overrides: [
         relayNotificationsProvider.overrideWith(notifierFactory),
         videoEventServiceProvider.overrideWithValue(videoEventService),
         nostrServiceProvider.overrideWithValue(nostrClient),
       ],
-      child: const MaterialApp(
-        home: Scaffold(body: NotificationsScreen()),
+      child: MaterialApp(
+        home: BlocProvider<InviteStatusCubit>.value(
+          value: mockInviteCubit,
+          child: const Scaffold(
+            body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+          ),
+        ),
       ),
     );
   }
@@ -72,8 +86,14 @@ void main() {
     'd' * 64,
     1111,
     [
-      ['e', rootVideoId, '', 'root'],
-      ['e', 'parent_comment', '', 'reply'],
+      // NIP-22: uppercase = root scope (video)
+      ['E', rootVideoId, '', 'video_author_pubkey'],
+      ['K', '34236'],
+      ['P', 'video_author_pubkey'],
+      // NIP-22: lowercase = parent item (comment being replied to)
+      ['e', 'parent_comment', '', 'parent_author_pubkey'],
+      ['k', '1111'],
+      ['p', 'parent_author_pubkey'],
     ],
     'comment body',
   );

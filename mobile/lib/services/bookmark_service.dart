@@ -814,8 +814,8 @@ class BookmarkService with NostrListServiceMixin {
       description: description,
       imageUrl: imageUrl,
       items: items,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      createdAt: event.createdAtDateTime,
+      updatedAt: event.createdAtDateTime,
       nostrEventId: event.id,
     );
 

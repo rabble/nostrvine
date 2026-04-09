@@ -239,6 +239,18 @@ class PlayerPool {
   /// over-eviction when multiple callers see the pool at capacity.
   Completer<void>? _operationLock;
 
+  /// Waits for any in-flight [getPlayer] operation to complete.
+  ///
+  /// Call this in test teardowns before iterating shared state that the
+  /// mock player factory writes to, to avoid concurrent modification errors
+  /// caused by in-flight lock completions firing after the test body returns.
+  @visibleForTesting
+  Future<void> drainPendingOperations() async {
+    while (_operationLock != null) {
+      await _operationLock!.future;
+    }
+  }
+
   /// Number of players currently in the pool.
   int get playerCount => _players.length;
 
@@ -264,6 +276,16 @@ class PlayerPool {
       lock?.complete();
     }
   }
+
+  /// Performs the actual pool lookup and eviction logic without the
+  /// concurrency lock.
+  ///
+  /// Exposed so test subclasses can bypass the [Completer]-based lock when
+  /// they need deterministic, synchronous-equivalent behaviour without
+  /// racing against teardown operations.
+  @visibleForTesting
+  @visibleForOverriding
+  Future<PooledPlayer> getPlayerInternal(String url) => _getPlayerInternal(url);
 
   Future<PooledPlayer> _getPlayerInternal(String url) async {
     if (_isDisposed) {
@@ -299,7 +321,7 @@ class PlayerPool {
 
     // No reusable player found (all LRU entries were already disposed) —
     // fall back to allocating a new native player.
-    final player = await createPlayer();
+    final player = await createPlayerForUrl(url);
     _players[url] = player;
     _lruOrder.add(url);
 
@@ -393,6 +415,16 @@ class PlayerPool {
       }
     }
   }
+
+  /// Creates a new [PooledPlayer] for [url].
+  ///
+  /// The default implementation ignores [url] and delegates to
+  /// [createPlayer]. Override in tests when you need URL-aware player
+  /// creation (e.g., to return a specific mock for a given URL) without
+  /// duplicating the pool's LRU and recycle logic.
+  @visibleForTesting
+  @visibleForOverriding
+  Future<PooledPlayer> createPlayerForUrl(String url) => createPlayer();
 
   /// Creates a new [PooledPlayer] with native media resources.
   ///

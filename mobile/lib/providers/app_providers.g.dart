@@ -2324,6 +2324,68 @@ final class CurrentAuthStateProvider
 
 String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+
+@ProviderFor(currentAuthRpcCapability)
+const currentAuthRpcCapabilityProvider = CurrentAuthRpcCapabilityProvider._();
+
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+
+final class CurrentAuthRpcCapabilityProvider
+    extends
+        $FunctionalProvider<
+          AuthRpcCapability,
+          AuthRpcCapability,
+          AuthRpcCapability
+        >
+    with $Provider<AuthRpcCapability> {
+  /// Provider that returns current RPC capability and rebuilds on changes.
+  ///
+  /// Widgets and repositories should watch this instead of polling
+  /// [AuthService.authRpcCapability] directly.
+  const CurrentAuthRpcCapabilityProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'currentAuthRpcCapabilityProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$currentAuthRpcCapabilityHash();
+
+  @$internal
+  @override
+  $ProviderElement<AuthRpcCapability> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AuthRpcCapability create(Ref ref) {
+    return currentAuthRpcCapability(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AuthRpcCapability value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AuthRpcCapability>(value),
+    );
+  }
+}
+
+String _$currentAuthRpcCapabilityHash() =>
+    r'cb273f3377e25d0c88104df14a38d2b502c3f7de';
+
 /// Provider that fetches the list of known accounts from the auth service.
 ///
 /// Invalidate this provider after sign-in or sign-out to refresh the list.
@@ -2500,6 +2562,62 @@ final class ZendeskIdentitySyncProvider
 
 String _$zendeskIdentitySyncHash() =>
     r'e49d4f9cedf56ec4131b30a6f1d9d45dada68bed';
+
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+
+@ProviderFor(pushNotificationSync)
+const pushNotificationSyncProvider = PushNotificationSyncProvider._();
+
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+
+final class PushNotificationSyncProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridges auth state changes to push notification registration.
+  ///
+  /// Registers FCM token on login, deregisters on logout.
+  /// Same pattern as [zendeskIdentitySync].
+  const PushNotificationSyncProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pushNotificationSyncProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pushNotificationSyncHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return pushNotificationSync(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$pushNotificationSyncHash() =>
+    r'fed5d3b0d5d729c415c77b8d0a88c090abf4095d';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -2892,7 +3010,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'1f41b9c42e06c287a43fe235a3b3774d1a759a49';
+String _$followRepositoryHash() => r'5eb08600816786c7447419fa0202c5532dd24678';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -2960,7 +3078,7 @@ final class CuratedListRepositoryProvider
 }
 
 String _$curatedListRepositoryHash() =>
-    r'ac877d48b81aebf77fb573cbeaf70a123ea843d4';
+    r'21aee8babc20a3b93a38c41c1905e0f04f1d877a';
 
 /// Provider for HashtagRepository instance.
 ///
@@ -4717,7 +4835,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'66aaef86246fb3bb43815502ca215b16454387b7';
+String _$likesRepositoryHash() => r'96460364fea5b82e9717a420d542f8a2a865da48';
 
 /// Provider for RepostsRepository instance
 ///
@@ -4790,4 +4908,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'03658f5c9263b40e6279c5dd325fdbcfd54b4068';
+String _$repostsRepositoryHash() => r'057ff5e60002499eee0dffa809e1ddb72f7c817c';

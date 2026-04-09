@@ -5,8 +5,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 
@@ -36,7 +36,7 @@ void main() {
     });
 
     service = NostrCreatorBindingService(
-      signer: AuthServiceSigner(mockKeyContainer),
+      identity: LocalNostrIdentity(keyContainer: mockKeyContainer),
       now: () => DateTime.utc(2026, 3, 29, 8, 30),
     );
   });
@@ -139,7 +139,7 @@ void main() {
 
     test('throws when no authenticated signer is available', () async {
       final unauthenticatedService = NostrCreatorBindingService(
-        signer: AuthServiceSigner(null),
+        identity: null,
         now: () => DateTime.utc(2026, 3, 29, 8, 30),
       );
 

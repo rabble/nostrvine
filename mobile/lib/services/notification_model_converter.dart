@@ -18,6 +18,7 @@ NotificationModel notificationModelFromRelayApi(
   final message = _generateMessage(
     type,
     actorName,
+    relay.sourcePubkey,
     relay.content,
     hasTargetEvent: relay.referencedEventId != null,
   );
@@ -29,7 +30,7 @@ NotificationModel notificationModelFromRelayApi(
     actorName: actorName,
     actorPictureUrl: actorPictureUrl,
     message: message,
-    timestamp: relay.createdAt,
+    timestamp: relay.sourceCreatedAt ?? relay.createdAt,
     isRead: relay.read,
     targetEventId: relay.referencedEventId,
     targetVideoUrl: targetVideoUrl,
@@ -101,10 +102,15 @@ NotificationType? _mapNotificationTypeFromSourceKind(int sourceKind) {
 String _generateMessage(
   NotificationType type,
   String? actorName,
+  String actorPubkey,
   String? content, {
   required bool hasTargetEvent,
 }) {
-  final name = actorName ?? 'Someone';
+  final name = switch (type) {
+    NotificationType.follow =>
+      actorName ?? UserProfile.defaultDisplayNameFor(actorPubkey),
+    _ => actorName ?? 'Someone',
+  };
   switch (type) {
     case NotificationType.like:
       return '$name liked your video';

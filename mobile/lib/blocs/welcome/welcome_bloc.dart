@@ -7,6 +7,7 @@ import 'package:db_client/db_client.dart';
 import 'package:equatable/equatable.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:models/models.dart';
+import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -46,6 +47,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       _onLoginOptionsRequested,
       transformer: droppable(),
     );
+    on<WelcomeProfilesHydrated>(_onProfilesHydrated);
   }
 
   final UserProfilesDao _userProfilesDao;
@@ -83,52 +85,67 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       name: 'WelcomeBloc',
       category: LogCategory.auth,
     );
-    for (final known in knownAccounts) {
-      Log.debug(
-        'WelcomeBloc: account pubkey=${known.pubkeyHex}, '
-        'source=${known.authSource.name}, '
-        'lastUsed=${known.lastUsedAt.toIso8601String()}',
-        name: 'WelcomeBloc',
-        category: LogCategory.auth,
-      );
-    }
 
-    // Load cached profiles for each known account
-    final accounts = <PreviousAccount>[];
-    for (final known in knownAccounts) {
-      UserProfile? profile;
-      try {
-        profile = await _userProfilesDao.getProfile(known.pubkeyHex);
-      } catch (e) {
-        Log.warning(
-          'Failed to load cached profile for ${known.pubkeyHex}: $e',
-          name: 'WelcomeBloc',
-          category: LogCategory.auth,
-        );
-      }
-      accounts.add(
-        PreviousAccount(
-          pubkeyHex: known.pubkeyHex,
-          authSource: known.authSource,
-          profile: profile,
-        ),
-      );
-    }
-
-    Log.info(
-      'WelcomeBloc: loaded ${accounts.length} account(s) '
-      '(${accounts.where((a) => a.profile != null).length} with cached '
-      'profiles)',
-      name: 'WelcomeBloc',
-      category: LogCategory.auth,
-    );
+    // Emit accounts immediately WITHOUT profiles so the screen renders fast.
+    final accountsWithoutProfiles = knownAccounts
+        .map(
+          (known) => PreviousAccount(
+            pubkeyHex: known.pubkeyHex,
+            authSource: known.authSource,
+          ),
+        )
+        .toList();
 
     emit(
       state.copyWith(
         status: WelcomeStatus.loaded,
-        previousAccounts: accounts,
+        previousAccounts: accountsWithoutProfiles,
         selectedPubkeyHex: pendingPubkey ?? event.initialSelectedPubkeyHex,
       ),
+    );
+
+    // Hydrate profiles from SQLite in parallel, then update state.
+    _hydrateProfiles(knownAccounts);
+  }
+
+  /// Loads cached profiles for each known account in parallel and fires
+  /// [WelcomeProfilesHydrated] to update the account list.
+  Future<void> _hydrateProfiles(List<KnownAccount> knownAccounts) async {
+    final futures = <Future<PreviousAccount>>[];
+    for (final known in knownAccounts) {
+      futures.add(_hydrateAccount(known));
+    }
+    final results = await Future.wait(futures);
+
+    final withProfiles = results.where((a) => a.profile != null).length;
+    Log.info(
+      'WelcomeBloc: hydrated ${results.length} account(s) '
+      '($withProfiles with cached profiles)',
+      name: 'WelcomeBloc',
+      category: LogCategory.auth,
+    );
+
+    // Only update if any profiles were actually found.
+    if (withProfiles > 0) {
+      add(WelcomeProfilesHydrated(results));
+    }
+  }
+
+  Future<PreviousAccount> _hydrateAccount(KnownAccount known) async {
+    UserProfile? profile;
+    try {
+      profile = await _userProfilesDao.getProfile(known.pubkeyHex);
+    } catch (e) {
+      Log.warning(
+        'Failed to load cached profile for ${known.pubkeyHex}: $e',
+        name: 'WelcomeBloc',
+        category: LogCategory.auth,
+      );
+    }
+    return PreviousAccount(
+      pubkeyHex: known.pubkeyHex,
+      authSource: known.authSource,
+      profile: profile,
     );
   }
 
@@ -304,5 +321,16 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     await _authService.acceptTerms();
     emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
     emit(state.copyWith(status: WelcomeStatus.loaded));
+  }
+
+  void _onProfilesHydrated(
+    WelcomeProfilesHydrated event,
+    Emitter<WelcomeState> emit,
+  ) {
+    // Only update if we're still on the loaded screen — don't clobber
+    // an in-progress sign-in or navigation.
+    if (state.status != WelcomeStatus.loaded) return;
+
+    emit(state.copyWith(previousAccounts: event.accounts));
   }
 }

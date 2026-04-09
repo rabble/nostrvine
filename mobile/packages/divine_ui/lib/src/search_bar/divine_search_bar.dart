@@ -74,6 +74,7 @@ class DivineSearchBar extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           prefixIconConstraints: const BoxConstraints(),
           prefixIcon: _PrefixIcon(isLoading: isLoading),
+          suffixIconConstraints: const BoxConstraints(),
           suffixIcon: suffixIcon,
         ),
       ),

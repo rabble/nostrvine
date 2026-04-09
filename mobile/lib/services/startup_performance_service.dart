@@ -145,6 +145,43 @@ class StartupPerformanceService {
     CrashReportingService.instance.setCustomKey('first_frame_ms', elapsed);
   }
 
+  DateTime? _authShellReadyTime;
+
+  /// Time when the auth shell (welcome or login screen) first rendered.
+  DateTime? get authShellReadyTime => _authShellReadyTime;
+
+  /// Time when the full UI (home feed) is ready for interaction.
+  DateTime? get uiReadyTime => _uiReadyTime;
+
+  /// Mark when the auth shell (welcome/login screen) first renders.
+  ///
+  /// This fires before [markUIReady] which tracks home-feed readiness.
+  /// The distinction lets us measure how fast a returning user sees a
+  /// usable screen vs. how long it takes for video content to load.
+  void markAuthShellReady() {
+    if (_authShellReadyTime != null) return;
+    if (_appStartTime == null) return;
+
+    _authShellReadyTime = DateTime.now();
+    final elapsed = _authShellReadyTime!
+        .difference(_appStartTime!)
+        .inMilliseconds;
+
+    Log.info(
+      'Auth shell ready in ${elapsed}ms',
+      name: 'StartupPerformance',
+      category: LogCategory.system,
+    );
+
+    CrashReportingService.instance.logInitializationStep(
+      'Auth shell ready: ${elapsed}ms',
+    );
+    CrashReportingService.instance.setCustomKey(
+      'auth_shell_ready_ms',
+      elapsed,
+    );
+  }
+
   /// Mark when UI is ready for interaction
   void markUIReady() {
     if (_uiReadyTime != null) return;
@@ -153,7 +190,7 @@ class StartupPerformanceService {
     final elapsed = _uiReadyTime!.difference(_appStartTime!).inMilliseconds;
 
     Log.info(
-      '🎯 UI ready for interaction in ${elapsed}ms',
+      'UI ready for interaction in ${elapsed}ms',
       name: 'StartupPerformance',
       category: LogCategory.system,
     );
@@ -286,6 +323,13 @@ class StartupPerformanceService {
       report.writeln('First Frame: ${firstFrameMs}ms');
     }
 
+    if (_authShellReadyTime != null) {
+      final authShellMs = _authShellReadyTime!
+          .difference(_appStartTime!)
+          .inMilliseconds;
+      report.writeln('Auth Shell Ready: ${authShellMs}ms');
+    }
+
     if (_uiReadyTime != null) {
       final uiReadyMs = _uiReadyTime!.difference(_appStartTime!).inMilliseconds;
       report.writeln('UI Ready: ${uiReadyMs}ms');
@@ -382,6 +426,12 @@ class StartupPerformanceService {
 
     if (_firstFrameTime != null) {
       metrics['first_frame_ms'] = _firstFrameTime!
+          .difference(_appStartTime!)
+          .inMilliseconds;
+    }
+
+    if (_authShellReadyTime != null) {
+      metrics['auth_shell_ready_ms'] = _authShellReadyTime!
           .difference(_appStartTime!)
           .inMilliseconds;
     }

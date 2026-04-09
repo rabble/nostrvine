@@ -5,13 +5,14 @@
 Pod::Spec.new do |s|
   s.name             = 'divine_camera'
   s.version          = '0.0.1'
-  s.summary          = 'A new Flutter plugin project.'
+  s.summary          = 'Camera plugin for iOS with AVFoundation-based recording and preview.'
   s.description      = <<-DESC
-A new Flutter plugin project.
+Flutter plugin providing native iOS camera operations including preview,
+video recording, flash control, and audio device management.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/divinevideo/divine-mobile'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Divine' => 'dev@divine.video' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'

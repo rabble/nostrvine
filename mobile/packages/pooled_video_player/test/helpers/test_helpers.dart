@@ -341,106 +341,40 @@ Widget wrapWithProvider({
 
 /// A testable [PlayerPool] that uses mock player creation.
 ///
-/// Allows tests to inject mock players and observe pool behavior.
+/// Overrides only [createPlayerForUrl] to inject URL-keyed mock players
+/// while inheriting the real pool logic — LRU eviction, recycle ordering,
+/// and the `stop()`-before-expose guarantee — from [PlayerPool] directly.
+/// This avoids duplicating production logic in test infrastructure.
+///
+/// ## Concurrency serialization
+///
+/// Pass `serialized: true` when the test needs correct LRU eviction under
+/// concurrent loads (e.g. eviction-window tests with `maxPlayers < 3`).
+/// This enables the production [Completer]-based lock in [getPlayer].
+///
+/// Leave `serialized: false` (default) for all other tests.  The lock is
+/// bypassed via [getPlayerInternal], so in-flight lock continuations cannot
+/// race against tearDown iterations that mutate shared test-state maps.
 class TestablePlayerPool extends PlayerPool {
   TestablePlayerPool({
     required this.mockPlayerFactory,
     super.maxPlayers,
+    this.serialized = false,
   });
 
-  /// Factory function to create mock [PooledPlayer]s.
+  /// Factory function to create mock [PooledPlayer]s for a given URL.
   final PooledPlayer Function(String url) mockPlayerFactory;
 
-  final Map<String, PooledPlayer> _testPlayers = {};
-  final List<String> _testLruOrder = [];
+  /// When `true`, uses the production [getPlayer] lock for correct
+  /// concurrent-eviction behaviour. When `false` (default), bypasses the
+  /// lock so test tearDowns cannot race with in-flight lock completions.
+  final bool serialized;
 
   @override
-  Future<PooledPlayer> getPlayer(String url) async {
-    if (_testPlayers.containsKey(url)) {
-      _testLruOrder
-        ..remove(url)
-        ..add(url);
-      // Mirror real PlayerPool: mute cached players to prevent audio leaks.
-      // The caller (_loadPlayer) will set volume/play state as needed.
-      final existing = _testPlayers[url]!;
-      unawaited(existing.player.setVolume(0));
-      return existing;
-    }
-
-    // Recycle LRU players until there is room, mirroring real PlayerPool.
-    PooledPlayer? recycled;
-    while (_testPlayers.length >= maxPlayers && _testLruOrder.isNotEmpty) {
-      final evictUrl = _testLruOrder.removeAt(0);
-      final evicted = _testPlayers.remove(evictUrl);
-      if (evicted != null && !evicted.isDisposed) {
-        evicted.recycle();
-        // Mirror real PlayerPool._recycleLru(): await stop() so the surface
-        // is cleared before the recycled player is exposed to the UI.
-        await evicted.player.stop();
-        recycled = evicted;
-        break;
-      }
-    }
-
-    if (recycled != null) {
-      _testPlayers[url] = recycled;
-      _testLruOrder.add(url);
-      return recycled;
-    }
-
-    final player = mockPlayerFactory(url);
-    _testPlayers[url] = player;
-    _testLruOrder.add(url);
-    return player;
-  }
+  Future<PooledPlayer> createPlayerForUrl(String url) async =>
+      mockPlayerFactory(url);
 
   @override
-  bool hasPlayer(String url) => _testPlayers.containsKey(url);
-
-  @override
-  PooledPlayer? getExistingPlayer(String url) {
-    if (_testPlayers.containsKey(url)) {
-      _testLruOrder
-        ..remove(url)
-        ..add(url);
-      return _testPlayers[url];
-    }
-    return null;
-  }
-
-  @override
-  int get playerCount => _testPlayers.length;
-
-  @override
-  Future<void> release(String url) async {
-    final player = _testPlayers.remove(url);
-    _testLruOrder.remove(url);
-    if (player != null && !player.isDisposed) {
-      await player.dispose();
-    }
-  }
-
-  @override
-  void stopAll() {
-    for (final player in _testPlayers.values) {
-      if (!player.isDisposed) {
-        try {
-          unawaited(player.player.stop());
-        } on Exception {
-          // Ignore errors during emergency stop
-        }
-      }
-    }
-  }
-
-  @override
-  Future<void> dispose() async {
-    for (final player in _testPlayers.values) {
-      if (!player.isDisposed) {
-        await player.dispose();
-      }
-    }
-    _testPlayers.clear();
-    _testLruOrder.clear();
-  }
+  Future<PooledPlayer> getPlayer(String url) =>
+      serialized ? super.getPlayer(url) : getPlayerInternal(url);
 }

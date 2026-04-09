@@ -7,6 +7,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -157,7 +158,7 @@ Examples:
       // Create Nostr service to connect to relay
       final keyContainer = await SecureKeyContainer.generate();
       final nostrService = NostrServiceFactory.create(
-        keyContainer: keyContainer,
+        signer: LocalNostrIdentity(keyContainer: keyContainer),
       );
 
       // Initialize

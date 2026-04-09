@@ -68,6 +68,12 @@ void main() {
           url.path,
           contains('/api/users/$testPubkey/notifications'),
         );
+        expect(url.queryParameters['limit'], equals('50'));
+        expect(url.queryParameters['before'], isNotNull);
+        expect(
+          int.tryParse(url.queryParameters['before']!),
+          isNotNull,
+        );
       });
 
       test('passes cursor as before parameter', () async {
@@ -132,6 +138,42 @@ void main() {
         ).captured;
         final headers = captured.first as Map<String, String>;
         expect(headers['Authorization'], equals('Nostr abc123'));
+      });
+
+      test('uses the provided requestUri without rebuilding it', () async {
+        when(
+          () => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'notifications': <Map<String, dynamic>>[],
+              'unread_count': 0,
+              'has_more': false,
+            }),
+            200,
+          ),
+        );
+
+        final requestUri = Uri.parse(
+          '$baseUrl/api/users/$testPubkey/notifications'
+          '?limit=50&before=custom_cursor_123',
+        );
+
+        await client.getNotifications(
+          pubkey: testPubkey,
+          requestUri: requestUri,
+        );
+
+        final captured = verify(
+          () => mockHttpClient.get(
+            captureAny(),
+            headers: any(named: 'headers'),
+          ),
+        ).captured;
+        expect(captured.first, same(requestUri));
       });
 
       test('returns empty response on 404', () async {

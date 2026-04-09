@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 /// Used in the "All" search results view to separate People, Tags,
 /// Lists, and Videos sections.
 class SectionHeader extends StatelessWidget {
-  const SectionHeader({
-    required this.title,
-    super.key,
-    this.onTap,
-  });
+  const SectionHeader({required this.title, super.key, this.onTap});
 
   final String title;
   final VoidCallback? onTap;
@@ -39,7 +35,7 @@ class SectionHeader extends StatelessWidget {
               if (onTap != null)
                 const DivineIcon(
                   icon: DivineIconName.caretRight,
-                  color: VineTheme.whiteText,
+                  color: VineTheme.vineGreen,
                 ),
             ],
           ),

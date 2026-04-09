@@ -143,6 +143,26 @@ void main() {
         // Message rendered in RichText
         expect(_richTextContains(tester, 'following you'), isTrue);
       });
+
+      testWidgets(
+        'renders follow copy from current actor identity instead of stale someone fallback',
+        (WidgetTester tester) async {
+          final notification = makeNotification(
+            type: NotificationType.follow,
+            actorName: null,
+            message: 'Someone started following you',
+          );
+
+          await tester.pumpWidget(buildTestWidget(notification: notification));
+
+          final expectedName = UserProfile.defaultDisplayNameFor(testPubkey);
+          expect(
+            find.text('$expectedName started following you'),
+            findsOneWidget,
+          );
+          expect(find.text('Someone started following you'), findsNothing);
+        },
+      );
     });
 
     group('repost notification', () {
