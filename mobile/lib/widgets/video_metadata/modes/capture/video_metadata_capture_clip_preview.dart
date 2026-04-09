@@ -47,6 +47,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
         ),
       ),
     );
+    final isReady = state.finalRenderedClip != null;
 
     return Center(
       child: SizedBox(
@@ -62,11 +63,12 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
               borderRadius: .circular(16),
               child: Semantics(
                 button: true,
+                enabled: isReady,
                 // TODO(l10n): Replace with context.l10n when localization
                 // is added.
                 label: 'Open post preview screen',
                 child: GestureDetector(
-                  onTap: state.finalRenderedClip != null
+                  onTap: isReady
                       ? () => _openPreview(context, state.finalRenderedClip!)
                       : null,
                   child: Stack(

@@ -30,18 +30,21 @@ class VideoRecorderClassicActionsBottom extends ConsumerWidget {
         children: [
           DivineIconButton(
             icon: .arrowsCounterClockwise,
+            semanticLabel: 'Switch camera',
             size: .small,
             type: .ghostSecondary,
             onPressed: notifier.switchCamera,
           ),
           DivineIconButton(
             icon: .gridNine,
+            semanticLabel: 'Toggle grid',
             size: .small,
             type: .ghostSecondary,
             onPressed: notifier.toggleGridLines,
           ),
           DivineIconButton(
             icon: .ghost,
+            semanticLabel: 'Toggle ghost frame',
             size: .small,
             type: .ghostSecondary,
             onPressed: () {

@@ -22,6 +22,7 @@ class VideoRecorderClassicActionsTop extends ConsumerWidget {
         children: [
           DivineIconButton(
             icon: .arrowCounterClockwise,
+            semanticLabel: 'Undo last clip',
             size: .small,
             type: .ghostSecondary,
             onPressed: ref.read(clipManagerProvider.notifier).removeLastClip,

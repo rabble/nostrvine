@@ -14,7 +14,7 @@ import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_cap
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
-  group('VideoMetadataClipPreview', () {
+  group(VideoMetadataCaptureClipPreview, () {
     late DivineVideoClip testClip;
 
     setUp(() {
@@ -163,39 +163,6 @@ void main() {
       // Play button should be tappable
       final playButton = find.bySemanticsLabel('Open post preview screen');
       expect(playButton, findsOneWidget);
-    });
-
-    testWidgets('opens preview screen when play button tapped', (tester) async {
-      final finalClip = DivineVideoClip(
-        id: 'final-clip',
-        video: EditorVideo.file('final.mp4'),
-        duration: const Duration(seconds: 15),
-        recordedAt: DateTime.now(),
-        targetAspectRatio: models.AspectRatio.square,
-        originalAspectRatio: 9 / 16,
-      );
-
-      final state = VideoEditorProviderState(finalRenderedClip: finalClip);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipManagerProvider.overrideWith(
-              () => _MockClipManagerNotifier([testClip]),
-            ),
-            videoEditorProvider.overrideWith(
-              () => _MockVideoEditorNotifier(state),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
-          ),
-        ),
-      );
-
-      // Just verify the play button exists - actual navigation requires
-      // full app context with GoRouter and all providers
-      expect(find.bySemanticsLabel('Open post preview screen'), findsOneWidget);
     });
 
     testWidgets('has correct aspect ratio', (tester) async {

@@ -18,6 +18,9 @@ Prefer immutable data structures. Widgets (especially `StatelessWidget`) should 
 ### Simplicity
 Write straightforward code. Clever or obscure code is difficult to maintain.
 
+### Reuse Before Writing
+Before writing a new helper, utility, or formatter, search `mobile/packages/` for an existing package that already provides the functionality. The monorepo contains shared packages (e.g., `count_formatter`, `divine_ui`) specifically to avoid duplication across features.
+
 ---
 
 ## Naming Conventions
