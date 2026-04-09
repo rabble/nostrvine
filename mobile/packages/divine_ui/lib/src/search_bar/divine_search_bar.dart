@@ -59,7 +59,7 @@ class DivineSearchBar extends StatelessWidget {
         onTap: onTap,
         onChanged: onChanged,
         onSubmitted: onSubmitted,
-        style: VineTheme.bodyLargeFont(color: VineTheme.whiteText),
+        style: VineTheme.bodyLargeFont(),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted55),
