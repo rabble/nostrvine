@@ -54,17 +54,12 @@ class SearchUserTile extends ConsumerWidget {
                   children: [
                     Text(
                       profile.bestDisplayName,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: VineTheme.titleMediumFont(),
                     ),
                     Text(
                       secondaryText,
-                      style: const TextStyle(
+                      style: VineTheme.bodyMediumFont(
                         color: VineTheme.secondaryText,
-                        fontSize: 14,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
