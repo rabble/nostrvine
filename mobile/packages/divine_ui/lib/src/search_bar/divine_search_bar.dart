@@ -101,7 +101,7 @@ class _PrefixIcon extends StatelessWidget {
                 ),
               ),
             )
-          : const DivineIcon(icon: .search, color: VineTheme.lightText),
+          : const DivineIcon(icon: .search, color: VineTheme.onSurfaceMuted55),
     );
   }
 }
