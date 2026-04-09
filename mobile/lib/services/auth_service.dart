@@ -3817,31 +3817,6 @@ class AuthService implements BackgroundAwareService {
 
   /// Update authentication state and notify listeners
   void _setAuthState(AuthState newState) {
-    // Suppress `checking → authenticating` transitions. The `checking`
-    // state is set exclusively in initialize() (the only call site is the
-    // top of this very method's caller chain), so this transition only
-    // fires during startup session restore — signInWithDivineOAuth,
-    // _reconnectBunker, and _reconnectAmber are all called from
-    // initialize() and each set `authenticating` before reaching the
-    // terminal state. Holding `checking` until we reach a terminal state
-    // keeps WelcomeScreen showing its splash-continuation scaffold instead
-    // of briefly rendering the full login UI between `checking` and
-    // `authenticated`.
-    //
-    // Runtime sign-in flows (signInForAccount, divine_auth_cubit,
-    // email_verification_cubit, tryRefreshExpiredSession) are unaffected
-    // because they always start from `unauthenticated` or `authenticated`,
-    // never from `checking`.
-    if (_authState == AuthState.checking &&
-        newState == AuthState.authenticating) {
-      Log.debug(
-        'Auth state: suppressing checking -> authenticating during init',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return;
-    }
-
     if (_authState != newState) {
       final previousState = _authState;
       _authState = newState;

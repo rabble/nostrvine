@@ -191,7 +191,13 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
 
   coordinator.registerService(
     name: 'CoreServices',
-    phase: StartupPhase.essential,
+    // Critical phase so auth state is resolved BEFORE runApp — the native
+    // splash stays visible until the first frame renders, at which point
+    // the router already has the final auth state and can route directly
+    // to home (authenticated) or welcome (unauthenticated) without the
+    // brief login-UI flash that auto-login users otherwise see. See
+    // issue #2749 and PR #2837 for the history.
+    phase: StartupPhase.critical,
     initialize: () async {
       await _runTimedStartupTask(
         phaseName: 'core_services',
@@ -730,7 +736,18 @@ Future<void> _startOpenVineApp() async {
   );
 }
 
-/// Initialize core identity services after the first frame.
+/// Maximum time we let [AuthService.initialize] block first-frame rendering.
+/// The native splash stays visible for the duration of this window so the
+/// user never sees a welcome/login flash when auto-login succeeds (#2749).
+/// Bounded so a stalled refresh/reconnect can't hang app launch — matches
+/// the reviewer's "max 1-2 seconds splash" guidance on PR #2837.
+const _authInitTimeout = Duration(seconds: 2);
+
+/// Initialize core identity services during the critical startup phase,
+/// before `runApp`. This keeps the native splash visible until auth state
+/// has resolved so the router can route directly to home or welcome on the
+/// first frame. Bounded by [_authInitTimeout] so a stalled init doesn't
+/// hang startup.
 Future<void> _initializeCoreServices(ProviderContainer container) async {
   Log.info(
     '[INIT] Starting service initialization...',
@@ -746,15 +763,39 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     category: LogCategory.system,
   );
 
-  // Initialize auth service
+  // Initialize auth service with a bounded timeout.
   // NOTE: NostrService (relay connections) is initialized lazily in AuthService
-  // when user actually authenticates, to avoid blocking startup for unauthenticated users
-  await container.read(authServiceProvider).initialize();
-  Log.info(
-    '[INIT] ✅ AuthService initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
+  // when user actually authenticates, to avoid blocking startup for unauthenticated users.
+  try {
+    await container
+        .read(authServiceProvider)
+        .initialize()
+        .timeout(_authInitTimeout);
+    Log.info(
+      '[INIT] ✅ AuthService initialized',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+  } on TimeoutException {
+    Log.warning(
+      '[INIT] AuthService.initialize timed out after '
+      '${_authInitTimeout.inSeconds}s — proceeding with current auth state. '
+      'Background init will continue; the welcome screen may render briefly '
+      'before the final state redirect fires.',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+  } catch (e, stackTrace) {
+    Log.error(
+      '[INIT] AuthService.initialize failed: $e',
+      name: 'Main',
+      category: LogCategory.system,
+      error: e,
+      stackTrace: stackTrace,
+    );
+    // Don't rethrow — let the app start and surface the error via the
+    // normal unauthenticated flow rather than hanging startup.
+  }
 
   // Re-initialize NostrKeyManager after AuthService, because AuthService may
   // have imported/restored keys into PlatformSecureStorage during its own
