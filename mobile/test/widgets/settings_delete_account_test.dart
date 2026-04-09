@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -45,7 +46,11 @@ void main() {
             authServiceProvider.overrideWithValue(mockAuthService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: const MaterialApp(home: SettingsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(),
+          ),
         ),
       );
 
@@ -77,7 +82,11 @@ void main() {
               AuthState.unauthenticated,
             ),
           ],
-          child: const MaterialApp(home: SettingsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(),
+          ),
         ),
       );
 
@@ -106,7 +115,11 @@ void main() {
             authServiceProvider.overrideWithValue(mockAuthService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: const MaterialApp(home: SettingsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(),
+          ),
         ),
       );
 
@@ -135,7 +148,11 @@ void main() {
             authServiceProvider.overrideWithValue(mockAuthService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: const MaterialApp(home: SettingsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(),
+          ),
         ),
       );
 

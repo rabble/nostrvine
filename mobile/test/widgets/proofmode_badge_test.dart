@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 
 void main() {
@@ -10,6 +11,8 @@ void main() {
     testWidgets('renders Verified Mobile badge correctly', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
@@ -29,6 +32,8 @@ void main() {
     testWidgets('renders Verified Web badge correctly', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProofModeBadge(level: VerificationLevel.verifiedWeb),
           ),
@@ -45,6 +50,8 @@ void main() {
     testWidgets('renders Basic Proof badge correctly', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProofModeBadge(level: VerificationLevel.basicProof),
           ),
@@ -61,6 +68,8 @@ void main() {
     testWidgets('renders Unverified badge correctly', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProofModeBadge(level: VerificationLevel.unverified),
           ),
@@ -78,6 +87,8 @@ void main() {
       // Test small size
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
@@ -90,6 +101,8 @@ void main() {
       // Test medium size
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProofModeBadge(
               level: VerificationLevel.verifiedMobile,
@@ -105,6 +118,8 @@ void main() {
       // Test large size
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProofModeBadge(
               level: VerificationLevel.verifiedMobile,
@@ -121,6 +136,8 @@ void main() {
     testWidgets('badge has proper visual structure', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
@@ -143,6 +160,8 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
             ),
@@ -175,6 +194,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ProofModeBadge(level: level)),
           ),
         );
@@ -217,7 +238,11 @@ void main() {
   group('OriginalVineBadge Widget', () {
     testWidgets('renders Original Vine badge correctly', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: OriginalVineBadge()),
+        ),
       );
 
       // Should display 'V' text
@@ -233,7 +258,11 @@ void main() {
     testWidgets('renders different Vine badge sizes correctly', (tester) async {
       // Test small size
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: OriginalVineBadge()),
+        ),
       );
 
       var badge = tester.widget<OriginalVineBadge>(
@@ -244,6 +273,8 @@ void main() {
       // Test medium size
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: OriginalVineBadge(size: BadgeSize.medium)),
         ),
       );
@@ -254,6 +285,8 @@ void main() {
       // Test large size
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: OriginalVineBadge(size: BadgeSize.large)),
         ),
       );
@@ -264,7 +297,11 @@ void main() {
 
     testWidgets('Vine badge has proper visual structure', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: OriginalVineBadge()),
+        ),
       );
 
       // Should have Container for styling
@@ -279,7 +316,11 @@ void main() {
 
     testWidgets('Vine badge has teal background color', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: OriginalVineBadge()),
+        ),
       );
 
       final container = tester.widget<Container>(

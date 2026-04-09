@@ -4,13 +4,18 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 
 void main() {
   group('BlockedUserScreen', () {
     testWidgets('displays unavailable message', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: BlockedUserScreen(onBack: () {})),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: BlockedUserScreen(onBack: () {}),
+        ),
       );
 
       expect(find.text('This account is not available'), findsOneWidget);
@@ -18,7 +23,11 @@ void main() {
 
     testWidgets('displays back button in app bar', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: BlockedUserScreen(onBack: () {})),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: BlockedUserScreen(onBack: () {}),
+        ),
       );
 
       expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
@@ -28,7 +37,11 @@ void main() {
       var backCalled = false;
 
       await tester.pumpWidget(
-        MaterialApp(home: BlockedUserScreen(onBack: () => backCalled = true)),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: BlockedUserScreen(onBack: () => backCalled = true),
+        ),
       );
 
       await tester.tap(find.byType(DiVineAppBarIconButton));

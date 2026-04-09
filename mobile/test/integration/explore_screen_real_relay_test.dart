@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
@@ -119,7 +120,11 @@ void main() {
                 () => TabVisibility()..setActiveTab(2),
               ), // Explore tab active
             ],
-            child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ExploreScreen()),
+            ),
           ),
         );
 
@@ -212,7 +217,11 @@ void main() {
                 () => TabVisibility()..setActiveTab(0),
               ), // Feed tab active
             ],
-            child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ExploreScreen()),
+            ),
           ),
         );
 
@@ -230,7 +239,11 @@ void main() {
                 () => TabVisibility()..setActiveTab(2),
               ), // Explore tab now active
             ],
-            child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ExploreScreen()),
+            ),
           ),
         );
 

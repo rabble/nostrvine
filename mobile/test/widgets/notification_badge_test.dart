@@ -3,12 +3,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 
 void main() {
   group(NotificationBadge, () {
     Widget buildTestWidget({required int count, bool showBadge = true}) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: NotificationBadge(
             count: count,
@@ -107,6 +110,8 @@ void main() {
       bool showBadge = true,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: AnimatedNotificationBadge(
             count: count,

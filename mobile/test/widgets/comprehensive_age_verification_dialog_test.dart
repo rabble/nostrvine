@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
 
 /// Helper to create a test widget with GoRouter for dialog interaction tests.
@@ -34,7 +35,11 @@ Widget _createDialogTestApp({
       ),
     ],
   );
-  return MaterialApp.router(routerConfig: router);
+  return MaterialApp.router(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    routerConfig: router,
+  );
 }
 
 void main() {
@@ -44,7 +49,11 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: AgeVerificationDialog()),
+          ),
         );
 
         expect(find.text('Age Verification'), findsOneWidget);
@@ -105,6 +114,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: AgeVerificationDialog(
                 type: AgeVerificationType.adultContent,
@@ -218,7 +229,11 @@ void main() {
     group('Styling and Visual Elements', () {
       testWidgets('uses $VineTheme colors correctly', (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: AgeVerificationDialog()),
+          ),
         );
 
         // Check icon color
@@ -249,7 +264,11 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: AgeVerificationDialog()),
+          ),
         );
 
         final dialog = tester.widget<Dialog>(find.byType(Dialog));
@@ -265,6 +284,8 @@ void main() {
       testWidgets('has proper text styling', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             theme: ThemeData(
               textTheme: const TextTheme(
                 headlineSmall: TextStyle(fontSize: 20),
@@ -303,7 +324,11 @@ void main() {
     group('Layout and Responsiveness', () {
       testWidgets('maintains proper layout structure', (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: AgeVerificationDialog()),
+          ),
         );
 
         // Check that all elements are present
@@ -336,7 +361,11 @@ void main() {
 
       testWidgets('buttons are properly sized and spaced', (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: AgeVerificationDialog()),
+          ),
         );
 
         // Both buttons are wrapped in Expanded for equal width
@@ -354,7 +383,11 @@ void main() {
       ) async {
         // Test creation type
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: AgeVerificationDialog()),
+          ),
         );
 
         expect(find.text('Age Verification'), findsOneWidget);
@@ -366,6 +399,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: AgeVerificationDialog(
                 type: AgeVerificationType.adultContent,
@@ -382,7 +417,11 @@ void main() {
     group('Accessibility', () {
       testWidgets('supports semantic labels', (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: AgeVerificationDialog()),
+          ),
         );
 
         // Check that buttons are accessible

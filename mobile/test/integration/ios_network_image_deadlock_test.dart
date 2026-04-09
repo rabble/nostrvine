@@ -4,6 +4,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 
 void main() {
   group('iOS Network Image Deadlock Prevention', () {
@@ -26,6 +27,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Column(
                 children: testImageUrls
@@ -82,6 +85,8 @@ void main() {
       // Test individual network image timeout behavior
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SizedBox(
               width: 100,

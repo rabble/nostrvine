@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -54,7 +55,11 @@ void main() {
             oauthClient: mockOAuth,
             authService: mockAuthService,
           ),
-          child: const MaterialApp(home: SecureAccountScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SecureAccountScreen(),
+          ),
         ),
       );
     }

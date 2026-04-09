@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 
@@ -20,6 +21,8 @@ void main() {
 
     Widget buildSubject() {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: BlocProvider<InviteStatusCubit>.value(
           value: mockCubit,
           child: const Scaffold(body: InvitesView()),

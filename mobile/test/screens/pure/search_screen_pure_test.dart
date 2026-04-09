@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -122,6 +123,8 @@ void main() {
           }),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData.dark(),
           home: const Scaffold(body: SearchScreenPure(embedded: true)),
         ),
@@ -154,6 +157,8 @@ void main() {
             searchScreenVideosProvider.overrideWith((ref) => searchVideos),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             theme: ThemeData.dark(),
             home: const Scaffold(body: SearchScreenPure(embedded: true)),
           ),

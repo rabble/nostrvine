@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -100,6 +101,8 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: BlocProvider<InviteStatusCubit>.value(
             value: mockInviteCubit,
             child: const SettingsScreen(),
@@ -258,6 +261,8 @@ void main() {
           child: MockGoRouterProvider(
             goRouter: mockGoRouter,
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<InviteStatusCubit>.value(
                 value: _createMockInviteCubit(),
                 child: const SettingsScreen(),
@@ -336,6 +341,8 @@ void main() {
               ),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<InviteStatusCubit>.value(
                 value: _createMockInviteCubit(),
                 child: const SettingsScreen(),
@@ -417,6 +424,8 @@ void main() {
               ).overrideWith((ref) => true),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<InviteStatusCubit>.value(
                 value: _createMockInviteCubit(),
                 child: const SettingsScreen(),

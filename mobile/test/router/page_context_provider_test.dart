@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -22,6 +23,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),
@@ -47,6 +50,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),
@@ -89,6 +94,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),
@@ -115,6 +122,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),
@@ -138,6 +147,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),
@@ -161,6 +172,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),

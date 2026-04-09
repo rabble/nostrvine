@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 
 void main() {
@@ -10,6 +11,8 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoEditorThumbnail(contentSize: Size(120, 120)),
           ),

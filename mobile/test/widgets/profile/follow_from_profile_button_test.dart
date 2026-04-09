@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
 
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
@@ -64,6 +65,8 @@ void main() {
       }
 
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: SizedBox(width: 200, child: child)),
       );
     }

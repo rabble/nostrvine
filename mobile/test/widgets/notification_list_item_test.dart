@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 
 /// Helper to check if any RichText in the tree contains a given substring
@@ -30,6 +31,8 @@ void main() {
       VoidCallback? onProfileTap,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData.dark(),
         home: Scaffold(
           body: NotificationListItem(

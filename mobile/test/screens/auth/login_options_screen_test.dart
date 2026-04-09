@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -45,6 +46,8 @@ void main() {
         ),
       ],
       child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         routerConfig: GoRouter(
           initialLocation: LoginOptionsScreen.path,

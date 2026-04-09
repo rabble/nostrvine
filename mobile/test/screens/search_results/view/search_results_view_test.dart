@@ -9,6 +9,7 @@ import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/view/search_results_view.dart';
 import 'package:openvine/screens/search_results/widgets/widgets.dart';
 
@@ -59,6 +60,8 @@ void main() {
 
     Widget buildSubject() {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: MultiBlocProvider(
           providers: [
             BlocProvider<SearchResultsFilterCubit>.value(

@@ -5,6 +5,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
 void main() {
@@ -18,6 +19,8 @@ void main() {
     bool isLoading = false,
   }) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: VideoActionButton(
           icon: icon,
