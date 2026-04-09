@@ -430,7 +430,8 @@ class _AboutTextState extends State<_AboutText> {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted);
+    final textStyle =
+        VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant);
 
     return LayoutBuilder(
       builder: (context, constraints) {
