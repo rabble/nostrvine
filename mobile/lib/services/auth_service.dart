@@ -1516,21 +1516,36 @@ class AuthService implements BackgroundAwareService {
           category: LogCategory.auth,
         );
         final session = await KeycastSession.load(_flutterSecureStorage);
-        if (session != null && session.hasRpcAccess) {
+        // Verify the loaded session belongs to the requested account.
+        // After sign-out, the global slot may still hold a different
+        // account's session if _restoreSignerInfo found no archive.
+        final sessionMatchesAccount =
+            session != null &&
+            session.hasRpcAccess &&
+            (session.userPubkey == null || session.userPubkey == pubkeyHex);
+        if (sessionMatchesAccount) {
           await signInWithDivineOAuth(session);
         } else {
-          // Session is expired, missing, or has no RPC access.
-          // Try to refresh, then fall back to local keys — same
-          // recovery strategy as _initializeDivineOAuth.
+          // Session is expired, missing, wrong account, or has no
+          // RPC access. Try to refresh, then fall back to local
+          // keys — same recovery strategy as _initializeDivineOAuth.
           Log.info(
             'signInForAccount: OAuth session not usable for $pubkeyHex '
             '(session=${session != null}, '
             'hasRpcAccess=${session?.hasRpcAccess}, '
-            'isExpired=${session?.isExpired}), attempting refresh...',
+            'isExpired=${session?.isExpired}, '
+            'sessionPubkey=${session?.userPubkey}, '
+            'requestedPubkey=$pubkeyHex), attempting refresh...',
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          if (_oauthClient != null) {
+          // Only attempt refresh if the global slot belongs to the
+          // requested account — refreshing a different account's token
+          // would sign in as the wrong identity.
+          final canRefresh =
+              _oauthClient != null &&
+              (session?.userPubkey == null || session?.userPubkey == pubkeyHex);
+          if (canRefresh) {
             final refreshed = await _tryRefreshOAuthSession(
               caller: 'signInForAccount',
             );
