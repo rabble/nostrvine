@@ -3783,20 +3783,31 @@ void main() {
         final url = createTestVideos()[0].url;
         final setup = playerSetups[url]!;
 
-        // Simulate: video is playing but position is frozen at 533ms
+        // Position advances for the first several heartbeats, then
+        // freezes at 533ms. Heartbeat fires every 100ms, grace is
+        // 5 ticks (500ms). Position must change at least once after
+        // grace so _positionHasAdvanced becomes true.
+        var callCount = 0;
         when(() => setup.state.playing).thenReturn(true);
         when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenReturn(
-          const Duration(milliseconds: 533),
-        );
+        when(() => setup.state.position).thenAnswer((_) {
+          callCount++;
+          // Advance for first 10 calls (~1s), then freeze at 533
+          if (callCount <= 10) {
+            return Duration(milliseconds: callCount * 33);
+          }
+          return const Duration(milliseconds: 533);
+        });
 
-        // Trigger buffer ready so the controller starts the position timer
+        // Trigger buffer ready so the controller starts the position
+        // timer
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Wait for stale detection:
-        // 5 grace ticks (500ms) + 8 stale ticks (800ms) + async buffer
-        await Future<void>.delayed(const Duration(milliseconds: 1700));
+        // Wait for:
+        // ~1s for position to advance and then freeze
+        // + 8 stale ticks (800ms) + async buffer
+        await Future<void>.delayed(const Duration(milliseconds: 2500));
 
         // Recovery should have called pause + seek + play
         verify(setup.player.pause).called(greaterThanOrEqualTo(1));
@@ -3873,6 +3884,42 @@ void main() {
 
         controller.dispose();
       });
+
+      test(
+        'does not trigger recovery during initial decoder warmup',
+        () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
+
+          // Position stays frozen at 0 (decoder hasn't produced frames)
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenReturn(Duration.zero);
+
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Wait well past grace + threshold — recovery should NOT fire
+          // because position has never advanced from initial value
+          await Future<void>.delayed(
+            const Duration(milliseconds: 2000),
+          );
+
+          // Recovery seek should NOT be called
+          verifyNever(() => setup.player.seek(Duration.zero));
+
+          controller.dispose();
+        },
+      );
 
       test('resets stale count on page change', () async {
         final controller = VideoFeedController(
@@ -4210,20 +4257,31 @@ void main() {
         final url = createTestVideos()[0].url;
         final setup = playerSetups[url]!;
 
-        // Simulate: video is playing but position is frozen at 533ms
+        // Position advances for the first several heartbeats, then
+        // freezes at 533ms. Heartbeat fires every 100ms, grace is
+        // 5 ticks (500ms). Position must change at least once after
+        // grace so _positionHasAdvanced becomes true.
+        var callCount = 0;
         when(() => setup.state.playing).thenReturn(true);
         when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenReturn(
-          const Duration(milliseconds: 533),
-        );
+        when(() => setup.state.position).thenAnswer((_) {
+          callCount++;
+          // Advance for first 10 calls (~1s), then freeze at 533
+          if (callCount <= 10) {
+            return Duration(milliseconds: callCount * 33);
+          }
+          return const Duration(milliseconds: 533);
+        });
 
-        // Trigger buffer ready so the controller starts the position timer
+        // Trigger buffer ready so the controller starts the position
+        // timer
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Wait for stale detection:
-        // 5 grace ticks (500ms) + 8 stale ticks (800ms) + async buffer
-        await Future<void>.delayed(const Duration(milliseconds: 1700));
+        // Wait for:
+        // ~1s for position to advance and then freeze
+        // + 8 stale ticks (800ms) + async buffer
+        await Future<void>.delayed(const Duration(milliseconds: 2500));
 
         // Recovery should have called pause + seek + play
         verify(setup.player.pause).called(greaterThanOrEqualTo(1));
@@ -4296,6 +4354,39 @@ void main() {
         // Recovery seek should NOT be called — buffering resets stale count
         verifyNever(
           () => setup.player.seek(const Duration(milliseconds: 533)),
+        );
+
+        controller.dispose();
+      });
+
+      test('does not trigger recovery during initial decoder warmup', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+          preloadAhead: 1,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        // Position stays frozen at 0 (decoder hasn't produced frames yet)
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(false);
+        when(() => setup.state.position).thenReturn(Duration.zero);
+
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Wait well past grace + threshold — recovery should NOT fire
+        // because position has never advanced from initial value
+        await Future<void>.delayed(const Duration(milliseconds: 2000));
+
+        // Recovery seek should NOT be called
+        verifyNever(
+          () => setup.player.seek(Duration.zero),
         );
 
         controller.dispose();
@@ -4646,16 +4737,22 @@ void main() {
         final url = createTestVideos()[0].url;
         final setup = playerSetups[url]!;
 
+        // Position advances for first 10 calls then freezes at 500ms.
+        // This ensures _positionHasAdvanced becomes true before freeze.
+        var callCount = 0;
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(false);
+        when(() => setup.state.position).thenAnswer((_) {
+          callCount++;
+          if (callCount <= 10) {
+            return Duration(milliseconds: callCount * 33);
+          }
+          return const Duration(milliseconds: 500);
+        });
+
         // Video becomes ready first
         setup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        // Now freeze position while playing
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenReturn(
-          const Duration(milliseconds: 500),
-        );
 
         // Wait for stale detection cycles.
         // Heartbeat interval = 100ms, threshold = 8, max attempts = 2.

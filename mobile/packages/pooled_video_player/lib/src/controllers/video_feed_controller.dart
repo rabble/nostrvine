@@ -217,6 +217,20 @@ class VideoFeedController extends ChangeNotifier {
   /// detection activates. Gives the decoder time to start producing frames.
   int _staleGraceHeartbeats = 0;
 
+  /// Whether the current video's position has ever advanced from its initial
+  /// value. media_kit reports `playing=true` and `buffering=false` before the
+  /// decoder produces its first frame, so position can stay at 0 (or wherever
+  /// it was on resume) for hundreds of milliseconds during normal startup.
+  /// Stale-position detection is deferred until this flag is `true` to avoid
+  /// false recovery cycles (pause→seek→play) that cause a visible stutter on
+  /// nearly every video.
+  bool _positionHasAdvanced = false;
+
+  /// The position value recorded when stale tracking began for the current
+  /// video. Used together with [_positionHasAdvanced] to detect the first
+  /// real position change.
+  int? _initialPositionMs;
+
   /// Number of consecutive stale heartbeats before triggering recovery.
   /// With a 100ms heartbeat interval, this means ~800ms of confirmed
   /// frozen video before recovery kicks in.
@@ -1104,8 +1118,15 @@ class VideoFeedController extends ChangeNotifier {
       'elapsedMs=$elapsedMs',
     );
 
-    // Unblock preloads that were waiting for this video to buffer.
-    _completeReady(index);
+    // For the current video, defer preload unblocking until the decoder
+    // has actually started producing frames (position advances). This
+    // prevents preloads from competing for CPU/bandwidth during the
+    // critical decoder warm-up window. The completer is completed in
+    // _checkStalePosition when _positionHasAdvanced becomes true.
+    // For non-current videos, unblock immediately.
+    if (index != _currentIndex) {
+      _completeReady(index);
+    }
 
     // Call onVideoReady hook
     onVideoReady?.call(index, player);
@@ -1402,6 +1423,8 @@ class VideoFeedController extends ChangeNotifier {
     _staleHeartbeatCount = 0;
     _staleRecoveryAttempts = 0;
     _staleGraceHeartbeats = _staleGraceAfterPlay;
+    _positionHasAdvanced = false;
+    _initialPositionMs = null;
 
     // Use the shorter of the caller's interval and the stale-detection
     // interval so both position callbacks and recovery work correctly.
@@ -1463,6 +1486,27 @@ class VideoFeedController extends ChangeNotifier {
       _staleHeartbeatCount = 0;
       _lastHeartbeatPositionMs = null;
       return;
+    }
+
+    // Track whether position has ever advanced from its initial value.
+    // media_kit reports playing+not-buffering before the decoder produces
+    // its first frame, so position legitimately stays frozen during
+    // startup. Stale detection only activates after the first real
+    // position change, preventing false recovery on every video.
+    if (!_positionHasAdvanced) {
+      _initialPositionMs ??= positionMs;
+      if (positionMs != _initialPositionMs) {
+        _positionHasAdvanced = true;
+        _logDebug(
+          'STUTTER_DEBUG position_first_advance index=$index '
+          'initialMs=$_initialPositionMs newMs=$positionMs',
+        );
+        // Also unblock preloads now that playback is confirmed.
+        _completeReady(index);
+      } else {
+        // Still waiting for first frame — don't count as stale.
+        return;
+      }
     }
 
     if (_lastHeartbeatPositionMs != null &&
