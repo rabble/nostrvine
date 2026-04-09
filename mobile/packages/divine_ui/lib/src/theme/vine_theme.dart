@@ -414,6 +414,9 @@ class VineTheme {
   /// Content warning amber color.
   static const Color contentWarningAmber = Color(0xFFFFB84D);
 
+  /// Dark background tint for content-warning banners.
+  static const Color contentWarningBackground = Color(0xFF4A1C00);
+
   // --------------------------------------------------------------------------
   // Button shadows
   // --------------------------------------------------------------------------

@@ -1004,6 +1004,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
+    if (!state.recorderMode.hasVideoEditor) {
+      ref.read(videoEditorProvider.notifier).startRenderVideo();
+    }
+
     await Future.wait([
       if (state.recorderMode.hasVideoEditor)
         context.push(VideoEditorScreen.path)

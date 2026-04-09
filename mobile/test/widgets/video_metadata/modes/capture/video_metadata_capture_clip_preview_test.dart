@@ -10,11 +10,11 @@ import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_clip_preview.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
-  group('VideoMetadataClipPreview', () {
+  group(VideoMetadataCaptureClipPreview, () {
     late DivineVideoClip testClip;
 
     setUp(() {
@@ -38,7 +38,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );
@@ -65,7 +65,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );
@@ -96,7 +96,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );
@@ -121,7 +121,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );
@@ -155,7 +155,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );
@@ -163,39 +163,6 @@ void main() {
       // Play button should be tappable
       final playButton = find.bySemanticsLabel('Open post preview screen');
       expect(playButton, findsOneWidget);
-    });
-
-    testWidgets('opens preview screen when play button tapped', (tester) async {
-      final finalClip = DivineVideoClip(
-        id: 'final-clip',
-        video: EditorVideo.file('final.mp4'),
-        duration: const Duration(seconds: 15),
-        recordedAt: DateTime.now(),
-        targetAspectRatio: models.AspectRatio.square,
-        originalAspectRatio: 9 / 16,
-      );
-
-      final state = VideoEditorProviderState(finalRenderedClip: finalClip);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipManagerProvider.overrideWith(
-              () => _MockClipManagerNotifier([testClip]),
-            ),
-            videoEditorProvider.overrideWith(
-              () => _MockVideoEditorNotifier(state),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
-          ),
-        ),
-      );
-
-      // Just verify the play button exists - actual navigation requires
-      // full app context with GoRouter and all providers
-      expect(find.bySemanticsLabel('Open post preview screen'), findsOneWidget);
     });
 
     testWidgets('has correct aspect ratio', (tester) async {
@@ -207,7 +174,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );
@@ -226,7 +193,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );
@@ -244,7 +211,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );
@@ -265,7 +232,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataClipPreview()),
+            home: Scaffold(body: VideoMetadataCaptureClipPreview()),
           ),
         ),
       );

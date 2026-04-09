@@ -10,7 +10,7 @@ import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,7 +47,7 @@ void main() {
     registerFallbackValue(_FakeEditorVideo());
   });
 
-  group('VideoMetadataBottomBar', () {
+  group(VideoMetadataCaptureBottomBar, () {
     late _MockGallerySaveService mockGallerySaveService;
     late _MockPermissionsService mockPermissionsService;
 
@@ -72,7 +72,9 @@ void main() {
     testWidgets('renders both Save draft and Post buttons', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
-          child: MaterialApp(home: Scaffold(body: VideoMetadataBottomBar())),
+          child: MaterialApp(
+            home: Scaffold(body: VideoMetadataCaptureBottomBar()),
+          ),
         ),
       );
       expect(find.text('Save for Later'), findsOneWidget);
@@ -84,7 +86,9 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const ProviderScope(
-          child: MaterialApp(home: Scaffold(body: VideoMetadataBottomBar())),
+          child: MaterialApp(
+            home: Scaffold(body: VideoMetadataCaptureBottomBar()),
+          ),
         ),
       );
 
@@ -131,7 +135,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataBottomBar()),
+            home: Scaffold(body: VideoMetadataCaptureBottomBar()),
           ),
         ),
       );
@@ -175,7 +179,7 @@ void main() {
               (ref) => mockGallerySaveService,
             ),
           ],
-          child: _createTestApp(const VideoMetadataBottomBar()),
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
         ),
       );
 
@@ -222,7 +226,7 @@ void main() {
                 mockPermissionsService,
               ),
             ],
-            child: _createTestApp(const VideoMetadataBottomBar()),
+            child: _createTestApp(const VideoMetadataCaptureBottomBar()),
           ),
         );
 
@@ -271,7 +275,7 @@ void main() {
               (ref) => mockGallerySaveService,
             ),
           ],
-          child: _createTestApp(const VideoMetadataBottomBar()),
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
         ),
       );
 
@@ -318,7 +322,7 @@ void main() {
               mockPermissionsService,
             ),
           ],
-          child: _createTestApp(const VideoMetadataBottomBar()),
+          child: _createTestApp(const VideoMetadataCaptureBottomBar()),
         ),
       );
 
@@ -363,7 +367,7 @@ void main() {
                 (ref) => mockGallerySaveService,
               ),
             ],
-            child: _createTestApp(const VideoMetadataBottomBar()),
+            child: _createTestApp(const VideoMetadataCaptureBottomBar()),
           ),
         );
 
@@ -417,7 +421,7 @@ void main() {
                   (ref) => mockGallerySaveService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
@@ -454,7 +458,7 @@ void main() {
                   mockPermissionsService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
@@ -488,7 +492,7 @@ void main() {
                   (ref) => mockGallerySaveService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
@@ -525,7 +529,7 @@ void main() {
                   (ref) => mockGallerySaveService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
@@ -557,7 +561,7 @@ void main() {
                   (ref) => mockGallerySaveService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
@@ -587,7 +591,7 @@ void main() {
                   (ref) => mockGallerySaveService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
@@ -617,13 +621,13 @@ void main() {
                   (ref) => mockGallerySaveService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
           // Verify we start on the page with the bottom bar.
           expect(
-            find.byType(VideoMetadataBottomBar),
+            find.byType(VideoMetadataCaptureBottomBar),
             findsOneWidget,
           );
 
@@ -657,7 +661,7 @@ void main() {
                   (ref) => mockGallerySaveService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
@@ -666,7 +670,7 @@ void main() {
 
           // Stays on the bottom bar page, does not navigate away.
           expect(
-            find.byType(VideoMetadataBottomBar),
+            find.byType(VideoMetadataCaptureBottomBar),
             findsOneWidget,
           );
         },
@@ -692,7 +696,7 @@ void main() {
                   (ref) => mockGallerySaveService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 
@@ -731,7 +735,7 @@ void main() {
                   mockPermissionsService,
                 ),
               ],
-              child: _createTestApp(const VideoMetadataBottomBar()),
+              child: _createTestApp(const VideoMetadataCaptureBottomBar()),
             ),
           );
 

@@ -225,7 +225,6 @@
 | `video_feed_item_moderation_icon_test.dart` | 68, 100 | 2 | `skip: true` |
 | `video_feed_item_repost_header_test.dart` | 156 | 1 | `skip: true` |
 | `video_feed_item_unmount_safety_test.dart` | 74 | 1 | `skip: true` |
-| `video_metadata/video_metadata_bottom_bar_test.dart` | 129 | 1 | `skip: true` |
 | `video_metadata/video_metadata_tags_input_test.dart` | 215 | 1 | `skip: !VideoEditorConstants.enableTagLimit` (conditional) |
 | `video_overlay_context_title_simple_test.dart` | 92 | 1 | `skip: true` |
 
