@@ -5,12 +5,14 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart';
+import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/widgets/list_search_card.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// Always-visible Lists section with a "Lists" header.
 ///
@@ -168,19 +170,84 @@ class _InitialState extends StatelessWidget {
   }
 }
 
-// TODO(#2855): Replace spinner with skeleton/shimmer loading state.
 class _LoadingState extends StatelessWidget {
   const _LoadingState();
 
   @override
   Widget build(BuildContext context) {
-    return const SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    return const SliverToBoxAdapter(child: _ListsSkeletonLoader());
+  }
+}
+
+class _ListsSkeletonLoader extends StatelessWidget {
+  const _ListsSkeletonLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'lists_loading_indicator',
+      label: 'Loading list results',
+      child: const Skeletonizer(
+        effect: searchSkeletonEffect,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            spacing: 12,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _ListCardSkeletonItem()),
+              Expanded(child: _ListCardSkeletonItem()),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _ListCardSkeletonItem extends StatelessWidget {
+  const _ListCardSkeletonItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Skeleton.leaf(
+          child: AspectRatio(
+            aspectRatio: 0.85,
+            child: Container(
+              decoration: BoxDecoration(
+                color: searchSkeletonSurface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Skeleton.leaf(
+          child: Container(
+            width: 100,
+            height: 16,
+            decoration: BoxDecoration(
+              color: searchSkeletonSurface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Skeleton.leaf(
+          child: Container(
+            width: 140,
+            height: 12,
+            decoration: BoxDecoration(
+              color: searchSkeletonSurface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

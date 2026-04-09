@@ -1,13 +1,14 @@
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// Maximum number of user profiles shown in the People preview.
 const _maxPeoplePreview = 3;
@@ -50,12 +51,7 @@ class _PeopleContent extends StatelessWidget {
     final results = context.select((UserSearchBloc bloc) => bloc.state.results);
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
-        ),
-      );
+      return const _PeopleSkeletonLoader();
     }
 
     if (results.isEmpty) return const SizedBox.shrink();
@@ -84,5 +80,84 @@ class _PeopleContent extends StatelessWidget {
     if (npub != null) {
       context.push(OtherProfileScreen.pathForNpub(npub));
     }
+  }
+}
+
+class _PeopleSkeletonLoader extends StatelessWidget {
+  const _PeopleSkeletonLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'people_loading_indicator',
+      label: 'Loading people results',
+      child: Skeletonizer(
+        effect: searchSkeletonEffect,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              _maxPeoplePreview,
+              (_) => const _UserTileSkeletonItem(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UserTileSkeletonItem extends StatelessWidget {
+  const _UserTileSkeletonItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Row(
+        spacing: 16,
+        children: [
+          Skeleton.leaf(
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: searchSkeletonSurface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                Skeleton.leaf(
+                  child: Container(
+                    width: 140,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: searchSkeletonSurface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                Skeleton.leaf(
+                  child: Container(
+                    width: 100,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: searchSkeletonSurface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

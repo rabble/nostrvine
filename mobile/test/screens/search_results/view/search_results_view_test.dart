@@ -78,9 +78,29 @@ void main() {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
       await tester.pumpWidget(buildSubject());
 
+      final scrollable = find.byType(Scrollable).first;
+
       expect(find.byType(PeopleSection), findsOneWidget);
-      expect(find.byType(TagsSection), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.byType(ListsSection),
+        200,
+        scrollable: scrollable,
+      );
       expect(find.byType(ListsSection), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.byType(TagsSection),
+        200,
+        scrollable: scrollable,
+      );
+      expect(find.byType(TagsSection), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.byType(VideosSection),
+        200,
+        scrollable: scrollable,
+      );
       expect(find.byType(VideosSection), findsOneWidget);
     });
 

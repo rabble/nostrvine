@@ -1,11 +1,12 @@
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// Maximum number of hashtag chips shown in the Tags preview.
 const _maxTagsPreview = 6;
@@ -52,12 +53,7 @@ class _TagsContent extends StatelessWidget {
     );
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
-        ),
-      );
+      return const _TagsSkeletonLoader();
     }
 
     if (results.isEmpty) return const SizedBox.shrink();
@@ -76,6 +72,55 @@ class _TagsContent extends StatelessWidget {
               onTap: () => context.push(HashtagScreenRouter.pathForTag(tag)),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Placeholder widths for tag chip skeletons, varying to look organic.
+const _tagSkeletonWidths = [80.0, 64.0, 96.0, 72.0, 88.0, 60.0];
+
+class _TagsSkeletonLoader extends StatelessWidget {
+  const _TagsSkeletonLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'tags_loading_indicator',
+      label: 'Loading tag results',
+      child: Skeletonizer(
+        effect: searchSkeletonEffect,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var i = 0; i < _maxTagsPreview; i++)
+                _TagChipSkeletonItem(width: _tagSkeletonWidths[i]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TagChipSkeletonItem extends StatelessWidget {
+  const _TagChipSkeletonItem({required this.width});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Skeleton.leaf(
+      child: Container(
+        width: width,
+        height: 36,
+        decoration: BoxDecoration(
+          color: searchSkeletonSurface,
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }

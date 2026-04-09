@@ -8,11 +8,13 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/search_results/widgets/search_skeleton_effect.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// Always-visible Videos section with a "Videos" header and optional
 /// "See all" chevron.
@@ -73,9 +75,8 @@ class _VideosContentState extends State<_VideosContent> {
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: _videosStreamController.stream.startWith(videos),
         initialIndex: index,
-        onLoadMore: () => context.read<VideoSearchBloc>().add(
-          const VideoSearchLoadMore(),
-        ),
+        onLoadMore: () =>
+            context.read<VideoSearchBloc>().add(const VideoSearchLoadMore()),
         contextTitle: 'Search Results',
         trafficSource: ViewTrafficSource.search,
         sourceDetail: context.read<VideoSearchBloc>().state.query,
@@ -102,24 +103,13 @@ class _VideosGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.select(
-      (VideoSearchBloc bloc) => bloc.state.status,
-    );
-    final videos = context.select(
-      (VideoSearchBloc bloc) => bloc.state.videos,
-    );
+    final status = context.select((VideoSearchBloc bloc) => bloc.state.status);
+    final videos = context.select((VideoSearchBloc bloc) => bloc.state.videos);
 
     if ((status == VideoSearchStatus.initial ||
             status == VideoSearchStatus.searching) &&
         videos.isEmpty) {
-      return const SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 24),
-          child: Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          ),
-        ),
-      );
+      return const _VideosSkeletonLoader();
     }
 
     if (videos.isEmpty) {
@@ -152,11 +142,7 @@ class _VideosGrid extends StatelessWidget {
 /// Shared between [VideosSection] (all-filter overview) and
 /// [VideoSearchView] (dedicated videos-filter grid).
 class SearchVideoTile extends StatelessWidget {
-  const SearchVideoTile({
-    required this.video,
-    required this.onTap,
-    super.key,
-  });
+  const SearchVideoTile({required this.video, required this.onTap, super.key});
 
   final VideoEvent video;
   final VoidCallback onTap;
@@ -208,6 +194,42 @@ class SearchVideoTile extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VideosSkeletonLoader extends StatelessWidget {
+  const _VideosSkeletonLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Semantics(
+        identifier: 'videos_loading_indicator',
+        label: 'Loading video results',
+        child: Skeletonizer(
+          effect: searchSkeletonEffect,
+          child: GridView.count(
+            crossAxisCount: 2,
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            padding: const EdgeInsets.all(4),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: List.generate(
+              4,
+              (_) => Skeleton.leaf(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: searchSkeletonSurface,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
