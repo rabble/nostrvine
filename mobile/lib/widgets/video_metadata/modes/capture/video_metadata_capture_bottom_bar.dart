@@ -65,7 +65,7 @@ class VideoMetadataCaptureBottomBar extends ConsumerWidget {
     } catch (e, stackTrace) {
       Log.error(
         'Failed to save: $e',
-        name: 'VideoMetadataBottomBar',
+        name: 'VideoMetadataCaptureBottomBar',
         category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
