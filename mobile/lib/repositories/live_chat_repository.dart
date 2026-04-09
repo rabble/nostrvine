@@ -100,7 +100,7 @@ class LiveChatRepository {
     return controller.stream;
   }
 
-  Future<Event?> publishMessage({
+  Future<LiveChatMessage?> publishMessage({
     required String sessionAddress,
     required String content,
   }) async {
@@ -109,7 +109,8 @@ class LiveChatRepository {
       content: content,
       signer: _nostrClient.signer,
     );
-    return _nostrClient.publishEvent(signedEvent);
+    final publishedEvent = await _nostrClient.publishEvent(signedEvent);
+    return _tryParseChatMessage(publishedEvent ?? signedEvent);
   }
 
   LiveChatMessage? _tryParseChatMessage(Event event) {

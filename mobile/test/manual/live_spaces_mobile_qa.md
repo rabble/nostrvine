@@ -3,7 +3,7 @@
 ## Host Flow
 
 - Start a live room from a physical phone with `livestreamingBeta` enabled.
-- Confirm the host lands in the room with `Mic on`, `Camera on`, `Flip camera`, and `Audio only` controls visible.
+- Confirm the host lands in the room with `Turn mic on`, `Turn camera on`, `Flip camera`, and `Audio only` controls visible.
 - Toggle mic off and back on.
 - Toggle camera off and back on.
 - Use `Flip camera` and confirm the active camera changes.

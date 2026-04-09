@@ -251,8 +251,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('Host controls'), findsOneWidget);
-      expect(find.text('Mic on'), findsOneWidget);
-      expect(find.text('Camera on'), findsOneWidget);
+      expect(find.text('Turn mic on'), findsOneWidget);
+      expect(find.text('Turn camera on'), findsOneWidget);
       expect(find.text('Flip camera'), findsOneWidget);
       expect(find.text('Audio only'), findsOneWidget);
       expect(find.text('Chat'), findsOneWidget);
@@ -465,8 +465,8 @@ void main() {
       expect(find.text('Share room'), findsOneWidget);
       expect(find.text('Zap'), findsNothing);
       expect(find.text('Raise hand'), findsOneWidget);
-      expect(find.text('Mic on'), findsNothing);
-      expect(find.text('Camera on'), findsNothing);
+      expect(find.text('Turn mic on'), findsNothing);
+      expect(find.text('Turn camera on'), findsNothing);
       expect(find.text('Audio only'), findsNothing);
 
       await tester.tap(find.text('Raise hand'));
@@ -607,8 +607,8 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Mic on'), findsOneWidget);
-      expect(find.text('Camera on'), findsOneWidget);
+      expect(find.text('Turn mic on'), findsOneWidget);
+      expect(find.text('Turn camera on'), findsOneWidget);
       expect(find.text('Flip camera'), findsOneWidget);
       expect(find.text('Audio only'), findsOneWidget);
     });
@@ -683,7 +683,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Raise hand'), findsOneWidget);
-      expect(find.text('Mic on'), findsNothing);
+      expect(find.text('Turn mic on'), findsNothing);
 
       sessionsController.add(<LiveSession>[promotedSession]);
       await tester.pump();
@@ -695,8 +695,8 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Mic on'), findsOneWidget);
-      expect(find.text('Camera on'), findsOneWidget);
+      expect(find.text('Turn mic on'), findsOneWidget);
+      expect(find.text('Turn camera on'), findsOneWidget);
       verify(() => mockLiveKitRoomService.connect(speakerToken)).called(1);
 
       await sessionsController.close();

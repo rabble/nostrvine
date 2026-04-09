@@ -31,6 +31,13 @@ void main() {
       content: 'Second message',
       createdAt: DateTime.utc(2026, 4, 6, 12, 1),
     );
+    final sentMessage = LiveChatMessage(
+      id: '3' * 64,
+      sessionAddress: sessionAddress,
+      pubkey: hostPubkey,
+      content: 'Hello room',
+      createdAt: DateTime.utc(2026, 4, 6, 12, 2),
+    );
 
     setUp(() {
       mockRepository = _MockLiveChatRepository();
@@ -51,7 +58,7 @@ void main() {
           sessionAddress: sessionAddress,
           content: 'Hello room',
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => sentMessage);
     });
 
     tearDown(() async {
@@ -92,6 +99,10 @@ void main() {
 
       expect(bloc.state.isSending, isFalse);
       expect(bloc.state.errorMessage, isNull);
+      expect(
+        bloc.state.messages,
+        <LiveChatMessage>[firstMessage, sentMessage],
+      );
       verify(
         () => mockRepository.publishMessage(
           sessionAddress: sessionAddress,

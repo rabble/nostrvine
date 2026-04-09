@@ -24,7 +24,8 @@ class LiveRoomStage extends StatelessWidget {
     final LiveMediaState resolvedMediaState =
         mediaState ??
         context.select((LiveRoomBloc bloc) => bloc.state.mediaState);
-    final localParticipantIdentity = resolvedMediaState.localParticipantIdentity;
+    final localParticipantIdentity =
+        resolvedMediaState.localParticipantIdentity;
     final hasLocalStagePlaceholder =
         resolvedMediaState.canPublish &&
         localParticipantIdentity != null &&

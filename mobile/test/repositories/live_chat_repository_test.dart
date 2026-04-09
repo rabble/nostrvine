@@ -187,7 +187,22 @@ void main() {
     test(
       'publishMessage signs with the client signer and publishes the chat event',
       () async {
-        final signedMessageEvent = Event.fromJson(_eventJson(idChar: '3'));
+        final signedMessageEvent = Event.fromJson(
+          _eventJson(
+            idChar: '3',
+            tags: const <List<String>>[
+              <String>['a', sessionAddress],
+            ],
+            content: 'Hello room',
+          ),
+        );
+        final parsedMessage = LiveChatMessage(
+          id: '3' * 64,
+          sessionAddress: sessionAddress,
+          pubkey: hostPubkey,
+          content: 'Hello room',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+        );
 
         when(
           () => mockCodec.buildChatMessageEvent(
@@ -196,13 +211,16 @@ void main() {
             signer: mockSigner,
           ),
         ).thenAnswer((_) async => signedMessageEvent);
+        when(
+          () => mockCodec.parseChatMessage(signedMessageEvent),
+        ).thenReturn(parsedMessage);
 
         final published = await repository.publishMessage(
           sessionAddress: sessionAddress,
           content: 'Hello room',
         );
 
-        expect(published, same(signedMessageEvent));
+        expect(published, parsedMessage);
         verify(
           () => mockCodec.buildChatMessageEvent(
             sessionAddress: sessionAddress,
@@ -216,6 +234,7 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
+        verify(() => mockCodec.parseChatMessage(signedMessageEvent)).called(1);
       },
     );
   });

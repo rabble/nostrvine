@@ -50,12 +50,8 @@ class _LiveRoomViewState extends State<LiveRoomView> {
       ),
       body: BlocBuilder<LiveRoomBloc, LiveRoomState>(
         builder: (context, roomState) {
-          final cameraEnabled = roomState.mediaState.canPublish
-              ? roomState.mediaState.cameraEnabled
-              : roomState.canPublish;
-          final microphoneEnabled = roomState.mediaState.canPublish
-              ? roomState.mediaState.microphoneEnabled
-              : roomState.canPublish;
+          final cameraEnabled = roomState.mediaState.cameraEnabled;
+          final microphoneEnabled = roomState.mediaState.microphoneEnabled;
 
           return switch (roomState.status) {
             LiveRoomStatus.initial || LiveRoomStatus.loading => const Center(
@@ -117,11 +113,11 @@ class _LiveRoomViewState extends State<LiveRoomView> {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: LiveLocalMediaControls(
                         cameraButtonLabel: cameraEnabled
-                            ? 'Camera on'
-                            : 'Camera off',
+                            ? 'Turn camera off'
+                            : 'Turn camera on',
                         microphoneButtonLabel: microphoneEnabled
-                            ? 'Mic on'
-                            : 'Mic off',
+                            ? 'Turn mic off'
+                            : 'Turn mic on',
                         onToggleCamera: () {
                           context.read<LiveRoomBloc>().add(
                             const ToggleCameraRequested(),

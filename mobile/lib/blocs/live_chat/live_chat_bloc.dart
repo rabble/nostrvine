@@ -97,12 +97,17 @@ class LiveChatBloc extends Bloc<LiveChatEvent, LiveChatState> {
     );
 
     try {
-      await _liveChatRepository.publishMessage(
+      final publishedMessage = await _liveChatRepository.publishMessage(
         sessionAddress: sessionAddress,
         content: trimmedContent,
       );
+      final nextMessages = publishedMessage == null
+          ? state.messages
+          : _mergedMessages(state.messages, publishedMessage);
       emit(
         state.copyWith(
+          status: LiveChatStatus.ready,
+          messages: nextMessages,
           isSending: false,
           clearErrorMessage: true,
         ),
@@ -138,5 +143,18 @@ class LiveChatBloc extends Bloc<LiveChatEvent, LiveChatState> {
   Future<void> close() async {
     await _messagesSubscription?.cancel();
     return super.close();
+  }
+
+  List<LiveChatMessage> _mergedMessages(
+    List<LiveChatMessage> existingMessages,
+    LiveChatMessage nextMessage,
+  ) {
+    final byId = <String, LiveChatMessage>{
+      for (final message in existingMessages) message.id: message,
+      nextMessage.id: nextMessage,
+    };
+    final merged = byId.values.toList(growable: false)
+      ..sort((left, right) => left.createdAt.compareTo(right.createdAt));
+    return merged;
   }
 }
