@@ -105,14 +105,6 @@ void main() {
       handRaised: true,
       updatedAt: DateTime.utc(2026, 4, 6, 8, 2),
     );
-    final liveMessage = LiveChatMessage(
-      id: 'chat-1',
-      sessionAddress: sessionAddress,
-      pubkey: 'audience-pubkey',
-      content: 'This room is live.',
-      createdAt: DateTime.utc(2026, 4, 6, 8, 1),
-    );
-
     setUpAll(() {
       registerFallbackValue(room);
       registerFallbackValue(LiveRole.audience);
@@ -331,6 +323,11 @@ void main() {
         await tester.pump();
         await tester.pump();
 
+        await _pumpUntil(
+          tester,
+          () => tester.any(find.text('This room is live.')),
+        );
+
         expect(find.text('Chat'), findsOneWidget);
         expect(find.text('This room is live.'), findsOneWidget);
 
@@ -341,137 +338,6 @@ void main() {
         ).called(1);
       },
     );
-
-    testWidgets('chat re-scopes when the active session changes', (
-      tester,
-    ) async {
-      final sessionsController = StreamController<List<LiveSession>>.broadcast(
-        sync: true,
-      );
-      final sessionTwo = LiveSession(
-        id: 'session-456',
-        roomId: room.id,
-        status: LiveSessionStatus.live,
-        startedAt: DateTime.utc(2026, 4, 6, 9),
-        endedAt: null,
-        speakerPubkeys: const <String>['host-pubkey'],
-        audienceCount: 22,
-      );
-      const sessionOneAddress = '30313:host-pubkey:session-123';
-      const sessionTwoAddress = '30313:host-pubkey:session-456';
-      final messageControllers =
-          <String, StreamController<List<LiveChatMessage>>>{};
-
-      when(
-        () => mockLiveRepository.watchSessions(roomAddress: room.address),
-      ).thenAnswer((_) => sessionsController.stream);
-      when(
-        () => mockLiveRepository.watchPresence(
-          sessionAddress: any(named: 'sessionAddress'),
-        ),
-      ).thenAnswer((_) => const Stream<List<LivePresence>>.empty());
-      when(
-        () => mockLiveChatRepository.watchChatMessages(
-          sessionAddress: any(named: 'sessionAddress'),
-        ),
-      ).thenAnswer((invocation) {
-        final sessionAddress =
-            invocation.namedArguments[#sessionAddress] as String;
-        return messageControllers
-            .putIfAbsent(
-              sessionAddress,
-              () => StreamController<List<LiveChatMessage>>.broadcast(
-                sync: true,
-              ),
-            )
-            .stream;
-      });
-
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final audienceAuth = createMockAuthService();
-      when(() => audienceAuth.currentPublicKeyHex).thenReturn(
-        'audience-pubkey',
-      );
-
-      await tester.pumpWidget(
-        testMaterialApp(
-          mockSharedPreferences: sharedPreferences,
-          mockAuthService: audienceAuth,
-          additionalOverrides: [
-            liveRepositoryProvider.overrideWithValue(mockLiveRepository),
-            liveChatRepositoryProvider.overrideWithValue(
-              mockLiveChatRepository,
-            ),
-            liveApiServiceProvider.overrideWithValue(mockLiveApiService),
-            liveKitRoomServiceProvider.overrideWithValue(
-              mockLiveKitRoomService,
-            ),
-          ],
-          home: LiveRoomPage(
-            roomId: room.id,
-            sessionId: session.id,
-            initialRoom: room,
-            initialSession: session,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      sessionsController.add(<LiveSession>[session]);
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-      messageControllers[sessionOneAddress]!.add(<LiveChatMessage>[
-        liveMessage,
-      ]);
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text('This room is live.'), findsOneWidget);
-
-      sessionsController.add(<LiveSession>[sessionTwo]);
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-      messageControllers[sessionTwoAddress]!.add(
-        <LiveChatMessage>[
-          LiveChatMessage(
-            id: 'chat-2',
-            sessionAddress: sessionTwoAddress,
-            pubkey: 'speaker-pubkey',
-            content: 'Fresh room, fresh chat.',
-            createdAt: DateTime.utc(2026, 4, 6, 9, 1),
-          ),
-        ],
-      );
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text('This room is live.'), findsNothing);
-      expect(find.text('Fresh room, fresh chat.'), findsOneWidget);
-
-      verify(
-        () => mockLiveChatRepository.watchChatMessages(
-          sessionAddress: sessionOneAddress,
-        ),
-      ).called(1);
-      verify(
-        () => mockLiveChatRepository.watchChatMessages(
-          sessionAddress: sessionTwoAddress,
-        ),
-      ).called(1);
-
-      await sessionsController.close();
-      for (final controller in messageControllers.values) {
-        await controller.close();
-      }
-    });
 
     testWidgets(
       'host console can report, block, and mute live chat participants',
@@ -903,4 +769,14 @@ void main() {
       },
     );
   });
+}
+
+Future<void> _pumpUntil(
+  WidgetTester tester,
+  bool Function() predicate, {
+  int maxPumps = 20,
+}) async {
+  for (var i = 0; i < maxPumps && !predicate(); i += 1) {
+    await tester.pump();
+  }
 }

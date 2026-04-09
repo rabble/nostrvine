@@ -47,6 +47,7 @@ class _LiveRoomPageState extends ConsumerState<LiveRoomPage> {
   LiveChatBloc? _liveChatBloc;
   ProviderSubscription<AsyncValue<bool>>? _lifecycleSubscription;
   String? _activePayloadKey;
+  String? _syncedChatSessionAddress;
 
   @override
   Widget build(BuildContext context) {
@@ -79,31 +80,48 @@ class _LiveRoomPageState extends ConsumerState<LiveRoomPage> {
         _ensureBlocs(payload);
         final liveRoomBloc = _liveRoomBloc!;
         final liveChatBloc = _liveChatBloc!;
+        _syncChatSession(liveRoomBloc, liveChatBloc);
 
         return MultiBlocProvider(
           providers: [
             BlocProvider<LiveRoomBloc>.value(value: liveRoomBloc),
             BlocProvider<LiveChatBloc>.value(value: liveChatBloc),
           ],
-          child: BlocListener<LiveRoomBloc, LiveRoomState>(
-            listenWhen: (previous, current) =>
-                previous.sessionAddress != current.sessionAddress &&
-                current.sessionAddress != null,
-            listener: (context, state) {
-              final sessionAddress = state.sessionAddress;
-              if (sessionAddress == null) {
-                return;
+          child: BlocBuilder<LiveRoomBloc, LiveRoomState>(
+            buildWhen: (previous, current) =>
+                previous.sessionAddress != current.sessionAddress,
+            builder: (context, state) {
+              final liveRoomBloc = _liveRoomBloc;
+              final liveChatBloc = _liveChatBloc;
+              if (liveRoomBloc != null && liveChatBloc != null) {
+                _syncChatSession(liveRoomBloc, liveChatBloc);
               }
 
-              context.read<LiveChatBloc>().add(
-                LiveChatStarted(sessionAddress: sessionAddress),
-              );
+              return const LiveRoomView();
             },
-            child: const LiveRoomView(),
           ),
         );
       },
     );
+  }
+
+  void _syncChatSession(LiveRoomBloc liveRoomBloc, LiveChatBloc liveChatBloc) {
+    final sessionAddress = liveRoomBloc.state.sessionAddress;
+    if (sessionAddress == null) {
+      return;
+    }
+
+    if (_syncedChatSessionAddress == sessionAddress &&
+        liveChatBloc.state.sessionAddress == sessionAddress) {
+      return;
+    }
+
+    _syncedChatSessionAddress = sessionAddress;
+    if (liveChatBloc.state.sessionAddress == sessionAddress) {
+      return;
+    }
+
+    liveChatBloc.add(LiveChatStarted(sessionAddress: sessionAddress));
   }
 
   @override

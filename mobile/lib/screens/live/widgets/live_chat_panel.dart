@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/live_chat/live_chat_bloc.dart';
 import 'package:openvine/blocs/live_room/live_room_bloc.dart';
+import 'package:openvine/screens/live/widgets/live_chat_message_tile.dart';
 
 class LiveChatPanel extends StatefulWidget {
   const LiveChatPanel({
@@ -82,30 +83,8 @@ class _LiveChatPanelState extends State<LiveChatPanel> {
                           const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final message = visibleMessages[index];
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: VineTheme.surfaceContainer,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                message.pubkey,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: VineTheme.labelLargeFont(
-                                  color: VineTheme.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                message.content,
-                                style: VineTheme.bodyMediumFont(),
-                              ),
-                            ],
-                          ),
+                        return LiveChatMessageTile(
+                          message: message,
                         );
                       },
                     );

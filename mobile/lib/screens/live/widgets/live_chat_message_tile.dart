@@ -5,6 +5,7 @@ import 'package:models/models.dart';
 import 'package:openvine/models/live/live_chat_message.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:time_formatter/time_formatter.dart';
 
 class LiveChatMessageTile extends ConsumerWidget {
@@ -53,14 +54,23 @@ class LiveChatMessageTile extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: VineTheme.labelLargeFont(
-                            color: VineTheme.primary,
-                          ),
-                        ),
+                        child: profile != null
+                            ? UserName.fromUserProfile(
+                                profile,
+                                style: VineTheme.labelLargeFont(
+                                  color: VineTheme.primary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : UserName.fromPubKey(
+                                message.pubkey,
+                                style: VineTheme.labelLargeFont(
+                                  color: VineTheme.primary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                       ),
                       if (relativeTime.isNotEmpty) ...[
                         const SizedBox(width: 12),
