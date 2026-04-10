@@ -1,8 +1,8 @@
 // ABOUTME: Tests for DmSyncState — persistence of per-pubkey DM sync
 // ABOUTME: boundaries (newestSyncedAt / oldestSyncedAt) in SharedPreferences.
 
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/repositories/dm_sync_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

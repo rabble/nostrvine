@@ -3,12 +3,13 @@
 
 import 'dart:convert';
 
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/nip44/nip44_v2.dart';
-import 'package:openvine/repositories/dm_decryption_worker.dart';
+import 'package:nostr_sdk/nostr_sdk.dart' show GiftWrapUtil, Nostr;
 
 /// Builds a NIP-17 gift wrap for [rumor] addressed to [recipientPubkey]
 /// using [senderPrivateKey] as the seal signer. Mirrors the production

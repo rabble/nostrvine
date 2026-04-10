@@ -10,6 +10,9 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/src/dm_decryption_worker.dart';
+import 'package:dm_repository/src/dm_sync_state.dart';
+import 'package:dm_repository/src/nip17_message_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -18,11 +21,8 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
+import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
-import 'package:openvine/repositories/dm_decryption_worker.dart';
-import 'package:openvine/repositories/dm_sync_state.dart';
-import 'package:openvine/services/local_key_signer.dart';
-import 'package:openvine/services/nip17_message_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Decrypts a gift-wrapped event (kind 1059) through the NIP-17 layers

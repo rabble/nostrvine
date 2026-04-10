@@ -2,12 +2,12 @@
 // ABOUTME: Covers NIP-17 share path, NIP-04 fallback, getShareableUsers,
 // ABOUTME: searchUsersToShareWith, shareVideoWithUser, and sharing utilities.
 
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:profile_repository/profile_repository.dart';

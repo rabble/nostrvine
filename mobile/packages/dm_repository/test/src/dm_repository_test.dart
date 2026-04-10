@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -15,10 +16,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
-import 'package:openvine/repositories/dm_repository.dart';
-import 'package:openvine/repositories/dm_sync_state.dart';
-import 'package:openvine/services/moderation_label_service.dart';
-import 'package:openvine/services/nip17_message_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -2653,9 +2650,9 @@ void main() {
     // -----------------------------------------------------------------
 
     group('moderation DM scenarios', () {
-      /// The fallback moderation pubkey from [ModerationLabelService].
+      /// The fallback moderation pubkey (inlined from ModerationLabelService).
       const moderationPubkey =
-          ModerationLabelService.fallbackModerationPubkeyHex;
+          '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
 
       void stubDaoInserts() {
         when(

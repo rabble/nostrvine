@@ -5,7 +5,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:openvine/repositories/dm_repository.dart';
+import 'package:dm_repository/dm_repository.dart';
 
 /// Cubit that tracks the number of unread DM conversations.
 ///
