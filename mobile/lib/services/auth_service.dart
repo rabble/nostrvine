@@ -2718,8 +2718,11 @@ class AuthService implements BackgroundAwareService {
         displayName: 'Divine User',
       );
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('current_user_pubkey_hex', publicKeyHex);
+      // Do not pre-write current_user_pubkey_hex here: _setupUserSession
+      // calls shouldClearDataForUser which compares the stored pubkey
+      // against the incoming one. Writing the new value first would
+      // mask identity changes. _setupUserSession writes it after the
+      // check.
       await _clearDismissedDivineLoginBannerForCurrentUser(publicKeyHex);
 
       Log.info(
