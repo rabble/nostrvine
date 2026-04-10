@@ -778,8 +778,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         }
       }),
     );
-    // Persist immediately so the clip is visible in the library right away.
-    clipProvider.saveClipToLibrary(clip);
 
     Log.debug(
       '📷 Lens metadata: ${_cameraService.currentLensMetadata?.toMap()}',
