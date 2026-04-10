@@ -4912,7 +4912,7 @@ void main() {
       }) {
         return DmConversation(
           id: id,
-          participantPubkeys: [_validPubkeyA, _validPubkeyB],
+          participantPubkeys: const [_validPubkeyA, _validPubkeyB],
           isGroup: false,
           createdAt: createdAt,
           lastMessageTimestamp: lastMessageTimestamp,
@@ -5127,7 +5127,8 @@ void main() {
       }) {
         return Event.fromJson({
           'id':
-              '1111111111111111111111111111111111111111111111111111111111111111',
+              '11111111111111111111111111111111'
+              '11111111111111111111111111111111',
           'pubkey': authorPubkey,
           'created_at': 1700000100,
           'kind': EventKind.eventDeletion,
@@ -5228,7 +5229,7 @@ void main() {
         ).thenAnswer((_) async => false);
 
         final repository = createRepository(
-          rumorDecryptor: (_, __) async => null,
+          rumorDecryptor: (_, _) async => null,
         );
         await repository.startListening();
 
@@ -5279,7 +5280,7 @@ void main() {
         ).thenAnswer((_) async => false);
 
         final repository = createRepository(
-          rumorDecryptor: (_, __) async => null,
+          rumorDecryptor: (_, _) async => null,
         );
         await repository.startListening();
 
@@ -5330,7 +5331,7 @@ void main() {
         ).thenAnswer((_) async => false);
 
         final repository = createRepository(
-          rumorDecryptor: (_, __) async => null,
+          rumorDecryptor: (_, _) async => null,
         );
         await repository.startListening();
 
@@ -5369,7 +5370,7 @@ void main() {
         ).thenAnswer((_) async => false);
 
         final repository = createRepository(
-          rumorDecryptor: (_, __) async => null,
+          rumorDecryptor: (_, _) async => null,
         );
         await repository.startListening();
 
@@ -5616,13 +5617,14 @@ void main() {
 
     group('setCredentials', () {
       test('same user is a no-op', () {
-        final repo = createRepository();
-        // Already initialized with _validPubkeyA — calling again is a no-op.
-        repo.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
+        final repo = createRepository()
+          // Already initialized with _validPubkeyA — calling again
+          // is a no-op.
+          ..setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
 
         expect(repo.isInitialized, isTrue);
         expect(repo.userPubkey, equals(_validPubkeyA));
@@ -5635,14 +5637,12 @@ void main() {
             () => mockNostrClient.unsubscribe(any()),
           ).thenAnswer((_) async {});
 
-          final repo = createRepository();
-          expect(repo.userPubkey, equals(_validPubkeyA));
-
-          repo.setCredentials(
-            userPubkey: _validPubkeyB,
-            signer: LocalNostrSigner(_validPrivateKey),
-            messageService: mockMessageService,
-          );
+          final repo = createRepository()
+            ..setCredentials(
+              userPubkey: _validPubkeyB,
+              signer: LocalNostrSigner(_validPrivateKey),
+              messageService: mockMessageService,
+            );
 
           // Give post-auth maintenance a chance to run.
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -5696,15 +5696,13 @@ void main() {
             () => mockNostrClient.unsubscribe(any()),
           ).thenAnswer((_) async {});
 
-          // Create repo via constructor, then setCredentials to trigger
-          // post-auth maintenance including _cleanupSelfConversations.
-          final repo = DmRepository(
+          // Create repo then setCredentials to trigger post-auth
+          // maintenance including _cleanupSelfConversations.
+          DmRepository(
             nostrClient: mockNostrClient,
             directMessagesDao: mockDirectMessagesDao,
             conversationsDao: mockConversationsDao,
-          );
-
-          repo.setCredentials(
+          ).setCredentials(
             userPubkey: _validPubkeyA,
             signer: LocalNostrSigner(_validPrivateKey),
             messageService: mockMessageService,
@@ -5747,13 +5745,11 @@ void main() {
             () => mockNostrClient.unsubscribe(any()),
           ).thenAnswer((_) async {});
 
-          final repo = DmRepository(
+          DmRepository(
             nostrClient: mockNostrClient,
             directMessagesDao: mockDirectMessagesDao,
             conversationsDao: mockConversationsDao,
-          );
-
-          repo.setCredentials(
+          ).setCredentials(
             userPubkey: _validPubkeyA,
             signer: LocalNostrSigner(_validPrivateKey),
             messageService: mockMessageService,
@@ -6195,13 +6191,11 @@ void main() {
             () => mockNostrClient.unsubscribe(any()),
           ).thenAnswer((_) async {});
 
-          final repo = DmRepository(
+          DmRepository(
             nostrClient: mockNostrClient,
             directMessagesDao: mockDirectMessagesDao,
             conversationsDao: mockConversationsDao,
-          );
-
-          repo.setCredentials(
+          ).setCredentials(
             userPubkey: _validPubkeyA,
             signer: LocalNostrSigner(_validPrivateKey),
             messageService: mockMessageService,
@@ -6312,13 +6306,11 @@ void main() {
             () => mockNostrClient.unsubscribe(any()),
           ).thenAnswer((_) async {});
 
-          final repo = DmRepository(
+          DmRepository(
             nostrClient: mockNostrClient,
             directMessagesDao: mockDirectMessagesDao,
             conversationsDao: mockConversationsDao,
-          );
-
-          repo.setCredentials(
+          ).setCredentials(
             userPubkey: _validPubkeyA,
             signer: LocalNostrSigner(_validPrivateKey),
             messageService: mockMessageService,
@@ -6370,13 +6362,11 @@ void main() {
           () => mockNostrClient.unsubscribe(any()),
         ).thenAnswer((_) async {});
 
-        final repo = DmRepository(
+        DmRepository(
           nostrClient: mockNostrClient,
           directMessagesDao: mockDirectMessagesDao,
           conversationsDao: mockConversationsDao,
-        );
-
-        repo.setCredentials(
+        ).setCredentials(
           userPubkey: _validPubkeyA,
           signer: LocalNostrSigner(_validPrivateKey),
           messageService: mockMessageService,
@@ -6411,13 +6401,11 @@ void main() {
           () => mockNostrClient.unsubscribe(any()),
         ).thenAnswer((_) async {});
 
-        final repo = DmRepository(
+        DmRepository(
           nostrClient: mockNostrClient,
           directMessagesDao: mockDirectMessagesDao,
           conversationsDao: mockConversationsDao,
-        );
-
-        repo.setCredentials(
+        ).setCredentials(
           userPubkey: _validPubkeyA,
           signer: LocalNostrSigner(_validPrivateKey),
           messageService: mockMessageService,
