@@ -104,5 +104,29 @@ void main() {
         expect(loadMoreCalled, isFalse);
       },
     );
+
+    testWidgets(
+      'does not re-fire onLoadMore on widget rebuild',
+      (tester) async {
+        var callCount = 0;
+
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: true,
+            isLoadingMore: false,
+            onLoadMore: () => callCount++,
+          ),
+        );
+
+        expect(callCount, equals(1));
+
+        // Pump again — sentinel is already mounted, initState should not
+        // re-fire.
+        await tester.pump();
+        await tester.pump();
+
+        expect(callCount, equals(1));
+      },
+    );
   });
 }
