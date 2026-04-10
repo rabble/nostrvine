@@ -322,9 +322,10 @@ class _AppShellState extends ConsumerState<AppShell> {
     final isExploreGrid =
         isNewSearchEnabled &&
         pageCtxAsync.maybeWhen(
-          data: (ctx) =>
-              ctx.type == RouteType.explore && ctx.videoIndex == null,
-          orElse: () => false,
+          data: (ctx) => ctx.type == RouteType.explore
+              ? ctx.videoIndex == null
+              : currentIndex == 1,
+          orElse: () => currentIndex == 1,
         );
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
