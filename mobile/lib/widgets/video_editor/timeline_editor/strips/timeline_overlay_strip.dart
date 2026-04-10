@@ -2,6 +2,7 @@
 // ABOUTME: Renders layer / filter / sound items in rows with long-press
 // ABOUTME: drag to reposition (time + row) and trim handles on selection.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
@@ -122,76 +123,34 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     return SizedBox(
       width: widget.totalWidth,
       height: displayRowCount * _rowHeight,
+      // TODO(hm21): If overlay item counts grow beyond ~20 per strip,
+      // split into a static layer (non-dragged items) and a drag overlay
+      // (single dragged item) so only 1 widget rebuilds per drag frame
+      // instead of the entire Stack. Profile first on low-end devices.
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          for (final item in widget.items) _buildItem(item, displayRowCount),
+          for (final item in widget.items)
+            _OverlayItemPositioned(
+              item: item,
+              isDragging: _draggingId == item.id,
+              isSelected: widget.selectedItemId == item.id,
+              isCollapsed: widget.isCollapsed,
+              dragDeltaX: _dragDeltaX,
+              dragDeltaY: _dragDeltaY,
+              pixelsPerSecond: widget.pixelsPerSecond,
+              rowHeight: _rowHeight,
+              color: widget.color,
+              displayRowCount: displayRowCount,
+              onTap: () => widget.onItemTapped?.call(item.id),
+              onLongPressStart: () => _onLongPressStart(item),
+              onLongPressMoveUpdate: (details) =>
+                  _onLongPressMoveUpdate(details, item, displayRowCount),
+              onLongPressEnd: () => _onLongPressEnd(item),
+              onTrimChanged: widget.onTrimChanged,
+              onTrimDragChanged: widget.onTrimDragChanged,
+            ),
         ],
-      ),
-    );
-  }
-
-  /// Builds a positioned overlay item with drag and trim support.
-  ///
-  /// Kept as a method rather than a separate widget because it reads and
-  /// writes local drag state ([_draggingId], [_dragDeltaX], [_dragDeltaY])
-  /// and binds gesture callbacks that call [setState] on this [State].
-  /// Extracting it would require forwarding all drag state plus multiple
-  /// callbacks without any rebuild-isolation benefit, since the entire
-  /// [Stack] rebuilds on every drag frame anyway.
-  Widget _buildItem(TimelineOverlayItem item, int displayRowCount) {
-    final isDragging = _draggingId == item.id;
-    final isSelected = widget.selectedItemId == item.id;
-
-    // Layout: x position from startTime, width from trimmedDuration.
-    final baseX = item.startTimeInSeconds * widget.pixelsPerSecond;
-    final itemWidth = item.trimmedDurationInSeconds * widget.pixelsPerSecond;
-
-    // Don't render if the item has zero width.
-    if (itemWidth <= 0) return const SizedBox.shrink();
-
-    final row = widget.isCollapsed ? 0 : item.row;
-    final baseY = row * _rowHeight;
-
-    // Apply drag offset to the dragged item.
-    final x = isDragging ? baseX + _dragDeltaX : baseX;
-    final y = isDragging ? baseY + _dragDeltaY : baseY;
-
-    Widget tile = _OverlayItemTile(
-      item: item,
-      width: itemWidth,
-      height: _rowHeight,
-      color: widget.color,
-      isDragging: isDragging,
-    );
-
-    // Wrap selected (non-dragging) items with trim handles.
-    if (isSelected && !isDragging) {
-      tile = _TrimmableOverlayTile(
-        item: item,
-        width: itemWidth,
-        height: _rowHeight,
-        color: widget.color,
-        pixelsPerSecond: widget.pixelsPerSecond,
-        onTrimChanged: widget.onTrimChanged,
-        onTrimDragChanged: widget.onTrimDragChanged,
-      );
-    }
-
-    return Positioned(
-      left: x,
-      top: y,
-      child: Semantics(
-        label: item.label,
-        hint: 'Long press to drag',
-        child: GestureDetector(
-          onTap: () => widget.onItemTapped?.call(item.id),
-          onLongPressStart: (_) => _onLongPressStart(item),
-          onLongPressMoveUpdate: (details) =>
-              _onLongPressMoveUpdate(details, item, displayRowCount),
-          onLongPressEnd: (_) => _onLongPressEnd(item),
-          child: tile,
-        ),
       ),
     );
   }
@@ -231,10 +190,8 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
     // Compute new row from vertical offset.
     final rowDelta = (_dragDeltaY / _rowHeight).round();
-    final newRow = (_dragStartRow + rowDelta).clamp(
-      0,
-      double.maxFinite.toInt(),
-    );
+    final maxRow = (widget.rowCount - 1).clamp(0, widget.rowCount);
+    final newRow = (_dragStartRow + rowDelta).clamp(0, maxRow);
 
     widget.onItemMoved?.call(
       itemId: item.id,
@@ -254,6 +211,102 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 // ---------------------------------------------------------------------------
 // Tile widgets
 // ---------------------------------------------------------------------------
+
+/// A single positioned overlay item inside the [Stack].
+///
+/// Computes its own x/y position from [item] timing, applies drag offsets
+/// when [isDragging], and wraps with [TimelineTrimHandles] when selected.
+class _OverlayItemPositioned extends StatelessWidget {
+  const _OverlayItemPositioned({
+    required this.item,
+    required this.isDragging,
+    required this.isSelected,
+    required this.isCollapsed,
+    required this.dragDeltaX,
+    required this.dragDeltaY,
+    required this.pixelsPerSecond,
+    required this.rowHeight,
+    required this.color,
+    required this.displayRowCount,
+    required this.onTap,
+    required this.onLongPressStart,
+    required this.onLongPressMoveUpdate,
+    required this.onLongPressEnd,
+    this.onTrimChanged,
+    this.onTrimDragChanged,
+  });
+
+  final TimelineOverlayItem item;
+  final bool isDragging;
+  final bool isSelected;
+  final bool isCollapsed;
+  final double dragDeltaX;
+  final double dragDeltaY;
+  final double pixelsPerSecond;
+  final double rowHeight;
+  final Color color;
+  final int displayRowCount;
+  final VoidCallback onTap;
+  final VoidCallback onLongPressStart;
+  final void Function(LongPressMoveUpdateDetails) onLongPressMoveUpdate;
+  final VoidCallback onLongPressEnd;
+  final OverlayTrimCallback? onTrimChanged;
+  final ValueChanged<bool>? onTrimDragChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    // Layout: x position from startTime, width from trimmedDuration.
+    final baseX = item.startTimeInSeconds * pixelsPerSecond;
+    final itemWidth = item.trimmedDurationInSeconds * pixelsPerSecond;
+
+    // Don't render if the item has zero width.
+    if (itemWidth <= 0) return const SizedBox.shrink();
+
+    final row = isCollapsed ? 0 : item.row;
+    final baseY = row * rowHeight;
+
+    // Apply drag offset to the dragged item.
+    final x = isDragging ? baseX + dragDeltaX : baseX;
+    final y = isDragging ? baseY + dragDeltaY : baseY;
+
+    Widget tile = _OverlayItemTile(
+      item: item,
+      width: itemWidth,
+      height: rowHeight,
+      color: color,
+      isDragging: isDragging,
+    );
+
+    // Wrap selected (non-dragging) items with trim handles.
+    if (isSelected && !isDragging) {
+      tile = _TrimmableOverlayTile(
+        item: item,
+        width: itemWidth,
+        height: rowHeight,
+        color: color,
+        pixelsPerSecond: pixelsPerSecond,
+        onTrimChanged: onTrimChanged,
+        onTrimDragChanged: onTrimDragChanged,
+      );
+    }
+
+    return Positioned(
+      left: x,
+      top: y,
+      child: Semantics(
+        label: item.label,
+        hint: 'Long press to drag',
+        child: GestureDetector(
+          onTap: onTap,
+          onLongPressStart: (_) => onLongPressStart(),
+          onLongPressMoveUpdate: onLongPressMoveUpdate,
+          onLongPressEnd: (_) => onLongPressEnd(),
+          child: tile,
+        ),
+      ),
+    );
+  }
+}
 
 /// Visual representation of a single overlay item.
 class _OverlayItemTile extends StatelessWidget {
@@ -277,36 +330,39 @@ class _OverlayItemTile extends StatelessWidget {
     return AnimatedContainer(
       duration: reduceMotion
           ? Duration.zero
-          : const Duration(milliseconds: 150),
+          : TimelineConstants.overlayTileAnimDuration,
       width: width,
-      height: height - 2, // 2px vertical gap between rows
+      height: height - TimelineConstants.overlayRowGap,
       decoration: BoxDecoration(
         color: color.withValues(alpha: isDragging ? 0.85 : 0.7),
         borderRadius: BorderRadius.circular(
           TimelineConstants.thumbnailRadius,
         ),
-        border: isDragging ? Border.all(color: Colors.white, width: 1.5) : null,
+        border: isDragging
+            ? Border.all(
+                color: VineTheme.whiteText,
+                width: TimelineConstants.dragBorderWidth,
+              )
+            : null,
         boxShadow: isDragging
             ? const [
                 BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 6,
+                  color: VineTheme.innerShadow,
+                  blurRadius: TimelineConstants.dragShadowBlurRadius,
                   offset: Offset(0, 2),
                 ),
               ]
             : null,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: TimelineConstants.overlayItemPadding,
+        ),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text(
             item.label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
+            style: VineTheme.labelSmallFont(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -339,7 +395,7 @@ class _TrimmableOverlayTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TimelineTrimHandles(
-      height: height - 2,
+      height: height - TimelineConstants.overlayRowGap,
       handleColor: color,
       onDragStart: () => onTrimDragChanged?.call(true),
       onDragEnd: () => onTrimDragChanged?.call(false),

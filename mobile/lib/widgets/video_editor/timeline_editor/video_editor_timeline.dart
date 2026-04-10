@@ -700,7 +700,7 @@ class _TimelineOverlayStrips extends StatelessWidget {
               totalWidth: totalWidth,
               pixelsPerSecond: pixelsPerSecond,
               totalDuration: totalDuration,
-              color: const Color(0xFFE91E8C),
+              color: VineTheme.accentPink,
               isCollapsed: overlayState.isTypeCollapsed(
                 TimelineOverlayType.layer,
               ),
@@ -727,7 +727,7 @@ class _TimelineOverlayStrips extends StatelessWidget {
               totalWidth: totalWidth,
               pixelsPerSecond: pixelsPerSecond,
               totalDuration: totalDuration,
-              color: const Color(0xFFE53935),
+              color: VineTheme.likeRed,
               isCollapsed: overlayState.isTypeCollapsed(
                 TimelineOverlayType.sound,
               ),
@@ -754,7 +754,7 @@ class _TimelineOverlayStrips extends StatelessWidget {
               totalWidth: totalWidth,
               pixelsPerSecond: pixelsPerSecond,
               totalDuration: totalDuration,
-              color: const Color(0xFF43A047),
+              color: VineTheme.success,
               isCollapsed: overlayState.isTypeCollapsed(
                 TimelineOverlayType.filter,
               ),

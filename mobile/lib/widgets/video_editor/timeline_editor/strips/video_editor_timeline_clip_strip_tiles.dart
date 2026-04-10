@@ -124,17 +124,21 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
         onRightDragUpdate: _onRightDragUpdate,
         onDragStart: _onDragStart,
         onDragEnd: _onDragEnd,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          behavior: HitTestBehavior.opaque,
-          child: _ClipTile(
-            clip: widget.clip,
-            fullWidth: widget.clip.durationInSeconds * widget.pixelsPerSecond,
-            trimStartOffset:
-                widget.clip.trimStart.inMilliseconds /
-                1000.0 *
-                widget.pixelsPerSecond,
-            thumbnailNotifier: widget.thumbnailNotifier,
+        child: Semantics(
+          label: 'Trim clip',
+          hint: 'Drag handles to adjust clip duration',
+          child: GestureDetector(
+            onTap: widget.onTap,
+            behavior: HitTestBehavior.opaque,
+            child: _ClipTile(
+              clip: widget.clip,
+              fullWidth: widget.clip.durationInSeconds * widget.pixelsPerSecond,
+              trimStartOffset:
+                  widget.clip.trimStart.inMilliseconds /
+                  1000.0 *
+                  widget.pixelsPerSecond,
+              thumbnailNotifier: widget.thumbnailNotifier,
+            ),
           ),
         ),
       ),

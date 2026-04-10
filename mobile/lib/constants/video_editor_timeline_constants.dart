@@ -68,4 +68,19 @@ abstract class TimelineConstants {
 
   /// Vertical gap between different overlay strip sections.
   static const double overlayStripGap = 4;
+
+  /// Vertical gap between overlay rows within a strip.
+  static const double overlayRowGap = 2;
+
+  /// Horizontal padding inside overlay item tiles.
+  static const double overlayItemPadding = 6;
+
+  /// Animation duration for overlay tile state changes.
+  static const Duration overlayTileAnimDuration = Duration(milliseconds: 150);
+
+  /// Border width for dragged overlay items.
+  static const double dragBorderWidth = 1.5;
+
+  /// Shadow blur radius for dragged overlay items.
+  static const double dragShadowBlurRadius = 6;
 }
