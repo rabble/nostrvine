@@ -215,6 +215,7 @@ void main() {
           lastModified: DateTime(2025),
           publishStatus: PublishStatus.draft,
           publishAttempts: 0,
+          allowAudioReuse: true,
         );
 
         expect(draft.hasBeenEdited, isTrue);
