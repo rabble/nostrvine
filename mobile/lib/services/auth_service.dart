@@ -3758,13 +3758,12 @@ class AuthService implements BackgroundAwareService {
   /// surfaced to embedded Nostr apps via the bridge. The fallback set is a
   /// reachability mechanism, not a relay list the user has chosen. See #2931.
   void _connectToFallbackRelays() {
-    for (final url in IndexerRelayConfig.safeFallbackRelays) {
-      Log.info(
-        '  - $url (fallback)',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
+    Log.info(
+      'Fallback relays: '
+      '${IndexerRelayConfig.safeFallbackRelays.join(', ')}',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
     _onUserRelaysDiscovered?.call(IndexerRelayConfig.safeFallbackRelays);
   }
 

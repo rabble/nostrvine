@@ -38,6 +38,13 @@ class IndexerRelayConfig {
   /// keep first-connect latency reasonable. Users can still override this
   /// by adding their own relays via Settings → Relays.
   ///
+  /// NOTE: relay.damus.io was removed from [defaultIndexers] because it
+  /// returns 503 sporadically (see comment above). It is acceptable here
+  /// because fallback connections are fire-and-forget — a single relay's
+  /// transient 503 does not block the others, and [RelayPool.add] will
+  /// retry on reconnect. If it proves persistently unreliable, replace it
+  /// with another general-purpose relay that accepts kind 1059.
+  ///
   /// See #2931.
   static const List<String> safeFallbackRelays = [
     'wss://relay.nos.social',
