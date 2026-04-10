@@ -1,6 +1,7 @@
 // ABOUTME: Centralized provider overrides for widget tests to fix ProviderException failures
 // ABOUTME: Provides mock implementations of all providers that throw UnimplementedError in production
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_cache/media_cache.dart';
@@ -13,7 +14,6 @@ import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';

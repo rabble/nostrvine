@@ -3,9 +3,9 @@
 
 import 'dart:convert';
 import 'dart:math' as math;
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:models/models.dart' show NativeProofData;
-import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'pending_upload.g.dart';

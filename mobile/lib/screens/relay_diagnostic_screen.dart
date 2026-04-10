@@ -4,6 +4,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,6 @@ import 'package:nostr_client/nostr_client.dart' show RelayState;
 import 'package:nostr_sdk/filter.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 

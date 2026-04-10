@@ -1,9 +1,9 @@
 // ABOUTME: Intercepts 401 unauthorized media requests and handles Blossom authentication
 // ABOUTME: Coordinates age verification and signed auth header creation for age-restricted content
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for intercepting unauthorized media requests and handling authentication flow

@@ -5,9 +5,9 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:path/path.dart' as p;

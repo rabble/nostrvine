@@ -1,5 +1,6 @@
 // ABOUTME: Tests for Blossom BUD-01 authentication service (kind 24242)
-// ABOUTME: Validates creation of signed auth events for age-restricted content access
+// ABOUTME: Validates creation of signed auth events for age-restricted content
+// access
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -159,14 +160,10 @@ void main() {
         json: {
           'id': 'event123',
           'kind': 24242,
-          'pubkey': 'test',
-          'created_at': 0,
-          'content': '',
           'tags': [
             ['t', 'get'],
             ['x', 'abc123'],
           ],
-          'sig': 'test',
         },
       );
 
@@ -205,14 +202,10 @@ void main() {
         json: {
           'id': 'event123',
           'kind': 24242,
-          'pubkey': 'test',
-          'created_at': 0,
-          'content': '',
           'tags': [
             ['t', 'get'],
             ['x', 'abc123'],
           ],
-          'sig': 'test',
         },
       );
 
@@ -257,13 +250,9 @@ void main() {
         json: {
           'id': 'event123',
           'kind': 24242,
-          'pubkey': 'test',
-          'created_at': 0,
-          'content': '',
           'tags': [
             ['t', 'get'],
           ],
-          'sig': 'test',
         },
       );
 

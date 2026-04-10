@@ -1,17 +1,24 @@
-// ABOUTME: Blossom BUD-01 authentication service for age-restricted content
-// ABOUTME: Creates kind 24242 signed events for authenticating GET requests to Blossom servers
+// ABOUTME: Blossom BUD-01 authentication service for
+// ABOUTME: age-restricted content. Creates kind 24242 signed
+// ABOUTME: events for authenticating GET requests to Blossom
+// ABOUTME: servers.
 
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:blossom_upload_service/src/blossom_auth_provider.dart';
 import 'package:crypto/crypto.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Exception thrown by Blossom authentication operations
 class BlossomAuthException implements Exception {
+  /// Creates a [BlossomAuthException].
   const BlossomAuthException(this.message, {this.code});
+
+  /// The error message.
   final String message;
+
+  /// An optional error code.
   final String? code;
 
   @override
@@ -21,8 +28,9 @@ class BlossomAuthException implements Exception {
 /// Service for creating Blossom BUD-01 authentication headers
 /// Uses kind 24242 events with `t: get` and `x: sha256hash` tags
 class BlossomAuthService {
-  BlossomAuthService({required AuthService authService})
-    : _authService = authService {
+  /// Creates a [BlossomAuthService] with the given [authProvider].
+  BlossomAuthService({required BlossomAuthProvider authProvider})
+    : _authProvider = authProvider {
     // Start periodic cache cleanup
     _cleanupTimer = Timer.periodic(
       _cacheCleanupInterval,
@@ -30,7 +38,7 @@ class BlossomAuthService {
     );
   }
 
-  final AuthService _authService;
+  final BlossomAuthProvider _authProvider;
 
   // Token cache to avoid repeated signing for identical blob requests
   final Map<String, _CachedAuthHeader> _cache = {};
@@ -39,13 +47,15 @@ class BlossomAuthService {
 
   Timer? _cleanupTimer;
 
-  /// Create a Blossom BUD-01 authentication header for GET requests
-  /// Returns "Nostr <base64-encoded-event>" header value
+  /// Create a Blossom BUD-01 authentication header for GET
+  /// requests.
+  ///
+  /// Returns `Nostr {base64-encoded-event}` header value.
   Future<String?> createGetAuthHeader({
     required String sha256Hash,
     String? serverUrl,
   }) async {
-    if (!_authService.isAuthenticated) {
+    if (!_authProvider.isAuthenticated) {
       Log.error(
         'Cannot create Blossom auth header - user not authenticated',
         name: 'BlossomAuthService',
@@ -75,7 +85,7 @@ class BlossomAuthService {
       }
 
       Log.debug(
-        '📱 Creating Blossom auth header for blob: $hashPreview',
+        'Creating Blossom auth header for blob: $hashPreview',
         name: 'BlossomAuthService',
         category: LogCategory.system,
       );
@@ -98,7 +108,7 @@ class BlossomAuthService {
       }
 
       // Create and sign the event
-      final authEvent = await _authService.createAndSignEvent(
+      final authEvent = await _authProvider.createAndSignEvent(
         kind: 24242, // Blossom BUD-01 auth event kind
         content: 'Get blob from Blossom server',
         tags: tags,
@@ -111,7 +121,7 @@ class BlossomAuthService {
       }
 
       // Encode the event as base64 for the header
-      final eventJson = jsonEncode(authEvent.toJson());
+      final eventJson = jsonEncode(authEvent.json);
       final token = base64Encode(utf8.encode(eventJson));
       final header = 'Nostr $token';
 
@@ -124,19 +134,21 @@ class BlossomAuthService {
         ),
       );
 
+      final expiresAt = _cache[cacheKey]!.expiresAt;
       Log.info(
-        'Created Blossom auth header for $hashPreview (expires: ${_cache[cacheKey]!.expiresAt})',
+        'Created Blossom auth header for '
+        '$hashPreview (expires: $expiresAt)',
         name: 'BlossomAuthService',
         category: LogCategory.system,
       );
       Log.debug(
-        '📱 Event ID: ${authEvent.id}',
+        'Event ID: ${authEvent.json['id']}',
         name: 'BlossomAuthService',
         category: LogCategory.system,
       );
 
       return header;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to create Blossom auth header: $e',
         name: 'BlossomAuthService',
@@ -156,18 +168,16 @@ class BlossomAuthService {
 
   /// Clean up expired cache entries
   void _cleanupExpiredCache() {
-    final expiredKeys = _cache.entries
-        .where((entry) => entry.value.isExpired)
-        .map((entry) => entry.key)
-        .toList();
-
-    for (final key in expiredKeys) {
-      _cache.remove(key);
-    }
+    final expiredKeys =
+        _cache.entries
+            .where((entry) => entry.value.isExpired)
+            .map((entry) => entry.key)
+            .toList()
+          ..forEach(_cache.remove);
 
     if (expiredKeys.isNotEmpty) {
       Log.debug(
-        '🧹 Cleaned up ${expiredKeys.length} expired Blossom auth headers',
+        'Cleaned up ${expiredKeys.length} expired Blossom auth headers',
         name: 'BlossomAuthService',
         category: LogCategory.system,
       );
@@ -178,7 +188,7 @@ class BlossomAuthService {
   void clearCache() {
     _cache.clear();
     Log.debug(
-      '🧹 Cleared all Blossom auth cache',
+      'Cleared all Blossom auth cache',
       name: 'BlossomAuthService',
       category: LogCategory.system,
     );
@@ -197,21 +207,22 @@ class BlossomAuthService {
       'total_cached': _cache.length,
       'valid_headers': validHeaders,
       'expired_headers': expiredHeaders,
-      'is_authenticated': _authService.isAuthenticated,
+      'is_authenticated': _authProvider.isAuthenticated,
       'cleanup_interval_minutes': _cacheCleanupInterval.inMinutes,
       'token_validity_hours': _tokenValidityDuration.inHours,
     };
   }
 
   /// Check if we can create auth headers (user is authenticated)
-  bool get canCreateHeaders => _authService.isAuthenticated;
+  bool get canCreateHeaders => _authProvider.isAuthenticated;
 
   /// Get current user's public key for auth
-  String? get currentUserPubkey => _authService.currentNpub;
+  String? get currentUserPubkey => _authProvider.currentNpub;
 
+  /// Dispose the service and clean up resources.
   void dispose() {
     Log.debug(
-      '📱 Disposing BlossomAuthService',
+      'Disposing BlossomAuthService',
       name: 'BlossomAuthService',
       category: LogCategory.system,
     );

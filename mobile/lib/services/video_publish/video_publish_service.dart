@@ -4,12 +4,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/upload_manager.dart';

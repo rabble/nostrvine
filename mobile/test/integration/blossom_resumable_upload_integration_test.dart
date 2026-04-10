@@ -3,17 +3,13 @@
 
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/event.dart';
-import 'package:openvine/constants/upload_constants.dart';
-import 'package:openvine/models/blossom_resumable_upload_session.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _MockAuthService extends Mock implements AuthService {}
+class _MockAuthProvider extends Mock implements BlossomAuthProvider {}
 
 class _MockDio extends Mock implements Dio {}
 
@@ -29,32 +25,34 @@ void main() {
     () async {
       SharedPreferences.setMockInitialValues({});
 
-      final mockAuthService = _MockAuthService();
+      final mockAuthProvider = _MockAuthProvider();
       final mockDio = _MockDio();
       final service = BlossomUploadService(
-        authService: mockAuthService,
+        authProvider: mockAuthProvider,
         dio: mockDio,
       );
 
       const testPublicKey =
           '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
       when(
-        () => mockAuthService.currentPublicKeyHex,
-      ).thenReturn(testPublicKey);
-      when(
-        () => mockAuthService.createAndSignEvent(
+        () => mockAuthProvider.createAndSignEvent(
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
         ),
       ).thenAnswer(
-        (_) async => Event(
-          testPublicKey,
-          24242,
-          const [],
-          'Upload video to Blossom server',
+        (_) async => const BlossomSignedEvent(
+          json: {
+            'id': 'test',
+            'pubkey': testPublicKey,
+            'created_at': 0,
+            'kind': 24242,
+            'tags': <List<String>>[],
+            'content': 'Upload video to Blossom server',
+            'sig': 'test',
+          },
         ),
       );
 
@@ -202,10 +200,10 @@ void main() {
     () async {
       SharedPreferences.setMockInitialValues({});
 
-      final mockAuthService = _MockAuthService();
+      final mockAuthProvider = _MockAuthProvider();
       final mockDio = _MockDio();
       final service = BlossomUploadService(
-        authService: mockAuthService,
+        authProvider: mockAuthProvider,
         dio: mockDio,
       );
 
@@ -213,22 +211,24 @@ void main() {
           '0223456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       const proofManifest = '{"videoHash":"abc123","pgpSignature":"sig"}';
 
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
       when(
-        () => mockAuthService.currentPublicKeyHex,
-      ).thenReturn(testPublicKey);
-      when(
-        () => mockAuthService.createAndSignEvent(
+        () => mockAuthProvider.createAndSignEvent(
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
         ),
       ).thenAnswer(
-        (_) async => Event(
-          testPublicKey,
-          24242,
-          const [],
-          'Upload video to Blossom server',
+        (_) async => const BlossomSignedEvent(
+          json: {
+            'id': 'test',
+            'pubkey': testPublicKey,
+            'created_at': 0,
+            'kind': 24242,
+            'tags': <List<String>>[],
+            'content': 'Upload video to Blossom server',
+            'sig': 'test',
+          },
         ),
       );
 
@@ -376,7 +376,7 @@ void main() {
   );
 
   group('per-chunk retry', () {
-    late _MockAuthService mockAuthService;
+    late _MockAuthProvider mockAuthProvider;
     late _MockDio mockDio;
     late BlossomUploadService service;
     late Directory tempDir;
@@ -391,31 +391,33 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
 
-      mockAuthService = _MockAuthService();
+      mockAuthProvider = _MockAuthProvider();
       mockDio = _MockDio();
       service = BlossomUploadService(
-        authService: mockAuthService,
+        authProvider: mockAuthProvider,
         dio: mockDio,
         defaultServerUrl: testServerUrl,
       );
       await service.setBlossomServer(testServerUrl);
 
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
       when(
-        () => mockAuthService.currentPublicKeyHex,
-      ).thenReturn(testPublicKey);
-      when(
-        () => mockAuthService.createAndSignEvent(
+        () => mockAuthProvider.createAndSignEvent(
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
         ),
       ).thenAnswer(
-        (_) async => Event(
-          testPublicKey,
-          24242,
-          const [],
-          'Upload video to Blossom server',
+        (_) async => const BlossomSignedEvent(
+          json: {
+            'id': 'test',
+            'pubkey': testPublicKey,
+            'created_at': 0,
+            'kind': 24242,
+            'tags': <List<String>>[],
+            'content': 'Upload video to Blossom server',
+            'sig': 'test',
+          },
         ),
       );
 

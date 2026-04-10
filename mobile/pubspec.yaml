@@ -25,6 +25,7 @@ environment:
 workspace:
   - packages/app_update_repository
   - packages/app_version_client
+  - packages/blossom_upload_service
   - packages/comments_repository
   - packages/count_formatter
   - packages/curated_list_repository
@@ -69,6 +70,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  blossom_upload_service:
 
   # State management
   flutter_riverpod: ^3.0.0

@@ -6,6 +6,7 @@ part of 'blossom_resumable_upload_session.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
+/// Hive type adapter for [BlossomResumableUploadSession].
 class BlossomResumableUploadSessionAdapter
     extends TypeAdapter<BlossomResumableUploadSession> {
   @override

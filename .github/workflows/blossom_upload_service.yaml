@@ -1,0 +1,27 @@
+# ABOUTME: CI workflow for the blossom_upload_service package.
+# ABOUTME: Runs tests, formatting, and analysis only when blossom_upload_service files change.
+
+name: Blossom Upload Service CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/blossom_upload_service/**"
+      - ".github/workflows/blossom_upload_service.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/blossom_upload_service/**"
+      - ".github/workflows/blossom_upload_service.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/blossom_upload_service"
+      min_coverage: 40

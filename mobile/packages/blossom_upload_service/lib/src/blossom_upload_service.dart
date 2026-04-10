@@ -1,39 +1,25 @@
-// ABOUTME: Service for uploading videos to user-configured Blossom media servers
-// ABOUTME: Supports Blossom BUD-01 authentication and returns media URLs from any Blossom server
+// ABOUTME: Service for uploading videos to user-configured
+// ABOUTME: Blossom media servers. Supports Blossom BUD-01
+// ABOUTME: authentication and returns media URLs from any
+// ABOUTME: Blossom server.
 
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:blossom_upload_service/src/blossom_auth_provider.dart';
+import 'package:blossom_upload_service/src/blossom_performance_monitor.dart';
+import 'package:blossom_upload_service/src/blossom_resumable_upload_session.dart';
+import 'package:blossom_upload_service/src/hash_util.dart';
+import 'package:blossom_upload_service/src/upload_constants.dart';
 import 'package:dio/dio.dart';
 import 'package:image_metadata_stripper/image_metadata_stripper.dart';
-import 'package:nostr_sdk/event.dart';
-import 'package:openvine/constants/upload_constants.dart';
-import 'package:openvine/models/blossom_resumable_upload_session.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/performance_monitoring_service.dart';
-import 'package:openvine/utils/hash_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Result type for Blossom upload operations
 class BlossomUploadResult {
-  final bool success;
-  final String? videoId; // SHA-256 hash
-  final String? url; // Primary HLS URL from server
-  final String? fallbackUrl; // R2 MP4 URL (always available immediately)
-  final String? streamingMp4Url; // BunnyStream MP4 URL (may be processing)
-  final String? streamingHlsUrl; // BunnyStream HLS URL (same as url)
-  final String? thumbnailUrl; // Auto-generated thumbnail
-  final String? streamingStatus; // "processing" or "ready"
-  final String? gifUrl; // Deprecated - keeping for backwards compatibility
-  final String? blurhash; // Deprecated - keeping for backwards compatibility
-  final String? errorMessage;
-  final int? statusCode; // HTTP status code on failure
-
-  // Convenience getter for backwards compatibility
-  String? get cdnUrl => fallbackUrl ?? url;
-
+  /// Creates a [BlossomUploadResult].
   const BlossomUploadResult({
     required this.success,
     this.videoId,
@@ -48,16 +34,50 @@ class BlossomUploadResult {
     this.errorMessage,
     this.statusCode,
   });
+
+  /// Whether the upload succeeded.
+  final bool success;
+
+  /// SHA-256 hash of the uploaded file.
+  final String? videoId;
+
+  /// Primary HLS URL from server.
+  final String? url;
+
+  /// R2 MP4 URL (always available immediately).
+  final String? fallbackUrl;
+
+  /// BunnyStream MP4 URL (may be processing).
+  final String? streamingMp4Url;
+
+  /// BunnyStream HLS URL (same as url).
+  final String? streamingHlsUrl;
+
+  /// Auto-generated thumbnail.
+  final String? thumbnailUrl;
+
+  /// "processing" or "ready".
+  final String? streamingStatus;
+
+  /// Deprecated - keeping for backwards compatibility.
+  final String? gifUrl;
+
+  /// Deprecated - keeping for backwards compatibility.
+  final String? blurhash;
+
+  /// Error message on failure.
+  final String? errorMessage;
+
+  /// HTTP status code on failure.
+  final int? statusCode;
+
+  /// Convenience getter for backwards compatibility.
+  String? get cdnUrl => fallbackUrl ?? url;
 }
 
 /// Result type for Blossom server health checks
 class BlossomHealthCheckResult {
-  final bool isReachable;
-  final int? latencyMs;
-  final int? statusCode;
-  final String? serverUrl;
-  final String? errorMessage;
-
+  /// Creates a [BlossomHealthCheckResult].
   const BlossomHealthCheckResult({
     required this.isReachable,
     this.latencyMs,
@@ -65,6 +85,21 @@ class BlossomHealthCheckResult {
     this.serverUrl,
     this.errorMessage,
   });
+
+  /// Whether the server is reachable.
+  final bool isReachable;
+
+  /// Latency in milliseconds.
+  final int? latencyMs;
+
+  /// HTTP status code.
+  final int? statusCode;
+
+  /// The server URL that was tested.
+  final String? serverUrl;
+
+  /// Error message if unreachable.
+  final String? errorMessage;
 
   @override
   String toString() {
@@ -76,10 +111,15 @@ class BlossomHealthCheckResult {
   }
 }
 
+/// Exception thrown when a resumable upload operation fails.
 class BlossomResumableUploadException implements Exception {
+  /// Creates a [BlossomResumableUploadException].
   const BlossomResumableUploadException(this.message, {this.statusCode});
 
+  /// The error message.
   final String message;
+
+  /// HTTP status code, if applicable.
   final int? statusCode;
 
   @override
@@ -105,9 +145,25 @@ class _CachedCapability {
   final DateTime expiresAt;
 }
 
+/// Blossom BUD-01 media upload service with resumable upload support.
 class BlossomUploadService {
+  /// Creates a [BlossomUploadService].
+  BlossomUploadService({
+    required this.authProvider,
+    BlossomPerformanceMonitor? performanceMonitor,
+    Dio? dio,
+    String? defaultServerUrl,
+    DateTime Function()? clock,
+  }) : _performanceMonitor =
+           performanceMonitor ?? const NoOpPerformanceMonitor(),
+       dio = dio ?? Dio(),
+       _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer,
+       _clock = clock ?? DateTime.now;
+
   static const String _blossomServerKey = 'blossom_server_url';
   static const String _useBlossomKey = 'use_blossom_upload';
+
+  /// The default Divine Blossom media server.
   static const String defaultBlossomServer = 'https://media.divine.video';
 
   /// Maximum retries for a single chunk PUT before bubbling to the caller.
@@ -117,22 +173,17 @@ class BlossomUploadService {
   /// How long a cached capability discovery result stays valid.
   static const Duration _capabilityCacheTtl = Duration(minutes: 5);
 
-  final AuthService authService;
+  /// The authentication provider for signing Blossom events.
+  final BlossomAuthProvider authProvider;
+  final BlossomPerformanceMonitor _performanceMonitor;
+
+  /// The HTTP client used for uploads.
   final Dio dio;
   final String _defaultServerUrl;
   final DateTime Function() _clock;
 
   /// In-memory cache of capability discovery results keyed by server URL.
   final Map<String, _CachedCapability> _capabilityCache = {};
-
-  BlossomUploadService({
-    required this.authService,
-    Dio? dio,
-    String? defaultServerUrl,
-    DateTime Function()? clock,
-  }) : dio = dio ?? Dio(),
-       _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer,
-       _clock = clock ?? DateTime.now;
 
   /// Determine which Blossom server to use for upload
   ///
@@ -149,7 +200,7 @@ class BlossomUploadService {
       if (customServerUrl != null && customServerUrl.isNotEmpty) {
         servers.add(customServerUrl);
         Log.info(
-          '🔧 Using custom configured server: $customServerUrl',
+          'Using custom configured server: $customServerUrl',
           name: 'BlossomUploadService',
           category: LogCategory.video,
         );
@@ -193,14 +244,15 @@ class BlossomUploadService {
         true; // Default to true for new installs (allow custom/non-Divine media servers)
   }
 
-  /// Enable or disable Blossom upload
+  /// Enable or disable Blossom upload.
+  // ignore: avoid_positional_boolean_parameters
   Future<void> setBlossomEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_useBlossomKey, enabled);
   }
 
   /// Create a Blossom authentication event for upload
-  Future<Event?> _createBlossomAuthEvent({
+  Future<BlossomSignedEvent?> _createBlossomAuthEvent({
     required String url,
     required String method,
     required String fileHash,
@@ -227,8 +279,8 @@ class BlossomUploadService {
         ['x', fileHash], // SHA-256 hash of the file
       ];
 
-      // Use AuthService to create and sign the event (established pattern)
-      final signedEvent = await authService.createAndSignEvent(
+      // Use auth provider to create and sign the event
+      final signedEvent = await authProvider.createAndSignEvent(
         kind: 24242, // Blossom auth event kind
         content: contentDescription,
         tags: tags,
@@ -236,7 +288,7 @@ class BlossomUploadService {
 
       if (signedEvent == null) {
         Log.error(
-          'Failed to create/sign Blossom auth event via AuthService',
+          'Failed to create/sign Blossom auth event via auth provider',
           name: 'BlossomUploadService',
           category: LogCategory.video,
         );
@@ -244,33 +296,33 @@ class BlossomUploadService {
       }
 
       Log.info(
-        'Created Blossom auth event: ${signedEvent.id}',
+        'Created Blossom auth event: ${signedEvent.json['id']}',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
       Log.info(
-        '  Event kind: ${signedEvent.kind}',
+        '  Event kind: ${signedEvent.json['kind']}',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
       Log.info(
-        '  Event pubkey: ${signedEvent.pubkey}',
+        '  Event pubkey: ${signedEvent.json['pubkey']}',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
       Log.info(
-        '  Event created_at: ${signedEvent.createdAt}',
+        '  Event created_at: ${signedEvent.json['created_at']}',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
       Log.info(
-        '  Event tags: ${signedEvent.tags}',
+        '  Event tags: ${signedEvent.json['tags']}',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
 
       return signedEvent;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Error creating Blossom auth event: $e',
         name: 'BlossomUploadService',
@@ -280,8 +332,8 @@ class BlossomUploadService {
     }
   }
 
-  String _buildAuthHeader(Event authEvent) {
-    final authEventJson = jsonEncode(authEvent.toJson());
+  String _buildAuthHeader(BlossomSignedEvent authEvent) {
+    final authEventJson = jsonEncode(authEvent.json);
     return 'Nostr ${base64.encode(utf8.encode(authEventJson))}';
   }
 
@@ -357,7 +409,8 @@ class BlossomUploadService {
     void Function(double)? onProgress,
   }) async {
     Log.warning(
-      'Falling back to legacy upload for $serverUrl after resumable failure: $fallbackReason',
+      'Falling back to legacy upload for $serverUrl '
+      'after resumable failure: $fallbackReason',
       name: 'BlossomUploadService',
       category: LogCategory.video,
     );
@@ -427,7 +480,7 @@ class BlossomUploadService {
     }
 
     try {
-      final response = await dio.head(
+      final response = await dio.head<dynamic>(
         '$serverUrl/upload',
         options: Options(
           validateStatus: _validateHttpStatus,
@@ -471,7 +524,9 @@ class BlossomUploadService {
             : const _DivineUploadCapability(supportsResumable: true);
 
         Log.warning(
-          'Assuming resumable upload support for Divine host $serverUrl after transient capability probe failure',
+          'Assuming resumable upload support for Divine '
+          'host $serverUrl after transient capability '
+          'probe failure',
           name: 'BlossomUploadService',
           category: LogCategory.video,
         );
@@ -515,7 +570,7 @@ class BlossomUploadService {
       );
     }
 
-    final response = await dio.post(
+    final response = await dio.post<dynamic>(
       '$serverUrl/upload/init',
       data: {
         'sha256': fileHash,
@@ -536,7 +591,8 @@ class BlossomUploadService {
     if ((response.statusCode != 200 && response.statusCode != 201) ||
         responseData is! Map) {
       throw BlossomResumableUploadException(
-        'Failed to initialize resumable upload: ${response.statusCode} ${response.data}',
+        'Failed to initialize resumable upload: '
+        '${response.statusCode} ${response.data}',
         statusCode: response.statusCode,
       );
     }
@@ -570,7 +626,7 @@ class BlossomUploadService {
   Future<BlossomResumableUploadSession> _queryResumableUploadSession(
     BlossomResumableUploadSession session,
   ) async {
-    final response = await dio.head(
+    final response = await dio.head<dynamic>(
       session.uploadUrl,
       options: Options(
         headers: session.requiredHeaders,
@@ -625,7 +681,7 @@ class BlossomUploadService {
         var chunkAttempt = 0;
         while (true) {
           try {
-            response = await dio.put(
+            response = await dio.put<dynamic>(
               currentSession.uploadUrl,
               data: chunkBytes,
               options: Options(
@@ -658,7 +714,7 @@ class BlossomUploadService {
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
-            await Future.delayed(_chunkRetryDelay);
+            await Future<void>.delayed(_chunkRetryDelay);
           }
         }
 
@@ -675,7 +731,8 @@ class BlossomUploadService {
               response.headers.value('X-Reason') ??
               response.headers.value('x-reason');
           throw BlossomResumableUploadException(
-            'Chunk upload failed: ${response.statusCode} ${xReason ?? response.data}',
+            'Chunk upload failed: ${response.statusCode} '
+            '${xReason ?? response.data}',
             statusCode: response.statusCode,
           );
         }
@@ -712,7 +769,8 @@ class BlossomUploadService {
     );
     if (authHeader == null) {
       throw const BlossomResumableUploadException(
-        'Failed to create Blossom authentication for resumable upload completion',
+        'Failed to create Blossom authentication for '
+        'resumable upload completion',
       );
     }
 
@@ -725,7 +783,7 @@ class BlossomUploadService {
       _addProofModeHeaders(headers, proofManifestJson);
     }
 
-    final response = await dio.post(
+    final response = await dio.post<dynamic>(
       '$serverUrl/upload/${session.uploadId}/complete',
       data: {'sha256': fileHash},
       options: Options(
@@ -811,8 +869,7 @@ class BlossomUploadService {
           name: 'BlossomUploadService',
           category: LogCategory.video,
         );
-        String? thumbnailUrl =
-            responseData['thumbnail']?.toString() ?? fallbackUrl;
+        var thumbnailUrl = responseData['thumbnail']?.toString() ?? fallbackUrl;
 
         String? streamingMp4Url;
         String? streamingHlsUrl;
@@ -830,7 +887,7 @@ class BlossomUploadService {
         }
 
         if (url != null && url.isNotEmpty) {
-          onProgress?.call(1.0);
+          onProgress?.call(1);
 
           return BlossomUploadResult(
             success: true,
@@ -853,7 +910,7 @@ class BlossomUploadService {
 
     if (response.statusCode == 409) {
       final existingUrl = '$_defaultServerUrl/$fileHash';
-      onProgress?.call(1.0);
+      onProgress?.call(1);
 
       return BlossomUploadResult(
         success: true,
@@ -874,10 +931,11 @@ class BlossomUploadService {
     );
   }
 
-  /// Core upload logic to a single Blossom server
+  /// Core upload logic to a single Blossom server.
   ///
-  /// This method encapsulates the common upload flow used by all upload methods.
-  /// It handles file streaming, auth events, progress callbacks, and response parsing.
+  /// This method encapsulates the common upload flow used by
+  /// all upload methods. It handles file streaming, auth events,
+  /// progress callbacks, and response parsing.
   Future<BlossomUploadResult> _uploadToServer({
     required String serverUrl,
     required File file,
@@ -936,7 +994,7 @@ class BlossomUploadService {
       // PUT request with file stream (Blossom BUD-01 spec)
       // Using stream instead of bytes to avoid loading entire file into memory
       final fileStream = file.openRead();
-      final response = await dio.put(
+      final response = await dio.put<dynamic>(
         '$serverUrl/upload',
         data: fileStream,
         options: Options(
@@ -964,7 +1022,7 @@ class BlossomUploadService {
       );
     } on DioException catch (e) {
       // Build detailed error message
-      String errorDetail = e.message ?? 'Unknown error';
+      var errorDetail = e.message ?? 'Unknown error';
       if (e.error != null) {
         errorDetail = '$errorDetail (${e.error})';
       }
@@ -1014,7 +1072,7 @@ class BlossomUploadService {
           errorMessage: 'Network error: $errorDetail',
         );
       }
-    } catch (e) {
+    } on Object catch (e) {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Upload error: $e',
@@ -1022,12 +1080,14 @@ class BlossomUploadService {
     }
   }
 
-  /// Upload a video file to the configured Blossom server
+  /// Upload a video file to the configured Blossom server.
   ///
-  /// Tries multiple Blossom servers in priority order with fallback.
-  /// Returns success if any server succeeds, failure only if all servers fail.
+  /// Tries multiple Blossom servers in priority order with
+  /// fallback. Returns success if any server succeeds, failure
+  /// only if all servers fail.
   ///
-  /// [proofManifestJson] - Optional ProofMode manifest JSON string for cryptographic proof
+  /// [proofManifestJson] - Optional ProofMode manifest JSON
+  /// string for cryptographic proof.
   Future<BlossomUploadResult> uploadVideo({
     required File videoFile,
     required String nostrPubkey,
@@ -1040,13 +1100,13 @@ class BlossomUploadService {
     void Function(double)? onProgress,
   }) async {
     // Start performance trace for video upload
-    await PerformanceMonitoringService.instance.startTrace('video_upload');
+    await _performanceMonitor.startTrace('video_upload');
 
     try {
       // Check authentication before attempting any uploads
-      if (!authService.isAuthenticated) {
+      if (!authProvider.isAuthenticated) {
         Log.error(
-          '❌ User not authenticated - cannot sign Blossom requests',
+          'User not authenticated - cannot sign Blossom requests',
           name: 'BlossomUploadService',
           category: LogCategory.video,
         );
@@ -1057,7 +1117,7 @@ class BlossomUploadService {
       }
 
       Log.info(
-        '✅ User is authenticated, can create signed events',
+        'User is authenticated, can create signed events',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
@@ -1065,14 +1125,15 @@ class BlossomUploadService {
       // Report initial progress
       onProgress?.call(0.1);
 
-      // Use streaming hash computation to avoid loading entire file into memory
-      // This is critical for iOS where large files (40MB+) can cause memory issues
+      // Use streaming hash computation to avoid loading entire
+      // file into memory. This is critical for iOS where large
+      // files (40MB+) can cause memory issues.
       final hashResult = await HashUtil.sha256File(videoFile);
       final fileSize = hashResult.size;
       final fileHash = hashResult.hash;
 
       // Add file size metric to performance trace
-      PerformanceMonitoringService.instance.setMetric(
+      _performanceMonitor.setMetric(
         'video_upload',
         'file_size_bytes',
         fileSize,
@@ -1113,8 +1174,11 @@ class BlossomUploadService {
           if (useResumable) {
             Log.info(
               hasProofModeData
-                  ? 'Using Divine resumable upload flow for $serverUrl with ProofMode metadata on completion'
-                  : 'Using Divine resumable upload flow for $serverUrl',
+                  ? 'Using Divine resumable upload flow '
+                        'for $serverUrl with ProofMode '
+                        'metadata on completion'
+                  : 'Using Divine resumable upload flow '
+                        'for $serverUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
@@ -1183,7 +1247,7 @@ class BlossomUploadService {
             final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
-              '✅ Video uploaded to: $serverUrl',
+              'Video uploaded to: $serverUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
@@ -1224,11 +1288,13 @@ class BlossomUploadService {
 
           lastError = result;
           Log.warning(
-            'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
+            'Upload to $serverUrl failed: '
+            '${result.errorMessage}, '
+            'trying next server...',
             name: 'BlossomUploadService',
             category: LogCategory.video,
           );
-        } catch (e) {
+        } on Object catch (e) {
           final statusCode = e is DioException ? e.response?.statusCode : null;
           lastError = BlossomUploadResult(
             success: false,
@@ -1236,7 +1302,8 @@ class BlossomUploadService {
             errorMessage: 'Upload to $serverUrl failed: $e',
           );
           Log.warning(
-            'Upload to $serverUrl failed: $e, trying next server...',
+            'Upload to $serverUrl failed: $e, '
+            'trying next server...',
             name: 'BlossomUploadService',
             category: LogCategory.video,
           );
@@ -1246,7 +1313,8 @@ class BlossomUploadService {
 
       // All servers failed
       Log.error(
-        '❌ All ${serverUrls.length} servers failed for video upload',
+        'All ${serverUrls.length} servers failed '
+        'for video upload',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
@@ -1256,7 +1324,7 @@ class BlossomUploadService {
             success: false,
             errorMessage: 'All servers failed',
           );
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Blossom upload error: $e',
         name: 'BlossomUploadService',
@@ -1269,20 +1337,24 @@ class BlossomUploadService {
       );
     } finally {
       // Stop performance trace
-      await PerformanceMonitoringService.instance.stopTrace('video_upload');
+      await _performanceMonitor.stopTrace('video_upload');
     }
   }
 
+  /// Resume a previously interrupted resumable upload session.
   Future<BlossomResumableUploadSession> resumeUploadSession({
     required BlossomResumableUploadSession session,
   }) => _queryResumableUploadSession(session);
 
-  /// Upload an image file (e.g. thumbnail) to the configured Blossom server
+  /// Upload an image file (e.g. thumbnail) to the configured
+  /// Blossom server.
   ///
-  /// Tries multiple Blossom servers in priority order with fallback.
-  /// Returns success if any server succeeds, failure only if all servers fail.
+  /// Tries multiple Blossom servers in priority order with
+  /// fallback. Returns success if any server succeeds, failure
+  /// only if all servers fail.
   ///
-  /// This uses the same Blossom BUD-01 protocol as video uploads but with image MIME type
+  /// This uses the same Blossom BUD-01 protocol as video
+  /// uploads but with image MIME type.
   Future<BlossomUploadResult> uploadImage({
     required File imageFile,
     required String nostrPubkey,
@@ -1291,7 +1363,7 @@ class BlossomUploadService {
   }) async {
     try {
       // Check authentication
-      if (!authService.isAuthenticated) {
+      if (!authProvider.isAuthenticated) {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Not authenticated',
@@ -1302,14 +1374,15 @@ class BlossomUploadService {
       onProgress?.call(0.1);
 
       // Strip EXIF metadata (GPS, device info) before uploading.
-      // The stripper may rename the file (e.g. .avif → .jpg) so use the
-      // returned reference for all subsequent operations.
+      // The stripper may rename the file (e.g. .avif -> .jpg)
+      // so use the returned reference for all subsequent ops.
       final strippedFile = await ImageMetadataStripper.stripMetadataInPlace(
         imageFile,
       );
 
-      // Calculate file hash for Blossom
-      // Note: For images, we need to load into memory for the hash (small files)
+      // Calculate file hash for Blossom.
+      // For images we load into memory for the hash
+      // (small files).
       final fileBytes = await strippedFile.readAsBytes();
       final fileHash = HashUtil.sha256Hash(fileBytes);
       final fileSize = fileBytes.length;
@@ -1356,7 +1429,7 @@ class BlossomUploadService {
             final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
-              '✅ Image uploaded to: $serverUrl',
+              'Image uploaded to: $serverUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
@@ -1376,11 +1449,13 @@ class BlossomUploadService {
 
           lastError = result;
           Log.warning(
-            'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
+            'Upload to $serverUrl failed: '
+            '${result.errorMessage}, '
+            'trying next server...',
             name: 'BlossomUploadService',
             category: LogCategory.video,
           );
-        } catch (e) {
+        } on Object catch (e) {
           final statusCode = e is DioException ? e.response?.statusCode : null;
           lastError = BlossomUploadResult(
             success: false,
@@ -1388,7 +1463,8 @@ class BlossomUploadService {
             errorMessage: 'Upload to $serverUrl failed: $e',
           );
           Log.warning(
-            'Upload to $serverUrl failed: $e, trying next server...',
+            'Upload to $serverUrl failed: $e, '
+            'trying next server...',
             name: 'BlossomUploadService',
             category: LogCategory.video,
           );
@@ -1398,7 +1474,8 @@ class BlossomUploadService {
 
       // All servers failed
       Log.error(
-        '❌ All ${serverUrls.length} servers failed for image upload',
+        'All ${serverUrls.length} servers failed '
+        'for image upload',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
@@ -1408,7 +1485,7 @@ class BlossomUploadService {
             success: false,
             errorMessage: 'All servers failed',
           );
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Image upload exception: $e',
         name: 'BlossomUploadService',
@@ -1421,17 +1498,19 @@ class BlossomUploadService {
     }
   }
 
-  /// Upload a bug report file (text/plain) to the configured Blossom server
+  /// Upload a bug report file (text/plain) to the configured
+  /// Blossom server.
   ///
-  /// Tries multiple Blossom servers in priority order with fallback.
-  /// Returns the URL if any server succeeds, null only if all servers fail.
+  /// Tries multiple Blossom servers in priority order with
+  /// fallback. Returns the URL if any server succeeds, null
+  /// only if all servers fail.
   Future<String?> uploadBugReport({
     required File bugReportFile,
     void Function(double)? onProgress,
   }) async {
     try {
       // Check authentication
-      if (!authService.isAuthenticated) {
+      if (!authProvider.isAuthenticated) {
         Log.error(
           'Not authenticated - cannot upload bug report',
           name: 'BlossomUploadService',
@@ -1489,7 +1568,7 @@ class BlossomUploadService {
 
             if (uploadedUrl != null) {
               Log.info(
-                '✅ Bug report uploaded to: $serverUrl',
+                'Bug report uploaded to: $serverUrl',
                 name: 'BlossomUploadService',
                 category: LogCategory.system,
               );
@@ -1503,13 +1582,16 @@ class BlossomUploadService {
           }
 
           Log.warning(
-            'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
+            'Upload to $serverUrl failed: '
+            '${result.errorMessage}, '
+            'trying next server...',
             name: 'BlossomUploadService',
             category: LogCategory.system,
           );
-        } catch (e) {
+        } on Object catch (e) {
           Log.warning(
-            'Upload to $serverUrl failed: $e, trying next server...',
+            'Upload to $serverUrl failed: $e, '
+            'trying next server...',
             name: 'BlossomUploadService',
             category: LogCategory.system,
           );
@@ -1519,13 +1601,14 @@ class BlossomUploadService {
 
       // All servers failed
       Log.error(
-        '❌ All ${serverUrls.length} servers failed for bug report upload',
+        'All ${serverUrls.length} servers failed '
+        'for bug report upload',
         name: 'BlossomUploadService',
         category: LogCategory.system,
       );
 
       return null;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Bug report upload error: $e',
         name: 'BlossomUploadService',
@@ -1535,10 +1618,11 @@ class BlossomUploadService {
     }
   }
 
-  /// Add ProofMode headers to upload request
+  /// Add ProofMode headers to upload request.
   ///
-  /// Generates X-ProofMode-Manifest, X-ProofMode-Signature, and X-ProofMode-Attestation
-  /// headers from the provided ProofManifest JSON.
+  /// Generates X-ProofMode-Manifest, X-ProofMode-Signature,
+  /// and X-ProofMode-Attestation headers from the provided
+  /// ProofManifest JSON.
   void _addProofModeHeaders(
     Map<String, dynamic> headers,
     String proofManifestJson,
@@ -1576,7 +1660,7 @@ class BlossomUploadService {
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to add ProofMode headers: $e',
         name: 'BlossomUploadService',
@@ -1594,16 +1678,19 @@ class BlossomUploadService {
     return base64.encode(utf8.encode(stringValue));
   }
 
-  /// Upload an audio file to the configured Blossom server
+  /// Upload an audio file to the configured Blossom server.
   ///
-  /// Tries multiple Blossom servers in priority order with fallback.
-  /// Returns success if any server succeeds, failure only if all servers fail.
+  /// Tries multiple Blossom servers in priority order with
+  /// fallback. Returns success if any server succeeds, failure
+  /// only if all servers fail.
   ///
-  /// This uses the same Blossom BUD-01 protocol as video/image uploads but with
-  /// audio MIME type. Used by the audio reuse feature when publishing videos
-  /// with allowAudioReuse enabled.
+  /// This uses the same Blossom BUD-01 protocol as video/image
+  /// uploads but with audio MIME type. Used by the audio reuse
+  /// feature when publishing videos with allowAudioReuse
+  /// enabled.
   ///
-  /// Returns a [BlossomUploadResult] with the audio file URL on success.
+  /// Returns a [BlossomUploadResult] with the audio file URL
+  /// on success.
   Future<BlossomUploadResult> uploadAudio({
     required File audioFile,
     String mimeType = 'audio/aac',
@@ -1611,7 +1698,7 @@ class BlossomUploadService {
   }) async {
     try {
       // Check authentication
-      if (!authService.isAuthenticated) {
+      if (!authProvider.isAuthenticated) {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Not authenticated',
@@ -1668,7 +1755,7 @@ class BlossomUploadService {
             final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
-              '✅ Audio uploaded to: $serverUrl',
+              'Audio uploaded to: $serverUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
@@ -1688,11 +1775,13 @@ class BlossomUploadService {
 
           lastError = result;
           Log.warning(
-            'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
+            'Upload to $serverUrl failed: '
+            '${result.errorMessage}, '
+            'trying next server...',
             name: 'BlossomUploadService',
             category: LogCategory.video,
           );
-        } catch (e) {
+        } on Object catch (e) {
           final statusCode = e is DioException ? e.response?.statusCode : null;
           lastError = BlossomUploadResult(
             success: false,
@@ -1700,7 +1789,8 @@ class BlossomUploadService {
             errorMessage: 'Upload to $serverUrl failed: $e',
           );
           Log.warning(
-            'Upload to $serverUrl failed: $e, trying next server...',
+            'Upload to $serverUrl failed: $e, '
+            'trying next server...',
             name: 'BlossomUploadService',
             category: LogCategory.video,
           );
@@ -1710,7 +1800,8 @@ class BlossomUploadService {
 
       // All servers failed
       Log.error(
-        '❌ All ${serverUrls.length} servers failed for audio upload',
+        'All ${serverUrls.length} servers failed '
+        'for audio upload',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
@@ -1720,7 +1811,7 @@ class BlossomUploadService {
             success: false,
             errorMessage: 'All servers failed',
           );
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Audio upload error: $e',
         name: 'BlossomUploadService',
@@ -1760,7 +1851,7 @@ class BlossomUploadService {
 
       // Try HEAD request first (lightweight), fall back to GET if HEAD fails
       try {
-        final response = await dio.head(
+        final response = await dio.head<dynamic>(
           targetUrl,
           options: Options(
             validateStatus: (status) => status != null && status < 500,
@@ -1781,7 +1872,7 @@ class BlossomUploadService {
       } on DioException catch (e) {
         // If HEAD is not supported, try GET
         if (e.response?.statusCode == 405) {
-          final response = await dio.get(
+          final response = await dio.get<dynamic>(
             targetUrl,
             options: Options(
               validateStatus: (status) => status != null && status < 500,
@@ -1820,7 +1911,7 @@ class BlossomUploadService {
         errorMessage: errorMessage,
         statusCode: e.response?.statusCode,
       );
-    } catch (e) {
+    } on Object catch (e) {
       stopwatch.stop();
       return BlossomHealthCheckResult(
         isReachable: false,

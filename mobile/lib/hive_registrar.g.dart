@@ -2,8 +2,8 @@
 // Do not modify
 // Check in to version control
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/pending_upload.dart';
 
 extension HiveRegistrar on HiveInterface {
