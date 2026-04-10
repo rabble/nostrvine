@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -56,40 +55,41 @@ class FeedModeSwitch extends StatelessWidget {
               builder: (context, state) {
                 return Row(
                   children: [
-                    GestureDetector(
-                      onTap: () =>
-                          _showFeedModeBottomSheet(context, state.mode),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            feedModeLabels[state.mode] ?? state.mode.name,
-                            style: VineTheme.headlineSmallFont().copyWith(
-                              shadows: [
-                                const Shadow(
-                                  color: VineTheme.innerShadow,
-                                  offset: Offset(1, 1),
-                                  blurRadius: 1,
-                                ),
-                                const Shadow(
-                                  color: VineTheme.innerShadow,
-                                  offset: Offset(0.4, 0.4),
-                                  blurRadius: 0.6,
-                                ),
-                              ],
+                    Semantics(
+                      label:
+                          'Feed mode: '
+                          '${feedModeLabels[state.mode] ?? state.mode.name}',
+                      button: true,
+                      child: GestureDetector(
+                        onTap: () =>
+                            _showFeedModeBottomSheet(context, state.mode),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: 12,
+                          children: [
+                            Text(
+                              feedModeLabels[state.mode] ?? state.mode.name,
+                              style: VineTheme.headlineSmallFont().copyWith(
+                                shadows: [
+                                  const Shadow(
+                                    color: VineTheme.innerShadow,
+                                    offset: Offset(1, 1),
+                                    blurRadius: 1,
+                                  ),
+                                  const Shadow(
+                                    color: VineTheme.innerShadow,
+                                    offset: Offset(0.4, 0.4),
+                                    blurRadius: 0.6,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          SvgPicture.asset(
-                            DivineIconName.caretDown.assetPath,
-                            width: 24,
-                            height: 24,
-                            colorFilter: const ColorFilter.mode(
-                              VineTheme.whiteText,
-                              BlendMode.srcIn,
+                            const DivineIcon(
+                              icon: DivineIconName.caretDown,
+                              color: VineTheme.whiteText,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     const Spacer(),
