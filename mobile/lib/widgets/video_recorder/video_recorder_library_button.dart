@@ -3,10 +3,9 @@ import 'dart:io';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/providers/video_recorder_provider.dart';
 
 class VideoRecorderLibraryButton extends ConsumerStatefulWidget {
   const VideoRecorderLibraryButton({super.key});
@@ -63,17 +62,27 @@ class _VideoRecorderLibraryButtonState
     }
 
     final thumbnailPath = _lastKnownThumbnailPath ?? _libraryThumbnailPath;
+    final hasClips = clips.isNotEmpty || _libraryThumbnailPath != null;
 
     return Semantics(
       button: true,
-      label: 'Open the clip library',
+      label: hasClips
+          ? 'Open clip library, ${clips.length} '
+                'clip${clips.length == 1 ? '' : 's'}'
+          : 'Clip library, no clips',
+      enabled: hasClips,
       child: InkWell(
-        onTap: () async {
-          await context.push(LibraryScreen.clipsPath);
-          // Refresh library thumbnail after returning — user may have
-          // deleted clips or new thumbnails may have been recovered.
-          _loadLibraryThumbnail();
-        },
+        onTap: hasClips
+            ? () async {
+                await ref
+                    .read(videoRecorderProvider.notifier)
+                    .openLibrary(context);
+
+                // Refresh library thumbnail after returning — user may have
+                // deleted clips or new thumbnails may have been recovered.
+                _loadLibraryThumbnail();
+              }
+            : null,
         child: Container(
           margin: const .only(left: 16),
           width: 40,

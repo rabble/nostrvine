@@ -473,7 +473,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// already set.
   DivineVideoDraft getActiveDraft({
     bool isAutosave = false,
-    bool enforceSeparatedClips = false,
     String? draftId,
   }) {
     // Read selected sound from local state
@@ -493,10 +492,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       id:
           draftId ??
           (isAutosave ? VideoEditorConstants.autoSaveId : this.draftId),
-      clips:
-          state.finalRenderedClip == null || isAutosave || enforceSeparatedClips
-          ? _clips
-          : [state.finalRenderedClip!],
+      clips: _clips,
       title: state.title,
       description: state.description,
       hashtags: state.tags,
@@ -510,7 +506,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       inspiredByNpub: state.inspiredByNpub,
       selectedSound: selectedSound,
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
-      finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
+      finalRenderedClip: state.finalRenderedClip,
       proofManifestJson: state.proofManifestJson,
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
@@ -652,9 +648,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      await _draftService.saveDraft(
-        getActiveDraft(enforceSeparatedClips: true, draftId: draftId),
-      );
+      await _draftService.saveDraft(getActiveDraft(draftId: draftId));
 
       // Remove the autosaved draft
       await removeAutosavedDraft();

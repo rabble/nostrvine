@@ -20,6 +20,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
@@ -765,7 +766,17 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       limitClipDuration: state.recorderMode.hasRecordingLimit,
     );
     // Persist immediately so the clip is visible in the library right away.
-    clipProvider.saveClipToLibrary(clip);
+    unawaited(
+      clipProvider.saveClipToLibrary(clip).then((saved) {
+        if (!saved) {
+          Log.warning(
+            '⚠️ Initial clip save to library failed for ${clip.id}',
+            name: 'VideoRecorderNotifier',
+            category: .video,
+          );
+        }
+      }),
+    );
 
     Log.debug(
       '📷 Lens metadata: ${_cameraService.currentLensMetadata?.toMap()}',
@@ -866,7 +877,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     // frame) is attached. The initial save above makes the clip visible
     // immediately; this upsert adds the generated assets.
     final updatedClip = clipProvider.clips.firstWhere((c) => c.id == clip.id);
-    clipProvider.saveClipToLibrary(updatedClip);
+    final saved = await clipProvider.saveClipToLibrary(updatedClip);
+    if (!saved) {
+      Log.warning(
+        '⚠️ Metadata-enriched clip save to library failed for ${clip.id}',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    }
   }
 
   /// Adjust zoom by vertical drag distance during long press.
@@ -1008,22 +1026,47 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       ref.read(videoEditorProvider.notifier).startRenderVideo();
     }
 
-    await Future.wait([
-      if (state.recorderMode.hasVideoEditor)
-        context.push(VideoEditorScreen.path)
-      else
-        context.push(VideoMetadataScreen.path),
-      // We delay camera dispose so that the screen animation can finish
-      // before the editor open. Without that it will look weird to the user
-      // because the initialization screen will show up quickly.
-      Future.delayed(const Duration(milliseconds: 300), () {
-        return _cameraService.dispose();
-      }),
-    ]);
+    final navigation = state.recorderMode.hasVideoEditor
+        ? context.push(VideoEditorScreen.path)
+        : context.push(VideoMetadataScreen.path);
+
+    // Wait for the push animation to finish before disposing the camera.
+    // Disposing immediately would flash the camera-init screen behind the
+    // transitioning route.
+    await _awaitPushTransition(context);
+    await _cameraService.dispose();
+
+    await navigation;
     if (!context.mounted) return;
 
     Log.info(
       '📹 Returned from editor - reinitializing camera',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+    await initialize();
+  }
+
+  Future<void> openLibrary(BuildContext context) async {
+    Log.info(
+      '📹 Opening library - disposing camera',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+
+    final navigation = context.push(LibraryScreen.clipsPath);
+
+    // Wait for the push animation to finish before disposing the camera.
+    // Disposing immediately would flash the camera-init screen behind the
+    // transitioning route.
+    await _awaitPushTransition(context);
+    await _cameraService.dispose();
+
+    await navigation;
+    if (!context.mounted) return;
+
+    Log.info(
+      '📹 Returned from library - reinitializing camera',
       name: 'VideoRecorderNotifier',
       category: .video,
     );
@@ -1217,6 +1260,42 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: LogCategory.video,
       );
     }
+  }
+
+  /// Waits for the current route's outgoing push transition to finish.
+  ///
+  /// When a new route is pushed on top, the previous route's
+  /// [TransitionRoute.secondaryAnimation] drives from 0→1. This method
+  /// completes when that animation reaches [AnimationStatus.completed],
+  /// meaning the pushed route fully covers the screen.
+  ///
+  /// Falls back immediately if the route has no animation (e.g.
+  /// NoTransitionPage) or the context is unmounted.
+  Future<void> _awaitPushTransition(BuildContext context) async {
+    // Yield one frame so the Navigator processes the push and starts
+    // the transition animation.
+    await WidgetsBinding.instance.endOfFrame;
+
+    if (!context.mounted) return;
+
+    final route = ModalRoute.of(context);
+    if (route == null) return;
+
+    final secondary = route.secondaryAnimation;
+    if (secondary == null || secondary.status == AnimationStatus.completed) {
+      return;
+    }
+
+    final completer = Completer<void>();
+    void onStatus(AnimationStatus status) {
+      if (status == AnimationStatus.completed && !completer.isCompleted) {
+        secondary.removeStatusListener(onStatus);
+        completer.complete();
+      }
+    }
+
+    secondary.addStatusListener(onStatus);
+    await completer.future;
   }
 }
 

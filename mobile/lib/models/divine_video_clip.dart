@@ -122,6 +122,9 @@ class DivineVideoClip {
       'originalAspectRatio': _originalAspectRatio,
       'targetAspectRatio': targetAspectRatio.name,
       'lensMetadata': lensMetadata?.toMap(),
+      'ghostFramePath': ghostFramePath != null
+          ? p.basename(ghostFramePath!)
+          : null,
       if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
     };
   }
@@ -166,6 +169,11 @@ class DivineVideoClip {
               json['lensMetadata'] as Map<String, dynamic>,
             )
           : null,
+      ghostFramePath: resolvePath(
+        json['ghostFramePath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
       proofManifestJson: json['proofManifestJson'] as String?,
     );
   }

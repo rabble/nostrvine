@@ -63,10 +63,26 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
 
+      // Pre-select clips that are already in the editor.
+      // Iterate preSelectedIds (which preserves ClipManager order)
+      // so the selection indices match the editor timeline.
+      final clipsById = {for (final c in clips) c.id: c};
+      final preSelectedIds = <String>{};
+      var preSelectedDuration = Duration.zero;
+      for (final id in event.preSelectedIds) {
+        final clip = clipsById[id];
+        if (clip != null) {
+          preSelectedIds.add(id);
+          preSelectedDuration += clip.duration;
+        }
+      }
+
       emit(
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
+          selectedClipIds: preSelectedIds,
+          selectedDuration: preSelectedDuration,
         ),
       );
 
@@ -304,7 +320,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   Future<void> _recoverAndReload(List<DivineVideoClip> clips) async {
     final recovered = await _clipLibraryService.recoverMissingAssets(clips);
     if (!identical(recovered, clips) && !isClosed) {
-      add(const ClipsLibraryLoadRequested());
+      add(ClipsLibraryLoadRequested(preSelectedIds: state.selectedClipIds));
     }
   }
 }

@@ -106,9 +106,7 @@ void main() {
                 ),
                 videoRecorderProvider.overrideWith(
                   () => _MockVideoRecorderNotifier(
-                    const VideoRecorderProviderState(
-                      recorderMode: VideoRecorderMode.capture,
-                    ),
+                    const VideoRecorderProviderState(),
                   ),
                 ),
               ],

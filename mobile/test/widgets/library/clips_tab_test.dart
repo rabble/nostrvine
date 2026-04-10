@@ -45,7 +45,6 @@ void main() {
     });
 
     Widget buildWidget({
-      Duration remainingDuration = const Duration(seconds: 30),
       bool isSelectionMode = false,
       double? targetAspectRatio,
     }) {
@@ -55,8 +54,7 @@ void main() {
           body: BlocProvider<ClipsLibraryBloc>.value(
             value: mockBloc,
             child: ClipsTab(
-              remainingDuration: remainingDuration,
-              isSelectionMode: isSelectionMode,
+              showRecordButton: isSelectionMode,
               targetAspectRatio: targetAspectRatio,
             ),
           ),
@@ -154,16 +152,13 @@ void main() {
         home: Scaffold(
           body: BlocProvider<ClipsLibraryBloc>.value(
             value: mockBloc,
-            child: ClipSelectionHeader(
-              remainingDuration: remainingDuration,
-              onCreate: onCreate ?? () {},
-            ),
+            child: ClipSelectionHeader(onCreate: onCreate ?? () {}),
           ),
         ),
       );
     }
 
-    testWidgets('displays remaining duration', (tester) async {
+    testWidgets('renders Clips title', (tester) async {
       when(() => mockBloc.state).thenReturn(
         const ClipsLibraryState(
           status: ClipsLibraryStatus.loaded,
@@ -173,8 +168,7 @@ void main() {
 
       await tester.pumpWidget(buildWidget());
 
-      // Format is "30.00s remaining" (2 decimal places)
-      expect(find.text('30.00s remaining'), findsOneWidget);
+      expect(find.text('Clips'), findsOneWidget);
     });
 
     testWidgets('calls onCreate when Add button is tapped', (tester) async {

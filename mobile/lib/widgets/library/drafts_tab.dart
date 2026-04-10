@@ -11,7 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/constants/video_editor_constants.dart'
+    show VideoEditorConstants;
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
@@ -24,7 +25,16 @@ import 'package:openvine/widgets/library/empty_library_state.dart';
 /// (post, edit, delete) internally.
 class DraftsTab extends ConsumerWidget {
   /// Creates a drafts tab.
-  const DraftsTab({super.key});
+  const DraftsTab({
+    required this.showRecordButton,
+    this.showAutosavedDraft = true,
+    super.key,
+  });
+
+  final bool showRecordButton;
+
+  /// Whether to include the autosaved draft in the list.
+  final bool showAutosavedDraft;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,30 +68,38 @@ class DraftsTab extends ConsumerWidget {
           ),
           DraftsLibraryLoaded(:final drafts) ||
           DraftsLibraryDraftDeleted(:final drafts) ||
-          DraftsLibraryDeleteFailed(
-            :final drafts,
-          ) when drafts.isEmpty => const EmptyLibraryState(
-            icon: DivineIconName.pencilSimple,
-            // TODO(l10n): Replace with context.l10n when localization is
-            // added.
-            title: 'No Drafts Yet',
-            // TODO(l10n): Replace with context.l10n when localization is
-            // added.
-            subtitle: 'Videos you save as draft will appear here',
-          ),
-          DraftsLibraryLoaded(:final drafts) ||
-          DraftsLibraryDraftDeleted(:final drafts) ||
-          DraftsLibraryDeleteFailed(:final drafts) => ListView.builder(
-            itemCount: drafts.length,
-            itemBuilder: (context, index) {
-              final draft = drafts[index];
-              return DraftListTile(
-                draft: draft,
-                onTap: () => _openDraft(context, ref, draft),
-                onOpenMore: () => _openDraftOptions(context, ref, draft),
+          DraftsLibraryDeleteFailed(:final drafts) => () {
+            final filtered = showAutosavedDraft
+                ? drafts
+                : drafts
+                      .where(
+                        (d) => d.id != VideoEditorConstants.autoSaveId,
+                      )
+                      .toList();
+            if (filtered.isEmpty) {
+              return EmptyLibraryState(
+                showRecordButton: showRecordButton,
+                icon: DivineIconName.pencilSimple,
+                // TODO(l10n): Replace with context.l10n when
+                // localization is added.
+                title: 'No Drafts Yet',
+                // TODO(l10n): Replace with context.l10n when
+                // localization is added.
+                subtitle: 'Videos you save as draft will appear here',
               );
-            },
-          ),
+            }
+            return ListView.builder(
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final draft = filtered[index];
+                return DraftListTile(
+                  draft: draft,
+                  onTap: () => _openDraft(context, ref, draft),
+                  onOpenMore: () => _openDraftOptions(context, ref, draft),
+                );
+              },
+            );
+          }(),
         };
       },
     );
