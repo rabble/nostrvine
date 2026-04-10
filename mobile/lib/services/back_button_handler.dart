@@ -11,6 +11,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
 
 class BackButtonHandler {
   static const MethodChannel _channel = MethodChannel(
@@ -57,9 +58,23 @@ class BackButtonHandler {
         }
         return true; // Handled
       case RouteType.hashtag:
-      case RouteType.search:
-        // Go back to explore
+        // Hashtag is part of the Explore tab
         _router!.go(ExploreScreen.path);
+        return true; // Handled
+      // TODO(#2470): Remove search case when unified
+      // search/explore replaces the old search path.
+      case RouteType.search:
+        if (ctx.videoIndex != null) {
+          // Feed mode → go back to search grid
+          _router!.go(
+            SearchScreenPure.pathForTerm(term: ctx.searchTerm),
+          );
+        } else {
+          // Grid mode → return to the originating tab
+          final lastTab =
+              _ref!.read(tabHistoryProvider.notifier).getCurrentTab() ?? 0;
+          _navigateToTab(lastTab);
+        }
         return true; // Handled
       case RouteType.videoRecorder:
       case RouteType.videoEditor:
@@ -96,37 +111,10 @@ class BackButtonHandler {
 
     // If there's a previous tab in history, navigate to it
     if (previousTab != null) {
-      // Navigate to previous tab
-      final previousRouteType = _routeTypeForTab(previousTab);
-      final lastIndex = _ref!
-          .read(lastTabPositionProvider.notifier)
-          .getPosition(previousRouteType);
-
       // Remove current tab from history before navigating
       tabHistory.navigateBack();
 
-      // Navigate to previous tab
-      switch (previousTab) {
-        case 0:
-          _router!.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
-        case 1:
-          if (lastIndex != null) {
-            _router!.go(ExploreScreen.pathForIndex(lastIndex));
-          } else {
-            _router!.go(ExploreScreen.path);
-          }
-        case 2:
-          _router!.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
-        case 3:
-          // Get current user's npub for profile
-          final authService = _ref!.read(authServiceProvider);
-          final currentNpub = authService.currentNpub;
-          if (currentNpub != null) {
-            _router!.go(ProfileScreenRouter.pathForNpub(currentNpub));
-          } else {
-            _router!.go(VideoFeedPage.pathForIndex(0));
-          }
-      }
+      _navigateToTab(previousTab);
       return true; // Handled
     }
 
@@ -141,6 +129,35 @@ class BackButtonHandler {
 
     // Already at home with no history - let system exit app
     return false; // Not handled - let Android exit app
+  }
+
+  /// Navigates to the given tab at its last known position.
+  static void _navigateToTab(int tabIndex) {
+    final routeType = _routeTypeForTab(tabIndex);
+    final lastIndex = _ref!
+        .read(lastTabPositionProvider.notifier)
+        .getPosition(routeType);
+
+    switch (tabIndex) {
+      case 0:
+        _router!.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
+      case 1:
+        if (lastIndex != null) {
+          _router!.go(ExploreScreen.pathForIndex(lastIndex));
+        } else {
+          _router!.go(ExploreScreen.path);
+        }
+      case 2:
+        _router!.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
+      case 3:
+        final authService = _ref!.read(authServiceProvider);
+        final currentNpub = authService.currentNpub;
+        if (currentNpub != null) {
+          _router!.go(ProfileScreenRouter.pathForNpub(currentNpub));
+        } else {
+          _router!.go(VideoFeedPage.pathForIndex(0));
+        }
+    }
   }
 
   /// Maps tab index to RouteType

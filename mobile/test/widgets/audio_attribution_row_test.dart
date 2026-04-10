@@ -1,5 +1,5 @@
 // ABOUTME: Tests for AudioAttributionRow widget - displays sound attribution on videos.
-// ABOUTME: Verifies dark theme colors, tap navigation, loading states, and graceful errors.
+// ABOUTME: Verifies shared audio, original sound fallback, dark theme, tap, and accessibility.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 
 void main() {
-  group('AudioAttributionRow', () {
+  group(AudioAttributionRow, () {
     // Full 64-character Nostr IDs as required by CLAUDE.md
     const testAudioEventId =
         'audio0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
@@ -64,13 +65,15 @@ void main() {
     Widget buildTestWidget({
       required VideoEvent video,
       AudioEvent? audioOverride,
+      List<dynamic> additionalOverrides = const [],
     }) {
       return ProviderScope(
         overrides: [
-          // Override soundByIdProvider to return our test audio
-          soundByIdProvider(testAudioEventId).overrideWith((ref) async {
-            return audioOverride ?? testAudio;
-          }),
+          if (video.hasAudioReference)
+            soundByIdProvider(testAudioEventId).overrideWith((ref) async {
+              return audioOverride ?? testAudio;
+            }),
+          ...additionalOverrides,
         ],
         child: MaterialApp(
           theme: VineTheme.theme,
@@ -82,8 +85,39 @@ void main() {
       );
     }
 
-    group('Visibility', () {
-      testWidgets('shows nothing when video has no audio reference', (
+    group('Original sound (no audio reference)', () {
+      testWidgets('shows Original sound with creator display name', (
+        tester,
+      ) async {
+        final video = createVideoWithoutAudio();
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const <String, dynamic>{},
+          createdAt: DateTime(2024),
+          eventId:
+              'event0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab',
+          displayName: 'TestCreator',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            video: video,
+            additionalOverrides: [
+              userProfileReactiveProvider(testPubkey).overrideWith(
+                (ref) => Stream.value(profile),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Original sound - TestCreator'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows music note icon with vineGreen color', (
         tester,
       ) async {
         final video = createVideoWithoutAudio();
@@ -91,54 +125,92 @@ void main() {
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        // Should render nothing (SizedBox.shrink)
-        expect(find.byType(AudioAttributionRow), findsOneWidget);
-        expect(find.byIcon(Icons.music_note), findsNothing);
-        expect(find.textContaining('sound'), findsNothing);
-      });
-
-      testWidgets('shows nothing when audio event is null', (tester) async {
-        final video = createVideoWithAudio();
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              soundByIdProvider(testAudioEventId).overrideWith((ref) async {
-                return null;
-              }),
-            ],
-            child: MaterialApp(
-              theme: VineTheme.theme,
-              home: Scaffold(
-                backgroundColor: Colors.black,
-                body: AudioAttributionRow(video: video),
-              ),
-            ),
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
           ),
         );
-
-        await tester.pumpAndSettle();
-
-        // Should hide when audio not found
-        expect(find.byIcon(Icons.music_note), findsNothing);
-      });
-    });
-
-    group('Content display', () {
-      testWidgets('displays music note icon with vineGreen color', (
-        tester,
-      ) async {
-        final video = createVideoWithAudio();
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        final musicNoteIcon = tester.widget<Icon>(
-          find.byIcon(Icons.music_note),
+        final musicNoteIcon = divineIcons.firstWhere(
+          (icon) => icon.icon == DivineIconName.musicNote,
         );
         expect(musicNoteIcon.color, equals(VineTheme.vineGreen));
       });
 
+      testWidgets('shows caret right icon', (tester) async {
+        final video = createVideoWithoutAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
+        );
+        expect(
+          divineIcons.any((icon) => icon.icon == DivineIconName.caretRight),
+          isTrue,
+        );
+      });
+
+      testWidgets('has correct semantics identifier', (tester) async {
+        final video = createVideoWithoutAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        final semantics = tester.widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(AudioAttributionRow),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+
+        expect(
+          semantics.properties.identifier,
+          equals('audio_attribution_row'),
+        );
+      });
+
+      testWidgets('has semantic label with Original sound', (tester) async {
+        final video = createVideoWithoutAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        final semantics = tester.widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(AudioAttributionRow),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+
+        expect(semantics.properties.label, contains('Original sound'));
+      });
+
+      testWidgets('falls back to generated name when no profile', (
+        tester,
+      ) async {
+        final video = createVideoWithoutAudio();
+        final generatedName = UserProfile.defaultDisplayNameFor(testPubkey);
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Original sound - $generatedName'),
+          findsOneWidget,
+        );
+      });
+    });
+
+    group('Shared audio (has audio reference)', () {
       testWidgets('displays sound title', (tester) async {
         final video = createVideoWithAudio();
 
@@ -149,6 +221,26 @@ void main() {
           find.textContaining('Original sound - @testuser'),
           findsOneWidget,
         );
+      });
+
+      testWidgets('displays music note icon with vineGreen color', (
+        tester,
+      ) async {
+        final video = createVideoWithAudio();
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
+        );
+        final musicNoteIcon = divineIcons.firstWhere(
+          (icon) => icon.icon == DivineIconName.musicNote,
+        );
+        expect(musicNoteIcon.color, equals(VineTheme.vineGreen));
       });
 
       testWidgets('displays fallback when sound has no title', (tester) async {
@@ -169,13 +261,22 @@ void main() {
         expect(find.textContaining('Original sound'), findsOneWidget);
       });
 
-      testWidgets('displays chevron right icon', (tester) async {
+      testWidgets('displays caret right icon', (tester) async {
         final video = createVideoWithAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
+        );
+        expect(
+          divineIcons.any((icon) => icon.icon == DivineIconName.caretRight),
+          isTrue,
+        );
       });
 
       testWidgets('uses white text color', (tester) async {
@@ -187,22 +288,46 @@ void main() {
         final text = tester.widget<Text>(
           find.textContaining('Original sound - @testuser'),
         );
-        expect(text.style?.color, equals(Colors.white));
+        expect(text.style?.color, equals(VineTheme.whiteText));
       });
+
+      testWidgets(
+        'falls back to Original sound when audio event is null',
+        (tester) async {
+          final video = createVideoWithAudio();
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                soundByIdProvider(testAudioEventId).overrideWith((ref) async {
+                  return null;
+                }),
+              ],
+              child: MaterialApp(
+                theme: VineTheme.theme,
+                home: Scaffold(
+                  backgroundColor: Colors.black,
+                  body: AudioAttributionRow(video: video),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // Should fall back to original sound, not hide
+          expect(find.textContaining('Original sound'), findsOneWidget);
+        },
+      );
     });
 
     group('Loading state', () {
       testWidgets('shows skeleton during loading', (tester) async {
         final video = createVideoWithAudio();
 
-        // Use a Completer to control when the Future resolves
-        // This avoids timer issues in tests
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              // Override with a provider that stays in loading state
-              // by returning a Future that resolves immediately but
-              // we check the skeleton before pumpAndSettle
               soundByIdProvider(testAudioEventId).overrideWith((ref) async {
                 return testAudio;
               }),
@@ -222,15 +347,23 @@ void main() {
 
         // After settling, should show music note icon (either skeleton or loaded)
         await tester.pumpAndSettle();
-        final musicNoteIcons = tester.widgetList<Icon>(
-          find.byIcon(Icons.music_note),
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
         );
-        expect(musicNoteIcons, isNotEmpty);
+        expect(
+          divineIcons.any((icon) => icon.icon == DivineIconName.musicNote),
+          isTrue,
+        );
       });
     });
 
     group('Accessibility', () {
-      testWidgets('has correct semantics identifier', (tester) async {
+      testWidgets('has correct semantics identifier for shared audio', (
+        tester,
+      ) async {
         final video = createVideoWithAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));

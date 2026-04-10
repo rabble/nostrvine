@@ -1,5 +1,5 @@
 // ABOUTME: Audio attribution row widget for displaying sound info on video feed.
-// ABOUTME: Shows sound name and creator with tap navigation to SoundDetailScreen.
+// ABOUTME: Shows shared sound name or "Original sound - @creator" with tap navigation.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,22 +8,19 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// A tappable row showing audio attribution when a video uses external audio.
+/// A tappable row showing audio attribution on every video in the feed.
 ///
-/// Displays the sound name and creator info in the format:
-/// "♪ Sound name · creator"
-///
-/// Tapping navigates to [SoundDetailScreen] for that audio.
-/// Shows nothing if the video has no audio reference or if audio is unavailable.
+/// Two display modes:
+/// - **Shared audio**: `♪ Sound name · Creator` → taps to [SoundDetailScreen]
+/// - **Original sound**: `♪ Original sound - @creator` → taps to
+///   [OriginalSoundDetailScreen]
 class AudioAttributionRow extends ConsumerWidget {
   /// Creates an AudioAttributionRow.
-  ///
-  /// [video] must have a non-null [VideoEvent.audioEventId] for this widget
-  /// to display anything.
   const AudioAttributionRow({required this.video, super.key});
 
   /// The video event to display audio attribution for.
@@ -31,12 +28,12 @@ class AudioAttributionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Only show if video has an audio reference
+    // Videos without a shared audio event show "Original sound - @creator"
     if (!video.hasAudioReference || video.audioEventId == null) {
-      return const SizedBox.shrink();
+      return _OriginalSoundContent(video: video);
     }
 
-    // Watch the audio event asynchronously
+    // Watch the shared audio event asynchronously
     final audioAsync = ref.watch(soundByIdProvider(video.audioEventId!));
 
     return audioAsync.when(
@@ -48,7 +45,8 @@ class AudioAttributionRow extends ConsumerWidget {
             name: 'AudioAttributionRow',
             category: LogCategory.ui,
           );
-          return const SizedBox.shrink();
+          // Fall back to original sound when the referenced audio is missing
+          return _OriginalSoundContent(video: video);
         }
 
         return _AudioAttributionContent(audio: audio);
@@ -60,7 +58,8 @@ class AudioAttributionRow extends ConsumerWidget {
           name: 'AudioAttributionRow',
           category: LogCategory.ui,
         );
-        return const SizedBox.shrink();
+        // Fall back to original sound on error
+        return _OriginalSoundContent(video: video);
       },
     );
   }
@@ -90,12 +89,12 @@ class _AudioAttributionContent extends ConsumerWidget {
           UserProfile.defaultDisplayNameFor(audio.pubkey);
     }
 
-    return GestureDetector(
-      onTap: () => _navigateToSoundDetail(context, audio),
-      child: Semantics(
-        identifier: 'audio_attribution_row',
-        button: true,
-        label: 'Sound: $soundName by $creatorName. Tap to view sound details.',
+    return Semantics(
+      identifier: 'audio_attribution_row',
+      button: true,
+      label: 'Sound: $soundName by $creatorName. Tap to view sound details.',
+      child: GestureDetector(
+        onTap: () => _navigateToSoundDetail(context, audio),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -104,29 +103,25 @@ class _AudioAttributionContent extends ConsumerWidget {
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            spacing: 4,
             children: [
-              const Icon(
-                Icons.music_note,
+              const DivineIcon(
+                icon: DivineIconName.musicNote,
                 size: 14,
                 color: VineTheme.vineGreen,
               ),
-              const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   '$soundName · $creatorName',
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    shadows: [Shadow(blurRadius: 4)],
+                  style: VineTheme.labelMediumFont().copyWith(
+                    shadows: [const Shadow(blurRadius: 4)],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right,
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
                 size: 14,
                 color: VineTheme.onSurfaceVariant,
               ),
@@ -151,6 +146,80 @@ class _AudioAttributionContent extends ConsumerWidget {
   }
 }
 
+/// Original sound attribution for videos without a shared audio event.
+///
+/// Shows `♪ Original sound - @creator_display_name` and navigates to
+/// [OriginalSoundDetailScreen] on tap.
+class _OriginalSoundContent extends ConsumerWidget {
+  const _OriginalSoundContent({required this.video});
+
+  final VideoEvent video;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final creatorProfile = ref
+        .watch(userProfileReactiveProvider(video.pubkey))
+        .value;
+    final creatorName =
+        creatorProfile?.bestDisplayName ??
+        UserProfile.defaultDisplayNameFor(video.pubkey);
+
+    final label = 'Original sound - $creatorName';
+
+    return Semantics(
+      identifier: 'audio_attribution_row',
+      button: true,
+      label: 'Sound: $label. Tap to view sound details.',
+      child: GestureDetector(
+        onTap: () {
+          Log.info(
+            'Navigating to original sound detail: pubkey=${video.pubkey}',
+            name: 'AudioAttributionRow',
+            category: LogCategory.ui,
+          );
+          context.pushWithVideoPause(
+            OriginalSoundDetailScreen.pathForPubkey(video.pubkey),
+            extra: video,
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [
+              const DivineIcon(
+                icon: DivineIconName.musicNote,
+                size: 14,
+                color: VineTheme.vineGreen,
+              ),
+              Flexible(
+                child: Text(
+                  label,
+                  style: VineTheme.labelMediumFont().copyWith(
+                    shadows: [const Shadow(blurRadius: 4)],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
+                size: 14,
+                color: VineTheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Skeleton loading state for audio attribution.
 class _AudioAttributionSkeleton extends StatelessWidget {
   const _AudioAttributionSkeleton();
@@ -166,7 +235,11 @@ class _AudioAttributionSkeleton extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.music_note, size: 14, color: VineTheme.lightText),
+          const DivineIcon(
+            icon: DivineIconName.musicNote,
+            size: 14,
+            color: VineTheme.lightText,
+          ),
           const SizedBox(width: 4),
           Container(
             width: 100,

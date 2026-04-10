@@ -1682,15 +1682,11 @@ class VideoOverlayActions extends ConsumerWidget {
                           isActive: isActive,
                         ),
                       ],
-                      // Audio attribution row (only for videos with shared audio)
-                      if (video.hasAudioReference) ...[
-                        const SizedBox(height: 4),
-                        AudioAttributionRow(video: video),
-                      ],
-                      const SizedBox(
-                        height: 8,
-                      ), // Bottom spacing only when description exists
                     ],
+                    // Audio attribution row (all videos)
+                    const SizedBox(height: 4),
+                    AudioAttributionRow(video: video),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
