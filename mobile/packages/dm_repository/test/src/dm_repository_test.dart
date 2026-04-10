@@ -6475,7 +6475,7 @@ void main() {
           ).thenAnswer((_) async => null);
 
           final repo = createRepository();
-          repo.startListening();
+          await repo.startListening();
 
           // Emit a stream error to trigger the onError handler.
           controller.addError(Exception('relay disconnect'));
@@ -6497,7 +6497,7 @@ void main() {
           // The reconnect is scheduled via Future.delayed, but calling
           // startListening() directly also works because the old
           // subscription reference was cleared.
-          repo.startListening();
+          await repo.startListening();
 
           await controller.close();
           await controller2.close();
@@ -6517,7 +6517,7 @@ void main() {
           // always sets a signer. Instead, test via a mock signer
           // that returns null from encrypt.
           final mockSigner = _MockNostrSigner();
-          when(() => mockSigner.getPublicKey()).thenAnswer(
+          when(mockSigner.getPublicKey).thenAnswer(
             (_) async => _validPubkeyA,
           );
           when(
@@ -6618,7 +6618,7 @@ void main() {
         'returns failure when signEvent returns null',
         () async {
           final mockSigner = _MockNostrSigner();
-          when(() => mockSigner.getPublicKey()).thenAnswer(
+          when(mockSigner.getPublicKey).thenAnswer(
             (_) async => _validPubkeyA,
           );
           when(
@@ -6980,7 +6980,6 @@ void main() {
                 lastMessageContent: 'Phantom 1',
                 lastMessageTimestamp: 1699999000,
                 lastMessageSenderPubkey: _validPubkeyB,
-                currentUserHasSent: false,
                 ownerPubkey: _validPubkeyA,
                 dmProtocol: 'nip17',
               ),

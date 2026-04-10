@@ -77,8 +77,7 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            capturedEvent = invocation.positionalArguments[0] as Event;
-            return capturedEvent;
+            return capturedEvent = invocation.positionalArguments[0] as Event;
           },
         );
 
@@ -96,8 +95,7 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            capturedEvent = invocation.positionalArguments[0] as Event;
-            return capturedEvent;
+            return capturedEvent = invocation.positionalArguments[0] as Event;
           },
         );
 
@@ -151,8 +149,7 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            capturedEvent = invocation.positionalArguments[0] as Event;
-            return capturedEvent;
+            return capturedEvent = invocation.positionalArguments[0] as Event;
           },
         );
 
@@ -188,8 +185,7 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            capturedEvent = invocation.positionalArguments[0] as Event;
-            return capturedEvent;
+            return capturedEvent = invocation.positionalArguments[0] as Event;
           },
         );
 
@@ -254,7 +250,7 @@ void main() {
         () async {
           final mockSigner = _MockNostrSigner();
           when(
-            () => mockSigner.getPublicKey(),
+            mockSigner.getPublicKey,
           ).thenThrow(Exception('signer unavailable'));
 
           final brokenService = NIP17MessageService(
