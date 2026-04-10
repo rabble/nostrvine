@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -29,7 +30,10 @@ class VideoEditorMainBloc
     on<VideoEditorPlaybackRestartRequested>(_onPlaybackRestartRequested);
     on<VideoEditorPlaybackToggleRequested>(_onPlaybackToggleRequested);
     on<VideoEditorSeekRequested>(_onSeekRequested);
-    on<VideoEditorPositionChanged>(_onPositionChanged);
+    on<VideoEditorPositionChanged>(
+      _onPositionChanged,
+      transformer: restartable(),
+    );
     on<VideoEditorDurationChanged>(_onDurationChanged);
     on<VideoEditorMuteToggled>(_onMuteToggled);
     on<VideoEditorReorderingChanged>(_onReorderingChanged);
