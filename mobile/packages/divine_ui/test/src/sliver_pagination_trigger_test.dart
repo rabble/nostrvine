@@ -120,7 +120,7 @@ void main() {
         );
         expect(callCount, equals(1));
 
-        // Step 2: isLoadingMore → true — sentinel is replaced by spinner.
+        // Step 2: isLoadingMore → true — sentinel replaced by spinner.
         await tester.pumpWidget(
           buildSubject(
             hasMore: true,
