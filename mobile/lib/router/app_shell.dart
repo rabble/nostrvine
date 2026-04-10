@@ -125,6 +125,34 @@ class _AppShellState extends ConsumerState<AppShell> {
     };
   }
 
+  /// Navigates to the given tab at its last known position.
+  void _navigateToTab(BuildContext context, WidgetRef ref, int tabIndex) {
+    final routeType = _routeTypeForTab(tabIndex);
+    final lastIndex = ref
+        .read(lastTabPositionProvider.notifier)
+        .getPosition(routeType);
+
+    switch (tabIndex) {
+      case 0:
+        context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
+      case 1:
+        if (lastIndex != null) {
+          context.go(ExploreScreen.pathForIndex(lastIndex));
+        } else {
+          context.go(ExploreScreen.path);
+        }
+      case 2:
+        context.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
+      case 3:
+        final authService = ref.read(authServiceProvider);
+        final currentUserHex = authService.currentPublicKeyHex;
+        if (currentUserHex != null) {
+          final npub = NostrKeyUtils.encodePubKey(currentUserHex);
+          context.go(ProfileScreenRouter.pathForNpub(npub));
+        }
+    }
+  }
+
   /// Handles tab tap - navigates to last known position in that tab
   void _handleTabTap(BuildContext context, WidgetRef ref, int tabIndex) {
     final routeType = _routeTypeForTab(tabIndex);
@@ -384,12 +412,26 @@ class _AppShellState extends ConsumerState<AppShell> {
                       final ctx = ref.read(pageContextProvider).asData?.value;
                       if (ctx == null) return;
 
-                      // Check if we're in a sub-route (hashtag, search, etc.)
-                      // If so, navigate back to parent route
+                      // Check if we're in a sub-route (search, etc.)
+                      // If so, navigate back appropriately
                       switch (ctx.type) {
                         case RouteType.search:
-                          // Go back to explore
-                          return context.go(ExploreScreen.path);
+                          if (ctx.videoIndex != null) {
+                            // Feed mode → go back to search grid
+                            return context.go(
+                              SearchScreenPure.pathForTerm(
+                                term: ctx.searchTerm,
+                              ),
+                            );
+                          }
+                          // Grid mode → return to the originating tab
+                          final lastTab =
+                              ref
+                                  .read(tabHistoryProvider.notifier)
+                                  .getCurrentTab() ??
+                              0;
+                          _navigateToTab(context, ref, lastTab);
+                          return;
                         default:
                           break;
                       }
@@ -425,46 +467,10 @@ class _AppShellState extends ConsumerState<AppShell> {
 
                       // If there's a previous tab in history, navigate to it
                       if (previousTab != null) {
-                        // Navigate to previous tab
-                        final previousRouteType = _routeTypeForTab(previousTab);
-                        final lastIndex = ref
-                            .read(lastTabPositionProvider.notifier)
-                            .getPosition(previousRouteType);
-
                         // Remove current tab from history before navigating
                         tabHistory.navigateBack();
 
-                        // Navigate to previous tab
-                        switch (previousTab) {
-                          case 0:
-                            context.go(
-                              VideoFeedPage.pathForIndex(lastIndex ?? 0),
-                            );
-                          case 1:
-                            if (lastIndex != null) {
-                              return context.go(
-                                ExploreScreen.pathForIndex(lastIndex),
-                              );
-                            } else {
-                              return context.go(ExploreScreen.path);
-                            }
-                          case 2:
-                            return context.go(
-                              NotificationsPage.pathForIndex(lastIndex ?? 0),
-                            );
-                          case 3:
-                            final authService = ref.read(authServiceProvider);
-                            final currentUserHex =
-                                authService.currentPublicKeyHex;
-                            if (currentUserHex != null) {
-                              final npub = NostrKeyUtils.encodePubKey(
-                                currentUserHex,
-                              );
-                              return context.go(
-                                ProfileScreenRouter.pathForNpub(npub),
-                              );
-                            }
-                        }
+                        _navigateToTab(context, ref, previousTab);
                         return;
                       }
 
