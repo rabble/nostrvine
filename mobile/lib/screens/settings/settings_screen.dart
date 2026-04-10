@@ -38,9 +38,9 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   static const routeName = 'settings';

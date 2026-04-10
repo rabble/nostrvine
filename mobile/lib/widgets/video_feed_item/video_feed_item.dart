@@ -1,5 +1,7 @@
 // ABOUTME: Video feed item using individual controller architecture
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
+// ABOUTME: SCOPE: Non-feed detail use cases only (e.g. debug screens).
+// ABOUTME: Feed surfaces must use PooledFullscreenVideoFeedScreen / PooledVideoFeed instead.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +38,6 @@ import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
@@ -57,6 +58,7 @@ import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -1680,7 +1682,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           isActive: isActive,
                         ),
                       ],
-                      // Audio attribution row (if video uses external audio)
+                      // Audio attribution row (only for videos with shared audio)
                       if (video.hasAudioReference) ...[
                         const SizedBox(height: 4),
                         AudioAttributionRow(video: video),
@@ -2190,10 +2192,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                   size: 22,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Content Warnings',
-                  style: VineTheme.titleMediumFont(),
-                ),
+                Text('Content Warnings', style: VineTheme.titleMediumFont()),
               ],
             ),
             const SizedBox(height: 4),

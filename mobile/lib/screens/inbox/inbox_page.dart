@@ -1,10 +1,8 @@
 // ABOUTME: Inbox page that provides BLoC dependencies for the inbox view.
-// ABOUTME: Sets up ConversationListBloc, DmUnreadCountCubit,
-// ABOUTME: MyFollowingBloc from Riverpod providers, and drives the
-// ABOUTME: DmRepository gift-wrap subscription lifecycle — the
-// ABOUTME: subscription is only open while the inbox is visible.
-
-import 'dart:async';
+// ABOUTME: Sets up ConversationListBloc, DmUnreadCountCubit, and
+// ABOUTME: MyFollowingBloc from Riverpod providers. The DmRepository
+// ABOUTME: gift-wrap subscription is auth-session-scoped via
+// ABOUTME: dmRepositoryProvider, not driven by this screen's lifecycle.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,17 +15,15 @@ import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 
 /// Inbox page (DM conversation list + notifications).
 ///
 /// Provides [ConversationListBloc], [DmUnreadCountCubit], and
-/// [MyFollowingBloc] to the widget tree. Drives the [DmRepository]
-/// gift-wrap subscription lifecycle so DM processing only runs while
-/// the inbox is on screen — see
-/// docs/plans/2026-04-05-dm-scaling-fix-design.md.
-class InboxPage extends ConsumerStatefulWidget {
+/// [MyFollowingBloc] to the widget tree. The gift-wrap subscription that
+/// powers DM ingestion is owned by `dmRepositoryProvider` for the entire
+/// authenticated session — this screen does NOT start or stop it (#2931).
+class InboxPage extends ConsumerWidget {
   const InboxPage({super.key});
 
   /// Route name for this screen.
@@ -37,32 +33,8 @@ class InboxPage extends ConsumerStatefulWidget {
   static const path = '/inbox';
 
   @override
-  ConsumerState<InboxPage> createState() => _InboxPageState();
-}
-
-class _InboxPageState extends ConsumerState<InboxPage> {
-  late final DmRepository _dmRepository;
-
-  @override
-  void initState() {
-    super.initState();
-    _dmRepository = ref.read(dmRepositoryProvider);
-    // Open the gift-wrap subscription only while the inbox is visible.
-    // This keeps cold start and background time off the DM decrypt path.
-    _dmRepository.startListening();
-  }
-
-  @override
-  void dispose() {
-    // Tear down the subscription when the inbox closes so the main
-    // isolate stops processing gift wraps in the background.
-    unawaited(_dmRepository.stopListening());
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dmRepository = _dmRepository;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dmRepository = ref.watch(dmRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
@@ -90,9 +62,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
               contentBlocklistService: blocklistService,
             )..add(const MyFollowingListLoadRequested()),
           ),
-          BlocProvider(
-            create: (_) => ConversationMuteCubit(prefs: prefs),
-          ),
+          BlocProvider(create: (_) => ConversationMuteCubit(prefs: prefs)),
           BlocProvider(
             create: (_) => ConversationActionsCubit(
               contentReportingService: reportingService,

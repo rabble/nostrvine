@@ -3,8 +3,8 @@
 
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/state/seen_videos_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'seen_videos_notifier.g.dart';
 

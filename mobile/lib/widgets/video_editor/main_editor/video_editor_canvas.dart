@@ -22,12 +22,12 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     hide AudioTrack, VideoClip;
+import 'package:unified_logger/unified_logger.dart';
 
 /// The main canvas area for the video editor.
 ///
@@ -402,8 +402,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     final notifier = ref.read(videoEditorProvider.notifier);
-    if (parameters.image.isNotEmpty) {
+    if (parameters.layers.isNotEmpty && parameters.image.isNotEmpty) {
       try {
+        // We only precache the image for the preview on the metadata screen,
+        // which is not relevant for rendering.
         await precacheImage(MemoryImage(parameters.image), context);
       } catch (e) {
         Log.warning(

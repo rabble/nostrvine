@@ -124,6 +124,33 @@ void main() {
       );
 
       blocTest<ListSearchBloc, ListSearchState>(
+        're-searches when same query is dispatched in failure state',
+        setUp: () {
+          when(
+            () => curatedListRepository.searchAllLists('test'),
+          ).thenAnswer((_) => Stream.value([testCuratedList]));
+        },
+        build: buildBloc,
+        seed: () => const ListSearchState(
+          status: ListSearchStatus.failure,
+          query: 'test',
+        ),
+        act: (bloc) => bloc.add(const ListSearchQueryChanged('test')),
+        wait: const Duration(milliseconds: 400),
+        expect: () => [
+          const ListSearchState(
+            status: ListSearchStatus.loading,
+            query: 'test',
+          ),
+          ListSearchState(
+            status: ListSearchStatus.success,
+            query: 'test',
+            results: [testCuratedList],
+          ),
+        ],
+      );
+
+      blocTest<ListSearchBloc, ListSearchState>(
         'yields progressive results as relay stream emits',
         setUp: () {
           final list2 = CuratedList(

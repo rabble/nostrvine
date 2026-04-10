@@ -14,7 +14,7 @@ import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Handles app lifecycle events for video playback
 class AppLifecycleHandler extends ConsumerStatefulWidget {

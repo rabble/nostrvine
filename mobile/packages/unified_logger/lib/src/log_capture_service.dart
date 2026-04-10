@@ -6,17 +6,17 @@ import 'package:models/models.dart' show LogEntry, LogLevel;
 
 /// Service for capturing and storing log entries in memory for bug reports
 class LogCaptureService {
-  static LogCaptureService? _instance;
-
-  /// Singleton instance
-  static LogCaptureService get instance => _instance ??= LogCaptureService._();
+  /// Returns the singleton [LogCaptureService] instance.
+  factory LogCaptureService() => _instance ??= LogCaptureService._();
 
   LogCaptureService._();
+
+  static LogCaptureService? _instance;
 
   /// In-memory ring buffer for logs
   final Queue<LogEntry> _memoryBuffer = Queue<LogEntry>();
 
-  /// Maximum memory buffer size (50k entries = ~5-10MB, totally fine for mobile)
+  /// Maximum memory buffer size (50k entries ~5-10MB).
   static const int _memoryBufferSize = 50000;
 
   /// Total entries captured in current session
@@ -29,8 +29,7 @@ class LogCaptureService {
     final category = entry.category?.toString().split('.').last ?? 'GENERAL';
     final name = entry.name ?? '';
 
-    final buffer = StringBuffer();
-    buffer.write('[$timestamp] [$level] ');
+    final buffer = StringBuffer()..write('[$timestamp] [$level] ');
     if (name.isNotEmpty) {
       buffer.write('[$name] ');
     }
@@ -61,7 +60,7 @@ class LogCaptureService {
 
   /// Get recent logs from memory buffer (fast access)
   ///
-  /// [limit] - Optional limit on number of entries to return (returns most recent)
+  /// [limit] - Max entries to return (most recent).
   /// [minLevel] - Optional minimum log level filter
   List<LogEntry> getRecentLogs({int? limit, LogLevel? minLevel}) {
     // Convert buffer to list and sort by timestamp

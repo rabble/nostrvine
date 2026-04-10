@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Completion mode for different types of queries
 enum CompletionMode {

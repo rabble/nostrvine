@@ -7,8 +7,8 @@ import 'package:c2pa_flutter/c2pa.dart';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/services/c2pa_identity_manifest_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Result of a C2PA signing operation
 class C2paSigningResult {

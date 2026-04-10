@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for VideoRecorderProviderState and VideoRecorderNotifier
 // ABOUTME: Tests state getters, properties, and recording lifecycle
 
+import 'dart:io';
+
 import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -754,13 +756,130 @@ void main() {
         // Stop recording with a video result to exercise the full
         // post-recording code path (metadata extraction, clip creation,
         // thumbnail generation).
+        // Use a real temp file so that the work-copy creation in
+        // stopRecording can copy it.
+        final tmpDir = await Directory.systemTemp.createTemp('rec_test');
+        final tmpFile = File('${tmpDir.path}/test_video.mp4');
+        await tmpFile.writeAsBytes([0]);
+        addTearDown(() => tmpDir.delete(recursive: true));
+
         await notifier.stopRecording(
-          EditorVideo.file('/fake/test_video.mp4'),
+          EditorVideo.file(tmpFile.path),
         );
 
         expect(spyGallerySave.saveVideoToGalleryCalled, isFalse);
 
         // Clean up the platform channel stub.
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              null,
+            );
+      },
+    );
+  });
+
+  group('VideoRecorderNotifier - Work Copy Lifecycle', () {
+    test(
+      'stopRecording cleans up work copy file',
+      () async {
+        final mockEditor = _MockProVideoEditor();
+        ProVideoEditor.instance = mockEditor;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (MethodCall call) async => null,
+            );
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockCamera = MockCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+        await mockCamera.initialize();
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(videoRecorderProvider.notifier).initialize();
+        final notifier = container.read(videoRecorderProvider.notifier);
+
+        final tmpDir = await Directory.systemTemp.createTemp('workcopy');
+        final tmpFile = File('${tmpDir.path}/test_video.mp4');
+        await tmpFile.writeAsBytes([0]);
+        addTearDown(() => tmpDir.delete(recursive: true));
+
+        await notifier.startRecording();
+        await notifier.stopRecording(EditorVideo.file(tmpFile.path));
+
+        // The .work.mp4 copy should be deleted after stopRecording.
+        final workCopy = File('${tmpFile.path}.work.mp4');
+        expect(workCopy.existsSync(), isFalse);
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              null,
+            );
+      },
+    );
+
+    test(
+      'stopRecording preserves original video file',
+      () async {
+        final mockEditor = _MockProVideoEditor();
+        ProVideoEditor.instance = mockEditor;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (MethodCall call) async => null,
+            );
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockCamera = MockCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+        await mockCamera.initialize();
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(videoRecorderProvider.notifier).initialize();
+        final notifier = container.read(videoRecorderProvider.notifier);
+
+        final tmpDir = await Directory.systemTemp.createTemp('preserve');
+        final tmpFile = File('${tmpDir.path}/test_video.mp4');
+        await tmpFile.writeAsBytes([0, 1, 2, 3]);
+        addTearDown(() => tmpDir.delete(recursive: true));
+
+        await notifier.startRecording();
+        await notifier.stopRecording(EditorVideo.file(tmpFile.path));
+
+        // The original file must still exist after the work copy flow.
+        expect(tmpFile.existsSync(), isTrue);
+        expect(tmpFile.lengthSync(), equals(4));
+
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
               const MethodChannel('divine_video_player'),

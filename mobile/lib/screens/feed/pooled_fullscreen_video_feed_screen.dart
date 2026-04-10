@@ -22,6 +22,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -92,6 +93,8 @@ class PooledFullscreenVideoFeedArgs {
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    this.autoOpenComments = false,
+    this.onPageChanged,
   });
 
   /// Stream of videos from the source (BLoC or provider).
@@ -111,6 +114,16 @@ class PooledFullscreenVideoFeedArgs {
 
   /// Additional context for the traffic source (e.g., hashtag name).
   final String? sourceDetail;
+
+  /// Whether to open the comments sheet immediately after the first frame.
+  ///
+  /// Used when navigating from a comment/reply notification.
+  final bool autoOpenComments;
+
+  /// Called whenever the active video index changes.
+  ///
+  /// Used by embedded surfaces to keep the URL in sync.
+  final void Function(int index)? onPageChanged;
 }
 
 /// Fullscreen video feed screen using pooled_video_player.
@@ -135,6 +148,8 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    this.autoOpenComments = false,
+    this.onPageChanged,
     super.key,
   });
 
@@ -144,6 +159,17 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
+
+  /// When true, opens the comments sheet immediately after the first frame.
+  ///
+  /// Used when navigating from a comment/reply notification.
+  final bool autoOpenComments;
+
+  /// Called whenever the active video index changes.
+  ///
+  /// Receives the new feed index. Used by embedded surfaces (e.g. explore,
+  /// search) to keep the URL in sync for deep-linking.
+  final void Function(int index)? onPageChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -167,6 +193,8 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         contextTitle: contextTitle,
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
+        autoOpenComments: autoOpenComments,
+        onPageChanged: onPageChanged,
       ),
     );
   }
@@ -190,6 +218,8 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    this.autoOpenComments = false,
+    this.onPageChanged,
     @visibleForTesting this.controllerFactory,
     super.key,
   });
@@ -202,6 +232,16 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
 
   /// Additional context for the traffic source (e.g., hashtag name).
   final String? sourceDetail;
+
+  /// When true, opens the comments sheet immediately after the first frame.
+  ///
+  /// Used when navigating from a comment/reply notification.
+  final bool autoOpenComments;
+
+  /// Called whenever the active video index changes.
+  ///
+  /// Used by embedded surfaces to keep the URL in sync.
+  final void Function(int index)? onPageChanged;
 
   /// Optional factory for creating the [VideoFeedController].
   ///
@@ -360,6 +400,16 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
           listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
           listener: (context, state) => _handleVideosChanged(state),
         ),
+        // Open comments sheet once the first video is ready (notification deep-link)
+        if (widget.autoOpenComments)
+          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+            listenWhen: (prev, curr) =>
+                prev.currentVideo == null && curr.currentVideo != null,
+            listener: (context, state) {
+              final video = state.currentVideo;
+              if (video != null) CommentsScreen.show(context, video);
+            },
+          ),
       ],
       child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
         builder: (context, state) {
@@ -445,6 +495,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       context.read<FullscreenFeedBloc>().add(
                         FullscreenFeedIndexChanged(index),
                       );
+                      widget.onPageChanged?.call(index);
                     },
                     onNearEnd: (index) => _onNearEnd(state, index),
                     itemBuilder:
@@ -474,6 +525,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       context.read<FullscreenFeedBloc>().add(
                         FullscreenFeedIndexChanged(index),
                       );
+                      widget.onPageChanged?.call(index);
                     },
                     onNearEnd: (index) => _onNearEnd(state, index),
                     nearEndThreshold: 0,

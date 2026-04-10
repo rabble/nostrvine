@@ -13,7 +13,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/page_load_history.dart';
 import 'package:openvine/services/video_format_preference.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Returns a color indicating speed: green (<1s), orange (1-3s), red (>3s).
 Color _getSpeedColor(PageLoadRecord record) {

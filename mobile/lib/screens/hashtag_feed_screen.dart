@@ -13,9 +13,9 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class HashtagFeedScreen extends ConsumerStatefulWidget {
   const HashtagFeedScreen({

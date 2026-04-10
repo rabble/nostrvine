@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   group('VideoEvent Thumbnail API Integration', () {

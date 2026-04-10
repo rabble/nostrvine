@@ -121,7 +121,7 @@ void main() {
 
     group('dm subscription lifecycle', () {
       testWidgets(
-        'calls startListening on mount and stopListening on dispose',
+        'does not start or stop the subscription — auth-scoped (#2931)',
         (tester) async {
           await tester.pumpWidget(
             testMaterialApp(
@@ -148,14 +148,19 @@ void main() {
           );
           await tester.pump();
 
-          verify(() => mockDmRepository.startListening()).called(1);
+          // Regression guard for #2931: the gift-wrap subscription is owned
+          // by `dmRepositoryProvider` for the entire authenticated session,
+          // not by this screen. Mounting and unmounting the inbox must NOT
+          // touch the subscription lifecycle, otherwise users who never
+          // open the inbox would never receive DMs.
+          verifyNever(() => mockDmRepository.startListening());
           verifyNever(() => mockDmRepository.stopListening());
 
-          // Replace the InboxPage with an empty widget to trigger dispose.
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
 
-          verify(() => mockDmRepository.stopListening()).called(1);
+          verifyNever(() => mockDmRepository.startListening());
+          verifyNever(() => mockDmRepository.stopListening());
         },
       );
     });

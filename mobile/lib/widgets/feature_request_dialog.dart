@@ -8,8 +8,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Dialog for collecting and submitting feature requests
 class FeatureRequestDialog extends StatefulWidget {

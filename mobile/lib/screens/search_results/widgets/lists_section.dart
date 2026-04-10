@@ -5,12 +5,15 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart';
+import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/widgets/list_search_card.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// Always-visible Lists section with a "Lists" header.
 ///
@@ -28,6 +31,18 @@ class ListsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final status = context.select(
+      (ListSearchBloc bloc) => bloc.state.status,
+    );
+    final results = context.select(
+      (ListSearchBloc bloc) => bloc.state.results,
+    );
+
+    // In the All tab, hide entire section when results are empty and loaded.
+    if (!showAll && status == .success && results.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverMainAxisGroup(
       slivers: [
         if (!showAll)
@@ -59,13 +74,17 @@ class _ListsContent extends StatelessWidget {
       return const _LoadingState();
     }
 
-    if (status == .failure && showAll) {
-      return const _FailureState();
+    if (status == .failure) {
+      return SearchSectionErrorState(
+        onRetry: () => context.read<ListSearchBloc>().add(
+          ListSearchQueryChanged(query),
+        ),
+      );
     }
 
     if (results.isEmpty) {
       if (showAll && status == .success) {
-        return _NoResultsState(query: query);
+        return SearchSectionEmptyState(query: query);
       }
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -168,79 +187,84 @@ class _InitialState extends StatelessWidget {
   }
 }
 
-// TODO(#2855): Replace spinner with skeleton/shimmer loading state.
 class _LoadingState extends StatelessWidget {
   const _LoadingState();
 
   @override
   Widget build(BuildContext context) {
-    return const SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    return const SliverToBoxAdapter(child: _ListsSkeletonLoader());
+  }
+}
+
+class _ListsSkeletonLoader extends StatelessWidget {
+  const _ListsSkeletonLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'lists_loading_indicator',
+      label: 'Loading list results',
+      child: const Skeletonizer(
+        effect: vineSkeletonEffect,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            spacing: 12,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _ListCardSkeletonItem()),
+              Expanded(child: _ListCardSkeletonItem()),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// TODO(#2856): Improve empty state design with better guidance for users.
-class _NoResultsState extends StatelessWidget {
-  const _NoResultsState({required this.query});
-
-  final String query;
+class _ListCardSkeletonItem extends StatelessWidget {
+  const _ListCardSkeletonItem();
 
   @override
   Widget build(BuildContext context) {
-    return SliverFillRemaining(
-      hasScrollBody: false,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 16,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.search,
-              color: VineTheme.secondaryText,
-              size: 64,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Skeleton.leaf(
+          child: AspectRatio(
+            aspectRatio: 0.85,
+            child: Container(
+              decoration: BoxDecoration(
+                color: VineTheme.skeletonSurface,
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
-            Text(
-              'No lists found for "$query"',
-              style: VineTheme.titleSmallFont(),
-            ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-// TODO(#2856): Improve error state design with retry action.
-class _FailureState extends StatelessWidget {
-  const _FailureState();
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverFillRemaining(
-      hasScrollBody: false,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 16,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.warningCircle,
-              color: VineTheme.error,
-              size: 64,
+        const SizedBox(height: 8),
+        Skeleton.leaf(
+          child: Container(
+            width: 100,
+            height: 16,
+            decoration: BoxDecoration(
+              color: VineTheme.skeletonSurface,
+              borderRadius: BorderRadius.circular(8),
             ),
-            Text(
-              'Search failed',
-              style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 4),
+        Skeleton.leaf(
+          child: Container(
+            width: 140,
+            height: 12,
+            decoration: BoxDecoration(
+              color: VineTheme.skeletonSurface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

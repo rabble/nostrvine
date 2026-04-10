@@ -10,10 +10,10 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class SecureAccountScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.

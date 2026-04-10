@@ -8,9 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:time_formatter/time_formatter.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A single conversation row in the DM conversation list.
 ///

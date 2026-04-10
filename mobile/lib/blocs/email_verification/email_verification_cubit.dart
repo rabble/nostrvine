@@ -10,7 +10,7 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/invite_error_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'email_verification_state.dart';
 

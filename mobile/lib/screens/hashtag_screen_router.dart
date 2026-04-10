@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Router-aware hashtag screen that always shows the grid.
 /// Fullscreen video feed is pushed as an overlay from HashtagFeedScreen.

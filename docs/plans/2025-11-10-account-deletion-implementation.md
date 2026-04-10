@@ -259,7 +259,7 @@ Create `lib/services/account_deletion_service.dart`:
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_interface.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Result of account deletion operation
 class DeleteAccountResult {
