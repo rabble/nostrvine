@@ -34,7 +34,8 @@ import 'package:sound_service/sound_service.dart';
 const _kLastUsedCameraLensKey = 'camera_last_used_lens';
 
 /// SharedPreferences key for storing the last used recorder mode.
-const _kLastUsedRecorderModeKey = 'camera_last_used_recorder_mode';
+@visibleForTesting
+const kLastUsedRecorderModeKey = 'camera_last_used_recorder_mode';
 
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
 ///
@@ -145,7 +146,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final prefs = ref.read(sharedPreferencesProvider);
 
     // Restore last used recorder mode
-    final savedModeName = prefs.getString(_kLastUsedRecorderModeKey);
+    final savedModeName = prefs.getString(kLastUsedRecorderModeKey);
     final savedMode = savedModeName != null
         ? VideoRecorderMode.values.firstWhere(
             (m) => m.name == savedModeName,
@@ -777,8 +778,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         }
       }),
     );
-    // Persist immediately so the clip is visible in the library right away.
-    clipProvider.saveClipToLibrary(clip);
 
     Log.debug(
       '📷 Lens metadata: ${_cameraService.currentLensMetadata?.toMap()}',
@@ -1119,7 +1118,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       showGridLines: mode.supportGridLines,
     );
     final prefs = ref.read(sharedPreferencesProvider);
-    prefs.setString(_kLastUsedRecorderModeKey, mode.name);
+    prefs.setString(kLastUsedRecorderModeKey, mode.name);
 
     ref
         .read(clipManagerProvider.notifier)
