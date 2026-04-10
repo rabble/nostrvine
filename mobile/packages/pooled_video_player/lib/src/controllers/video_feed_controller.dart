@@ -251,6 +251,28 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, int> _diagStuckFailovers = {};
   final Set<int> _readyVideosAwaitingRecovery = {};
   final Set<int> _slowLoadIndices = {};
+
+  /// Indices that have ever been the user's "current video" in their
+  /// current player generation.
+  ///
+  /// Used by [_resume] to distinguish two cases that look identical from
+  /// the player's perspective but mean very different things:
+  ///
+  /// - **First transition from preload→current** (index NOT in set):
+  ///   The player was prepared by [_pauseAndRewindPreloaded], which on
+  ///   iOS via media_kit/mpv may have failed to actually rewind to
+  ///   position 0 — `player.state.position` cannot be trusted. The
+  ///   resume must explicitly seek to zero before play().
+  ///
+  /// - **Swipe-back to a previously-watched video** (index IN set):
+  ///   The player was paused by the swipe-away path at the user's
+  ///   actual last-watched position. That position is meaningful and
+  ///   must be preserved — no force-seek.
+  ///
+  /// The entry is added when [_resume] runs for an index, and cleared
+  /// when the index is released or its player is evicted, so a fresh
+  /// preload after a release is treated as a new "first transition".
+  final Set<int> _userVisitedIndices = {};
   final Map<int, Completer<void>> _readyCompleters = {};
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
@@ -1225,6 +1247,9 @@ class VideoFeedController extends ChangeNotifier {
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);
+    // Same reason as in [_releasePlayer]: a fresh preload after an
+    // eviction should be treated as a new "first transition".
+    _userVisitedIndices.remove(index);
     _notifyIndex(index);
   }
 
@@ -1509,12 +1534,40 @@ class VideoFeedController extends ChangeNotifier {
     bool forcePlay = true,
   }) async {
     try {
-      // Seek to zero only when the video has reached the end so it loops.
-      // Mid-playback position is preserved for swiped-away videos.
-      // Preloaded videos are already at position zero from _onBufferReady.
-      final duration = player.state.duration;
-      if (duration > Duration.zero && player.state.position >= duration) {
+      // First-resume force-seek to zero.
+      //
+      // _pauseAndRewindPreloaded is supposed to leave preloaded players
+      // at position 0, but on iOS via media_kit/mpv the seek-to-zero
+      // silently fails: by the time the user swipes here,
+      // `player.state.position` reports the muted-buffer-fill stop point
+      // (~400ms typical, sometimes near end-of-video). The previous
+      // implementation trusted "preloaded videos are at zero" and only
+      // seeked at end-of-video, so every preloaded clip started ~400ms
+      // in. See journal:
+      // 2026-04-10-flutter-pooled-player-preload-rewind-silent-failure.md
+      //
+      // Fix: on the FIRST resume of an index in its current player
+      // generation, unconditionally seek to zero. Subsequent resumes
+      // (swipe-back to a video the user has already watched) preserve
+      // the user's last-watched position via the existing path below.
+      final isFirstResume = !_userVisitedIndices.contains(index);
+      if (isFirstResume) {
+        final positionBeforeMs = player.state.position.inMilliseconds;
+        _logDebug(
+          'resume_force_seek_zero ${_videoDebugDetails(index)} '
+          'positionBefore=$positionBeforeMs '
+          'reason=preload_to_current',
+        );
         await player.seek(Duration.zero);
+        _userVisitedIndices.add(index);
+      } else {
+        // Loop-end seek for swipe-backs: if the previous playback ran
+        // off the end of the clip and was paused there, seek to zero on
+        // resume so the loop restarts.
+        final duration = player.state.duration;
+        if (duration > Duration.zero && player.state.position >= duration) {
+          await player.seek(Duration.zero);
+        }
       }
 
       // Guard: user may have scrolled away during the seek.
@@ -1831,6 +1884,11 @@ class VideoFeedController extends ChangeNotifier {
     _diagStaleRecoveries.remove(index);
     _diagStaleEscalations.remove(index);
     _diagStuckFailovers.remove(index);
+    // Reset the user-visited tracking so a fresh preload after a release
+    // is treated as a new "first transition from preload to current" by
+    // [_resume]. Without this, scrolling far past a video and back would
+    // skip the force-seek-zero and reproduce the original bug.
+    _userVisitedIndices.remove(index);
     _notifyIndex(index);
   }
 
@@ -1953,6 +2011,7 @@ class VideoFeedController extends ChangeNotifier {
     _diagStaleRecoveries.clear();
     _diagStaleEscalations.clear();
     _diagStuckFailovers.clear();
+    _userVisitedIndices.clear();
 
     // Notify all index listeners that their video is gone.  This causes
     // ValueListenableBuilder to rebuild with videoController == null,
