@@ -28,7 +28,7 @@ class DivineVideoDraft {
     required this.publishStatus,
     required this.publishAttempts,
     this.publishError,
-    this.allowAudioReuse = false,
+    this.allowAudioReuse = true,
     this.expireTime,
     this.proofManifestJson,
     this.editorStateHistory = const {},
@@ -49,7 +49,7 @@ class DivineVideoDraft {
     required String description,
     required Set<String> hashtags,
     required String selectedApproach,
-    bool allowAudioReuse = false,
+    bool allowAudioReuse = true,
     Duration? expireTime,
     String? id,
     String? proofManifestJson,
@@ -151,7 +151,7 @@ class DivineVideoDraft {
       publishStatus: json['publishStatus'] != null
           ? PublishStatus.values.byName(json['publishStatus'] as String)
           : PublishStatus.draft, // Migration: default for old drafts
-      allowAudioReuse: json['allowAudioReuse'] as bool? ?? false,
+      allowAudioReuse: json['allowAudioReuse'] as bool? ?? true,
       publishError: json['publishError'] as String?,
       publishAttempts: json['publishAttempts'] as int? ?? 0,
       proofManifestJson: json['proofManifestJson'] as String?,

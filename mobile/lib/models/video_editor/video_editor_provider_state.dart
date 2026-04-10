@@ -21,7 +21,7 @@ class VideoEditorProviderState {
   VideoEditorProviderState({
     this.isProcessing = false,
     this.isSavingDraft = false,
-    this.allowAudioReuse = false,
+    this.allowAudioReuse = true,
     this.title = '',
     this.description = '',
     this.tags = const {},

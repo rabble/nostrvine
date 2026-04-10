@@ -1682,7 +1682,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           isActive: isActive,
                         ),
                       ],
-                      // Audio attribution row (if video uses external audio)
+                      // Audio attribution row (only for videos with shared audio)
                       if (video.hasAudioReference) ...[
                         const SizedBox(height: 4),
                         AudioAttributionRow(video: video),
@@ -2192,10 +2192,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                   size: 22,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Content Warnings',
-                  style: VineTheme.titleMediumFont(),
-                ),
+                Text('Content Warnings', style: VineTheme.titleMediumFont()),
               ],
             ),
             const SizedBox(height: 4),

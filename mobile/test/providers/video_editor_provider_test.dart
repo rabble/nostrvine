@@ -51,8 +51,8 @@ void main() {
         );
         expect(
           state.allowAudioReuse,
-          false,
-          reason: 'allowAudioReuse should default to false',
+          true,
+          reason: 'allowAudioReuse should default to true',
         );
         expect(state.title, isEmpty, reason: 'title should default to empty');
         expect(
@@ -1022,7 +1022,6 @@ void main() {
       final original = VideoEditorProviderState(
         isProcessing: true,
         isSavingDraft: true,
-        allowAudioReuse: true,
         title: 'Test',
         description: 'Desc',
         tags: const {'tag1'},
