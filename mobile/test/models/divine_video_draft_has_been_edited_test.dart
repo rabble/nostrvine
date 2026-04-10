@@ -258,7 +258,8 @@ void main() {
           ),
           inspiredByNpub: _testPubkey,
           selectedSound: const AudioEvent(
-            id: 'snd-1234567890123456789012345678901234'
+            id:
+                'snd-1234567890123456789012345678901234'
                 '5678901234567890123456',
             pubkey: _testPubkey,
             createdAt: 1700000000,
