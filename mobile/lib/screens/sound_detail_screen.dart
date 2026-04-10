@@ -42,10 +42,19 @@ class SoundDetailScreen extends ConsumerStatefulWidget {
   /// Creates a SoundDetailScreen.
   ///
   /// [sound] is the audio event to display.
-  const SoundDetailScreen({required this.sound, super.key});
+  /// [sourceVideo] is optional — provided for original sounds to show
+  /// the video this sound came from.
+  const SoundDetailScreen({
+    required this.sound,
+    this.sourceVideo,
+    super.key,
+  });
 
   /// The audio event to display details for.
   final AudioEvent sound;
+
+  /// The source video for original sounds (when [AudioEvent.isOriginalSound]).
+  final VideoEvent? sourceVideo;
 
   @override
   ConsumerState<SoundDetailScreen> createState() => _SoundDetailScreenState();
@@ -248,19 +257,21 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                 const Divider(color: VineTheme.cardBackground, height: 1),
 
                 // Videos section header
-                const Padding(
-                  padding: EdgeInsets.all(16),
+                Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.videocam,
                         color: VineTheme.vineGreen,
                         size: 20,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Videos using this sound',
-                        style: TextStyle(
+                        widget.sound.isOriginalSound
+                            ? 'Source video'
+                            : 'Videos using this sound',
+                        style: const TextStyle(
                           color: VineTheme.whiteText,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -270,12 +281,19 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                   ),
                 ),
 
-                // Videos grid
+                // Videos grid — for original sounds, show the source video
+                // directly instead of querying by audio event ID
                 Expanded(
-                  child: _VideosGrid(
-                    audioEventId: widget.sound.id,
-                    onVideoTap: _navigateToVideo,
-                  ),
+                  child:
+                      widget.sound.isOriginalSound && widget.sourceVideo != null
+                      ? _SourceVideoGrid(
+                          video: widget.sourceVideo!,
+                          onVideoTap: _navigateToVideo,
+                        )
+                      : _VideosGrid(
+                          audioEventId: widget.sound.id,
+                          onVideoTap: _navigateToVideo,
+                        ),
                 ),
               ],
             ),
@@ -552,6 +570,43 @@ class _AttributionInfo extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Grid showing the single source video for an original sound.
+class _SourceVideoGrid extends StatelessWidget {
+  const _SourceVideoGrid({required this.video, required this.onVideoTap});
+
+  final VideoEvent video;
+  final void Function(String videoId, int index, List<VideoEvent> videos)
+  onVideoTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final videosList = [video];
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(2),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 2,
+              mainAxisSpacing: 2,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                return _VideoGridTile(
+                  video: video,
+                  onTap: () => onVideoTap(video.id, 0, videosList),
+                );
+              },
+              childCount: 1,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

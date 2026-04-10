@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
+import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
@@ -172,6 +173,22 @@ class VideoEditorRenderService {
 
   static const _logName = 'VideoEditorRenderService';
 
+  /// Test-only override for [renderVideoToClip].
+  ///
+  /// When set, [renderVideoToClip] delegates to this callback instead of
+  /// running the real render pipeline. Reset to `null` in `tearDown`.
+  @visibleForTesting
+  static Future<(DivineVideoClip, String? proofManifestJson)?> Function({
+    required List<DivineVideoClip> clips,
+    required Map<String, dynamic> editorStateHistory,
+    double originalAudioVolume,
+    double customAudioVolume,
+    bool aiTrainingOptOut,
+    CompleteParameters? parameters,
+    String? taskId,
+  })?
+  renderVideoToClipOverride;
+
   // ─────────────────────────────────────────────────────────────────────────
   // Public API
   // ─────────────────────────────────────────────────────────────────────────
@@ -196,13 +213,25 @@ class VideoEditorRenderService {
     CompleteParameters? parameters,
     String? taskId,
   }) async {
+    if (renderVideoToClipOverride != null) {
+      return renderVideoToClipOverride!(
+        clips: clips,
+        editorStateHistory: editorStateHistory,
+        originalAudioVolume: originalAudioVolume,
+        customAudioVolume: customAudioVolume,
+        aiTrainingOptOut: aiTrainingOptOut,
+        parameters: parameters,
+        taskId: taskId,
+      );
+    }
+
     if (clips.isEmpty) return null;
 
     Log.debug(
       '🎬 renderVideoToClip: clips=${clips.length}, '
       'originalAudioVolume=$originalAudioVolume, '
       'customAudioVolume=$customAudioVolume, '
-      'parameters=${parameters?.toMap()}',
+      'parameters=${parameters?.toLogString()}',
       name: _logName,
       category: LogCategory.video,
     );

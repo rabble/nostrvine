@@ -590,14 +590,16 @@ void main() {
       expect(find.text('Test Sound'), findsOneWidget);
     });
 
-    testWidgets('hides when no audio reference', (tester) async {
+    testWidgets('shows original sound when no audio reference', (tester) async {
       final video = _makeVideo();
 
       await tester.pumpWidget(
         buildSubject(child: MetadataSoundsSection(video: video)),
       );
+      await tester.pumpAndSettle();
 
-      expect(find.text('Sounds'), findsNothing);
+      expect(find.text('Sounds'), findsOneWidget);
+      expect(find.text('Original sound'), findsOneWidget);
     });
   });
 
@@ -731,7 +733,14 @@ void main() {
       expect(find.text('Collaborators'), findsNothing);
       expect(find.text('Inspired by'), findsNothing);
       expect(find.text('Reposted by'), findsNothing);
-      expect(find.text('Sounds'), findsNothing);
+
+      // Sounds section is always present (shows "Original sound")
+      // Scroll down to find it
+      final listFinder = find.byType(ListView);
+      await tester.drag(listFinder, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(find.text('Sounds'), findsOneWidget);
+      expect(find.text('Original sound'), findsOneWidget);
     });
   });
 }
