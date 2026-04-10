@@ -36,7 +36,7 @@ class ProfileActionButtons extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       child: Row(
-        spacing: 8,
+        spacing: 6,
         children: _buildButtons(context),
       ),
     );
