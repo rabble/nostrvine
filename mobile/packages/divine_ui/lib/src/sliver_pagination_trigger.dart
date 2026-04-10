@@ -48,7 +48,7 @@ class SliverPaginationTrigger extends StatelessWidget {
           padding: EdgeInsets.all(16),
           child: Center(
             child: CircularProgressIndicator(
-              color: VineTheme.vineGreen,
+              color: VineTheme.primary,
               semanticsLabel: 'Loading more results',
             ),
           ),

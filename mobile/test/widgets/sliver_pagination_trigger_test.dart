@@ -106,6 +106,45 @@ void main() {
     );
 
     testWidgets(
+      'fires again when sentinel remounts after loading cycle',
+      (tester) async {
+        var callCount = 0;
+
+        // Step 1: sentinel mounts, fires onLoadMore.
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: true,
+            isLoadingMore: false,
+            onLoadMore: () => callCount++,
+          ),
+        );
+        expect(callCount, equals(1));
+
+        // Step 2: isLoadingMore → true — sentinel is replaced by spinner.
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: true,
+            isLoadingMore: true,
+            onLoadMore: () => callCount++,
+          ),
+        );
+        expect(callCount, equals(1));
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Step 3: loading done, hasMore still true — new sentinel mounts,
+        // fires onLoadMore again.
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: true,
+            isLoadingMore: false,
+            onLoadMore: () => callCount++,
+          ),
+        );
+        expect(callCount, equals(2));
+      },
+    );
+
+    testWidgets(
       'does not re-fire onLoadMore on widget rebuild',
       (tester) async {
         var callCount = 0;
