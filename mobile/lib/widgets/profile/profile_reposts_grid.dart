@@ -13,7 +13,11 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 
 /// Grid widget displaying user's reposted videos
 ///
@@ -73,38 +77,25 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
         if (state.status == ProfileRepostedVideosStatus.initial ||
             state.status == ProfileRepostedVideosStatus.syncing ||
             state.status == ProfileRepostedVideosStatus.loading) {
-          return const CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                ),
-              ),
-            ],
-          );
+          return const ProfileTabLoadingState();
         }
 
         if (state.status == ProfileRepostedVideosStatus.failure) {
-          return const CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Text(
-                    'Error loading reposted videos',
-                    style: TextStyle(color: VineTheme.whiteText),
-                  ),
-                ),
-              ),
-            ],
+          return const ProfileTabErrorState(
+            message: 'Error loading reposted videos',
           );
         }
 
         final repostedVideos = state.videos;
 
         if (repostedVideos.isEmpty) {
-          return _RepostsEmptyState(isOwnProfile: widget.isOwnProfile);
+          return ProfileTabEmptyState(
+            icon: DivineIconName.repeat,
+            title: 'No Reposts Yet',
+            subtitle: widget.isOwnProfile
+                ? 'Videos you repost will appear here'
+                : 'Videos they repost will appear here',
+          );
         }
 
         return CustomScrollView(
@@ -131,72 +122,12 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
                 }, childCount: repostedVideos.length),
               ),
             ),
-            if (state.isLoadingMore)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: VineTheme.vineGreen,
-                    ),
-                  ),
-                ),
-              ),
+            if (state.isLoadingMore) const ProfileTabLoadingMoreSliver(),
           ],
         );
       },
     );
   }
-}
-
-/// Empty state shown when user has no reposts
-class _RepostsEmptyState extends StatelessWidget {
-  const _RepostsEmptyState({required this.isOwnProfile});
-
-  /// Whether this is the current user's own profile.
-  final bool isOwnProfile;
-
-  @override
-  Widget build(BuildContext context) => CustomScrollView(
-    slivers: [
-      SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.repeat, color: VineTheme.lightText, size: 64),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Reposts Yet',
-                  textAlign: .center,
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  isOwnProfile
-                      ? 'Videos you repost will appear here'
-                      : 'Videos they repost will appear here',
-                  textAlign: .center,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
 }
 
 /// Individual repost tile in the grid with repost badge
@@ -239,41 +170,8 @@ class _RepostGridTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
         decoration: const BoxDecoration(color: VineTheme.cardBackground),
-        child: _RepostThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
+        child: ProfileTabThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
-    ),
-  );
-}
-
-/// Repost thumbnail with loading and error states
-class _RepostThumbnail extends StatelessWidget {
-  const _RepostThumbnail({required this.thumbnailUrl});
-
-  final String? thumbnailUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return VineCachedImage(
-        imageUrl: thumbnailUrl!,
-        placeholder: (context, url) => const _RepostThumbnailPlaceholder(),
-        errorWidget: (context, url, error) =>
-            const _RepostThumbnailPlaceholder(),
-      );
-    }
-    return const _RepostThumbnailPlaceholder();
-  }
-}
-
-/// Flat color placeholder for repost thumbnails
-class _RepostThumbnailPlaceholder extends StatelessWidget {
-  const _RepostThumbnailPlaceholder();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(4),
-      color: VineTheme.surfaceContainer,
     ),
   );
 }

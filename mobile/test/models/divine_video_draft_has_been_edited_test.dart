@@ -220,6 +220,110 @@ void main() {
 
         expect(draft.hasBeenEdited, isTrue);
       });
+
+      // Guard test: uses toJson() as the source of truth for all
+      // persisted fields. Every field MUST appear in toJson() (or it
+      // would be lost on save), so toJson().keys is a reliable proxy
+      // for the full field list.
+      //
+      // If this test fails, a new field was added to toJson() but not
+      // registered here. Decide: should hasBeenEdited check it?
+      //   YES → add to checkedFields, add a check in hasBeenEdited,
+      //         and add a dedicated test above
+      //   NO  → add to excludedFields with a comment explaining why
+      test('covers all persisted DivineVideoDraft fields', () {
+        // Build a draft with every optional field set to a non-default
+        // value so toJson() emits all conditional keys.
+        final fullyPopulated = DivineVideoDraft(
+          id: 'guard',
+          clips: [_createTestClip()],
+          title: 'T',
+          description: 'D',
+          hashtags: const {'h'},
+          selectedApproach: 'camera',
+          createdAt: DateTime(2025),
+          lastModified: DateTime(2025),
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 1,
+          publishError: 'err',
+          allowAudioReuse: true,
+          expireTime: const Duration(days: 1),
+          proofManifestJson: '{}',
+          editorStateHistory: const {'k': 'v'},
+          editorEditingParameters: const {'k': 'v'},
+          finalRenderedClip: _createTestClip(),
+          collaboratorPubkeys: const {'pk'},
+          inspiredByVideo: const InspiredByInfo(
+            addressableId: '34236:$_testPubkey:dtag',
+          ),
+          inspiredByNpub: _testPubkey,
+          selectedSound: const AudioEvent(
+            id:
+                'snd-1234567890123456789012345678901234'
+                '5678901234567890123456',
+            pubkey: _testPubkey,
+            createdAt: 1700000000,
+            url: 'https://example.com/a.aac',
+            title: 'S',
+          ),
+          contentWarning: 'nsfw',
+          originalAudioVolume: 0.5,
+          customAudioVolume: 0.5,
+        );
+
+        final actualKeys = fullyPopulated.toJson().keys.toSet();
+
+        // Fields checked by hasBeenEdited:
+        const checkedFields = {
+          'clips', // guard: clips.isNotEmpty
+          'title',
+          'description',
+          'hashtags',
+          'editorStateHistory',
+          'editorEditingParameters',
+          'finalRenderedClip',
+          'selectedSound',
+          'contentWarning',
+          'collaboratorPubkeys',
+          'inspiredByVideo',
+          'inspiredByNpub',
+          'originalAudioVolume',
+          'customAudioVolume',
+          'expireTime',
+          'allowAudioReuse',
+        };
+
+        // Fields intentionally excluded from hasBeenEdited:
+        const excludedFields = {
+          'id', // identity, not user content
+          'selectedApproach', // always set at creation
+          'createdAt', // timestamp metadata
+          'lastModified', // timestamp metadata
+          'publishStatus', // lifecycle status
+          'publishAttempts', // lifecycle counter
+          'publishError', // transient error
+          'proofManifestJson', // auto-generated, not a user edit
+        };
+
+        final knownFields = {...checkedFields, ...excludedFields};
+
+        expect(
+          actualKeys,
+          equals(knownFields),
+          reason:
+              'toJson() keys do not match the known field sets. '
+              'A field was added to or removed from DivineVideoDraft. '
+              'Update checkedFields or excludedFields above '
+              '(and hasBeenEdited if needed).',
+        );
+
+        // No overlap between the two sets
+        expect(
+          checkedFields.intersection(excludedFields),
+          isEmpty,
+          reason: 'A field appears in both checked and excluded sets',
+        );
+      });
     });
   });
 }

@@ -154,7 +154,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Error: Connection failed'), findsOneWidget);
+        expect(find.text('Connection failed'), findsOneWidget);
       });
 
       testWidgets('video grid when videos are provided', (tester) async {

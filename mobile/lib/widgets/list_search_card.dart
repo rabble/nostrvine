@@ -1,14 +1,31 @@
 // ABOUTME: Card widget for displaying curated video list search results.
-// ABOUTME: Separate from list_card.dart which is used by the Explore screen.
+// ABOUTME: Shows stacked video thumbnails with a count badge,
+// ABOUTME: plus title and description below. Designed for 2-column grid layout.
 
+import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/widgets/vine_cached_image.dart';
 
+/// Number of portrait card slots to display.
+const _thumbnailSlotCount = 5;
+
+/// How far each card overlaps the one behind it.
+const _cardOverlap = 60.0;
+
+/// Border width around each portrait card.
+const _cardBorder = 2.0;
+
+/// Corner radius for each portrait card.
+const _cardRadius = 16.0;
+
+/// Portrait aspect ratio (width:height = 3:4, from Figma 177:236).
+const double _cardAspectRatio = 3 / 4;
+
 /// Search card for a curated video list (kind 30005).
 ///
-/// Shows a cover image thumbnail with video count badge,
+/// Shows stacked video thumbnails with a count badge,
 /// plus title and description below. Designed for 2-column grid layout.
 class CuratedListSearchCard extends StatelessWidget {
   const CuratedListSearchCard({
@@ -31,8 +48,8 @@ class CuratedListSearchCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _VideoListThumbnail(
-              imageUrl: curatedList.imageUrl,
+            _StackedThumbnails(
+              thumbnailUrls: curatedList.thumbnailUrls,
               videoCount: curatedList.videoEventIds.length,
             ),
             const SizedBox(height: 8),
@@ -81,42 +98,81 @@ class _ListDescription extends StatelessWidget {
   }
 }
 
-// TODO(#2854): Replace single cover image with stacked video thumbnails.
-class _VideoListThumbnail extends StatelessWidget {
-  const _VideoListThumbnail({required this.videoCount, this.imageUrl});
+/// Overlapping portrait cards arranged left-to-right.
+///
+/// Renders [_thumbnailSlotCount] cards where the leftmost card has the
+/// highest z-index. Cards with a resolved thumbnail URL show the image;
+/// the rest are colored placeholders.
+class _StackedThumbnails extends StatelessWidget {
+  const _StackedThumbnails({
+    required this.thumbnailUrls,
+    required this.videoCount,
+  });
 
-  final String? imageUrl;
+  final List<String> thumbnailUrls;
   final int videoCount;
+
+  String? _urlAt(int index) =>
+      index < thumbnailUrls.length ? thumbnailUrls[index] : null;
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 3 / 2,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (imageUrl != null && imageUrl!.isNotEmpty)
-              VineCachedImage(imageUrl: imageUrl!)
-            else
-              const ColoredBox(
-                color: VineTheme.cardBackground,
-                child: Center(
-                  child: DivineIcon(
-                    icon: DivineIconName.play,
-                    color: VineTheme.secondaryText,
-                    size: 32,
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        final cardWidth =
+            (totalWidth + _cardOverlap * (_thumbnailSlotCount - 1)) /
+            _thumbnailSlotCount;
+        final cardHeight = cardWidth / _cardAspectRatio;
+
+        return SizedBox(
+          height: cardHeight,
+          child: Stack(
+            children: [
+              // Cards in reverse order so index 0 is on top.
+              for (int i = _thumbnailSlotCount - 1; i >= 0; i--)
+                Positioned(
+                  left: i * (cardWidth - _cardOverlap),
+                  top: 0,
+                  width: cardWidth,
+                  height: cardHeight,
+                  child: _ThumbnailCard(imageUrl: _urlAt(i)),
                 ),
+              Positioned(
+                left: 8,
+                bottom: 9,
+                child: _CountBadge(count: videoCount),
               ),
-            Positioned(
-              left: 8,
-              bottom: 8,
-              child: _CountBadge(count: videoCount),
-            ),
-          ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A single portrait card with a border and optional image.
+class _ThumbnailCard extends StatelessWidget {
+  const _ThumbnailCard({this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(
+          width: _cardBorder,
+          color: VineTheme.surfaceBackground,
         ),
+        borderRadius: BorderRadius.circular(_cardRadius),
+        color: VineTheme.containerLow,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_cardRadius),
+        child: imageUrl != null
+            ? VineCachedImage(imageUrl: imageUrl!)
+            : const SizedBox(),
       ),
     );
   }
@@ -133,7 +189,7 @@ class _CountBadge extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: VineTheme.backgroundColor.withValues(alpha: 0.65),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(4),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -144,10 +200,10 @@ class _CountBadge extends StatelessWidget {
               const DivineIcon(
                 icon: DivineIconName.play,
                 color: VineTheme.whiteText,
-                size: 12,
+                size: 16,
               ),
               Text(
-                '$count',
+                CountFormatter.formatCompact(count),
                 style: VineTheme.labelSmallFont(),
               ),
             ],
