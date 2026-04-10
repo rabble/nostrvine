@@ -131,6 +131,14 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     );
   }
 
+  /// Builds a positioned overlay item with drag and trim support.
+  ///
+  /// Kept as a method rather than a separate widget because it reads and
+  /// writes local drag state ([_draggingId], [_dragDeltaX], [_dragDeltaY])
+  /// and binds gesture callbacks that call [setState] on this [State].
+  /// Extracting it would require forwarding all drag state plus multiple
+  /// callbacks without any rebuild-isolation benefit, since the entire
+  /// [Stack] rebuilds on every drag frame anyway.
   Widget _buildItem(TimelineOverlayItem item, int displayRowCount) {
     final isDragging = _draggingId == item.id;
     final isSelected = widget.selectedItemId == item.id;
