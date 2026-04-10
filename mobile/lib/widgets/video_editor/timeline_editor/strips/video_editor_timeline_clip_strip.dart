@@ -42,6 +42,8 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
 
 class _VideoEditorTimelineClipStripState
     extends State<VideoEditorTimelineClipStrip> {
+  static const _animDuration = Duration(milliseconds: 250);
+
   bool _isReordering = false;
   bool _isReorderExiting = false;
   bool _dragAnimating = false;
@@ -180,7 +182,7 @@ class _VideoEditorTimelineClipStripState
     });
 
     // After the shrink animation completes, switch to finger-following mode.
-    Future.delayed(const Duration(milliseconds: 250), () {
+    Future.delayed(_animDuration, () {
       if (mounted && _isReordering) {
         setState(() => _dragAnimating = false);
       }
@@ -312,7 +314,7 @@ class _VideoEditorTimelineClipStripState
     }
 
     // Phase 2: after the grow-back animation completes, clean up.
-    Future.delayed(const Duration(milliseconds: 250), () {
+    Future.delayed(_animDuration, () {
       if (mounted) {
         setState(() {
           _isReorderExiting = false;
@@ -361,7 +363,7 @@ class _VideoEditorTimelineClipStripState
   Widget build(BuildContext context) {
     const gap = TimelineConstants.clipGap;
     const reorderSlotStep = _reorderSize + gap;
-    const animDuration = Duration(milliseconds: 250);
+    const animDuration = _animDuration;
     const animCurve = Curves.easeInOut;
 
     final layout = _computeLayout();

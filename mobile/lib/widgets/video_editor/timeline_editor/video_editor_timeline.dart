@@ -87,20 +87,30 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
         final totalDuration = context.select(
           (ClipEditorBloc b) => b.state.totalDuration,
         );
-        _totalDuration = totalDuration;
         final screenWidth = MediaQuery.sizeOf(context).width;
         final halfScreen = screenWidth / 2;
         final totalWidth = _contentWidth(totalDuration);
 
         // Sync scroll to playback position while not user-scrolling.
-        return BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
-          listenWhen: (prev, curr) =>
-              !_isUserScrolling && prev.currentPosition != curr.currentPosition,
-          listener: (context, state) => _syncScrollToPosition(
-            state.currentPosition,
-            totalDuration,
-            totalWidth,
-          ),
+        return MultiBlocListener(
+          listeners: [
+            BlocListener<ClipEditorBloc, ClipEditorState>(
+              listenWhen: (prev, curr) =>
+                  prev.totalDuration != curr.totalDuration,
+              listener: (context, state) =>
+                  _totalDuration = state.totalDuration,
+            ),
+            BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+              listenWhen: (prev, curr) =>
+                  !_isUserScrolling &&
+                  prev.currentPosition != curr.currentPosition,
+              listener: (context, state) => _syncScrollToPosition(
+                state.currentPosition,
+                totalDuration,
+                totalWidth,
+              ),
+            ),
+          ],
           child: Container(
             color: VineTheme.backgroundCamera,
             height: TimelineConstants.height,
