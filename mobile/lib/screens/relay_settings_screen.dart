@@ -71,15 +71,18 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         .replaceFirst('wss://', 'https://')
         .replaceFirst('ws://', 'http://');
     final url = Uri.parse(httpUrl);
+    final couldNotOpenBrowserMessage =
+        context.l10n.relaySettingsCouldNotOpenBrowser;
+    final failedToOpenLinkMessage = context.l10n.relaySettingsFailedToOpenLink;
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        _showError(context.l10n.relaySettingsCouldNotOpenBrowser);
+        _showError(couldNotOpenBrowserMessage);
       }
     } catch (e) {
       Log.error('Failed to launch relay URL: $e', name: 'RelaySettingsScreen');
-      _showError(context.l10n.relaySettingsFailedToOpenLink);
+      _showError(failedToOpenLinkMessage);
     }
   }
 
@@ -641,6 +644,11 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
   }
 
   Future<void> _removeRelay(String relayUrl) async {
+    // Capture l10n strings before any await to avoid
+    // use_build_context_synchronously warnings.
+    final failedToRemoveMessage = context.l10n.relaySettingsFailedToRemoveRelay;
+    final removedRelayFn = context.l10n.relaySettingsRemovedRelay;
+
     // Show confirmation dialog
     final confirm = await showDialog<bool>(
       context: context,
@@ -680,7 +688,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       final success = await nostrService.removeRelay(relayUrl);
 
       if (!success) {
-        _showError(context.l10n.relaySettingsFailedToRemoveRelay);
+        _showError(failedToRemoveMessage);
         return;
       }
 
@@ -689,7 +697,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.relaySettingsRemovedRelay(relayUrl)),
+            content: Text(removedRelayFn(relayUrl)),
             backgroundColor: VineTheme.warning,
           ),
         );
@@ -713,6 +721,11 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
   }
 
   Future<void> _retryConnection() async {
+    // Capture l10n strings before any await to avoid
+    // use_build_context_synchronously warnings.
+    final connectedToRelaysFn = context.l10n.relaySettingsConnectedToRelays;
+    final failedToConnectMessage =
+        context.l10n.relaySettingsFailedToConnectCheck;
     try {
       final nostrService = ref.read(nostrServiceProvider);
       final videoService = ref.read(videoEventServiceProvider);
@@ -734,9 +747,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.relaySettingsConnectedToRelays(connectedCount),
-              ),
+              content: Text(connectedToRelaysFn(connectedCount)),
               backgroundColor: VineTheme.success,
             ),
           );
@@ -745,7 +756,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         // Trigger a full reset and resubscribe of all feeds
         await videoService.resetAndResubscribeAll();
       } else {
-        _showError(context.l10n.relaySettingsFailedToConnectCheck);
+        _showError(failedToConnectMessage);
       }
     } catch (e) {
       Log.error('Failed to retry connection: $e', name: 'RelaySettingsScreen');
@@ -755,6 +766,12 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
   Future<void> _showAddRelayDialog() async {
     final controller = TextEditingController();
+
+    // Capture l10n strings before awaits to avoid
+    // use_build_context_synchronously warnings.
+    final invalidUrlMessage = context.l10n.relaySettingsInvalidUrl;
+    final addedRelayFn = context.l10n.relaySettingsAddedRelay;
+    final failedToAddMessage = context.l10n.relaySettingsFailedToAddRelay;
 
     final relayUrl = await showDialog<String>(
       context: context,
@@ -836,7 +853,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
     // Validate URL format
     if (!relayUrl.startsWith('wss://') && !relayUrl.startsWith('ws://')) {
-      _showError(context.l10n.relaySettingsInvalidUrl);
+      _showError(invalidUrlMessage);
       return;
     }
 
@@ -850,7 +867,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.relaySettingsAddedRelay(relayUrl)),
+              content: Text(addedRelayFn(relayUrl)),
               backgroundColor: VineTheme.success,
             ),
           );
@@ -861,7 +878,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           name: 'RelaySettingsScreen',
         );
       } else {
-        _showError(context.l10n.relaySettingsFailedToAddRelay);
+        _showError(failedToAddMessage);
       }
     } catch (e) {
       Log.error('Failed to add relay: $e', name: 'RelaySettingsScreen');
@@ -870,6 +887,11 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
   }
 
   Future<void> _restoreDefaultRelay() async {
+    // Capture l10n strings before the await to avoid
+    // use_build_context_synchronously warnings.
+    final restoredDefaultFn = context.l10n.relaySettingsRestoredDefault;
+    final failedToRestoreMessage =
+        context.l10n.relaySettingsFailedToRestoreDefault;
     try {
       final nostrService = ref.read(nostrServiceProvider);
       const defaultRelay = AppConstants.defaultRelayUrl;
@@ -882,9 +904,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.relaySettingsRestoredDefault(defaultRelay),
-              ),
+              content: Text(restoredDefaultFn(defaultRelay)),
               backgroundColor: VineTheme.success,
             ),
           );
@@ -892,7 +912,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
         Log.info('Restored default relay', name: 'RelaySettingsScreen');
       } else {
-        _showError(context.l10n.relaySettingsFailedToRestoreDefault);
+        _showError(failedToRestoreMessage);
       }
     } catch (e) {
       Log.error(
@@ -905,32 +925,38 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
   Future<void> _launchNostrWatch() async {
     final url = Uri.parse('https://nostr.co.uk/relays/');
+    final couldNotOpenBrowserMessage =
+        context.l10n.relaySettingsCouldNotOpenBrowser;
+    final failedToOpenLinkMessage = context.l10n.relaySettingsFailedToOpenLink;
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        _showError(context.l10n.relaySettingsCouldNotOpenBrowser);
+        _showError(couldNotOpenBrowserMessage);
       }
     } catch (e) {
       Log.error(
         'Failed to launch nostr.co.uk: $e',
         name: 'RelaySettingsScreen',
       );
-      _showError(context.l10n.relaySettingsFailedToOpenLink);
+      _showError(failedToOpenLinkMessage);
     }
   }
 
   Future<void> _launchNostrDocs() async {
     final url = Uri.parse('https://nostr.com');
+    final couldNotOpenBrowserMessage =
+        context.l10n.relaySettingsCouldNotOpenBrowser;
+    final failedToOpenLinkMessage = context.l10n.relaySettingsFailedToOpenLink;
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        _showError(context.l10n.relaySettingsCouldNotOpenBrowser);
+        _showError(couldNotOpenBrowserMessage);
       }
     } catch (e) {
       Log.error('Failed to launch URL: $e', name: 'RelaySettingsScreen');
-      _showError(context.l10n.relaySettingsFailedToOpenLink);
+      _showError(failedToOpenLinkMessage);
     }
   }
 }

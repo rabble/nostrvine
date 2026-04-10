@@ -226,6 +226,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   Future<void> _shareProfile(String userIdHex) async {
+    // Capture l10n callable functions before any awaits to avoid
+    // use_build_context_synchronously warnings.
+    final l10n = context.l10n;
+    final shareTextFn = l10n.profileShareText;
+    final shareSubjectFn = l10n.profileShareSubject;
+
     try {
       // Get profile info for better share text
       final profile = await ref
@@ -237,13 +243,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final npub = NostrKeyUtils.encodePubKey(userIdHex);
 
       // Create share text with divine.video URL format
-      final shareText = context.l10n.profileShareText(displayName, npub);
+      final shareText = shareTextFn(displayName, npub);
 
       // Use share_plus to show native share sheet
       final result = await SharePlus.instance.share(
         ShareParams(
           text: shareText,
-          subject: context.l10n.profileShareSubject(displayName),
+          subject: shareSubjectFn(displayName),
         ),
       );
 
