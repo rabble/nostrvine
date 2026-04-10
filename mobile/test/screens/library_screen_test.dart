@@ -17,6 +17,7 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/clips_tab.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -232,14 +233,14 @@ void main() {
           // Clips tab should show the clip
           expect(find.byType(ClipSelectionHeader), findsOneWidget);
 
-          // Locate a GestureDetector wrapping a clip thumbnail
-          // and tap to select it
-          final clipCard = find.byType(GestureDetector).last;
+          // Locate a clip thumbnail card and tap to select it
+          final clipCard = find.byType(VideoClipThumbnailCard);
+          expect(clipCard, findsOneWidget);
           await tester.tap(clipCard);
           await tester.pumpAndSettle();
 
-          // Tap "Add" button (the first one, visible in the header)
-          await tester.tap(find.text('Add').first);
+          // Tap "Select" button (visible in the header)
+          await tester.tap(find.text('Select').first);
           await tester.pumpAndSettle();
 
           // Verify context.pop was called with the selected clip list
