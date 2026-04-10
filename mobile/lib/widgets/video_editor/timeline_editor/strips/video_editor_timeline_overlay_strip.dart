@@ -7,6 +7,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
@@ -135,6 +137,15 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
   /// Whether the dragged item is currently snapped to an edge.
   bool _isSnapped = false;
+
+  /// Cumulative scroll offset added by auto-scroll during the current drag.
+  double _scrollCompensationY = 0;
+
+  /// Distance from viewport edge that triggers auto-scroll.
+  static const _autoScrollEdge = 40.0;
+
+  /// Max pixels scrolled per gesture frame when auto-scrolling.
+  static const _autoScrollSpeed = 4.0;
 
   static const double _rowHeight = TimelineConstants.overlayRowHeight;
 
@@ -335,8 +346,13 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       _draggingId = item.id;
       _snappedDragDeltaX = 0;
       _dragDeltaY = 0;
+      _scrollCompensationY = 0;
       _dragStartRow = item.row;
     });
+
+    final bloc = context.read<TimelineOverlayBloc>();
+    bloc.add(const TimelineOverlayItemSelected(null));
+
     widget.onDragStarted?.call(item.id);
   }
 
@@ -363,9 +379,11 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       HapticFeedback.selectionClick();
     }
 
+    _handleAutoScroll(details.globalPosition);
+
     setState(() {
       _snappedDragDeltaX = snappedDx;
-      _dragDeltaY = details.offsetFromOrigin.dy;
+      _dragDeltaY = details.offsetFromOrigin.dy + _scrollCompensationY;
       _isSnapped = isNowSnapped;
     });
   }
@@ -431,9 +449,48 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       _draggingId = null;
       _snappedDragDeltaX = 0;
       _dragDeltaY = 0;
+      _scrollCompensationY = 0;
       _isSnapped = false;
     });
     widget.onDragEnded?.call();
+  }
+
+  // -- Auto-scroll near viewport edges during drag --------------------------
+
+  void _handleAutoScroll(Offset globalPosition) {
+    final scrollable = Scrollable.maybeOf(context);
+    if (scrollable == null) return;
+
+    final renderBox = scrollable.context.findRenderObject()! as RenderBox;
+    final localY = renderBox.globalToLocal(globalPosition).dy;
+    final viewportHeight = renderBox.size.height;
+    // Shrink the bottom edge by the system safe-area so the trigger zone
+    // sits above the home-indicator / navigation bar.
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final effectiveBottom = viewportHeight - bottomInset;
+
+    double delta = 0;
+    if (localY < _autoScrollEdge) {
+      delta = -_autoScrollSpeed * (1 - localY / _autoScrollEdge);
+    } else if (localY > effectiveBottom - _autoScrollEdge) {
+      delta =
+          _autoScrollSpeed * (1 - (effectiveBottom - localY) / _autoScrollEdge);
+    }
+
+    if (delta == 0) return;
+
+    final pos = scrollable.position;
+    final before = pos.pixels;
+    final target = (before + delta).clamp(
+      pos.minScrollExtent,
+      pos.maxScrollExtent,
+    );
+    if (target == before) return;
+    pos.jumpTo(target);
+
+    // Accumulate scroll compensation so the next setState keeps the
+    // item under the finger.
+    _scrollCompensationY += target - before;
   }
 }
 

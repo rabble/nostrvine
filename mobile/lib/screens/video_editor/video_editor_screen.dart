@@ -19,7 +19,7 @@ import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bl
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
@@ -161,33 +161,42 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   Future<void> _openClipsEditor({
     required VideoEditorMainBloc mainBloc,
+    required ClipEditorBloc clipEditorBloc,
   }) async {
-    // Pause playback while the clip editor is open.
+    // Pause playback while the library is open.
     mainBloc
       ..add(const VideoEditorMainOpenSubEditor(.clips))
       ..add(const VideoEditorExternalPauseRequested(isPaused: true));
-    final initialClips = ref.read(clipManagerProvider).clips;
+    final currentClips = ref.read(clipManagerProvider).clips;
 
-    final clips = await Navigator.push<List<DivineVideoClip>>(
-      context,
-      _FadeUpPageRoute<List<DivineVideoClip>>(
-        child: VideoClipEditorScreen(
-          initialClips: initialClips.map((e) => e.copyWith()).toList(),
-        ),
+    final newClips = await VineBottomSheet.show<List<DivineVideoClip>>(
+      context: context,
+      maxChildSize: 1,
+      initialChildSize: 1,
+      minChildSize: 0.9,
+      buildScrollBody: (scrollController) => LibraryScreen(
+        initialTabIndex: 1,
+        selectionMode: true,
+        editorClips: currentClips,
+        scrollController: scrollController,
       ),
     );
 
     mainBloc.add(const VideoEditorMainSubEditorClosed());
 
-    if (clips != null) {
+    if (newClips != null && newClips.isNotEmpty) {
       Log.info(
-        '🎬 Clips changed after clip editor',
+        '🎬 Adding ${newClips.length} new clips from library',
         name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
 
       final clipManager = ref.read(clipManagerProvider.notifier);
-      clipManager.replaceClips(clips);
+      clipManager.addMultipleClips(newClips);
+
+      // Sync the updated clip list into the editor BLoC.
+      final updatedClips = ref.read(clipManagerProvider).clips;
+      clipEditorBloc.add(ClipEditorInitialized(updatedClips));
     }
   }
 
@@ -316,6 +325,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     return result.copyWith(scale: 1 / _fittedBoxScale);
   }
 
+  Future<void> _openMusicLibrary() async {
+    // TODO(hm21): implement music library
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -346,7 +359,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             fromLibrary: widget.fromLibrary,
             onOpenClipsEditor: () {
               final mainBloc = context.read<VideoEditorMainBloc>();
-              _openClipsEditor(mainBloc: mainBloc);
+              final clipEditorBloc = context.read<ClipEditorBloc>();
+              _openClipsEditor(
+                mainBloc: mainBloc,
+                clipEditorBloc: clipEditorBloc,
+              );
             },
             onAddStickers: _addStickers,
             onAdjustVolume: _adjustVolume,
@@ -360,6 +377,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                 layer: layer,
               );
             },
+            onOpenMusicLibrary: _openMusicLibrary,
             child: ValueListenableBuilder<bool>(
               valueListenable: _isLoadingDraft,
               builder: (_, isLoading, _) =>
@@ -368,49 +386,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
           );
         },
       ),
-    );
-  }
-}
-
-class _FadeUpPageRoute<T> extends PageRoute<T> {
-  _FadeUpPageRoute({required this.child});
-
-  final Widget child;
-
-  @override
-  Color? get barrierColor => null;
-
-  @override
-  String? get barrierLabel => null;
-
-  @override
-  bool get maintainState => true;
-
-  @override
-  Duration get transitionDuration => const Duration(milliseconds: 300);
-
-  @override
-  Widget buildPage(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-  ) {
-    return child;
-  }
-
-  @override
-  Widget buildTransitions(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Widget child,
-  ) {
-    return const FadeUpwardsPageTransitionsBuilder().buildTransitions(
-      this,
-      context,
-      animation,
-      secondaryAnimation,
-      child,
     );
   }
 }

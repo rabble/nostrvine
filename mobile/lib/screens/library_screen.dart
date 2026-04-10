@@ -37,6 +37,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
     this.initialTabIndex = 0,
     this.selectionMode = false,
     this.editorClips = const [],
+    this.scrollController,
   });
 
   /// Index of the tab to show when the screen opens.
@@ -56,6 +57,9 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// Current editor clips, used to calculate remaining duration and
   /// target aspect ratio in selection mode.
   final List<DivineVideoClip> editorClips;
+
+  /// Optional scroll controller, e.g. from a parent [DraggableScrollableSheet].
+  final ScrollController? scrollController;
 
   @override
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
@@ -122,9 +126,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     }
 
     if (widget.selectionMode) {
+      final disabledIds = widget.editorClips.map((c) => c.id).toSet();
+      final newClips = selectedClips
+          .where((c) => !disabledIds.contains(c.id))
+          .toList();
       clipsBloc.add(const ClipsLibraryClearSelection());
       if (!context.mounted) return;
-      context.pop(selectedClips);
+      context.pop(newClips);
     } else {
       if (!context.mounted) return;
       await context.push(
@@ -165,7 +173,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               clipLibraryService: ref.read(clipLibraryServiceProvider),
               gallerySaveService: ref.read(gallerySaveServiceProvider),
             )..add(
-              ClipsLibraryLoadRequested(preSelectedIds: editorClipIds),
+              ClipsLibraryLoadRequested(
+                preSelectedIds: editorClipIds,
+                disabledClipIds: widget.selectionMode
+                    ? editorClipIds
+                    : const {},
+              ),
             );
           },
         ),
@@ -264,6 +277,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                             ),
                       body: widget.selectionMode
                           ? _SelectionBody(
+                              scrollController: widget.scrollController,
                               targetAspectRatio: targetAspectRatio,
                               onCreate: () => _createVideoFromSelected(
                                 context,
@@ -384,10 +398,12 @@ class _SelectionBody extends StatelessWidget {
   const _SelectionBody({
     required this.onCreate,
     this.targetAspectRatio,
+    this.scrollController,
   });
 
   final VoidCallback onCreate;
   final double? targetAspectRatio;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -398,6 +414,7 @@ class _SelectionBody extends StatelessWidget {
           child: ClipsTab(
             targetAspectRatio: targetAspectRatio,
             showRecordButton: true,
+            scrollController: scrollController,
           ),
         ),
       ],

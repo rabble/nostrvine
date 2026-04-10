@@ -41,6 +41,7 @@ void main() {
             onOpenClipsEditor: () {},
             onAddStickers: () {},
             onAdjustVolume: () {},
+            onOpenMusicLibrary: () {},
             onAddEditTextLayer: ([layer]) async => null,
             child: BlocProvider<VideoEditorDrawBloc>.value(
               value: mockBloc,

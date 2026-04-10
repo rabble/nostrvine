@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,14 +12,14 @@ import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_actions_sheet.dart';
-import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
-
-import 'package:openvine/widgets/video_editor/main_editor/video_editor_remove_area.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
 
 /// A scaffold widget that provides the standard layout for the video editor.
 ///
+/// Duration for the timeline ↔ bottom-actions switch animation.
+const _switchDuration = Duration(milliseconds: 240);
+
 /// This widget arranges the video editor UI into three main sections:
 /// - A main editor area that displays the video with proper aspect ratio
 /// - Overlay controls positioned on top of the video
@@ -36,68 +34,127 @@ class VideoEditorScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: VideoEditorConstants.uiOverlayStyle,
-      child: Scaffold(
-        backgroundColor: VineTheme.surfaceContainerHigh,
-        resizeToAvoidBottomInset: false,
-        floatingActionButton: Semantics(
-          label: 'Add element',
-          child: FloatingActionButton(
-            backgroundColor: VineTheme.primary,
-            onPressed: () => VideoEditorMainActionsSheet.show(context),
-            child: const DivineIcon(icon: .plus, color: VineTheme.onPrimary),
-          ),
-        ),
-        body: Column(
-          spacing: 16,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: .expand,
-                clipBehavior: .none,
-                children: [
-                  if (isLoading)
-                    const BrandedLoadingScaffold()
-                  else ...[
-                    const VideoEditorCanvas(),
-                    BlocSelector<
-                      VideoEditorMainBloc,
-                      VideoEditorMainState,
-                      ({bool isOver, bool isReordering})
-                    >(
-                      selector: (state) => (
-                        isOver:
-                            state.currentPosition.inMilliseconds >
-                            VideoEditorConstants.maxDuration.inMilliseconds,
-                        isReordering: state.isReordering,
+      child: BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
+        selector: (state) => state.isSubEditorOpen,
+        builder: (context, isSubEditorOpen) {
+          return Scaffold(
+            backgroundColor: VineTheme.surfaceContainerHigh,
+            resizeToAvoidBottomInset: false,
+            floatingActionButton: Semantics(
+              label: 'Add element',
+              child: isSubEditorOpen
+                  ? const SizedBox.shrink()
+                  : FloatingActionButton(
+                      backgroundColor: VineTheme.primary,
+                      onPressed: () =>
+                          VideoEditorMainActionsSheet.show(context),
+                      child: const DivineIcon(
+                        icon: .plus,
+                        color: VineTheme.onPrimary,
                       ),
-                      builder: (context, record) {
-                        if (!record.isOver || record.isReordering) {
-                          return const SizedBox.shrink();
-                        }
-                        return IgnorePointer(
-                          child: ColoredBox(
-                            color: VineTheme.backgroundColor.withAlpha(128),
-                            child: const SizedBox.expand(),
-                          ),
-                        );
-                      },
                     ),
-                  ],
-                  const _OverlayControls(),
-                  const _BottomActions(),
-                ],
-              ),
             ),
-            BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
-              selector: (state) => state.isSubEditorOpen,
-              builder: (context, isSubEditorOpen) {
-                if (isSubEditorOpen) return const SizedBox.shrink();
-                return const VideoEditorTimeline();
-              },
+
+            body: Column(
+              children: [
+                Expanded(
+                  child: Stack(
+                    fit: .expand,
+                    clipBehavior: .none,
+                    children: [
+                      if (isLoading)
+                        const BrandedLoadingScaffold()
+                      else ...[
+                        const VideoEditorCanvas(),
+                        BlocSelector<
+                          VideoEditorMainBloc,
+                          VideoEditorMainState,
+                          ({bool isOver, bool isReordering})
+                        >(
+                          selector: (state) => (
+                            isOver:
+                                state.currentPosition.inMilliseconds >
+                                VideoEditorConstants.maxDuration.inMilliseconds,
+                            isReordering: state.isReordering,
+                          ),
+                          builder: (context, record) {
+                            if (!record.isOver ||
+                                record.isReordering ||
+                                isSubEditorOpen) {
+                              return const SizedBox.shrink();
+                            }
+                            return IgnorePointer(
+                              child: ColoredBox(
+                                color: VineTheme.backgroundColor.withAlpha(128),
+                                child: const SizedBox.expand(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                      const _OverlayControls(),
+                    ],
+                  ),
+                ),
+                const _TimelineSection(),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
+    );
+  }
+}
+
+class _TimelineSection extends StatefulWidget {
+  const _TimelineSection();
+
+  @override
+  State<_TimelineSection> createState() => _TimelineSectionState();
+}
+
+class _TimelineSectionState extends State<_TimelineSection> {
+  bool _hasTransitioned = false;
+  bool? _lastHideTimeline;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      VideoEditorMainBloc,
+      VideoEditorMainState,
+      SubEditorType?
+    >(
+      selector: (state) => state.openSubEditor,
+      builder: (context, openSubEditor) {
+        final hideTimeline = openSubEditor == .draw || openSubEditor == .filter;
+
+        // Enable animation only after the first actual transition.
+        if (_lastHideTimeline != null && _lastHideTimeline != hideTimeline) {
+          _hasTransitioned = true;
+        }
+        _lastHideTimeline = hideTimeline;
+
+        return AnimatedSize(
+          duration: _hasTransitioned ? _switchDuration : .zero,
+          curve: Curves.easeInOut,
+          alignment: .bottomCenter,
+          child: Column(
+            mainAxisSize: .min,
+            children: [
+              // Keep timeline always in tree to preserve thumbnail cache.
+              // Offstage hides without unmounting.
+              Offstage(
+                offstage: hideTimeline,
+                child: const Padding(
+                  padding: .only(top: 12),
+                  child: VideoEditorTimeline(),
+                ),
+              ),
+              if (hideTimeline) const _BottomActions(),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -146,163 +203,34 @@ class _BottomActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final systemNavigationBarHeight = MediaQuery.viewPaddingOf(context).bottom;
-    return BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
-      selector: (state) =>
-          state.isSubEditorOpen || state.isLayerInteractionActive,
-      builder: (context, showActions) {
-        if (!showActions) return const SizedBox.shrink();
-
-        return Align(
-          alignment: .bottomCenter,
-          child: SizedBox(
-            height:
-                systemNavigationBarHeight +
-                VideoEditorConstants.bottomBarHeight +
-                VideoEditorConstants.canvasRadius,
-            child: BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
-              buildWhen: (previous, current) =>
-                  previous.isLayerInteractionActive !=
-                      current.isLayerInteractionActive ||
-                  previous.openSubEditor != current.openSubEditor,
-              builder: (context, state) {
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: state.isLayerInteractionActive
-                      ? const VideoEditorRemoveArea()
-                      : Column(
-                          children: [
-                            const _BottomCornerArcs(),
-                            AnimatedSwitcher(
-                              switchInCurve: Curves.easeInOut,
-                              duration: const Duration(milliseconds: 240),
-                              transitionBuilder: (child, animation) =>
-                                  FadeTransition(
-                                    opacity: animation,
-                                    child: SizeTransition(
-                                      sizeFactor: animation,
-                                      axisAlignment: -1,
-                                      child: child,
-                                    ),
-                                  ),
-                              layoutBuilder: (currentChild, previousChildren) =>
-                                  Container(
-                                    height:
-                                        systemNavigationBarHeight +
-                                        VideoEditorConstants.bottomBarHeight,
-                                    padding: .only(
-                                      bottom: state.openSubEditor == .draw
-                                          ? 0
-                                          : systemNavigationBarHeight,
-                                    ),
-                                    color: VineTheme.surfaceContainerHigh,
-                                    child: Stack(
-                                      clipBehavior: .none,
-                                      alignment: .bottomCenter,
-                                      children: <Widget>[?currentChild],
-                                    ),
-                                  ),
-                              child: switch (state.openSubEditor) {
-                                // Text-Bar (no bottom bar for text editor)
-                                .text => const SizedBox(),
-                                // Draw-Bar
-                                .draw => const VideoEditorDrawBottomBar(
-                                  key: ValueKey('Draw-Editor-Bottom-Bar'),
-                                ),
-                                // Filter-Bar
-                                .filter => const VideoEditorFilterBottomBar(
-                                  key: ValueKey('Filter-Editor-Bottom-Bar'),
-                                ),
-                                // Audio-Bar (no bottom bar, timing screen has its own)
-                                .music => const SizedBox(),
-                                // Main-Bar
-                                _ => const VideoEditorMainBottomBar(),
-                              },
-                            ),
-                          ],
-                        ),
-                );
-              },
-            ),
+    return SizedBox(
+      height: systemNavigationBarHeight + VideoEditorConstants.bottomBarHeight,
+      child:
+          BlocSelector<
+            VideoEditorMainBloc,
+            VideoEditorMainState,
+            SubEditorType?
+          >(
+            selector: (state) => state.openSubEditor,
+            builder: (context, openSubEditor) {
+              return switch (openSubEditor) {
+                // Draw-Bar
+                SubEditorType.draw => const VideoEditorDrawBottomBar(
+                  key: ValueKey('Draw-Editor-Bottom-Bar'),
+                ),
+                // Filter-Bar
+                SubEditorType.filter => Padding(
+                  padding: .only(bottom: systemNavigationBarHeight),
+                  child: const VideoEditorFilterBottomBar(
+                    key: ValueKey('Filter-Editor-Bottom-Bar'),
+                  ),
+                ),
+                // Fallback — should not happen since _BottomActions is only
+                // rendered for draw/filter, but handle gracefully.
+                _ => const SizedBox.shrink(),
+              };
+            },
           ),
-        );
-      },
     );
   }
-}
-
-class _BottomCornerArcs extends StatelessWidget {
-  const _BottomCornerArcs();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: SizedBox(
-        width: .infinity,
-        height: VideoEditorConstants.canvasRadius,
-        child: CustomPaint(
-          painter: _BottomCornerArcsPainter(
-            arcRadius: VideoEditorConstants.canvasRadius,
-            color: VineTheme.surfaceContainerHigh,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomCornerArcsPainter extends CustomPainter {
-  _BottomCornerArcsPainter({
-    required this.arcRadius,
-    required this.color,
-  });
-
-  final double arcRadius;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = .fill;
-
-    final double radius = arcRadius.clamp(
-      0.0,
-      math.min(size.width / 2, size.height),
-    );
-
-    // Bottom-left: quarter-circle hole curving into the video area
-    final leftPath = Path()
-      ..moveTo(0, 0)
-      ..lineTo(0, size.height)
-      ..lineTo(radius, size.height)
-      ..arcTo(
-        Rect.fromCircle(center: Offset(radius, 0), radius: radius),
-        math.pi / 2, // start: bottom (radius, radius)
-        math.pi / 2, // sweep CW toward (0, 0)
-        false,
-      )
-      ..close();
-    canvas.drawPath(leftPath, paint);
-
-    // Bottom-right: quarter-circle hole curving into the video area
-    final rightPath = Path()
-      ..moveTo(size.width, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(size.width - radius, size.height)
-      ..arcTo(
-        Rect.fromCircle(
-          center: Offset(size.width - radius, 0),
-          radius: radius,
-        ),
-        math.pi / 2, // start: bottom (width - radius, radius)
-        -math.pi / 2, // sweep CCW toward (width, 0)
-        false,
-      )
-      ..close();
-    canvas.drawPath(rightPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _BottomCornerArcsPainter oldDelegate) =>
-      oldDelegate.arcRadius != arcRadius || oldDelegate.color != color;
 }

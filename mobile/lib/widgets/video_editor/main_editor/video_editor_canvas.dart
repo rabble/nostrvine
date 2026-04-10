@@ -732,11 +732,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 _hasImportedHistory = true;
                 _syncMainCapabilities(scope, bloc);
               },
-              onTap: () {
-                context.read<VideoEditorMainBloc>().add(
-                  const VideoEditorPlaybackToggleRequested(),
-                );
-              },
               onDone: _handleDone,
               onImportHistoryStart: (state, import) {
                 Log.debug(
@@ -874,14 +869,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               onInit: () {
                 final filterBloc = context.read<VideoEditorFilterBloc>();
                 filterBloc.add(const VideoEditorFilterEditorInitialized());
-                final filterState = filterBloc.state;
-
-                // Sync editor with current BLoC state
-                final filterEditor = scope.filterEditor;
-                if (filterState.selectedFilter != null) {
-                  filterEditor?.setFilter(filterState.selectedFilter!);
-                }
-                filterEditor?.setFilterOpacity(filterState.opacity);
               },
             ),
           ),

@@ -24,6 +24,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.onAdjustVolume,
     required this.onOpenClipsEditor,
     required this.onAddEditTextLayer,
+    required this.onOpenMusicLibrary,
     required this.originalClipAspectRatio,
     required this.bodySizeNotifier,
     required this.fromLibrary,
@@ -45,6 +46,9 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Callback to open the clips editor.
   final VoidCallback onOpenClipsEditor;
+
+  /// Callback to open the music library.
+  final VoidCallback onOpenMusicLibrary;
 
   /// Original aspect ratio of the clip being edited.
   final double originalClipAspectRatio;

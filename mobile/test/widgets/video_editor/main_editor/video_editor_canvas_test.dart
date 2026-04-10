@@ -28,6 +28,7 @@ void main() {
               onAddStickers: () {},
               onAdjustVolume: () {},
               onOpenClipsEditor: () {},
+              onOpenMusicLibrary: () {},
               onAddEditTextLayer: ([_]) async => null,
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: bodySizeNotifier,

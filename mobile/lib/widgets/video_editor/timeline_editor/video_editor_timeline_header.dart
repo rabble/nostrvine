@@ -152,7 +152,7 @@ class _UndoButton extends StatelessWidget {
     );
 
     return DivineIconButton(
-      icon: .arrowArcLeft,
+      icon: .arrowUUpLeft,
       size: .small,
       type: .ghost,
       semanticLabel: 'Undo',
@@ -175,7 +175,7 @@ class _RedoButton extends StatelessWidget {
     );
 
     return DivineIconButton(
-      icon: .arrowArcRight,
+      icon: .arrowUUpRight,
       size: .small,
       type: .ghost,
       semanticLabel: 'Redo',

@@ -71,6 +71,7 @@ final class ClipsLibraryState extends Equatable {
     this.status = ClipsLibraryStatus.initial,
     this.clips = const [],
     this.selectedClipIds = const {},
+    this.disabledClipIds = const {},
     this.selectedDuration = Duration.zero,
     this.lastGallerySaveResult,
     this.lastDeletedCount,
@@ -84,6 +85,9 @@ final class ClipsLibraryState extends Equatable {
 
   /// IDs of currently selected clips.
   final Set<String> selectedClipIds;
+
+  /// IDs of clips already in the editor that cannot be toggled.
+  final Set<String> disabledClipIds;
 
   /// Total duration of selected clips.
   final Duration selectedDuration;
@@ -116,6 +120,7 @@ final class ClipsLibraryState extends Equatable {
     ClipsLibraryStatus? status,
     List<DivineVideoClip>? clips,
     Set<String>? selectedClipIds,
+    Set<String>? disabledClipIds,
     Duration? selectedDuration,
     GallerySaveResult? lastGallerySaveResult,
     int? lastDeletedCount,
@@ -126,6 +131,7 @@ final class ClipsLibraryState extends Equatable {
       status: status ?? this.status,
       clips: clips ?? this.clips,
       selectedClipIds: selectedClipIds ?? this.selectedClipIds,
+      disabledClipIds: disabledClipIds ?? this.disabledClipIds,
       selectedDuration: selectedDuration ?? this.selectedDuration,
       lastGallerySaveResult: clearGallerySaveResult
           ? null
@@ -141,6 +147,7 @@ final class ClipsLibraryState extends Equatable {
     status,
     clips,
     selectedClipIds,
+    disabledClipIds,
     selectedDuration,
     lastGallerySaveResult,
     lastDeletedCount,

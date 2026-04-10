@@ -60,6 +60,7 @@ void main() {
         const event = ClipsLibraryLoadRequested(preSelectedIds: {'x'});
         expect(event.props, [
           const {'x'},
+          const <String>{},
         ]);
       });
 

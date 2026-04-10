@@ -175,6 +175,7 @@ void main() {
         ClipsLibraryStatus.loaded,
         [clip1],
         {'clip1'},
+        const <String>{},
         const Duration(seconds: 5),
         const GallerySaveResultSuccess(successCount: 1, failureCount: 0),
         1,

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -32,6 +33,10 @@ class _MockTimelineOverlayBloc
     extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
     implements TimelineOverlayBloc {}
 
+class _MockVideoEditorFilterBloc
+    extends MockBloc<VideoEditorFilterEvent, VideoEditorFilterState>
+    implements VideoEditorFilterBloc {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -39,11 +44,13 @@ void main() {
     late _MockVideoEditorMainBloc mockMainBloc;
     late _MockClipEditorBloc mockClipBloc;
     late _MockTimelineOverlayBloc mockOverlayBloc;
+    late _MockVideoEditorFilterBloc mockFilterBloc;
 
     setUp(() {
       mockMainBloc = _MockVideoEditorMainBloc();
       mockClipBloc = _MockClipEditorBloc();
       mockOverlayBloc = _MockTimelineOverlayBloc();
+      mockFilterBloc = _MockVideoEditorFilterBloc();
 
       when(() => mockMainBloc.state).thenReturn(
         const VideoEditorMainState(),
@@ -62,6 +69,12 @@ void main() {
       );
       when(() => mockOverlayBloc.stream).thenAnswer(
         (_) => const Stream<TimelineOverlayState>.empty(),
+      );
+      when(() => mockFilterBloc.state).thenReturn(
+        const VideoEditorFilterState(filters: []),
+      );
+      when(() => mockFilterBloc.stream).thenAnswer(
+        (_) => const Stream<VideoEditorFilterState>.empty(),
       );
     });
 
@@ -88,6 +101,7 @@ void main() {
               onOpenClipsEditor: () {},
               onAddStickers: () {},
               onAdjustVolume: () {},
+              onOpenMusicLibrary: () {},
               onAddEditTextLayer: ([layer]) async => null,
               child: MultiBlocProvider(
                 providers: [
@@ -98,7 +112,11 @@ void main() {
                   BlocProvider<TimelineOverlayBloc>.value(
                     value: mockOverlayBloc,
                   ),
+                  BlocProvider<VideoEditorFilterBloc>.value(
+                    value: mockFilterBloc,
+                  ),
                 ],
+
                 child: const VideoEditorTimeline(),
               ),
             ),

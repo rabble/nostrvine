@@ -7,7 +7,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 
 /// Bottom sheet that shows video editor sub-editor actions.
 ///
-/// Uses [DivineIconButton] for each action and closes the sheet after
+/// Uses [_ItemButton] for each action and closes the sheet after
 /// an action is selected.
 class VideoEditorMainActionsSheet extends StatelessWidget {
   const VideoEditorMainActionsSheet({
@@ -27,7 +27,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
       scrollable: false,
       isScrollControlled: true,
       // TODO(l10n): Replace with context.l10n when localization is added.
-      contentTitle: 'Add',
+      title: const Text('Add'),
       children: [VideoEditorMainActionsSheet(scope: scope)],
     );
   }
@@ -35,67 +35,122 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 16,
+      padding: const .all(16),
+      child: Column(
+        crossAxisAlignment: .stretch,
         children: [
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          DivineIconButton(
-            icon: .images,
-            semanticLabel: 'Clips',
-            onPressed: () {
-              Navigator.pop(context);
-              scope.onOpenClipsEditor();
-            },
-          ),
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          DivineIconButton(
-            icon: .textAa,
-            semanticLabel: 'Text',
-            onPressed: () {
-              Navigator.pop(context);
-              scope.editor?.openTextEditor();
-            },
-          ),
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          DivineIconButton(
-            icon: .scribble,
-            semanticLabel: 'Draw',
-            onPressed: () {
-              Navigator.pop(context);
-              scope.editor?.openPaintEditor();
-            },
-          ),
-          /* TODO(hm21): uncomment stickers once we have a license for them
-          DivineIconButton(
-            icon: .sticker,
-            semanticLabel: 'Stickers',
-            onPressed: () {
-              Navigator.pop(context);
-              scope.onAddStickers();
-            },
-          ),*/
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          DivineIconButton(
-            icon: .speakerHigh,
-            semanticLabel: 'Volume',
-            onPressed: () {
-              Navigator.pop(context);
-              scope.onAdjustVolume();
-            },
-          ),
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          DivineIconButton(
-            icon: .fadersHorizontal,
-            semanticLabel: 'Effects',
-            onPressed: () {
-              Navigator.pop(context);
-              scope.editor?.openFilterEditor();
-            },
+          Wrap(
+            alignment: .spaceEvenly,
+            spacing: 24,
+            runSpacing: 24,
+            children: [
+              // TODO(l10n): Replace with context.l10n when localization is added.
+              _ItemButton(
+                icon: .images,
+                label: 'Clips',
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.onOpenClipsEditor();
+                },
+              ),
+              // TODO(l10n): Replace with context.l10n when localization is added.
+              _ItemButton(
+                icon: .waveform,
+                label: 'Audio',
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.onOpenMusicLibrary();
+                },
+              ),
+              // TODO(l10n): Replace with context.l10n when localization is added.
+              _ItemButton(
+                icon: .textAa,
+                label: 'Text',
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.editor?.openTextEditor();
+                },
+              ),
+              // TODO(l10n): Replace with context.l10n when localization is added.
+              _ItemButton(
+                icon: .scribble,
+                label: 'Draw',
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.editor?.openPaintEditor();
+                },
+              ),
+              // TODO(l10n): Replace with context.l10n when localization is added.
+              _ItemButton(
+                icon: .fadersHorizontal,
+                label: 'Effects',
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.editor?.openFilterEditor();
+                },
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ItemButton extends StatelessWidget {
+  const _ItemButton({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+  });
+
+  final VoidCallback onTap;
+  final DivineIconName icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: .min,
+      spacing: 8,
+      children: [
+        Semantics(
+          label: label,
+          button: true,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: 72,
+              height: 72,
+              padding: const .all(12),
+              decoration: ShapeDecoration(
+                color: VineTheme.surfaceContainer,
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(
+                    width: 2,
+                    color: VineTheme.outlineMuted,
+                  ),
+                  borderRadius: .circular(24),
+                ),
+              ),
+              child: Center(
+                child: DivineIcon(
+                  icon: icon,
+                  color: VineTheme.primary,
+                ),
+              ),
+            ),
+          ),
+        ),
+        Semantics(
+          excludeSemantics: true,
+          child: Text(
+            label,
+            textAlign: .center,
+            style: VineTheme.bodySmallFont(),
+          ),
+        ),
+      ],
     );
   }
 }

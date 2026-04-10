@@ -134,8 +134,13 @@ class RenderHitExpandedBox extends RenderProxyBox {
     if (node is RenderHitExpandedBox) {
       return node.hitTest(result, position: position);
     }
+    // Respect IgnorePointer — do not traverse into ignored subtrees.
+    if (node is RenderIgnorePointer && node.ignoring) {
+      return false;
+    }
     // Single-child render objects: skip bounds check, apply the
-    // child's paint offset, and recurse.
+    // child's full paint transform (includes scroll offsets), and
+    // recurse.
     if (node is RenderObjectWithChildMixin<RenderBox>) {
       final singleChildNode = node as RenderObjectWithChildMixin<RenderBox>;
       final child = singleChildNode.child;
@@ -146,31 +151,35 @@ class RenderHitExpandedBox extends RenderProxyBox {
         // bounds.
         return node.hitTest(result, position: position);
       }
-      final childParentData = child.parentData;
-      final childOffset = childParentData is BoxParentData
-          ? childParentData.offset
-          : Offset.zero;
-      return result.addWithPaintOffset(
-        offset: childOffset,
+      // Use applyPaintTransform instead of parentData.offset so that
+      // scroll viewports (SingleChildScrollView) include their scroll
+      // offset in the coordinate transform.
+      final transform = Matrix4.identity();
+      node.applyPaintTransform(child, transform);
+      return result.addWithPaintTransform(
+        transform: transform,
         position: position,
-        hitTest: (BoxHitTestResult result, Offset transformed) =>
-            _hitTestDeep(result, transformed, child),
+        hitTest: (BoxHitTestResult result, Offset? transformed) =>
+            transformed != null && _hitTestDeep(result, transformed, child),
       );
     }
     // Multi-child (Stack, Column, Row, etc.): iterate children in
     // reverse paint order, bypassing size.contains on each child so
     // expanded-margin touches propagate through intermediate layouts.
     if (node
-        is ContainerRenderObjectMixin<RenderBox,
-            ContainerBoxParentData<RenderBox>>) {
+        is ContainerRenderObjectMixin<
+          RenderBox,
+          ContainerBoxParentData<RenderBox>
+        >) {
       final multi =
           node
-              as ContainerRenderObjectMixin<RenderBox,
-                  ContainerBoxParentData<RenderBox>>;
+              as ContainerRenderObjectMixin<
+                RenderBox,
+                ContainerBoxParentData<RenderBox>
+              >;
       var child = multi.lastChild;
       while (child != null) {
-        final pd =
-            child.parentData! as ContainerBoxParentData<RenderBox>;
+        final pd = child.parentData! as ContainerBoxParentData<RenderBox>;
         final current = child;
         final hit = result.addWithPaintOffset(
           offset: pd.offset,
