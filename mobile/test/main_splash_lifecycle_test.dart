@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/main.dart';
 import 'package:openvine/services/auth_service.dart' show AuthState;
@@ -393,11 +394,9 @@ void main() {
           callbackFired = true;
         });
 
-        // Advance time without pumping a frame — simulates the hung-auth
-        // scenario where no widget rebuild triggers a frame.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
+        // No frame has been drawn since registration — the callback must
+        // not have fired. This simulates the hung-auth scenario where no
+        // widget rebuild triggers a frame.
         expect(
           callbackFired,
           isFalse,
@@ -406,9 +405,10 @@ void main() {
               'this is why the timeout path releases the splash immediately',
         );
 
-        // Now pump a frame to prove the callback was registered and does
-        // fire once a frame exists.
-        await tester.pump();
+        // Pumping a widget forces a full frame (build → layout → paint →
+        // post-frame callbacks), proving the callback was registered and
+        // only fires once a frame actually occurs.
+        await tester.pumpWidget(const SizedBox.shrink());
         expect(callbackFired, isTrue);
       },
     );
