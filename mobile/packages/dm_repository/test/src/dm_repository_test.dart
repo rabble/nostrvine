@@ -1291,6 +1291,9 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => controller.stream);
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         final repository = createRepository();
         await repository.startListening();
@@ -1302,6 +1305,7 @@ void main() {
           ),
         ).called(1);
 
+        await repository.stopListening();
         await controller.close();
       });
 
@@ -1313,6 +1317,9 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => controller.stream);
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         final repository = createRepository();
         await repository.startListening();
@@ -1325,6 +1332,7 @@ void main() {
           ),
         ).called(1);
 
+        await repository.stopListening();
         await controller.close();
       });
 
