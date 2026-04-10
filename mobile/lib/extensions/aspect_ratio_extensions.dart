@@ -1,8 +1,6 @@
 // ABOUTME: Extensions for AspectRatio enum with platform-specific behavior.
 // ABOUTME: Centralizes the logic for full-screen vertical video display.
 
-// ignore_for_file: dead_code
-
 import 'dart:ui';
 
 import 'package:divine_camera/divine_camera.dart' show DivineVideoQuality;
