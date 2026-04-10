@@ -963,6 +963,18 @@ class DivineApp extends ConsumerStatefulWidget {
 @visibleForTesting
 const splashRemovalTimeout = Duration(seconds: 2);
 
+/// Why the splash was removed — lets the consumer choose the right release
+/// strategy (post-frame for auth-resolved so GoRouter can settle, immediate
+/// for timeout so the release is frame-independent).
+@visibleForTesting
+enum SplashRemovalReason {
+  /// Auth transitioned out of [AuthState.checking] (or was already resolved).
+  authResolved,
+
+  /// The [splashRemovalTimeout] fired before auth resolved.
+  timeout,
+}
+
 /// Releases the native splash screen that was preserved at startup via
 /// [FlutterNativeSplash.preserve].
 ///
@@ -1020,12 +1032,13 @@ class SplashLifecycleController {
 
   final Stream<AuthState> authStateStream;
   final AuthState initialAuthState;
-  final VoidCallback onRemove;
+  final void Function(SplashRemovalReason reason) onRemove;
   final Duration timeout;
 
   StreamSubscription<AuthState>? _subscription;
   Timer? _timer;
   bool _removed = false;
+  bool _started = false;
 
   /// Whether [onRemove] has already fired. Exposed for test assertions.
   @visibleForTesting
@@ -1034,13 +1047,16 @@ class SplashLifecycleController {
   /// Begin watching for the first non-checking auth state, or schedule
   /// immediate removal if auth is already resolved.
   void start() {
+    assert(!_started, 'SplashLifecycleController.start() called twice');
+    _started = true;
+
     if (initialAuthState != AuthState.checking) {
-      _fire();
+      _fire(SplashRemovalReason.authResolved);
       return;
     }
     _subscription = authStateStream.listen((state) {
       if (state != AuthState.checking) {
-        _fire();
+        _fire(SplashRemovalReason.authResolved);
       }
     });
     _timer = Timer(timeout, () {
@@ -1052,16 +1068,16 @@ class SplashLifecycleController {
         name: 'Main',
         category: LogCategory.system,
       );
-      _fire();
+      _fire(SplashRemovalReason.timeout);
     });
   }
 
-  void _fire() {
+  void _fire(SplashRemovalReason reason) {
     if (_removed) return;
     _removed = true;
     _subscription?.cancel();
     _timer?.cancel();
-    onRemove();
+    onRemove(reason);
   }
 
   /// Cancel any in-flight subscription or timer. Safe to call multiple
@@ -1107,7 +1123,20 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     return SplashLifecycleController(
       authStateStream: authService.authStateStream,
       initialAuthState: authService.authState,
-      onRemove: _schedulePostFrameSplashRelease,
+      onRemove: (reason) {
+        switch (reason) {
+          case SplashRemovalReason.authResolved:
+            // Post-frame so GoRouter can process the refreshListenable
+            // notification and redirect to the correct initial route before
+            // Flutter paints its first frame.
+            _schedulePostFrameSplashRelease();
+          case SplashRemovalReason.timeout:
+            // Immediate — the timeout path must be frame-independent because
+            // auth may be hung and no further UI work may schedule a frame.
+            // addPostFrameCallback would sit pending forever in that case.
+            _releaseNativeSplash();
+        }
+      },
     );
   }
 

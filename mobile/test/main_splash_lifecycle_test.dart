@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/main.dart';
 import 'package:openvine/services/auth_service.dart' show AuthState;
@@ -21,7 +22,7 @@ void main() {
           final lifecycle = SplashLifecycleController(
             authStateStream: controller.stream,
             initialAuthState: AuthState.checking,
-            onRemove: () => removeCount++,
+            onRemove: (_) => removeCount++,
           );
 
           lifecycle.start();
@@ -55,7 +56,7 @@ void main() {
           final lifecycle = SplashLifecycleController(
             authStateStream: controller.stream,
             initialAuthState: AuthState.checking,
-            onRemove: () => removeCount++,
+            onRemove: (_) => removeCount++,
           );
 
           lifecycle.start();
@@ -84,7 +85,7 @@ void main() {
           final lifecycle = SplashLifecycleController(
             authStateStream: controller.stream,
             initialAuthState: AuthState.checking,
-            onRemove: () => removeCount++,
+            onRemove: (_) => removeCount++,
           );
 
           lifecycle.start();
@@ -110,7 +111,7 @@ void main() {
           final lifecycle = SplashLifecycleController(
             authStateStream: controller.stream,
             initialAuthState: AuthState.authenticated,
-            onRemove: () => removeCount++,
+            onRemove: (_) => removeCount++,
           );
 
           lifecycle.start();
@@ -139,7 +140,7 @@ void main() {
           final lifecycle = SplashLifecycleController(
             authStateStream: controller.stream,
             initialAuthState: AuthState.checking,
-            onRemove: () => removeCount++,
+            onRemove: (_) => removeCount++,
           );
 
           lifecycle.start();
@@ -172,7 +173,7 @@ void main() {
           final lifecycle = SplashLifecycleController(
             authStateStream: controller.stream,
             initialAuthState: AuthState.checking,
-            onRemove: () => removeCount++,
+            onRemove: (_) => removeCount++,
           );
 
           lifecycle.start();
@@ -204,7 +205,7 @@ void main() {
           final lifecycle = SplashLifecycleController(
             authStateStream: controller.stream,
             initialAuthState: AuthState.checking,
-            onRemove: () => removeCount++,
+            onRemove: (_) => removeCount++,
           );
 
           lifecycle.start();
@@ -226,7 +227,7 @@ void main() {
       final lifecycle = SplashLifecycleController(
         authStateStream: controller.stream,
         initialAuthState: AuthState.checking,
-        onRemove: () => removeCount++,
+        onRemove: (_) => removeCount++,
       );
 
       lifecycle.dispose();
@@ -245,7 +246,7 @@ void main() {
           final lifecycle = SplashLifecycleController(
             authStateStream: controller.stream,
             initialAuthState: AuthState.checking,
-            onRemove: () => removeCount++,
+            onRemove: (_) => removeCount++,
           );
 
           lifecycle.start();
@@ -272,7 +273,7 @@ void main() {
         final lifecycle = SplashLifecycleController(
           authStateStream: controller.stream,
           initialAuthState: AuthState.checking,
-          onRemove: () {},
+          onRemove: (_) {},
         );
 
         expect(lifecycle.debugRemoved, isFalse);
@@ -288,11 +289,128 @@ void main() {
         controller.close();
       });
     });
+
+    group('SplashRemovalReason', () {
+      test('passes authResolved when auth transitions out of checking', () {
+        fakeAsync((async) {
+          final controller = StreamController<AuthState>.broadcast();
+          SplashRemovalReason? capturedReason;
+
+          final lifecycle = SplashLifecycleController(
+            authStateStream: controller.stream,
+            initialAuthState: AuthState.checking,
+            onRemove: (reason) => capturedReason = reason,
+          );
+
+          lifecycle.start();
+          controller.add(AuthState.authenticated);
+          async.flushMicrotasks();
+
+          expect(capturedReason, SplashRemovalReason.authResolved);
+          lifecycle.dispose();
+          controller.close();
+        });
+      });
+
+      test('passes authResolved when initial state is already resolved', () {
+        fakeAsync((async) {
+          final controller = StreamController<AuthState>.broadcast();
+          SplashRemovalReason? capturedReason;
+
+          final lifecycle = SplashLifecycleController(
+            authStateStream: controller.stream,
+            initialAuthState: AuthState.authenticated,
+            onRemove: (reason) => capturedReason = reason,
+          );
+
+          lifecycle.start();
+          async.flushMicrotasks();
+
+          expect(capturedReason, SplashRemovalReason.authResolved);
+          lifecycle.dispose();
+          controller.close();
+        });
+      });
+
+      test('passes timeout when auth never emits', () {
+        fakeAsync((async) {
+          final controller = StreamController<AuthState>.broadcast();
+          SplashRemovalReason? capturedReason;
+
+          final lifecycle = SplashLifecycleController(
+            authStateStream: controller.stream,
+            initialAuthState: AuthState.checking,
+            onRemove: (reason) => capturedReason = reason,
+          );
+
+          lifecycle.start();
+          async.elapse(const Duration(seconds: 2));
+
+          expect(capturedReason, SplashRemovalReason.timeout);
+          lifecycle.dispose();
+          controller.close();
+        });
+      });
+    });
+
+    test('assert fires on double start', () {
+      fakeAsync((async) {
+        final controller = StreamController<AuthState>.broadcast();
+
+        final lifecycle = SplashLifecycleController(
+          authStateStream: controller.stream,
+          initialAuthState: AuthState.checking,
+          onRemove: (_) {},
+        );
+
+        lifecycle.start();
+        expect(lifecycle.start, throwsA(isA<AssertionError>()));
+
+        lifecycle.dispose();
+        controller.close();
+      });
+    });
   });
 
   group('splashRemovalTimeout constant', () {
     test("is 2 seconds to match Alex's recommendation on PR #2837", () {
       expect(splashRemovalTimeout, const Duration(seconds: 2));
     });
+  });
+
+  group('post-frame callback is frame-dependent (documents the bug)', () {
+    // This test proves WHY the timeout path must bypass addPostFrameCallback.
+    // addPostFrameCallback registers a callback that runs after the NEXT
+    // frame, but it does not schedule a frame. If no frame is ever
+    // scheduled (e.g. auth is hung and no UI work is happening), the
+    // callback sits pending forever. The timeout fallback must therefore
+    // release the splash immediately, not through addPostFrameCallback.
+    testWidgets(
+      'addPostFrameCallback does not fire without a scheduled frame',
+      (tester) async {
+        var callbackFired = false;
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          callbackFired = true;
+        });
+
+        // Advance time without pumping a frame — simulates the hung-auth
+        // scenario where no widget rebuild triggers a frame.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          callbackFired,
+          isFalse,
+          reason:
+              'post-frame callback must not fire without a frame — '
+              'this is why the timeout path releases the splash immediately',
+        );
+
+        // Now pump a frame to prove the callback was registered and does
+        // fire once a frame exists.
+        await tester.pump();
+        expect(callbackFired, isTrue);
+      },
+    );
   });
 }
