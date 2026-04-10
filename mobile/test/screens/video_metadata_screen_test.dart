@@ -9,9 +9,14 @@ import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
+import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_stack.dart';
+import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_stack.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 DivineVideoClip _createTestClip({String id = 'test-clip'}) {
@@ -88,6 +93,60 @@ void main() {
         expect(find.text('Post'), findsOneWidget);
       });
     });
+
+    group('recorder mode switch', () {
+      testWidgets(
+        'renders $VideoMetadataCaptureStack when mode is capture',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                clipManagerProvider.overrideWith(
+                  () => _MockClipManagerNotifier([testClip]),
+                ),
+                videoRecorderProvider.overrideWith(
+                  () => _MockVideoRecorderNotifier(
+                    const VideoRecorderProviderState(),
+                  ),
+                ),
+              ],
+              child: const MaterialApp(home: VideoMetadataScreen()),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoMetadataCaptureStack), findsOneWidget);
+          expect(find.byType(VideoMetadataClassicStack), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'renders $VideoMetadataClassicStack when mode is classic',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                clipManagerProvider.overrideWith(
+                  () => _MockClipManagerNotifier([testClip]),
+                ),
+                videoRecorderProvider.overrideWith(
+                  () => _MockVideoRecorderNotifier(
+                    const VideoRecorderProviderState(
+                      recorderMode: VideoRecorderMode.classic,
+                    ),
+                  ),
+                ),
+              ],
+              child: const MaterialApp(home: VideoMetadataScreen()),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoMetadataClassicStack), findsOneWidget);
+          expect(find.byType(VideoMetadataCaptureStack), findsNothing);
+        },
+      );
+    });
   });
 }
 
@@ -109,4 +168,14 @@ class _MockVideoPublishNotifier extends VideoPublishNotifier {
 
   @override
   VideoPublishProviderState build() => _initialState;
+}
+
+/// Mock recorder notifier that returns a fixed state.
+class _MockVideoRecorderNotifier extends VideoRecorderNotifier {
+  _MockVideoRecorderNotifier(this._initialState);
+
+  final VideoRecorderProviderState _initialState;
+
+  @override
+  VideoRecorderProviderState build() => _initialState;
 }

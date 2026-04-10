@@ -218,6 +218,10 @@ class _MasonryLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectionIndexById = <String, int>{
+      for (var i = 0; i < selectedClipIds.length; i++)
+        selectedClipIds.elementAt(i): i + 1,
+    };
     return MasonryGridView.count(
       padding: .fromSTEB(8, 0, 8, MediaQuery.viewPaddingOf(context).bottom),
       crossAxisCount: _columnCount,
@@ -227,19 +231,17 @@ class _MasonryLayout extends StatelessWidget {
       itemCount: clips.length,
       itemBuilder: (context, index) {
         final clip = clips[index];
-        final isSelected = selectedClipIds.contains(clip.id);
-        final selectionIndex = isSelected
-            ? selectedClipIds.toList().indexOf(clip.id) + 1
-            : -1;
+        final selectionIndex = selectionIndexById[clip.id] ?? -1;
+        final isLastInFirstRow =
+            index == _columnCount - 1 || index == clips.length - 1;
         final borderRadius = BorderRadius.only(
           topLeft: index == 0 ? _radius : Radius.zero,
-          topRight: index == _columnCount - 1 ? _radius : Radius.zero,
+          topRight: isLastInFirstRow ? _radius : Radius.zero,
         );
         return ClipRRect(
           borderRadius: borderRadius,
           child: VideoClipThumbnailCard(
             clip: clip,
-            isSelected: isSelected,
             selectionIndex: selectionIndex,
             disabled:
                 targetAspectRatio != null &&

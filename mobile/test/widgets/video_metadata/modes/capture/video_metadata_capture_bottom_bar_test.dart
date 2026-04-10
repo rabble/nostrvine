@@ -47,7 +47,7 @@ void main() {
     registerFallbackValue(_FakeEditorVideo());
   });
 
-  group('VideoMetadataBottomBar', () {
+  group(VideoMetadataCaptureBottomBar, () {
     late _MockGallerySaveService mockGallerySaveService;
     late _MockPermissionsService mockPermissionsService;
 

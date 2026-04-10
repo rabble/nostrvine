@@ -12,15 +12,12 @@ import 'package:openvine/utils/video_editor_utils.dart';
 ///
 /// Displays a video clip thumbnail with duration badge and optional selection
 /// indicator.
-/// Uses [FutureBuilder] to asynchronously check thumbnail file existence for
-/// optimal performance.
 class VideoClipThumbnailCard extends StatefulWidget {
   const VideoClipThumbnailCard({
     required this.clip,
     required this.onTap,
     required this.onLongPress,
-    this.selectionIndex = 0,
-    this.isSelected = false,
+    this.selectionIndex = -1,
     this.disabled = false,
     this.showDurationBadge = true,
     super.key,
@@ -41,10 +38,6 @@ class VideoClipThumbnailCard extends StatefulWidget {
   /// Callback invoked when the card is long-pressed.
   final VoidCallback onLongPress;
 
-  /// Whether this clip is currently selected, showing green border and
-  /// check icon.
-  final bool isSelected;
-
   /// Whether to show the duration badge at the bottom-left corner.
   final bool showDurationBadge;
 
@@ -62,6 +55,8 @@ class VideoClipThumbnailCard extends StatefulWidget {
 /// Manages thumbnail existence check as a cached [Future] to prevent
 /// redundant file system checks on rebuild.
 class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
+  bool get _isSelected => widget.selectionIndex > 0;
+
   @override
   Widget build(BuildContext context) {
     // Calculate aspect ratio for container
@@ -70,16 +65,16 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
     return Semantics(
       // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Video clip, ${widget.clip.duration.toFormattedSeconds()} seconds',
-      value: widget.isSelected ? 'Selected' : 'Not selected',
+      value: _isSelected ? 'Selected' : 'Not selected',
       button: true,
-      selected: widget.isSelected,
+      selected: _isSelected,
       enabled: !widget.disabled,
       onTap: widget.disabled ? null : widget.onTap,
       onLongPress: widget.disabled ? null : widget.onLongPress,
       // TODO(l10n): Replace with context.l10n when localization is added.
       hint: widget.disabled
           ? 'Disabled'
-          : 'Tap to ${widget.isSelected ? 'deselect' : 'select'}, '
+          : 'Tap to ${_isSelected ? 'deselect' : 'select'}, '
                 'long press to preview',
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 100),
@@ -120,9 +115,8 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
 
 /// Builds the thumbnail image or placeholder.
 ///
-/// Uses [FutureBuilder] to show a loading spinner while checking if the
-/// thumbnail exists, then displays either the thumbnail image or a
-/// placeholder icon.
+/// Checks thumbnail file existence synchronously on init and refreshes
+/// via [didUpdateWidget] when the clip's thumbnail path changes.
 class _Thumbnail extends StatefulWidget {
   const _Thumbnail({required this.clip});
 
@@ -141,7 +135,15 @@ class _ThumbnailState extends State<_Thumbnail> {
     _thumbnailExists = _checkThumbnailExists();
   }
 
-  /// Asynchronously checks if the thumbnail file exists
+  @override
+  void didUpdateWidget(_Thumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.clip.thumbnailPath != widget.clip.thumbnailPath) {
+      _thumbnailExists = _checkThumbnailExists();
+    }
+  }
+
+  /// Checks if the thumbnail file exists on disk.
   bool _checkThumbnailExists() {
     if (widget.clip.thumbnailPath == null) {
       return false;
@@ -201,7 +203,7 @@ class _SelectionOverlay extends StatelessWidget {
 
   final int selectionIndex;
 
-  bool get _isSelected => selectionIndex >= 0;
+  bool get _isSelected => selectionIndex > 0;
 
   @override
   Widget build(BuildContext context) {
