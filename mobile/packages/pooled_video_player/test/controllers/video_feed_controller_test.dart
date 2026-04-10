@@ -5111,4 +5111,69 @@ void main() {
       );
     });
   });
+
+  group('classifyPlaybackSourceKind', () {
+    const hash =
+        'a1b2c3d4e5f6071828394a5b6c7d8e9f0a1b2c3d4e5f6071828394a5b6c7d8e9';
+
+    test('progressive divine derivative is classified as progressive', () {
+      expect(
+        classifyPlaybackSourceKind('https://media.divine.video/$hash/720p.mp4'),
+        equals(PlaybackSourceKind.progressive),
+      );
+      expect(
+        classifyPlaybackSourceKind('https://media.divine.video/$hash/480p.mp4'),
+        equals(PlaybackSourceKind.progressive),
+      );
+    });
+
+    test('hls master playlist is classified as hls', () {
+      expect(
+        classifyPlaybackSourceKind(
+          'https://media.divine.video/$hash/hls/master.m3u8',
+        ),
+        equals(PlaybackSourceKind.hls),
+      );
+    });
+
+    test('bare divine blob hash url is classified as raw', () {
+      expect(
+        classifyPlaybackSourceKind('https://media.divine.video/$hash'),
+        equals(PlaybackSourceKind.raw),
+      );
+    });
+
+    test('non-divine url is classified as original', () {
+      expect(
+        classifyPlaybackSourceKind('https://example.com/video.mp4'),
+        equals(PlaybackSourceKind.original),
+      );
+    });
+
+    test('empty string is classified as original', () {
+      expect(
+        classifyPlaybackSourceKind(''),
+        equals(PlaybackSourceKind.original),
+      );
+    });
+
+    test('progressive derivative with query string is classified', () {
+      expect(
+        classifyPlaybackSourceKind(
+          'https://media.divine.video/$hash/720p.mp4?token=abc',
+        ),
+        equals(PlaybackSourceKind.progressive),
+      );
+    });
+  });
+
+  group('kPlaybackDiagnosticsEnabled', () {
+    test('flag is currently enabled (set to false to remove diagnostics)', () {
+      // This test exists to make removal of the diagnostics gate
+      // visible: when iOS playback investigation wraps up, set the
+      // const to false (or delete the call sites) and update this
+      // expectation in the same commit.
+      expect(kPlaybackDiagnosticsEnabled, isTrue);
+    });
+  });
 }
