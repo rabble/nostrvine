@@ -1408,6 +1408,246 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // _initializeDivineOAuth divergence tiebreaker
+  // ---------------------------------------------------------------------------
+
+  group('initialize (divineOAuth): divergence tiebreaker', () {
+    late SecureKeyContainer localKeyContainer;
+
+    setUp(() {
+      // Use a different nsec so localKey does not match testKeyContainer.
+      localKeyContainer = SecureKeyContainer.fromNsec(
+        'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+      );
+    });
+
+    test(
+      'preserves session and forces slow path when session matches '
+      'last-used npub but local key does not (multi-device Keycast)',
+      () async {
+        // Scenario: user added a Keycast account originally registered
+        // on another device. Fresh OAuth session was bound to that
+        // pubkey. Local PRIMARY still has an older device-only key.
+        // On next launch, divergence is detected; the tiebreaker must
+        // pick the session (which matches last_used_npub) and force
+        // the slow path that uses the session — NOT clear it.
+        final sessionPubkey = testKeyContainer.publicKeyHex;
+        final sessionNpub = testKeyContainer.npub;
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': sessionNpub,
+          kKnownAccountsKey: '[]',
+        });
+
+        final storage = <String, String>{};
+        final sessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'fresh_multi_device_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+          'user_pubkey': sessionPubkey,
+        };
+        storage['keycast_session'] = jsonEncode(sessionData);
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          storage.remove(key);
+        });
+
+        // Local PRIMARY has a DIFFERENT key than the session
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => localKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        // Session must NOT be cleared — it is the authoritative side.
+        expect(
+          storage['keycast_session'],
+          isNotNull,
+          reason:
+              'Session matches last_used_npub and should be preserved '
+              '(tiebreaker picks session over stale local key)',
+        );
+        final preserved =
+            jsonDecode(storage['keycast_session']!) as Map<String, dynamic>;
+        expect(preserved['access_token'], equals('fresh_multi_device_token'));
+
+        // The stale local key should be archived to its per-identity
+        // slot so the user can switch back via the welcome screen.
+        verify(
+          () => mockKeyStorage.storeIdentityKeyContainer(
+            localKeyContainer.npub,
+            any(),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    test(
+      'clears session when local key matches last-used npub but session '
+      'does not (local is authoritative)',
+      () async {
+        // Scenario: the global OAuth slot is stale (e.g., from an old
+        // session). The local key corresponds to the current user.
+        // The tiebreaker must clear the stale session so it does not
+        // pollute future sign-ins.
+        final localNpub = localKeyContainer.npub;
+        const staleSessionPubkey =
+            '89ef92b9ebe6dc1e4ea398f6477f227e9542'
+            '9627b0a33dc89b640e137b256be5';
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': localNpub,
+          kKnownAccountsKey: '[]',
+        });
+
+        final storage = <String, String>{};
+        final sessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'stale_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+          'user_pubkey': staleSessionPubkey,
+        };
+        storage['keycast_session'] = jsonEncode(sessionData);
+        storage['keycast_refresh_token'] = 'stale_refresh';
+        storage['keycast_auth_handle'] = 'stale_handle';
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          storage.remove(key);
+        });
+
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => localKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        // Stale session must be cleared
+        expect(
+          storage['keycast_session'],
+          isNull,
+          reason: 'Stale session should be cleared when local key wins',
+        );
+        expect(storage['keycast_refresh_token'], isNull);
+        expect(storage['keycast_auth_handle'], isNull);
+      },
+    );
+
+    test(
+      'clears session on ambiguous divergence (neither side matches '
+      'last_used_npub)',
+      () async {
+        // Safe default: when neither session nor local key matches
+        // the last-used npub, clear the session to avoid propagating
+        // unknown state.
+        const unknownNpub =
+            'npub1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': unknownNpub,
+          kKnownAccountsKey: '[]',
+        });
+
+        final storage = <String, String>{};
+        final sessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'unknown_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+          'user_pubkey': testKeyContainer.publicKeyHex,
+        };
+        storage['keycast_session'] = jsonEncode(sessionData);
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          storage.remove(key);
+        });
+
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => localKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        // Ambiguous → safe default: clear session
+        expect(storage['keycast_session'], isNull);
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
   // _restoreLastUsedAccountOrFallback (via initialize)
   // ---------------------------------------------------------------------------
 

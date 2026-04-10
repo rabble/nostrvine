@@ -340,33 +340,92 @@ class AuthService implements BackgroundAwareService {
       _reportStorageError(e, stack, 'divineOAuth local key load');
     }
 
-    // Detect diverged state: the global OAuth session either belongs
-    // to a different account than the local key, or has a null
-    // userPubkey (legacy sessions saved before pubkey binding was
-    // enforced). Without cleanup, the fast path would use the local
-    // key while a stale/legacy session sits in the global slot, which
-    // signOut would later archive under the wrong pubkey (Bug 2
-    // corruption mechanism). Clear the corrupt/legacy global OAuth
-    // session so the local key is used alone. The local nsec itself
-    // is never touched — user can re-auth via email+password to get
-    // a fresh session with userPubkey properly bound.
+    // Detect and resolve diverged state: the global OAuth session and
+    // local PRIMARY key belong to different accounts. This can happen
+    // from pre-fix cross-contamination (Bug 2 corruption) OR from a
+    // user adding a Keycast account originally registered on another
+    // device (their local PRIMARY has a different device-only key).
+    //
+    // Use _kLastUsedNpubKey as the tiebreaker to decide which side is
+    // authoritative. Whichever matches last-used wins. If neither
+    // matches, safe default: clear the session.
+    //
+    // In all branches, the local nsec in secure key storage is never
+    // deleted (Daniel rule: no silent key loss).
     if (session != null && localKey != null) {
       final sessionPubkey = session.userPubkey;
       final diverged =
           sessionPubkey == null || sessionPubkey != localKey.publicKeyHex;
       if (diverged) {
-        Log.warning(
-          'initialize: global OAuth session pubkey='
-          '${sessionPubkey ?? "null (legacy)"} does not match local '
-          'key ${localKey.publicKeyHex} — clearing corrupt/legacy '
-          'global session (local key is untouched)',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        await KeycastSession.clear(_flutterSecureStorage);
-        await _flutterSecureStorage?.delete(key: 'keycast_refresh_token');
-        await _flutterSecureStorage?.delete(key: 'keycast_auth_handle');
-        session = null;
+        final prefs = await SharedPreferences.getInstance();
+        final lastUsedNpub = prefs.getString(_kLastUsedNpubKey);
+        final localNpub = NostrKeyUtils.encodePubKey(localKey.publicKeyHex);
+        final sessionNpub = sessionPubkey != null
+            ? NostrKeyUtils.encodePubKey(sessionPubkey)
+            : null;
+
+        final sessionAuthoritative =
+            sessionNpub != null && sessionNpub == lastUsedNpub;
+        final localAuthoritative = localNpub == lastUsedNpub;
+
+        if (sessionAuthoritative && !localAuthoritative) {
+          // Session wins. The local PRIMARY key is stale (e.g., from
+          // an older device-only account). Preserve the session,
+          // force the slow path with null localKey, and archive the
+          // stale local key into its per-identity slot so the user
+          // can switch back to it via the welcome screen.
+          Log.warning(
+            'initialize: local key ${localKey.publicKeyHex} is stale — '
+            'last-used=$lastUsedNpub matches session '
+            'userPubkey=$sessionPubkey. Forcing slow path with '
+            'session; archiving stale local key to $localNpub.',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          try {
+            await _keyStorage.storeIdentityKeyContainer(
+              localNpub,
+              localKey,
+            );
+          } catch (e) {
+            Log.warning(
+              'initialize: failed to archive stale local key: $e',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+          }
+          localKey = null;
+        } else if (localAuthoritative && !sessionAuthoritative) {
+          // Local key wins. Clear the stale OAuth session.
+          Log.warning(
+            'initialize: global OAuth session pubkey='
+            '${sessionPubkey ?? "null (legacy)"} is stale — '
+            'last-used=$lastUsedNpub matches local key '
+            '${localKey.publicKeyHex}. Clearing stale session.',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await KeycastSession.clear(_flutterSecureStorage);
+          await _flutterSecureStorage?.delete(key: 'keycast_refresh_token');
+          await _flutterSecureStorage?.delete(key: 'keycast_auth_handle');
+          session = null;
+        } else {
+          // Ambiguous: neither (or both, impossible since diverged)
+          // matches last-used. Safe default — clear the session. The
+          // local key stays put and the fast path uses it.
+          Log.warning(
+            'initialize: divergence with ambiguous last-used npub — '
+            'session=${sessionPubkey ?? "null"}, '
+            'local=${localKey.publicKeyHex}, last-used=$lastUsedNpub. '
+            'Clearing global session (safe default).',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await KeycastSession.clear(_flutterSecureStorage);
+          await _flutterSecureStorage?.delete(key: 'keycast_refresh_token');
+          await _flutterSecureStorage?.delete(key: 'keycast_auth_handle');
+          session = null;
+        }
       }
     }
 
