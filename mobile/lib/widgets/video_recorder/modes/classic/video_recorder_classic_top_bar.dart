@@ -14,6 +14,9 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
     final isRecording = ref.watch(
       videoRecorderProvider.select((p) => p.isRecording),
     );
+    final hasClips = ref.watch(
+      clipManagerProvider.select((p) => p.hasClips),
+    );
 
     return Stack(
       children: [
@@ -29,6 +32,7 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
               children: [
                 DivineIconButton(
                   icon: .x,
+                  semanticLabel: 'Close',
                   size: .small,
                   type: .ghostSecondary,
                   onPressed: isRecording
@@ -37,9 +41,10 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
                 ),
                 DivineIconButton(
                   icon: .caretRight,
+                  semanticLabel: 'Next',
                   size: .small,
                   type: .ghostSecondary,
-                  onPressed: isRecording
+                  onPressed: isRecording || !hasClips
                       ? null
                       : () => notifier.openVideoEditor(context),
                 ),

@@ -62,18 +62,18 @@ class _VideoRecorderLibraryButtonState
     }
 
     final thumbnailPath = _lastKnownThumbnailPath ?? _libraryThumbnailPath;
+    final hasClips = clips.isNotEmpty || _libraryThumbnailPath != null;
 
     return Semantics(
       button: true,
-      label: thumbnailPath == null
-          ? 'Clip library, no clips'
-          : 'Open clip library, ${clips.length} '
-                'clip${clips.length == 1 ? '' : 's'}',
-      enabled: clips.isNotEmpty,
+      label: hasClips
+          ? 'Open clip library, ${clips.length} '
+                'clip${clips.length == 1 ? '' : 's'}'
+          : 'Clip library, no clips',
+      enabled: hasClips,
       child: InkWell(
-        onTap: thumbnailPath == null
-            ? null
-            : () async {
+        onTap: hasClips
+            ? () async {
                 await ref
                     .read(videoRecorderProvider.notifier)
                     .openLibrary(context);
@@ -81,7 +81,8 @@ class _VideoRecorderLibraryButtonState
                 // Refresh library thumbnail after returning — user may have
                 // deleted clips or new thumbnails may have been recovered.
                 _loadLibraryThumbnail();
-              },
+              }
+            : null,
         child: Container(
           margin: const .only(left: 16),
           width: 40,
@@ -152,30 +153,25 @@ class _SelectionCountBadge extends StatelessWidget {
                     minWidth: 20,
                     minHeight: 20,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                  ),
+                  padding: const .symmetric(horizontal: 4),
                   decoration: BoxDecoration(
                     color: VineTheme.error,
-                    border: Border.all(
-                      width: 2,
-                      color: VineTheme.backgroundCamera,
-                    ),
-                    borderRadius: .circular(999),
+                    shape: .circle,
+                    border: .all(width: 2, color: VineTheme.backgroundCamera),
                   ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: .min,
+                    mainAxisAlignment: .center,
                     children: [
-                      Text(
-                        count.toString(),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: .visible,
-                        style: VineTheme.labelSmallFont().copyWith(
-                          fontFeatures: [
-                            const .tabularFigures(),
-                          ],
+                      MediaQuery.withNoTextScaling(
+                        child: Text(
+                          count.toString(),
+                          textAlign: .center,
+                          style: VineTheme.labelSmallFont().copyWith(
+                            fontFeatures: [
+                              const .tabularFigures(),
+                            ],
+                          ),
                         ),
                       ),
                     ],

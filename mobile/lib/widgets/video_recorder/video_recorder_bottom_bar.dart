@@ -1,5 +1,5 @@
 // ABOUTME: Bottom bar widget for video recorder screen
-// ABOUTME: Contains flash, timer, sound, camera flip, more options, and selected sound indicator
+// ABOUTME: Contains mode selector wheel and library button
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

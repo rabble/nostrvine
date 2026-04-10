@@ -1,4 +1,4 @@
-// ABOUTME: Tests for VideoMetadataAppBar widget
+// ABOUTME: Tests for VideoMetadataCaptureAppBar widget
 // ABOUTME: Verifies rendering, Hero animation, and navigation behavior
 
 import 'package:divine_ui/divine_ui.dart';

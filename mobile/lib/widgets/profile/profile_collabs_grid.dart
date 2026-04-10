@@ -15,7 +15,11 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 
 /// Grid widget displaying user's collab videos.
 ///
@@ -101,38 +105,27 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
       builder: (context, state) {
         if (state.status == ProfileCollabVideosStatus.initial ||
             state.status == ProfileCollabVideosStatus.loading) {
-          return const CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                ),
-              ),
-            ],
-          );
+          return const ProfileTabLoadingState();
         }
 
         if (state.status == ProfileCollabVideosStatus.failure) {
-          return const CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Text(
-                    'Error loading collab videos',
-                    style: TextStyle(color: VineTheme.whiteText),
-                  ),
-                ),
-              ),
-            ],
+          return const ProfileTabErrorState(
+            message: 'Error loading collab videos',
           );
         }
 
         final collabVideos = state.videos;
 
         if (collabVideos.isEmpty) {
-          return _CollabsEmptyState(isOwnProfile: widget.isOwnProfile);
+          return ProfileTabEmptyState(
+            icon: DivineIconName.userCircle,
+            iconColor: VineTheme.onSurfaceMuted,
+            title: 'No Collabs Yet',
+            subtitle: widget.isOwnProfile
+                ? 'Videos you collaborate on will appear here'
+                : 'Videos they collaborate on will appear here',
+            subtitleColor: VineTheme.onSurfaceMuted,
+          );
         }
 
         // Prefetch visible grid videos
@@ -162,76 +155,12 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
                 }, childCount: collabVideos.length),
               ),
             ),
-            if (state.isLoadingMore)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: VineTheme.vineGreen,
-                    ),
-                  ),
-                ),
-              ),
+            if (state.isLoadingMore) const ProfileTabLoadingMoreSliver(),
           ],
         );
       },
     );
   }
-}
-
-/// Empty state shown when user has no collab videos.
-class _CollabsEmptyState extends StatelessWidget {
-  const _CollabsEmptyState({required this.isOwnProfile});
-
-  /// Whether this is the current user's own profile.
-  final bool isOwnProfile;
-
-  @override
-  Widget build(BuildContext context) => CustomScrollView(
-    slivers: [
-      SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.people_outline,
-                  color: VineTheme.onSurfaceMuted,
-                  size: 64,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Collabs Yet',
-                  textAlign: .center,
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  isOwnProfile
-                      ? 'Videos you collaborate on will appear here'
-                      : 'Videos they collaborate on will appear here',
-                  textAlign: .center,
-                  style: const TextStyle(
-                    color: VineTheme.onSurfaceMuted,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
 }
 
 /// Individual collab tile in the grid.
@@ -253,41 +182,8 @@ class _CollabGridTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
         decoration: const BoxDecoration(color: VineTheme.cardBackground),
-        child: _CollabThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
+        child: ProfileTabThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
-    ),
-  );
-}
-
-/// Collab thumbnail with loading and error states.
-class _CollabThumbnail extends StatelessWidget {
-  const _CollabThumbnail({required this.thumbnailUrl});
-
-  final String? thumbnailUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return VineCachedImage(
-        imageUrl: thumbnailUrl!,
-        placeholder: (context, url) => const _CollabThumbnailPlaceholder(),
-        errorWidget: (context, url, error) =>
-            const _CollabThumbnailPlaceholder(),
-      );
-    }
-    return const _CollabThumbnailPlaceholder();
-  }
-}
-
-/// Flat color placeholder for collab thumbnails.
-class _CollabThumbnailPlaceholder extends StatelessWidget {
-  const _CollabThumbnailPlaceholder();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(4),
-      color: VineTheme.surfaceContainer,
     ),
   );
 }

@@ -1342,14 +1342,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  linked_scroll_controller:
-    dependency: "direct main"
-    description:
-      name: linked_scroll_controller
-      sha256: e6020062bcf4ffc907ee7fd090fa971e65d8dfaac3c62baf601a3ced0b37986a
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
   lints:
     dependency: transitive
     description:
