@@ -1,6 +1,5 @@
-// ABOUTME: Utility for formatting timestamps into
-// ABOUTME: human-readable relative strings.
-// ABOUTME: Used by conversation list items and message bubbles.
+// ABOUTME: Utility for formatting timestamps into human-readable strings.
+// ABOUTME: Supports relative, verbose, date-label, and conversation formats.
 
 import 'package:intl/intl.dart';
 

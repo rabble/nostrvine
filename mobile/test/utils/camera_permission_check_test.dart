@@ -304,6 +304,35 @@ void main() {
       );
 
       testWidgets(
+        'navigates directly when resolve times out after 10s',
+        (tester) async {
+          final bloc = _FakeCameraPermissionBloc(
+            const CameraPermissionInitial(),
+          );
+          bool? result;
+          await tester.pumpWidget(
+            buildSubject(bloc, onResult: (r) => result = r),
+          );
+
+          await tester.tap(find.text('Trigger'));
+          await tester.pump();
+
+          // Stream never emits → 10s timeout fires → status is null
+          // → navigates directly.
+          await tester.pump(const Duration(seconds: 11));
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockGoRouter.push<Object?>(
+              VideoRecorderScreen.path,
+              extra: any(named: 'extra'),
+            ),
+          ).called(1);
+          expect(result, isTrue);
+        },
+      );
+
+      testWidgets(
         'navigates when permission resolves to error',
         (tester) async {
           final bloc = _FakeCameraPermissionBloc(

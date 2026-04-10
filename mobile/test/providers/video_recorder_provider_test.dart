@@ -811,7 +811,7 @@ void main() {
       expect(state.recorderMode, equals(VideoRecorderMode.classic));
 
       final savedMode = prefs.getString(
-        'camera_last_used_recorder_mode',
+        kLastUsedRecorderModeKey,
       );
       expect(savedMode, equals('classic'));
     });
@@ -853,7 +853,7 @@ void main() {
       expect(state.recorderMode, equals(VideoRecorderMode.capture));
 
       final savedMode = prefs.getString(
-        'camera_last_used_recorder_mode',
+        kLastUsedRecorderModeKey,
       );
       expect(savedMode, equals('capture'));
     });
@@ -901,7 +901,7 @@ void main() {
       () async {
         // Simulate a previously saved "classic" mode in preferences
         SharedPreferences.setMockInitialValues({
-          'camera_last_used_recorder_mode': 'classic',
+          kLastUsedRecorderModeKey: 'classic',
         });
         final prefs = await SharedPreferences.getInstance();
 

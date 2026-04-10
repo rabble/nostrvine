@@ -26,8 +26,8 @@ extension CameraPermissionNavigation on BuildContext {
     // Couldn't determine status, already authorized, or requiresSettings
     // → navigate directly (CameraPermissionGate handles the rest)
     if (status == null ||
-        status == CameraPermissionStatus.authorized ||
-        status == CameraPermissionStatus.requiresSettings) {
+        status == .authorized ||
+        status == .requiresSettings) {
       await pushWithVideoPause(VideoRecorderScreen.path);
       return true;
     }

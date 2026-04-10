@@ -51,11 +51,12 @@ class VideoEditorScaffold extends ConsumerWidget {
                   else
                     const VideoEditorCanvas(),
                   const _OverlayControls(),
-                  // FIXME(hm21) const _BottomActions(),
+                  // FIXME(hm21) Remove or keep depending on coming design decisions
+                  // const _BottomActions(),
                 ],
               ),
             ),
-            // FIXME(hm21)
+            // FIXME(hm21) Remove or keep depending on coming design decisions
             const VideoEditorTimeline(),
           ],
         ),

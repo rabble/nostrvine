@@ -7,7 +7,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_limit_warning_banner.dart';
 
 void main() {
-  group(MetadataLimitWarningBanner, () {
+  group(VideoMetadataLimitWarningBanner, () {
     Widget buildWidget({bool metadataLimitReached = false}) {
       return ProviderScope(
         overrides: [
@@ -21,7 +21,7 @@ void main() {
         ],
         child: const Directionality(
           textDirection: TextDirection.ltr,
-          child: MetadataLimitWarningBanner(),
+          child: VideoMetadataLimitWarningBanner(),
         ),
       );
     }

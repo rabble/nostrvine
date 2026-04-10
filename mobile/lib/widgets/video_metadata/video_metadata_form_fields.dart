@@ -63,7 +63,7 @@ class _VideoMetadataFormFieldsState
       mainAxisSize: .min,
       crossAxisAlignment: .stretch,
       children: [
-        const MetadataLimitWarningBanner(),
+        const VideoMetadataLimitWarningBanner(),
 
         // Title input field
         DivineTextField(

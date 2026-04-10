@@ -506,7 +506,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       inspiredByNpub: state.inspiredByNpub,
       selectedSound: selectedSound,
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
-      finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
+      finalRenderedClip: state.finalRenderedClip,
       proofManifestJson: state.proofManifestJson,
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
