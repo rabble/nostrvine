@@ -253,7 +253,6 @@ void main() {
               type: TimelineOverlayType.layer,
               startTime: Duration.zero,
               duration: Duration(seconds: 3),
-              row: 0,
             ),
             TimelineOverlayItem(
               id: 'l-1',
@@ -462,7 +461,6 @@ void main() {
                 type: TimelineOverlayType.layer,
                 startTime: Duration(seconds: 2),
                 duration: Duration(seconds: 3),
-                row: 0, // stays at target row
               ),
             ],
           ),

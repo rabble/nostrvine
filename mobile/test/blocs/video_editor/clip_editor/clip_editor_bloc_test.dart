@@ -1332,10 +1332,10 @@ void main() {
         build: buildBloc,
         seed: () => ClipEditorState(clips: twoClips),
         act: (bloc) => bloc.add(
-          ClipEditorTrimUpdated(
+          const ClipEditorTrimUpdated(
             clipId: 'a',
-            trimStart: const Duration(milliseconds: 500),
-            trimEnd: const Duration(milliseconds: 300),
+            trimStart: Duration(milliseconds: 500),
+            trimEnd: Duration(milliseconds: 300),
             isStart: true,
           ),
         ),
@@ -1359,9 +1359,9 @@ void main() {
         build: buildBloc,
         seed: () => ClipEditorState(clips: twoClips),
         act: (bloc) => bloc.add(
-          ClipEditorTrimUpdated(
+          const ClipEditorTrimUpdated(
             clipId: 'a',
-            trimStart: const Duration(milliseconds: 200),
+            trimStart: Duration(milliseconds: 200),
             trimEnd: Duration.zero,
             isStart: true,
           ),
@@ -1415,9 +1415,9 @@ void main() {
         build: buildBloc,
         seed: () => ClipEditorState(clips: twoClips),
         act: (bloc) => bloc.add(
-          ClipEditorTrimUpdated(
+          const ClipEditorTrimUpdated(
             clipId: 'a',
-            trimStart: const Duration(milliseconds: 500),
+            trimStart: Duration(milliseconds: 500),
             trimEnd: Duration.zero,
             isStart: true,
           ),
@@ -1438,9 +1438,9 @@ void main() {
         build: buildBloc,
         seed: () => ClipEditorState(clips: twoClips),
         act: (bloc) => bloc.add(
-          ClipEditorTrimUpdated(
+          const ClipEditorTrimUpdated(
             clipId: 'a',
-            trimStart: const Duration(seconds: 1),
+            trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
             isStart: true,
           ),
