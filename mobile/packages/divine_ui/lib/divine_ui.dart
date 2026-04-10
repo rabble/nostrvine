@@ -8,6 +8,7 @@ export 'src/partial_circle_spinner.dart';
 export 'src/search_bar/search_bar.dart';
 export 'src/skeleton/vine_skeleton_effect.dart';
 export 'src/slider/slider.dart';
+export 'src/sliver_pagination_trigger.dart';
 export 'src/sticker/sticker.dart';
 export 'src/text_field/text_field.dart';
 export 'src/theme/vine_theme.dart';

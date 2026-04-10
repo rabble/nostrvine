@@ -10,7 +10,6 @@ import 'package:openvine/screens/search_results/widgets/search_section_error_sta
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/widgets/sliver_pagination_trigger.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Maximum number of user profiles shown in the People preview.

@@ -8,7 +8,6 @@ import 'package:openvine/screens/search_results/widgets/search_section_empty_sta
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
-import 'package:openvine/widgets/sliver_pagination_trigger.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Maximum number of hashtag chips shown in the Tags preview.
