@@ -92,7 +92,14 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
       - name: 🚀 Run Flutter tests
-        run: flutter test --exclude-tags integration --total-shards 8 --shard-index ${{ matrix.shard_index }}
+        run: |
+          mapfile -t all < <(find test -type f -name '*_test.dart' | LC_ALL=C sort)
+          selected=()
+          for i in "${!all[@]}"; do
+            (( i % 8 == ${{ matrix.shard_index }} )) && selected+=("${all[$i]}")
+          done
+          echo "Shard ${{ matrix.shard_index }}/8: ${#selected[@]} of ${#all[@]} test files"
+          flutter test --exclude-tags integration "${selected[@]}"
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}
