@@ -38,7 +38,7 @@ class VideoEditorScaffold extends ConsumerWidget {
         selector: (state) => state.isSubEditorOpen,
         builder: (context, isSubEditorOpen) {
           return Scaffold(
-            backgroundColor: VineTheme.surfaceContainerHigh,
+            backgroundColor: VineTheme.backgroundCamera,
             resizeToAvoidBottomInset: false,
             floatingActionButton: Semantics(
               label: 'Add element',
@@ -64,34 +64,9 @@ class VideoEditorScaffold extends ConsumerWidget {
                     children: [
                       if (isLoading)
                         const BrandedLoadingScaffold()
-                      else ...[
+                      else
                         const VideoEditorCanvas(),
-                        BlocSelector<
-                          VideoEditorMainBloc,
-                          VideoEditorMainState,
-                          ({bool isOver, bool isReordering})
-                        >(
-                          selector: (state) => (
-                            isOver:
-                                state.currentPosition.inMilliseconds >
-                                VideoEditorConstants.maxDuration.inMilliseconds,
-                            isReordering: state.isReordering,
-                          ),
-                          builder: (context, record) {
-                            if (!record.isOver ||
-                                record.isReordering ||
-                                isSubEditorOpen) {
-                              return const SizedBox.shrink();
-                            }
-                            return IgnorePointer(
-                              child: ColoredBox(
-                                color: VineTheme.backgroundColor.withAlpha(128),
-                                child: const SizedBox.expand(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+
                       const _OverlayControls(),
                     ],
                   ),

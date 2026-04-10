@@ -666,12 +666,54 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               safeArea: const EditorSafeArea.none(),
               style: const MainEditorStyle(
                 uiOverlayStyle: VideoEditorConstants.uiOverlayStyle,
-                background: VineTheme.backgroundColor,
+                background: VineTheme.backgroundCamera,
               ),
               widgets: MainEditorWidgets(
                 appBar: (_, _) => null,
                 bottomBar: (_, _, key) => null,
                 removeLayerArea: (key, _, _, _) => SizedBox.shrink(key: key),
+                bodyItems: (editor, rebuildStream) {
+                  return [
+                    ReactiveWidget(
+                      builder: (context) =>
+                          BlocSelector<
+                            VideoEditorMainBloc,
+                            VideoEditorMainState,
+                            ({
+                              bool isOver,
+                              bool isReordering,
+                              bool isSubEditorOpen,
+                            })
+                          >(
+                            selector: (state) => (
+                              isOver:
+                                  state.currentPosition.inMilliseconds >
+                                  VideoEditorConstants
+                                      .maxDuration
+                                      .inMilliseconds,
+                              isReordering: state.isReordering,
+                              isSubEditorOpen: state.isSubEditorOpen,
+                            ),
+                            builder: (context, record) {
+                              if (!record.isOver ||
+                                  record.isReordering ||
+                                  record.isSubEditorOpen) {
+                                return const SizedBox.shrink();
+                              }
+                              return IgnorePointer(
+                                child: ColoredBox(
+                                  color: VineTheme.backgroundColor.withAlpha(
+                                    128,
+                                  ),
+                                  child: const SizedBox.expand(),
+                                ),
+                              );
+                            },
+                          ),
+                      stream: rebuildStream,
+                    ),
+                  ];
+                },
               ),
             ),
             paintEditor: PaintEditorConfigs(
@@ -681,7 +723,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                   2,
               safeArea: const EditorSafeArea.none(),
               style: const PaintEditorStyle(
-                background: VineTheme.backgroundColor,
+                background: VineTheme.backgroundCamera,
               ),
               widgets: PaintEditorWidgets(
                 appBar: (_, _) => null,
@@ -693,7 +735,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               safeArea: const EditorSafeArea.none(),
               enableMultiSelection: false,
               style: const FilterEditorStyle(
-                background: VineTheme.backgroundColor,
+                background: VineTheme.backgroundCamera,
               ),
               widgets: FilterEditorWidgets(
                 appBar: (_, _) => null,
