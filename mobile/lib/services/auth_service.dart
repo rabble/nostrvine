@@ -329,7 +329,7 @@ class AuthService implements BackgroundAwareService {
       category: LogCategory.auth,
     );
 
-    final session = await KeycastSession.load(_flutterSecureStorage);
+    var session = await KeycastSession.load(_flutterSecureStorage);
     SecureKeyContainer? localKey;
     try {
       if (await _keyStorage.hasKeys()) {
@@ -337,6 +337,36 @@ class AuthService implements BackgroundAwareService {
       }
     } catch (e, stack) {
       _reportStorageError(e, stack, 'divineOAuth local key load');
+    }
+
+    // Detect diverged state: the global OAuth session either belongs
+    // to a different account than the local key, or has a null
+    // userPubkey (legacy sessions saved before pubkey binding was
+    // enforced). Without cleanup, the fast path would use the local
+    // key while a stale/legacy session sits in the global slot, which
+    // signOut would later archive under the wrong pubkey (Bug 2
+    // corruption mechanism). Clear the corrupt/legacy global OAuth
+    // session so the local key is used alone. The local nsec itself
+    // is never touched — user can re-auth via email+password to get
+    // a fresh session with userPubkey properly bound.
+    if (session != null && localKey != null) {
+      final sessionPubkey = session.userPubkey;
+      final diverged =
+          sessionPubkey == null || sessionPubkey != localKey.publicKeyHex;
+      if (diverged) {
+        Log.warning(
+          'initialize: global OAuth session pubkey='
+          '${sessionPubkey ?? "null (legacy)"} does not match local '
+          'key ${localKey.publicKeyHex} — clearing corrupt/legacy '
+          'global session (local key is untouched)',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        await KeycastSession.clear(_flutterSecureStorage);
+        await _flutterSecureStorage?.delete(key: 'keycast_refresh_token');
+        await _flutterSecureStorage?.delete(key: 'keycast_auth_handle');
+        session = null;
+      }
     }
 
     final targetPubkey = session?.userPubkey ?? localKey?.publicKeyHex;
@@ -1277,12 +1307,30 @@ class AuthService implements BackgroundAwareService {
         );
       }
 
-      // Archive OAuth session
+      // Archive OAuth session — only if it has a bound userPubkey
+      // matching this account. Null userPubkey means the session was
+      // created before pubkey binding (legacy) and cannot be verified
+      // as belonging to any specific account; archiving an unverifiable
+      // session risks cross-contamination (Bug 2). A fresh OAuth
+      // sign-in via signInWithDivineOAuth always binds userPubkey.
       final oauthSession = await KeycastSession.load(_flutterSecureStorage);
-      if (oauthSession != null) {
+      final oauthOwnerMatches =
+          oauthSession?.userPubkey != null &&
+          oauthSession?.userPubkey == pubkeyHex;
+      final archiveOauth = oauthSession != null && oauthOwnerMatches;
+      if (archiveOauth) {
         await _flutterSecureStorage.write(
           key: 'keycast_session_$pubkeyHex',
           value: jsonEncode(oauthSession.toJson()),
+        );
+      } else if (oauthSession != null) {
+        Log.warning(
+          '_archiveSignerInfo: skipping OAuth archive for $pubkeyHex — '
+          'global session pubkey='
+          '${oauthSession.userPubkey ?? "null (legacy)"} '
+          '(cannot verify ownership, not archiving to avoid corruption)',
+          name: 'AuthService',
+          category: LogCategory.auth,
         );
       }
 
@@ -1290,7 +1338,7 @@ class AuthService implements BackgroundAwareService {
         '_archiveSignerInfo: archived for $pubkeyHex — '
         'amber=${amberInfo != null}, '
         'bunker=${bunkerUrl != null && bunkerUrl.isNotEmpty}, '
-        'oauth=${oauthSession != null}',
+        'oauth=$archiveOauth',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -1369,23 +1417,47 @@ class AuthService implements BackgroundAwareService {
           if (sessionJson != null) {
             final sessionMap = jsonDecode(sessionJson) as Map<String, dynamic>;
             final session = KeycastSession.fromJson(sessionMap);
-            await session.save(_flutterSecureStorage);
-            // Also restore the refresh token and auth handle to their
-            // standalone keys — KeycastOAuth.refreshSession() reads these
-            // separately from the session JSON, and _oauthClient.logout()
-            // clears them. Without this, expired restored sessions can
-            // never be refreshed.
-            if (session.refreshToken != null) {
-              await _flutterSecureStorage.write(
-                key: 'keycast_refresh_token',
-                value: session.refreshToken,
+
+            // Validate archive ownership. If the archive's userPubkey
+            // is set and does NOT match the requested account, the
+            // archive is corrupt (e.g., from pre-fix cross-contamination).
+            // Delete it so Bug 1's recovery cascade can handle the
+            // fallback via SessionExpiredException → login options.
+            // Corrupt if userPubkey is null (legacy, unverifiable) or
+            // mismatches the requested account (cross-contamination).
+            final archivePubkey = session.userPubkey;
+            final corrupt = archivePubkey == null || archivePubkey != pubkeyHex;
+            if (corrupt) {
+              Log.warning(
+                '_restoreSignerInfo: corrupt OAuth archive for '
+                '$pubkeyHex — archive pubkey='
+                '${archivePubkey ?? "null (legacy)"}. '
+                'Deleting corrupt archive.',
+                name: 'AuthService',
+                category: LogCategory.auth,
               );
-            }
-            if (session.authorizationHandle != null) {
-              await _flutterSecureStorage.write(
-                key: 'keycast_auth_handle',
-                value: session.authorizationHandle,
+              await _flutterSecureStorage.delete(
+                key: 'keycast_session_$pubkeyHex',
               );
+            } else {
+              await session.save(_flutterSecureStorage);
+              // Also restore the refresh token and auth handle to
+              // their standalone keys — KeycastOAuth.refreshSession()
+              // reads these separately from the session JSON, and
+              // _oauthClient.logout() clears them. Without this,
+              // expired restored sessions can never be refreshed.
+              if (session.refreshToken != null) {
+                await _flutterSecureStorage.write(
+                  key: 'keycast_refresh_token',
+                  value: session.refreshToken,
+                );
+              }
+              if (session.authorizationHandle != null) {
+                await _flutterSecureStorage.write(
+                  key: 'keycast_auth_handle',
+                  value: session.authorizationHandle,
+                );
+              }
             }
           }
 
@@ -2552,9 +2624,32 @@ class AuthService implements BackgroundAwareService {
     try {
       _keycastSigner = KeycastRpc.fromSession(_oauthConfig, session);
 
-      final publicKeyHex = await _keycastSigner?.getPublicKey();
+      // Prefer the pubkey stored in the session over an RPC call.
+      // session.userPubkey is ground truth once populated — it is
+      // bound to the session at the first sign-in, so subsequent
+      // reads get a pubkey that cannot mismatch the token.
+      String? publicKeyHex = session.userPubkey;
+      if (publicKeyHex == null || publicKeyHex.isEmpty) {
+        publicKeyHex = await _keycastSigner?.getPublicKey();
+      }
       if (publicKeyHex == null) {
         throw Exception('Could not retrieve public key from server');
+      }
+
+      // If the session was created before userPubkey was populated
+      // (legacy or fresh from fromTokenResponse), bind the pubkey now
+      // and re-save. This is the fix for Bug 2: every saved session
+      // must carry its owning pubkey so subsequent archive/restore
+      // operations can validate ownership.
+      if (session.userPubkey == null || session.userPubkey!.isEmpty) {
+        final boundSession = session.copyWith(userPubkey: publicKeyHex);
+        await boundSession.save(_flutterSecureStorage);
+        Log.debug(
+          'signInWithDivineOAuth: bound userPubkey=$publicKeyHex to '
+          'session and re-saved',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
       }
 
       _currentProfile = UserProfile(
