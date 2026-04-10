@@ -76,22 +76,12 @@ class LocalePreferenceService {
   }
 
   /// Map of supported locale codes to their native display names.
+  ///
+  /// Only include locales that have full (or near-full) translations.
+  /// Add new entries here as translations are completed.
   static const Map<String, String> supportedLocales = {
     'en': 'English',
     'es': 'Espa\u00f1ol',
-    'tr': 'T\u00fcrk\u00e7e',
-    'ja': '\u65e5\u672c\u8a9e',
-    'de': 'Deutsch',
-    'pt': 'Portugu\u00eas',
-    'fr': 'Fran\u00e7ais',
-    'id': 'Bahasa Indonesia',
-    'nl': 'Nederlands',
-    'sv': 'Svenska',
-    'ro': 'Rom\u00e2n\u0103',
-    'it': 'Italiano',
-    'pl': 'Polski',
-    'ar': '\u0627\u0644\u0639\u0631\u0628\u064a\u0629',
-    'ko': '\ud55c\uad6d\uc5b4',
   };
 
   /// Returns the native display name for a locale code, or the code

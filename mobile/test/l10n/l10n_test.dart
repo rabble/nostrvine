@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 void main() {
@@ -52,7 +51,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          locale: const Locale('tr'),
+          locale: const Locale('es'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
@@ -64,11 +63,16 @@ void main() {
         ),
       );
 
-      // Turkish ARB only has settingsTitle, rest falls back to English
-      expect(l10n.settingsTitle, equals('Ayarlar'));
+      // Spanish has settingsTitle but not all keys — untranslated
+      // keys fall back to English
       expect(
-        l10n.settingsCreatorAnalytics,
-        equals('Creator Analytics'),
+        l10n.settingsTitle,
+        equals('Configuraci\u00f3n'),
+      );
+      // shareMenuOriginalSound is not in the es ARB, falls back
+      expect(
+        l10n.shareMenuOriginalSound,
+        equals('Original sound'),
       );
     });
 
