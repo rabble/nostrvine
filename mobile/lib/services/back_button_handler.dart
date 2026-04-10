@@ -61,6 +61,8 @@ class BackButtonHandler {
         // Hashtag is part of the Explore tab
         _router!.go(ExploreScreen.path);
         return true; // Handled
+      // TODO(#2470): Remove search case when unified
+      // search/explore replaces the old search path.
       case RouteType.search:
         if (ctx.videoIndex != null) {
           // Feed mode → go back to search grid
