@@ -694,7 +694,7 @@ void main() {
           syncState: syncState,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(giftWrap);
         await Future<void>.delayed(Duration.zero);
 
@@ -741,7 +741,7 @@ void main() {
           syncState: syncState,
         );
 
-        repository.startListening();
+        await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
 
@@ -1302,7 +1302,7 @@ void main() {
           ),
         ).called(1);
 
-        controller.close();
+        await controller.close();
       });
 
       test('startListening is idempotent', () async {
@@ -1325,7 +1325,7 @@ void main() {
           ),
         ).called(1);
 
-        controller.close();
+        await controller.close();
       });
 
       test('stopListening unsubscribes', () async {
@@ -1371,9 +1371,9 @@ void main() {
 
         final repository = createRepository();
 
-        repository.startListening();
+        await repository.startListening();
         await repository.stopListening();
-        repository.startListening();
+        await repository.startListening();
 
         // Both opens should have produced a subscribe call on the client.
         verify(
@@ -1395,19 +1395,18 @@ void main() {
         // This keeps cold start off the UI isolate until the user visits
         // the messages tab. Regression guard for
         // docs/plans/2026-04-05-dm-scaling-fix-design.md.
-        final repository = DmRepository(
-          nostrClient: mockNostrClient,
-          messageService: mockMessageService,
-          directMessagesDao: mockDirectMessagesDao,
-          conversationsDao: mockConversationsDao,
-          // Intentionally no userPubkey/signer — initialize() provides them.
-        );
-
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
+        final repository =
+            DmRepository(
+              nostrClient: mockNostrClient,
+              messageService: mockMessageService,
+              directMessagesDao: mockDirectMessagesDao,
+              conversationsDao: mockConversationsDao,
+              // Intentionally no userPubkey/signer — initialize() provides them.
+            )..setCredentials(
+              userPubkey: _validPubkeyA,
+              signer: LocalNostrSigner(_validPrivateKey),
+              messageService: mockMessageService,
+            );
 
         // The relay client must not have been asked to subscribe.
         verifyNever(
@@ -1421,13 +1420,11 @@ void main() {
       });
 
       test('setCredentials triggers backfillCurrentUserHasSent', () async {
-        final repository = DmRepository(
+        DmRepository(
           nostrClient: mockNostrClient,
           directMessagesDao: mockDirectMessagesDao,
           conversationsDao: mockConversationsDao,
-        );
-
-        repository.setCredentials(
+        ).setCredentials(
           userPubkey: _validPubkeyA,
           signer: LocalNostrSigner(_validPrivateKey),
           messageService: mockMessageService,
@@ -1462,7 +1459,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final repository = createRepository();
-        repository.startListening();
+        await repository.startListening();
 
         // Wait well beyond any former poll interval.
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -1493,7 +1490,7 @@ void main() {
 
           final syncState = _FakeDmSyncState();
           final repository = createRepository(syncState: syncState);
-          repository.startListening();
+          await repository.startListening();
 
           final captured =
               verify(
@@ -1526,7 +1523,7 @@ void main() {
 
           final syncState = _FakeDmSyncState()..newestOverride = newest;
           final repository = createRepository(syncState: syncState);
-          repository.startListening();
+          await repository.startListening();
 
           final captured =
               verify(
@@ -1765,7 +1762,8 @@ void main() {
         'deletes messages then conversation in a transaction',
         () async {
           const convId =
-              'aabb00112233445566778899aabbccddeeff0011223344556677889900aabb00';
+              'aabb00112233445566778899aabbccddeeff'
+              '0011223344556677889900aabb00';
 
           when(
             () => mockConversationsDao.runInTransaction<void>(any()),
@@ -2951,7 +2949,8 @@ void main() {
           // Any valid Nostr pubkey works as a recipient, including users
           // not on the Divine app. This verifies NIP-17 interoperability.
           const externalUserPubkey =
-              'ff0011223344556677889900aabbccddeeff0011223344556677889900aabbcc';
+              'ff0011223344556677889900aabbccddeeff'
+              '0011223344556677889900aabbcc';
 
           when(
             () => mockMessageService.sendPrivateMessage(
@@ -4616,7 +4615,7 @@ void main() {
             rumorDecryptor: (_, _) async => rumor,
           );
 
-          repository.startListening();
+          await repository.startListening();
           controller.add(giftWrap);
           await Future<void>.delayed(Duration.zero);
 

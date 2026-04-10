@@ -66,6 +66,7 @@ const Set<int> _supportedDmKinds = {
 /// the lifetime of this object; callers should ensure the repository is
 /// disposed when the user logs out.
 class DmRepository {
+  /// Creates a [DmRepository] with the given dependencies.
   DmRepository({
     required NostrClient nostrClient,
     required DirectMessagesDao directMessagesDao,
@@ -411,7 +412,7 @@ class DmRepository {
           category: LogCategory.system,
         );
       }
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to process kind 5 event: $e',
         category: LogCategory.system,
@@ -563,7 +564,7 @@ class DmRepository {
         '$conversationId',
         category: LogCategory.system,
       );
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to process gift wrap event: $e',
         category: LogCategory.system,
@@ -727,7 +728,7 @@ class DmRepository {
         'Persisted NIP-04 DM in conversation $conversationId',
         category: LogCategory.system,
       );
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to process NIP-04 event: $e',
         category: LogCategory.system,
@@ -833,7 +834,7 @@ class DmRepository {
             }),
           );
         }
-      } catch (e, stackTrace) {
+      } on Object catch (e, stackTrace) {
         Log.error(
           'Failed to persist sent message locally: $e',
           category: LogCategory.system,
@@ -867,9 +868,7 @@ class DmRepository {
         'must not be empty',
       );
     }
-    for (final pk in recipientPubkeys) {
-      validatePubkey(pk);
-    }
+    recipientPubkeys.forEach(validatePubkey);
     if (content.trim().isEmpty) {
       throw ArgumentError.value(content, 'content', 'must not be empty');
     }
@@ -1050,10 +1049,12 @@ class DmRepository {
         isGroup: conversation.isGroup,
         createdAt: conversation.createdAt,
         // Explicit nulls clear the previous preview after deletion.
-        lastMessageContent: null, // ignore: avoid_redundant_argument_values
-        lastMessageTimestamp: null, // ignore: avoid_redundant_argument_values
-        lastMessageSenderPubkey:
-            null, // ignore: avoid_redundant_argument_values
+        // ignore: avoid_redundant_argument_values, clears preview
+        lastMessageContent: null,
+        // ignore: avoid_redundant_argument_values, clears preview
+        lastMessageTimestamp: null,
+        // ignore: avoid_redundant_argument_values, clears preview
+        lastMessageSenderPubkey: null,
         currentUserHasSent: conversation.currentUserHasSent,
         ownerPubkey: conversation.ownerPubkey,
         dmProtocol: conversation.dmProtocol,
@@ -1378,7 +1379,7 @@ class DmRepository {
   ///
   /// Throws:
   ///
-  /// * [InvalidDataException] if a database constraint is violated.
+  /// * `InvalidDataException` if a database constraint is violated.
   Future<void> removeConversation(String conversationId) {
     return _conversationsDao.runInTransaction(() async {
       await _directMessagesDao.deleteConversationMessages(
@@ -1398,7 +1399,7 @@ class DmRepository {
   ///
   /// Throws:
   ///
-  /// * [InvalidDataException] if a database constraint is violated.
+  /// * `InvalidDataException` if a database constraint is violated.
   Future<void> removeConversations(List<String> conversationIds) {
     if (conversationIds.isEmpty) return Future.value();
 
@@ -1526,7 +1527,7 @@ class DmRepository {
         // Refresh preview from actual messages.
         await _refreshConversationPreview(canonicalId);
       }
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to merge duplicate conversations: $e',
         category: LogCategory.system,
@@ -1564,7 +1565,7 @@ class DmRepository {
         'Cleaned up phantom self-conversation',
         category: LogCategory.system,
       );
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to clean up self-conversation: $e',
         category: LogCategory.system,
@@ -1602,7 +1603,7 @@ class DmRepository {
           category: LogCategory.system,
         );
       }
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to backfill currentUserHasSent: $e',
         category: LogCategory.system,
