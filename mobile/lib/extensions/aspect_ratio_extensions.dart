@@ -1,8 +1,6 @@
 // ABOUTME: Extensions for AspectRatio enum with platform-specific behavior.
 // ABOUTME: Centralizes the logic for full-screen vertical video display.
 
-// ignore_for_file: dead_code
-
 import 'dart:ui';
 
 import 'package:divine_camera/divine_camera.dart' show DivineVideoQuality;
@@ -28,6 +26,7 @@ extension AspectRatioExtensions on AspectRatio {
     // FIXME(@hm21): Remove or keep depending on coming design decisions
     return false;
 
+    // ignore_for_file: dead_code
     if (this != AspectRatio.vertical) return false;
     if (!isDesktopPlatform) return true;
     // On desktop, use fullscreen if screen already fits the target aspect ratio
