@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -28,6 +29,14 @@ class VideoEditorMainBloc
     on<VideoEditorExternalPauseRequested>(_onExternalPauseRequested);
     on<VideoEditorPlaybackRestartRequested>(_onPlaybackRestartRequested);
     on<VideoEditorPlaybackToggleRequested>(_onPlaybackToggleRequested);
+    on<VideoEditorSeekRequested>(_onSeekRequested);
+    on<VideoEditorPositionChanged>(
+      _onPositionChanged,
+      transformer: restartable(),
+    );
+    on<VideoEditorDurationChanged>(_onDurationChanged);
+    on<VideoEditorMuteToggled>(_onMuteToggled);
+    on<VideoEditorReorderingChanged>(_onReorderingChanged);
   }
 
   /// Updates undo/redo/subEditor state based on editor capabilities.
@@ -130,7 +139,10 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(
-      state.copyWith(playbackRestartCounter: state.playbackRestartCounter + 1),
+      state.copyWith(
+        playbackRestartCounter: state.playbackRestartCounter + 1,
+        isExternalPauseRequested: false,
+      ),
     );
   }
 
@@ -139,7 +151,50 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(
-      state.copyWith(playbackToggleCounter: state.playbackToggleCounter + 1),
+      state.copyWith(
+        playbackToggleCounter: state.playbackToggleCounter + 1,
+        isExternalPauseRequested: false,
+      ),
     );
+  }
+
+  void _onSeekRequested(
+    VideoEditorSeekRequested event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        seekPosition: event.position,
+        seekCounter: state.seekCounter + 1,
+      ),
+    );
+  }
+
+  void _onPositionChanged(
+    VideoEditorPositionChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(currentPosition: event.position));
+  }
+
+  void _onDurationChanged(
+    VideoEditorDurationChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(totalDuration: event.duration));
+  }
+
+  void _onMuteToggled(
+    VideoEditorMuteToggled event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(isMuted: !state.isMuted));
+  }
+
+  void _onReorderingChanged(
+    VideoEditorReorderingChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(isReordering: event.isReordering));
   }
 }

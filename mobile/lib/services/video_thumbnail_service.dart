@@ -1,6 +1,7 @@
 // ABOUTME: Service for extracting thumbnails from video files
 // ABOUTME: Generates preview frames for video posts to include in NIP-71 events
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
@@ -17,6 +18,10 @@ class VideoThumbnailService {
   static const Size _thumbnailSize = Size.square(640);
 
   static final ProVideoEditor _proVideoEditor = ProVideoEditor.instance;
+
+  /// Completer-based lock so only one strip extraction runs at a time,
+  /// preventing multiple clips from hammering the native decoder in parallel.
+  static Completer<void>? _stripLock;
 
   /// Extract a thumbnail from a video file at a specific timestamp
   ///
@@ -483,6 +488,105 @@ class VideoThumbnailService {
     return destPath;
   }
 
+  /// Generates thumbnails for a timeline strip at ~1 per second, yielded in
+  /// batches so the UI can update progressively.
+  ///
+  /// Thumbnails are written to temporary cache files to avoid holding
+  /// large byte arrays in memory. The caller is responsible for deleting
+  /// the files when they are no longer needed (see [StripThumbnail.path]).
+  ///
+  /// Each yield contains the **accumulated** list so far, allowing the
+  /// caller to simply replace its current list on each event.
+  static Stream<List<StripThumbnail>> generateStripThumbnails({
+    required String videoPath,
+    required String clipId,
+    required Duration duration,
+    required Size outputSize,
+    int quality = _thumbnailQuality,
+    int batchSize = 6,
+  }) async* {
+    if (duration <= Duration.zero) return;
+
+    // Wait for any other strip extraction to finish first.
+    while (_stripLock != null) {
+      await _stripLock!.future;
+    }
+    _stripLock = Completer<void>();
+
+    try {
+      yield* _generateStripThumbnailsBatched(
+        videoPath: videoPath,
+        clipId: clipId,
+        duration: duration,
+        outputSize: outputSize,
+        quality: quality,
+        batchSize: batchSize,
+      );
+    } finally {
+      final lock = _stripLock;
+      _stripLock = null;
+      lock?.complete();
+    }
+  }
+
+  static Stream<List<StripThumbnail>> _generateStripThumbnailsBatched({
+    required String videoPath,
+    required String clipId,
+    required Duration duration,
+    required Size outputSize,
+    required int quality,
+    required int batchSize,
+  }) async* {
+    final durationMs = duration.inMilliseconds;
+    // 1 thumbnail per second, but at least 1.
+    final count = (durationMs / 1000).ceil().clamp(1, 60);
+
+    final allTimestamps = List.generate(count, (i) {
+      final fraction = (i + 0.5) / count;
+      return Duration(
+        milliseconds: (durationMs * fraction).round(),
+      );
+    });
+
+    final cacheDir = await getTemporaryDirectory();
+    final batchId = '${clipId}_${DateTime.now().millisecondsSinceEpoch}';
+
+    final accumulated = <StripThumbnail>[];
+
+    for (
+      var batchStart = 0;
+      batchStart < allTimestamps.length;
+      batchStart += batchSize
+    ) {
+      final batchEnd = (batchStart + batchSize).clamp(0, allTimestamps.length);
+      final batchTimestamps = allTimestamps.sublist(batchStart, batchEnd);
+
+      final bytes = await _proVideoEditor.getThumbnails(
+        ThumbnailConfigs(
+          video: EditorVideo.file(videoPath),
+          outputSize: outputSize,
+          timestamps: batchTimestamps,
+          jpegQuality: quality,
+        ),
+      );
+
+      for (var i = 0; i < bytes.length && i < batchTimestamps.length; i++) {
+        final file = File(
+          '${cacheDir.path}/strip_${batchId}_${batchStart + i}.jpg',
+        );
+        await file.writeAsBytes(bytes[i]);
+        accumulated.add(
+          StripThumbnail(
+            path: file.path,
+            timestamp: batchTimestamps[i],
+          ),
+        );
+      }
+
+      yield List.unmodifiable(accumulated);
+    }
+  }
+
   /// Get optimal thumbnail timestamp based on video duration
   static Duration getOptimalTimestamp(Duration videoDuration) {
     // Extract thumbnail from 10% into the video
@@ -534,5 +638,16 @@ class ThumbnailFileResult {
 
   /// The actual video timestamp where the thumbnail was extracted from.
   /// May differ from the requested timestamp due to retry logic.
+  final Duration timestamp;
+}
+
+/// A single thumbnail extracted for a timeline strip, persisted to disk.
+class StripThumbnail {
+  const StripThumbnail({required this.path, required this.timestamp});
+
+  /// Path to the cached thumbnail file.
+  final String path;
+
+  /// The video position this thumbnail represents.
   final Duration timestamp;
 }

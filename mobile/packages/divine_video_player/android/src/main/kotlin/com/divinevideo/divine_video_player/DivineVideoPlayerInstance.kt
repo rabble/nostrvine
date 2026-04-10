@@ -8,6 +8,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
@@ -58,6 +59,19 @@ internal class DivineVideoPlayerInstance(
 
     private val audioOverlayManager = AudioOverlayManager(context)
 
+    /**
+     * Pending result for an async seekTo call.
+     * Completed when ExoPlayer transitions to STATE_READY after a seek,
+     * so the Dart `await seekTo()` blocks until the frame is decoded.
+     */
+    private var seekCompletionResult: MethodChannel.Result? = null
+
+    /** Safety timeout so Dart is never left hanging if the callback is lost. */
+    private val seekTimeoutRunnable = Runnable {
+        seekCompletionResult?.success(null)
+        seekCompletionResult = null
+    }
+
     private val positionUpdater = object : Runnable {
         override fun run() {
             syncAudioOverlays()
@@ -91,6 +105,7 @@ internal class DivineVideoPlayerInstance(
             )
             .build().also { newPlayer ->
                 player = newPlayer
+                newPlayer.setSeekParameters(SeekParameters.EXACT)
                 newPlayer.addListener(playerListener)
                 textureSurface?.let { newPlayer.setVideoSurface(it) }
             }
@@ -184,6 +199,11 @@ internal class DivineVideoPlayerInstance(
         val globalMs = (call.argument<Number>("positionMs"))?.toLong() ?: 0L
         val exoPlayer = ensurePlayer()
 
+        // Complete any previous pending seek so Dart isn't left hanging.
+        mainHandler.removeCallbacks(seekTimeoutRunnable)
+        seekCompletionResult?.success(null)
+        seekCompletionResult = result
+
         // Ensure clip offsets are up-to-date from ExoPlayer's timeline
         // before resolving the global position. Without this, offsets
         // may all be zero when clips were set without endMs and the
@@ -195,7 +215,9 @@ internal class DivineVideoPlayerInstance(
 
         exoPlayer.seekTo(resolved.first, resolved.second)
         syncAudioOverlays()
-        result.success(null)
+
+        // Safety timeout — complete after 500ms if the callback never fires.
+        mainHandler.postDelayed(seekTimeoutRunnable, 500)
     }
 
     /**
@@ -207,7 +229,12 @@ internal class DivineVideoPlayerInstance(
      */
     private fun resolveGlobalPosition(globalMs: Long): Pair<Int, Long> {
         // If offsets haven't been populated yet (all zero with >1 clip)
-        // fall back to clip 0 so we never accidentally land on the last.
+        // try refreshing once more from the current timeline.
+        if (clipCount > 1 && clipOffsets.all { it == 0L }) {
+            player?.let { refreshClipOffsets(it) }
+        }
+
+        // Still all zero — fall back to clip 0.
         if (clipCount > 1 && clipOffsets.all { it == 0L }) {
             return Pair(0, globalMs)
         }
@@ -323,6 +350,15 @@ internal class DivineVideoPlayerInstance(
         audioOverlayManager.update(globalPositionMs, videoPlayer.isPlaying)
     }
 
+    /** Completes the pending seekTo result so Dart's await returns. */
+    private fun completeSeekIfPending() {
+        seekCompletionResult?.let {
+            mainHandler.removeCallbacks(seekTimeoutRunnable)
+            it.success(null)
+            seekCompletionResult = null
+        }
+    }
+
     // -- state broadcasting --
 
     private fun sendStateUpdate() {
@@ -404,21 +440,21 @@ internal class DivineVideoPlayerInstance(
         }
         val newOffsets = mutableListOf<Long>()
         var accum = 0L
+        var allResolved = true
         for (i in 0 until exoPlayer.mediaItemCount) {
             newOffsets.add(accum)
             val w = androidx.media3.common.Timeline.Window()
             timeline.getWindow(i, w)
             val durationMs = w.durationMs
-            // C.TIME_UNSET (Long.MIN_VALUE + 1) and any other negative value
-            // means the duration is not yet resolved. With an even number of
-            // clips, summing C.TIME_UNSET values overflows back to a small
-            // positive number (e.g. 2 for two clips), which passes the
-            // accum > 0 guard and corrupts clipOffsets with invalid values.
-            // Bail out early so clipOffsets stays all-zeros and the safety
-            // check in resolveGlobalPosition keeps playback on clip 0.
-            if (durationMs < 0) return
+            if (durationMs < 0) {
+                // Duration not yet resolved for this clip — skip it but
+                // continue so that earlier clips still get correct offsets.
+                allResolved = false
+                continue
+            }
             accum += durationMs
         }
+        // Only update when at least some durations are known.
         if (accum > 0) clipOffsets = newOffsets
     }
 
@@ -439,6 +475,10 @@ internal class DivineVideoPlayerInstance(
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (playbackState == Player.STATE_ENDED && isLooping) {
                 syncAudioOverlays()
+            }
+            // Complete pending seekTo when ExoPlayer finishes decoding.
+            if (playbackState == Player.STATE_READY) {
+                completeSeekIfPending()
             }
             sendStateUpdate()
         }
@@ -508,6 +548,9 @@ internal class DivineVideoPlayerInstance(
 
     fun dispose() {
         mainHandler.removeCallbacks(positionUpdater)
+        mainHandler.removeCallbacks(seekTimeoutRunnable)
+        seekCompletionResult?.success(null)
+        seekCompletionResult = null
         methodChannel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
         player?.removeListener(playerListener)

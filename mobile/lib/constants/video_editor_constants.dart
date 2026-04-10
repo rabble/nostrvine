@@ -89,7 +89,7 @@ class VideoEditorConstants {
   static const double drawItemWidth = 48.0;
 
   /// Border radius applied to the video editor canvas.
-  static const double canvasRadius = 32.0;
+  static const double canvasRadius = 8.0;
 
   /// Base font size in pixels for text overlays.
   static const double baseFontSize = 24.0;

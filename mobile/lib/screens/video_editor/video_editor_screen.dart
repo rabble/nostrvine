@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show StickerData;
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
@@ -323,6 +324,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         BlocProvider(create: (_) => VideoEditorFilterBloc()),
         BlocProvider(create: (_) => VideoEditorDrawBloc()),
         BlocProvider(create: (_) => VideoEditorTextBloc()),
+        BlocProvider(
+          create: (_) {
+            final clips = ref.read(clipManagerProvider).clips;
+            return ClipEditorBloc()..add(ClipEditorInitialized(clips));
+          },
+        ),
       ],
       child: Builder(
         builder: (context) {

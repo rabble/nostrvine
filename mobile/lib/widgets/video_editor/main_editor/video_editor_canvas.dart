@@ -59,7 +59,11 @@ class _VideoEditorCanvasState extends State<VideoEditorCanvas> {
         }
       },
       child: Padding(
-        padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
+        padding: .only(
+          // FIXME(hm21) Remove or keep depending on coming design decisions
+          // bottom:  VideoEditorConstants.bottomBarHeight,
+          top: MediaQuery.viewPaddingOf(context).top,
+        ),
         child: _CanvasFitter(
           builder: (bodySize, renderSize) =>
               _VideoEditor(renderSize: renderSize, bodySize: bodySize),
@@ -99,6 +103,19 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   /// Tracks last playback state to detect changes.
   bool _lastIsPlaying = false;
+
+  /// Last position dispatched to BLoC — avoids flooding with duplicates.
+  Duration _lastReportedPosition = Duration.zero;
+
+  /// Last duration dispatched to BLoC — avoids flooding with duplicates.
+  Duration _lastReportedDuration = Duration.zero;
+
+  /// Whether a native seekTo is currently in flight.
+  bool _isSeeking = false;
+
+  /// The most recent seek position received while a seek was in progress.
+  /// Processed as a trailing seek once the current seek completes.
+  Duration? _pendingSeekPosition;
 
   @override
   void initState() {
@@ -168,18 +185,60 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
   }
 
+  /// Handles seek requests from BLoC (e.g. timeline scrubbing).
+  ///
+  /// Uses a leading + trailing pattern with async backpressure:
+  /// - The first request (leading) is executed immediately via await.
+  /// - While the native seekTo is in flight, intermediate requests are
+  ///   dropped; only the latest position is kept.
+  /// - Once the seek completes, the last received position is fired as
+  ///   a trailing seek so the video always lands on the final frame.
+  ///
+  /// This relies on both Android and iOS returning from seekTo only
+  /// after the frame is actually decoded and rendered.
+  Future<void> _onSeekRequested(Duration position) async {
+    if (!_isPlayerReadyNotifier.value) return;
+
+    if (_isSeeking) {
+      _pendingSeekPosition = position;
+      return;
+    }
+
+    _isSeeking = true;
+    await _videoPlayer?.seekTo(position);
+
+    // Process trailing seek if one arrived while we were busy.
+    while (_pendingSeekPosition != null && mounted) {
+      final pending = _pendingSeekPosition!;
+      _pendingSeekPosition = null;
+      await _videoPlayer?.seekTo(pending);
+    }
+
+    _isSeeking = false;
+  }
+
   /// Dispatches playback state changes to the BLoC.
   ///
-  /// Audio synchronization is handled natively by the player's
-  /// audio overlay tracks — no manual sync needed.
+  /// Reports play/pause state, current position, and duration so the
+  /// timeline can stay in sync with the real player.
+  /// Only dispatches when values actually change to avoid flooding.
   void _onPlayerStateChanged(DivineVideoPlayerState playerState) {
-    final isPlaying = playerState.isPlaying;
+    final bloc = context.read<VideoEditorMainBloc>();
 
+    final isPlaying = playerState.isPlaying;
     if (isPlaying != _lastIsPlaying) {
       _lastIsPlaying = isPlaying;
-      context.read<VideoEditorMainBloc>().add(
-        VideoEditorPlaybackChanged(isPlaying: isPlaying),
-      );
+      bloc.add(VideoEditorPlaybackChanged(isPlaying: isPlaying));
+    }
+
+    if (playerState.position != _lastReportedPosition) {
+      _lastReportedPosition = playerState.position;
+      bloc.add(VideoEditorPositionChanged(playerState.position));
+    }
+
+    if (playerState.duration != _lastReportedDuration) {
+      _lastReportedDuration = playerState.duration;
+      bloc.add(VideoEditorDurationChanged(playerState.duration));
     }
   }
 
@@ -262,7 +321,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     ]);
     if (!mounted) return;
 
-    await _videoPlayer!.play();
+    final mainState = context.read<VideoEditorMainBloc>().state;
+    if (!mainState.isExternalPauseRequested) {
+      await _videoPlayer!.play();
+    }
     if (!mounted) return;
     _isPlayerReadyNotifier.value = true;
 
@@ -523,6 +585,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 previous.playbackToggleCounter != current.playbackToggleCounter,
             listener: (context, state) {
               _onPlaybackToggleRequested();
+            },
+          ),
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.seekCounter != current.seekCounter,
+            listener: (context, state) {
+              _onSeekRequested(state.seekPosition);
+            },
+          ),
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.isMuted != current.isMuted,
+            listener: (context, state) {
+              _videoPlayer?.setVolume(state.isMuted ? 0 : 1);
+              ref
+                  .read(videoEditorProvider.notifier)
+                  .setOriginalAudioVolume(state.isMuted ? 0 : 1);
             },
           ),
         ],

@@ -17,6 +17,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_bott
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_remove_area.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
 
 /// A scaffold widget that provides the standard layout for the video editor.
 ///
@@ -37,16 +38,26 @@ class VideoEditorScaffold extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: VineTheme.surfaceContainerHigh,
         resizeToAvoidBottomInset: false,
-        body: Stack(
-          fit: .expand,
-          clipBehavior: .none,
+        body: Column(
+          spacing: 16,
           children: [
-            if (isLoading)
-              const BrandedLoadingScaffold()
-            else
-              const VideoEditorCanvas(),
-            const _OverlayControls(),
-            const _BottomActions(),
+            Expanded(
+              child: Stack(
+                fit: .expand,
+                clipBehavior: .none,
+                children: [
+                  if (isLoading)
+                    const BrandedLoadingScaffold()
+                  else
+                    const VideoEditorCanvas(),
+                  const _OverlayControls(),
+                  // FIXME(hm21) Remove or keep depending on coming design decisions
+                  // const _BottomActions(),
+                ],
+              ),
+            ),
+            // FIXME(hm21) Remove or keep depending on coming design decisions
+            const VideoEditorTimeline(),
           ],
         ),
       ),
@@ -92,6 +103,7 @@ class _OverlayControls extends StatelessWidget {
 ///
 /// Shows [VideoEditorFilterBottomBar] when filter editor is open, hides the
 /// bar during layer interaction, and falls back to [VideoEditorMainBottomBar].
+// ignore: unused_element
 class _BottomActions extends StatelessWidget {
   const _BottomActions();
 

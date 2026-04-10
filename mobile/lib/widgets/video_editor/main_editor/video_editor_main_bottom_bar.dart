@@ -1,5 +1,5 @@
 // ABOUTME: Bottom toolbar for the video editor with sub-editor buttons.
-// ABOUTME: Provides access to text, draw, stickers, effects, and music editors.
+// ABOUTME: Provides access to clips, text, draw, volume, and effects editors.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -125,10 +125,12 @@ class _ActionButton extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(),
-          textAlign: .center,
+        ExcludeSemantics(
+          child: Text(
+            label,
+            style: VineTheme.bodySmallFont(),
+            textAlign: .center,
+          ),
         ),
       ],
     );
