@@ -56,13 +56,15 @@ class VideosSection extends StatelessWidget {
             ),
           ),
         _VideosContent(showAll: showAll),
-        if (showAll) _VideosPaginationTrigger(),
+        if (showAll) const _VideosPaginationTrigger(),
       ],
     );
   }
 }
 
 class _VideosPaginationTrigger extends StatelessWidget {
+  const _VideosPaginationTrigger();
+
   @override
   Widget build(BuildContext context) {
     final hasMore = context.select(

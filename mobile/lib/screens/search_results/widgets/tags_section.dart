@@ -48,13 +48,15 @@ class TagsSection extends StatelessWidget {
             child: SectionHeader(title: 'Tags', onTap: onSeeAll),
           ),
         _TagsContent(showAll: showAll),
-        if (showAll) _TagsPaginationTrigger(),
+        if (showAll) const _TagsPaginationTrigger(),
       ],
     );
   }
 }
 
 class _TagsPaginationTrigger extends StatelessWidget {
+  const _TagsPaginationTrigger();
+
   @override
   Widget build(BuildContext context) {
     final hasMore = context.select(

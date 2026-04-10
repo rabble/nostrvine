@@ -50,13 +50,15 @@ class PeopleSection extends StatelessWidget {
             child: SectionHeader(title: 'People', onTap: onSeeAll),
           ),
         _PeopleContent(showAll: showAll),
-        if (showAll) _PeoplePaginationTrigger(),
+        if (showAll) const _PeoplePaginationTrigger(),
       ],
     );
   }
 }
 
 class _PeoplePaginationTrigger extends StatelessWidget {
+  const _PeoplePaginationTrigger();
+
   @override
   Widget build(BuildContext context) {
     final hasMore = context.select(

@@ -9,6 +9,15 @@ import 'package:flutter/material.dart';
 ///
 /// When [isLoadingMore] is true, a loading indicator replaces the sentinel.
 /// When [hasMore] is false, the sliver collapses to nothing.
+///
+/// **Re-mount safety:** If the user scrolls past the sentinel and back,
+/// [initState] fires again on remount. This is intentional — the consuming
+/// BLoC must guard against duplicate dispatches (e.g. `if (isLoadingMore)
+/// return` + `sequential()` transformer).
+///
+/// **When to use:** Prefer this widget for pagination inside
+/// [CustomScrollView] slivers. For widgets that own their own
+/// [ScrollController], use [ScrollPaginationMixin] instead.
 class SliverPaginationTrigger extends StatelessWidget {
   const SliverPaginationTrigger({
     required this.onLoadMore,
@@ -31,7 +40,10 @@ class SliverPaginationTrigger extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(16),
           child: Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            child: CircularProgressIndicator(
+              color: VineTheme.vineGreen,
+              semanticsLabel: 'Loading more results',
+            ),
           ),
         ),
       );
