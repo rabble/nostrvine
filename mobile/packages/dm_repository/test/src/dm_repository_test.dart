@@ -6241,10 +6241,6 @@ void main() {
             phantomParticipants,
           );
 
-          final secondPhantom = [_validPubkeyA, _validPubkeyB]..sort();
-          // Use a fake non-canonical id for the second "duplicate"
-          final secondId = '${secondPhantom.join(':')}:fake';
-
           when(
             () => mockConversationsDao.getAllConversations(
               ownerPubkey: any(named: 'ownerPubkey'),
