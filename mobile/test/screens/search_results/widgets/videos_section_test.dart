@@ -158,5 +158,60 @@ void main() {
         ).called(1);
       },
     );
+
+    group('loading more indicator', () {
+      testWidgets(
+        'shows loading indicator when showAll and isLoadingMore',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            VideoSearchState(
+              status: VideoSearchStatus.success,
+              videos: [testVideo],
+              hasMore: true,
+              isLoadingMore: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides loading indicator when showAll and not isLoadingMore',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            VideoSearchState(
+              status: VideoSearchStatus.success,
+              videos: [testVideo],
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not show loading indicator when not showAll',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            VideoSearchState(
+              status: VideoSearchStatus.success,
+              videos: [testVideo],
+              isLoadingMore: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          // The initial loading spinner is hidden because we have results,
+          // and the loading-more indicator is only added when showAll.
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+    });
   });
 }

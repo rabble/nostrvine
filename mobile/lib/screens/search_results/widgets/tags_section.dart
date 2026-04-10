@@ -8,6 +8,7 @@ import 'package:openvine/screens/search_results/widgets/search_section_empty_sta
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
+import 'package:openvine/widgets/sliver_pagination_trigger.dart';
 
 /// Maximum number of hashtag chips shown in the Tags preview.
 const _maxTagsPreview = 6;
@@ -46,7 +47,27 @@ class TagsSection extends StatelessWidget {
             child: SectionHeader(title: 'Tags', onTap: onSeeAll),
           ),
         _TagsContent(showAll: showAll),
+        if (showAll) _TagsPaginationTrigger(),
       ],
+    );
+  }
+}
+
+class _TagsPaginationTrigger extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final hasMore = context.select(
+      (HashtagSearchBloc b) => b.state.hasMore,
+    );
+    final isLoadingMore = context.select(
+      (HashtagSearchBloc b) => b.state.isLoadingMore,
+    );
+    return SliverPaginationTrigger(
+      onLoadMore: () => context.read<HashtagSearchBloc>().add(
+        const HashtagSearchLoadMore(),
+      ),
+      hasMore: hasMore,
+      isLoadingMore: isLoadingMore,
     );
   }
 }

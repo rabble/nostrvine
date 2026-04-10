@@ -1,0 +1,108 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/widgets/sliver_pagination_trigger.dart';
+
+void main() {
+  group(SliverPaginationTrigger, () {
+    Widget buildSubject({
+      required bool hasMore,
+      required bool isLoadingMore,
+      required VoidCallback onLoadMore,
+    }) {
+      return MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              SliverPaginationTrigger(
+                hasMore: hasMore,
+                isLoadingMore: isLoadingMore,
+                onLoadMore: onLoadMore,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    testWidgets(
+      'shows nothing when hasMore is false',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: false,
+            isLoadingMore: false,
+            onLoadMore: () {},
+          ),
+        );
+
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows loading indicator when isLoadingMore is true',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: true,
+            isLoadingMore: true,
+            onLoadMore: () {},
+          ),
+        );
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'calls onLoadMore when sentinel is mounted',
+      (tester) async {
+        var loadMoreCalled = false;
+
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: true,
+            isLoadingMore: false,
+            onLoadMore: () => loadMoreCalled = true,
+          ),
+        );
+
+        expect(loadMoreCalled, isTrue);
+      },
+    );
+
+    testWidgets(
+      'does not call onLoadMore when isLoadingMore is true',
+      (tester) async {
+        var loadMoreCalled = false;
+
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: true,
+            isLoadingMore: true,
+            onLoadMore: () => loadMoreCalled = true,
+          ),
+        );
+
+        expect(loadMoreCalled, isFalse);
+      },
+    );
+
+    testWidgets(
+      'does not call onLoadMore when hasMore is false',
+      (tester) async {
+        var loadMoreCalled = false;
+
+        await tester.pumpWidget(
+          buildSubject(
+            hasMore: false,
+            isLoadingMore: false,
+            onLoadMore: () => loadMoreCalled = true,
+          ),
+        );
+
+        expect(loadMoreCalled, isFalse);
+      },
+    );
+  });
+}

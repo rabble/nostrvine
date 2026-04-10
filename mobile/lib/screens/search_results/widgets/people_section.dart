@@ -10,6 +10,7 @@ import 'package:openvine/screens/search_results/widgets/search_section_error_sta
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:openvine/widgets/sliver_pagination_trigger.dart';
 
 /// Maximum number of user profiles shown in the People preview.
 const _maxPeoplePreview = 3;
@@ -48,7 +49,27 @@ class PeopleSection extends StatelessWidget {
             child: SectionHeader(title: 'People', onTap: onSeeAll),
           ),
         _PeopleContent(showAll: showAll),
+        if (showAll) _PeoplePaginationTrigger(),
       ],
+    );
+  }
+}
+
+class _PeoplePaginationTrigger extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final hasMore = context.select(
+      (UserSearchBloc b) => b.state.hasMore,
+    );
+    final isLoadingMore = context.select(
+      (UserSearchBloc b) => b.state.isLoadingMore,
+    );
+    return SliverPaginationTrigger(
+      onLoadMore: () => context.read<UserSearchBloc>().add(
+        const UserSearchLoadMore(),
+      ),
+      hasMore: hasMore,
+      isLoadingMore: isLoadingMore,
     );
   }
 }
