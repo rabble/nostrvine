@@ -64,7 +64,7 @@ void main() {
 
       testWidgets('no selection index text when not selected', (tester) async {
         await tester.pumpWidget(
-          buildWidget(selectionIndex: -1),
+          buildWidget(),
         );
 
         // Selection overlay exists but without the number
