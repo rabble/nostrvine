@@ -629,6 +629,47 @@ void main() {
             expect(pool.hasPlayer('https://example.com/v4.mp4'), isTrue);
           },
         );
+
+        test(
+          'skips multiple disposed LRU entries in a row and creates a new '
+          'player',
+          () async {
+            // Use a larger pool so we can have multiple disposed LRU entries
+            // without the pool dropping below capacity after each removal.
+            // pool (maxPlayers=3) starts full; v1 and v2 are disposed.
+            // Removing disposed v1 drops the count to 2 (< maxPlayers=3),
+            // making room for v4 without needing to evict further.
+            // This test verifies that neither disposed entry is recycled or
+            // double-disposed, and that a fresh player is allocated as
+            // fallback.
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            // Mark v1 (LRU) and v2 as already disposed.
+            when(() => createdPlayers[0].isDisposed).thenReturn(true);
+            when(() => createdPlayers[1].isDisposed).thenReturn(true);
+
+            // Request v4 — _recycleLru skips disposed v1 (pool now has room),
+            // so no further eviction occurs and a fresh player is created.
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            // Neither disposed entry must be recycled or double-disposed.
+            verifyNever(() => createdPlayers[0].recycle());
+            verifyNever(() => createdPlayers[0].dispose());
+            verifyNever(() => createdPlayers[1].recycle());
+            verifyNever(() => createdPlayers[1].dispose());
+
+            // v3 (live LRU) was not touched because the pool had room after
+            // the disposed v1 was removed.
+            verifyNever(() => createdPlayers[2].recycle());
+
+            // A fresh player was created as fallback.
+            expect(createdPlayers.length, equals(4));
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+            expect(pool.hasPlayer('https://example.com/v4.mp4'), isTrue);
+          },
+        );
       });
     });
 

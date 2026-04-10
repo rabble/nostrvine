@@ -12,7 +12,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/subscription_manager.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 // Mock classes
 class MockNostrService extends Mock implements NostrClient {}

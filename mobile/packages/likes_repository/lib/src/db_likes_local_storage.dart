@@ -113,7 +113,10 @@ class DbLikesLocalStorage implements LikesLocalStorage {
     return LikeRecord(
       targetEventId: row.targetEventId,
       reactionEventId: row.reactionEventId,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt * 1000),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        row.createdAt * 1000,
+        isUtc: true,
+      ),
     );
   }
 }

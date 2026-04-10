@@ -1,11 +1,14 @@
 // ABOUTME: Widget test for settings hub screen
 // ABOUTME: Verifies account header, auth-state tiles, and navigation structure
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/models/known_account.dart';
@@ -26,6 +29,15 @@ import '../helpers/go_router.dart';
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
+    implements InviteStatusCubit {}
+
+_MockInviteStatusCubit _createMockInviteCubit() {
+  final cubit = _MockInviteStatusCubit();
+  when(() => cubit.state).thenReturn(const InviteStatusState());
+  return cubit;
+}
 
 void main() {
   group(SettingsScreen, () {
@@ -70,6 +82,8 @@ void main() {
         () => mockAuthService.getKnownAccounts(),
       ).thenAnswer((_) async => knownAccounts);
 
+      final mockInviteCubit = _createMockInviteCubit();
+
       final app = ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
@@ -85,7 +99,12 @@ void main() {
             (ref, pubkey) => Stream.value(null),
           ),
         ],
-        child: const MaterialApp(home: SettingsScreen()),
+        child: MaterialApp(
+          home: BlocProvider<InviteStatusCubit>.value(
+            value: mockInviteCubit,
+            child: const SettingsScreen(),
+          ),
+        ),
       );
 
       if (goRouter == null) {
@@ -238,7 +257,12 @@ void main() {
           container: container,
           child: MockGoRouterProvider(
             goRouter: mockGoRouter,
-            child: const MaterialApp(home: SettingsScreen()),
+            child: MaterialApp(
+              home: BlocProvider<InviteStatusCubit>.value(
+                value: _createMockInviteCubit(),
+                child: const SettingsScreen(),
+              ),
+            ),
           ),
         ),
       );
@@ -311,7 +335,12 @@ void main() {
                 AuthState.authenticated,
               ),
             ],
-            child: const MaterialApp(home: SettingsScreen()),
+            child: MaterialApp(
+              home: BlocProvider<InviteStatusCubit>.value(
+                value: _createMockInviteCubit(),
+                child: const SettingsScreen(),
+              ),
+            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -387,7 +416,12 @@ void main() {
                 FeatureFlag.blueskyPublishing,
               ).overrideWith((ref) => true),
             ],
-            child: const MaterialApp(home: SettingsScreen()),
+            child: MaterialApp(
+              home: BlocProvider<InviteStatusCubit>.value(
+                value: _createMockInviteCubit(),
+                child: const SettingsScreen(),
+              ),
+            ),
           ),
         );
         await tester.pumpAndSettle();

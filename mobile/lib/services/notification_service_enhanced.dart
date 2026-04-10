@@ -14,9 +14,9 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/notification_helpers.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:synchronized/synchronized.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Enhanced notification service with social features
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -302,7 +302,7 @@ class NotificationServiceEnhanced {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName liked your video',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent.videoUrl,
       targetVideoThumbnail: videoEvent.thumbnailUrl,
@@ -336,7 +336,7 @@ class NotificationServiceEnhanced {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName commented on your video',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent.videoUrl,
       targetVideoThumbnail: videoEvent.thumbnailUrl,
@@ -377,7 +377,7 @@ class NotificationServiceEnhanced {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName started following you',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
     );
 
     await _addNotification(notification);
@@ -414,7 +414,7 @@ class NotificationServiceEnhanced {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName mentioned you',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
       metadata: {'text': event.content},
     );
 
@@ -446,7 +446,7 @@ class NotificationServiceEnhanced {
       actorName: actorName,
       actorPictureUrl: actorProfile?.picture,
       message: '$actorName reposted your video',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      timestamp: event.createdAtDateTime,
       targetEventId: videoEventId,
       targetVideoUrl: videoEvent.videoUrl,
       targetVideoThumbnail: videoEvent.thumbnailUrl,

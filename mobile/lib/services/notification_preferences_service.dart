@@ -5,7 +5,7 @@ import 'dart:convert';
 
 import 'package:hive_ce/hive.dart';
 import 'package:openvine/models/notification_preferences.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class NotificationPreferencesService {
   NotificationPreferencesService({

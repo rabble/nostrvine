@@ -32,6 +32,7 @@ class VideoMetadataCaptureAppBar extends StatelessWidget
                 icon: .caretLeft,
                 type: .secondary,
                 size: .small,
+                semanticLabel: 'Back',
                 onPressed: () => context.pop(),
               ),
             ),

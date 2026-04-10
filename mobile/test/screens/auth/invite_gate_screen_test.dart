@@ -6,21 +6,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
-import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:openvine/services/invite_api_service.dart';
 
-class _MockInviteApiService extends Mock implements InviteApiService {}
+class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 class _MockHttpClient extends Mock implements http.Client {}
 
 class _MockResponse extends Mock implements http.Response {}
 
 void main() {
-  late _MockInviteApiService mockInviteApiService;
+  late _MockInviteApiClient mockInviteApiClient;
 
   setUpAll(() {
     registerFallbackValue(Uri.parse('https://example.com'));
@@ -28,16 +27,16 @@ void main() {
   });
 
   setUp(() {
-    mockInviteApiService = _MockInviteApiService();
+    mockInviteApiClient = _MockInviteApiClient();
   });
 
-  Widget createTestWidget({InviteApiService? inviteApiService}) {
-    final service = inviteApiService ?? mockInviteApiService;
+  Widget createTestWidget({InviteApiClient? inviteApiClient}) {
+    final client = inviteApiClient ?? mockInviteApiClient;
 
-    return RepositoryProvider<InviteApiService>.value(
-      value: service,
+    return RepositoryProvider<InviteApiClient>.value(
+      value: client,
       child: BlocProvider(
-        create: (_) => InviteGateBloc(inviteApiService: service),
+        create: (_) => InviteGateBloc(inviteApiClient: client),
         child: MaterialApp.router(
           theme: VineTheme.theme,
           routerConfig: GoRouter(
@@ -74,7 +73,7 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockInviteApiService.getClientConfig(),
+        () => mockInviteApiClient.getClientConfig(),
       ).thenAnswer(
         (_) async => InviteClientConfig(
           mode: parseOnboardingMode('waitlist_only'),
@@ -105,13 +104,14 @@ void main() {
           () => mockClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => response);
 
-        final previewInviteApiService = InviteApiService(
+        final previewInviteApiClient = InviteApiClient(
+          baseUrl: 'https://invite.example.com',
           client: mockClient,
           forceOpenOnboarding: true,
         );
 
         await tester.pumpWidget(
-          createTestWidget(inviteApiService: previewInviteApiService),
+          createTestWidget(inviteApiClient: previewInviteApiClient),
         );
         await tester.pumpAndSettle();
 
@@ -121,7 +121,7 @@ void main() {
 
     testWidgets('valid code continues to create account', (tester) async {
       when(
-        () => mockInviteApiService.getClientConfig(),
+        () => mockInviteApiClient.getClientConfig(),
       ).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
@@ -129,7 +129,7 @@ void main() {
         ),
       );
       when(
-        () => mockInviteApiService.validateCode(any()),
+        () => mockInviteApiClient.validateCode(any()),
       ).thenAnswer(
         (_) async => const InviteValidationResult(
           valid: true,
@@ -150,14 +150,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Create Account'), findsOneWidget);
-      verify(() => mockInviteApiService.validateCode('AB12-EF34')).called(1);
+      verify(() => mockInviteApiClient.validateCode('AB12-EF34')).called(1);
     });
 
     testWidgets('shows initial recovery error from query params', (
       tester,
     ) async {
       when(
-        () => mockInviteApiService.getClientConfig(),
+        () => mockInviteApiClient.getClientConfig(),
       ).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
@@ -166,11 +166,10 @@ void main() {
       );
 
       await tester.pumpWidget(
-        RepositoryProvider<InviteApiService>.value(
-          value: mockInviteApiService,
+        RepositoryProvider<InviteApiClient>.value(
+          value: mockInviteApiClient,
           child: BlocProvider(
-            create: (_) =>
-                InviteGateBloc(inviteApiService: mockInviteApiService),
+            create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
             child: MaterialApp.router(
               theme: VineTheme.theme,
               routerConfig: GoRouter(

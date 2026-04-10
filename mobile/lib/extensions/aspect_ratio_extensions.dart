@@ -25,7 +25,7 @@ extension AspectRatioExtensions on AspectRatio {
   /// - vertical + non-desktop, OR
   /// - vertical + desktop but screen is already 9/16 or narrower
   bool useFullScreenForSize(Size bodySize) {
-    // FIXME(@hm21):
+    // FIXME(@hm21): Remove or keep depending on coming design decisions
     return false;
 
     if (this != AspectRatio.vertical) return false;

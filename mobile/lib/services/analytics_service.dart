@@ -7,8 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for tracking video analytics with privacy controls.
 ///

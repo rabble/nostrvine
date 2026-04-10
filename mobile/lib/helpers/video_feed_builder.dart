@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Configuration for building a video feed
 class VideoFeedConfig {

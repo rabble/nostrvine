@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'video_editor_filter_event.dart';
 part 'video_editor_filter_state.dart';

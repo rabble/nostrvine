@@ -3,8 +3,8 @@
 
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'readiness_gate_providers.g.dart';
 

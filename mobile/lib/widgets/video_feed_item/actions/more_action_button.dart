@@ -4,8 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Three-dots more action button for the video overlay.
 ///

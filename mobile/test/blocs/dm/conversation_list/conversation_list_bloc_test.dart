@@ -1104,10 +1104,10 @@ void main() {
   });
 
   // -------------------------------------------------------------------
-  // Subscription lifecycle (#2766)
+  // Subscription lifecycle (#2931)
   // -------------------------------------------------------------------
 
-  group('subscription lifecycle (#2766)', () {
+  group('subscription lifecycle (#2931)', () {
     late _MockDmRepository mockDmRepository;
     late _MockFollowRepository mockFollowRepository;
 
@@ -1125,7 +1125,7 @@ void main() {
     });
 
     blocTest<ConversationListBloc, ConversationListState>(
-      'calls startListening when $ConversationListStarted is added',
+      'does not call startListening — auth-scoped via dmRepositoryProvider',
       build: () {
         _stubStreams(mockDmRepository);
         return ConversationListBloc(
@@ -1135,11 +1135,16 @@ void main() {
       },
       act: (bloc) => bloc.add(const ConversationListStarted()),
       verify: (_) {
-        verify(() => mockDmRepository.startListening()).called(1);
+        // Regression guard for #2931: the gift-wrap subscription lives
+        // for the whole authenticated session via `dmRepositoryProvider`.
+        // The BLoC must not start it on its own — that would break the
+        // session-wide ingestion contract by creating overlapping
+        // subscription bookkeeping.
+        verifyNever(() => mockDmRepository.startListening());
       },
     );
 
-    test('calls stopListening when BLoC is closed', () async {
+    test('does not call stopListening on close', () async {
       _stubStreams(mockDmRepository);
       final bloc = ConversationListBloc(
         dmRepository: mockDmRepository,
@@ -1148,28 +1153,10 @@ void main() {
 
       await bloc.close();
 
-      verify(() => mockDmRepository.stopListening()).called(1);
+      // Regression guard for #2931: closing the BLoC must NOT stop the
+      // gift-wrap subscription. Doing so would silently break DM ingestion
+      // for users who navigated away from the inbox tab.
+      verifyNever(() => mockDmRepository.stopListening());
     });
-
-    blocTest<ConversationListBloc, ConversationListState>(
-      'startListening is idempotent across multiple Started events',
-      build: () {
-        _stubStreams(mockDmRepository);
-        return ConversationListBloc(
-          dmRepository: mockDmRepository,
-          followRepository: mockFollowRepository,
-        );
-      },
-      act: (bloc) {
-        bloc
-          ..add(const ConversationListStarted())
-          ..add(const ConversationListStarted());
-      },
-      verify: (_) {
-        // startListening is called once per event, but the repository's
-        // internal guard makes it a no-op after the first.
-        verify(() => mockDmRepository.startListening()).called(2);
-      },
-    );
   });
 }

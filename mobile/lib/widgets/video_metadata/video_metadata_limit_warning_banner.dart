@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 
 /// Warning banner displayed when metadata size exceeds the 64KB limit.
-class MetadataLimitWarningBanner extends ConsumerWidget {
+class VideoMetadataLimitWarningBanner extends ConsumerWidget {
   /// Creates a metadata limit warning widget.
-  const MetadataLimitWarningBanner({super.key});
+  const VideoMetadataLimitWarningBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -6,8 +6,8 @@ import 'dart:convert';
 
 import 'package:nostr_key_manager/nostr_key_manager.dart' show SecureKeyStorage;
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Represents a saved Nostr identity
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod

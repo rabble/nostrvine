@@ -13,8 +13,8 @@ import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/utils/hash_util.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Result type for Blossom upload operations
 class BlossomUploadResult {

@@ -29,6 +29,23 @@ class _VideoMetadataClassicPreviewThumbnailState
   final _iconVisible = ValueNotifier<bool>(false);
 
   @override
+  void initState() {
+    super.initState();
+    // Start playback once the rendered clip becomes available.
+    ref.listenManual(
+      videoEditorProvider.select((s) => s.finalRenderedClip),
+      (_, clip) {
+        if (clip != null && _controller == null) {
+          clip.video.safeFilePath().then((path) {
+            if (mounted) _initPlayer(path);
+          });
+        }
+      },
+      fireImmediately: true,
+    );
+  }
+
+  @override
   void dispose() {
     _hideTimer?.cancel();
     _iconVisible.dispose();
@@ -86,13 +103,6 @@ class _VideoMetadataClassicPreviewThumbnailState
         (s) => (s.finalRenderedClip, s.isProcessing),
       ),
     );
-
-    // Start playback once the rendered clip becomes available.
-    if (finalRenderedClip != null && _controller == null) {
-      finalRenderedClip.video.safeFilePath().then((path) {
-        if (mounted) _initPlayer(path);
-      });
-    }
 
     return AspectRatio(
       aspectRatio: 1,

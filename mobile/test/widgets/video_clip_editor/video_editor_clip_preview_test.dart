@@ -7,6 +7,7 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -60,17 +61,19 @@ void main() {
         initialState: initialState ?? ClipEditorState(clips: [clip]),
       );
 
-      return BlocProvider<ClipEditorBloc>.value(
-        value: bloc,
-        child: MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 200,
-              height: 400,
-              child: VideoEditorClipPreview(
-                clip: clip,
-                isCurrentClip: isCurrentClip,
-                isReordering: isReordering,
+      return ProviderScope(
+        child: BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 200,
+                height: 400,
+                child: VideoEditorClipPreview(
+                  clip: clip,
+                  isCurrentClip: isCurrentClip,
+                  isReordering: isReordering,
+                ),
               ),
             ),
           ),
@@ -177,16 +180,18 @@ void main() {
       );
 
       await tester.pumpWidget(
-        BlocProvider<ClipEditorBloc>.value(
-          value: bloc,
-          child: MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                width: 200,
-                height: 400,
-                child: VideoEditorClipPreview(
-                  clip: clip,
-                  onTap: () => tapped = true,
+        ProviderScope(
+          child: BlocProvider<ClipEditorBloc>.value(
+            value: bloc,
+            child: MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  width: 200,
+                  height: 400,
+                  child: VideoEditorClipPreview(
+                    clip: clip,
+                    onTap: () => tapped = true,
+                  ),
                 ),
               ),
             ),

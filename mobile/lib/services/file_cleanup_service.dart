@@ -6,8 +6,8 @@ import 'dart:io';
 
 import 'package:db_client/db_client.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for safely deleting clip files while respecting references.
 ///

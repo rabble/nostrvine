@@ -42,7 +42,9 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final recorderMode = ref.read(videoRecorderProvider).recorderMode;
+    final recorderMode = ref.watch(
+      videoRecorderProvider.select((s) => s.recorderMode),
+    );
 
     // Cancel video render when user navigates back
     return PopScope(

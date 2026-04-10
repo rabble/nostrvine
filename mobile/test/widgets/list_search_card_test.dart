@@ -1,0 +1,189 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' hide AspectRatio;
+import 'package:openvine/widgets/list_search_card.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
+
+void main() {
+  final now = DateTime(2025, 6, 15);
+
+  CuratedList createList({
+    String id = 'test-list',
+    String name = 'Test List',
+    String? description,
+    String? imageUrl,
+    List<String> videoEventIds = const [],
+    List<String> thumbnailUrls = const [],
+  }) {
+    return CuratedList(
+      id: id,
+      name: name,
+      description: description,
+      imageUrl: imageUrl,
+      videoEventIds: videoEventIds,
+      thumbnailUrls: thumbnailUrls,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  Widget buildSubject({
+    required CuratedList curatedList,
+    VoidCallback? onTap,
+  }) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 200,
+            height: 300,
+            child: SingleChildScrollView(
+              child: CuratedListSearchCard(
+                curatedList: curatedList,
+                onTap: onTap ?? () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  group(CuratedListSearchCard, () {
+    group('renders', () {
+      testWidgets('title', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(name: 'Dance Moves'),
+          ),
+        );
+
+        expect(find.text('Dance Moves'), findsOneWidget);
+      });
+
+      testWidgets('description when present', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(description: 'Great videos'),
+          ),
+        );
+
+        expect(find.text('Great videos'), findsOneWidget);
+      });
+
+      testWidgets('no description when null', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(curatedList: createList()),
+        );
+
+        // Only title should be present, no extra Text widgets for description.
+        expect(find.text('Test List'), findsOneWidget);
+      });
+
+      testWidgets('no description when empty', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(description: ''),
+          ),
+        );
+
+        expect(find.text('Test List'), findsOneWidget);
+      });
+
+      testWidgets('video count badge', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(videoEventIds: ['v1', 'v2', 'v3']),
+          ),
+        );
+
+        expect(find.text('3'), findsOneWidget);
+      });
+
+      testWidgets('formatted count for large numbers', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(
+              videoEventIds: List.generate(9100, (i) => 'v$i'),
+            ),
+          ),
+        );
+
+        expect(find.text('9.1k'), findsOneWidget);
+      });
+    });
+
+    group('thumbnails', () {
+      testWidgets(
+        'renders 5 card slots with no images when thumbnailUrls is empty',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(curatedList: createList()),
+          );
+
+          expect(find.byType(DecoratedBox), findsNWidgets(6));
+          expect(find.byType(VineCachedImage), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'renders $VineCachedImage for each thumbnail URL '
+        'while keeping all 5 card slots',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              curatedList: createList(
+                thumbnailUrls: [
+                  'https://example.com/thumb1.jpg',
+                  'https://example.com/thumb2.jpg',
+                ],
+                videoEventIds: ['v1', 'v2', 'v3'],
+              ),
+            ),
+          );
+
+          expect(find.byType(VineCachedImage), findsNWidgets(2));
+          // 5 card slots + 1 count badge remain regardless of how many
+          // thumbnails are supplied.
+          expect(find.byType(DecoratedBox), findsAtLeastNWidgets(6));
+        },
+      );
+    });
+
+    group('interactions', () {
+      testWidgets('calls onTap when tapped', (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(),
+            onTap: () => tapped = true,
+          ),
+        );
+
+        await tester.tap(find.text('Test List'));
+        await tester.pumpAndSettle();
+
+        expect(tapped, isTrue);
+      });
+    });
+
+    group('semantics', () {
+      testWidgets('has semantic label from list name', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(name: 'My Playlist'),
+          ),
+        );
+
+        final semantics = tester.widgetList<Semantics>(
+          find.byType(Semantics),
+        );
+        final cardSemantics = semantics.where(
+          (s) => s.properties.label == 'My Playlist',
+        );
+        expect(cardSemantics, hasLength(1));
+      });
+    });
+  });
+}

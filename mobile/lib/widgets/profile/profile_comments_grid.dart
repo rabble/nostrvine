@@ -12,7 +12,11 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
+import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
+import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 
 /// Grid widget displaying a user's comments (video replies + text).
 ///
@@ -71,22 +75,27 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
       builder: (context, state) {
         if (state.status == ProfileCommentsStatus.initial ||
             state.status == ProfileCommentsStatus.loading) {
-          return const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          );
+          return const ProfileTabLoadingState();
         }
 
         if (state.status == ProfileCommentsStatus.failure) {
-          return const Center(
-            child: Text(
-              'Error loading comments',
-              style: TextStyle(color: VineTheme.whiteText),
-            ),
+          return const ProfileTabErrorState(
+            message: 'Error loading comments',
           );
         }
 
         if (state.videoReplies.isEmpty && state.textComments.isEmpty) {
-          return _CommentsEmptyState(isOwnProfile: widget.isOwnProfile);
+          return ProfileTabEmptyState(
+            icon: DivineIconName.chat,
+            iconColor: VineTheme.onSurfaceMuted,
+            title: widget.isOwnProfile ? 'No Comments Yet' : 'No Comments',
+            subtitle: widget.isOwnProfile
+                ? 'Your comments and replies will '
+                      'appear here'
+                : 'Their comments and replies will '
+                      'appear here',
+            subtitleColor: VineTheme.onSurfaceMuted,
+          );
         }
 
         return CustomScrollView(
@@ -129,17 +138,7 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
                 }, childCount: state.textComments.length),
               ),
             ],
-            if (state.isLoadingMore)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: VineTheme.vineGreen,
-                    ),
-                  ),
-                ),
-              ),
+            if (state.isLoadingMore) const ProfileTabLoadingMoreSliver(),
           ],
         );
       },
@@ -170,61 +169,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// Empty state shown when user has no comments.
-class _CommentsEmptyState extends StatelessWidget {
-  const _CommentsEmptyState({required this.isOwnProfile});
-
-  final bool isOwnProfile;
-
-  @override
-  Widget build(BuildContext context) => CustomScrollView(
-    slivers: [
-      SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.chat_bubble_outline,
-                  color: VineTheme.onSurfaceMuted,
-                  size: 64,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  isOwnProfile ? 'No Comments Yet' : 'No Comments',
-                  textAlign: .center,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  isOwnProfile
-                      ? 'Your comments and replies will '
-                            'appear here'
-                      : 'Their comments and replies will '
-                            'appear here',
-                  textAlign: .center,
-                  style: const TextStyle(
-                    color: VineTheme.onSurfaceMuted,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
 /// Thumbnail tile for a video reply in the grid.
 class _VideoReplyTile extends StatelessWidget {
   const _VideoReplyTile({required this.comment});
@@ -243,7 +187,7 @@ class _VideoReplyTile extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              _VideoReplyThumbnail(thumbnailUrl: comment.thumbnailUrl),
+              ProfileTabThumbnail(thumbnailUrl: comment.thumbnailUrl),
               // Play icon overlay
               const Center(
                 child: Icon(
@@ -258,38 +202,6 @@ class _VideoReplyTile extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Thumbnail image for a video reply.
-class _VideoReplyThumbnail extends StatelessWidget {
-  const _VideoReplyThumbnail({required this.thumbnailUrl});
-
-  final String? thumbnailUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return VineCachedImage(
-        imageUrl: thumbnailUrl!,
-        placeholder: (context, url) => const _ThumbnailPlaceholder(),
-        errorWidget: (context, url, error) => const _ThumbnailPlaceholder(),
-      );
-    }
-    return const _ThumbnailPlaceholder();
-  }
-}
-
-/// Placeholder for video reply thumbnails.
-class _ThumbnailPlaceholder extends StatelessWidget {
-  const _ThumbnailPlaceholder();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(4),
-      color: VineTheme.surfaceContainer,
-    ),
-  );
 }
 
 /// Card widget for a text comment in the list.

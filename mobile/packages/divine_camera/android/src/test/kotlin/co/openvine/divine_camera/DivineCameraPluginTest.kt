@@ -1,8 +1,11 @@
 package co.openvine.divine_camera
 
+import androidx.camera.video.Quality
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import kotlin.test.Test
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -14,6 +17,7 @@ import kotlin.test.assertNull
  * you can run them directly from IDEs that support JUnit such as Android Studio.
  */
 
+@RunWith(RobolectricTestRunner::class)
 internal class DivineCameraPluginTest {
     @Test
     fun onMethodCall_getPlatformVersion_returnsExpectedValue() {
@@ -103,5 +107,52 @@ internal class DivineCameraPluginTest {
         override fun notImplemented() {
             notImplementedCount += 1
         }
+    }
+}
+
+@RunWith(RobolectricTestRunner::class)
+internal class QualityFallbackTest {
+    @Test
+    fun lowerQuality_fromUHD_returnsFHD() {
+        assertEquals(Quality.FHD, CameraController.lowerQuality(Quality.UHD))
+    }
+
+    @Test
+    fun lowerQuality_fromFHD_returnsHD() {
+        assertEquals(Quality.HD, CameraController.lowerQuality(Quality.FHD))
+    }
+
+    @Test
+    fun lowerQuality_fromHIGHEST_returnsFHD() {
+        assertEquals(Quality.FHD, CameraController.lowerQuality(Quality.HIGHEST))
+    }
+
+    @Test
+    fun lowerQuality_fromHD_returnsSD() {
+        assertEquals(Quality.SD, CameraController.lowerQuality(Quality.HD))
+    }
+
+    @Test
+    fun lowerQuality_fromSD_returnsNull() {
+        assertNull(CameraController.lowerQuality(Quality.SD))
+    }
+
+    @Test
+    fun lowerQuality_fromLOWEST_returnsNull() {
+        assertNull(CameraController.lowerQuality(Quality.LOWEST))
+    }
+
+    @Test
+    fun fullFallbackChain_coversThreeSteps() {
+        var quality: Quality? = Quality.UHD
+        val chain = mutableListOf<Quality>()
+        while (quality != null) {
+            chain.add(quality)
+            quality = CameraController.lowerQuality(quality)
+        }
+        assertEquals(
+            listOf(Quality.UHD, Quality.FHD, Quality.HD, Quality.SD),
+            chain
+        )
     }
 }

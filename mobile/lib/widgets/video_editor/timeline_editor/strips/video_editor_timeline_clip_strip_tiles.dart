@@ -308,19 +308,27 @@ class _ClipContainer extends StatelessWidget {
     // Time at the center of this visual slot.
     final slotTimeMs = durationMs * (slotIndex + 0.5) / slotCount;
 
-    // Find the thumbnail closest in time.
-    var bestIndex = 0;
-    var bestDist = (slotTimeMs - stripThumbnails[0].timestamp.inMilliseconds)
-        .abs();
-    for (var i = 1; i < stripThumbnails.length; i++) {
-      final dist = (slotTimeMs - stripThumbnails[i].timestamp.inMilliseconds)
-          .abs();
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestIndex = i;
+    // Binary search for the closest thumbnail by timestamp.
+    var lo = 0;
+    var hi = stripThumbnails.length - 1;
+    while (lo < hi) {
+      final mid = (lo + hi) ~/ 2;
+      if (stripThumbnails[mid].timestamp.inMilliseconds < slotTimeMs) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
       }
     }
-    return stripThumbnails[bestIndex].path;
+    // lo is the first thumbnail at or after slotTimeMs.
+    // Compare with the previous one to find which is closer.
+    if (lo > 0) {
+      final distLo = (slotTimeMs - stripThumbnails[lo].timestamp.inMilliseconds)
+          .abs();
+      final distPrev =
+          (slotTimeMs - stripThumbnails[lo - 1].timestamp.inMilliseconds).abs();
+      if (distPrev < distLo) return stripThumbnails[lo - 1].path;
+    }
+    return stripThumbnails[lo].path;
   }
 
   @override

@@ -6,8 +6,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// User preference for how a content category should be handled in feeds.
 enum ContentFilterPreference {

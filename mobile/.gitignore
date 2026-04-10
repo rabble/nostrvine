@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+divine_video_cache/
 
 # IntelliJ related
 *.iml

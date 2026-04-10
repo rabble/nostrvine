@@ -60,7 +60,9 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
       return;
     }
 
-    if (query == state.query && state.status != HashtagSearchStatus.initial) {
+    if (query == state.query &&
+        state.status != HashtagSearchStatus.initial &&
+        state.status != HashtagSearchStatus.failure) {
       return;
     }
 

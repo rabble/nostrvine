@@ -6,8 +6,8 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'nostr_client_provider.g.dart';
 
@@ -38,13 +38,15 @@ class NostrService extends _$NostrService {
         .map((relay) => relay.url)
         .toList();
 
-    // Create initial NostrClient (prefer RPC signer when available)
+    // Create initial NostrClient using the atomic identity as signer.
+    // currentIdentity is nullable — before auth completes, the factory falls
+    // back to a no-op LocalKeySigner. _onAuthStateChanged recreates the client
+    // once the user authenticates.
     final client = NostrServiceFactory.create(
-      keyContainer: authService.currentKeyContainer,
+      signer: authService.currentIdentity,
       statisticsService: statisticsService,
       environmentConfig: environmentConfig,
       dbClient: dbClient,
-      rpcSigner: authService.rpcSigner,
     );
 
     // Register callback so when NIP-65 discovery completes later, we add those
@@ -134,11 +136,10 @@ class NostrService extends _$NostrService {
           .toList();
 
       final newClient = NostrServiceFactory.create(
-        keyContainer: authService.currentKeyContainer,
+        signer: authService.currentIdentity,
         statisticsService: statisticsService,
         environmentConfig: environmentConfig,
         dbClient: dbClient,
-        rpcSigner: authService.rpcSigner,
       );
 
       // Register callback for new client so later discovery adds relays to it
