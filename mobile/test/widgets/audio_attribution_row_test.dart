@@ -125,19 +125,34 @@ void main() {
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        final musicNoteIcon = tester.widget<Icon>(
-          find.byIcon(Icons.music_note),
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
+        );
+        final musicNoteIcon = divineIcons.firstWhere(
+          (icon) => icon.icon == DivineIconName.musicNote,
         );
         expect(musicNoteIcon.color, equals(VineTheme.vineGreen));
       });
 
-      testWidgets('shows chevron right icon', (tester) async {
+      testWidgets('shows caret right icon', (tester) async {
         final video = createVideoWithoutAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
+        );
+        expect(
+          divineIcons.any((icon) => icon.icon == DivineIconName.caretRight),
+          isTrue,
+        );
       });
 
       testWidgets('has correct semantics identifier', (tester) async {
@@ -216,8 +231,14 @@ void main() {
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        final musicNoteIcon = tester.widget<Icon>(
-          find.byIcon(Icons.music_note),
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
+        );
+        final musicNoteIcon = divineIcons.firstWhere(
+          (icon) => icon.icon == DivineIconName.musicNote,
         );
         expect(musicNoteIcon.color, equals(VineTheme.vineGreen));
       });
@@ -240,13 +261,22 @@ void main() {
         expect(find.textContaining('Original sound'), findsOneWidget);
       });
 
-      testWidgets('displays chevron right icon', (tester) async {
+      testWidgets('displays caret right icon', (tester) async {
         final video = createVideoWithAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
+        );
+        expect(
+          divineIcons.any((icon) => icon.icon == DivineIconName.caretRight),
+          isTrue,
+        );
       });
 
       testWidgets('uses white text color', (tester) async {
@@ -258,7 +288,7 @@ void main() {
         final text = tester.widget<Text>(
           find.textContaining('Original sound - @testuser'),
         );
-        expect(text.style?.color, equals(Colors.white));
+        expect(text.style?.color, equals(VineTheme.whiteText));
       });
 
       testWidgets(
@@ -317,10 +347,16 @@ void main() {
 
         // After settling, should show music note icon (either skeleton or loaded)
         await tester.pumpAndSettle();
-        final musicNoteIcons = tester.widgetList<Icon>(
-          find.byIcon(Icons.music_note),
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
         );
-        expect(musicNoteIcons, isNotEmpty);
+        expect(
+          divineIcons.any((icon) => icon.icon == DivineIconName.musicNote),
+          isTrue,
+        );
       });
     });
 

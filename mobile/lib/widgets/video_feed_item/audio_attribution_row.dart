@@ -89,12 +89,12 @@ class _AudioAttributionContent extends ConsumerWidget {
           UserProfile.defaultDisplayNameFor(audio.pubkey);
     }
 
-    return GestureDetector(
-      onTap: () => _navigateToSoundDetail(context, audio),
-      child: Semantics(
-        identifier: 'audio_attribution_row',
-        button: true,
-        label: 'Sound: $soundName by $creatorName. Tap to view sound details.',
+    return Semantics(
+      identifier: 'audio_attribution_row',
+      button: true,
+      label: 'Sound: $soundName by $creatorName. Tap to view sound details.',
+      child: GestureDetector(
+        onTap: () => _navigateToSoundDetail(context, audio),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -103,29 +103,25 @@ class _AudioAttributionContent extends ConsumerWidget {
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            spacing: 4,
             children: [
-              const Icon(
-                Icons.music_note,
+              const DivineIcon(
+                icon: DivineIconName.musicNote,
                 size: 14,
                 color: VineTheme.vineGreen,
               ),
-              const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   '$soundName · $creatorName',
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    shadows: [Shadow(blurRadius: 4)],
+                  style: VineTheme.labelMediumFont().copyWith(
+                    shadows: [const Shadow(blurRadius: 4)],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right,
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
                 size: 14,
                 color: VineTheme.onSurfaceVariant,
               ),
@@ -170,22 +166,22 @@ class _OriginalSoundContent extends ConsumerWidget {
 
     final label = 'Original sound - $creatorName';
 
-    return GestureDetector(
-      onTap: () {
-        Log.info(
-          'Navigating to original sound detail: pubkey=${video.pubkey}',
-          name: 'AudioAttributionRow',
-          category: LogCategory.ui,
-        );
-        context.pushWithVideoPause(
-          OriginalSoundDetailScreen.pathForPubkey(video.pubkey),
-          extra: video,
-        );
-      },
-      child: Semantics(
-        identifier: 'audio_attribution_row',
-        button: true,
-        label: 'Sound: $label. Tap to view sound details.',
+    return Semantics(
+      identifier: 'audio_attribution_row',
+      button: true,
+      label: 'Sound: $label. Tap to view sound details.',
+      child: GestureDetector(
+        onTap: () {
+          Log.info(
+            'Navigating to original sound detail: pubkey=${video.pubkey}',
+            name: 'AudioAttributionRow',
+            category: LogCategory.ui,
+          );
+          context.pushWithVideoPause(
+            OriginalSoundDetailScreen.pathForPubkey(video.pubkey),
+            extra: video,
+          );
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -194,29 +190,25 @@ class _OriginalSoundContent extends ConsumerWidget {
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            spacing: 4,
             children: [
-              const Icon(
-                Icons.music_note,
+              const DivineIcon(
+                icon: DivineIconName.musicNote,
                 size: 14,
                 color: VineTheme.vineGreen,
               ),
-              const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   label,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    shadows: [Shadow(blurRadius: 4)],
+                  style: VineTheme.labelMediumFont().copyWith(
+                    shadows: [const Shadow(blurRadius: 4)],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right,
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
                 size: 14,
                 color: VineTheme.onSurfaceVariant,
               ),
@@ -243,7 +235,11 @@ class _AudioAttributionSkeleton extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.music_note, size: 14, color: VineTheme.lightText),
+          const DivineIcon(
+            icon: DivineIconName.musicNote,
+            size: 14,
+            color: VineTheme.lightText,
+          ),
           const SizedBox(width: 4),
           Container(
             width: 100,
