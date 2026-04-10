@@ -8,9 +8,6 @@ import 'package:unified_logger/unified_logger.dart';
 part 'clip_editor_event.dart';
 part 'clip_editor_state.dart';
 
-/// Maximum number of undo steps to keep in memory.
-const _maxUndoSteps = 30;
-
 /// Callback that executes the clip split operation and post-split
 /// side effects (rendered clip invalidation, autosave).
 ///
@@ -88,8 +85,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     ];
 
     // Trim oldest entries beyond the limit.
-    final trimmed = newUndo.length > _maxUndoSteps
-        ? newUndo.sublist(newUndo.length - _maxUndoSteps)
+    final trimmed = newUndo.length > VideoEditorConstants.maxUndoSteps
+        ? newUndo.sublist(
+            newUndo.length - VideoEditorConstants.maxUndoSteps,
+          )
         : newUndo;
 
     return s.copyWith(undoStack: trimmed, redoStack: const []);

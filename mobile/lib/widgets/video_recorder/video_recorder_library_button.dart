@@ -120,40 +120,12 @@ class _VideoRecorderLibraryButtonState
                         : const SizedBox.shrink(),
                   ),
                 ),
-              ),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ClipRRect(
-                    borderRadius: .circular(14),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
-                      layoutBuilder: (currentChild, previousChildren) => Stack(
-                        alignment: .center,
-                        fit: .expand,
-                        children: [...previousChildren, ?currentChild],
-                      ),
-                      child: thumbnailPath != null
-                          ? Image.file(
-                              File(thumbnailPath),
-                              key: ValueKey(thumbnailPath),
-                              fit: BoxFit.cover,
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ),
-      
-                  _SelectionCountBadge(count: clips.length),
-                ],
-              ),
+                _SelectionCountBadge(count: clips.length),
+              ],
             ),
           ),
         ),
-    ),
+      ),
     );
   }
 }

@@ -66,6 +66,8 @@ class TimelineOverlayBloc
     TimelineOverlayItemTrimmed event,
     Emitter<TimelineOverlayState> emit,
   ) {
+    // event.isStart distinguishes drag-start from drag-update.
+    // Reserved for future undo support (see ClipEditorBloc pattern).
     final updated = state.items.map((item) {
       if (item.id != event.itemId) return item;
       return item.copyWith(
