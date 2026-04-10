@@ -1,5 +1,7 @@
 // ABOUTME: Video feed item using individual controller architecture
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
+// ABOUTME: SCOPE: Non-feed detail use cases only (e.g. debug screens).
+// ABOUTME: Feed surfaces must use PooledFullscreenVideoFeedScreen / PooledVideoFeed instead.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -1682,7 +1684,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           isActive: isActive,
                         ),
                       ],
-                      // Audio attribution row (if video uses external audio)
+                      // Audio attribution row (only for videos with shared audio)
                       if (video.hasAudioReference) ...[
                         const SizedBox(height: 4),
                         AudioAttributionRow(video: video),

@@ -150,8 +150,6 @@ class _AudioAttributionContent extends ConsumerWidget {
       extra: audio,
     );
   }
-
-  /// Format pubkey for display (short version with ellipsis in middle).
 }
 
 /// Skeleton loading state for audio attribution.

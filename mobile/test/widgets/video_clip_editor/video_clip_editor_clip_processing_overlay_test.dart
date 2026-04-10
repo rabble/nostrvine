@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -30,10 +31,12 @@ void main() {
       final clip = _createClip(processingCompleter: completer);
 
       await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+          ),
         ),
       );
 
@@ -52,10 +55,12 @@ void main() {
       final clip = _createClip(); // No processingCompleter
 
       await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+          ),
         ),
       );
 
@@ -75,10 +80,12 @@ void main() {
       final clip = _createClip(processingCompleter: completer);
 
       await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+          ),
         ),
       );
 

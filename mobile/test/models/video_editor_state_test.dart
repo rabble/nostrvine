@@ -14,7 +14,7 @@ void main() {
 
       expect(state.isProcessing, isFalse);
       expect(state.isSavingDraft, isFalse);
-      expect(state.allowAudioReuse, isFalse);
+      expect(state.allowAudioReuse, isTrue);
       expect(state.title, isEmpty);
       expect(state.description, isEmpty);
       expect(state.tags, isEmpty);
@@ -54,7 +54,6 @@ void main() {
       final state = VideoEditorProviderState(
         isProcessing: true,
         isSavingDraft: true,
-        allowAudioReuse: true,
         title: 'Test Title',
         description: 'Test Description',
         tags: const {'tag1', 'tag2'},

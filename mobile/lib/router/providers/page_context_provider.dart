@@ -17,7 +17,6 @@ import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
@@ -80,7 +79,7 @@ enum RouteType {
   loginOptions, // Login options screen (choose login method)
   following, // Following list screen
   followers, // Followers list screen
-  videoFeed, // Fullscreen video feed (pushed from grids)
+  videoFeed, // Legacy route alias — resolved same as pooledVideoFeed
   profileView, // Other user's profile (fullscreen, no bottom nav)
   curatedList, // Curated video list screen (NIP-51 kind 30005)
   discoverLists, // Discover public lists screen
@@ -588,7 +587,7 @@ String buildRoute(RouteContext context) {
       return FollowersScreenRouter.pathForPubkey(context.npub ?? '');
 
     case RouteType.videoFeed:
-      return FullscreenVideoFeedScreen.path;
+      return PooledFullscreenVideoFeedScreen.path;
 
     case RouteType.profileView:
       final npub = Uri.encodeComponent(context.npub ?? '');

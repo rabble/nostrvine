@@ -3855,6 +3855,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get soundVideosUsingThisSound => 'Videos using this sound';
 
   @override
+  String get soundSourceVideo => 'Source video';
+
+  @override
   String get soundNoVideosYet => 'No videos yet';
 
   @override

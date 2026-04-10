@@ -389,13 +389,15 @@ void main() {
           pubkey: 'abc123',
         );
 
-        final captured = verify(
-          () => mockClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: captureAny(named: 'body'),
-          ),
-        ).captured.last as String;
+        final captured =
+            verify(
+                  () => mockClient.post(
+                    any(),
+                    headers: any(named: 'headers'),
+                    body: captureAny(named: 'body'),
+                  ),
+                ).captured.last
+                as String;
         final body = jsonDecode(captured) as Map<String, dynamic>;
         expect(body['contact'], 'user@test.com');
         expect(body['pubkey'], 'abc123');

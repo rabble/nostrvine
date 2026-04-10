@@ -6822,6 +6822,12 @@ abstract class AppLocalizations {
   /// **'Videos using this sound'**
   String get soundVideosUsingThisSound;
 
+  /// No description provided for @soundSourceVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Source video'**
+  String get soundSourceVideo;
+
   /// No description provided for @soundNoVideosYet.
   ///
   /// In en, this message translates to:

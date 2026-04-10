@@ -1787,6 +1787,7 @@
   "soundTitle": "Sound",
   "soundOriginalSound": "Original sound",
   "soundVideosUsingThisSound": "Videos using this sound",
+  "soundSourceVideo": "Source video",
   "soundNoVideosYet": "No videos yet",
   "soundBeFirstToUse": "Be the first to use this sound!",
   "soundFailedToLoadVideos": "Failed to load videos",

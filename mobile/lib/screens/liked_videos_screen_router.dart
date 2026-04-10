@@ -1,19 +1,22 @@
 // ABOUTME: Router-aware liked videos screen that shows grid or feed based on URL
 // ABOUTME: Reads route context to determine grid mode vs feed mode
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
@@ -122,7 +125,7 @@ class _LikedVideosScreenRouterState
   }
 }
 
-/// Feed view that uses BLoC state to display videos and syncs to Riverpod bridge
+/// Feed view that streams BLoC state into [PooledFullscreenVideoFeedScreen].
 class _LikedVideosFeedView extends ConsumerStatefulWidget {
   const _LikedVideosFeedView({required this.videoIndex});
 
@@ -134,31 +137,34 @@ class _LikedVideosFeedView extends ConsumerStatefulWidget {
 }
 
 class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
+  late final StreamController<List<VideoEvent>> _streamController;
+  List<VideoEvent>? _lastVideos;
+
+  @override
+  void initState() {
+    super.initState();
+    _streamController = StreamController<List<VideoEvent>>.broadcast();
+  }
+
   @override
   void dispose() {
-    // Reset bridge state when leaving the feed
-    ref.read(likedVideosFeedStateProvider.notifier).state =
-        const LikedVideosBridgeState.initial();
+    _streamController.close();
     super.dispose();
   }
 
-  /// Sync BLoC state to Riverpod bridge for activeVideoIdProvider
-  void _syncToBridge(ProfileLikedVideosState state) {
-    final isLoading =
-        state.status == ProfileLikedVideosStatus.initial ||
-        state.status == ProfileLikedVideosStatus.syncing ||
-        state.status == ProfileLikedVideosStatus.loading;
-
-    ref.read(likedVideosFeedStateProvider.notifier).state =
-        LikedVideosBridgeState(isLoading: isLoading, videos: state.videos);
+  /// Push the latest non-empty video list into the stream.
+  void _pushVideos(List<VideoEvent> videos) {
+    if (videos.isEmpty) return;
+    if (identical(videos, _lastVideos)) return;
+    _lastVideos = videos;
+    if (!_streamController.isClosed) _streamController.add(videos);
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ProfileLikedVideosBloc, ProfileLikedVideosState>(
       listener: (context, state) {
-        // Sync BLoC state to Riverpod bridge whenever it changes
-        _syncToBridge(state);
+        _pushVideos(state.videos);
       },
       builder: (context, state) {
         if (state.status == ProfileLikedVideosStatus.initial ||
@@ -203,18 +209,14 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
           dataMetrics: {'video_count': videos.length},
         );
 
-        // Determine target index from route context
         final safeIndex = widget.videoIndex.clamp(0, videos.length - 1);
 
-        // Feed mode - show fullscreen video player
-        return ExploreVideoScreenPure(
-          startingVideo: videos[safeIndex],
-          videoList: videos,
+        return PooledFullscreenVideoFeedScreen(
+          // Stream is seeded via _pushVideos in the BlocConsumer listener.
+          videosStream: _streamController.stream,
+          initialIndex: safeIndex,
           contextTitle: 'Liked Videos',
-          startingIndex: safeIndex,
-          useLocalActiveState: true,
-          onNavigate: (index) =>
-              context.go(LikedVideosScreenRouter.pathForIndex(index)),
+          trafficSource: ViewTrafficSource.profile,
         );
       },
     );
