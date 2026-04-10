@@ -365,11 +365,9 @@ class _AuthorInfoSection extends ConsumerWidget {
             const SizedBox(height: 4),
             InspiredByAttributionRow(video: video, isActive: true),
           ],
-          // Audio attribution (only for videos with shared audio)
-          if (video.hasAudioReference) ...[
-            const SizedBox(height: 4),
-            AudioAttributionRow(video: video),
-          ],
+          // Audio attribution (all videos)
+          const SizedBox(height: 4),
+          AudioAttributionRow(video: video),
           // List attribution (curated lists)
           if (listSources != null && listSources!.isNotEmpty) ...[
             const SizedBox(height: 4),
