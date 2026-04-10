@@ -4824,5 +4824,1617 @@ void main() {
         await repository.stopListening();
       });
     });
+
+    // -----------------------------------------------------------------
+    // Phase 1: Static helpers + DAO wrappers
+    // -----------------------------------------------------------------
+
+    group('classifyPotentialRequests', () {
+      DmConversation makeConversation({
+        required String id,
+        required List<String> participantPubkeys,
+        bool isGroup = false,
+      }) {
+        return DmConversation(
+          id: id,
+          participantPubkeys: participantPubkeys,
+          isGroup: isGroup,
+          createdAt: 1700000000,
+        );
+      }
+
+      test('1:1 from followed contact goes to followed list', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA, _validPubkeyB],
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (pk) => pk == _validPubkeyB,
+        );
+
+        expect(result.followed, hasLength(1));
+        expect(result.requests, isEmpty);
+      });
+
+      test('1:1 from unfollowed contact goes to requests list', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA, _validPubkeyB],
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (_) => false,
+        );
+
+        expect(result.followed, isEmpty);
+        expect(result.requests, hasLength(1));
+      });
+
+      test('group conversation always goes to requests', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          isGroup: true,
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (_) => true, // Even if all are followed
+        );
+
+        expect(result.followed, isEmpty);
+        expect(result.requests, hasLength(1));
+      });
+
+      test('empty input returns both lists empty', () {
+        final result = DmRepository.classifyPotentialRequests(
+          [],
+          userPubkey: _validPubkeyA,
+          isFollowing: (_) => false,
+        );
+
+        expect(result.followed, isEmpty);
+        expect(result.requests, isEmpty);
+      });
+    });
+
+    group('mergeAndSort', () {
+      DmConversation makeConversation({
+        required String id,
+        int? lastMessageTimestamp,
+        int createdAt = 1700000000,
+      }) {
+        return DmConversation(
+          id: id,
+          participantPubkeys: [_validPubkeyA, _validPubkeyB],
+          isGroup: false,
+          createdAt: createdAt,
+          lastMessageTimestamp: lastMessageTimestamp,
+        );
+      }
+
+      test('returns accepted unchanged when followedPotential is empty', () {
+        final accepted = [
+          makeConversation(id: 'a', lastMessageTimestamp: 100),
+        ];
+
+        final result = DmRepository.mergeAndSort(accepted, []);
+
+        expect(result, same(accepted));
+      });
+
+      test('merges and sorts by effectiveTimestamp descending', () {
+        final accepted = [
+          makeConversation(id: 'a', lastMessageTimestamp: 200),
+          makeConversation(id: 'b', lastMessageTimestamp: 100),
+        ];
+        final followed = [
+          makeConversation(id: 'c', lastMessageTimestamp: 150),
+        ];
+
+        final result = DmRepository.mergeAndSort(accepted, followed);
+
+        expect(result.map((c) => c.id).toList(), equals(['a', 'c', 'b']));
+      });
+
+      test('both empty returns empty', () {
+        final result = DmRepository.mergeAndSort([], []);
+
+        expect(result, isEmpty);
+      });
+    });
+
+    group('getConversations', () {
+      test('returns mapped $DmConversation list from DAO', () async {
+        final participants = [_validPubkeyA, _validPubkeyB]..sort();
+        final convId = DmRepository.computeConversationId(participants);
+
+        when(
+          () => mockConversationsDao.getAllConversations(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            ConversationRow(
+              id: convId,
+              participantPubkeys: jsonEncode(participants),
+              isGroup: false,
+              isRead: true,
+              currentUserHasSent: false,
+              createdAt: 1700000000,
+              lastMessageContent: 'Hello',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+            ),
+          ],
+        );
+
+        final repository = createRepository();
+        final conversations = await repository.getConversations();
+
+        expect(conversations, hasLength(1));
+        expect(conversations.first.id, equals(convId));
+        expect(conversations.first.lastMessageContent, equals('Hello'));
+      });
+    });
+
+    group('getMessages', () {
+      test('returns mapped $DmMessage list from DAO', () async {
+        final participants = [_validPubkeyA, _validPubkeyB]..sort();
+        final convId = DmRepository.computeConversationId(participants);
+
+        when(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            convId,
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: convId,
+              senderPubkey: _validPubkeyB,
+              content: 'Hello!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+            ),
+          ],
+        );
+
+        final repository = createRepository();
+        final messages = await repository.getMessages(convId);
+
+        expect(messages, hasLength(1));
+        expect(messages.first.id, equals(_rumorEventId));
+        expect(messages.first.content, equals('Hello!'));
+      });
+    });
+
+    group('watchAcceptedConversations', () {
+      test('maps $ConversationRow stream to $DmConversation stream', () async {
+        final participants = [_validPubkeyA, _validPubkeyB]..sort();
+        final convId = DmRepository.computeConversationId(participants);
+
+        when(
+          () => mockConversationsDao.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value([
+            ConversationRow(
+              id: convId,
+              participantPubkeys: jsonEncode(participants),
+              isGroup: false,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1700000000,
+            ),
+          ]),
+        );
+
+        final repository = createRepository();
+        final conversations = await repository
+            .watchAcceptedConversations()
+            .first;
+
+        expect(conversations, hasLength(1));
+        expect(conversations.first.id, equals(convId));
+        expect(conversations.first.currentUserHasSent, isTrue);
+      });
+    });
+
+    group('watchPotentialRequests', () {
+      test('maps $ConversationRow stream to $DmConversation stream', () async {
+        final participants = [_validPubkeyA, _validPubkeyB]..sort();
+        final convId = DmRepository.computeConversationId(participants);
+
+        when(
+          () => mockConversationsDao.watchPotentialRequestConversations(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value([
+            ConversationRow(
+              id: convId,
+              participantPubkeys: jsonEncode(participants),
+              isGroup: false,
+              isRead: false,
+              currentUserHasSent: false,
+              createdAt: 1700000000,
+            ),
+          ]),
+        );
+
+        final repository = createRepository();
+        final requests = await repository.watchPotentialRequests().first;
+
+        expect(requests, hasLength(1));
+        expect(requests.first.currentUserHasSent, isFalse);
+      });
+    });
+
+    group('watchUnreadCount', () {
+      test('delegates to $ConversationsDao', () async {
+        when(
+          () => mockConversationsDao.watchUnreadCount(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => Stream.value(5));
+
+        final repository = createRepository();
+        final count = await repository.watchUnreadCount().first;
+
+        expect(count, equals(5));
+      });
+    });
+
+    group('watchUnreadAcceptedCount', () {
+      test('delegates to $ConversationsDao', () async {
+        when(
+          () => mockConversationsDao.watchUnreadAcceptedCount(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => Stream.value(3));
+
+        final repository = createRepository();
+        final count = await repository.watchUnreadAcceptedCount().first;
+
+        expect(count, equals(3));
+      });
+    });
+
+    // -----------------------------------------------------------------
+    // Phase 2: Deletion receive pipeline, maintenance, credentials
+    // -----------------------------------------------------------------
+
+    group('receive pipeline - kind 5 deletion', () {
+      final participants = [_validPubkeyA, _validPubkeyB]..sort();
+      final convId = DmRepository.computeConversationId(participants);
+
+      Event createDeletionEvent({
+        required String authorPubkey,
+        required List<String> deletedRumorIds,
+      }) {
+        return Event.fromJson({
+          'id':
+              '1111111111111111111111111111111111111111111111111111111111111111',
+          'pubkey': authorPubkey,
+          'created_at': 1700000100,
+          'kind': EventKind.eventDeletion,
+          'tags': [
+            for (final id in deletedRumorIds) ['e', id],
+            ['k', '14'],
+          ],
+          'content': '',
+          'sig': '',
+        });
+      }
+
+      void stubSubscription(StreamController<Event> controller) {
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+      }
+
+      test('valid kind 5 soft-deletes message and refreshes preview', () async {
+        final controller = StreamController<Event>();
+        stubSubscription(controller);
+
+        // Stub getMessageById — the message exists and is authored by B
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: _rumorEventId,
+            conversationId: convId,
+            senderPubkey: _validPubkeyB,
+            content: 'Hello',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: 14,
+            isDeleted: false,
+          ),
+        );
+
+        when(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        // Stub _refreshConversationPreview: no messages remain
+        when(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            convId,
+            limit: 1,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        when(
+          () => mockConversationsDao.getConversation(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => ConversationRow(
+            id: convId,
+            participantPubkeys: jsonEncode(participants),
+            isGroup: false,
+            isRead: true,
+            currentUserHasSent: true,
+            createdAt: 1700000000,
+          ),
+        );
+
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).thenAnswer((_) async {});
+
+        // Stub hasGiftWrap to ensure deletion event is not treated as duplicate
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer((_) async => false);
+
+        final repository = createRepository(
+          rumorDecryptor: (_, __) async => null,
+        );
+        await repository.startListening();
+
+        // Emit deletion event from B (the author of the message)
+        controller.add(
+          createDeletionEvent(
+            authorPubkey: _validPubkeyB,
+            deletedRumorIds: [_rumorEventId],
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
+      test('ignores kind 5 from non-author (NIP-09 mismatch)', () async {
+        final controller = StreamController<Event>();
+        stubSubscription(controller);
+
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: _rumorEventId,
+            conversationId: convId,
+            senderPubkey: _validPubkeyB, // B is the author
+            content: 'Hello',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: 14,
+            isDeleted: false,
+          ),
+        );
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer((_) async => false);
+
+        final repository = createRepository(
+          rumorDecryptor: (_, __) async => null,
+        );
+        await repository.startListening();
+
+        // Emit deletion event from C (NOT the author)
+        controller.add(
+          createDeletionEvent(
+            authorPubkey: _validPubkeyC,
+            deletedRumorIds: [_rumorEventId],
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
+      test('skips already-deleted message', () async {
+        final controller = StreamController<Event>();
+        stubSubscription(controller);
+
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: _rumorEventId,
+            conversationId: convId,
+            senderPubkey: _validPubkeyB,
+            content: 'Hello',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: 14,
+            isDeleted: true, // Already deleted
+          ),
+        );
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer((_) async => false);
+
+        final repository = createRepository(
+          rumorDecryptor: (_, __) async => null,
+        );
+        await repository.startListening();
+
+        controller.add(
+          createDeletionEvent(
+            authorPubkey: _validPubkeyB,
+            deletedRumorIds: [_rumorEventId],
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
+      test('skips kind 5 for non-existent message', () async {
+        final controller = StreamController<Event>();
+        stubSubscription(controller);
+
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer((_) async => false);
+
+        final repository = createRepository(
+          rumorDecryptor: (_, __) async => null,
+        );
+        await repository.startListening();
+
+        controller.add(
+          createDeletionEvent(
+            authorPubkey: _validPubkeyB,
+            deletedRumorIds: [_rumorEventId],
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+
+        await controller.close();
+        await repository.stopListening();
+      });
+    });
+
+    group('_refreshConversationPreview', () {
+      final participants = [_validPubkeyA, _validPubkeyB]..sort();
+      final convId = DmRepository.computeConversationId(participants);
+
+      test(
+        'updates preview to latest remaining message after deletion',
+        () async {
+          final repo = createRepository();
+
+          // Stub message lookup — the message exists and is authored by us
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: convId,
+              senderPubkey: _validPubkeyA,
+              content: 'Deleted msg',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+            ),
+          );
+
+          when(
+            () => mockConversationsDao.getConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: convId,
+              participantPubkeys: jsonEncode(participants),
+              isGroup: false,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1700000000,
+            ),
+          );
+
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => _FakeEvent());
+
+          when(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          // After deletion, one message remains
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              convId,
+              limit: 1,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              DirectMessageRow(
+                id: _giftWrapEventId2,
+                conversationId: convId,
+                senderPubkey: _validPubkeyB,
+                content: 'Older message',
+                createdAt: 1699999000,
+                giftWrapId: _giftWrapEventId2,
+                messageKind: 14,
+                isDeleted: false,
+              ),
+            ],
+          );
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+
+          // Verify upsert was called with the older message's content
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: convId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Older message',
+              lastMessageTimestamp: 1699999000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'uses file preview text when latest remaining is kind 15',
+        () async {
+          final repo = createRepository();
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: convId,
+              senderPubkey: _validPubkeyA,
+              content: 'Deleted msg',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+            ),
+          );
+
+          when(
+            () => mockConversationsDao.getConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: convId,
+              participantPubkeys: jsonEncode(participants),
+              isGroup: false,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1700000000,
+            ),
+          );
+
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => _FakeEvent());
+
+          when(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          // After deletion, a file message remains
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              convId,
+              limit: 1,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              DirectMessageRow(
+                id: _giftWrapEventId2,
+                conversationId: convId,
+                senderPubkey: _validPubkeyB,
+                content: 'https://blossom.example.com/file.enc',
+                createdAt: 1699999000,
+                giftWrapId: _giftWrapEventId2,
+                messageKind: EventKind.fileMessage,
+                isDeleted: false,
+                fileType: 'image/jpeg',
+              ),
+            ],
+          );
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+
+          // Verify file preview text was used
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: convId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Sent a photo',
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('setCredentials', () {
+      test('same user is a no-op', () {
+        final repo = createRepository();
+        // Already initialized with _validPubkeyA — calling again is a no-op.
+        repo.setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        expect(repo.isInitialized, isTrue);
+        expect(repo.userPubkey, equals(_validPubkeyA));
+      });
+
+      test(
+        'switching users resets state and re-initializes',
+        () async {
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
+
+          final repo = createRepository();
+          expect(repo.userPubkey, equals(_validPubkeyA));
+
+          repo.setCredentials(
+            userPubkey: _validPubkeyB,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+
+          // Give post-auth maintenance a chance to run.
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(repo.userPubkey, equals(_validPubkeyB));
+          expect(repo.isInitialized, isTrue);
+        },
+      );
+    });
+
+    group('_cleanupSelfConversations', () {
+      test(
+        'deletes self-conversation when it exists',
+        () async {
+          final selfConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyA],
+          );
+
+          // Stub: self-conversation exists
+          when(
+            () => mockConversationsDao.getConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: selfConvId,
+              participantPubkeys: jsonEncode([_validPubkeyA, _validPubkeyA]),
+              isGroup: false,
+              isRead: true,
+              currentUserHasSent: false,
+              createdAt: 1700000000,
+            ),
+          );
+
+          when(
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 0);
+
+          when(
+            () => mockConversationsDao.deleteConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 1);
+
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
+
+          // Create repo via constructor, then setCredentials to trigger
+          // post-auth maintenance including _cleanupSelfConversations.
+          final repo = DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+          );
+
+          repo.setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+
+          // Give post-auth maintenance time to complete.
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+
+          verify(
+            () => mockConversationsDao.deleteConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'no-op when self-conversation does not exist',
+        () async {
+          final selfConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyA],
+          );
+
+          when(
+            () => mockConversationsDao.getConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
+
+          final repo = DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+          );
+
+          repo.setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verifyNever(
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+    });
+
+    group('sendMessage - replyToId', () {
+      test('includes reply-to tag when replyToId is provided', () async {
+        when(
+          () => mockMessageService.sendPrivateMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            eventKind: any(named: 'eventKind'),
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: _validPubkeyB,
+          ),
+        );
+
+        when(
+          () => mockDirectMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            subject: any(named: 'subject'),
+            isRead: any(named: 'isRead'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockNostrClient.publishEvent(any()),
+        ).thenAnswer((_) async => _FakeEvent());
+
+        final repo = createRepository();
+        const replyId =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+        await repo.sendMessage(
+          recipientPubkey: _validPubkeyB,
+          content: 'Reply!',
+          replyToId: replyId,
+        );
+
+        // Verify the reply-to tag was passed to sendPrivateMessage
+        final captured =
+            verify(
+                  () => mockMessageService.sendPrivateMessage(
+                    recipientPubkey: any(named: 'recipientPubkey'),
+                    content: any(named: 'content'),
+                    eventKind: any(named: 'eventKind'),
+                    additionalTags: captureAny(named: 'additionalTags'),
+                  ),
+                ).captured.single
+                as List<dynamic>;
+        expect(
+          captured.any(
+            (tag) =>
+                tag is List &&
+                tag.length == 2 &&
+                tag[0] == 'e' &&
+                tag[1] == replyId,
+          ),
+          isTrue,
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------
+    // Phase 3: sendGroupMessage success, _mergeDuplicateConversations
+    // -----------------------------------------------------------------
+
+    group('sendGroupMessage - success', () {
+      void stubDaoInserts() {
+        when(
+          () => mockDirectMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            subject: any(named: 'subject'),
+            isRead: any(named: 'isRead'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+      }
+
+      test(
+        'sends to each recipient and persists group conversation',
+        () async {
+          when(
+            () => mockMessageService.sendPrivateMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: _validPubkeyB,
+            ),
+          );
+          stubDaoInserts();
+
+          final repo = createRepository();
+          final results = await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Group hello!',
+          );
+
+          expect(results, hasLength(2));
+          expect(results.every((r) => r.success), isTrue);
+
+          // Verify sent to each recipient
+          verify(
+            () => mockMessageService.sendPrivateMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: 'Group hello!',
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).called(2);
+
+          // Verify group conversation was persisted
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: true,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Group hello!',
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: _validPubkeyA,
+              currentUserHasSent: true,
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'persists when at least one send succeeds (partial failure)',
+        () async {
+          var callCount = 0;
+          when(
+            () => mockMessageService.sendPrivateMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return NIP17SendResult.success(
+                rumorEventId: _rumorEventId,
+                messageEventId: _giftWrapEventId,
+                recipientPubkey: _validPubkeyB,
+              );
+            }
+            return NIP17SendResult.failure('relay timeout');
+          });
+          stubDaoInserts();
+
+          final repo = createRepository();
+          final results = await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Partial!',
+          );
+
+          expect(results, hasLength(2));
+          expect(results.where((r) => r.success), hasLength(1));
+
+          // Message should still be persisted since one succeeded
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: 'Partial!',
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              replyToId: any(named: 'replyToId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'does not persist when all sends fail',
+        () async {
+          when(
+            () => mockMessageService.sendPrivateMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.failure('relay timeout'),
+          );
+
+          final repo = createRepository();
+          final results = await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Fails!',
+          );
+
+          expect(results, hasLength(2));
+          expect(results.every((r) => !r.success), isTrue);
+
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+    });
+
+    group('_mergeDuplicateConversations', () {
+      test(
+        'merges duplicate conversations into canonical 1:1 ID',
+        () async {
+          final canonical = [_validPubkeyA, _validPubkeyB]..sort();
+          final canonicalId = DmRepository.computeConversationId(canonical);
+
+          // Two conversations exist for the same peer: one canonical, one
+          // phantom from extra p-tags.
+          final phantomParticipants = [
+            _validPubkeyA,
+            _validPubkeyB,
+            _validPubkeyC,
+          ]..sort();
+          final phantomId = DmRepository.computeConversationId(
+            phantomParticipants,
+          );
+
+          when(
+            () => mockConversationsDao.getAllConversations(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ConversationRow(
+                id: canonicalId,
+                participantPubkeys: jsonEncode(canonical),
+                isGroup: false,
+                isRead: true,
+                currentUserHasSent: true,
+                createdAt: 1700000000,
+                lastMessageContent: 'Canonical msg',
+                lastMessageTimestamp: 1700000000,
+                lastMessageSenderPubkey: _validPubkeyB,
+              ),
+              ConversationRow(
+                id: phantomId,
+                participantPubkeys: jsonEncode(phantomParticipants),
+                isGroup: false,
+                isRead: true,
+                currentUserHasSent: false,
+                createdAt: 1699999000,
+                lastMessageContent: 'Phantom msg',
+                lastMessageTimestamp: 1699999000,
+                lastMessageSenderPubkey: _validPubkeyB,
+              ),
+            ],
+          );
+
+          when(
+            () => mockDirectMessagesDao.reassignConversation(
+              fromConversationId: any(named: 'fromConversationId'),
+              toConversationId: any(named: 'toConversationId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 1);
+
+          when(
+            () => mockConversationsDao.deleteConversation(
+              phantomId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 1);
+
+          // Stub for _refreshConversationPreview
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              canonicalId,
+              limit: 1,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockConversationsDao.getConversation(
+              canonicalId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          // Stub self-conversation for _cleanupSelfConversations
+          final selfConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyA],
+          );
+          when(
+            () => mockConversationsDao.getConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
+
+          final repo = DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+          );
+
+          repo.setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Phantom messages should be reassigned to canonical ID.
+          verify(
+            () => mockDirectMessagesDao.reassignConversation(
+              fromConversationId: phantomId,
+              toConversationId: canonicalId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+
+          // Phantom conversation should be deleted.
+          verify(
+            () => mockConversationsDao.deleteConversation(
+              phantomId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'creates canonical row when it does not exist',
+        () async {
+          // Only the phantom exists, not the canonical row.
+          final phantomParticipants = [
+            _validPubkeyA,
+            _validPubkeyB,
+            _validPubkeyC,
+          ]..sort();
+          final phantomId = DmRepository.computeConversationId(
+            phantomParticipants,
+          );
+
+          final secondPhantom = [_validPubkeyA, _validPubkeyB]..sort();
+          // Use a fake non-canonical id for the second "duplicate"
+          final secondId = '${secondPhantom.join(':')}:fake';
+
+          when(
+            () => mockConversationsDao.getAllConversations(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ConversationRow(
+                id: phantomId,
+                participantPubkeys: jsonEncode(phantomParticipants),
+                isGroup: false,
+                isRead: true,
+                currentUserHasSent: false,
+                createdAt: 1699999000,
+                lastMessageContent: 'Phantom',
+                lastMessageTimestamp: 1699999000,
+                lastMessageSenderPubkey: _validPubkeyB,
+                ownerPubkey: _validPubkeyA,
+                dmProtocol: 'nip17',
+              ),
+            ],
+          );
+
+          when(
+            () => mockDirectMessagesDao.reassignConversation(
+              fromConversationId: any(named: 'fromConversationId'),
+              toConversationId: any(named: 'toConversationId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 0);
+
+          when(
+            () => mockConversationsDao.deleteConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 0);
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              any(),
+              limit: 1,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
+
+          final repo = DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+          );
+
+          repo.setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Only 1 conversation → no duplicates to merge (peerGroups
+          // will have a single entry), so no reassignment.
+          verifyNever(
+            () => mockDirectMessagesDao.reassignConversation(
+              fromConversationId: any(named: 'fromConversationId'),
+              toConversationId: any(named: 'toConversationId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+
+      test('single conversation per peer is a no-op', () async {
+        final participants = [_validPubkeyA, _validPubkeyB]..sort();
+        final convId = DmRepository.computeConversationId(participants);
+
+        when(
+          () => mockConversationsDao.getAllConversations(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            ConversationRow(
+              id: convId,
+              participantPubkeys: jsonEncode(participants),
+              isGroup: false,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1700000000,
+            ),
+          ],
+        );
+
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        final repo = DmRepository(
+          nostrClient: mockNostrClient,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+        );
+
+        repo.setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verifyNever(
+          () => mockDirectMessagesDao.reassignConversation(
+            fromConversationId: any(named: 'fromConversationId'),
+            toConversationId: any(named: 'toConversationId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+    });
+
+    group('_backfillCurrentUserHasSent', () {
+      test('logs when conversations are updated', () async {
+        when(
+          () => mockConversationsDao.backfillCurrentUserHasSent(any()),
+        ).thenAnswer((_) async => 3);
+
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        final repo = DmRepository(
+          nostrClient: mockNostrClient,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+        );
+
+        repo.setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(
+          () => mockConversationsDao.backfillCurrentUserHasSent(
+            _validPubkeyA,
+          ),
+        ).called(1);
+      });
+    });
   });
 }
