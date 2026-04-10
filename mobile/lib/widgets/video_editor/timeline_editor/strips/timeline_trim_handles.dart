@@ -4,8 +4,8 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
 
 /// Callback reporting the horizontal drag delta in pixels.
 typedef TrimDragCallback = void Function(double dx);
@@ -109,7 +109,7 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
       double.infinity,
     );
 
-    return _ExpandedHitSizedBox(
+    return HitExpandedBox(
       expandLeft: handleW + widget.hitAreaExtra,
       expandRight: handleW + widget.hitAreaExtra,
       height: widget.height,
@@ -242,84 +242,5 @@ class _HandleVisual extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// A [SizedBox]-like widget that accepts hit-tests beyond its layout bounds.
-///
-/// Used so that trim handles positioned outside the content area via
-/// [Stack] + [Clip.none] remain interactive.
-class _ExpandedHitSizedBox extends SingleChildRenderObjectWidget {
-  const _ExpandedHitSizedBox({
-    required super.child,
-    required this.height,
-    this.expandLeft = 0,
-    this.expandRight = 0,
-  });
-
-  final double height;
-  final double expandLeft;
-  final double expandRight;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _RenderExpandedHitSizedBox(
-      expandLeft: expandLeft,
-      expandRight: expandRight,
-      additionalConstraints: BoxConstraints.tightFor(height: height),
-    );
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderExpandedHitSizedBox renderObject,
-  ) {
-    renderObject
-      ..expandLeft = expandLeft
-      ..expandRight = expandRight
-      ..additionalConstraints = BoxConstraints.tightFor(height: height);
-  }
-}
-
-class _RenderExpandedHitSizedBox extends RenderConstrainedBox {
-  _RenderExpandedHitSizedBox({
-    required double expandLeft,
-    required double expandRight,
-    required super.additionalConstraints,
-  }) : _expandLeft = expandLeft,
-       _expandRight = expandRight;
-
-  double _expandLeft;
-  double get expandLeft => _expandLeft;
-  set expandLeft(double value) {
-    if (_expandLeft == value) return;
-    _expandLeft = value;
-  }
-
-  double _expandRight;
-  double get expandRight => _expandRight;
-  set expandRight(double value) {
-    if (_expandRight == value) return;
-    _expandRight = value;
-  }
-
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (position.dx >= -_expandLeft &&
-        position.dx < size.width + _expandRight &&
-        position.dy >= 0 &&
-        position.dy < size.height) {
-      // Bypass the child's own size.contains() check by calling
-      // hitTestChildren directly.  This lets Positioned children that
-      // sit outside the Stack's bounds still receive touches.
-      final childHit =
-          child?.hitTestChildren(result, position: position) ?? false;
-      if (childHit || hitTestSelf(position)) {
-        result.add(BoxHitTestEntry(this, position));
-        return true;
-      }
-    }
-    return false;
   }
 }

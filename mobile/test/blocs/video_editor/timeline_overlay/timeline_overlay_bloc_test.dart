@@ -130,7 +130,6 @@ void main() {
               type: TimelineOverlayType.layer,
               startTime: Duration.zero,
               duration: Duration(seconds: 3),
-              row: 0,
             ),
             TimelineOverlayItem(
               id: 'l-1',

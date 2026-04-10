@@ -87,17 +87,29 @@ void main() {
       });
     });
 
+    // The trim handles are positioned OUTSIDE the parent's layout bounds
+    // via _ExpandedHitSizedBox. tester.drag(finder) resolves the
+    // GestureDetector center at off-screen coordinates and fails to
+    // hit-test. Use tester.dragFrom() at positions within the handle's
+    // overlap zone (border width area: x ∈ [0, borderWidth) for left,
+    // x ∈ [width - borderWidth, width) for right).
+
     group('left handle drag', () {
+      Offset leftHandleCenter(WidgetTester tester) {
+        final box = tester.renderObject<RenderBox>(
+          find.byType(TimelineTrimHandles),
+        );
+        final topLeft = box.localToGlobal(Offset.zero);
+        return Offset(topLeft.dx + 1, topLeft.dy + box.size.height / 2);
+      }
+
       testWidgets('calls onDragStart on drag begin', (tester) async {
         var started = false;
         await tester.pumpWidget(
           buildWidget(onDragStart: () => started = true),
         );
 
-        final handles = find.byType(GestureDetector);
-        final leftHandle = handles.first;
-
-        await tester.drag(leftHandle, const Offset(10, 0));
+        await tester.dragFrom(leftHandleCenter(tester), const Offset(10, 0));
         await tester.pumpAndSettle();
 
         expect(started, isTrue);
@@ -109,10 +121,7 @@ void main() {
           buildWidget(onLeftDragUpdate: deltas.add),
         );
 
-        final handles = find.byType(GestureDetector);
-        final leftHandle = handles.first;
-
-        await tester.drag(leftHandle, const Offset(20, 0));
+        await tester.dragFrom(leftHandleCenter(tester), const Offset(20, 0));
         await tester.pumpAndSettle();
 
         expect(deltas, isNotEmpty);
@@ -124,10 +133,7 @@ void main() {
           buildWidget(onDragEnd: () => ended = true),
         );
 
-        final handles = find.byType(GestureDetector);
-        final leftHandle = handles.first;
-
-        await tester.drag(leftHandle, const Offset(10, 0));
+        await tester.dragFrom(leftHandleCenter(tester), const Offset(10, 0));
         await tester.pumpAndSettle();
 
         expect(ended, isTrue);
@@ -135,16 +141,27 @@ void main() {
     });
 
     group('right handle drag', () {
+      Offset rightHandleCenter(WidgetTester tester) {
+        final box = tester.renderObject<RenderBox>(
+          find.byType(TimelineTrimHandles),
+        );
+        final topLeft = box.localToGlobal(Offset.zero);
+        return Offset(
+          topLeft.dx + box.size.width - 1,
+          topLeft.dy + box.size.height / 2,
+        );
+      }
+
       testWidgets('calls onRightDragUpdate with dx', (tester) async {
         final deltas = <double>[];
         await tester.pumpWidget(
           buildWidget(onRightDragUpdate: deltas.add),
         );
 
-        final handles = find.byType(GestureDetector);
-        final rightHandle = handles.last;
-
-        await tester.drag(rightHandle, const Offset(-20, 0));
+        await tester.dragFrom(
+          rightHandleCenter(tester),
+          const Offset(-20, 0),
+        );
         await tester.pumpAndSettle();
 
         expect(deltas, isNotEmpty);
@@ -158,10 +175,10 @@ void main() {
           buildWidget(onDragStart: () => started = true),
         );
 
-        final handles = find.byType(GestureDetector);
-        final rightHandle = handles.last;
-
-        await tester.drag(rightHandle, const Offset(-10, 0));
+        await tester.dragFrom(
+          rightHandleCenter(tester),
+          const Offset(-10, 0),
+        );
         await tester.pumpAndSettle();
 
         expect(started, isTrue);

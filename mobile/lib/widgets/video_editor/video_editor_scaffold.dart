@@ -51,12 +51,16 @@ class VideoEditorScaffold extends ConsumerWidget {
                   else
                     const VideoEditorCanvas(),
                   const _OverlayControls(),
-                  // FIXME(hm21) Remove or keep depending on coming design decisions
+                  // TODO(hm21): Decide whether _BottomActions replaces the
+                  // current overlay layout once the new editor design is
+                  // finalised. Remove this commented-out call if not needed.
                   // const _BottomActions(),
                 ],
               ),
             ),
-            // FIXME(hm21) Remove or keep depending on coming design decisions
+            // TODO(hm21): Evaluate whether the timeline stays in
+            // the bottom section or moves into the overlay once the
+            // new editor layout design is finalised.
             const VideoEditorTimeline(),
           ],
         ),

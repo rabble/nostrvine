@@ -79,7 +79,7 @@ class _VideoRecorderLibraryButtonState
                   await ref
                       .read(videoRecorderProvider.notifier)
                       .openLibrary(context);
-      
+
                   // Refresh library thumbnail after returning — user may have
                   // deleted clips or new thumbnails may have been recovered.
                   _loadLibraryThumbnail();

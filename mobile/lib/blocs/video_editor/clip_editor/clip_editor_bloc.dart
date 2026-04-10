@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -70,7 +71,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     on<ClipEditorSplitRequested>(_onSplitRequested);
 
     // Trim
-    on<ClipEditorTrimUpdated>(_onTrimUpdated);
+    on<ClipEditorTrimUpdated>(_onTrimUpdated, transformer: restartable());
     on<ClipEditorTrimDragStarted>(_onTrimDragStarted);
     on<ClipEditorTrimDragEnded>(_onTrimDragEnded);
   }

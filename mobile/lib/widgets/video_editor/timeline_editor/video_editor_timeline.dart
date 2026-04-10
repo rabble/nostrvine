@@ -1,6 +1,5 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
@@ -10,6 +9,7 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
@@ -603,7 +603,7 @@ class _TimelineScrollContent extends StatelessWidget {
         ? TimelineConstants.trimHandleWidth + 12.0
         : 0.0;
 
-    return _ColumnHitExpander(
+    return HitExpandedBox(
       expandLeft: trimExpand,
       expandRight: trimExpand,
       child: Column(
@@ -769,85 +769,5 @@ class _TimelineOverlayStrips extends StatelessWidget {
           ),
       ],
     );
-  }
-}
-
-/// Expands the hit-test area horizontally so that trim handles positioned
-/// outside the [Column]'s layout bounds (via [Clip.none]) can still receive
-/// touches.  Bypasses the child's own [RenderBox.hitTest] `size.contains`
-/// check and delegates directly to [hitTestChildren].
-class _ColumnHitExpander extends SingleChildRenderObjectWidget {
-  const _ColumnHitExpander({
-    required super.child,
-    this.expandLeft = 0,
-    this.expandRight = 0,
-  });
-
-  final double expandLeft;
-  final double expandRight;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _RenderColumnHitExpander(
-      expandLeft: expandLeft,
-      expandRight: expandRight,
-    );
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderColumnHitExpander renderObject,
-  ) {
-    renderObject
-      ..expandLeft = expandLeft
-      ..expandRight = expandRight;
-  }
-}
-
-class _RenderColumnHitExpander extends RenderProxyBox {
-  _RenderColumnHitExpander({
-    required double expandLeft,
-    required double expandRight,
-  }) : _expandLeft = expandLeft,
-       _expandRight = expandRight;
-
-  double _expandLeft;
-  double get expandLeft => _expandLeft;
-  set expandLeft(double value) {
-    if (_expandLeft == value) return;
-    _expandLeft = value;
-  }
-
-  double _expandRight;
-  double get expandRight => _expandRight;
-  set expandRight(double value) {
-    if (_expandRight == value) return;
-    _expandRight = value;
-  }
-
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (position.dx >= -_expandLeft &&
-        position.dx < size.width + _expandRight &&
-        position.dy >= 0 &&
-        position.dy < size.height) {
-      if (size.contains(position)) {
-        if (hitTestChildren(result, position: position) ||
-            hitTestSelf(position)) {
-          result.add(BoxHitTestEntry(this, position));
-          return true;
-        }
-      } else {
-        // Expanded margin → bypass child's size.contains().
-        final childHit =
-            child?.hitTestChildren(result, position: position) ?? false;
-        if (childHit || hitTestSelf(position)) {
-          result.add(BoxHitTestEntry(this, position));
-          return true;
-        }
-      }
-    }
-    return false;
   }
 }

@@ -9,6 +9,7 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 
 part 'video_editor_timeline_clip_strip_tiles.dart';
@@ -67,8 +68,13 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
 }
 
 class _VideoEditorTimelineClipStripState
-    extends State<VideoEditorTimelineClipStrip> {
+    extends State<VideoEditorTimelineClipStrip>
+    with SingleTickerProviderStateMixin {
   static const _animDuration = Duration(milliseconds: 250);
+
+  /// Drives reorder shrink/grow timing so we can react to completion
+  /// instead of guessing with [Future.delayed].
+  late final AnimationController _reorderAnimController;
 
   bool _isReordering = false;
   bool _isReorderExiting = false;
@@ -110,6 +116,10 @@ class _VideoEditorTimelineClipStripState
   @override
   void initState() {
     super.initState();
+    _reorderAnimController = AnimationController(
+      vsync: this,
+      duration: _animDuration,
+    );
     _orderedClips = List.of(widget.clips);
   }
 
@@ -131,6 +141,7 @@ class _VideoEditorTimelineClipStripState
   @override
   void dispose() {
     _stopAutoScroll();
+    _reorderAnimController.dispose();
     _thumbnails.dispose();
     super.dispose();
   }
@@ -208,11 +219,13 @@ class _VideoEditorTimelineClipStripState
     });
 
     // After the shrink animation completes, switch to finger-following mode.
-    Future.delayed(_animDuration, () {
-      if (mounted && _isReordering) {
-        setState(() => _dragAnimating = false);
-      }
-    });
+    _reorderAnimController
+      ..reset()
+      ..forward().then((_) {
+        if (mounted && _isReordering) {
+          setState(() => _dragAnimating = false);
+        }
+      });
   }
 
   void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
@@ -340,21 +353,23 @@ class _VideoEditorTimelineClipStripState
     }
 
     // Phase 2: after the grow-back animation completes, clean up.
-    Future.delayed(_animDuration, () {
-      if (mounted) {
-        setState(() {
-          _isReorderExiting = false;
-          _dragGlobalX = 0;
-          _dragStartGlobalX = 0;
-          _dragStartLocalX = 0;
-          _dragStartScrollOffset = 0;
-          _dragClipWidth = 0;
-          _dragFingerRatio = 0.5;
-          _dragStartClipCenter = 0;
-          _rowOffset = 0;
-        });
-      }
-    });
+    _reorderAnimController
+      ..reset()
+      ..forward().then((_) {
+        if (mounted) {
+          setState(() {
+            _isReorderExiting = false;
+            _dragGlobalX = 0;
+            _dragStartGlobalX = 0;
+            _dragStartLocalX = 0;
+            _dragStartScrollOffset = 0;
+            _dragClipWidth = 0;
+            _dragFingerRatio = 0.5;
+            _dragStartClipCenter = 0;
+            _rowOffset = 0;
+          });
+        }
+      });
   }
 
   static bool _sameOrder(
@@ -403,7 +418,7 @@ class _VideoEditorTimelineClipStripState
         ? TimelineConstants.trimHandleWidth + 12.0
         : 0.0;
 
-    return _HitExpandedBox(
+    return HitExpandedBox(
       expandLeft: trimExpand,
       expandRight: trimExpand,
       child: GestureDetector(
@@ -411,7 +426,7 @@ class _VideoEditorTimelineClipStripState
         onLongPressMoveUpdate: _isReordering ? _onLongPressMoveUpdate : null,
         onLongPressEnd: _isReordering ? _onLongPressEnd : null,
         onLongPressCancel: _isReordering ? _onLongPressCancel : null,
-        child: _HitExpandedBox(
+        child: HitExpandedBox(
           expandLeft: trimExpand,
           expandRight: trimExpand,
           child: AnimatedContainer(
@@ -419,7 +434,7 @@ class _VideoEditorTimelineClipStripState
             curve: animCurve,
             width: totalWidth,
             height: TimelineConstants.thumbnailStripHeight,
-            child: _HitExpandedBox(
+            child: HitExpandedBox(
               expandLeft: trimExpand,
               expandRight: trimExpand,
               child: Stack(
@@ -512,91 +527,5 @@ class _VideoEditorTimelineClipStripState
         ),
       ),
     );
-  }
-}
-
-/// Wraps a child and expands its hit-test area beyond its layout bounds.
-///
-/// This is needed because Flutter's [Stack] (and other [RenderBox] subclasses)
-/// reject hit-tests that land outside `size`. When trim handles are positioned
-/// outside the clip strip's bounds via [Clip.none], they paint correctly but
-/// cannot receive touches. Wrapping the strip hierarchy with this widget
-/// extends the hit-test rect so outer-positioned handles remain interactive.
-class _HitExpandedBox extends SingleChildRenderObjectWidget {
-  const _HitExpandedBox({
-    required super.child,
-    this.expandLeft = 0,
-    this.expandRight = 0,
-  });
-
-  final double expandLeft;
-  final double expandRight;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _RenderHitExpandedBox(
-      expandLeft: expandLeft,
-      expandRight: expandRight,
-    );
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderHitExpandedBox renderObject,
-  ) {
-    renderObject
-      ..expandLeft = expandLeft
-      ..expandRight = expandRight;
-  }
-}
-
-class _RenderHitExpandedBox extends RenderProxyBox {
-  _RenderHitExpandedBox({
-    required double expandLeft,
-    required double expandRight,
-  }) : _expandLeft = expandLeft,
-       _expandRight = expandRight;
-
-  double _expandLeft;
-  double get expandLeft => _expandLeft;
-  set expandLeft(double value) {
-    if (_expandLeft == value) return;
-    _expandLeft = value;
-  }
-
-  double _expandRight;
-  double get expandRight => _expandRight;
-  set expandRight(double value) {
-    if (_expandRight == value) return;
-    _expandRight = value;
-  }
-
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (position.dx >= -_expandLeft &&
-        position.dx < size.width + _expandRight &&
-        position.dy >= 0 &&
-        position.dy < size.height) {
-      // Inside normal bounds → standard path so GestureDetectors
-      // (e.g. longPress for reorder) register in the hit result.
-      if (size.contains(position)) {
-        if (hitTestChildren(result, position: position) ||
-            hitTestSelf(position)) {
-          result.add(BoxHitTestEntry(this, position));
-          return true;
-        }
-      } else {
-        // Expanded margin → bypass child's size.contains() so
-        // touches reach the trim handles.
-        final childHit =
-            child?.hitTestChildren(result, position: position) ?? false;
-        if (childHit || hitTestSelf(position)) {
-          result.add(BoxHitTestEntry(this, position));
-          return true;
-        }
-      }
-    }
-    return false;
   }
 }
