@@ -8,7 +8,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Mixin that provides video prefetching logic for PageView-based feeds
 ///

@@ -11,8 +11,8 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class KeyImportScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.

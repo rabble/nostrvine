@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/nip05/nip05_validor.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Verification status for NIP-05 addresses
 enum Nip05VerificationStatus {

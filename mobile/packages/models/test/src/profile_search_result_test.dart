@@ -156,8 +156,14 @@ void main() {
 
         expect(
           result.createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(
+              1700000000 * 1000,
+              isUtc: true,
+            ),
+          ),
         );
+        expect(result.createdAt!.isUtc, isTrue);
       });
 
       test('parses created_at as ISO string', () {

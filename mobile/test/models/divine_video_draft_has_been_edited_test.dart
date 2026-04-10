@@ -215,7 +215,6 @@ void main() {
           lastModified: DateTime(2025),
           publishStatus: PublishStatus.draft,
           publishAttempts: 0,
-          allowAudioReuse: true,
         );
 
         expect(draft.hasBeenEdited, isTrue);
@@ -246,7 +245,6 @@ void main() {
           publishStatus: PublishStatus.draft,
           publishAttempts: 1,
           publishError: 'err',
-          allowAudioReuse: true,
           expireTime: const Duration(days: 1),
           proofManifestJson: '{}',
           editorStateHistory: const {'k': 'v'},

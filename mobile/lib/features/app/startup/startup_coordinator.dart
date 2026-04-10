@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart'; // ABOUTME: Manages service dependenci
 import 'package:openvine/features/app/startup/startup_metrics.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service registration info
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod

@@ -5,7 +5,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 // Import screen tests
 import 'screens/video_recorder_screen_test.dart' as screen_test;

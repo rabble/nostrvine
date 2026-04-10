@@ -2,19 +2,18 @@
 // ABOUTME: Ensures ALL logs are captured to file regardless of category/level filtering
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/log_capture_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   group('UnifiedLogger File Capture', () {
     late LogCaptureService logService;
 
     setUp(() async {
-      logService = LogCaptureService.instance;
+      logService = LogCaptureService();
 
       // Clear logs and wait for async file operations to complete
       await logService.clearAllLogs();
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Set restrictive category filtering (only system and auth)
       // This mimics the default production configuration
@@ -23,7 +22,8 @@ void main() {
     });
 
     test(
-      'should capture ALL categories to file even when category filtering is enabled',
+      'captures ALL categories to file even when '
+      'category filtering is enabled',
       () async {
         // Given: Category filtering is enabled (only system and auth)
         // This is the default production configuration
@@ -56,9 +56,10 @@ void main() {
         ); // NOT enabled for console
 
         // Wait for async file captures to complete
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        // Then: ALL 7 logs should be captured to file, regardless of category filtering
+        // Then: ALL 7 logs should be captured to file,
+        // regardless of category filtering
         final capturedLogs = logService.getRecentLogs();
         final newLogsCount = capturedLogs.length - beforeCount;
 
@@ -66,7 +67,8 @@ void main() {
           newLogsCount,
           equals(7),
           reason:
-              'ALL 7 logs should be captured to file, even those from disabled categories',
+              'ALL 7 logs should be captured to file, '
+              'even those from disabled categories',
         );
 
         // Verify each category was captured (check last 7 logs)
@@ -88,7 +90,8 @@ void main() {
     );
 
     test(
-      'should capture ALL log levels to file even when level filtering is enabled',
+      'captures ALL log levels to file even when '
+      'level filtering is enabled',
       () async {
         // Given: Level filtering is enabled (only info and above)
         UnifiedLogger.setLogLevel(LogLevel.info);
@@ -107,9 +110,10 @@ void main() {
         Log.error('Error log', category: LogCategory.system);
 
         // Wait for async file captures to complete
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        // Then: ALL 5 logs should be captured to file, regardless of level filtering
+        // Then: ALL 5 logs should be captured,
+        // regardless of level filtering
         final capturedLogs = logService.getRecentLogs();
         final newLogsCount = capturedLogs.length - beforeCount;
 
@@ -143,7 +147,7 @@ void main() {
       Log.info('Log without category');
 
       // Wait for async file capture to complete
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Then: Log should still be captured
       final capturedLogs = logService.getRecentLogs();
@@ -170,7 +174,7 @@ void main() {
       );
 
       // Wait for async file capture to complete
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Then: Error details should be captured
       final capturedLogs = logService.getRecentLogs();
@@ -185,13 +189,16 @@ void main() {
     });
 
     test(
-      'should capture logs from disabled categories for bug report export',
+      'captures logs from disabled categories '
+      'for bug report export',
       () async {
         // This is the critical test case that was failing in production
         // Users were exporting logs and getting only 25 lines because
-        // relay, video, and other categories were filtered out before file capture
+        // relay, video, and other categories were
+        // filtered out before file capture
 
-        // Given: Only system and auth categories are enabled (production default)
+        // Given: Only system and auth categories
+        // are enabled (production default)
         UnifiedLogger.enableCategories({LogCategory.system, LogCategory.auth});
 
         final beforeCount = logService.getRecentLogs().length;
@@ -206,7 +213,7 @@ void main() {
         Log.error('API call failed', category: LogCategory.api);
 
         // Wait for async file captures
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Then: When user exports logs, they should get ALL 7 new entries
         final exportedLogs = logService.getRecentLogs();
@@ -216,7 +223,8 @@ void main() {
           newLogsCount,
           equals(7),
           reason:
-              'User log export must include ALL categories for debugging remote issues',
+              'User log export must include ALL categories '
+              'for debugging remote issues',
         );
 
         // Verify critical relay logs are included
@@ -228,7 +236,8 @@ void main() {
           relayLogs.length,
           equals(2),
           reason:
-              'Relay connection errors are critical for debugging and must be captured',
+              'Relay connection errors are critical '
+              'for debugging and must be captured',
         );
       },
     );

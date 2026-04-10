@@ -116,7 +116,10 @@ class DbRepostsLocalStorage implements RepostsLocalStorage {
       addressableId: row.addressableId,
       repostEventId: row.repostEventId,
       originalAuthorPubkey: row.originalAuthorPubkey,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt * 1000),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        row.createdAt * 1000,
+        isUtc: true,
+      ),
     );
   }
 }

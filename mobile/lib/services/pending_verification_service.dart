@@ -2,7 +2,7 @@
 // ABOUTME: Enables auto-login when app is cold-started via email verification deep link
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Data class representing pending email verification credentials
 class PendingVerification {

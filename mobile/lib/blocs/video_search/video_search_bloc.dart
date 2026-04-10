@@ -64,7 +64,9 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
       return;
     }
 
-    if (query == state.query && state.status != VideoSearchStatus.initial) {
+    if (query == state.query &&
+        state.status != VideoSearchStatus.initial &&
+        state.status != VideoSearchStatus.failure) {
       return;
     }
 

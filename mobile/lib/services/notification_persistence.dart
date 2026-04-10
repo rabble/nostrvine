@@ -3,7 +3,7 @@
 
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Handles persistence of notifications to Hive storage
 class NotificationPersistence {

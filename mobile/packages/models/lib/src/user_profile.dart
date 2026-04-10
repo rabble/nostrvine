@@ -56,7 +56,7 @@ class UserProfile {
         lud16: content['lud16']?.toString(),
         lud06: content['lud06']?.toString(),
         rawData: content,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+        createdAt: event.createdAtDateTime,
         eventId: event.id,
       );
     } on FormatException {
@@ -64,7 +64,7 @@ class UserProfile {
       return UserProfile(
         pubkey: event.pubkey,
         rawData: const {},
-        createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+        createdAt: event.createdAtDateTime,
         eventId: event.id,
       );
     }
@@ -83,7 +83,10 @@ class UserProfile {
     lud16: json['lud16'] as String?,
     lud06: json['lud06'] as String?,
     rawData: json['raw_data'] as Map<String, dynamic>? ?? {},
-    createdAt: DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(
+      json['created_at'] as int,
+      isUtc: true,
+    ),
     eventId: json['event_id'] as String,
   );
 

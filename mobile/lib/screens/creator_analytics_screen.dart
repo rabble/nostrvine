@@ -1327,9 +1327,12 @@ class _DailyInteractionPoint {
 
 DateTime _videoTimestamp(VideoEvent video) {
   if (video.createdAt > 0) {
-    return DateTime.fromMillisecondsSinceEpoch(video.createdAt * 1000);
+    return DateTime.fromMillisecondsSinceEpoch(
+      video.createdAt * 1000,
+      isUtc: true,
+    ).toLocal();
   }
-  return video.timestamp;
+  return video.timestamp.toLocal();
 }
 
 String _dayKey(DateTime day) {

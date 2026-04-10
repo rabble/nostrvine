@@ -7,9 +7,9 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for extracting thumbnail images from video files
 class VideoThumbnailService {

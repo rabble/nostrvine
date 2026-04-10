@@ -11,7 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
 /// Tracks video playback metrics and sends analytics

@@ -20,28 +20,20 @@ class SearchFilterPill extends StatelessWidget {
     return Semantics(
       label: 'Filter: ${filter.label}',
       button: true,
-      child: GestureDetector(
-        onTap: () => SearchFilterSheet.show(context),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: VineTheme.vineGreen,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 4,
-            children: [
-              Text(
-                filter.label,
-                style: VineTheme.titleSmallFont(color: VineTheme.onPrimary),
-              ),
-              const DivineIcon(
-                icon: DivineIconName.caretDown,
-                color: VineTheme.onPrimary,
-                size: 16,
-              ),
-            ],
+      child: Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: GestureDetector(
+          onTap: () => SearchFilterSheet.show(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: VineTheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              filter.label,
+              style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
+            ),
           ),
         ),
       ),

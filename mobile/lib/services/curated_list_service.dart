@@ -22,8 +22,8 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/curated_list_ext.dart';
 import 'package:openvine/utils/nostr_event_ext.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Callback type for list subscription events
 /// Called with listId and the video IDs in that list
@@ -1485,8 +1485,8 @@ class CuratedListService extends ChangeNotifier {
         description: description ?? event.content,
         imageUrl: imageUrl,
         videoEventIds: videoEventIds,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+        createdAt: event.createdAtDateTime,
+        updatedAt: event.createdAtDateTime,
         nostrEventId: event.id,
         tags: tags,
         isCollaborative: isCollaborative,

@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
@@ -29,8 +30,10 @@ void main() {
       final clip = _createClip(processingCompleter: completer);
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+          ),
         ),
       );
 
@@ -49,8 +52,10 @@ void main() {
       final clip = _createClip(); // No processingCompleter
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+          ),
         ),
       );
 
@@ -70,8 +75,10 @@ void main() {
       final clip = _createClip(processingCompleter: completer);
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+          ),
         ),
       );
 

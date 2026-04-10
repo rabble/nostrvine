@@ -218,6 +218,40 @@ void main() {
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
+        're-searches when same query is dispatched in failure state',
+        setUp: () {
+          when(
+            () => mockHashtagRepository.searchHashtags(query: 'flutter'),
+          ).thenAnswer((_) async => ['flutter', 'flutterdev']);
+        },
+        build: createBloc,
+        seed: () => const HashtagSearchState(
+          status: HashtagSearchStatus.failure,
+          query: 'flutter',
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('flutter')),
+        wait: debounceDuration,
+        expect: () => [
+          const HashtagSearchState(
+            status: HashtagSearchStatus.loading,
+            query: 'flutter',
+          ),
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'flutter',
+            results: ['flutter', 'flutterdev'],
+            resultCount: 2,
+            offset: 2,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockHashtagRepository.searchHashtags(query: 'flutter'),
+          ).called(1);
+        },
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
         'normalizes query by trimming and lowercasing',
         setUp: () {
           when(

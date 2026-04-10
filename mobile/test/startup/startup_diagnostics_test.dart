@@ -8,7 +8,7 @@ import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/features/app/startup/startup_profiler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockCrashReportingService extends Mock
     implements CrashReportingService {}

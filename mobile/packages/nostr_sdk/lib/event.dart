@@ -165,7 +165,7 @@ class Event {
   int get hashCode => id.hashCode;
 
   DateTime get createdAtDateTime =>
-      DateTime.fromMillisecondsSinceEpoch(createdAt * 1000);
+      DateTime.fromMillisecondsSinceEpoch(createdAt * 1000, isUtc: true);
 
   static int _secondsSinceEpoch() {
     final now = clock.now();

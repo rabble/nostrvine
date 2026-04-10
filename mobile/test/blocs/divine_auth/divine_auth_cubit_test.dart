@@ -3,14 +3,12 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
-import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
@@ -20,7 +18,7 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockPendingVerificationService extends Mock
     implements PendingVerificationService {}
 
-class _MockInviteApiService extends Mock implements InviteApiService {}
+class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 class _FakeKeycastSession extends Fake implements KeycastSession {}
 
@@ -43,7 +41,7 @@ void main() {
     late _MockKeycastOAuth mockOAuth;
     late _MockAuthService mockAuthService;
     late _MockPendingVerificationService mockPendingVerification;
-    late _MockInviteApiService mockInviteApiService;
+    late _MockInviteApiClient mockInviteApiClient;
 
     const testEmail = 'test@example.com';
     const testPassword = 'password123';
@@ -55,7 +53,7 @@ void main() {
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
       mockPendingVerification = _MockPendingVerificationService();
-      mockInviteApiService = _MockInviteApiService();
+      mockInviteApiClient = _MockInviteApiClient();
       when(() => mockOAuth.config).thenReturn(
         const OAuthConfig(
           serverUrl: 'https://login.divine.video',
@@ -70,7 +68,7 @@ void main() {
         oauthClient: mockOAuth,
         authService: mockAuthService,
         pendingVerificationService: mockPendingVerification,
-        inviteApiService: mockInviteApiService,
+        inviteApiClient: mockInviteApiClient,
         inviteCode: inviteCode,
       );
     }
@@ -356,7 +354,7 @@ void main() {
               (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
             );
             when(
-              () => mockInviteApiService.consumeInviteWithSession(
+              () => mockInviteApiClient.consumeInviteWithSession(
                 code: any(named: 'code'),
                 oauthConfig: any(named: 'oauthConfig'),
                 session: any(named: 'session'),
@@ -393,7 +391,7 @@ void main() {
                 code: testCode,
                 verifier: testVerifier,
               ),
-              () => mockInviteApiService.consumeInviteWithSession(
+              () => mockInviteApiClient.consumeInviteWithSession(
                 code: 'AB12-EF34',
                 oauthConfig: any(named: 'oauthConfig'),
                 session: any(named: 'session'),
@@ -427,13 +425,13 @@ void main() {
               (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
             );
             when(
-              () => mockInviteApiService.consumeInviteWithSession(
+              () => mockInviteApiClient.consumeInviteWithSession(
                 code: any(named: 'code'),
                 oauthConfig: any(named: 'oauthConfig'),
                 session: any(named: 'session'),
               ),
             ).thenThrow(
-              const ApiException(
+              const InviteApiException(
                 'Invite already been used',
                 statusCode: 409,
               ),
@@ -1322,7 +1320,7 @@ void main() {
         'consumes invite before creating anonymous account when invite code exists',
         setUp: () {
           when(
-            () => mockInviteApiService.consumeInviteWithKeyContainer(
+            () => mockInviteApiClient.consumeInviteWithKeyContainer(
               code: any(named: 'code'),
               keyContainer: any(named: 'keyContainer'),
             ),
@@ -1351,7 +1349,7 @@ void main() {
         verify: (_) {
           verifyNever(() => mockAuthService.createAnonymousAccount());
           verifyInOrder([
-            () => mockInviteApiService.consumeInviteWithKeyContainer(
+            () => mockInviteApiClient.consumeInviteWithKeyContainer(
               code: 'AB12-EF34',
               keyContainer: any(named: 'keyContainer'),
             ),
@@ -1364,12 +1362,12 @@ void main() {
         'emits invite recovery error when anonymous invite activation fails',
         setUp: () {
           when(
-            () => mockInviteApiService.consumeInviteWithKeyContainer(
+            () => mockInviteApiClient.consumeInviteWithKeyContainer(
               code: any(named: 'code'),
               keyContainer: any(named: 'keyContainer'),
             ),
           ).thenThrow(
-            const ApiException('Invite revoked', statusCode: 403),
+            const InviteApiException('Invite revoked', statusCode: 403),
           );
         },
         build: () => buildCubit(inviteCode: 'ab12ef34'),

@@ -65,9 +65,9 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
     if (kIsWeb) return false;
     if (!_camera.lens.isFrontFacing) return false;
 
-    // On iOS, mirror preview only when native isn't mirroring
+    // On iOS/macOS, mirror preview only when native isn't mirroring
     // coverage:ignore-start
-    if (Platform.isIOS) {
+    if (Platform.isIOS || Platform.isMacOS) {
       return !_camera.mirrorFrontCameraOutput;
     }
     // coverage:ignore-end
