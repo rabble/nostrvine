@@ -26,6 +26,7 @@ import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -84,6 +85,7 @@ enum RouteType {
   discoverLists, // Discover public lists screen
   creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
+  originalSound, // Original sound detail screen (creator's own audio)
   contentPreferences, // Content preferences (language, audio, filters)
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
   legal, // Legal screen (ToS, Privacy, Safety, DMCA, Licenses)
@@ -379,6 +381,16 @@ RouteContext parseRoute(String path) {
       final soundId = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.sound, soundId: soundId);
 
+    case 'original-sound':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final originalSoundPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(
+        type: RouteType.originalSound,
+        npub: originalSoundPubkey,
+      );
+
     case 'profile-view':
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
@@ -596,6 +608,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.sound:
       return SoundDetailScreen.pathForId(context.soundId ?? '');
+
+    case RouteType.originalSound:
+      return OriginalSoundDetailScreen.pathForPubkey(context.npub ?? '');
 
     case RouteType.secureAccount:
       return SecureAccountScreen.path;
