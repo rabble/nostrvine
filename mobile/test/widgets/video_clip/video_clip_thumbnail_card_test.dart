@@ -26,8 +26,7 @@ void main() {
 
     Widget buildWidget({
       DivineVideoClip? clip,
-      bool isSelected = false,
-      int selectionIndex = 0,
+      int selectionIndex = -1,
       bool disabled = false,
       VoidCallback? onTap,
       VoidCallback? onLongPress,
@@ -37,7 +36,6 @@ void main() {
         home: Scaffold(
           body: VideoClipThumbnailCard(
             clip: clip ?? createClip(),
-            isSelected: isSelected,
             selectionIndex: selectionIndex,
             disabled: disabled,
             onTap: onTap ?? () {},
@@ -58,7 +56,7 @@ void main() {
 
       testWidgets('selection index when selected', (tester) async {
         await tester.pumpWidget(
-          buildWidget(isSelected: true, selectionIndex: 2),
+          buildWidget(selectionIndex: 2),
         );
 
         expect(find.text('2'), findsOneWidget);
@@ -151,7 +149,7 @@ void main() {
         'has correct semantics value when selected',
         (tester) async {
           await tester.pumpWidget(
-            buildWidget(isSelected: true, selectionIndex: 1),
+            buildWidget(selectionIndex: 1),
           );
 
           final semantics = tester.getSemantics(
