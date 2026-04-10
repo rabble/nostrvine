@@ -15,7 +15,7 @@ import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

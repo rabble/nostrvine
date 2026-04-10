@@ -6,8 +6,8 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'nostr_client_provider.g.dart';
 

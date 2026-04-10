@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Tracks performance timing for different startup phases
 class StartupPhaseTimer {

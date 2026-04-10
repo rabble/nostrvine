@@ -74,8 +74,8 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Global route observer for [RouteAware] subscribers (e.g. pausing video
 /// when a new route is pushed on top of the feed).

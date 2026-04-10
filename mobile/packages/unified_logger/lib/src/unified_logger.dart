@@ -1,16 +1,19 @@
-// ABOUTME: Unified logging utility that outputs to both Flutter console and browser DevTools
-// ABOUTME: Provides structured logging with levels while maintaining single command simplicity
+// ABOUTME: Unified logging utility that outputs to both
+// ABOUTME: Flutter console and browser DevTools.
+// ABOUTME: Provides structured logging with levels while
+// ABOUTME: maintaining single command simplicity.
 
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' show LogCategory, LogEntry, LogLevel;
-import 'package:openvine/services/log_capture_service.dart';
+import 'package:unified_logger/src/log_capture_service.dart';
 
 // Re-export enums so existing consumers of unified_logger.dart
 // continue to resolve LogLevel and LogCategory without import changes.
-export 'package:models/models.dart' show LogCategory, LogLevel;
+export 'package:models/models.dart' show LogCategory, LogEntry, LogLevel;
 
-/// Unified logger that outputs to both Flutter tool console and browser DevTools
+/// Unified logger that outputs to both Flutter tool console
+/// and browser DevTools.
 ///
 /// This logger combines the best of both worlds:
 /// - debugPrint: Shows in Flutter tool console (terminal)
@@ -24,7 +27,7 @@ export 'package:models/models.dart' show LogCategory, LogLevel;
 /// - Default: debug in debug mode, info in release mode
 ///
 /// Configure log categories via:
-/// - Code: UnifiedLogger.enableCategories({LogCategory.relay, LogCategory.video})
+/// - Code: `UnifiedLogger.enableCategories({...})`
 /// - Environment: LOG_CATEGORIES=RELAY,VIDEO,AUTH
 /// - Default: all categories in debug mode, only SYSTEM+AUTH in release mode
 ///
@@ -146,8 +149,11 @@ class UnifiedLogger {
 
       if (shouldPrintToConsole) {
         final now = DateTime.now();
-        final timestamp =
-            '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}.${now.millisecond.toString().padLeft(3, '0')}';
+        final h = now.hour.toString().padLeft(2, '0');
+        final m = now.minute.toString().padLeft(2, '0');
+        final s = now.second.toString().padLeft(2, '0');
+        final ms = now.millisecond.toString().padLeft(3, '0');
+        final timestamp = '$h:$m:$s.$ms';
         final categoryPrefix = category != null ? '[${category.name}] ' : '';
         final timestampedMessage = '[$timestamp] $categoryPrefix$message';
 
@@ -178,8 +184,8 @@ class UnifiedLogger {
         error: error?.toString(),
         stackTrace: stackTrace?.toString(),
       );
-      LogCaptureService.instance.captureLog(logEntry);
-    } catch (e) {
+      LogCaptureService().captureLog(logEntry);
+    } on Exception catch (e) {
       if (kDebugMode) {
         debugPrint('Failed to capture log: $e');
       }

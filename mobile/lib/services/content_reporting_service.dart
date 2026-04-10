@@ -9,8 +9,8 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Report submission result
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod

@@ -7,8 +7,8 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Configuration for indexer relays used to discover user relay lists
 class IndexerRelayConfig {

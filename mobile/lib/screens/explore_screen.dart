@@ -32,7 +32,6 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/categories_tab.dart';
@@ -43,6 +42,7 @@ import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:rxdart/rxdart.dart' show StartWithExtension;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Pure ExploreScreen using revolutionary Riverpod architecture
 class ExploreScreen extends ConsumerStatefulWidget {

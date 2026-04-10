@@ -29,10 +29,10 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, required this.currentIndex, super.key});

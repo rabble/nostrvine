@@ -105,12 +105,12 @@ import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/search_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sound_service/sound_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';

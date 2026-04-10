@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'background_publish_event.dart';
 part 'background_publish_state.dart';

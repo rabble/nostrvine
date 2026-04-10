@@ -18,7 +18,6 @@ import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
@@ -27,6 +26,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();

@@ -10,7 +10,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Bulk thumbnail generation script
 ///

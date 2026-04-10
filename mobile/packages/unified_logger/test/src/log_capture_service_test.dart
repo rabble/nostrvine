@@ -1,16 +1,16 @@
 // ABOUTME: Unit tests for LogCaptureService memory buffer functionality
-// ABOUTME: Tests in-memory buffer storage, max size enforcement, chronological ordering, and thread safety
+// ABOUTME: Tests buffer storage, max size, ordering,
+// ABOUTME: and thread safety.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show LogCategory, LogEntry, LogLevel;
-import 'package:openvine/services/log_capture_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   group('LogCaptureService Memory Buffer', () {
     late LogCaptureService service;
 
     setUp(() async {
-      service = LogCaptureService.instance;
+      service = LogCaptureService();
       // Clear all logs (both memory and persistent files)
       await service.clearAllLogs();
     });
@@ -31,7 +31,7 @@ void main() {
 
     test('should not exceed max buffer size of 50000 entries', () {
       // Add 50100 log entries
-      for (int i = 0; i < 50100; i++) {
+      for (var i = 0; i < 50100; i++) {
         service.captureLog(
           LogEntry(
             timestamp: DateTime.now().add(Duration(milliseconds: i)),
@@ -48,7 +48,7 @@ void main() {
 
     test('should evict oldest entries when buffer is full', () {
       // Add 50000 entries
-      for (int i = 0; i < 50000; i++) {
+      for (var i = 0; i < 50000; i++) {
         service.captureLog(
           LogEntry(
             timestamp: DateTime.now().add(Duration(milliseconds: i)),
@@ -76,23 +76,28 @@ void main() {
       final now = DateTime.now();
 
       // Add entries out of order
-      service.captureLog(
-        LogEntry(
-          timestamp: now.add(const Duration(seconds: 2)),
-          level: LogLevel.info,
-          message: 'Third',
-        ),
-      );
-      service.captureLog(
-        LogEntry(timestamp: now, level: LogLevel.info, message: 'First'),
-      );
-      service.captureLog(
-        LogEntry(
-          timestamp: now.add(const Duration(seconds: 1)),
-          level: LogLevel.info,
-          message: 'Second',
-        ),
-      );
+      service
+        ..captureLog(
+          LogEntry(
+            timestamp: now.add(const Duration(seconds: 2)),
+            level: LogLevel.info,
+            message: 'Third',
+          ),
+        )
+        ..captureLog(
+          LogEntry(
+            timestamp: now,
+            level: LogLevel.info,
+            message: 'First',
+          ),
+        )
+        ..captureLog(
+          LogEntry(
+            timestamp: now.add(const Duration(seconds: 1)),
+            level: LogLevel.info,
+            message: 'Second',
+          ),
+        );
 
       final logs = service.getRecentLogs();
 
@@ -104,7 +109,7 @@ void main() {
 
     test('should return limited number of logs when limit specified', () {
       // Add 10 entries
-      for (int i = 0; i < 10; i++) {
+      for (var i = 0; i < 10; i++) {
         service.captureLog(
           LogEntry(
             timestamp: DateTime.now().add(Duration(milliseconds: i)),
@@ -123,20 +128,21 @@ void main() {
 
     test('should clear all entries from buffer', () async {
       // Add some entries
-      service.captureLog(
-        LogEntry(
-          timestamp: DateTime.now(),
-          level: LogLevel.info,
-          message: 'Test 1',
-        ),
-      );
-      service.captureLog(
-        LogEntry(
-          timestamp: DateTime.now(),
-          level: LogLevel.error,
-          message: 'Test 2',
-        ),
-      );
+      service
+        ..captureLog(
+          LogEntry(
+            timestamp: DateTime.now(),
+            level: LogLevel.info,
+            message: 'Test 1',
+          ),
+        )
+        ..captureLog(
+          LogEntry(
+            timestamp: DateTime.now(),
+            level: LogLevel.error,
+            message: 'Test 2',
+          ),
+        );
 
       expect(service.getRecentLogs().length, equals(2));
 
@@ -147,8 +153,8 @@ void main() {
 
     test('should handle concurrent writes safely', () async {
       // Simulate concurrent log captures
-      final futures = <Future>[];
-      for (int i = 0; i < 100; i++) {
+      final futures = <Future<void>>[];
+      for (var i = 0; i < 100; i++) {
         futures.add(
           Future(() {
             service.captureLog(
@@ -194,27 +200,32 @@ void main() {
     });
 
     test('should filter by minimum log level when specified', () {
-      service.captureLog(
-        LogEntry(
-          timestamp: DateTime.now(),
-          level: LogLevel.debug,
-          message: 'Debug log',
-        ),
-      );
-      service.captureLog(
-        LogEntry(
-          timestamp: DateTime.now().add(const Duration(milliseconds: 1)),
-          level: LogLevel.error,
-          message: 'Error log',
-        ),
-      );
-      service.captureLog(
-        LogEntry(
-          timestamp: DateTime.now().add(const Duration(milliseconds: 2)),
-          level: LogLevel.warning,
-          message: 'Warning log',
-        ),
-      );
+      service
+        ..captureLog(
+          LogEntry(
+            timestamp: DateTime.now(),
+            level: LogLevel.debug,
+            message: 'Debug log',
+          ),
+        )
+        ..captureLog(
+          LogEntry(
+            timestamp: DateTime.now().add(
+              const Duration(milliseconds: 1),
+            ),
+            level: LogLevel.error,
+            message: 'Error log',
+          ),
+        )
+        ..captureLog(
+          LogEntry(
+            timestamp: DateTime.now().add(
+              const Duration(milliseconds: 2),
+            ),
+            level: LogLevel.warning,
+            message: 'Warning log',
+          ),
+        );
 
       final errorLogsOnly = service.getRecentLogs(minLevel: LogLevel.error);
 

@@ -23,7 +23,6 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -39,6 +38,7 @@ import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Video overlay for the home feed matching the new design.
 ///

@@ -44,8 +44,8 @@ import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Route types supported by the app
 enum RouteType {

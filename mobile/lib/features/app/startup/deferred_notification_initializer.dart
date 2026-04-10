@@ -7,8 +7,8 @@ import 'package:flutter/widgets.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Handles deferred initialization of notification service
 class DeferredNotificationInitializer {

@@ -29,8 +29,8 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 export 'package:openvine/models/authentication_source.dart';

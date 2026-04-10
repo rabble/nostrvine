@@ -10,10 +10,10 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 import 'package:sound_service/sound_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A screen for browsing and selecting sounds for use in recordings.
 ///

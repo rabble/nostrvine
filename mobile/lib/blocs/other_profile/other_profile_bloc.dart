@@ -6,8 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'other_profile_event.dart';
 part 'other_profile_state.dart';

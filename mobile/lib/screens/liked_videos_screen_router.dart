@@ -18,8 +18,8 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Router-aware liked videos screen that shows grid or feed based on route
 class LikedVideosScreenRouter extends ConsumerStatefulWidget {

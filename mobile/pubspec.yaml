@@ -53,6 +53,7 @@ workspace:
   - packages/sound_service
   - packages/time_formatter
   - packages/tv_static_effect
+  - packages/unified_logger
   - packages/videos_repository
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -173,6 +174,7 @@ dependencies:
 
   # Logging
   logging: ^1.2.0
+  unified_logger:
 
   # Date formatting
   intl: ^0.19.0

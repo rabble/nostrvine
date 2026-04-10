@@ -2,7 +2,7 @@
 // ABOUTME: Uses Firebase Performance Monitoring to track screen transitions, network requests, and custom operations
 
 import 'package:firebase_performance/firebase_performance.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Performance monitoring service for tracking app performance
 class PerformanceMonitoringService {

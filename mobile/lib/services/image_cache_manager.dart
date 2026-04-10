@@ -5,7 +5,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:openvine/services/image_cache_manager_native.dart'
     if (dart.library.html) 'package:openvine/services/image_cache_manager_web.dart'
     as platform_cache;
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class ImageCacheManager extends CacheManager {
   static const key = 'openvine_image_cache';

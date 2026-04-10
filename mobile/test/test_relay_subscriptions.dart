@@ -4,7 +4,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:web_socket_channel/io.dart';
 
 void main() async {

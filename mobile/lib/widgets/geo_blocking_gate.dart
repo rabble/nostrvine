@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/geo_blocked_screen.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class GeoBlockingGate extends ConsumerStatefulWidget {
   final Widget child;

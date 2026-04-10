@@ -21,9 +21,9 @@ import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 import 'package:time_formatter/time_formatter.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.

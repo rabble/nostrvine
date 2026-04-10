@@ -2,7 +2,7 @@
 // ABOUTME: Verifies AuthService automatically adds staging-relay.divine.video relay requirement
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   group('staging-relay.divine.video Relay Tag Requirement', () {

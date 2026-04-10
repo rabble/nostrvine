@@ -14,9 +14,9 @@ import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/state/seen_videos_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'video_events_providers.g.dart';
 

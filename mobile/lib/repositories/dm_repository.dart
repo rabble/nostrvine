@@ -23,7 +23,7 @@ import 'package:openvine/repositories/dm_decryption_worker.dart';
 import 'package:openvine/repositories/dm_sync_state.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nip17_message_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Decrypts a gift-wrapped event (kind 1059) through the NIP-17 layers
 /// (gift wrap → seal → rumor) and returns the inner rumor event.

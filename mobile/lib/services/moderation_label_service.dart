@@ -8,8 +8,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip05/nip05_validor.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A content-warning label applied by a labeler to a target event or pubkey.
 class ModerationLabel {

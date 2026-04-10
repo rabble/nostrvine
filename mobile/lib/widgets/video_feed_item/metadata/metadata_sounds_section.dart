@@ -10,8 +10,8 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Sounds section showing audio attribution in the metadata sheet.
 ///

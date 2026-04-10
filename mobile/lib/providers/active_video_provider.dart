@@ -9,9 +9,9 @@ import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:riverpod/src/providers/provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Active video ID derived from router state and app lifecycle
 /// Returns null when app is backgrounded, overlay is visible, or no valid video at current index

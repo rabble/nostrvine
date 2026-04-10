@@ -11,9 +11,9 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Video thumbnail tile for explore screen
 /// - Shows clean thumbnail with title/hashtag overlay

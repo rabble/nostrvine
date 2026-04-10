@@ -10,7 +10,7 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A tappable row showing audio attribution when a video uses external audio.
 ///

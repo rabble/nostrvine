@@ -9,7 +9,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'welcome_event.dart';
 part 'welcome_state.dart';

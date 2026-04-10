@@ -15,8 +15,8 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying a list of saved drafts.
 ///

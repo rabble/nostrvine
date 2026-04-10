@@ -12,7 +12,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Show warning dialog for removing keys from device only
 Future<void> showRemoveKeysWarningDialog({

@@ -6,7 +6,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Notification from the Divine Relay API
 class RelayNotification {

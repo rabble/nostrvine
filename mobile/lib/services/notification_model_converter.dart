@@ -3,7 +3,7 @@
 
 import 'package:models/models.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Convert a [RelayNotification] from the Divine Relay API to a
 /// [NotificationModel] suitable for display in the app.
