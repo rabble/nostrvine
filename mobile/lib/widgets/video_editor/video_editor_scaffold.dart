@@ -57,15 +57,44 @@ class VideoEditorScaffold extends ConsumerWidget {
                 children: [
                   if (isLoading)
                     const BrandedLoadingScaffold()
-                  else
+                  else ...[
                     const VideoEditorCanvas(),
+                    BlocSelector<
+                      VideoEditorMainBloc,
+                      VideoEditorMainState,
+                      ({bool isOver, bool isReordering})
+                    >(
+                      selector: (state) => (
+                        isOver:
+                            state.currentPosition.inMilliseconds >
+                            VideoEditorConstants.maxDuration.inMilliseconds,
+                        isReordering: state.isReordering,
+                      ),
+                      builder: (context, record) {
+                        if (!record.isOver || record.isReordering) {
+                          return const SizedBox.shrink();
+                        }
+                        return IgnorePointer(
+                          child: ColoredBox(
+                            color: VineTheme.backgroundColor.withAlpha(128),
+                            child: const SizedBox.expand(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   const _OverlayControls(),
-                  // FIXME(hm21) const _BottomActions(),
+                  const _BottomActions(),
                 ],
               ),
             ),
-            // FIXME(hm21)
-            const VideoEditorTimeline(),
+            BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
+              selector: (state) => state.isSubEditorOpen,
+              builder: (context, isSubEditorOpen) {
+                if (isSubEditorOpen) return const SizedBox.shrink();
+                return const VideoEditorTimeline();
+              },
+            ),
           ],
         ),
       ),
@@ -109,87 +138,94 @@ class _OverlayControls extends StatelessWidget {
 
 /// Bottom section that switches between different toolbars based on context.
 ///
-/// Shows [VideoEditorFilterBottomBar] when filter editor is open, hides the
-/// bar during layer interaction, and falls back to [VideoEditorMainBottomBar].
-// ignore: unused_element
+/// Only visible when a sub-editor is open. When no sub-editor is open the
+/// timeline is shown instead (see [_TimelineSection]).
 class _BottomActions extends StatelessWidget {
   const _BottomActions();
 
   @override
   Widget build(BuildContext context) {
     final systemNavigationBarHeight = MediaQuery.viewPaddingOf(context).bottom;
-    return Align(
-      alignment: .bottomCenter,
-      child: SizedBox(
-        height:
-            systemNavigationBarHeight +
-            VideoEditorConstants.bottomBarHeight +
-            VideoEditorConstants.canvasRadius,
-        child: BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
-          buildWhen: (previous, current) =>
-              previous.isLayerInteractionActive !=
-                  current.isLayerInteractionActive ||
-              previous.openSubEditor != current.openSubEditor,
-          builder: (context, state) {
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: state.isLayerInteractionActive
-                  ? const VideoEditorRemoveArea()
-                  : Column(
-                      children: [
-                        const _BottomCornerArcs(),
-                        AnimatedSwitcher(
-                          switchInCurve: Curves.easeInOut,
-                          duration: const Duration(milliseconds: 240),
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(
-                                opacity: animation,
-                                child: SizeTransition(
-                                  sizeFactor: animation,
-                                  axisAlignment: -1,
-                                  child: child,
+    return BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
+      selector: (state) =>
+          state.isSubEditorOpen || state.isLayerInteractionActive,
+      builder: (context, showActions) {
+        if (!showActions) return const SizedBox.shrink();
+
+        return Align(
+          alignment: .bottomCenter,
+          child: SizedBox(
+            height:
+                systemNavigationBarHeight +
+                VideoEditorConstants.bottomBarHeight +
+                VideoEditorConstants.canvasRadius,
+            child: BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
+              buildWhen: (previous, current) =>
+                  previous.isLayerInteractionActive !=
+                      current.isLayerInteractionActive ||
+                  previous.openSubEditor != current.openSubEditor,
+              builder: (context, state) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: state.isLayerInteractionActive
+                      ? const VideoEditorRemoveArea()
+                      : Column(
+                          children: [
+                            const _BottomCornerArcs(),
+                            AnimatedSwitcher(
+                              switchInCurve: Curves.easeInOut,
+                              duration: const Duration(milliseconds: 240),
+                              transitionBuilder: (child, animation) =>
+                                  FadeTransition(
+                                    opacity: animation,
+                                    child: SizeTransition(
+                                      sizeFactor: animation,
+                                      axisAlignment: -1,
+                                      child: child,
+                                    ),
+                                  ),
+                              layoutBuilder: (currentChild, previousChildren) =>
+                                  Container(
+                                    height:
+                                        systemNavigationBarHeight +
+                                        VideoEditorConstants.bottomBarHeight,
+                                    padding: .only(
+                                      bottom: state.openSubEditor == .draw
+                                          ? 0
+                                          : systemNavigationBarHeight,
+                                    ),
+                                    color: VineTheme.surfaceContainerHigh,
+                                    child: Stack(
+                                      clipBehavior: .none,
+                                      alignment: .bottomCenter,
+                                      children: <Widget>[?currentChild],
+                                    ),
+                                  ),
+                              child: switch (state.openSubEditor) {
+                                // Text-Bar (no bottom bar for text editor)
+                                .text => const SizedBox(),
+                                // Draw-Bar
+                                .draw => const VideoEditorDrawBottomBar(
+                                  key: ValueKey('Draw-Editor-Bottom-Bar'),
                                 ),
-                              ),
-                          layoutBuilder: (currentChild, previousChildren) =>
-                              Container(
-                                height:
-                                    systemNavigationBarHeight +
-                                    VideoEditorConstants.bottomBarHeight,
-                                padding: .only(
-                                  bottom: state.openSubEditor == .draw
-                                      ? 0
-                                      : systemNavigationBarHeight,
+                                // Filter-Bar
+                                .filter => const VideoEditorFilterBottomBar(
+                                  key: ValueKey('Filter-Editor-Bottom-Bar'),
                                 ),
-                                color: VineTheme.surfaceContainerHigh,
-                                child: Stack(
-                                  clipBehavior: .none,
-                                  alignment: .bottomCenter,
-                                  children: <Widget>[?currentChild],
-                                ),
-                              ),
-                          child: switch (state.openSubEditor) {
-                            // Text-Bar (no bottom bar for text editor)
-                            .text => const SizedBox(),
-                            // Draw-Bar
-                            .draw => const VideoEditorDrawBottomBar(
-                              key: ValueKey('Draw-Editor-Bottom-Bar'),
+                                // Audio-Bar (no bottom bar, timing screen has its own)
+                                .music => const SizedBox(),
+                                // Main-Bar
+                                _ => const VideoEditorMainBottomBar(),
+                              },
                             ),
-                            // Filter-Bar
-                            .filter => const VideoEditorFilterBottomBar(
-                              key: ValueKey('Filter-Editor-Bottom-Bar'),
-                            ),
-                            // Audio-Bar (no bottom bar, timing screen has its own)
-                            .music => const SizedBox(),
-                            // Main-Bar
-                            _ => const VideoEditorMainBottomBar(),
-                          },
+                          ],
                         ),
-                      ],
-                    ),
-            );
-          },
-        ),
-      ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }

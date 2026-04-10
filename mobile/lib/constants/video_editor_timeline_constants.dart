@@ -68,4 +68,16 @@ abstract class TimelineConstants {
 
   /// Vertical gap between different overlay strip sections.
   static const double overlayStripGap = 4;
+
+  // --- Snap ---
+
+  /// Distance in logical pixels within which a free-moving edge first
+  /// snaps to a nearby snap point. Kept very small so the edge reaches
+  /// the snap point naturally instead of being pulled from a distance.
+  static const double snapCatchPx = 3;
+
+  /// Logical pixels of continued finger movement absorbed while the
+  /// handle is held at a snap point. After this distance the handle
+  /// releases and continues smoothly from the snap position.
+  static const double snapDeadZonePx = 10;
 }

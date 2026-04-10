@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -9,6 +10,7 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 
 part 'video_editor_timeline_clip_strip_tiles.dart';
@@ -401,7 +403,7 @@ class _VideoEditorTimelineClipStripState
         ? TimelineConstants.trimHandleWidth + 12.0
         : 0.0;
 
-    return _HitExpandedBox(
+    return HitExpandedBox(
       expandLeft: trimExpand,
       expandRight: trimExpand,
       child: GestureDetector(
@@ -501,119 +503,5 @@ class _VideoEditorTimelineClipStripState
         ),
       ),
     );
-  }
-}
-
-/// Wraps a child and expands its hit-test area beyond its layout bounds.
-///
-/// This is needed because Flutter's [Stack] (and other [RenderBox] subclasses)
-/// reject hit-tests that land outside `size`. When trim handles are positioned
-/// outside the clip strip's bounds via [Clip.none], they paint correctly but
-/// cannot receive touches. Wrapping the strip hierarchy with this widget
-/// extends the hit-test rect so outer-positioned handles remain interactive.
-class _HitExpandedBox extends SingleChildRenderObjectWidget {
-  const _HitExpandedBox({
-    required super.child,
-    this.expandLeft = 0,
-    this.expandRight = 0,
-  });
-
-  final double expandLeft;
-  final double expandRight;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _RenderHitExpandedBox(
-      expandLeft: expandLeft,
-      expandRight: expandRight,
-    );
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderHitExpandedBox renderObject,
-  ) {
-    renderObject
-      ..expandLeft = expandLeft
-      ..expandRight = expandRight;
-  }
-}
-
-class _RenderHitExpandedBox extends RenderProxyBox {
-  _RenderHitExpandedBox({
-    required double expandLeft,
-    required double expandRight,
-  }) : _expandLeft = expandLeft,
-       _expandRight = expandRight;
-
-  double _expandLeft;
-  double get expandLeft => _expandLeft;
-  set expandLeft(double value) {
-    if (_expandLeft == value) return;
-    _expandLeft = value;
-  }
-
-  double _expandRight;
-  double get expandRight => _expandRight;
-  set expandRight(double value) {
-    if (_expandRight == value) return;
-    _expandRight = value;
-  }
-
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    final inExpanded =
-        position.dx >= -_expandLeft &&
-        position.dx < size.width + _expandRight &&
-        position.dy >= 0 &&
-        position.dy < size.height;
-    final inNormal = size.contains(position);
-
-    if (inExpanded) {
-      if (inNormal) {
-        if (hitTestChildren(result, position: position) ||
-            hitTestSelf(position)) {
-          result.add(BoxHitTestEntry(this, position));
-          return true;
-        }
-      } else {
-        // Expanded margin — must bypass size.contains on ALL intermediate
-        // proxy boxes (e.g. GestureDetector creates Semantics + Listener).
-        // Walk through the render tree skipping proxy boxes until we reach
-        // a multi-child widget (Stack) whose hitTestChildren iterates
-        // positioned children directly.
-        final childHit = _hitTestDeep(result, position, child);
-        if (childHit || hitTestSelf(position)) {
-          result.add(BoxHitTestEntry(this, position));
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  /// Recursively traverses the render tree, bypassing [size.contains]
-  /// checks on intermediate [RenderProxyBox] nodes (e.g. the Semantics
-  /// and Listener render objects created by [GestureDetector]).
-  ///
-  /// Stops at the first non-proxy child (e.g. [RenderStack]) and calls
-  /// its [hitTestChildren] which iterates positioned children directly.
-  static bool _hitTestDeep(
-    BoxHitTestResult result,
-    Offset position,
-    RenderBox? node,
-  ) {
-    if (node == null) return false;
-    // Another _RenderHitExpandedBox — let it handle its own expansion.
-    if (node is _RenderHitExpandedBox) {
-      return node.hitTest(result, position: position);
-    }
-    // Proxy box — skip its hitTest (which has size.contains) and recurse.
-    if (node is RenderProxyBox) {
-      return _hitTestDeep(result, position, node.child);
-    }
-    // Multi-child (Stack, Flex, etc.) — use standard hitTestChildren.
-    return node.hitTestChildren(result, position: position);
   }
 }

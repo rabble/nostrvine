@@ -29,37 +29,58 @@ class TimelineOverlayItemRemoved extends TimelineOverlayEvent {
 }
 
 /// Move an overlay item to a new start time and/or row.
+///
+/// When [insertAbove] is `true` and the target row has an overlap,
+/// the moved item keeps the target row and existing items shift down.
+/// When `false` (default), the moved item shifts to the row below.
 class TimelineOverlayItemMoved extends TimelineOverlayEvent {
   const TimelineOverlayItemMoved({
     required this.itemId,
     this.startTime,
     this.row,
+    this.insertAbove = false,
   });
 
   final String itemId;
   final Duration? startTime;
   final int? row;
+  final bool insertAbove;
 
   @override
-  List<Object?> get props => [itemId, startTime, row];
+  List<Object?> get props => [itemId, startTime, row, insertAbove];
 }
 
 /// Update the trim of an overlay item.
+///
+/// When [startTime] or [duration] are provided, the item is being
+/// extended beyond its original boundary (overlays have no fixed
+/// content length).
 class TimelineOverlayItemTrimmed extends TimelineOverlayEvent {
   const TimelineOverlayItemTrimmed({
     required this.itemId,
     required this.trimStart,
     required this.trimEnd,
     required this.isStart,
+    this.startTime,
+    this.duration,
   });
 
   final String itemId;
   final Duration trimStart;
   final Duration trimEnd;
   final bool isStart;
+  final Duration? startTime;
+  final Duration? duration;
 
   @override
-  List<Object?> get props => [itemId, trimStart, trimEnd, isStart];
+  List<Object?> get props => [
+    itemId,
+    trimStart,
+    trimEnd,
+    isStart,
+    startTime,
+    duration,
+  ];
 }
 
 /// Select an overlay item (shows trim handles).
@@ -95,4 +116,17 @@ class TimelineOverlayCollapseToggled extends TimelineOverlayEvent {
 
   @override
   List<Object?> get props => [type];
+}
+
+/// Clamp all overlay items so they fit within [totalDuration].
+///
+/// Dispatched when clip trimming or removal shortens the total
+/// video duration.
+class TimelineOverlayTotalDurationChanged extends TimelineOverlayEvent {
+  const TimelineOverlayTotalDurationChanged(this.totalDuration);
+
+  final Duration totalDuration;
+
+  @override
+  List<Object?> get props => [totalDuration];
 }

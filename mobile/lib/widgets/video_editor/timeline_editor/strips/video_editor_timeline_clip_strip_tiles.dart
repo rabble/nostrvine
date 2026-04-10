@@ -40,6 +40,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onDragStart() {
+    developer.log(
+      'ClipTile._onDragStart clip=${widget.clip.id}',
+      name: 'clip_trim',
+    );
     _isDragStarted = false;
     widget.onTrimDragChanged?.call(true);
   }
@@ -50,6 +54,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onLeftDragUpdate(double dx) {
+    developer.log(
+      'ClipTile._onLeftDragUpdate dx=$dx clip=${widget.clip.id}',
+      name: 'clip_trim',
+    );
     final clip = widget.clip;
     final delta = _dxToDuration(dx);
     var newTrimStart = clip.trimStart + delta;
@@ -82,6 +90,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onRightDragUpdate(double dx) {
+    developer.log(
+      'ClipTile._onRightDragUpdate dx=$dx clip=${widget.clip.id}',
+      name: 'clip_trim',
+    );
     final clip = widget.clip;
     // Dragging right handle left (negative dx) increases trimEnd.
     final delta = _dxToDuration(-dx);
@@ -128,15 +140,15 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
           onTap: widget.onTap,
           behavior: HitTestBehavior.opaque,
           child: _ClipTile(
-          clip: widget.clip,
-          fullWidth: widget.clip.durationInSeconds * widget.pixelsPerSecond,
-          trimStartOffset:
-              widget.clip.trimStart.inMilliseconds /
-              1000.0 *
-              widget.pixelsPerSecond,
-          thumbnailNotifier: widget.thumbnailNotifier,
+            clip: widget.clip,
+            fullWidth: widget.clip.durationInSeconds * widget.pixelsPerSecond,
+            trimStartOffset:
+                widget.clip.trimStart.inMilliseconds /
+                1000.0 *
+                widget.pixelsPerSecond,
+            thumbnailNotifier: widget.thumbnailNotifier,
+          ),
         ),
-      ),
       ),
     );
   }

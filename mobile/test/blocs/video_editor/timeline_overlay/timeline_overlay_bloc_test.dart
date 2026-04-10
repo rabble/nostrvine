@@ -73,6 +73,129 @@ void main() {
           ),
         ],
       );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'assigns new row when overlapping same-type item',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          items: [layerItem], // row 0, 0–5s
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemAdded(
+            TimelineOverlayItem(
+              id: 'layer-2',
+              type: TimelineOverlayType.layer,
+              startTime: Duration(seconds: 2),
+              duration: Duration(seconds: 3),
+              label: 'Overlap',
+            ),
+          ),
+        ),
+        expect: () => [
+          const TimelineOverlayState(
+            items: [
+              layerItem,
+              TimelineOverlayItem(
+                id: 'layer-2',
+                type: TimelineOverlayType.layer,
+                startTime: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
+                row: 1, // pushed to row 1
+                label: 'Overlap',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'keeps row 0 when no overlap with same-type items',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          items: [layerItem], // row 0, 0–5s
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemAdded(
+            TimelineOverlayItem(
+              id: 'layer-2',
+              type: TimelineOverlayType.layer,
+              startTime: Duration(seconds: 6),
+              duration: Duration(seconds: 2),
+              label: 'NoOverlap',
+            ),
+          ),
+        ),
+        expect: () => [
+          const TimelineOverlayState(
+            items: [
+              layerItem,
+              TimelineOverlayItem(
+                id: 'layer-2',
+                type: TimelineOverlayType.layer,
+                startTime: Duration(seconds: 6),
+                duration: Duration(seconds: 2),
+                label: 'NoOverlap',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'shifts existing items down when inserting overlapping item',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          items: [
+            // Row 0: 0–5s
+            layerItem,
+            // Row 1: 0–3s
+            TimelineOverlayItem(
+              id: 'layer-existing',
+              type: TimelineOverlayType.layer,
+              startTime: Duration.zero,
+              duration: Duration(seconds: 3),
+              row: 1,
+              label: 'Existing',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemAdded(
+            TimelineOverlayItem(
+              id: 'layer-new',
+              type: TimelineOverlayType.layer,
+              startTime: Duration(seconds: 1),
+              duration: Duration(seconds: 2),
+              label: 'New',
+            ),
+          ),
+        ),
+        expect: () => [
+          const TimelineOverlayState(
+            items: [
+              layerItem, // stays at row 0
+              // Was row 1, shifted to row 2
+              TimelineOverlayItem(
+                id: 'layer-existing',
+                type: TimelineOverlayType.layer,
+                startTime: Duration.zero,
+                duration: Duration(seconds: 3),
+                row: 2,
+                label: 'Existing',
+              ),
+              // Inserted at row 1
+              TimelineOverlayItem(
+                id: 'layer-new',
+                type: TimelineOverlayType.layer,
+                startTime: Duration(seconds: 1),
+                duration: Duration(seconds: 2),
+                row: 1,
+                label: 'New',
+              ),
+            ],
+          ),
+        ],
+      );
     });
 
     group('$TimelineOverlayItemRemoved', () {
@@ -247,11 +370,109 @@ void main() {
           ),
         ],
       );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'resolves overlap when moved to occupied row',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          items: [
+            TimelineOverlayItem(
+              id: 'l-0',
+              type: TimelineOverlayType.layer,
+              startTime: Duration.zero,
+              duration: Duration(seconds: 5),
+            ),
+            TimelineOverlayItem(
+              id: 'l-1',
+              type: TimelineOverlayType.layer,
+              startTime: Duration(seconds: 6),
+              duration: Duration(seconds: 3),
+              row: 1,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemMoved(
+            itemId: 'l-1',
+            startTime: Duration(seconds: 2), // now overlaps with l-0
+            row: 0,
+          ),
+        ),
+        expect: () => [
+          const TimelineOverlayState(
+            items: [
+              TimelineOverlayItem(
+                id: 'l-0',
+                type: TimelineOverlayType.layer,
+                startTime: Duration.zero,
+                duration: Duration(seconds: 5),
+              ),
+              TimelineOverlayItem(
+                id: 'l-1',
+                type: TimelineOverlayType.layer,
+                startTime: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
+                row: 1, // pushed back to row 1
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'insertAbove keeps moved item at target row and shifts others',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          items: [
+            TimelineOverlayItem(
+              id: 'l-0',
+              type: TimelineOverlayType.layer,
+              startTime: Duration.zero,
+              duration: Duration(seconds: 5),
+            ),
+            TimelineOverlayItem(
+              id: 'l-1',
+              type: TimelineOverlayType.layer,
+              startTime: Duration(seconds: 6),
+              duration: Duration(seconds: 3),
+              row: 1,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemMoved(
+            itemId: 'l-1',
+            startTime: Duration(seconds: 2), // overlaps with l-0
+            row: 0,
+            insertAbove: true,
+          ),
+        ),
+        expect: () => [
+          const TimelineOverlayState(
+            items: [
+              TimelineOverlayItem(
+                id: 'l-0',
+                type: TimelineOverlayType.layer,
+                startTime: Duration.zero,
+                duration: Duration(seconds: 5),
+                row: 1, // shifted down
+              ),
+              TimelineOverlayItem(
+                id: 'l-1',
+                type: TimelineOverlayType.layer,
+                startTime: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
+                row: 0, // stays at target row
+              ),
+            ],
+          ),
+        ],
+      );
     });
 
     group('$TimelineOverlayItemTrimmed', () {
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
-        'updates trim start and end',
+        'updates trim start, end, and shifts startTime when isStart',
         build: TimelineOverlayBloc.new,
         seed: () => const TimelineOverlayState(items: [layerItem]),
         act: (bloc) => bloc.add(
@@ -266,8 +487,88 @@ void main() {
           TimelineOverlayState(
             items: [
               layerItem.copyWith(
+                startTime: const Duration(seconds: 1),
                 trimStart: const Duration(seconds: 1),
                 trimEnd: const Duration(seconds: 2),
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'updates trim end without shifting startTime when not isStart',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(items: [layerItem]),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemTrimmed(
+            itemId: 'layer-1',
+            trimStart: Duration.zero,
+            trimEnd: Duration(seconds: 2),
+            isStart: false,
+          ),
+        ),
+        expect: () => [
+          TimelineOverlayState(
+            items: [
+              layerItem.copyWith(
+                trimEnd: const Duration(seconds: 2),
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'extends left with explicit startTime and duration',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          items: [
+            layerItem.copyWith(
+              startTime: const Duration(seconds: 2),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemTrimmed(
+            itemId: 'layer-1',
+            trimStart: Duration.zero,
+            trimEnd: Duration.zero,
+            isStart: true,
+            startTime: Duration(seconds: 1),
+            duration: Duration(seconds: 6),
+          ),
+        ),
+        expect: () => [
+          TimelineOverlayState(
+            items: [
+              layerItem.copyWith(
+                startTime: const Duration(seconds: 1),
+                duration: const Duration(seconds: 6),
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'extends right with explicit duration',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(items: [layerItem]),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemTrimmed(
+            itemId: 'layer-1',
+            trimStart: Duration.zero,
+            trimEnd: Duration.zero,
+            isStart: false,
+            duration: Duration(seconds: 8),
+          ),
+        ),
+        expect: () => [
+          TimelineOverlayState(
+            items: [
+              layerItem.copyWith(
+                duration: const Duration(seconds: 8),
               ),
             ],
           ),
@@ -420,6 +721,63 @@ void main() {
             },
           ),
         ],
+      );
+    });
+
+    group('$TimelineOverlayTotalDurationChanged', () {
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'clamps items that extend past new total duration',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          items: [
+            layerItem.copyWith(
+              startTime: const Duration(seconds: 2),
+              duration: const Duration(seconds: 10),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayTotalDurationChanged(Duration(seconds: 8)),
+        ),
+        expect: () => [
+          TimelineOverlayState(
+            items: [
+              layerItem.copyWith(
+                startTime: const Duration(seconds: 2),
+                duration: const Duration(seconds: 6),
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'removes items with zero visible duration after clamp',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          items: [
+            layerItem.copyWith(
+              startTime: const Duration(seconds: 9),
+              duration: const Duration(seconds: 5),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayTotalDurationChanged(Duration(seconds: 8)),
+        ),
+        expect: () => [
+          const TimelineOverlayState(),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not emit when items already within bounds',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(items: [layerItem]),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayTotalDurationChanged(Duration(seconds: 10)),
+        ),
+        expect: () => <TimelineOverlayState>[],
       );
     });
   });
