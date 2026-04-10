@@ -34,7 +34,8 @@ import 'package:sound_service/sound_service.dart';
 const _kLastUsedCameraLensKey = 'camera_last_used_lens';
 
 /// SharedPreferences key for storing the last used recorder mode.
-const _kLastUsedRecorderModeKey = 'camera_last_used_recorder_mode';
+@visibleForTesting
+const kLastUsedRecorderModeKey = 'camera_last_used_recorder_mode';
 
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
 ///
@@ -145,7 +146,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final prefs = ref.read(sharedPreferencesProvider);
 
     // Restore last used recorder mode
-    final savedModeName = prefs.getString(_kLastUsedRecorderModeKey);
+    final savedModeName = prefs.getString(kLastUsedRecorderModeKey);
     final savedMode = savedModeName != null
         ? VideoRecorderMode.values.firstWhere(
             (m) => m.name == savedModeName,
@@ -153,7 +154,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
           )
         : VideoRecorderMode.capture;
     if (savedMode != state.recorderMode) {
-      setRecorderMode(savedMode);
+      setRecorderMode(savedMode, keepAutosavedDraft: true);
     }
     final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
     final initialLens = savedLensString != null
@@ -1103,17 +1104,32 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   }
 
   /// Set the recorder mode (capture / classic).
-  void setRecorderMode(VideoRecorderMode mode) {
+  ///
+  /// When [keepAutosavedDraft] is true the autosaved draft in the database
+  /// is preserved. This is used during initialisation where the saved mode
+  /// is restored but the user may still want to recover an earlier session.
+  void setRecorderMode(
+    VideoRecorderMode mode, {
+    bool keepAutosavedDraft = false,
+  }) {
     state = state.copyWith(
       recorderMode: mode,
       aspectRatio: mode.defaultAspectRatio,
       showGridLines: mode.supportGridLines,
     );
     final prefs = ref.read(sharedPreferencesProvider);
-    prefs.setString(_kLastUsedRecorderModeKey, mode.name);
+    prefs.setString(kLastUsedRecorderModeKey, mode.name);
 
-    ref.read(clipManagerProvider.notifier).clearAll();
-    ref.read(videoEditorProvider.notifier).reset();
+    ref
+        .read(clipManagerProvider.notifier)
+        .clearAll(
+          keepAutosavedDraft: keepAutosavedDraft,
+        );
+    ref
+        .read(videoEditorProvider.notifier)
+        .reset(
+          keepAutosavedDraft: keepAutosavedDraft,
+        );
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
       name: 'VideoRecorderNotifier',

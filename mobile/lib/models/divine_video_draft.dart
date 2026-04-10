@@ -392,4 +392,25 @@ class DivineVideoDraft {
   bool get hasHashtags => hashtags.isNotEmpty;
   bool get canRetry => publishStatus == PublishStatus.failed;
   bool get isPublishing => publishStatus == PublishStatus.publishing;
+
+  /// Whether the draft has been edited beyond its initial recording.
+  ///
+  /// Checks metadata and editor state but ignores clips.
+  bool get hasBeenEdited =>
+      clips.isNotEmpty &&
+      (hasTitle ||
+          hasDescription ||
+          hasHashtags ||
+          editorStateHistory.isNotEmpty ||
+          editorEditingParameters.isNotEmpty ||
+          finalRenderedClip != null ||
+          selectedSound != null ||
+          contentWarning != null ||
+          collaboratorPubkeys.isNotEmpty ||
+          inspiredByVideo != null ||
+          inspiredByNpub != null ||
+          originalAudioVolume != 1.0 ||
+          customAudioVolume != 1.0 ||
+          expireTime != null ||
+          allowAudioReuse);
 }

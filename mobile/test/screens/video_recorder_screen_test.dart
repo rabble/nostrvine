@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -17,7 +19,9 @@ import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/mock_camera_service.dart';
 
@@ -433,6 +437,175 @@ void main() {
           debugDefaultTargetPlatformOverride = null;
         }
       });
+    });
+
+    group('Autosave Restore Flow', () {
+      testWidgets(
+        'shows bottom sheet when autosaved draft has been edited',
+        (tester) async {
+          // Skip the "why six seconds" prompt
+          SharedPreferences.setMockInitialValues({
+            'why_six_seconds_shown': true,
+          });
+
+          final mockDraftStorage = _MockDraftStorageService();
+          final editedDraft = DivineVideoDraft(
+            id: 'autosave',
+            clips: [
+              DivineVideoClip(
+                id: 'clip_1',
+                video: EditorVideo.file('/tmp/test.mp4'),
+                duration: const Duration(seconds: 6),
+                recordedAt: DateTime(2025),
+                originalAspectRatio: 9 / 16,
+                targetAspectRatio: .vertical,
+              ),
+            ],
+            title: 'Edited Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'camera',
+            createdAt: DateTime(2025),
+            lastModified: DateTime(2025),
+            publishStatus: PublishStatus.draft,
+            publishAttempts: 0,
+          );
+          when(
+            () => mockDraftStorage.getDraftById(any()),
+          ).thenAnswer((_) async => editedDraft);
+
+          final mockClipLibrary = _MockClipLibraryService();
+          when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                draftStorageServiceProvider.overrideWithValue(
+                  mockDraftStorage,
+                ),
+                clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+              ],
+              child: BlocProvider<CameraPermissionBloc>(
+                create: (_) => MockCameraPermissionBloc(),
+                child: const MaterialApp(home: VideoRecorderScreen()),
+              ),
+            ),
+          );
+
+          // Trigger post-frame callback
+          await tester.pump();
+          // Wait for async draft check
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pump();
+
+          // Bottom sheet should be visible
+          expect(find.text('We found work in progress'), findsOneWidget);
+          expect(find.text('Yes, continue'), findsOneWidget);
+          expect(
+            find.text('No, start a new video'),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'does not show bottom sheet when draft has no edits',
+        (tester) async {
+          SharedPreferences.setMockInitialValues({
+            'why_six_seconds_shown': true,
+          });
+
+          final mockDraftStorage = _MockDraftStorageService();
+          // Draft with clips but no metadata edits → hasBeenEdited = false
+          final uneditedDraft = DivineVideoDraft(
+            id: 'autosave',
+            clips: [
+              DivineVideoClip(
+                id: 'clip_1',
+                video: EditorVideo.file('/tmp/test.mp4'),
+                duration: const Duration(seconds: 6),
+                recordedAt: DateTime(2025),
+                originalAspectRatio: 9 / 16,
+                targetAspectRatio: .vertical,
+              ),
+            ],
+            title: '',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'camera',
+            createdAt: DateTime(2025),
+            lastModified: DateTime(2025),
+            publishStatus: PublishStatus.draft,
+            publishAttempts: 0,
+          );
+          when(
+            () => mockDraftStorage.getDraftById(any()),
+          ).thenAnswer((_) async => uneditedDraft);
+
+          final mockClipLibrary = _MockClipLibraryService();
+          when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                draftStorageServiceProvider.overrideWithValue(
+                  mockDraftStorage,
+                ),
+                clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+              ],
+              child: BlocProvider<CameraPermissionBloc>(
+                create: (_) => MockCameraPermissionBloc(),
+                child: const MaterialApp(home: VideoRecorderScreen()),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pump();
+
+          // Bottom sheet should NOT appear
+          expect(find.text('We found work in progress'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not show bottom sheet when no draft exists',
+        (tester) async {
+          SharedPreferences.setMockInitialValues({
+            'why_six_seconds_shown': true,
+          });
+
+          final mockDraftStorage = _MockDraftStorageService();
+          when(
+            () => mockDraftStorage.getDraftById(any()),
+          ).thenAnswer((_) async => null);
+
+          final mockClipLibrary = _MockClipLibraryService();
+          when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                draftStorageServiceProvider.overrideWithValue(
+                  mockDraftStorage,
+                ),
+                clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+              ],
+              child: BlocProvider<CameraPermissionBloc>(
+                create: (_) => MockCameraPermissionBloc(),
+                child: const MaterialApp(home: VideoRecorderScreen()),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pump();
+
+          expect(find.text('We found work in progress'), findsNothing);
+        },
+      );
     });
   });
 }

@@ -318,9 +318,18 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   /// Runs asset recovery in the background and dispatches a fresh load
   /// event when done so the UI picks up the updated thumbnails/ghost frames.
   Future<void> _recoverAndReload(List<DivineVideoClip> clips) async {
-    final recovered = await _clipLibraryService.recoverMissingAssets(clips);
-    if (!identical(recovered, clips) && !isClosed) {
-      add(ClipsLibraryLoadRequested(preSelectedIds: state.selectedClipIds));
+    try {
+      final recovered = await _clipLibraryService.recoverMissingAssets(clips);
+      if (!identical(recovered, clips) && !isClosed) {
+        add(ClipsLibraryLoadRequested(preSelectedIds: state.selectedClipIds));
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        '📚 Background asset recovery failed: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
     }
   }
 }

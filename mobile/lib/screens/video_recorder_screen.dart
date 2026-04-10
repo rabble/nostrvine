@@ -141,7 +141,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     );
     if (!mounted) return;
 
-    if (draft != null && draft.clips.isNotEmpty) {
+    if (draft != null && draft.hasBeenEdited) {
       Log.info(
         '📹 Found valid autosaved draft',
         name: 'VideoRecorderScreen',
@@ -153,9 +153,25 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         title: 'We found work in progress',
         subtitle: 'Would you like to continue where you left off?',
         primaryButtonText: 'Yes, continue',
-        onPrimaryPressed: () {
-          ref.read(videoEditorProvider.notifier).restoreDraft();
+        onPrimaryPressed: () async {
+          final restoreSuccessful = await ref
+              .read(videoEditorProvider.notifier)
+              .restoreDraft();
+
+          if (!mounted) return;
           context.pop();
+
+          if (!restoreSuccessful) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              DivineSnackbarContainer.snackBar(
+                'Could not restore your draft',
+                error: true,
+              ),
+            );
+            return;
+          }
+
+          ref.read(videoRecorderProvider.notifier).openVideoEditor(context);
         },
         secondaryButtonText: 'No, start a new video',
         onSecondaryPressed: () {

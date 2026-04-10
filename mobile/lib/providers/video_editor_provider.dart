@@ -680,7 +680,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// restores from [autoSaveId] to recover an autosaved session.
   /// Invalid clips (missing video files) are automatically filtered out,
   /// and missing thumbnails are regenerated.
-  Future<void> restoreDraft([String? draftId]) async {
+  ///
+  /// Returns `true` if the draft was restored successfully with at least
+  /// one clip, `false` if the draft was not found or had no valid clips.
+  Future<bool> restoreDraft([String? draftId]) async {
     draftId ??= VideoEditorConstants.autoSaveId;
     Log.info(
       '🎬 Restoring draft: $draftId',
@@ -695,7 +698,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: LogCategory.video,
       );
-      return;
+      return false;
     }
 
     // Regenerate missing thumbnails
@@ -783,7 +786,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: LogCategory.video,
       );
-      return;
+      return false;
     }
 
     // We set the aspect ratio in the video recorder to match the clips,
@@ -796,6 +799,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       name: 'VideoEditorNotifier',
       category: LogCategory.video,
     );
+    return true;
   }
 
   /// Delete the autosaved draft from local storage.
