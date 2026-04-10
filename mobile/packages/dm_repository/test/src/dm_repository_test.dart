@@ -6494,10 +6494,16 @@ void main() {
             ),
           ).thenAnswer((_) => controller2.stream);
 
-          // The reconnect is scheduled via Future.delayed, but calling
+          // The reconnect is scheduled via Timer, but calling
           // startListening() directly also works because the old
-          // subscription reference was cleared.
+          // subscription reference was cleared and the pending reconnect
+          // timer is cancelled at the top of startListening().
           await repo.startListening();
+
+          // Tear down the repository before closing the controllers so
+          // any pending reconnect timer is cancelled and onDone doesn't
+          // schedule a fresh one that would leak past this test.
+          await repo.stopListening();
 
           await controller.close();
           await controller2.close();

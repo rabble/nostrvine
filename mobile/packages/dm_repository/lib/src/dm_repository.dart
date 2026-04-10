@@ -194,6 +194,17 @@ class DmRepository {
   /// Delay before attempting to re-subscribe after stream closure.
   static const _reconnectDelay = Duration(seconds: 2);
 
+  /// Schedule a single reconnect attempt, cancelling any pending one.
+  ///
+  /// Using a [Timer] (not `Future.delayed`) keeps the reconnect cancellable
+  /// from [stopListening] / [_resetState], preventing leaked async work from
+  /// firing after the repository has been torn down (e.g. in tests or user
+  /// switch flows).
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(_reconnectDelay, startListening);
+  }
+
   // -------------------------------------------------------------------------
   // Subscription lifecycle
   // -------------------------------------------------------------------------
@@ -216,6 +227,11 @@ class DmRepository {
     // only meant to suppress the onDone reconnect during intentional stop;
     // a new explicit startListening() should always be honored.
     _disposed = false;
+    // A pending reconnect is made stale by this call — cancel it so the
+    // timer doesn't fire later and try to re-subscribe on top of the
+    // fresh subscription we're about to establish.
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     if (_giftWrapSubscription != null || !isInitialized) return;
 
     // Count-based windowing: first open fetches a bounded backlog
@@ -262,7 +278,7 @@ class DmRepository {
         // open a fresh connection instead of seeing a stale reference.
         _giftWrapSubscription = null;
         if (!_disposed) {
-          Future<void>.delayed(_reconnectDelay, startListening);
+          _scheduleReconnect();
         }
       },
       onDone: () {
@@ -275,7 +291,7 @@ class DmRepository {
             'in ${_reconnectDelay.inSeconds}s',
             category: LogCategory.system,
           );
-          _reconnectTimer = Timer(_reconnectDelay, startListening);
+          _scheduleReconnect();
         }
       },
     );
