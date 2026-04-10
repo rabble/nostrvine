@@ -10,8 +10,8 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class VideoClipEditorMoreButton extends ConsumerStatefulWidget {
   const VideoClipEditorMoreButton({super.key});

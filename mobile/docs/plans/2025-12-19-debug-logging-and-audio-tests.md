@@ -24,7 +24,7 @@ Status: Historical
 
 At the top of `app_router.dart`, ensure the Log import is present:
 ```dart
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 ```
 
 **Step 2: Replace all 11 debugPrint statements with Log.debug**

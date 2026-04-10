@@ -46,8 +46,8 @@ import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_batcher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {

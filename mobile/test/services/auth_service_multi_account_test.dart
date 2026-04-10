@@ -1436,5 +1436,100 @@ void main() {
       expect(authService.authState, equals(AuthState.authenticated));
       expect(prefetchedPubkeys, [testKeyContainer.publicKeyHex]);
     });
+
+    test(
+      'destructive sign-out redirects recovery to remaining account',
+      () async {
+        // Create a second key to represent account A (the one that should survive)
+        final accountA = SecureKeyContainer.fromNsec(
+          'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+        );
+
+        // Start with account B active and account A in known accounts
+        final knownAccounts = jsonEncode([
+          KnownAccount(
+            pubkeyHex: accountA.publicKeyHex,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime.now().subtract(const Duration(hours: 2)),
+            lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
+          ).toJson(),
+          KnownAccount(
+            pubkeyHex: testKeyContainer.publicKeyHex,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime.now().subtract(const Duration(hours: 1)),
+            lastUsedAt: DateTime.now(),
+          ).toJson(),
+        ]);
+
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: knownAccounts,
+        });
+
+        // Sign in as B
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        expect(authService.isAuthenticated, isTrue);
+
+        // Delete B
+        await authService.signOut(deleteKeys: true);
+
+        // Recovery should point to A (the remaining account)
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('last_used_npub'),
+          equals(accountA.npub),
+        );
+        expect(
+          prefs.getString('authentication_source'),
+          equals('automatic'),
+        );
+      },
+    );
+
+    test(
+      'initialize restores remaining account after destructive sign-out '
+      'via known accounts scan',
+      () async {
+        // Scenario: last_used_npub is absent, PRIMARY is wiped,
+        // but account A still has per-identity keys
+        final accountA = SecureKeyContainer.fromNsec(
+          'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+        );
+
+        final knownAccounts = jsonEncode([
+          KnownAccount(
+            pubkeyHex: accountA.publicKeyHex,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime.now().subtract(const Duration(hours: 2)),
+            lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
+          ).toJson(),
+        ]);
+
+        // No last_used_npub, simulating edge case where pref was lost
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          kKnownAccountsKey: knownAccounts,
+        });
+
+        // PRIMARY is empty (wiped by deleteKeys)
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+        // But account A has per-identity keys
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            accountA.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => accountA);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(
+          authService.currentPublicKeyHex,
+          equals(accountA.publicKeyHex),
+        );
+      },
+    );
   });
 }

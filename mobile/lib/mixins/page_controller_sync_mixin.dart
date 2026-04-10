@@ -2,7 +2,7 @@
 // ABOUTME: Eliminates code duplication across home, explore, and profile router screens
 
 import 'package:flutter/material.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Mixin that provides PageController synchronization logic for router screens.
 ///

@@ -10,7 +10,7 @@ import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/relay.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for sending encrypted private messages using NIP-17 gift wrapping.
 ///

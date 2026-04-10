@@ -558,5 +558,125 @@ void main() {
         expect(countB, equals(1));
       });
     });
+
+    group('backfillCurrentUserHasSent', () {
+      const userA = 'pubkey_a';
+      const userB = 'pubkey_b';
+
+      test('sets flag for conversations where user sent messages', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["$userA","$userB"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          ownerPubkey: userA,
+        );
+        await database.directMessagesDao.insertMessage(
+          id: 'msg_1',
+          conversationId: 'conv_1',
+          senderPubkey: userA,
+          content: 'hello',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_1',
+          ownerPubkey: userA,
+        );
+
+        final updated = await dao.backfillCurrentUserHasSent(userA);
+
+        expect(updated, equals(1));
+        final conv = await dao.getConversation('conv_1', ownerPubkey: userA);
+        expect(conv!.currentUserHasSent, isTrue);
+      });
+
+      test('does not flip true back to false', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["$userA","$userB"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          currentUserHasSent: true,
+          ownerPubkey: userA,
+        );
+
+        final updated = await dao.backfillCurrentUserHasSent(userA);
+
+        expect(updated, equals(0));
+        final conv = await dao.getConversation('conv_1', ownerPubkey: userA);
+        expect(conv!.currentUserHasSent, isTrue);
+      });
+
+      test('skips conversations with no sent messages from user', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["$userA","$userB"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          ownerPubkey: userA,
+        );
+        // Only a received message (sender is userB, not userA).
+        await database.directMessagesDao.insertMessage(
+          id: 'msg_1',
+          conversationId: 'conv_1',
+          senderPubkey: userB,
+          content: 'hey',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_1',
+          ownerPubkey: userA,
+        );
+
+        final updated = await dao.backfillCurrentUserHasSent(userA);
+
+        expect(updated, equals(0));
+        final conv = await dao.getConversation('conv_1', ownerPubkey: userA);
+        expect(conv!.currentUserHasSent, isFalse);
+      });
+
+      test('idempotent — second run is a no-op', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["$userA","$userB"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          ownerPubkey: userA,
+        );
+        await database.directMessagesDao.insertMessage(
+          id: 'msg_1',
+          conversationId: 'conv_1',
+          senderPubkey: userA,
+          content: 'hello',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_1',
+          ownerPubkey: userA,
+        );
+
+        await dao.backfillCurrentUserHasSent(userA);
+        final secondRun = await dao.backfillCurrentUserHasSent(userA);
+
+        expect(secondRun, equals(0));
+      });
+
+      test('handles legacy rows with null owner_pubkey', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["$userA","$userB"]',
+          isGroup: false,
+          createdAt: 1700000000,
+        );
+        await database.directMessagesDao.insertMessage(
+          id: 'msg_1',
+          conversationId: 'conv_1',
+          senderPubkey: userA,
+          content: 'hello',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_1',
+        );
+
+        final updated = await dao.backfillCurrentUserHasSent(userA);
+
+        expect(updated, equals(1));
+        final conv = await dao.getConversation('conv_1');
+        expect(conv!.currentUserHasSent, isTrue);
+      });
+    });
   });
 }

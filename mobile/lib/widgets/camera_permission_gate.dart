@@ -9,9 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:tv_static_effect/tv_static_effect.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A declarative gate widget that handles camera/microphone permissions.
 ///

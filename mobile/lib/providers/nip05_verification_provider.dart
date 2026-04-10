@@ -6,8 +6,8 @@ import 'dart:async';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'nip05_verification_provider.g.dart';
 

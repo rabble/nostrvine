@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
-import 'package:openvine/services/auth_service_signer.dart';
+import 'package:openvine/services/nostr_identity.dart';
 
 @immutable
 class CreatorSocialHandle {
@@ -86,15 +86,15 @@ class NostrCreatorBindingAssertion {
 
 class NostrCreatorBindingService {
   NostrCreatorBindingService({
-    required AuthServiceSigner signer,
+    required NostrIdentity? identity,
     DateTime Function()? now,
-  }) : _signer = signer,
+  }) : _identity = identity,
        _now = now ?? DateTime.now;
 
   static const assertionLabel = 'video.divine.nostr.creator_binding';
   static const signatureAlgorithm = 'nostr.secp256k1';
 
-  final AuthServiceSigner _signer;
+  final NostrIdentity? _identity;
   final DateTime Function() _now;
 
   Future<NostrCreatorBindingAssertion> createAssertion({
@@ -102,11 +102,12 @@ class NostrCreatorBindingService {
     required CreatorBindingHardBinding hardBinding,
     required List<String> referencedAssertions,
   }) async {
-    final pubkey = await _signer.currentPubkey();
-    if (pubkey.isEmpty) {
-      throw StateError('No authenticated Nostr signer available');
+    final identity = _identity;
+    if (identity == null) {
+      throw StateError('No authenticated Nostr identity available');
     }
 
+    final pubkey = identity.pubkey;
     final normalizedAssertions = List<String>.of(referencedAssertions)..sort();
 
     final unsignedPayload = <String, dynamic>{
@@ -121,7 +122,7 @@ class NostrCreatorBindingService {
 
     final unsignedPayloadJson = jsonEncode(unsignedPayload);
     final payloadBytes = Uint8List.fromList(utf8.encode(unsignedPayloadJson));
-    final signature = await _signer.signCanonicalPayload(payloadBytes);
+    final signature = await identity.signCanonicalPayload(payloadBytes);
 
     if (signature == null || signature.isEmpty) {
       throw StateError('Failed to sign canonical creator-binding payload');

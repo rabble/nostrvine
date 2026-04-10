@@ -12,12 +12,12 @@ import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_b
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos
 ///

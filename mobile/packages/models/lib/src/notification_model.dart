@@ -115,7 +115,8 @@ class NotificationModel extends Equatable {
 
   String get formattedTimestamp {
     final now = DateTime.now();
-    final difference = now.difference(timestamp);
+    final localTimestamp = timestamp.toLocal();
+    final difference = now.difference(localTimestamp);
 
     if (difference.inSeconds < 60) {
       return 'just now';
@@ -126,7 +127,7 @@ class NotificationModel extends Equatable {
     } else if (difference.inDays < 7) {
       return '${difference.inDays}d ago';
     } else {
-      return DateFormat.yMd().format(timestamp);
+      return DateFormat.yMd().format(localTimestamp);
     }
   }
 

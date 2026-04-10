@@ -321,6 +321,44 @@ void main() {
       );
 
       blocTest<VideoSearchBloc, VideoSearchState>(
+        're-searches when same query is dispatched in failure state',
+        setUp: () {
+          when(
+            () => mockVideosRepository.searchVideos(query: 'flutter'),
+          ).thenAnswer((_) => Stream.value([]));
+        },
+        build: createBloc,
+        seed: () => const VideoSearchState(
+          status: VideoSearchStatus.failure,
+          query: 'flutter',
+        ),
+        act: (bloc) => bloc.add(const VideoSearchQueryChanged('flutter')),
+        wait: debounceDuration,
+        expect: () => [
+          isA<VideoSearchState>().having(
+            (s) => s.status,
+            'status',
+            VideoSearchStatus.searching,
+          ),
+          isA<VideoSearchState>().having(
+            (s) => s.status,
+            'status',
+            VideoSearchStatus.searching,
+          ),
+          isA<VideoSearchState>().having(
+            (s) => s.status,
+            'status',
+            VideoSearchStatus.success,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.searchVideos(query: 'flutter'),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
         'passes query to repository trimmed',
         build: createBloc,
         act: (bloc) => bloc.add(const VideoSearchQueryChanged('  flutter  ')),

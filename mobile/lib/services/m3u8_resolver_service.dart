@@ -2,7 +2,7 @@
 // ABOUTME: Parses HLS playlists and extracts the best video variant for short-form content
 
 import 'package:dio/dio.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Represents a video variant in an m3u8 playlist
 class M3u8Variant {

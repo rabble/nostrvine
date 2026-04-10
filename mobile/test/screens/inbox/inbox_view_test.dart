@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
@@ -35,6 +36,9 @@ class _MockConversationListBloc
 
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
     implements MyFollowingBloc {}
+
+class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
+    implements InviteStatusCubit {}
 
 /// Minimal mock so the legacy RelayNotifications provider (still used for
 /// unread-count) does not start real timers or HTTP calls.
@@ -118,6 +122,10 @@ void main() {
         );
       }
 
+      final mockInviteCubit = _MockInviteStatusCubit();
+      when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
+      when(mockInviteCubit.load).thenAnswer((_) async {});
+
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
@@ -132,6 +140,9 @@ void main() {
             providers: [
               BlocProvider<ConversationListBloc>.value(value: mockBloc),
               BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
+              BlocProvider<InviteStatusCubit>.value(
+                value: mockInviteCubit,
+              ),
             ],
             child: const InboxView(),
           ),

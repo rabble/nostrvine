@@ -23,8 +23,8 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
-import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
@@ -32,7 +32,6 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/categories_tab.dart';
@@ -42,6 +41,8 @@ import 'package:openvine/widgets/list_card.dart';
 import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:rxdart/rxdart.dart' show StartWithExtension;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Pure ExploreScreen using revolutionary Riverpod architecture
 class ExploreScreen extends ConsumerStatefulWidget {
@@ -431,78 +432,138 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     }
 
     // Show Column with search bar + TabBar + content in grid mode
-    return Column(
-      children: [
-        // Search bar (debug-only until #2470 is complete)
-        if (kDebugMode)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: DivineSearchBar(controller: _searchController),
+    // surfaceBackground (#00150D) fills behind the rounded top corners
+    return ColoredBox(
+      color: VineTheme.surfaceBackground,
+      child: Column(
+        children: [
+          // Top area: SafeArea + search bar on surfaceBackground
+          // Search bar is debug-only until #2470 is complete
+          SafeArea(
+            bottom: false,
+            child: kDebugMode
+                ? Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: DivineSearchBar(
+                      controller: _searchController,
+                      hintText: 'Search...',
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
-        // Tabs only visible in grid mode
-        // Material widget is required for TabBar to render ink splashes
-        // PointerInterceptor ensures tabs receive taps on web even when
-        // HTML platform views (video elements) overlap the area.
-        PointerInterceptor(
-          intercepting: kIsWeb,
-          child: Material(
-            color: VineTheme.navGreen,
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              padding: const EdgeInsets.only(left: 16),
-              indicatorColor: VineTheme.tabIndicatorGreen,
-              indicatorWeight: 4,
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: VineTheme.transparent,
-              labelColor: VineTheme.whiteText,
-              unselectedLabelColor: VineTheme.tabIconInactive,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-              labelStyle: VineTheme.tabTextStyle(),
-              unselectedLabelStyle: VineTheme.tabTextStyle(
-                color: VineTheme.tabIconInactive,
+          // Tab bar + content with rounded top corners
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(32),
+                topRight: Radius.circular(32),
               ),
-              onTap: (index) {
-                // If tapping the currently active tab, reset to default state (exit feed/hashtag mode)
-                // But only if we're actually in feed or hashtag mode - otherwise do nothing
-                if (index == _tabController?.index) {
-                  final pageContext = ref.read(pageContextProvider);
-                  final isInFeedMode =
-                      pageContext.whenOrNull(
-                        data: (ctx) => ctx.videoIndex != null,
-                      ) ??
-                      false;
-                  final isInHashtagMode = _hashtagMode != null;
+              child: ColoredBox(
+                color: VineTheme.surfaceContainerHigh,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    // Tabs only visible in grid mode
+                    // Material widget is required for TabBar ink splashes
+                    // PointerInterceptor ensures tabs receive taps on web
+                    PointerInterceptor(
+                      intercepting: kIsWeb,
+                      child: Material(
+                        color: VineTheme.transparent,
+                        child: Stack(
+                          children: [
+                            TabBar(
+                              controller: _tabController,
+                              isScrollable: true,
+                              tabAlignment: TabAlignment.start,
+                              padding: const EdgeInsets.only(left: 16),
+                              indicatorColor: VineTheme.tabIndicatorGreen,
+                              indicatorWeight: 4,
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              dividerColor: VineTheme.transparent,
+                              labelColor: VineTheme.whiteText,
+                              unselectedLabelColor: VineTheme.onSurfaceMuted55,
+                              labelPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
+                              labelStyle: VineTheme.titleMediumFont(),
+                              unselectedLabelStyle: VineTheme.titleMediumFont(
+                                color: VineTheme.onSurfaceMuted55,
+                              ),
+                              onTap: (index) {
+                                // If tapping the currently active tab, reset to default state (exit feed/hashtag mode)
+                                // But only if we're actually in feed or hashtag mode - otherwise do nothing
+                                if (index == _tabController?.index) {
+                                  final pageContext = ref.read(
+                                    pageContextProvider,
+                                  );
+                                  final isInFeedMode =
+                                      pageContext.whenOrNull(
+                                        data: (ctx) => ctx.videoIndex != null,
+                                      ) ??
+                                      false;
+                                  final isInHashtagMode = _hashtagMode != null;
 
-                  if (isInFeedMode || isInHashtagMode) {
-                    _resetToDefaultState();
-                  } else {
-                    Log.debug(
-                      '🎯 ExploreScreen: Already in grid mode for tab $index, ignoring tap',
-                      category: LogCategory.video,
-                    );
-                  }
-                } else {
-                  // Switching to a different tab - reset to grid mode if needed
-                  _resetToDefaultState();
-                }
-              },
-              tabs: [
-                if (_classicsAvailable) const Tab(text: 'Classics'),
-                const Tab(text: 'New'),
-                const Tab(text: 'Popular'),
-                const Tab(text: 'Categories'),
-                if (_forYouAvailable) const Tab(text: 'For You'),
-                const Tab(text: 'Lists'),
-                if (_appsAvailable) const Tab(text: 'Integrated Apps'),
-              ],
+                                  if (isInFeedMode || isInHashtagMode) {
+                                    _resetToDefaultState();
+                                  } else {
+                                    Log.debug(
+                                      '🎯 ExploreScreen: Already in grid mode for tab $index, ignoring tap',
+                                      category: LogCategory.video,
+                                    );
+                                  }
+                                } else {
+                                  // Switching to a different tab - reset to grid mode if needed
+                                  _resetToDefaultState();
+                                }
+                              },
+                              tabs: [
+                                if (_classicsAvailable)
+                                  const Tab(text: 'Classics'),
+                                const Tab(text: 'New'),
+                                const Tab(text: 'Popular'),
+                                const Tab(text: 'Categories'),
+                                if (_forYouAvailable)
+                                  const Tab(text: 'For You'),
+                                const Tab(text: 'Lists'),
+                                if (_appsAvailable)
+                                  const Tab(text: 'Integrated Apps'),
+                              ],
+                            ),
+                            // Right-edge fade gradient shim
+                            const Positioned(
+                              top: 0,
+                              bottom: 0,
+                              right: 0,
+                              width: 24,
+                              child: IgnorePointer(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.centerRight,
+                                      end: Alignment.centerLeft,
+                                      colors: [
+                                        VineTheme.surfaceContainerHigh,
+                                        Color(0x00000A06),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Content changes based on mode
+                    Expanded(child: _buildContent()),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-        // Content changes based on mode
-        Expanded(child: _buildContent()),
-      ],
+        ],
+      ),
     );
   }
 
@@ -517,7 +578,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             ctx.type == RouteType.explore && ctx.videoIndex != null;
 
         if (isInFeedMode) {
-          return _buildFeedModeContent();
+          return _ExploreFeedContent(
+            key: const Key('explore-feed'),
+            startIndex: ctx.videoIndex ?? 0,
+          );
         }
 
         // IMPORTANT: Clear hashtag mode when URL shows we're on main explore
@@ -598,44 +662,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           style: const TextStyle(color: VineTheme.likeRed),
         ),
       ),
-    );
-  }
-
-  Widget _buildFeedModeContent() {
-    ref.watch(divineHostFilterVersionProvider);
-    final videoEventService = ref.read(videoEventServiceProvider);
-    // Read videos from provider (survives widget recreation)
-    final videos = videoEventService.filterVideoList(
-      ref.watch(exploreTabVideosProvider) ?? const <VideoEvent>[],
-    );
-
-    // Derive starting index from URL
-    final pageContext = ref.watch(pageContextProvider);
-    final startIndex =
-        pageContext.whenOrNull(data: (ctx) => ctx.videoIndex ?? 0) ?? 0;
-
-    // Safety check: ensure we have videos and valid index
-    if (videos.isEmpty || startIndex >= videos.length) {
-      return const Center(
-        child: Text(
-          'No videos available',
-          style: TextStyle(color: VineTheme.whiteText),
-        ),
-      );
-    }
-
-    // Just return the video screen - tabs are shown above
-    // useLocalActiveState: true → playback controlled by local _currentPage
-    // onNavigate: keeps URL in sync for deep linking, back nav, and provider
-    // state (e.g. activeVideoIdProvider). Safe because PageController is in
-    // state (not recreated on parent rebuild).
-    return ExploreVideoScreenPure(
-      startingVideo: videos[startIndex],
-      videoList: videos,
-      contextTitle: '', // Don't show context title for general explore feed
-      startingIndex: startIndex,
-      useLocalActiveState: true,
-      onNavigate: (index) => context.go(ExploreScreen.pathForIndex(index)),
     );
   }
 
@@ -1121,6 +1147,71 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Stateful widget that streams [exploreTabVideosProvider] updates into
+/// [PooledFullscreenVideoFeedScreen] so pagination appends are visible.
+class _ExploreFeedContent extends ConsumerStatefulWidget {
+  const _ExploreFeedContent({required this.startIndex, super.key});
+
+  final int startIndex;
+
+  @override
+  ConsumerState<_ExploreFeedContent> createState() =>
+      _ExploreFeedContentState();
+}
+
+class _ExploreFeedContentState extends ConsumerState<_ExploreFeedContent> {
+  late final StreamController<List<VideoEvent>> _streamController;
+  List<VideoEvent>? _lastVideos;
+
+  @override
+  void initState() {
+    super.initState();
+    _streamController = StreamController<List<VideoEvent>>.broadcast();
+  }
+
+  @override
+  void dispose() {
+    _streamController.close();
+    super.dispose();
+  }
+
+  void _pushVideos(List<VideoEvent> videos) {
+    if (videos.isEmpty) return;
+    if (identical(videos, _lastVideos)) return;
+    _lastVideos = videos;
+    if (!_streamController.isClosed) _streamController.add(videos);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.watch(divineHostFilterVersionProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
+    final videos = videoEventService.filterVideoList(
+      ref.watch(exploreTabVideosProvider) ?? const <VideoEvent>[],
+    );
+
+    if (videos.isEmpty) {
+      return Center(
+        child: Text(
+          'No videos available',
+          style: VineTheme.bodyMediumFont(),
+        ),
+      );
+    }
+
+    _pushVideos(videos);
+
+    final safeIndex = widget.startIndex.clamp(0, videos.length - 1);
+
+    return PooledFullscreenVideoFeedScreen(
+      videosStream: _streamController.stream.startWith(videos),
+      initialIndex: safeIndex,
+      contextTitle: '',
+      onPageChanged: (index) => context.go(ExploreScreen.pathForIndex(index)),
     );
   }
 }

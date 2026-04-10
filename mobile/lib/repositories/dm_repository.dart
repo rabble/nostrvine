@@ -21,9 +21,9 @@ import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/repositories/dm_decryption_worker.dart';
 import 'package:openvine/repositories/dm_sync_state.dart';
-import 'package:openvine/services/auth_service_signer.dart';
+import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nip17_message_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Decrypts a gift-wrapped event (kind 1059) through the NIP-17 layers
 /// (gift wrap → seal → rumor) and returns the inner rumor event.
@@ -123,10 +123,15 @@ class DmRepository {
 
   /// Set auth credentials on the repository.
   ///
-  /// Called by the provider when the user's keys become available. Read
-  /// methods work before this; send requires it. The relay subscription
-  /// is NOT started here — callers (the inbox screen) are responsible for
-  /// invoking [startListening] when they need live gift-wrap delivery.
+  /// Called by `dmRepositoryProvider` when the user's keys become
+  /// available. Read methods work before this; send requires it.
+  ///
+  /// This wires credentials only — the gift-wrap subscription is opened
+  /// separately by the provider via [startListening] right after this
+  /// returns, so DM ingestion runs for the whole authenticated session.
+  /// Cold-start cost stays bounded thanks to the count-based windowing
+  /// (`since: newestSyncedAt - 2d`) and the isolate decryption worker.
+  /// See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
   /// no-ops. If called with a different user, resets and re-initializes.
@@ -153,16 +158,10 @@ class DmRepository {
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
-    // Subscription is started by the inbox screen via startListening().
-    // Do NOT start it here — doing so would replay the full gift-wrap
-    // backlog onto the UI isolate at app launch and scale linearly with
-    // lifetime DM count. See docs/plans/2026-04-05-dm-scaling-fix-design.md.
 
-    // Merge duplicate conversations created by extra p-tags (idempotent).
-    unawaited(_mergeDuplicateConversations());
-
-    // Remove phantom self-conversations created by the self-wrap bug.
-    unawaited(_cleanupSelfConversations());
+    // Run post-auth maintenance sequentially so each step operates on the
+    // final state of the previous one (e.g. backfill runs after merge).
+    unawaited(_runPostAuthMaintenance());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
@@ -280,10 +279,10 @@ class DmRepository {
       },
     );
 
-    // No poll timer: the live subscription is the sole event source while
-    // the inbox is open. Poller was removed because it re-fetched duplicate
-    // events every 10s forever on the UI isolate. See
-    // docs/plans/2026-04-05-dm-scaling-fix-design.md.
+    // No poll timer: the live WebSocket subscription is the sole event
+    // source for the entire authenticated session. Poller was removed
+    // because it re-fetched duplicate events every 10s forever on the UI
+    // isolate. See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
   }
 
   /// Fetches an older page of DM events (gift wraps, NIP-04, deletions)
@@ -328,8 +327,9 @@ class DmRepository {
   Future<void> stopListening() async {
     // Don't set _disposed = true here — _disposed is reserved for
     // _resetState() (user switch). Setting it would make a subsequent
-    // startListening() call a silent no-op, breaking re-open flows like
-    // "user leaves the inbox tab and comes back later".
+    // startListening() call a silent no-op, breaking re-open flows such
+    // as the post-signOut cleanup in UserDataCleanupService that may be
+    // followed by a fresh sign-in on the same repository instance.
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _eventLock = null;
@@ -585,7 +585,7 @@ class DmRepository {
   /// Real backlog batching can come later.
   Future<Event?> _decryptRumor(Nostr nostr, Event giftWrapEvent) async {
     final signer = _signer;
-    if (signer is AuthServiceSigner && signer.canDecryptInIsolate) {
+    if (signer is IsolateDecryptSigner && signer.canDecryptInIsolate) {
       try {
         final hex = signer.withPrivateKeyHex((k) => k);
         final results = await compute(
@@ -1567,6 +1567,44 @@ class DmRepository {
     } catch (e, stackTrace) {
       Log.error(
         'Failed to clean up self-conversation: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Runs post-auth cleanup and migration tasks sequentially so each step
+  /// operates on the final state of the previous one (e.g. backfill runs
+  /// after merge creates canonical conversation rows).
+  Future<void> _runPostAuthMaintenance() async {
+    await _mergeDuplicateConversations();
+    await _cleanupSelfConversations();
+    await _backfillCurrentUserHasSent();
+  }
+
+  /// Backfills `currentUserHasSent` for conversations where the column
+  /// was added with DEFAULT 0 but the user has actually sent messages.
+  ///
+  /// Fixes #2834 — without this, all pre-existing conversations appear
+  /// as message requests instead of in the Messages tab.
+  ///
+  /// Idempotent — safe to call on every init. Becomes a no-op once all
+  /// conversations are correctly flagged.
+  Future<void> _backfillCurrentUserHasSent() async {
+    try {
+      final updated = await _conversationsDao.backfillCurrentUserHasSent(
+        _userPubkey,
+      );
+      if (updated > 0) {
+        Log.info(
+          'Backfilled currentUserHasSent for $updated conversations',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to backfill currentUserHasSent: $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,

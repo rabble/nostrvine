@@ -5,9 +5,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A safe wrapper around [JsonCacheInfoRepository] that handles corrupted
 /// JSON files.

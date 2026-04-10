@@ -2,7 +2,7 @@
 // ABOUTME: Header title uses Bricolage Grotesque font, camera button in bottom nav
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,10 +29,10 @@ import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, required this.currentIndex, super.key});
@@ -309,6 +309,17 @@ class _AppShellState extends ConsumerState<AppShell> {
       data: (ctx) => ctx.type == RouteType.search,
       orElse: () => false,
     );
+
+    // Explore grid mode manages its own header (search bar + tabs)
+    // Only in debug builds until #2470 is complete; production keeps the
+    // standard title + search-icon app bar.
+    final isExploreGrid =
+        kDebugMode &&
+        pageCtxAsync.maybeWhen(
+          data: (ctx) =>
+              ctx.type == RouteType.explore && ctx.videoIndex == null,
+          orElse: () => false,
+        );
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
         final isSubRoute = ctx.type == RouteType.search;
@@ -341,7 +352,8 @@ class _AppShellState extends ConsumerState<AppShell> {
       // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
       // instead of the standard AppBar, for full-screen video UX.
       // Inbox uses its own segmented toggle header.
-      appBar: currentIndex == 0 || isInbox
+      // Explore grid manages its own header (search bar + tabs).
+      appBar: currentIndex == 0 || isInbox || isExploreGrid
           ? null
           : DiVineAppBar(
               titleWidget: _buildTappableTitle(context, ref, title),

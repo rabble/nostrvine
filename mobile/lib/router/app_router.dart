@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_category.dart';
@@ -38,7 +39,6 @@ import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -50,6 +50,7 @@ import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -60,6 +61,7 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -72,8 +74,8 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Global route observer for [RouteAware] subscribers (e.g. pausing video
 /// when a new route is pushed on top of the feed).
@@ -615,6 +617,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const SettingsScreen(),
       ),
       GoRoute(
+        path: InvitesScreen.path,
+        name: InvitesScreen.routeName,
+        builder: (_, _) => const InvitesScreen(),
+      ),
+      GoRoute(
         path: AppsDirectoryScreen.path,
         name: AppsDirectoryScreen.routeName,
         builder: (_, _) => const AppsDirectoryScreen(),
@@ -639,10 +646,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ? state.extra! as NostrAppDirectoryEntry
               : null;
           final appId = state.pathParameters['appId'] ?? '';
-          return ResolvedSandboxRouteScreen(
-            appId: appId,
-            initialApp: app,
-          );
+          return ResolvedSandboxRouteScreen(appId: appId, initialApp: app);
         },
       ),
       GoRoute(
@@ -653,10 +657,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final initialEntry = state.extra is NostrAppDirectoryEntry
               ? state.extra! as NostrAppDirectoryEntry
               : null;
-          return AppDetailScreen(
-            slug: slug,
-            initialEntry: initialEntry,
-          );
+          return AppDetailScreen(slug: slug, initialEntry: initialEntry);
         },
       ),
       GoRoute(
@@ -859,20 +860,50 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: SoundDetailScreen.routeName,
         builder: (ctx, st) {
           final soundId = st.pathParameters['id'];
-          final sound = st.extra as AudioEvent?;
           if (soundId == null || soundId.isEmpty) {
             return const Scaffold(
               appBar: DiVineAppBar(title: 'Error'),
               body: Center(child: Text('Invalid sound ID')),
             );
           }
-          // If sound was passed via extra, use it directly
-          // Otherwise, SoundDetailScreen will need to fetch it
+          // Extra can be an AudioEvent directly or a Map with both
+          // sound and sourceVideo (for original sounds).
+          final extra = st.extra;
+          AudioEvent? sound;
+          VideoEvent? sourceVideo;
+          if (extra is AudioEvent) {
+            sound = extra;
+          } else if (extra is Map<String, dynamic>) {
+            sound = extra['sound'] as AudioEvent?;
+            sourceVideo = extra['sourceVideo'] as VideoEvent?;
+          }
           if (sound != null) {
-            return SoundDetailScreen(sound: sound);
+            return SoundDetailScreen(
+              sound: sound,
+              sourceVideo: sourceVideo,
+            );
           }
           // Wrap in a loader that fetches the sound by ID
           return SoundDetailLoader(soundId: soundId);
+        },
+      ),
+      // Original sound detail route (for videos without shared audio)
+      GoRoute(
+        path: OriginalSoundDetailScreen.path,
+        name: OriginalSoundDetailScreen.routeName,
+        builder: (ctx, st) {
+          final pubkey = st.pathParameters['pubkey'];
+          final video = st.extra as VideoEvent?;
+          if (pubkey == null || pubkey.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid creator')),
+            );
+          }
+          return OriginalSoundDetailScreen(
+            creatorPubkey: pubkey,
+            sourceVideo: video,
+          );
         },
       ),
       // Video editor route (requires video passed via extra)
@@ -921,10 +952,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final categoryName = st.pathParameters['categoryName'];
           final category =
               st.extra as VideoCategory? ??
-              VideoCategory(
-                name: categoryName ?? '',
-                videoCount: 0,
-              );
+              VideoCategory(name: categoryName ?? '', videoCount: 0);
 
           if (category.name.isEmpty) {
             return const Scaffold(
@@ -934,26 +962,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           }
 
           return CategoryGalleryScreen(category: category);
-        },
-      ),
-      // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
-      GoRoute(
-        path: FullscreenVideoFeedScreen.path,
-        name: FullscreenVideoFeedScreen.routeName,
-        builder: (ctx, st) {
-          final args = st.extra as FullscreenVideoFeedArgs?;
-          if (args == null) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('No videos to display')),
-            );
-          }
-          return FullscreenVideoFeedScreen(
-            source: args.source,
-            initialIndex: args.initialIndex,
-            contextTitle: args.contextTitle,
-            trafficSource: args.trafficSource,
-          );
         },
       ),
       // Pooled fullscreen video feed (uses pooled_video_player package)
@@ -975,6 +983,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             contextTitle: args.contextTitle,
             trafficSource: args.trafficSource,
             sourceDetail: args.sourceDetail,
+            autoOpenComments: args.autoOpenComments,
+            onPageChanged: args.onPageChanged,
           );
         },
       ),

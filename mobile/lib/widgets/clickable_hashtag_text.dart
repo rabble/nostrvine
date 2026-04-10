@@ -12,7 +12,7 @@ import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A widget that displays text with clickable hashtags and nostr: mentions
 ///

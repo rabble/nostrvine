@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -15,7 +16,6 @@ import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 
@@ -28,7 +28,7 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockPendingVerificationService extends Mock
     implements PendingVerificationService {}
 
-class _MockInviteApiService extends Mock implements InviteApiService {}
+class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 class _FakeSecureKeyContainer extends Fake implements SecureKeyContainer {}
 
@@ -36,7 +36,7 @@ void main() {
   late _MockKeycastOAuth mockOAuth;
   late _MockAuthService mockAuthService;
   late _MockPendingVerificationService mockPendingVerification;
-  late _MockInviteApiService mockInviteApiService;
+  late _MockInviteApiClient mockInviteApiClient;
 
   setUpAll(() {
     registerFallbackValue(_FakeSecureKeyContainer());
@@ -46,7 +46,7 @@ void main() {
     mockOAuth = _MockKeycastOAuth();
     mockAuthService = _MockAuthService();
     mockPendingVerification = _MockPendingVerificationService();
-    mockInviteApiService = _MockInviteApiService();
+    mockInviteApiClient = _MockInviteApiClient();
 
     when(
       () => mockAuthService.createAnonymousAccount(),
@@ -62,10 +62,10 @@ void main() {
           mockPendingVerification,
         ),
       ],
-      child: RepositoryProvider<InviteApiService>.value(
-        value: mockInviteApiService,
+      child: RepositoryProvider<InviteApiClient>.value(
+        value: mockInviteApiClient,
         child: BlocProvider(
-          create: (_) => InviteGateBloc(inviteApiService: mockInviteApiService),
+          create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
           child: MaterialApp(
             theme: VineTheme.theme,
             home: const CreateAccountScreen(),

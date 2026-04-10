@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 typedef JwtIdentityRefresh =
     Future<bool> Function({

@@ -6,8 +6,8 @@ import 'dart:convert';
 
 import 'package:models/models.dart';
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for managing NIP-51 kind 30000 user lists
 class UserListService {

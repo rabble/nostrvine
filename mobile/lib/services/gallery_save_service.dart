@@ -9,11 +9,11 @@ import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Result of a gallery save operation.
 sealed class GallerySaveResult {

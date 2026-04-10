@@ -16,12 +16,11 @@ import 'package:models/models.dart'
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
-import 'package:openvine/services/log_capture_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
@@ -125,7 +124,7 @@ class BugReportService {
       }
 
       // Get recent logs from LogCaptureService
-      final recentLogs = LogCaptureService.instance.getRecentLogs(
+      final recentLogs = LogCaptureService().getRecentLogs(
         limit: BugReportConfig.maxLogEntries,
       );
 
@@ -746,14 +745,14 @@ class BugReportService {
       );
 
       // Get comprehensive statistics about logs
-      final stats = await LogCaptureService.instance.getLogStatistics();
+      final stats = await LogCaptureService().getLogStatistics();
       Log.info(
         'Log stats: ${stats['totalLogLines']} lines, ${stats['totalSizeMB']} MB across ${stats['fileCount']} files',
         category: LogCategory.system,
       );
 
       // Get ALL logs from persistent storage (hundreds of thousands of entries)
-      final allLogLines = await LogCaptureService.instance.getAllLogsAsText();
+      final allLogLines = await LogCaptureService().getAllLogsAsText();
 
       if (allLogLines.isEmpty) {
         Log.warning(

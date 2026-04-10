@@ -24,7 +24,7 @@ The following log levels are available (from most to least verbose):
 ### Basic Usage
 
 ```dart
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 // Use the Log alias for brevity
 Log.verbose('Detailed trace info', name: 'ServiceName');

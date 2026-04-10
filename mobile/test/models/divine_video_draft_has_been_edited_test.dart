@@ -246,7 +246,6 @@ void main() {
           publishStatus: PublishStatus.draft,
           publishAttempts: 1,
           publishError: 'err',
-          allowAudioReuse: true,
           expireTime: const Duration(days: 1),
           proofManifestJson: '{}',
           editorStateHistory: const {'k': 'v'},

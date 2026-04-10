@@ -609,7 +609,10 @@ class VideoEvent {
       pubkey: event.pubkey,
       createdAt: effectiveTimestamp,
       content: event.content,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        effectiveTimestamp * 1000,
+        isUtc: true,
+      ),
       title: title,
       videoUrl: videoUrl,
       thumbnailUrl: thumbnailUrl,
@@ -1069,7 +1072,7 @@ class VideoEvent {
   /// Get relative time string (e.g., "2 hours ago")
   String get relativeTime {
     final now = DateTime.now();
-    final difference = now.difference(timestamp);
+    final difference = now.difference(timestamp.toLocal());
 
     if (difference.inMinutes < 1) {
       return 'now';
