@@ -78,16 +78,45 @@ void main() {
     group('supportedLocales', () {
       test('only exposes fully translated locales in the picker', () {
         // The picker iterates this map. Keep it intentionally narrow —
-        // only locales with near-full coverage should appear. Stub
+        // only locales with near-full coverage should appear. Partial
         // translations ship via `AppLocalizations.supportedLocales` but
-        // must stay hidden from the user-facing switcher.
+        // must stay hidden from the user-facing switcher until coverage
+        // catches up.
+        //
+        // If this list changes, double-check coverage by running
+        // `flutter gen-l10n` and reviewing the untranslated-message
+        // counts — anything below ~99% should stay out of the picker.
         expect(
           LocalePreferenceService.supportedLocales.keys,
-          equals(<String>['en']),
+          unorderedEquals(<String>[
+            'en',
+            'de',
+            'es',
+            'fr',
+            'id',
+            'it',
+            'ja',
+            'nl',
+            'pl',
+            'pt',
+            'ro',
+            'sv',
+            'tr',
+          ]),
+        );
+        expect(LocalePreferenceService.supportedLocales['en'], 'English');
+      });
+
+      test('partial locales are not exposed in the picker', () {
+        // app_ar.arb and app_ko.arb only cover ~34–38% of keys. Re-add
+        // once coverage is materially higher.
+        expect(
+          LocalePreferenceService.supportedLocales.keys,
+          isNot(contains('ar')),
         );
         expect(
-          LocalePreferenceService.supportedLocales['en'],
-          'English',
+          LocalePreferenceService.supportedLocales.keys,
+          isNot(contains('ko')),
         );
       });
     });

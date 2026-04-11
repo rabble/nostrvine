@@ -41,7 +41,7 @@ void main() {
         ),
       );
 
-      expect(l10n.settingsTitle, equals('Configuraci\u00f3n'));
+      expect(l10n.settingsTitle, equals('Ajustes'));
     });
 
     testWidgets('falls back to English for missing translations', (
@@ -49,9 +49,11 @@ void main() {
     ) async {
       late AppLocalizations l10n;
 
+      // Arabic is a partial translation (~34% coverage). Any key not in
+      // app_ar.arb falls back through the l10n chain to English.
       await tester.pumpWidget(
         MaterialApp(
-          locale: const Locale('es'),
+          locale: const Locale('ar'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
@@ -63,17 +65,11 @@ void main() {
         ),
       );
 
-      // Spanish has settingsTitle but not all keys — untranslated
-      // keys fall back to English
-      expect(
-        l10n.settingsTitle,
-        equals('Configuraci\u00f3n'),
-      );
-      // shareMenuOriginalSound is not in the es ARB, falls back
-      expect(
-        l10n.shareMenuOriginalSound,
-        equals('Original sound'),
-      );
+      // Arabic has settingsTitle translated.
+      expect(l10n.settingsTitle, equals('الإعدادات'));
+      // shareMenuOriginalSound is not in the ar ARB, so it falls back to
+      // English.
+      expect(l10n.shareMenuOriginalSound, equals('Original sound'));
     });
 
     testWidgets('parameterized string works for version', (tester) async {

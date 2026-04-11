@@ -1,0 +1,1855 @@
+{
+  "@@locale": "ro",
+
+  "appTitle": "Divine",
+  "@appTitle": {
+    "description": "App title shown in task switcher"
+  },
+
+  "settingsTitle": "Set\u0103ri",
+  "@settingsTitle": {
+    "description": "Settings screen app bar title"
+  },
+  "settingsSecureAccount": "Securizeaz\u0103-\u021bi contul",
+  "settingsSessionExpired": "Sesiune expirat\u0103",
+  "settingsSessionExpiredSubtitle": "Autentific\u0103-te din nou ca s\u0103 recape\u021bi acces complet",
+  "settingsCreatorAnalytics": "Statistici pentru creatori",
+  "settingsSupportCenter": "Centru de asisten\u021b\u0103",
+  "settingsNotifications": "Notific\u0103ri",
+  "settingsContentPreferences": "Preferin\u021be de con\u021binut",
+  "settingsModerationControls": "Controale de moderare",
+  "settingsBlueskyPublishing": "Publicare pe Bluesky",
+  "settingsBlueskyPublishingSubtitle": "Gestioneaz\u0103 postarea \u00eencruci\u0219at\u0103 pe Bluesky",
+  "settingsNostrSettings": "Set\u0103ri Nostr",
+  "settingsIntegratedApps": "Aplica\u021bii integrate",
+  "settingsIntegratedAppsSubtitle": "Aplica\u021bii ter\u021be aprobate care ruleaz\u0103 \u00een Divine",
+  "settingsExperimentalFeatures": "Func\u021bii experimentale",
+  "settingsExperimentalFeaturesSubtitle": "Chestii care s-ar putea s\u0103 sughi\u021be\u2014\u00eencearc\u0103-le dac\u0103 e\u0219ti curios.",
+  "settingsLegal": "Legal",
+  "settingsIntegrationPermissions": "Permisiuni de integrare",
+  "settingsIntegrationPermissionsSubtitle": "Verific\u0103 \u0219i revoc\u0103 aprob\u0103rile memorate pentru integr\u0103ri",
+  "settingsVersion": "Versiunea {version}",
+  "@settingsVersion": {
+    "description": "App version label in settings footer",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsVersionEmpty": "Versiune",
+  "@settingsVersionEmpty": {
+    "description": "Version label when version string is not yet loaded"
+  },
+  "settingsDeveloperModeAlreadyEnabled": "Modul dezvoltator e deja activat",
+  "settingsDeveloperModeEnabled": "Mod dezvoltator activat!",
+  "settingsDeveloperModeTapsRemaining": "\u00cenc\u0103 {count, plural, one{o atingere} few{{count} atingeri} other{{count} de atingeri}} ca s\u0103 activezi modul dezvoltator",
+  "@settingsDeveloperModeTapsRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsInvites": "Invita\u021bii",
+  "settingsSwitchAccount": "Schimb\u0103 contul",
+  "settingsAddAnotherAccount": "Adaug\u0103 alt cont",
+  "settingsUnsavedDraftsTitle": "Ciorne nesalvate",
+  "settingsUnsavedDraftsMessage": "Ai {count} {count, plural, =1{ciorn\u0103} other{ciorne}} nesalvate. Schimbarea contului \u00e2\u021bi va p\u0103stra {count, plural, =1{ciorna} other{ciornele}}, dar poate vrei s\u0103 {count, plural, =1{o} other{le}} publici sau s\u0103 {count, plural, =1{o} other{le}} revizui\u00eei \u00eent\u00e2i.",
+  "@settingsUnsavedDraftsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsCancel": "Anuleaz\u0103",
+  "settingsSwitchAnyway": "Schimb\u0103 oricum",
+  "settingsAppVersionLabel": "Versiunea aplica\u021biei",
+  "settingsAppLanguage": "Limba aplica\u021biei",
+  "settingsAppLanguageDeviceDefault": "{language} (implicit pe dispozitiv)",
+  "@settingsAppLanguageDeviceDefault": {
+    "description": "Subtitle for app language tile when using device default",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAppLanguageTitle": "Limba aplica\u021biei",
+  "@settingsAppLanguageTitle": {
+    "description": "Title shown at top of locale picker bottom sheet"
+  },
+  "settingsAppLanguageDescription": "Alege limba pentru interfa\u021ba aplica\u021biei",
+  "settingsAppLanguageUseDeviceLanguage": "Folose\u0219te limba dispozitivului",
+
+  "contentPreferencesTitle": "Preferin\u021be de con\u021binut",
+  "@contentPreferencesTitle": {
+    "description": "Content preferences screen app bar title"
+  },
+  "contentPreferencesContentFilters": "Filtre de con\u021binut",
+  "contentPreferencesContentFiltersSubtitle": "Gestioneaz\u0103 filtrele pentru aten\u021bion\u0103ri de con\u021binut",
+  "contentPreferencesContentLanguage": "Limba con\u021binutului",
+  "contentPreferencesContentLanguageDeviceDefault": "{language} (implicit pe dispozitiv)",
+  "@contentPreferencesContentLanguageDeviceDefault": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "contentPreferencesTagYourVideos": "Eticheteaz\u0103-\u021bi videoclipurile cu o limb\u0103, ca privitorii s\u0103 poat\u0103 filtra con\u021binutul.",
+  "contentPreferencesUseDeviceLanguage": "Folose\u0219te limba dispozitivului (implicit)",
+  "contentPreferencesAudioSharing": "F\u0103 audio-ul meu disponibil pentru refolosire",
+  "contentPreferencesAudioSharingSubtitle": "C\u00e2nd e activat, al\u021bii pot folosi audio din videoclipurile tale",
+  "contentPreferencesAccountLabels": "Etichete de cont",
+  "contentPreferencesAccountLabelsEmpty": "Auto-eticheteaz\u0103-\u021bi con\u021binutul",
+  "contentPreferencesAccountContentLabels": "Etichete de con\u021binut pentru cont",
+  "contentPreferencesClearAll": "\u0218terge tot",
+  "contentPreferencesSelectAllThatApply": "Selecteaz\u0103 tot ce se potrive\u0219te contului t\u0103u",
+  "contentPreferencesDoneNoLabels": "Gata (f\u0103r\u0103 etichete)",
+  "contentPreferencesDoneCount": "Gata ({count} selectate)",
+  "@contentPreferencesDoneCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "contentPreferencesAudioInputDevice": "Dispozitiv de intrare audio",
+  "contentPreferencesAutoRecommended": "Automat (recomandat)",
+  "contentPreferencesAutoSelectsBest": "Alege automat cel mai bun microfon",
+  "contentPreferencesSelectAudioInput": "Alege intrarea audio",
+  "contentPreferencesUnknownMicrophone": "Microfon necunoscut",
+
+  "profileBlockedAccountNotAvailable": "Acest cont nu e disponibil",
+  "profileErrorPrefix": "Eroare: {error}",
+  "@profileErrorPrefix": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileInvalidId": "ID de profil invalid",
+  "profileShareText": "Arunc\u0103 o privire la {displayName} pe Divine!\n\nhttps://divine.video/profile/{npub}",
+  "@profileShareText": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      },
+      "npub": {
+        "type": "String"
+      }
+    }
+  },
+  "profileShareSubject": "{displayName} pe Divine",
+  "@profileShareSubject": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileShareFailed": "Nu am putut partaja profilul: {error}",
+  "@profileShareFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileEditProfile": "Editeaz\u0103 profilul",
+  "profileCreatorAnalytics": "Statistici creator",
+  "profileShareProfile": "Partajeaz\u0103 profilul",
+  "profileCopyPublicKey": "Copiaz\u0103 cheia public\u0103 (npub)",
+  "profileGetEmbedCode": "Ob\u021bine codul de \u00eencorporare",
+  "profilePublicKeyCopied": "Cheia public\u0103 a fost copiat\u0103",
+  "profileEmbedCodeCopied": "Codul de \u00eencorporare a fost copiat",
+  "profileRefreshTooltip": "Re\u00eencarc\u0103",
+  "profileRefreshSemanticLabel": "Re\u00eencarc\u0103 profilul",
+  "profileMoreTooltip": "Mai multe",
+  "profileMoreSemanticLabel": "Mai multe op\u021biuni",
+  "profileFollowingLabel": "Urm\u0103rit",
+  "profileFollowLabel": "Urm\u0103re\u0219te",
+  "profileBlockedLabel": "Blocat",
+  "profileFollowersLabel": "Urm\u0103ritori",
+  "profileFollowingStatLabel": "Urm\u0103ri\u021bi",
+  "profileVideosLabel": "Videoclipuri",
+  "profileFollowerCountUsers": "{count, plural, one{1 utilizator} few{{count} utilizatori} other{{count} de utilizatori}}",
+  "@profileFollowerCountUsers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileBlockTitle": "Blochezi pe {displayName}?",
+  "@profileBlockTitle": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileBlockExplanation": "C\u00e2nd blochezi un utilizator:",
+  "profileBlockBulletHidePosts": "Postările lui nu vor mai apărea \u00een feedurile tale.",
+  "profileBlockBulletCantView": "Nu va putea să-\u021bi vadă profilul, să te urmărească sau să-\u021bi vadă postările.",
+  "profileBlockBulletNoNotify": "Nu va fi notificat despre această schimbare.",
+  "profileBlockBulletYouCanView": "Tu \u00eencă vei putea să-i vezi profilul.",
+  "profileBlockConfirmButton": "Blocheaz\u0103 pe {displayName}",
+  "@profileBlockConfirmButton": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileCancelButton": "Anuleaz\u0103",
+  "profileLearnMore": "Afl\u0103 mai multe",
+  "profileUnblockTitle": "Deblochezi pe {displayName}?",
+  "@profileUnblockTitle": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnblockExplanation": "C\u00e2nd deblochezi acest utilizator:",
+  "profileUnblockBulletShowPosts": "Postările lui vor apărea \u00een feedurile tale.",
+  "profileUnblockBulletCanView": "Va putea să-\u021bi vadă profilul, să te urmărească \u0219i să-\u021bi vadă postările.",
+  "profileUnblockBulletNoNotify": "Nu va fi notificat despre această schimbare.",
+  "profileLearnMoreAt": "Afl\u0103 mai multe la ",
+  "profileUnblockButton": "Deblocheaz\u0103",
+  "profileUnfollowDisplayName": "Nu mai urm\u0103ri pe {displayName}",
+  "@profileUnfollowDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileBlockDisplayName": "Blocheaz\u0103 pe {displayName}",
+  "@profileBlockDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnblockDisplayName": "Deblocheaz\u0103 pe {displayName}",
+  "@profileUnblockDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUserBlockedTitle": "Utilizator blocat",
+  "profileUserBlockedContent": "Nu vei mai vedea con\u021binut de la acest utilizator \u00een feedurile tale.",
+  "profileUserBlockedUnblockHint": "\u00cel po\u021bi debloca oric\u00e2nd din profilul lui sau din Set\u0103ri > Siguran\u021b\u0103.",
+  "profileCloseButton": "\u00cenchide",
+  "profileNoCollabsTitle": "\u00cenc\u0103 nicio colaborare",
+  "profileCollabsOwnEmpty": "Videoclipurile la care colaborezi vor ap\u0103rea aici",
+  "profileCollabsOtherEmpty": "Videoclipurile la care colaboreaz\u0103 vor ap\u0103rea aici",
+  "profileErrorLoadingCollabs": "Eroare la \u00eenc\u0103rcarea colabor\u0103rilor",
+  "profileNoCommentsOwnTitle": "\u00cenc\u0103 niciun comentariu",
+  "profileNoCommentsOtherTitle": "F\u0103r\u0103 comentarii",
+  "profileCommentsOwnEmpty": "Comentariile \u0219i r\u0103spunsurile tale vor ap\u0103rea aici",
+  "profileCommentsOtherEmpty": "Comentariile \u0219i r\u0103spunsurile lui vor ap\u0103rea aici",
+  "profileErrorLoadingComments": "Eroare la \u00eenc\u0103rcarea comentariilor",
+  "profileVideoRepliesSection": "R\u0103spunsuri video",
+  "profileCommentsSection": "Comentarii",
+  "profileEditLabel": "Editeaz\u0103",
+  "profileLibraryLabel": "Bibliotec\u0103",
+  "profileNoLikedVideosTitle": "\u00cenc\u0103 niciun videoclip apreciat",
+  "profileLikedOwnEmpty": "Videoclipurile pe care le apreciezi vor ap\u0103rea aici",
+  "profileLikedOtherEmpty": "Videoclipurile pe care le apreciaz\u0103 vor ap\u0103rea aici",
+  "profileErrorLoadingLiked": "Eroare la \u00eenc\u0103rcarea videoclipurilor apreciate",
+  "profileNoRepostsTitle": "\u00cenc\u0103 nicio redistribuire",
+  "profileRepostsOwnEmpty": "Videoclipurile pe care le redistribui vor ap\u0103rea aici",
+  "profileRepostsOtherEmpty": "Videoclipurile pe care le redistribuie vor ap\u0103rea aici",
+  "profileErrorLoadingReposts": "Eroare la \u00eenc\u0103rcarea videoclipurilor redistribuite",
+  "profileLoadingTitle": "Se \u00eencarc\u0103 profilul...",
+  "profileLoadingSubtitle": "Poate dura c\u00e2teva momente",
+  "profileLoadingVideos": "Se \u00eencarc\u0103 videoclipurile...",
+  "profileNoVideosTitle": "\u00cenc\u0103 niciun videoclip",
+  "profileNoVideosOwnSubtitle": "Distribuie primul t\u0103u videoclip ca s\u0103-l vezi aici",
+  "profileNoVideosOtherSubtitle": "Acest utilizator \u00eenc\u0103 n-a distribuit niciun videoclip",
+  "profileVideoThumbnailLabel": "Miniatur\u0103 videoclip {number}",
+  "@profileVideoThumbnailLabel": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "profileShowMore": "Arat\u0103 mai mult",
+  "profileShowLess": "Arat\u0103 mai pu\u021bin",
+  "profileCompleteYourProfile": "Completeaz\u0103-\u021bi profilul",
+  "profileCompleteSubtitle": "Adaug\u0103 numele, bio \u0219i poza ca s\u0103 \u00eencepi",
+  "profileSetUpButton": "Configureaz\u0103",
+  "profileVerifyingEmail": "Se verific\u0103 emailul...",
+  "profileCheckEmailVerification": "Verific\u0103 {email} pentru linkul de confirmare",
+  "@profileCheckEmailVerification": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "profileWaitingForVerification": "Se a\u0219teapt\u0103 verificarea emailului",
+  "profileVerificationFailed": "Verificare e\u0219uat\u0103",
+  "profilePleaseTryAgain": "\u00cencearc\u0103 din nou",
+  "profileSecureYourAccount": "Securizeaz\u0103-\u021bi contul",
+  "profileSecureSubtitle": "Adaug\u0103 email \u0219i parol\u0103 ca s\u0103-\u021bi recuperezi contul pe orice dispozitiv",
+  "profileRetryButton": "Re\u00eencearc\u0103",
+  "profileRegisterButton": "\u00censcrie-te",
+  "profileSessionExpired": "Sesiune expirat\u0103",
+  "profileSignInToRestore": "Autentific\u0103-te din nou ca s\u0103 recape\u021bi acces complet",
+  "profileSignInButton": "Autentificare",
+  "profileDismissTooltip": "Respinge",
+  "profileLinkCopied": "Linkul profilului a fost copiat",
+  "profileSetupEditProfileTitle": "Editeaz\u0103 profilul",
+  "profileSetupBackLabel": "\u00cenapoi",
+  "profileSetupAboutNostr": "Despre Nostr",
+  "profileSetupProfilePublished": "Profil publicat cu succes!",
+  "profileSetupCreateNewProfile": "Creezi un profil nou?",
+  "profileSetupNoExistingProfile": "N-am g\u0103sit un profil existent pe relay-urile tale. Publicarea va crea un profil nou. Continu\u0103m?",
+  "profileSetupPublishButton": "Public\u0103",
+  "profileSetupUsernameTaken": "Numele tocmai a fost luat. Alege altul.",
+  "profileSetupClaimFailed": "N-am putut revendica numele. \u00cencearc\u0103 din nou.",
+  "profileSetupPublishFailed": "N-am putut publica profilul. \u00cencearc\u0103 din nou.",
+  "profileSetupDisplayNameLabel": "Nume afi\u0219at",
+  "profileSetupDisplayNameHint": "Cum s\u0103 te \u0219tie oamenii?",
+  "profileSetupDisplayNameHelper": "Orice nume sau etichet\u0103 vrei. Nu trebuie s\u0103 fie unic.",
+  "profileSetupDisplayNameRequired": "Introdu un nume afi\u0219at",
+  "profileSetupBioLabel": "Bio (op\u021bional)",
+  "profileSetupBioHint": "Spune-le oamenilor despre tine...",
+  "profileSetupPublicKeyLabel": "Cheie public\u0103 (npub)",
+  "profileSetupUsernameLabel": "Nume de utilizator (op\u021bional)",
+  "profileSetupUsernameHint": "nume-utilizator",
+  "profileSetupUsernameHelper": "Identitatea ta unic\u0103 pe Divine",
+  "profileSetupProfileColorLabel": "Culoarea profilului (op\u021bional)",
+  "profileSetupSaveButton": "Salveaz\u0103",
+  "profileSetupSavingButton": "Se salveaz\u0103...",
+  "profileSetupImageUrlTitle": "Adaug\u0103 URL de imagine",
+  "profileSetupPictureUploaded": "Poz\u0103 de profil \u00eenc\u0103rcat\u0103 cu succes!",
+  "profileSetupImageSelectionFailed": "Selectarea imaginii a e\u0219uat. Lipe\u0219te mai jos un URL de imagine.",
+  "profileSetupCameraAccessFailed": "Accesul la camer\u0103 a e\u0219uat: {error}",
+  "@profileSetupCameraAccessFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileSetupGotItButton": "Am \u00een\u021beles",
+  "profileSetupUploadFailedGeneric": "\u00cenc\u0103rcarea imaginii a e\u0219uat: {error}",
+  "@profileSetupUploadFailedGeneric": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileSetupUploadNetworkError": "Eroare de re\u021bea: verific\u0103 conexiunea la internet \u0219i \u00eencearc\u0103 din nou.",
+  "profileSetupUploadAuthError": "Eroare de autentificare: deconecteaz\u0103-te \u0219i autentific\u0103-te din nou.",
+  "profileSetupUploadFileTooLarge": "Fi\u0219ier prea mare: alege o imagine mai mic\u0103 (maxim 10MB).",
+  "profileSetupUsernameChecking": "Se verific\u0103 disponibilitatea...",
+  "profileSetupUsernameAvailable": "Numele e disponibil!",
+  "profileSetupUsernameTakenIndicator": "Numele e deja luat",
+  "profileSetupUsernameReserved": "Numele e rezervat",
+  "profileSetupContactSupport": "Contacteaz\u0103 asisten\u021ba",
+  "profileSetupCheckAgain": "Verific\u0103 din nou",
+  "profileSetupUsernameBurned": "Acest nume nu mai e disponibil",
+  "profileSetupUsernameInvalidFormat": "Sunt permise doar litere, cifre \u0219i cratime",
+  "profileSetupUsernameInvalidLength": "Numele trebuie s\u0103 aib\u0103 3-20 de caractere",
+  "profileSetupUsernameNetworkError": "N-am putut verifica disponibilitatea. \u00cencearc\u0103 din nou.",
+  "profileSetupUsernameInvalidFormatGeneric": "Format invalid de nume",
+  "profileSetupUsernameCheckFailed": "N-am putut verifica disponibilitatea",
+  "profileSetupUsernameReservedTitle": "Nume rezervat",
+  "profileSetupUsernameReservedBody": "Numele {username} e rezervat. Spune-ne de ce ar trebui s\u0103 fie al t\u0103u.",
+  "@profileSetupUsernameReservedBody": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSetupUsernameReservedHint": "ex. E brandul meu, numele de scen\u0103 etc.",
+  "profileSetupUsernameReservedCheckHint": "Ai contactat deja asisten\u021ba? Apas\u0103 pe \"Verific\u0103 din nou\" ca s\u0103 vezi dac\u0103 \u021bi-a fost eliberat.",
+  "profileSetupSupportRequestSent": "Cerere de asisten\u021b\u0103 trimis\u0103! Revenim la tine cur\u00e2nd.",
+  "profileSetupCouldntOpenEmail": "N-am putut deschide emailul. Trimite la: names@divine.video",
+  "profileSetupSendRequest": "Trimite cererea",
+  "profileSetupPickColorTitle": "Alege o culoare",
+  "profileSetupSelectButton": "Selecteaz\u0103",
+  "profileSetupUseOwnNip05": "Folose\u0219te propria ta adres\u0103 NIP-05",
+  "profileSetupNip05AddressLabel": "Adres\u0103 NIP-05",
+  "profileSetupProfilePicturePreview": "Previzualizare poz\u0103 de profil",
+  "nostrInfoIntroBuiltOn": "DiVine e construit pe Nostr,",
+  "nostrInfoIntroDescription": " un protocol deschis \u0219i rezistent la cenzur\u0103 care permite oamenilor s\u0103 comunice online f\u0103r\u0103 s\u0103 depind\u0103 de o singur\u0103 companie sau platform\u0103. ",
+  "nostrInfoIntroIdentity": "C\u00e2nd te \u00eenscrii pe Divine, prime\u0219ti o identitate Nostr nou\u0103.",
+  "nostrInfoOwnership": "Nostr \u021bi\u0163i las\u0103 \u00een posesie con\u021binutul, identitatea \u0219i graful social, pe care le po\u021bi folosi \u00een multe aplica\u021bii. Rezult\u0103 mai mult\u0103 alegere, mai pu\u021bin\u0103 dependen\u021b\u0103 \u0219i un internet social mai s\u0103n\u0103tos \u0219i mai rezilient.",
+  "nostrInfoLingo": "Jargon Nostr:",
+  "nostrInfoNpubLabel": "npub:",
+  "nostrInfoNpubDescription": " Adresa ta public\u0103 Nostr. E sigur s-o distribui \u0219i le permite altora s\u0103 te g\u0103seasc\u0103, s\u0103 te urm\u0103reasc\u0103 sau s\u0103-\u021bi trimit\u0103 mesaje pe aplica\u021bii Nostr.",
+  "nostrInfoNsecLabel": "nsec:",
+  "nostrInfoNsecDescription": " Cheia ta privat\u0103 \u0219i dovada de proprietate. \u00ce\u021bi d\u0103 control total asupra identit\u0103\u021bii tale Nostr, a\u0219a c\u0103 ",
+  "nostrInfoNsecWarning": "\u021bine-o mereu secret\u0103!",
+  "nostrInfoUsernameLabel": "Nume de utilizator Nostr:",
+  "nostrInfoUsernameDescription": " Un nume u\u0219or de citit (gen @nume.divine.video) care duce la npub-ul t\u0103u. Face identitatea ta Nostr mai u\u0219or de recunoscut \u0219i verificat, ca o adres\u0103 de email.",
+  "nostrInfoLearnMoreAt": "Afl\u0103 mai multe la ",
+  "nostrInfoGotIt": "Am \u00een\u021beles!",
+  "profileTabRefreshTooltip": "Re\u00eencarc\u0103",
+
+  "videoGridRefreshLabel": "Se caut\u0103 mai multe videoclipuri",
+  "videoGridOptionsTitle": "Op\u021biuni video",
+  "videoGridEditVideo": "Editeaz\u0103 videoclipul",
+  "videoGridEditVideoSubtitle": "Actualizeaz\u0103 titlul, descrierea \u0219i hashtagurile",
+  "videoGridDeleteVideo": "\u0218terge videoclipul",
+  "videoGridDeleteVideoSubtitle": "Elimin\u0103 definitiv acest con\u021binut",
+  "videoGridDeleteConfirmTitle": "\u0218terge videoclipul",
+  "videoGridDeleteConfirmMessage": "Sigur vrei s\u0103 \u0219tergi acest videoclip?",
+  "videoGridDeleteConfirmNote": "Asta va trimite o cerere de \u0219tergere (NIP-09) c\u0103tre toate relay-urile. Unele relay-uri pot p\u0103stra totu\u0219i con\u021binutul.",
+  "videoGridDeleteCancel": "Anuleaz\u0103",
+  "videoGridDeleteConfirm": "\u0218terge",
+  "videoGridDeletingContent": "Se \u0219terge con\u021binutul...",
+  "videoGridDeleteSuccess": "Cererea de \u0219tergere a fost trimis\u0103 cu succes",
+  "videoGridDeleteFailure": "N-am putut \u0219terge con\u021binutul: {error}",
+  "@videoGridDeleteFailure": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+
+  "exploreTabClassics": "Clasice",
+  "exploreTabNew": "Noi",
+  "exploreTabPopular": "Populare",
+  "exploreTabCategories": "Categorii",
+  "exploreTabForYou": "Pentru tine",
+  "exploreTabLists": "Liste",
+  "exploreTabIntegratedApps": "Aplica\u021bii integrate",
+  "exploreNoVideosAvailable": "Niciun videoclip disponibil",
+  "exploreErrorPrefix": "Eroare: {error}",
+  "@exploreErrorPrefix": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "exploreDiscoverLists": "Descoper\u0103 liste",
+  "exploreAboutLists": "Despre liste",
+  "exploreAboutListsDescription": "Listele te ajut\u0103 s\u0103 organizezi \u0219i s\u0103 cura\u00e2ezi con\u021binutul Divine \u00een dou\u0103 feluri:",
+  "explorePeopleLists": "Liste de oameni",
+  "explorePeopleListsDescription": "Urm\u0103re\u0219te grupuri de creatori \u0219i vezi cele mai noi videoclipuri ale lor",
+  "exploreVideoLists": "Liste de videoclipuri",
+  "exploreVideoListsDescription": "Creeaz\u0103 playlisturi cu videoclipurile preferate ca s\u0103 le vezi mai t\u00e2rziu",
+  "exploreMyLists": "Listele mele",
+  "exploreSubscribedLists": "Liste la care e\u0219ti abonat",
+  "exploreErrorLoadingLists": "Eroare la \u00eenc\u0103rcarea listelor: {error}",
+  "@exploreErrorLoadingLists": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "exploreNewVideosCount": "{count, plural, =1{1 videoclip nou} other{{count} videoclipuri noi}}",
+  "@exploreNewVideosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreLoadNewVideosLabel": "\u00cencarc\u0103 {count} {count, plural, =1{videoclip nou} other{videoclipuri noi}}",
+  "@exploreLoadNewVideosLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "videoPlayerLoadingVideo": "Se \u00eencarc\u0103 videoclipul...",
+  "videoPlayerPlayVideo": "Red\u0103 videoclipul",
+  "videoPlayerEditVideo": "Editeaz\u0103 videoclipul",
+  "videoPlayerEditVideoTooltip": "Editeaz\u0103 videoclipul",
+
+  "contentWarningLabel": "Aten\u021bionare de con\u021binut",
+  "contentWarningNudity": "Nuditate",
+  "contentWarningSexualContent": "Con\u021binut sexual",
+  "contentWarningPornography": "Pornografie",
+  "contentWarningGraphicMedia": "Imagini explicite",
+  "contentWarningViolence": "Violen\u021b\u0103",
+  "contentWarningSelfHarm": "Auto-v\u0103t\u0103mare",
+  "contentWarningDrugUse": "Consum de droguri",
+  "contentWarningAlcohol": "Alcool",
+  "contentWarningTobacco": "Tutun",
+  "contentWarningGambling": "Jocuri de noroc",
+  "contentWarningProfanity": "Limbaj vulgar",
+  "contentWarningFlashingLights": "Lumini care clipesc",
+  "contentWarningAiGenerated": "Generat de AI",
+  "contentWarningSpoiler": "Spoiler",
+  "contentWarningSensitiveContent": "Con\u021binut sensibil",
+  "contentWarningDescNudity": "Con\u021bine nuditate sau nuditate par\u021bial\u0103",
+  "contentWarningDescSexual": "Con\u021bine con\u021binut sexual",
+  "contentWarningDescPorn": "Con\u021bine con\u021binut pornografic explicit",
+  "contentWarningDescGraphicMedia": "Con\u021bine imagini explicite sau tulbur\u0103toare",
+  "contentWarningDescViolence": "Con\u021bine con\u021binut violent",
+  "contentWarningDescSelfHarm": "Con\u021bine referin\u021be la auto-v\u0103t\u0103mare",
+  "contentWarningDescDrugs": "Con\u021bine con\u021binut legat de droguri",
+  "contentWarningDescAlcohol": "Con\u021bine con\u021binut legat de alcool",
+  "contentWarningDescTobacco": "Con\u021bine con\u021binut legat de tutun",
+  "contentWarningDescGambling": "Con\u021bine con\u021binut legat de jocuri de noroc",
+  "contentWarningDescProfanity": "Con\u021bine limbaj vulgar",
+  "contentWarningDescFlashingLights": "Con\u021bine lumini care clipesc (avertisment de fotosensibilitate)",
+  "contentWarningDescAiGenerated": "Acest con\u021binut a fost generat de AI",
+  "contentWarningDescSpoiler": "Con\u021bine spoilere",
+  "contentWarningDescContentWarning": "Creatorul a marcat asta ca sensibil",
+  "contentWarningDescDefault": "Creatorul a semnalat acest con\u021binut",
+  "contentWarningDetailsTitle": "Aten\u021bion\u0103ri de con\u021binut",
+  "contentWarningDetailsSubtitle": "Creatorul a aplicat aceste etichete:",
+  "contentWarningManageFilters": "Gestioneaz\u0103 filtrele de con\u021binut",
+  "contentWarningViewAnyway": "Vezi oricum",
+  "contentWarningHideAllLikeThis": "Ascunde tot con\u021binutul de genul \u0103sta",
+  "contentWarningNoFilterYet": "\u00cenc\u0103 n-ai un filtru salvat pentru aceast\u0103 aten\u021bionare.",
+  "contentWarningHiddenConfirmation": "De acum \u00eenainte ascundem postările de genul \u0103sta.",
+
+  "videoErrorNotFound": "Videoclipul n-a fost g\u0103sit",
+  "videoErrorNetwork": "Eroare de re\u021bea",
+  "videoErrorTimeout": "Timpul de \u00eenc\u0103rcare a expirat",
+  "videoErrorFormat": "Eroare de format video\n(\u00cencearc\u0103 din nou sau folose\u0219te alt browser)",
+  "videoErrorUnsupportedFormat": "Format video nesuportat",
+  "videoErrorPlayback": "Eroare de redare video",
+  "videoErrorAgeRestricted": "Con\u021binut cu restric\u021bie de v\u00e2rst\u0103",
+  "videoErrorVerifyAge": "Verific\u0103 v\u00e2rsta",
+  "videoErrorRetry": "Re\u00eencearc\u0103",
+  "videoErrorContentRestricted": "Con\u021binut restric\u021bionat",
+  "videoErrorContentRestrictedBody": "Acest videoclip a fost restric\u021bionat de relay.",
+  "videoErrorVerifyAgeBody": "Verific\u0103-\u021bi v\u00e2rsta ca s\u0103 vezi acest videoclip.",
+  "videoErrorSkip": "Sari peste",
+  "videoErrorVerifyAgeButton": "Verific\u0103 v\u00e2rsta",
+
+  "videoFollowButtonFollowing": "Urm\u0103rit",
+  "videoFollowButtonFollow": "Urm\u0103re\u0219te",
+
+  "audioAttributionOriginalSound": "Sunet original",
+
+  "videoInspiredByAttribution": "Inspirat de @{creatorName}",
+  "@videoInspiredByAttribution": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "videoCollaboratorWithOne": "cu @{name}",
+  "@videoCollaboratorWithOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoCollaboratorWithMore": "cu @{name} +{count}",
+  "@videoCollaboratorWithMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoCollaboratorCountLabel": "{count, plural, =1{1 colaborator} other{{count} colaboratori}}. Atinge pentru a vedea profilul.",
+  "@videoCollaboratorCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "listAttributionFallback": "List\u0103",
+
+  "shareVideoLabel": "Partajeaz\u0103 videoclipul",
+  "sharePostSharedWith": "Postare partajat\u0103 cu {recipientName}",
+  "@sharePostSharedWith": {
+    "placeholders": {
+      "recipientName": {
+        "type": "String"
+      }
+    }
+  },
+  "shareFailedToSend": "N-am putut trimite videoclipul",
+  "shareAddedToBookmarks": "Ad\u0103ugat la semne de carte",
+  "shareFailedToAddBookmark": "N-am putut ad\u0103uga semnul de carte",
+  "shareActionFailed": "Ac\u021biunea a e\u0219uat",
+  "shareWithTitle": "Partajeaz\u0103 cu",
+  "shareFindPeople": "G\u0103se\u0219te oameni",
+  "shareFindPeopleMultiline": "G\u0103se\u0219te\noameni",
+  "shareSent": "Trimis",
+  "shareContactFallback": "Contact",
+  "shareUserFallback": "Utilizator",
+  "shareSendingTo": "Se trimite c\u0103tre {name}",
+  "@shareSendingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMessageHint": "Adaug\u0103 un mesaj op\u021bional...",
+
+  "videoActionUnlike": "Retrage aprecierea",
+  "videoActionLike": "Apreciaz\u0103 videoclipul",
+  "videoActionRemoveRepost": "Elimin\u0103 redistribuirea",
+  "videoActionRepost": "Redistribuie videoclipul",
+  "videoActionViewComments": "Vezi comentariile",
+  "videoActionMoreOptions": "Mai multe op\u021biuni",
+  "videoActionHideSubtitles": "Ascunde subtitr\u0103rile",
+  "videoActionShowSubtitles": "Arat\u0103 subtitr\u0103rile",
+
+  "videoDescriptionLoops": "{count} bucle",
+  "@videoDescriptionLoops": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+
+  "metadataBadgeNotDivine": "Nu e Divine",
+  "metadataBadgeHumanMade": "F\u0103cut de om",
+  "metadataSoundsLabel": "Sunete",
+  "metadataOriginalSound": "Sunet original",
+  "metadataVerificationLabel": "Verificare",
+  "metadataDeviceAttestation": "Atestare de dispozitiv",
+  "metadataProofManifest": "Manifest de dovezi",
+  "metadataCreatorLabel": "Creator",
+  "metadataCollaboratorsLabel": "Colaboratori",
+  "metadataInspiredByLabel": "Inspirat de",
+  "metadataRepostedByLabel": "Redistribuit de",
+  "metadataLoopsLabel": "Bucle",
+  "metadataLikesLabel": "Aprecieri",
+  "metadataCommentsLabel": "Comentarii",
+  "metadataRepostsLabel": "Redistribuiri",
+
+  "devOptionsTitle": "Op\u021biuni dezvoltator",
+  "@devOptionsTitle": {
+    "description": "Developer options screen app bar title"
+  },
+  "devOptionsPageLoadTimes": "Timpi de \u00eenc\u0103rcare a paginilor",
+  "devOptionsNoPageLoads": "Nicio \u00eenc\u0103rcare de pagin\u0103 \u00eenregistrat\u0103 \u00eenc\u0103.\nNavigheaz\u0103 prin aplica\u021bie ca s\u0103 vezi datele de timing.",
+  "devOptionsPageLoadVisible": "Vizibil: {visibleMs}ms  |  Date: {dataMs}ms",
+  "@devOptionsPageLoadVisible": {
+    "placeholders": {
+      "visibleMs": { "type": "String" },
+      "dataMs": { "type": "String" }
+    }
+  },
+  "devOptionsSlowestScreens": "Cele mai lente ecrane",
+  "devOptionsVideoPlaybackFormat": "Format de redare video",
+  "devOptionsSwitchEnvironmentTitle": "Schimbi mediul?",
+  "devOptionsSwitchEnvironmentMessage": "Schimbi la {envName}?\n\nAsta va \u0219terge datele video din cache \u0219i se va reconecta la noul relay.",
+  "@devOptionsSwitchEnvironmentMessage": {
+    "placeholders": {
+      "envName": { "type": "String" }
+    }
+  },
+  "devOptionsCancel": "Anuleaz\u0103",
+  "devOptionsSwitch": "Schimb\u0103",
+  "devOptionsSwitchedTo": "Schimbat la {envName}",
+  "@devOptionsSwitchedTo": {
+    "placeholders": {
+      "envName": { "type": "String" }
+    }
+  },
+  "devOptionsSwitchedFormat": "Schimbat la {formatName} \u2014 cache \u0219ters",
+  "@devOptionsSwitchedFormat": {
+    "placeholders": {
+      "formatName": { "type": "String" }
+    }
+  },
+
+  "featureFlagTitle": "Indicatoare de func\u021bii",
+  "@featureFlagTitle": {
+    "description": "Feature flags screen app bar title"
+  },
+  "featureFlagResetAllTooltip": "Reseteaz\u0103 toate indicatoarele la valorile implicite",
+  "featureFlagResetToDefault": "Reseteaz\u0103 la valoarea implicit\u0103",
+  "featureFlagAppRecovery": "Recuperare aplica\u021bie",
+  "featureFlagAppRecoveryDescription": "Dac\u0103 aplica\u021bia se blocheaz\u0103 sau se comport\u0103 ciudat, \u00eencearc\u0103 s\u0103 goli cache-ul.",
+  "featureFlagClearAllCache": "Gole\u0219te tot cache-ul",
+  "featureFlagCacheInfo": "Informa\u021bii cache",
+  "featureFlagClearCacheTitle": "Gole\u0219ti tot cache-ul?",
+  "featureFlagClearCacheMessage": "Asta va \u0219terge toate datele din cache, inclusiv:\n\u2022 Notific\u0103ri\n\u2022 Profiluri de utilizator\n\u2022 Semne de carte\n\u2022 Fi\u0219iere temporare\n\nVa trebui s\u0103 te autentifici din nou. Continu\u0103m?",
+  "featureFlagClearCache": "Gole\u0219te cache-ul",
+  "featureFlagClearingCache": "Se gole\u0219te cache-ul...",
+  "featureFlagSuccess": "Succes",
+  "featureFlagError": "Eroare",
+  "featureFlagClearCacheSuccess": "Cache-ul a fost golit cu succes. Reporne\u0219te aplica\u021bia.",
+  "featureFlagClearCacheFailure": "Unele elemente din cache n-au putut fi \u0219terse. Verific\u0103 jurnalele pentru detalii.",
+  "featureFlagOk": "OK",
+  "featureFlagCacheInformation": "Informa\u021bii despre cache",
+  "featureFlagTotalCacheSize": "Dimensiunea total\u0103 a cache-ului: {size}",
+  "@featureFlagTotalCacheSize": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "featureFlagCacheIncludes": "Cache-ul include:\n\u2022 Istoricul notific\u0103rilor\n\u2022 Datele profilurilor de utilizator\n\u2022 Miniaturi video\n\u2022 Fi\u0219iere temporare\n\u2022 Indexuri de baze de date",
+
+  "relaySettingsTitle": "Relay-uri",
+  "@relaySettingsTitle": {
+    "description": "Relay settings screen app bar title"
+  },
+  "relaySettingsInfoTitle": "Divine e un sistem deschis - tu \u00e2\u021bi controlezi conexiunile",
+  "relaySettingsInfoDescription": "Aceste relay-uri distribuie con\u021binutul t\u0103u prin re\u021beaua descentralizat\u0103 Nostr. Po\u021bi ad\u0103uga sau elimina relay-uri dup\u0103 cum vrei.",
+  "relaySettingsLearnMoreNostr": "Afl\u0103 mai multe despre Nostr \u2192",
+  "relaySettingsFindPublicRelays": "G\u0103se\u0219te relay-uri publice la nostr.co.uk \u2192",
+  "relaySettingsAppNotFunctional": "Aplica\u021bia nu e func\u021bional\u0103",
+  "relaySettingsRequiresRelay": "Divine are nevoie de cel pu\u021bin un relay ca s\u0103 \u00eencarce videoclipuri, s\u0103 publice con\u021binut \u0219i s\u0103 sincronizeze date.",
+  "relaySettingsRestoreDefaultRelay": "Restabile\u0219te relay-ul implicit",
+  "relaySettingsAddCustomRelay": "Adaug\u0103 relay personalizat",
+  "relaySettingsAddRelay": "Adaug\u0103 relay",
+  "relaySettingsRetry": "Re\u00eencearc\u0103",
+  "relaySettingsNoStats": "\u00cenc\u0103 nicio statistic\u0103 disponibil\u0103",
+  "relaySettingsConnection": "Conexiune",
+  "relaySettingsConnected": "Conectat",
+  "relaySettingsDisconnected": "Deconectat",
+  "relaySettingsSessionDuration": "Durata sesiunii",
+  "relaySettingsLastConnected": "Ultima conectare",
+  "relaySettingsDisconnectedLabel": "Deconectat",
+  "relaySettingsReason": "Motiv",
+  "relaySettingsActiveSubscriptions": "Abon\u0103ri active",
+  "relaySettingsTotalSubscriptions": "Total abon\u0103ri",
+  "relaySettingsEventsReceived": "Evenimente primite",
+  "relaySettingsEventsSent": "Evenimente trimise",
+  "relaySettingsRequestsThisSession": "Cereri \u00een aceast\u0103 sesiune",
+  "relaySettingsFailedRequests": "Cereri e\u0219uate",
+  "relaySettingsLastError": "Ultima eroare: {error}",
+  "@relaySettingsLastError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "relaySettingsLoadingRelayInfo": "Se \u00eencarc\u0103 informa\u021biile despre relay...",
+  "relaySettingsAboutRelay": "Despre relay",
+  "relaySettingsSupportedNips": "NIP-uri suportate",
+  "relaySettingsSoftware": "Software",
+  "relaySettingsViewWebsite": "Vezi site-ul",
+  "relaySettingsRemoveRelayTitle": "Elimini relay-ul?",
+  "relaySettingsRemoveRelayMessage": "Sigur vrei s\u0103 elimini acest relay?\n\n{relayUrl}",
+  "@relaySettingsRemoveRelayMessage": {
+    "placeholders": {
+      "relayUrl": { "type": "String" }
+    }
+  },
+  "relaySettingsCancel": "Anuleaz\u0103",
+  "relaySettingsRemove": "Elimin\u0103",
+  "relaySettingsRemovedRelay": "Relay eliminat: {relayUrl}",
+  "@relaySettingsRemovedRelay": {
+    "placeholders": {
+      "relayUrl": { "type": "String" }
+    }
+  },
+  "relaySettingsFailedToRemoveRelay": "N-am putut elimina relay-ul",
+  "relaySettingsForcingReconnection": "Se for\u021beaz\u0103 reconectarea la relay...",
+  "relaySettingsConnectedToRelays": "Conectat la {count, plural, one{1 relay} few{{count} relay-uri} other{{count} de relay-uri}}!",
+  "@relaySettingsConnectedToRelays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "relaySettingsFailedToConnectCheck": "N-am putut conecta la relay-uri. Verific\u0103-\u021bi conexiunea la re\u021bea.",
+  "relaySettingsAddRelayTitle": "Adaug\u0103 relay",
+  "relaySettingsAddRelayPrompt": "Introdu URL-ul WebSocket al relay-ului pe care vrei s\u0103-l adaugi:",
+  "relaySettingsBrowsePublicRelays": "R\u0103sfoie\u0219te relay-urile publice la nostr.co.uk",
+  "relaySettingsAdd": "Adaug\u0103",
+  "relaySettingsAddedRelay": "Relay ad\u0103ugat: {relayUrl}",
+  "@relaySettingsAddedRelay": {
+    "placeholders": {
+      "relayUrl": { "type": "String" }
+    }
+  },
+  "relaySettingsFailedToAddRelay": "N-am putut ad\u0103uga relay-ul. Verific\u0103 URL-ul \u0219i \u00eencearc\u0103 din nou.",
+  "relaySettingsInvalidUrl": "URL-ul relay-ului trebuie s\u0103 \u00eenceap\u0103 cu wss:// sau ws://",
+  "relaySettingsRestoredDefault": "Relay-ul implicit a fost restabilit: {defaultRelay}",
+  "@relaySettingsRestoredDefault": {
+    "placeholders": {
+      "defaultRelay": { "type": "String" }
+    }
+  },
+  "relaySettingsFailedToRestoreDefault": "N-am putut restabili relay-ul implicit. Verific\u0103-\u021bi conexiunea la re\u021bea.",
+  "relaySettingsCouldNotOpenBrowser": "N-am putut deschide browserul",
+  "relaySettingsFailedToOpenLink": "N-am putut deschide linkul",
+
+  "relayDiagnosticTitle": "Diagnostice relay",
+  "@relayDiagnosticTitle": {
+    "description": "Relay diagnostics screen app bar title"
+  },
+  "relayDiagnosticRefreshTooltip": "Re\u00eencarc\u0103 diagnosticele",
+  "relayDiagnosticLastRefresh": "Ultima re\u00eencarcare: {time}",
+  "@relayDiagnosticLastRefresh": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "relayDiagnosticRelayStatus": "Stare relay",
+  "relayDiagnosticInitialized": "Ini\u021bializat",
+  "relayDiagnosticReady": "Gata",
+  "relayDiagnosticNotInitialized": "Neini\u021bializat",
+  "relayDiagnosticDatabaseEvents": "Evenimente din baza de date",
+  "relayDiagnosticActiveSubscriptions": "Abon\u0103ri active",
+  "relayDiagnosticExternalRelays": "Relay-uri externe",
+  "relayDiagnosticConfigured": "Configurat",
+  "relayDiagnosticRelayCount": "{count, plural, one{1 relay} few{{count} relay-uri} other{{count} de relay-uri}}",
+  "@relayDiagnosticRelayCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "relayDiagnosticConnectedLabel": "Conectat",
+  "relayDiagnosticConnectedRatio": "{connected}/{total}",
+  "@relayDiagnosticConnectedRatio": {
+    "placeholders": {
+      "connected": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "relayDiagnosticVideoEvents": "Evenimente video",
+  "relayDiagnosticHomeFeed": "Feed principal",
+  "relayDiagnosticVideosCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
+  "@relayDiagnosticVideosCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "relayDiagnosticDiscovery": "Descoperire",
+  "relayDiagnosticLoading": "Se \u00eencarc\u0103",
+  "relayDiagnosticYes": "Da",
+  "relayDiagnosticNo": "Nu",
+  "relayDiagnosticTestDirectQuery": "Testeaz\u0103 interogarea direct\u0103",
+  "relayDiagnosticNetworkConnectivity": "Conectivitate re\u021bea",
+  "relayDiagnosticRunNetworkTest": "Ruleaz\u0103 testul de re\u021bea",
+  "relayDiagnosticBlossomServer": "Server Blossom",
+  "relayDiagnosticTestAllEndpoints": "Testeaz\u0103 toate endpoint-urile",
+  "relayDiagnosticStatus": "Stare",
+  "relayDiagnosticUrl": "URL",
+  "relayDiagnosticError": "Eroare",
+  "relayDiagnosticFunnelCakeApi": "API FunnelCake",
+  "relayDiagnosticBaseUrl": "URL de baz\u0103",
+  "relayDiagnosticSummary": "Sumar",
+  "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (medie {avgMs}ms)",
+  "@relayDiagnosticEndpointSummary": {
+    "placeholders": {
+      "successCount": { "type": "int" },
+      "totalCount": { "type": "int" },
+      "avgMs": { "type": "int" }
+    }
+  },
+  "relayDiagnosticRetestAll": "Retesteaz\u0103 tot",
+  "relayDiagnosticRetrying": "Se re\u00eencearc\u0103...",
+  "relayDiagnosticRetryConnection": "Re\u00eencearc\u0103 conexiunea",
+  "relayDiagnosticTroubleshooting": "Depanare",
+  "relayDiagnosticTroubleshootingGuide": "\u2022 Stare verde = Conectat \u0219i func\u021bional\n\u2022 Stare ro\u0219ie = Conexiunea a e\u0219uat\n\u2022 Dac\u0103 testul de re\u021bea e\u0219ueaz\u0103, verific\u0103 conexiunea la internet\n\u2022 Dac\u0103 relay-urile sunt configurate dar neconectate, apas\u0103 \"Re\u00eencearc\u0103 conexiunea\"\n\u2022 F\u0103 o captur\u0103 de ecran pentru depanare",
+  "relayDiagnosticAllEndpointsHealthy": "Toate endpoint-urile REST sunt s\u0103n\u0103toase!",
+  "relayDiagnosticSomeEndpointsFailed": "Unele endpoint-uri REST au e\u0219uat - vezi detaliile mai sus",
+  "relayDiagnosticFoundVideoEvents": "Am g\u0103sit {count, plural, one{1 eveniment video} few{{count} evenimente video} other{{count} de evenimente video}} \u00een baza de date",
+  "@relayDiagnosticFoundVideoEvents": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "relayDiagnosticQueryFailed": "Interogarea a e\u0219uat: {error}",
+  "@relayDiagnosticQueryFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "relayDiagnosticConnectedToRelays": "Conectat la {count, plural, one{1 relay} few{{count} relay-uri} other{{count} de relay-uri}}!",
+  "@relayDiagnosticConnectedToRelays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "relayDiagnosticFailedToConnect": "N-am putut conecta la niciun relay",
+  "relayDiagnosticConnectionRetryFailed": "Re\u00eencercarea conexiunii a e\u0219uat: {error}",
+  "@relayDiagnosticConnectionRetryFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "relayDiagnosticConnectedAuthenticated": "Conectat \u0219i autentificat",
+  "relayDiagnosticConnectedOnly": "Conectat",
+  "relayDiagnosticNotConnected": "Neconectat",
+  "relayDiagnosticNoRelaysConfigured": "Niciun relay configurat",
+  "relayDiagnosticFailed": "E\u0219uat",
+
+  "notificationSettingsTitle": "Notific\u0103ri",
+  "@notificationSettingsTitle": {
+    "description": "Notification settings screen app bar title"
+  },
+  "notificationSettingsResetTooltip": "Reseteaz\u0103 la valorile implicite",
+  "notificationSettingsTypes": "Tipuri de notific\u0103ri",
+  "notificationSettingsLikes": "Aprecieri",
+  "notificationSettingsLikesSubtitle": "C\u00e2nd cineva \u00e2\u021bi apreciaz\u0103 videoclipurile",
+  "notificationSettingsComments": "Comentarii",
+  "notificationSettingsCommentsSubtitle": "C\u00e2nd cineva comenteaz\u0103 la videoclipurile tale",
+  "notificationSettingsFollows": "Urm\u0103riri",
+  "notificationSettingsFollowsSubtitle": "C\u00e2nd cineva te urm\u0103re\u0219te",
+  "notificationSettingsMentions": "Men\u021bion\u0103ri",
+  "notificationSettingsMentionsSubtitle": "C\u00e2nd e\u0219ti men\u021bionat",
+  "notificationSettingsReposts": "Redistribuiri",
+  "notificationSettingsRepostsSubtitle": "C\u00e2nd cineva \u00e2\u021bi redistribuie videoclipurile",
+  "notificationSettingsSystem": "Sistem",
+  "notificationSettingsSystemSubtitle": "Actualiz\u0103ri de aplica\u021bie \u0219i mesaje de sistem",
+  "notificationSettingsPushNotificationsSection": "Notific\u0103ri push",
+  "notificationSettingsPushNotifications": "Notific\u0103ri push",
+  "notificationSettingsPushNotificationsSubtitle": "Prime\u0219te notific\u0103ri c\u00e2nd aplica\u021bia e \u00eenchis\u0103",
+  "notificationSettingsSound": "Sunet",
+  "notificationSettingsSoundSubtitle": "Red\u0103 sunet pentru notific\u0103ri",
+  "notificationSettingsVibration": "Vibra\u021bie",
+  "notificationSettingsVibrationSubtitle": "Vibreaz\u0103 pentru notific\u0103ri",
+  "notificationSettingsActions": "Ac\u021biuni",
+  "notificationSettingsMarkAllAsRead": "Marcheaz\u0103 toate ca citite",
+  "notificationSettingsMarkAllAsReadSubtitle": "Marcheaz\u0103 toate notific\u0103rile ca citite",
+  "notificationSettingsAllMarkedAsRead": "Toate notific\u0103rile au fost marcate ca citite",
+  "notificationSettingsResetToDefaults": "Set\u0103rile au fost resetate la valorile implicite",
+  "notificationSettingsAbout": "Despre notific\u0103ri",
+  "notificationSettingsAboutDescription": "Notific\u0103rile sunt alimentate de protocolul Nostr. Actualiz\u0103rile \u00een timp real depind de conexiunea ta la relay-urile Nostr. Unele notific\u0103ri pot avea \u00eent\u00e2rzieri.",
+
+  "safetySettingsTitle": "Siguran\u021b\u0103 \u0219i confiden\u021bialitate",
+  "@safetySettingsTitle": {
+    "description": "Safety settings screen app bar title"
+  },
+  "safetySettingsLabel": "SET\u0102RI",
+  "safetySettingsShowDivineHostedOnly": "Arat\u0103 doar videoclipurile g\u0103zduite de Divine",
+  "safetySettingsShowDivineHostedOnlySubtitle": "Ascunde videoclipurile servite de alte g\u0103zduiri media",
+  "safetySettingsModeration": "MODERARE",
+  "safetySettingsBlockedUsers": "UTILIZATORI BLOCA\u021aI",
+  "safetySettingsAgeVerification": "VERIFICARE V\u00c2RST\u0102",
+  "safetySettingsAgeConfirmation": "Confirm c\u0103 am 18 ani sau mai mult",
+  "safetySettingsAgeRequired": "Necesar pentru a vedea con\u021binut pentru adul\u021bi",
+  "safetySettingsDivine": "Divine",
+  "safetySettingsDivineSubtitle": "Serviciu oficial de moderare (activat implicit)",
+  "safetySettingsPeopleIFollow": "Oameni pe care \u00e2i urm\u0103resc",
+  "safetySettingsPeopleIFollowSubtitle": "Aboneaz\u0103-te la etichete de la oameni pe care \u00e2i urm\u0103re\u0219ti",
+  "safetySettingsAddCustomLabeler": "Adaug\u0103 etichetator personalizat",
+  "safetySettingsAddCustomLabelerHint": "Introdu npub...",
+  "safetySettingsAddCustomLabelerListTitle": "Adaug\u0103 etichetator personalizat",
+  "safetySettingsAddCustomLabelerListSubtitle": "Introdu adresa npub",
+  "safetySettingsNoBlockedUsers": "Niciun utilizator blocat",
+  "safetySettingsUnblock": "Deblocheaz\u0103",
+  "safetySettingsUserUnblocked": "Utilizator deblocat",
+  "safetySettingsCancel": "Anuleaz\u0103",
+  "safetySettingsAdd": "Adaug\u0103",
+
+  "analyticsTitle": "Statistici creator",
+  "@analyticsTitle": {
+    "description": "Creator analytics screen app bar title"
+  },
+  "analyticsDiagnosticsTooltip": "Diagnostice",
+  "analyticsDiagnosticsSemanticLabel": "Comut\u0103 diagnosticele",
+  "analyticsRetry": "Re\u00eencearc\u0103",
+  "analyticsUnableToLoad": "Nu am putut \u00eenc\u0103rca statisticile.",
+  "analyticsSignInRequired": "Autentific\u0103-te ca s\u0103 vezi statisticile pentru creatori.",
+  "analyticsViewDataUnavailable": "Vizualiz\u0103rile nu sunt disponibile momentan de la relay pentru aceste postări. Metricile de aprecieri/comentarii/redistribuiri sunt totu\u0219i corecte.",
+  "analyticsViewDataTitle": "Date vizualiz\u0103ri",
+  "analyticsUpdatedTimestamp": "Actualizat {time} \u2022 Scorurile folosesc aprecieri, comentarii, redistribuiri \u0219i vizualiz\u0103ri/bucle de la Funnelcake c\u00e2nd sunt disponibile.",
+  "@analyticsUpdatedTimestamp": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "analyticsVideos": "Videoclipuri",
+  "analyticsViews": "Vizualiz\u0103ri",
+  "analyticsInteractions": "Interac\u021biuni",
+  "analyticsEngagement": "Implicare",
+  "analyticsFollowers": "Urm\u0103ritori",
+  "analyticsAvgPerPost": "Medie/Postare",
+  "analyticsInteractionMix": "Mixul interac\u021biunilor",
+  "analyticsLikes": "Aprecieri",
+  "analyticsComments": "Comentarii",
+  "analyticsReposts": "Redistribuiri",
+  "analyticsPerformanceHighlights": "Repere de performan\u021b\u0103",
+  "analyticsMostViewed": "Cele mai vizualizate",
+  "analyticsMostDiscussed": "Cele mai discutate",
+  "analyticsMostReposted": "Cele mai redistribuite",
+  "analyticsNoVideosYet": "\u00cenc\u0103 niciun videoclip",
+  "analyticsViewDataUnavailableShort": "Date de vizualizare indisponibile",
+  "analyticsViewsCount": "{count} vizualiz\u0103ri",
+  "@analyticsViewsCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "analyticsCommentsCount": "{count} comentarii",
+  "@analyticsCommentsCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "analyticsRepostsCount": "{count} redistribuiri",
+  "@analyticsRepostsCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "analyticsTopContent": "Con\u021binut de top",
+  "analyticsPublishPrompt": "Public\u0103 c\u00e2teva videoclipuri ca s\u0103 vezi clasamentele.",
+  "analyticsEngagementRateExplainer": "Procentul din dreapta = Rata de implicare (interac\u021biuni \u00eemp\u0103r\u021bite la vizualiz\u0103ri).",
+  "analyticsEngagementRateNoViews": "Rata de implicare are nevoie de date de vizualizare; valorile apar ca N/A p\u00e2n\u0103 c\u00e2nd sunt disponibile vizualiz\u0103rile.",
+  "analyticsEngagementLabel": "Implicare",
+  "analyticsViewsUnavailable": "vizualiz\u0103ri indisponibile",
+  "analyticsInteractionsCount": "{count} interac\u021biuni",
+  "@analyticsInteractionsCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "analyticsPostAnalytics": "Statistici postare",
+  "analyticsOpenPost": "Deschide postarea",
+  "analyticsRecentDailyInteractions": "Interac\u021biuni zilnice recente",
+  "analyticsNoActivityYet": "\u00cenc\u0103 nicio activitate \u00een acest interval.",
+  "analyticsDailyInteractionsExplainer": "Interac\u021biuni = aprecieri + comentarii + redistribuiri dup\u0103 data postării.",
+  "analyticsDailyBarExplainer": "Lungimea barei e relativ\u0103 la cea mai bun\u0103 zi a ta din aceast\u0103 fereastr\u0103.",
+  "analyticsAudienceSnapshot": "Instantaneu audien\u021b\u0103",
+  "analyticsFollowersCount": "Urm\u0103ritori: {count}",
+  "@analyticsFollowersCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "analyticsFollowingCount": "Urm\u0103ri\u021bi: {count}",
+  "@analyticsFollowingCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "analyticsAudiencePlaceholder": "Detaliile despre sursa/geografia/timpul audien\u021bei se vor popula pe m\u0103sur\u0103 ce Funnelcake adaug\u0103 endpoint-uri de statistici de audien\u021b\u0103.",
+  "analyticsRetention": "Reten\u021bie",
+  "analyticsRetentionWithViews": "Curba de reten\u021bie \u0219i defalcarea timpului de vizionare vor ap\u0103rea odat\u0103 ce reten\u021bia per secund\u0103/bucket\u0103 ajunge de la Funnelcake.",
+  "analyticsRetentionWithoutViews": "Datele de reten\u021bie sunt indisponibile p\u00e2n\u0103 c\u00e2nd statisticile de vizualiz\u0103ri+timp de vizionare sunt returnate de Funnelcake.",
+  "analyticsDiagnostics": "Diagnostice",
+  "analyticsDiagnosticsTotalVideos": "Total videoclipuri: {count}",
+  "@analyticsDiagnosticsTotalVideos": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "analyticsDiagnosticsWithViews": "Cu vizualiz\u0103ri: {count}",
+  "@analyticsDiagnosticsWithViews": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "analyticsDiagnosticsMissingViews": "F\u0103r\u0103 vizualiz\u0103ri: {count}",
+  "@analyticsDiagnosticsMissingViews": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "analyticsDiagnosticsHydratedBulk": "Hidratate (bulk): {count}",
+  "@analyticsDiagnosticsHydratedBulk": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "analyticsDiagnosticsHydratedViews": "Hidratate (/views): {count}",
+  "@analyticsDiagnosticsHydratedViews": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "analyticsDiagnosticsSources": "Surse: {sources}",
+  "@analyticsDiagnosticsSources": {
+    "placeholders": {
+      "sources": { "type": "String" }
+    }
+  },
+  "analyticsDiagnosticsUseFixture": "Folose\u0219te date de test",
+  "analyticsNa": "N/A",
+
+  "authCreateNewAccount": "Creeaz\u0103 un cont Divine nou",
+  "authSignInDifferentAccount": "Autentific\u0103-te cu un alt cont",
+  "authSignBackIn": "Reautentific\u0103-te",
+  "authTermsPrefix": "Selec\u021bion\u00e2nd o op\u021biune de mai sus, confirmi c\u0103 ai cel pu\u021bin 16 ani \u0219i e\u0219ti de acord cu ",
+  "authTermsOfService": "Termenii serviciului",
+  "authPrivacyPolicy": "Politica de confiden\u021bialitate",
+  "authTermsAnd": ", \u0219i ",
+  "authSafetyStandards": "Standardele de siguran\u021b\u0103",
+  "authAmberNotInstalled": "Aplica\u021bia Amber nu e instalat\u0103",
+  "authAmberConnectionFailed": "N-am putut conecta cu Amber",
+  "authPasswordResetSent": "Dac\u0103 exist\u0103 un cont cu acel email, am trimis un link de resetare a parolei.",
+  "authSignInTitle": "Autentificare",
+  "authEmailLabel": "Email",
+  "authPasswordLabel": "Parol\u0103",
+  "authForgotPassword": "Ai uitat parola?",
+  "authImportNostrKey": "Import\u0103 cheia Nostr",
+  "authConnectSignerApp": "Conecteaz\u0103 o aplica\u021bie de semnare",
+  "authSignInWithAmber": "Autentific\u0103-te cu Amber",
+  "authSignInOptionsTitle": "Op\u021biuni de autentificare",
+  "authInfoEmailPasswordTitle": "Email \u0219i parol\u0103",
+  "authInfoEmailPasswordDescription": "Autentific\u0103-te cu contul t\u0103u Divine. Dac\u0103 te-ai \u00eenregistrat cu email \u0219i parol\u0103, folose\u0219te-le aici.",
+  "authInfoImportNostrKeyDescription": "Ai deja o identitate Nostr? Import\u0103 cheia ta privat\u0103 nsec dintr-un alt client.",
+  "authInfoSignerAppTitle": "Aplica\u021bie de semnare",
+  "authInfoSignerAppDescription": "Conecteaz\u0103-te cu un semnatar la distan\u021b\u0103 compatibil NIP-46 cum ar fi nsecBunker pentru securitate sporit\u0103 a cheilor.",
+  "authInfoAmberTitle": "Amber",
+  "authInfoAmberDescription": "Folose\u0219te aplica\u021bia de semnare Amber pe Android ca s\u0103 gestionezi cheile tale Nostr \u00een siguran\u021b\u0103.",
+  "authCreateAccountTitle": "Creeaz\u0103 cont",
+  "authBackToInviteCode": "\u00cenapoi la codul de invita\u021bie",
+  "authUseDivineNoBackup": "Folose\u0219te Divine f\u0103r\u0103 backup",
+  "authSkipConfirmTitle": "Un ultim lucru...",
+  "authSkipConfirmKeyCreated": "E\u0219ti \u00een\u0103untru! Cre\u0103m o cheie sigur\u0103 care va alimenta contul t\u0103u Divine.",
+  "authSkipConfirmKeyOnly": "F\u0103r\u0103 email, cheia ta e singurul mod prin care Divine \u0219tie c\u0103 acest cont e al t\u0103u.",
+  "authSkipConfirmRecommendEmail": "Po\u021bi accesa cheia \u00een aplica\u021bie, dar, dac\u0103 nu e\u0219ti tehnic, recomand\u0103m s\u0103 adaugi un email \u0219i o parol\u0103 acum. Face mai u\u0219oar\u0103 autentificarea \u0219i restabilirea contului dac\u0103 pierzi sau resetezi dispozitivul.",
+  "authAddEmailPassword": "Adaug\u0103 email \u0219i parol\u0103",
+  "authUseThisDeviceOnly": "Folose\u0219te doar acest dispozitiv",
+  "authCompleteRegistration": "Finalizeaz\u0103-\u021bi \u00eenregistrarea",
+  "authVerifying": "Se verific\u0103...",
+  "authVerificationLinkSent": "Am trimis un link de verificare la:",
+  "authClickVerificationLink": "Apas\u0103 linkul din email ca\ns\u0103 finalizezi \u00eenregistrarea.",
+  "authPleaseWaitVerifying": "Te rug\u0103m s\u0103 a\u0219tep\u021bi c\u00e2t \u00e2\u021bi verific\u0103m emailul...",
+  "authWaitingForVerification": "Se a\u0219teapt\u0103 verificarea",
+  "authOpenEmailApp": "Deschide aplica\u021bia de email",
+  "authWelcomeToDivine": "Bun venit pe Divine!",
+  "authEmailVerified": "Emailul t\u0103u a fost verificat.",
+  "authSigningYouIn": "Te autentific\u0103m",
+  "authErrorTitle": "Ups.",
+  "authVerificationFailed": "N-am reu\u0219it s\u0103-\u021bi verific\u0103m emailul.\n\u00cencearc\u0103 din nou.",
+  "authStartOver": "\u00cencepe din nou",
+  "authEmailVerifiedLogin": "Email verificat! Autentific\u0103-te ca s\u0103 continui.",
+  "authVerificationLinkExpired": "Acest link de verificare nu mai e valid.",
+  "authVerificationConnectionError": "Nu am putut verifica emailul. Verific\u0103-\u021bi conexiunea \u0219i \u00eencearc\u0103 din nou.",
+  "authWaitlistConfirmTitle": "E\u0219ti \u00een\u0103untru!",
+  "authWaitlistUpdatesAt": "Vom da nout\u0103\u021bi la {email}.\nC\u00e2nd apar mai multe coduri de invita\u021bie, \u021bi le trimitem.",
+  "@authWaitlistUpdatesAt": {
+    "description": "Waitlist confirmation message with email",
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "authOk": "OK",
+  "authInviteUnavailable": "Accesul prin invita\u021bie e temporar indisponibil.",
+  "authInviteUnavailableBody": "\u00cencearc\u0103 din nou \u00eentr-un moment, sau contacteaz\u0103 asisten\u021ba dac\u0103 ai nevoie de ajutor ca s\u0103 intri.",
+  "authTryAgain": "\u00cencearc\u0103 din nou",
+  "authContactSupport": "Contacteaz\u0103 asisten\u021ba",
+  "authCouldNotOpenEmail": "N-am putut deschide {email}",
+  "@authCouldNotOpenEmail": {
+    "description": "Error when email client cannot be opened",
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "authAddInviteCode": "Adaug\u0103 codul de invita\u021bie",
+  "authInviteCodeLabel": "Cod de invita\u021bie",
+  "authEnterYourCode": "Introdu codul t\u0103u",
+  "authNext": "Mai departe",
+  "authJoinWaitlist": "Al\u0103tur\u0103-te listei de a\u0219teptare",
+  "authJoinWaitlistTitle": "Al\u0103tur\u0103-te listei de a\u0219teptare",
+  "authJoinWaitlistDescription": "D\u0103-ne emailul t\u0103u \u0219i \u00e2\u021bi vom trimite nout\u0103\u021bi pe m\u0103sur\u0103 ce se deschide accesul.",
+  "authInviteAccessHelp": "Ajutor pentru accesul prin invita\u021bie",
+  "authGeneratingConnection": "Se genereaz\u0103 conexiunea...",
+  "authConnectedAuthenticating": "Conectat! Se autentific\u0103...",
+  "authConnectionTimedOut": "Conexiunea a expirat",
+  "authApproveConnection": "Asigur\u0103-te c\u0103 ai aprobat conexiunea \u00een aplica\u021bia ta de semnare.",
+  "authConnectionCancelled": "Conexiune anulat\u0103",
+  "authConnectionCancelledMessage": "Conexiunea a fost anulat\u0103.",
+  "authConnectionFailed": "Conexiunea a e\u0219uat",
+  "authUnknownError": "A ap\u0103rut o eroare necunoscut\u0103.",
+  "authUrlCopied": "URL copiat \u00een clipboard",
+  "authConnectToDivine": "Conecteaz\u0103-te la Divine",
+  "authPasteBunkerUrl": "Lipe\u0219te URL-ul bunker://",
+  "authBunkerUrlHint": "URL bunker://",
+  "authInvalidBunkerUrl": "URL bunker invalid. Ar trebui s\u0103 \u00eenceap\u0103 cu bunker://",
+  "authScanSignerApp": "Scaneaz\u0103 cu aplica\u021bia ta\nde semnare ca s\u0103 te conectezi.",
+  "authWaitingForConnection": "Se a\u0219teapt\u0103 conexiunea... {seconds}s",
+  "@authWaitingForConnection": {
+    "description": "Waiting indicator with elapsed seconds",
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "authCopyUrl": "Copiaz\u0103 URL-ul",
+  "authShare": "Partajeaz\u0103",
+  "authAddBunker": "Adaug\u0103 bunker",
+  "authCompatibleSignerApps": "Aplica\u021bii de semnare compatibile",
+  "authFailedToConnect": "N-am putut conecta",
+  "authResetPasswordTitle": "Reseteaz\u0103 parola",
+  "authResetPasswordSubtitle": "Introdu parola nou\u0103. Trebuie s\u0103 aib\u0103 cel pu\u021bin 8 caractere.",
+  "authNewPasswordLabel": "Parol\u0103 nou\u0103",
+  "authPasswordTooShort": "Parola trebuie s\u0103 aib\u0103 cel pu\u021bin 8 caractere",
+  "authPasswordResetSuccess": "Parola a fost resetat\u0103 cu succes. Autentific\u0103-te.",
+  "authPasswordResetFailed": "Resetarea parolei a e\u0219uat",
+  "authUnexpectedError": "A ap\u0103rut o eroare nea\u0219teptat\u0103. \u00cencearc\u0103 din nou.",
+  "authUpdatePassword": "Actualizeaz\u0103 parola",
+  "authSecureAccountTitle": "Securizeaz\u0103 contul",
+  "authUnableToAccessKeys": "Nu am putut accesa cheile tale. \u00cencearc\u0103 din nou.",
+  "authRegistrationFailed": "\u00censcrierea a e\u0219uat",
+  "authRegistrationComplete": "\u00censcriere finalizat\u0103. Verific\u0103-\u021bi emailul.",
+  "authVerificationFailedTitle": "Verificare e\u0219uat\u0103",
+  "authClose": "\u00cenchide",
+  "authAccountSecured": "Cont securizat!",
+  "authAccountLinkedToEmail": "Contul t\u0103u e acum legat de emailul t\u0103u.",
+  "authVerifyYourEmail": "Verific\u0103-\u021bi emailul",
+  "authClickLinkContinue": "Apas\u0103 linkul din email ca s\u0103 finalizezi \u00eenregistrarea. Po\u021bi continua s\u0103 folose\u0219ti aplica\u021bia \u00eentre timp.",
+  "authWaitingForVerificationEllipsis": "Se a\u0219teapt\u0103 verificarea...",
+  "authContinueToApp": "Continu\u0103 \u00een aplica\u021bie",
+  "authResetPassword": "Reseteaz\u0103 parola",
+  "authResetPasswordDescription": "Introdu adresa ta de email \u0219i \u00e2\u021bi trimitem un link de resetare a parolei.",
+  "authFailedToSendResetEmail": "N-am putut trimite emailul de resetare.",
+  "authUnexpectedErrorShort": "A ap\u0103rut o eroare nea\u0219teptat\u0103.",
+  "authSending": "Se trimite...",
+  "authSendResetLink": "Trimite linkul de resetare",
+  "authEmailSent": "Email trimis!",
+  "authResetLinkSentTo": "Am trimis un link de resetare a parolei la {email}. Apas\u0103 linkul din email ca s\u0103-\u021bi actualizezi parola.",
+  "@authResetLinkSentTo": {
+    "description": "Confirmation message after reset link sent",
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "authSignInButton": "Autentificare",
+
+  "authVerificationErrorTimeout": "Verificarea a expirat. \u00cencearc\u0103 s\u0103 te \u00eenregistrezi din nou.",
+  "authVerificationErrorMissingCode": "Verificare e\u0219uat\u0103 \u2014 cod de autorizare lips\u0103.",
+  "authVerificationErrorPollFailed": "Verificare e\u0219uat\u0103. \u00cencearc\u0103 din nou.",
+  "authVerificationErrorNetworkExchange": "Eroare de re\u021bea la autentificare. \u00cencearc\u0103 din nou.",
+  "authVerificationErrorOAuthExchange": "Verificare e\u0219uat\u0103. \u00cencearc\u0103 s\u0103 te \u00eenregistrezi din nou.",
+  "authVerificationErrorSignInFailed": "Autentificarea a e\u0219uat. \u00cencearc\u0103 s\u0103 te conectezi manual.",
+  "authInviteErrorAlreadyUsed": "Acest cod de invita\u021bie nu mai e disponibil. \u00centoarce-te la codul t\u0103u, al\u0103tur\u0103-te listei de a\u0219teptare sau contacteaz\u0103 asisten\u021ba.",
+  "authInviteErrorInvalid": "Acest cod de invita\u021bie nu poate fi folosit acum. \u00centoarce-te la codul t\u0103u, al\u0103tur\u0103-te listei de a\u0219teptare sau contacteaz\u0103 asisten\u021ba.",
+  "authInviteErrorTemporary": "N-am putut confirma invita\u021bia ta acum. \u00centoarce-te la codul t\u0103u \u0219i \u00eencearc\u0103 din nou, sau contacteaz\u0103 asisten\u021ba.",
+  "authInviteErrorUnknown": "N-am putut activa invita\u021bia ta. \u00centoarce-te la codul t\u0103u, al\u0103tur\u0103-te listei de a\u0219teptare sau contacteaz\u0103 asisten\u021ba.",
+
+  "shareSheetSave": "Salveaz\u0103",
+  "shareSheetSaveToGallery": "Salveaz\u0103 \u00een galerie",
+  "shareSheetSaveWithWatermark": "Salveaz\u0103 cu filigran",
+  "shareSheetSaveVideo": "Salveaz\u0103 videoclipul",
+  "shareSheetAddToList": "Adaug\u0103 la list\u0103",
+  "shareSheetCopy": "Copiaz\u0103",
+  "shareSheetShareVia": "Partajeaz\u0103 prin",
+  "shareSheetReport": "Raporteaz\u0103",
+  "shareSheetEventJson": "JSON eveniment",
+  "shareSheetEventId": "ID eveniment",
+  "shareSheetMoreActions": "Mai multe ac\u021biuni",
+
+  "watermarkDownloadSavedToCameraRoll": "Salvat \u00een galerie",
+  "watermarkDownloadShare": "Partajeaz\u0103",
+  "watermarkDownloadDone": "Gata",
+  "watermarkDownloadPhotosAccessNeeded": "E nevoie de acces la Poze",
+  "watermarkDownloadPhotosAccessDescription": "Pentru a salva videoclipuri, permite accesul la Poze \u00een Set\u0103ri.",
+  "watermarkDownloadOpenSettings": "Deschide set\u0103rile",
+  "watermarkDownloadNotNow": "Nu acum",
+  "watermarkDownloadFailed": "Desc\u0103rcare e\u0219uat\u0103",
+  "watermarkDownloadDismiss": "Respinge",
+  "watermarkDownloadStageDownloading": "Se descarc\u0103 videoclipul",
+  "watermarkDownloadStageWatermarking": "Se adaug\u0103 filigranul",
+  "watermarkDownloadStageSaving": "Se salveaz\u0103 \u00een galerie",
+  "watermarkDownloadStageDownloadingDesc": "Se aduce videoclipul din re\u021bea...",
+  "watermarkDownloadStageWatermarkingDesc": "Se aplic\u0103 filigranul Divine...",
+  "watermarkDownloadStageSavingDesc": "Se salveaz\u0103 videoclipul cu filigran \u00een galeria ta...",
+
+  "uploadProgressVideoUpload": "\u00cenc\u0103rcare videoclip",
+  "uploadProgressPause": "Pauz\u0103",
+  "uploadProgressResume": "Reia",
+  "uploadProgressGoBack": "\u00cenapoi",
+  "uploadProgressRetryWithCount": "Re\u00eencearc\u0103 ({count} r\u0103mase)",
+  "@uploadProgressRetryWithCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "uploadProgressDelete": "\u0218terge",
+  "uploadProgressDaysAgo": "acum {count}z",
+  "@uploadProgressDaysAgo": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "uploadProgressHoursAgo": "acum {count}h",
+  "@uploadProgressHoursAgo": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "uploadProgressMinutesAgo": "acum {count}m",
+  "@uploadProgressMinutesAgo": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "uploadProgressJustNow": "Chiar acum",
+  "uploadProgressUploadingPercent": "Se \u00eencarc\u0103 {percent}%",
+  "@uploadProgressUploadingPercent": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "uploadProgressPausedPercent": "Pauz\u0103 la {percent}%",
+  "@uploadProgressPausedPercent": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+
+  "badgeExplanationClose": "\u00cenchide",
+  "badgeExplanationOriginalVineArchive": "Arhiv\u0103 Vine original\u0103",
+  "badgeExplanationCameraProof": "Dovad\u0103 de camer\u0103",
+  "badgeExplanationAuthenticitySignals": "Semnale de autenticitate",
+  "badgeExplanationVineArchiveIntro": "Acest videoclip e un Vine original recuperat din Internet Archive.",
+  "badgeExplanationVineArchiveHistory": "\u00cenainte ca Vine s\u0103 se \u00eenchid\u0103 \u00een 2017, ArchiveTeam \u0219i Internet Archive au lucrat ca s\u0103 p\u0103streze milioane de Vine-uri pentru posteritate. Acest con\u021binut face parte din acel efort istoric de conservare.",
+  "badgeExplanationOriginalStats": "Statistici originale: {loops} bucle",
+  "@badgeExplanationOriginalStats": {
+    "placeholders": { "loops": { "type": "int" } }
+  },
+  "badgeExplanationLearnVineArchive": "Afl\u0103 mai multe despre conservarea arhivei Vine",
+  "badgeExplanationLearnProofmode": "Afl\u0103 mai multe despre verificarea Proofmode",
+  "badgeExplanationLearnAuthenticity": "Afl\u0103 mai multe despre semnalele de autenticitate Divine",
+  "badgeExplanationInspectProofCheck": "Inspecteaz\u0103 cu unealta ProofCheck",
+  "badgeExplanationInspectMedia": "Inspecteaz\u0103 detaliile media",
+  "badgeExplanationProofmodeVerified": "Autenticitatea acestui videoclip e verificat\u0103 cu tehnologia Proofmode.",
+  "badgeExplanationDivineHostedHumanMade": "Acest videoclip e g\u0103zduit pe Divine \u0219i detec\u021bia AI indic\u0103 c\u0103 e probabil f\u0103cut de om, dar nu include date criptografice de verificare a camerei.",
+  "badgeExplanationHumanMadeNoCrypto": "Detec\u021bia AI indic\u0103 c\u0103 acest videoclip e probabil f\u0103cut de om, de\u0219i nu include date criptografice de verificare a camerei.",
+  "badgeExplanationDivineHostedNoCrypto": "Acest videoclip e g\u0103zduit pe Divine, dar \u00eenc\u0103 nu include date criptografice de verificare a camerei.",
+  "badgeExplanationExternalNoCrypto": "Acest videoclip e g\u0103zduit \u00een afara Divine \u0219i nu include date criptografice de verificare a camerei.",
+  "badgeExplanationDeviceAttestation": "Atestare dispozitiv",
+  "badgeExplanationPgpSignature": "Semn\u0103tur\u0103 PGP",
+  "badgeExplanationC2paCredentials": "Credentiale de con\u021binut C2PA",
+  "badgeExplanationProofManifest": "Manifest de dovezi",
+  "badgeExplanationAiDetection": "Detec\u021bie AI",
+  "badgeExplanationAiNotScanned": "Scanare AI: \u00cenc\u0103 nescanat",
+  "badgeExplanationNoScanResults": "\u00cenc\u0103 nu sunt rezultate de scanare disponibile.",
+  "badgeExplanationCheckAiGenerated": "Verific\u0103 dac\u0103 e generat de AI",
+  "badgeExplanationAiLikelihood": "{percentage}% probabilitate s\u0103 fie generat de AI",
+  "@badgeExplanationAiLikelihood": {
+    "placeholders": { "percentage": { "type": "int" } }
+  },
+  "badgeExplanationScannedBy": "Scanat de: {source}",
+  "@badgeExplanationScannedBy": {
+    "placeholders": { "source": { "type": "String" } }
+  },
+  "badgeExplanationVerifiedByModerator": "Verificat de un moderator uman",
+  "badgeExplanationVerificationPlatinum": "Platin\u0103: Atestare hardware de dispozitiv, semn\u0103turi criptografice, credentiale de con\u021binut (C2PA) \u0219i scanare AI confirm\u0103 originea uman\u0103.",
+  "badgeExplanationVerificationGold": "Aur: Capturat pe un dispozitiv real cu atestare hardware, semn\u0103turi criptografice \u0219i credentiale de con\u021binut (C2PA).",
+  "badgeExplanationVerificationSilver": "Argint: Semn\u0103turile criptografice dovedesc c\u0103 acest videoclip n-a fost modificat de la \u00eenregistrare.",
+  "badgeExplanationVerificationBronze": "Bronz: Sunt prezente semn\u0103turi de metadate de baz\u0103.",
+  "badgeExplanationVerificationSilverAiScan": "Argint: Scanarea AI confirm\u0103 c\u0103 acest videoclip e probabil creat de om.",
+  "badgeExplanationNoVerification": "Nu sunt date de verificare disponibile pentru acest videoclip.",
+
+  "shareMenuTitle": "Partajeaz\u0103 videoclipul",
+  "shareMenuReportAiContent": "Raporteaz\u0103 con\u021binut AI",
+  "shareMenuReportAiContentSubtitle": "Raporteaz\u0103 rapid con\u021binut suspect de a fi generat de AI",
+  "shareMenuReportingAiContent": "Se raporteaz\u0103 con\u021binutul AI...",
+  "shareMenuFailedToReportContent": "N-am putut raporta con\u021binutul: {error}",
+  "@shareMenuFailedToReportContent": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "shareMenuFailedToReportAiContent": "N-am putut raporta con\u021binutul AI: {error}",
+  "@shareMenuFailedToReportAiContent": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "shareMenuVideoStatus": "Stare videoclip",
+  "shareMenuViewAllLists": "Vezi toate listele \u2192",
+  "shareMenuShareWith": "Partajeaz\u0103 cu",
+  "shareMenuShareViaOtherApps": "Partajeaz\u0103 prin alte aplica\u021bii",
+  "shareMenuShareViaOtherAppsSubtitle": "Partajeaz\u0103 prin alte aplica\u021bii sau copiaz\u0103 linkul",
+  "shareMenuSaveToGallery": "Salveaz\u0103 \u00een galerie",
+  "shareMenuSaveOriginalSubtitle": "Salveaz\u0103 videoclipul original \u00een galerie",
+  "shareMenuSaveWithWatermark": "Salveaz\u0103 cu filigran",
+  "shareMenuSaveVideo": "Salveaz\u0103 videoclipul",
+  "shareMenuDownloadWithWatermark": "Descarc\u0103 cu filigran Divine",
+  "shareMenuSaveVideoSubtitle": "Salveaz\u0103 videoclipul \u00een galerie",
+  "shareMenuLists": "Liste",
+  "shareMenuAddToList": "Adaug\u0103 la list\u0103",
+  "shareMenuAddToListSubtitle": "Adaug\u0103 la listele tale curate",
+  "shareMenuCreateNewList": "Creeaz\u0103 o list\u0103 nou\u0103",
+  "shareMenuCreateNewListSubtitle": "\u00cencepe o nou\u0103 colec\u021bie curat\u0103",
+  "shareMenuRemovedFromList": "Eliminat din list\u0103",
+  "shareMenuFailedToRemoveFromList": "N-am putut elimina din list\u0103",
+  "shareMenuBookmarks": "Semne de carte",
+  "shareMenuAddToBookmarks": "Adaug\u0103 la semne de carte",
+  "shareMenuAddToBookmarksSubtitle": "Salveaz\u0103 pentru vizualizare ulterioar\u0103",
+  "shareMenuAddToBookmarkSet": "Adaug\u0103 la set de semne de carte",
+  "shareMenuAddToBookmarkSetSubtitle": "Organizeaz\u0103 \u00een colec\u021bii",
+  "shareMenuFollowSets": "Seturi de urm\u0103rire",
+  "shareMenuCreateFollowSet": "Creeaz\u0103 un set de urm\u0103rire",
+  "shareMenuCreateFollowSetSubtitle": "\u00cencepe o colec\u021bie nou\u0103 cu acest creator",
+  "shareMenuAddToFollowSet": "Adaug\u0103 la setul de urm\u0103rire",
+  "shareMenuFollowSetsAvailable": "{count, plural, one{1 set de urm\u0103rire disponibil} few{{count} seturi de urm\u0103rire disponibile} other{{count} de seturi de urm\u0103rire disponibile}}",
+  "@shareMenuFollowSetsAvailable": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "shareMenuAddedToBookmarks": "Ad\u0103ugat la semnele de carte!",
+  "shareMenuFailedToAddBookmark": "N-am putut ad\u0103uga semnul de carte",
+  "shareMenuCreatedListAndAddedVideo": "Lista \"{name}\" creat\u0103 \u0219i videoclipul ad\u0103ugat",
+  "@shareMenuCreatedListAndAddedVideo": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "shareMenuManageContent": "Gestioneaz\u0103 con\u021binutul",
+  "shareMenuEditVideo": "Editeaz\u0103 videoclipul",
+  "shareMenuEditVideoSubtitle": "Actualizeaz\u0103 titlul, descrierea \u0219i hashtagurile",
+  "shareMenuDeleteVideo": "\u0218terge videoclipul",
+  "shareMenuDeleteVideoSubtitle": "Elimin\u0103 definitiv acest con\u021binut",
+  "shareMenuVideoInTheseLists": "Videoclipul e \u00een aceste liste:",
+  "shareMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
+  "@shareMenuVideoCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "shareMenuClose": "\u00cenchide",
+  "shareMenuDeleteConfirmation": "Sigur vrei s\u0103 \u0219tergi acest videoclip?",
+  "shareMenuDeleteWarning": "Asta va trimite o cerere de \u0219tergere (NIP-09) c\u0103tre toate relay-urile. Unele relay-uri pot p\u0103stra totu\u0219i con\u021binutul.",
+  "shareMenuCancel": "Anuleaz\u0103",
+  "shareMenuDelete": "\u0218terge",
+  "shareMenuDeletingContent": "Se \u0219terge con\u021binutul...",
+  "shareMenuDeleteRequestSent": "Cererea de \u0219tergere a fost trimis\u0103 cu succes",
+  "shareMenuFailedToDeleteContent": "N-am putut \u0219terge con\u021binutul: {error}",
+  "@shareMenuFailedToDeleteContent": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "shareMenuFollowSetName": "Numele setului de urm\u0103rire",
+  "shareMenuFollowSetNameHint": "ex. Creatori de con\u021binut, Muzicieni etc.",
+  "shareMenuDescriptionOptional": "Descriere (op\u021bional)",
+  "shareMenuCreate": "Creeaz\u0103",
+  "shareMenuCreatedFollowSetAndAddedCreator": "Set de urm\u0103rire \"{name}\" creat \u0219i creatorul ad\u0103ugat",
+  "@shareMenuCreatedFollowSetAndAddedCreator": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "shareMenuDone": "Gata",
+  "shareMenuEditTitle": "Titlu",
+  "shareMenuEditTitleHint": "Introdu titlul videoclipului",
+  "shareMenuEditDescription": "Descriere",
+  "shareMenuEditDescriptionHint": "Introdu descrierea videoclipului",
+  "shareMenuEditHashtags": "Hashtaguri",
+  "shareMenuEditHashtagsHint": "hashtaguri, separate, prin virgul\u0103",
+  "shareMenuEditMetadataNote": "Not\u0103: Doar metadatele pot fi editate. Con\u021binutul video nu poate fi schimbat.",
+  "shareMenuDeleting": "Se \u0219terge...",
+  "shareMenuUpdate": "Actualizeaz\u0103",
+  "shareMenuVideoUpdated": "Videoclip actualizat cu succes",
+  "shareMenuFailedToUpdateVideo": "N-am putut actualiza videoclipul: {error}",
+  "@shareMenuFailedToUpdateVideo": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "shareMenuDeleteVideoQuestion": "\u0218tergi videoclipul?",
+  "shareMenuDeleteRelayWarning": "Asta va trimite o cerere de \u0219tergere c\u0103tre relay-uri. Not\u0103: Unele relay-uri pot avea \u00eenc\u0103 copii \u00een cache.",
+  "shareMenuVideoDeletionRequested": "Cerere de \u0219tergere a videoclipului trimis\u0103",
+  "shareMenuFailedToDeleteVideo": "N-am putut \u0219terge videoclipul: {error}",
+  "@shareMenuFailedToDeleteVideo": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "shareMenuContentLabels": "Etichete de con\u021binut",
+  "shareMenuAddContentLabels": "Adaug\u0103 etichete de con\u021binut",
+  "shareMenuClearAll": "\u0218terge tot",
+  "shareMenuCollaborators": "Colaboratori",
+  "shareMenuAddCollaborator": "Adaug\u0103 colaborator",
+  "shareMenuMutualFollowRequired": "Trebuie s\u0103 te urm\u0103re\u0219ti reciproc cu {name} ca s\u0103-l adaugi drept colaborator.",
+  "@shareMenuMutualFollowRequired": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "shareMenuLoading": "Se \u00eencarc\u0103...",
+  "shareMenuInspiredBy": "Inspirat de",
+  "shareMenuAddInspirationCredit": "Adaug\u0103 credit pentru inspira\u021bie",
+  "shareMenuCreatorCannotBeReferenced": "Acest creator nu poate fi referit.",
+  "shareMenuUnknown": "Necunoscut",
+  "shareMenuCreateBookmarkSet": "Creeaz\u0103 un set de semne de carte",
+  "shareMenuSetName": "Numele setului",
+  "shareMenuSetNameHint": "ex. Preferate, De vizionat mai t\u00e2rziu etc.",
+  "shareMenuCreateNewSet": "Creeaz\u0103 un set nou",
+  "shareMenuStartNewBookmarkCollection": "\u00cencepe o colec\u021bie nou\u0103 de semne de carte",
+  "shareMenuNoBookmarkSets": "\u00cenc\u0103 nu ai seturi de semne de carte. Creeaz\u0103-l pe primul!",
+  "shareMenuError": "Eroare",
+  "shareMenuFailedToLoadBookmarkSets": "N-am putut \u00eenc\u0103rca seturile de semne de carte",
+  "shareMenuCreatedSetAndAddedVideo": "Set \"{name}\" creat \u0219i videoclipul ad\u0103ugat",
+  "@shareMenuCreatedSetAndAddedVideo": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "shareMenuUseThisSound": "Folose\u0219te acest sunet",
+  "shareMenuOriginalSound": "Sunet original",
+
+  "authSessionExpired": "Sesiunea ta a expirat. Autentific\u0103-te din nou.",
+  "authSignInFailed": "N-am putut autentifica. \u00cencearc\u0103 din nou.",
+
+  "localeAppLanguage": "Limba aplica\u021biei",
+  "localeDeviceDefault": "Implicit dispozitiv",
+  "localeSelectLanguage": "Alege limba",
+
+  "webAuthNotSupportedSecureMode": "Autentificarea web nu e suportat\u0103 \u00een modul sigur. Folose\u0219te aplica\u021bia mobil\u0103 pentru gestionarea sigur\u0103 a cheilor.",
+  "webAuthIntegrationFailed": "Integrarea de autentificare a e\u0219uat: {error}",
+  "@webAuthIntegrationFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "webAuthUnexpectedError": "Eroare nea\u0219teptat\u0103: {error}",
+  "@webAuthUnexpectedError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "webAuthEnterBunkerUri": "Introdu un URI bunker",
+  "webAuthConnectTitle": "Conecteaz\u0103-te la Divine",
+  "webAuthChooseMethod": "Alege metoda ta preferat\u0103 de autentificare Nostr",
+  "webAuthBrowserExtension": "Extensie de browser",
+  "webAuthRecommended": "RECOMANDAT",
+  "webAuthNsecBunker": "nsec bunker",
+  "webAuthConnectRemoteSigner": "Conecteaz\u0103-te la un semnatar la distan\u021b\u0103",
+  "webAuthBunkerHint": "bunker://pubkey?relay=wss://...",
+  "webAuthPasteFromClipboard": "Lipe\u0219te din clipboard",
+  "webAuthConnectToBunker": "Conecteaz\u0103-te la Bunker",
+  "webAuthNewToNostr": "E\u0219ti nou pe Nostr?",
+  "webAuthNostrHelp": "Instaleaz\u0103 o extensie de browser ca Alby sau nos2x pentru cea mai u\u0219oar\u0103 experien\u021b\u0103, sau folose\u0219te nsec bunker pentru semnare la distan\u021b\u0103 sigur\u0103.",
+
+  "soundsTitle": "Sunete",
+  "soundsSearchHint": "Caut\u0103 sunete...",
+  "soundsPreviewUnavailable": "Nu pot previzualiza sunetul - niciun audio disponibil",
+  "soundsPreviewFailed": "N-am putut reda previzualizarea: {error}",
+  "@soundsPreviewFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "soundsFeaturedSounds": "Sunete recomandate",
+  "soundsTrendingSounds": "Sunete \u00een trend",
+  "soundsAllSounds": "Toate sunetele",
+  "soundsSearchResults": "Rezultatele c\u0103ut\u0103rii",
+  "soundsNoSoundsAvailable": "Niciun sunet disponibil",
+  "soundsNoSoundsDescription": "Sunetele vor ap\u0103rea aici c\u00e2nd creatorii distribuie audio",
+  "soundsNoSoundsFound": "Niciun sunet g\u0103sit",
+  "soundsNoSoundsFoundDescription": "\u00cencearc\u0103 alt termen de c\u0103utare",
+  "soundsFailedToLoad": "N-am putut \u00eenc\u0103rca sunetele",
+  "soundsRetry": "Re\u00eencearc\u0103",
+  "soundsScreenLabel": "Ecranul sunetelor",
+
+  "profileTitle": "Profil",
+  "profileRefresh": "Re\u00eencarc\u0103",
+  "profileRefreshLabel": "Re\u00eencarc\u0103 profilul",
+  "profileMoreOptions": "Mai multe op\u021biuni",
+  "profileBlockedUser": "L-ai blocat pe {name}",
+  "@profileBlockedUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "profileUnblockedUser": "L-ai deblocat pe {name}",
+  "@profileUnblockedUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "profileUnfollowedUser": "Nu-l mai urm\u0103re\u0219ti pe {name}",
+  "@profileUnfollowedUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "profileError": "Eroare: {error}",
+  "@profileError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "notificationsTabAll": "Toate",
+  "notificationsTabLikes": "Aprecieri",
+  "notificationsTabComments": "Comentarii",
+  "notificationsTabFollows": "Urm\u0103riri",
+  "notificationsTabReposts": "Redistribuiri",
+  "notificationsFailedToLoad": "N-am putut \u00eenc\u0103rca notific\u0103rile",
+  "notificationsRetry": "Re\u00eencearc\u0103",
+  "notificationsCheckingNew": "se verific\u0103 notific\u0103ri noi",
+  "notificationsNoneYet": "\u00cenc\u0103 nicio notificare",
+  "notificationsNoneForType": "Nicio notificare de tip {type}",
+  "@notificationsNoneForType": {
+    "placeholders": { "type": { "type": "String" } }
+  },
+  "notificationsEmptyDescription": "C\u00e2nd oamenii interac\u021bioneaz\u0103 cu con\u021binutul t\u0103u, vei vedea asta aici",
+  "notificationsLoadingType": "Se \u00eencarc\u0103 notific\u0103rile de tip {type}...",
+  "@notificationsLoadingType": {
+    "placeholders": { "type": { "type": "String" } }
+  },
+  "notificationsInviteSingular": "Ai 1 invita\u021bie de \u00eemp\u0103r\u021bit cu un prieten!",
+  "notificationsInvitePlural": "Ai {count, plural, one{1 invita\u021bie} few{{count} invita\u021bii} other{{count} de invita\u021bii}} de \u00eemp\u0103r\u021bit cu prietenii!",
+  "@notificationsInvitePlural": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notificationsVideoNotFound": "Videoclipul n-a fost g\u0103sit",
+  "notificationsVideoUnavailable": "Videoclip indisponibil",
+  "notificationsFromNotification": "Din notificare",
+
+  "feedFailedToLoadVideos": "N-am putut \u00eenc\u0103rca videoclipurile",
+  "feedRetry": "Re\u00eencearc\u0103",
+  "feedNoFollowedUsers": "Niciun utilizator urm\u0103rit.\nUrm\u0103re\u0219te pe cineva ca s\u0103-i vezi videoclipurile aici.",
+  "feedNoVideosForMode": "Niciun videoclip g\u0103sit pentru feedul {mode}.",
+  "@feedNoVideosForMode": {
+    "placeholders": { "mode": { "type": "String" } }
+  },
+  "feedExploreVideos": "Exploreaz\u0103 videoclipuri",
+  "feedExternalVideoSlow": "Videoclipul extern se \u00eencarc\u0103 \u00eencet",
+  "feedSkip": "Sari peste",
+
+  "uploadWaitingToUpload": "Se a\u0219teapt\u0103 \u00eenc\u0103rcarea",
+  "uploadUploadingVideo": "Se \u00eencarc\u0103 videoclipul",
+  "uploadProcessingVideo": "Se proceseaz\u0103 videoclipul",
+  "uploadProcessingComplete": "Procesare finalizat\u0103",
+  "uploadPublishedSuccessfully": "Publicat cu succes",
+  "uploadFailed": "\u00cenc\u0103rcare e\u0219uat\u0103",
+  "uploadRetrying": "Se re\u00eencearc\u0103 \u00eenc\u0103rcarea",
+  "uploadPaused": "\u00cenc\u0103rcare \u00een pauz\u0103",
+  "uploadPercentComplete": "{percent}% finalizat",
+  "@uploadPercentComplete": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "uploadQueuedMessage": "Videoclipul t\u0103u e \u00een a\u0219teptare pentru \u00eenc\u0103rcare",
+  "uploadUploadingMessage": "Se \u00eencarc\u0103 pe server...",
+  "uploadProcessingMessage": "Se proceseaz\u0103 videoclipul - poate dura c\u00e2teva minute",
+  "uploadReadyToPublishMessage": "Videoclip procesat cu succes \u0219i gata de publicare",
+  "uploadPublishedMessage": "Videoclip publicat pe profilul t\u0103u",
+  "uploadFailedMessage": "\u00cenc\u0103rcarea a e\u0219uat - \u00eencearc\u0103 din nou",
+  "uploadRetryingMessage": "Se re\u00eencearc\u0103 \u00eenc\u0103rcarea...",
+  "uploadPausedMessage": "\u00cenc\u0103rcare oprit\u0103 de utilizator",
+  "uploadRetryButton": "RE\u00ceNCEARC\u0102",
+  "uploadRetryFailed": "N-am putut re\u00eencerca \u00eenc\u0103rcarea: {error}",
+  "@uploadRetryFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "userSearchPrompt": "Caut\u0103 utilizatori",
+  "userSearchNoResults": "Niciun utilizator g\u0103sit",
+  "userSearchFailed": "C\u0103utarea a e\u0219uat",
+
+  "forgotPasswordTitle": "Reseteaz\u0103 parola",
+  "forgotPasswordDescription": "Introdu adresa ta de email \u0219i \u00e2\u021bi trimitem un link de resetare a parolei.",
+  "forgotPasswordEmailLabel": "Adres\u0103 de email",
+  "forgotPasswordCancel": "Anuleaz\u0103",
+  "forgotPasswordSendLink": "Trimite linkul de resetare",
+
+  "ageVerificationContentWarning": "Aten\u021bionare de con\u021binut",
+  "ageVerificationTitle": "Verificare v\u00e2rst\u0103",
+  "ageVerificationAdultDescription": "Acest con\u021binut a fost marcat ca put\u00e2nd con\u021bine material pentru adul\u021bi. Trebuie s\u0103 ai 18 ani sau mai mult ca s\u0103-l vezi.",
+  "ageVerificationCreationDescription": "Ca s\u0103 folose\u0219ti camera \u0219i s\u0103 creezi con\u021binut, trebuie s\u0103 ai cel pu\u021bin 16 ani.",
+  "ageVerificationAdultQuestion": "Ai 18 ani sau mai mult?",
+  "ageVerificationCreationQuestion": "Ai 16 ani sau mai mult?",
+  "ageVerificationNo": "Nu",
+  "ageVerificationYes": "Da",
+
+  "shareLinkCopied": "Link copiat \u00een clipboard",
+  "shareFailedToCopy": "N-am putut copia linkul",
+  "shareVideoSubject": "Vezi acest videoclip pe Divine",
+  "shareFailedToShare": "N-am putut partaja",
+  "shareVideoTitle": "Partajeaz\u0103 videoclipul",
+  "shareToApps": "Partajeaz\u0103 \u00een aplica\u021bii",
+  "shareToAppsSubtitle": "Partajeaz\u0103 prin aplica\u021bii de mesagerie sau sociale",
+  "shareCopyWebLink": "Copiaz\u0103 linkul web",
+  "shareCopyWebLinkSubtitle": "Copiaz\u0103 un link web de partajat",
+  "shareCopyNostrLink": "Copiaz\u0103 linkul Nostr",
+  "shareCopyNostrLinkSubtitle": "Copiaz\u0103 linkul nevent pentru clien\u021bii Nostr",
+
+  "navHome": "Acas\u0103",
+  "navExplore": "Exploreaz\u0103",
+  "navInbox": "Mesaje",
+  "navProfile": "Profil",
+  "navMyProfile": "Profilul meu",
+  "navSearch": "Caut\u0103",
+  "navNotifications": "Notific\u0103ri",
+  "navSearchTooltip": "Caut\u0103",
+  "navOpenCamera": "Deschide camera",
+  "navUnknown": "Necunoscut",
+  "navExploreClassics": "Clasice",
+  "navExploreNewVideos": "Videoclipuri noi",
+  "navExploreTrending": "\u00cen trend",
+  "navExploreForYou": "Pentru tine",
+  "navExploreLists": "Liste",
+
+  "routeErrorTitle": "Eroare",
+  "routeInvalidHashtag": "Hashtag invalid",
+  "routeInvalidConversationId": "ID de conversa\u021bie invalid",
+  "routeInvalidRequestId": "ID de cerere invalid",
+  "routeInvalidListId": "ID de list\u0103 invalid",
+  "routeInvalidUserId": "ID de utilizator invalid",
+  "routeInvalidVideoId": "ID de videoclip invalid",
+  "routeInvalidSoundId": "ID de sunet invalid",
+  "routeInvalidCategory": "Categorie invalid\u0103",
+  "routeNoVideosToDisplay": "Niciun videoclip de afi\u0219at",
+  "routeInvalidProfileId": "ID de profil invalid",
+  "routeDefaultListName": "List\u0103",
+
+  "supportTitle": "Centru de asisten\u021b\u0103",
+  "supportContactSupport": "Contacteaz\u0103 asisten\u021ba",
+  "supportContactSupportSubtitle": "\u00cencepe o conversa\u021bie sau vezi mesajele trecute",
+  "supportReportBug": "Raporteaz\u0103 un bug",
+  "supportReportBugSubtitle": "Probleme tehnice cu aplica\u021bia",
+  "supportRequestFeature": "Cere o func\u021bie",
+  "supportRequestFeatureSubtitle": "Sugereaz\u0103 o \u00eembun\u0103t\u0103\u021bire sau o func\u021bie nou\u0103",
+  "supportSaveLogs": "Salveaz\u0103 jurnalele",
+  "supportSaveLogsSubtitle": "Export\u0103 jurnalele \u00eentr-un fi\u0219ier pentru trimitere manual\u0103",
+  "supportFaq": "\u00centreb\u0103ri frecvente",
+  "supportFaqSubtitle": "\u00centreb\u0103ri \u0219i r\u0103spunsuri comune",
+  "supportProofMode": "ProofMode",
+  "supportProofModeSubtitle": "Afl\u0103 despre verificare \u0219i autenticitate",
+  "supportLoginRequired": "Autentific\u0103-te ca s\u0103 contactezi asisten\u021ba",
+  "supportExportingLogs": "Se export\u0103 jurnalele...",
+  "supportExportLogsFailed": "N-am putut exporta jurnalele",
+  "supportChatNotAvailable": "Chatul de asisten\u021b\u0103 nu e disponibil",
+  "supportCouldNotOpenMessages": "N-am putut deschide mesajele de asisten\u021b\u0103",
+  "supportCouldNotOpenPage": "N-am putut deschide {pageName}",
+  "@supportCouldNotOpenPage": {
+    "placeholders": {
+      "pageName": { "type": "String" }
+    }
+  },
+  "supportErrorOpeningPage": "Eroare la deschiderea {pageName}: {error}",
+  "@supportErrorOpeningPage": {
+    "placeholders": {
+      "pageName": { "type": "String" },
+      "error": { "type": "Object" }
+    }
+  },
+
+  "reportTitle": "Raporteaz\u0103 con\u021binut",
+  "reportWhyReporting": "De ce raportezi acest con\u021binut?",
+  "reportPolicyNotice": "Divine va ac\u021biona asupra rapoartelor de con\u021binut \u00een 24 de ore elimin\u00e2nd con\u021binutul \u0219i exclu\u021b\u00e2nd utilizatorul care a furnizat con\u021binutul ofensator.",
+  "reportAdditionalDetails": "Detalii suplimentare (op\u021bional)",
+  "reportBlockUser": "Blocheaz\u0103 acest utilizator",
+  "reportCancel": "Anuleaz\u0103",
+  "reportSubmit": "Raporteaz\u0103",
+  "reportSelectReason": "Alege un motiv pentru raportarea acestui con\u021binut",
+  "reportReasonSpam": "Spam sau con\u021binut nedorit",
+  "reportReasonHarassment": "H\u0103r\u021buire, bullying sau amenin\u021b\u0103ri",
+  "reportReasonViolence": "Con\u021binut violent sau extremist",
+  "reportReasonSexualContent": "Con\u021binut sexual sau pentru adul\u021bi",
+  "reportReasonCopyright": "\u00cenc\u0103lcarea dreptului de autor",
+  "reportReasonFalseInfo": "Informa\u021bii false",
+  "reportReasonCsam": "\u00cenc\u0103lcarea siguran\u021bei copiilor",
+  "reportReasonAiGenerated": "Con\u021binut generat de AI",
+  "reportReasonOther": "Alt\u0103 \u00eenc\u0103lcare a politicii",
+  "reportFailed": "N-am putut raporta con\u021binutul: {error}",
+  "@reportFailed": {
+    "placeholders": {
+      "error": { "type": "Object" }
+    }
+  },
+  "reportReceivedTitle": "Raport primit",
+  "reportReceivedThankYou": "Mersi c\u0103 ne aju\u021bi s\u0103 p\u0103str\u0103m Divine \u00een siguran\u021b\u0103.",
+  "reportReceivedReviewNotice": "Echipa noastr\u0103 \u00e2\u021bi va revizui raportul \u0219i va lua m\u0103suri corespunz\u0103toare. S-ar putea s\u0103 prime\u0219ti actualiz\u0103ri prin mesaj direct.",
+  "reportLearnMore": "Afl\u0103 mai multe",
+  "reportSafetyUrl": "divine.video/safety",
+  "reportClose": "\u00cenchide",
+
+  "listAddToList": "Adaug\u0103 la list\u0103",
+  "listVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
+  "@listVideoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "listNewList": "List\u0103 nou\u0103",
+  "listDone": "Gata",
+  "listErrorLoading": "Eroare la \u00eenc\u0103rcarea listelor",
+  "listRemovedFrom": "Eliminat din {name}",
+  "@listRemovedFrom": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "listAddedTo": "Ad\u0103ugat la {name}",
+  "@listAddedTo": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "listCreateNewList": "Creeaz\u0103 o list\u0103 nou\u0103",
+  "listNameLabel": "Numele listei",
+  "listDescriptionLabel": "Descriere (op\u021bional)",
+  "listPublicList": "List\u0103 public\u0103",
+  "listPublicListSubtitle": "Al\u021bii pot urm\u0103ri \u0219i vedea aceast\u0103 list\u0103",
+  "listCancel": "Anuleaz\u0103",
+  "listCreate": "Creeaz\u0103",
+  "listCreateFailed": "N-am putut crea lista",
+
+  "keyManagementTitle": "Chei Nostr",
+  "keyManagementWhatAreKeys": "Ce sunt cheile Nostr?",
+  "keyManagementExplanation": "Identitatea ta Nostr e o pereche de chei criptografice:\n\n\u2022 Cheia public\u0103 (npub) e ca numele t\u0103u de utilizator - distribuie-o liber\n\u2022 Cheia privat\u0103 (nsec) e ca parola ta - p\u0103streaz-o secret\u0103!\n\nNsec-ul \u00e2\u021bi permite s\u0103 accesezi contul pe orice aplica\u021bie Nostr.",
+  "keyManagementImportTitle": "Import\u0103 cheie existent\u0103",
+  "keyManagementImportSubtitle": "Ai deja un cont Nostr? Lipe\u0219te cheia privat\u0103 (nsec) ca s\u0103-l accesezi aici.",
+  "keyManagementImportButton": "Import\u0103 cheia",
+  "keyManagementImportWarning": "Asta \u00e2\u021bi va \u00eenlocui cheia curent\u0103!",
+  "keyManagementBackupTitle": "Fă backup la cheia ta",
+  "keyManagementBackupSubtitle": "Salveaz\u0103 cheia privat\u0103 (nsec) ca s\u0103-\u021bi folose\u0219ti contul \u00een alte aplica\u021bii Nostr.",
+  "keyManagementCopyNsec": "Copiaz\u0103 cheia mea privat\u0103 (nsec)",
+  "keyManagementNeverShare": "Nu \u00eemp\u0103r\u021bi niciodat\u0103 nsec-ul cu nimeni!",
+  "keyManagementPasteKey": "Lipe\u0219te cheia ta privat\u0103",
+  "keyManagementInvalidFormat": "Format de cheie invalid. Trebuie s\u0103 \u00eenceap\u0103 cu \"nsec1\"",
+  "keyManagementConfirmImportTitle": "Import\u0103m aceast\u0103 cheie?",
+  "keyManagementConfirmImportBody": "Asta \u00e2\u021bi va \u00eenlocui identitatea curent\u0103 cu cea importat\u0103.\n\nCheia ta curent\u0103 va fi pierdut\u0103 dac\u0103 n-ai f\u0103cut backup mai \u00eent\u00e2i.",
+  "keyManagementImportConfirm": "Import\u0103",
+  "keyManagementImportSuccess": "Cheie importat\u0103 cu succes!",
+  "keyManagementImportFailed": "N-am putut importa cheia: {error}",
+  "@keyManagementImportFailed": {
+    "placeholders": {
+      "error": { "type": "Object" }
+    }
+  },
+  "keyManagementExportSuccess": "Cheia privat\u0103 a fost copiat\u0103 \u00een clipboard!\n\n\u021aine-o \u00eentr-un loc sigur.",
+  "keyManagementExportFailed": "N-am putut exporta cheia: {error}",
+  "@keyManagementExportFailed": {
+    "placeholders": {
+      "error": { "type": "Object" }
+    }
+  },
+
+  "saveOriginalSavedToCameraRoll": "Salvat \u00een galerie",
+  "saveOriginalShare": "Partajeaz\u0103",
+  "saveOriginalDone": "Gata",
+  "saveOriginalPhotosAccessNeeded": "E nevoie de acces la Poze",
+  "saveOriginalPhotosAccessMessage": "Pentru a salva videoclipuri, permite accesul la Poze \u00een Set\u0103ri.",
+  "saveOriginalOpenSettings": "Deschide set\u0103rile",
+  "saveOriginalNotNow": "Nu acum",
+  "saveOriginalDownloadFailed": "Desc\u0103rcare e\u0219uat\u0103",
+  "saveOriginalDismiss": "Respinge",
+  "saveOriginalDownloadingVideo": "Se descarc\u0103 videoclipul",
+  "saveOriginalSavingToCameraRoll": "Se salveaz\u0103 \u00een galerie",
+  "saveOriginalFetchingVideo": "Se aduce videoclipul din re\u021bea...",
+  "saveOriginalSavingVideo": "Se salveaz\u0103 videoclipul original \u00een galeria ta...",
+
+  "soundTitle": "Sunet",
+  "soundOriginalSound": "Sunet original",
+  "soundVideosUsingThisSound": "Videoclipuri care folosesc acest sunet",
+  "soundSourceVideo": "Videoclip surs\u0103",
+  "soundNoVideosYet": "\u00cenc\u0103 niciun videoclip",
+  "soundBeFirstToUse": "Fii primul care folose\u0219te acest sunet!",
+  "soundFailedToLoadVideos": "N-am putut \u00eenc\u0103rca videoclipurile",
+  "soundRetry": "Re\u00eencearc\u0103",
+  "soundVideosUnavailable": "Videoclipuri indisponibile",
+  "soundCouldNotLoadDetails": "N-am putut \u00eenc\u0103rca detaliile videoclipului",
+  "soundPreview": "Previzualizare",
+  "soundStop": "Opre\u0219te",
+  "soundUseSound": "Folose\u0219te sunetul",
+  "soundNoVideoCount": "\u00cenc\u0103 niciun videoclip",
+  "soundOneVideo": "1 videoclip",
+  "soundVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
+  "@soundVideoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "soundUnableToPreview": "Nu pot previzualiza sunetul - niciun audio disponibil",
+  "soundPreviewFailed": "N-am putut reda previzualizarea: {error}",
+  "@soundPreviewFailed": {
+    "placeholders": {
+      "error": { "type": "Object" }
+    }
+  },
+  "soundViewSource": "Vezi sursa",
+  "soundCloseTooltip": "\u00cenchide",
+
+  "exploreNotExploreRoute": "Nu e o rut\u0103 de explorare",
+
+  "legalTitle": "Legal",
+  "legalTermsOfService": "Termenii serviciului",
+  "legalTermsOfServiceSubtitle": "Termeni \u0219i condi\u021bii de utilizare",
+  "legalPrivacyPolicy": "Politica de confiden\u021bialitate",
+  "legalPrivacyPolicySubtitle": "Cum gestion\u0103m datele tale",
+  "legalSafetyStandards": "Standarde de siguran\u021b\u0103",
+  "legalSafetyStandardsSubtitle": "Ghiduri comunitare \u0219i siguran\u021b\u0103",
+  "legalDmca": "DMCA",
+  "legalDmcaSubtitle": "Politica de drepturi de autor \u0219i de eliminare",
+  "legalOpenSourceLicenses": "Licen\u021be open source",
+  "legalOpenSourceLicensesSubtitle": "Atribuiri pentru pachetele ter\u021be",
+  "legalAppName": "Divine",
+  "legalCouldNotOpenPage": "N-am putut deschide {pageName}",
+  "@legalCouldNotOpenPage": {
+    "placeholders": {
+      "pageName": { "type": "String" }
+    }
+  },
+  "legalErrorOpeningPage": "Eroare la deschiderea {pageName}: {error}",
+  "@legalErrorOpeningPage": {
+    "placeholders": {
+      "pageName": { "type": "String" },
+      "error": { "type": "Object" }
+    }
+  }
+}
