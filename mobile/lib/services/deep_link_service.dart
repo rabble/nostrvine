@@ -4,7 +4,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Types of deep links supported by the app
 enum DeepLinkType {

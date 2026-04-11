@@ -2,9 +2,10 @@
 // ABOUTME: Uses Cloudflare Worker to check IP-based geolocation for compliance with state laws
 
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Response from geo-blocking API
 class GeoBlockResponse {

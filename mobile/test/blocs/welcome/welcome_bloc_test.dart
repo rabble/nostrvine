@@ -106,7 +106,7 @@ void main() {
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
-        'emits loaded with single returning user and profile',
+        'emits accounts immediately, then hydrates profiles later',
         setUp: () {
           when(
             () => mockAuthService.getKnownAccounts(),
@@ -118,6 +118,12 @@ void main() {
         build: buildBloc,
         act: (bloc) => bloc.add(const WelcomeStarted()),
         expect: () => [
+          // First: accounts without profiles
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [_testPreviousAccount],
+          ),
+          // Second: accounts with hydrated profiles
           WelcomeState(
             status: WelcomeStatus.loaded,
             previousAccounts: [
@@ -172,7 +178,7 @@ void main() {
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
-        'emits loaded with multiple accounts in order',
+        'emits loaded with multiple accounts then hydrates profiles',
         setUp: () {
           when(
             () => mockAuthService.getKnownAccounts(),
@@ -187,6 +193,15 @@ void main() {
         build: buildBloc,
         act: (bloc) => bloc.add(const WelcomeStarted()),
         expect: () => [
+          // First: accounts without profiles
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [
+              _testPreviousAccount,
+              _testPreviousAccount2,
+            ],
+          ),
+          // Second: accounts with hydrated profiles
           WelcomeState(
             status: WelcomeStatus.loaded,
             previousAccounts: [

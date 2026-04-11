@@ -13,9 +13,9 @@ import 'package:openvine/services/notification_model_converter.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'relay_notifications_provider.g.dart';
 

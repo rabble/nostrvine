@@ -13,9 +13,9 @@ import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'video_feed_event.dart';

@@ -23,7 +23,6 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -39,6 +38,7 @@ import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Video overlay for the home feed matching the new design.
 ///
@@ -221,10 +221,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             final opacity = scrollDrivenOpacity(distance);
             return Opacity(
               opacity: opacity,
-              child: IgnorePointer(
-                ignoring: opacity < 0.01,
-                child: child,
-              ),
+              child: IgnorePointer(ignoring: opacity < 0.01, child: child),
             );
           },
           child: Stack(
@@ -368,7 +365,7 @@ class _AuthorInfoSection extends ConsumerWidget {
             const SizedBox(height: 4),
             InspiredByAttributionRow(video: video, isActive: true),
           ],
-          // Audio attribution
+          // Audio attribution (only for videos with shared audio)
           if (video.hasAudioReference) ...[
             const SizedBox(height: 4),
             AudioAttributionRow(video: video),

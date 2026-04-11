@@ -11,10 +11,11 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +41,9 @@ void main() {
 
       // Generate a test key container
       keyContainer = await SecureKeyContainer.generate();
-      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
+      nostrService = NostrServiceFactory.create(
+        signer: LocalNostrIdentity(keyContainer: keyContainer),
+      );
       await nostrService.initialize();
 
       subscriptionManager = SubscriptionManager(nostrService);

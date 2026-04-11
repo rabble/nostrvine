@@ -12,8 +12,8 @@ import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Error overlay shown when video playback fails
 ///

@@ -2,9 +2,12 @@
 // ABOUTME: Ensures InboxPage provides ConversationListBloc, DmUnreadCountCubit,
 // ABOUTME: and MyFollowingBloc to InboxView via MultiBlocProvider.
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/repositories/dm_repository.dart';
@@ -26,6 +29,9 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
+
+class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
+    implements InviteStatusCubit {}
 
 /// Minimal mock so NotificationsScreen (default tab) renders without crashing.
 class _MockRelayNotifications extends RelayNotifications {
@@ -61,6 +67,7 @@ void main() {
     late _MockFollowRepository mockFollowRepository;
     late _MockContentBlocklistService mockBlocklistService;
     late MockGoRouter mockGoRouter;
+    late _MockInviteStatusCubit mockInviteCubit;
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
@@ -68,6 +75,9 @@ void main() {
       mockFollowRepository = _MockFollowRepository();
       mockBlocklistService = _MockContentBlocklistService();
       mockGoRouter = MockGoRouter();
+      mockInviteCubit = _MockInviteStatusCubit();
+      when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
+      when(mockInviteCubit.load).thenAnswer((_) async {});
 
       when(
         () => mockDmRepository.watchAcceptedConversations(
@@ -111,11 +121,14 @@ void main() {
 
     group('dm subscription lifecycle', () {
       testWidgets(
-        'calls startListening on mount and stopListening on dispose',
+        'does not start or stop the subscription — auth-scoped (#2931)',
         (tester) async {
           await tester.pumpWidget(
             testMaterialApp(
-              home: const InboxPage(),
+              home: BlocProvider<InviteStatusCubit>.value(
+                value: mockInviteCubit,
+                child: const InboxPage(),
+              ),
               mockAuthService: mockAuthService,
               additionalOverrides: [
                 dmRepositoryProvider.overrideWithValue(mockDmRepository),
@@ -135,14 +148,19 @@ void main() {
           );
           await tester.pump();
 
-          verify(() => mockDmRepository.startListening()).called(1);
+          // Regression guard for #2931: the gift-wrap subscription is owned
+          // by `dmRepositoryProvider` for the entire authenticated session,
+          // not by this screen. Mounting and unmounting the inbox must NOT
+          // touch the subscription lifecycle, otherwise users who never
+          // open the inbox would never receive DMs.
+          verifyNever(() => mockDmRepository.startListening());
           verifyNever(() => mockDmRepository.stopListening());
 
-          // Replace the InboxPage with an empty widget to trigger dispose.
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
 
-          verify(() => mockDmRepository.stopListening()).called(1);
+          verifyNever(() => mockDmRepository.startListening());
+          verifyNever(() => mockDmRepository.stopListening());
         },
       );
     });
@@ -151,7 +169,10 @@ void main() {
       testWidgets('renders $InboxView', (tester) async {
         await tester.pumpWidget(
           testMaterialApp(
-            home: const InboxPage(),
+            home: BlocProvider<InviteStatusCubit>.value(
+              value: mockInviteCubit,
+              child: const InboxPage(),
+            ),
             mockAuthService: mockAuthService,
             additionalOverrides: [
               dmRepositoryProvider.overrideWithValue(mockDmRepository),

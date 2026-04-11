@@ -147,5 +147,6 @@ class _RulerPainter extends CustomPainter {
   @override
   bool shouldRepaint(_RulerPainter oldDelegate) =>
       oldDelegate.totalDuration != totalDuration ||
-      oldDelegate.pixelsPerSecond != pixelsPerSecond;
+      oldDelegate.pixelsPerSecond != pixelsPerSecond ||
+      oldDelegate.scrollPadding != scrollPadding;
 }

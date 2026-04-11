@@ -4,7 +4,7 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:openvine/services/page_load_history.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Maximum age for a session before it is considered stale and discarded.
 ///

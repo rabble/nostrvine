@@ -7,12 +7,11 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' show LogEntry, LogLevel;
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Build a log summary prioritizing errors/warnings with recent context.
 /// Returns null if logs are empty.

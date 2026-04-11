@@ -725,7 +725,7 @@ import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MigrationResult {

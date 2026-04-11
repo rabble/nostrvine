@@ -9,7 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'clips_library_event.dart';
 part 'clips_library_state.dart';
@@ -318,9 +318,18 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   /// Runs asset recovery in the background and dispatches a fresh load
   /// event when done so the UI picks up the updated thumbnails/ghost frames.
   Future<void> _recoverAndReload(List<DivineVideoClip> clips) async {
-    final recovered = await _clipLibraryService.recoverMissingAssets(clips);
-    if (!identical(recovered, clips) && !isClosed) {
-      add(ClipsLibraryLoadRequested(preSelectedIds: state.selectedClipIds));
+    try {
+      final recovered = await _clipLibraryService.recoverMissingAssets(clips);
+      if (!identical(recovered, clips) && !isClosed) {
+        add(ClipsLibraryLoadRequested(preSelectedIds: state.selectedClipIds));
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        '📚 Background asset recovery failed: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
     }
   }
 }

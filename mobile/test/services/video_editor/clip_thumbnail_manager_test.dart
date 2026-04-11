@@ -76,10 +76,10 @@ void main() {
       });
 
       test('handles empty clip list', () {
-        manager.sync(clips: [], devicePixelRatio: 1);
-
-        // Should not throw.
-        expect(true, isTrue);
+        expect(
+          () => manager.sync(clips: [], devicePixelRatio: 1),
+          returnsNormally,
+        );
       });
 
       test('handles transition from clips to empty', () {

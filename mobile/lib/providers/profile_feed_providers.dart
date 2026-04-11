@@ -6,7 +6,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Route-aware profile feed (reactive, no lifecycle writes).
 final videosForProfileRouteProvider = Provider<AsyncValue<VideoFeedState>>((

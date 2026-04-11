@@ -3,7 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// App lifecycle state enum (simplified version for testing)
 enum AppLifecycleState { resumed, inactive, paused, detached, hidden }

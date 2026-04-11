@@ -2,8 +2,8 @@
 // ABOUTME: Allows dynamic adjustment of log verbosity for debugging production issues
 
 import 'package:flutter/foundation.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for managing logging configuration
 class LoggingConfigService {

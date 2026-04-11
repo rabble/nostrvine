@@ -4,7 +4,7 @@
 import 'dart:ui' show Size;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Device memory tier for determining safe rendering resolutions
 enum MemoryTier {

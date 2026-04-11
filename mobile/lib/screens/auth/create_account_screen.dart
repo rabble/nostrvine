@@ -8,13 +8,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
 
@@ -36,7 +36,7 @@ class CreateAccountScreen extends ConsumerWidget {
     final pendingVerificationService = ref.watch(
       pendingVerificationServiceProvider,
     );
-    final inviteApiService = context.read<InviteApiService>();
+    final inviteApiClient = context.read<InviteApiClient>();
     final inviteAccessGrant = context.read<InviteGateBloc>().state.accessGrant;
 
     return BlocProvider(
@@ -44,7 +44,7 @@ class CreateAccountScreen extends ConsumerWidget {
         oauthClient: oauthClient,
         authService: authService,
         pendingVerificationService: pendingVerificationService,
-        inviteApiService: inviteApiService,
+        inviteApiClient: inviteApiClient,
         inviteCode: inviteAccessGrant?.code,
       )..initialize(),
       child: const _CreateAccountView(),

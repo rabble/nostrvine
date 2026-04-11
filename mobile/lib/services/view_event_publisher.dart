@@ -4,7 +4,7 @@
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Kind 22236 - Ephemeral video view event (NIP-71 extension)
 const int viewEventKind = 22236;

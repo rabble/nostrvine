@@ -8,8 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for handling video sharing functionality
 class ShareService {

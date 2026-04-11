@@ -11,26 +11,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Mobile CI
+  generated-files:
+    name: Generated Files
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: mobile/
-
     steps:
       - uses: actions/checkout@v4
-
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.41.4"
           channel: "stable"
           cache: true
-
       - name: 📦 Install dependencies
         run: flutter pub get
-
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs
@@ -39,12 +35,114 @@ jobs:
             git diff --name-only
             exit 1
           fi
-
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
       - name: ✨ Check formatting
         run: dart format --output=none --set-exit-if-changed lib test integration_test
-
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
+  tests:
+    name: Tests (shard ${{ matrix.shard_number }}/${{ matrix.shard_count }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard_index: 0
+            shard_number: 1
+            shard_count: 8
+          - shard_index: 1
+            shard_number: 2
+            shard_count: 8
+          - shard_index: 2
+            shard_number: 3
+            shard_count: 8
+          - shard_index: 3
+            shard_number: 4
+            shard_count: 8
+          - shard_index: 4
+            shard_number: 5
+            shard_count: 8
+          - shard_index: 5
+            shard_number: 6
+            shard_count: 8
+          - shard_index: 6
+            shard_number: 7
+            shard_count: 8
+          - shard_index: 7
+            shard_number: 8
+            shard_count: 8
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
+      - name: 🚀 Run Flutter test shard
+        run: scripts/ci/run_flutter_test_shard.sh ${{ matrix.shard_index }} ${{ matrix.shard_count }}
+  mobile-ci:
+    name: Mobile CI
+    if: ${{ always() }}
+    needs:
+      - generated-files
+      - format
+      - analyze
+      - tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify upstream jobs
+        env:
+          GENERATED_FILES_RESULT: ${{ needs.generated-files.result }}
+          FORMAT_RESULT: ${{ needs.format.result }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+          TESTS_RESULT: ${{ needs.tests.result }}
+        run: |
+          echo "generated-files: ${GENERATED_FILES_RESULT}"
+          echo "format: ${FORMAT_RESULT}"
+          echo "analyze: ${ANALYZE_RESULT}"
+          echo "tests: ${TESTS_RESULT}"
 
-      - name: 🚀 Run tests
-        run: flutter test --exclude-tags integration
+          if [[ "${GENERATED_FILES_RESULT}" != "success" || \
+                "${FORMAT_RESULT}" != "success" || \
+                "${ANALYZE_RESULT}" != "success" || \
+                "${TESTS_RESULT}" != "success" ]]; then
+            echo "One or more Mobile CI jobs failed."
+            exit 1
+          fi

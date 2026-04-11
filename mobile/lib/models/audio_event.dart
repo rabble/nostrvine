@@ -1,6 +1,7 @@
 // ABOUTME: AudioEvent model for NIP-94 Kind 1063 audio file metadata events
 // ABOUTME: Used for audio reuse feature - parsing audio shared for use in other videos
 
+import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/vine_sound.dart';
 
@@ -139,6 +140,29 @@ class AudioEvent {
       source: source,
     );
   }
+
+  /// Create a synthetic AudioEvent from a video's audio track.
+  ///
+  /// Uses the video URL as the audio source. The audio player can extract
+  /// the audio track from video files. The ID is prefixed with `video_`
+  /// to distinguish from real Kind 1063 events.
+  factory AudioEvent.fromVideoOriginalSound(
+    VideoEvent video, {
+    required String creatorName,
+  }) {
+    return AudioEvent(
+      id: 'video_${video.id}',
+      pubkey: video.pubkey,
+      createdAt: video.createdAt,
+      url: video.videoUrl,
+      title: 'Original sound - $creatorName',
+      source: 'Original Sound',
+      sourceVideoReference: '34236:${video.pubkey}:${video.vineId ?? video.id}',
+    );
+  }
+
+  /// Whether this audio is derived from a video's original sound.
+  bool get isOriginalSound => id.startsWith('video_');
 
   /// Whether this audio is a bundled sound (from app assets).
   bool get isBundled => id.startsWith('${bundledMarker}_');

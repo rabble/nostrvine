@@ -7,8 +7,8 @@ import 'dart:convert';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_list_service_mixin.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Represents a bookmarked item
 class BookmarkItem {
@@ -814,8 +814,8 @@ class BookmarkService with NostrListServiceMixin {
       description: description,
       imageUrl: imageUrl,
       items: items,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
+      createdAt: event.createdAtDateTime,
+      updatedAt: event.createdAtDateTime,
       nostrEventId: event.id,
     );
 

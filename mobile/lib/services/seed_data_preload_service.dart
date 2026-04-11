@@ -4,7 +4,7 @@
 import 'package:db_client/db_client.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/services/classic_viner_seed_preload_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class SeedDataPreloadService {
   /// Load seed data if database is empty

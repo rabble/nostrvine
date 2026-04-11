@@ -18,8 +18,8 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 final clipManagerProvider =
     NotifierProvider<ClipManagerNotifier, ClipManagerState>(
@@ -182,16 +182,16 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     final remainingDuration = this.remainingDuration;
 
     // Check if clip needs to be trimmed to fit within max duration
-    final isClipToLong = limitClipDuration && clipDuration > remainingDuration;
+    final isClipTooLong = limitClipDuration && clipDuration > remainingDuration;
 
     // Create a completer to track async trimming progress only when needed.
     // Proof generation runs independently and does not block the UI.
-    final processingCompleter = isClipToLong ? Completer<bool>() : null;
+    final processingCompleter = isClipTooLong ? Completer<bool>() : null;
 
     var clip = DivineVideoClip(
       id: 'clip_${DateTime.now().millisecondsSinceEpoch}_${_clipCounter++}',
       video: video,
-      duration: isClipToLong ? remainingDuration : clipDuration,
+      duration: isClipTooLong ? remainingDuration : clipDuration,
       recordedAt: .now(),
       thumbnailPath: thumbnailPath,
       targetAspectRatio: targetAspectRatio,
@@ -201,7 +201,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
 
     // Asynchronously trim the clip if it exceeds remaining duration
-    if (isClipToLong) {
+    if (isClipTooLong) {
       unawaited(
         VideoEditorRenderService.limitClipDuration(
           clip: clip,

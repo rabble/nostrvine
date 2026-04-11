@@ -8,7 +8,7 @@ import 'package:openvine/config/app_config.dart';
 import 'package:openvine/services/network/rate_limiter.dart'
     show RateLimitStatus, RateLimiter;
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Exception thrown by API service
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod

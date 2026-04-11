@@ -13,7 +13,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class CurationService {

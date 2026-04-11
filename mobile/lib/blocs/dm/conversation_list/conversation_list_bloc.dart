@@ -3,8 +3,6 @@
 // ABOUTME: updates, marking conversations as read, and splitting conversations
 // ABOUTME: into normal inbox vs message requests based on follow state.
 
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
@@ -59,9 +57,9 @@ class ConversationListBloc
     ConversationListStarted event,
     Emitter<ConversationListState> emit,
   ) async {
-    // Start the DM relay subscription when the inbox opens (#2766).
-    // The subscription is lazy — it only runs while this BLoC is alive.
-    unawaited(_dmRepository.startListening());
+    // The gift-wrap subscription is started by `dmRepositoryProvider` for
+    // the whole authenticated session — this BLoC just consumes the
+    // already-running stream via the DAO. See #2931.
 
     // Only show the loading spinner and reset limit on first load.
     if (state.status == ConversationListStatus.initial) {
@@ -195,8 +193,8 @@ class ConversationListBloc
 
   @override
   Future<void> close() {
-    // Stop the DM relay subscription when the inbox is closed (#2766).
-    _dmRepository.stopListening();
+    // The gift-wrap subscription is owned by `dmRepositoryProvider` for the
+    // whole authenticated session — do NOT stop it here. See #2931.
     return super.close();
   }
 }

@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class PageLoadObserver extends NavigatorObserver {
   final ScreenAnalyticsService _analytics = ScreenAnalyticsService();

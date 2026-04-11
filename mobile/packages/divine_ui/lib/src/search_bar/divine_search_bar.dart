@@ -59,12 +59,10 @@ class DivineSearchBar extends StatelessWidget {
         onTap: onTap,
         onChanged: onChanged,
         onSubmitted: onSubmitted,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: VineTheme.bodyLargeFont(),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(
-            color: VineTheme.whiteText.withValues(alpha: 0.6),
-          ),
+          hintStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted55),
           filled: true,
           fillColor: VineTheme.iconButtonBackground,
           border: OutlineInputBorder(
@@ -74,6 +72,7 @@ class DivineSearchBar extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           prefixIconConstraints: const BoxConstraints(),
           prefixIcon: _PrefixIcon(isLoading: isLoading),
+          suffixIconConstraints: const BoxConstraints(),
           suffixIcon: suffixIcon,
         ),
       ),
@@ -102,10 +101,7 @@ class _PrefixIcon extends StatelessWidget {
                 ),
               ),
             )
-          : const DivineIcon(
-              icon: .search,
-              color: VineTheme.lightText,
-            ),
+          : const DivineIcon(icon: .search, color: VineTheme.onSurfaceMuted55),
     );
   }
 }

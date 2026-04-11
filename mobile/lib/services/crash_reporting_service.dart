@@ -7,7 +7,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/firebase_options.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Crash reporting service for production error tracking
 class CrashReportingService {

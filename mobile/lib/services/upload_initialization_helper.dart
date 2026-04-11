@@ -10,9 +10,9 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/utils/async_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Robust initialization helper for UploadManager
 class UploadInitializationHelper {

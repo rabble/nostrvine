@@ -1,9 +1,8 @@
-// ABOUTME: Top toolbar for the video editor with navigation and history controls.
-// ABOUTME: Contains close, undo, redo, done, and audio buttons with BLoC integration.
+// ABOUTME: Top overlay actions for the video editor with close and done buttons.
+// ABOUTME: Hides when the music sub-editor is open.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -39,11 +38,11 @@ class VideoEditorMainOverlayActions extends StatelessWidget {
 }
 
 /// Top row actions: close, audio chip, and done buttons.
-class _TopActions extends ConsumerWidget {
+class _TopActions extends StatelessWidget {
   const _TopActions();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final scope = VideoEditorScope.of(context);
 
     return VideoEditorToolbar(

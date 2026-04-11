@@ -9,8 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_moderation_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Dialog for reporting a DM message.
 ///

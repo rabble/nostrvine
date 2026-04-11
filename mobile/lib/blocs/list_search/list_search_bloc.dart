@@ -39,7 +39,9 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
       return;
     }
 
-    if (query == state.query && state.status != ListSearchStatus.initial) {
+    if (query == state.query &&
+        state.status != ListSearchStatus.initial &&
+        state.status != ListSearchStatus.failure) {
       return;
     }
 

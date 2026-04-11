@@ -10,8 +10,8 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Displays collaborator avatars on a video feed item.
 ///

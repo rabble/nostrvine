@@ -15,10 +15,10 @@ import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying new/recent videos sorted by time.
 ///

@@ -16,12 +16,12 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_viners_slider.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying Classics archive videos (pre-2017).
 ///

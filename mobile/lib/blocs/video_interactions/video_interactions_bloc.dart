@@ -8,8 +8,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' show NIP71VideoKinds;
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:reposts_repository/reposts_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'video_interactions_event.dart';
 part 'video_interactions_state.dart';

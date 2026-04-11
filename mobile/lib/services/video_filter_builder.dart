@@ -5,7 +5,7 @@ import 'package:models/models.dart'
     show DivineFilter, IntRangeFilter, SortConfig, SortDirection;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/relay_capability_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Sort options for video queries
 enum VideoSortField {
