@@ -240,19 +240,5 @@ void main() {
       expect(result, isTrue);
       verify(() => mockBlossomAuthService.canCreateHeaders).called(1);
     });
-
-    test('currentUserPubkey delegates to BlossomAuthService', () {
-      // Arrange
-      when(
-        () => mockBlossomAuthService.currentUserPubkey,
-      ).thenReturn('npub123');
-
-      // Act
-      final result = interceptor.currentUserPubkey;
-
-      // Assert
-      expect(result, equals('npub123'));
-      verify(() => mockBlossomAuthService.currentUserPubkey).called(1);
-    });
   });
 }

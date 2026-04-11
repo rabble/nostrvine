@@ -76,9 +76,6 @@ void main() {
       capturedOptions = null;
 
       when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-      when(
-        () => mockAuthProvider.currentNpub,
-      ).thenReturn(_testPubkey);
 
       when(
         () => mockAuthProvider.createAndSignEvent(
