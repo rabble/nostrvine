@@ -90,12 +90,12 @@ class InviteErrorUtils {
   }
 
   /// Legacy string-based helper retained for pre-existing callers
-  /// (`DivineAuthCubit`) that still store English strings in state. New
-  /// callers must use [activationFailureReason] or
-  /// [toEmailVerificationError] instead.
-  @Deprecated(
-    'Store an InviteActivationFailureReason in state and localize in the UI.',
-  )
+  /// (`DivineAuthCubit`) that still store English strings in state.
+  ///
+  /// New callers must use [activationFailureReason] or
+  /// [toEmailVerificationError] instead and localize in the UI layer.
+  /// When `DivineAuthCubit` is migrated to the reason-code pattern, this
+  /// helper can be removed.
   static String activationFailureMessage(InviteApiException error) {
     switch (activationFailureReason(error)) {
       case InviteActivationFailureReason.alreadyUsed:
