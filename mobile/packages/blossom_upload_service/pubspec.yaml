@@ -11,6 +11,10 @@ dependencies:
   convert: ^3.1.1
   crypto: ^3.0.6
   dio: ^5.7.0
+  # Required transitively by flutter_test (dev) and image_metadata_stripper.
+  # The lib/ sources do NOT import dart:ui or any flutter/* package — this
+  # package is a pure Dart data layer. Do not remove without first confirming
+  # both transitive deps are gone.
   flutter:
     sdk: flutter
   hive_ce: ^2.6.0
