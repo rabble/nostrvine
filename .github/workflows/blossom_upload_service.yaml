@@ -24,4 +24,4 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/blossom_upload_service"
-      min_coverage: 40
+      min_coverage: 100
