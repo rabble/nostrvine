@@ -10,9 +10,12 @@ class VideoEditorTimelinePlayhead extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
     return AnimatedOpacity(
       opacity: isVisible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 200),
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 200),
       child: const IgnorePointer(
         child: Align(
           child: SizedBox(

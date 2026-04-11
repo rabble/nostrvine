@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
@@ -307,9 +308,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
     await _videoPlayer!.initialize();
     if (!mounted) return;
-    await _videoPlayer!.setClips(
-      clipPaths.map((path) => VideoClip(uri: path)).toList(),
-    );
+    await _videoPlayer!.setClips([
+      for (final clip in clips)
+        if (clip.video.file?.path case final path?)
+          VideoClip(
+            uri: path,
+            start: clip.trimStart,
+            end: clip.duration - clip.trimEnd,
+          ),
+    ]);
     if (!mounted) return;
 
     final editorState = ref.read(videoEditorProvider);
@@ -562,6 +569,34 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     return _OverlayCutArea(
       child: MultiBlocListener(
         listeners: [
+          // Update native player clip boundaries when trim handle is
+          // released or for non-trim clip changes (reorder, add, remove).
+          BlocListener<ClipEditorBloc, ClipEditorState>(
+            listenWhen: (previous, current) {
+              // Trim handle released.
+              if (previous.isTrimDragging && !current.isTrimDragging) {
+                return true;
+              }
+              // Non-trim clip changes (reorder, add, remove).
+              if (!current.isTrimDragging &&
+                  !previous.isTrimDragging &&
+                  previous.clips != current.clips) {
+                return true;
+              }
+              return false;
+            },
+            listener: (context, state) {
+              _videoPlayer?.setClips([
+                for (final clip in state.clips)
+                  if (clip.video.file?.path case final path?)
+                    VideoClip(
+                      uri: path,
+                      start: clip.trimStart,
+                      end: clip.duration - clip.trimEnd,
+                    ),
+              ]);
+            },
+          ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
             listenWhen: (previous, current) =>
                 previous.isExternalPauseRequested !=
