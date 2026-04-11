@@ -33,7 +33,7 @@ class TimelineTrimHandles extends StatefulWidget {
     this.markerHeight = TimelineConstants.trimHandleMarkerHeight,
     this.borderWidth = TimelineConstants.trimBorderWidth,
     this.borderRadius = TimelineConstants.thumbnailRadius,
-    this.hitAreaExtra = 12,
+    this.hitAreaExtra = TimelineConstants.trimHitAreaExtra,
     super.key,
   });
 

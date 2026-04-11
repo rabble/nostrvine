@@ -56,6 +56,7 @@ void main() {
       expect(bloc.state.isPlayerReady, isFalse);
       expect(bloc.state.hasPlayedOnce, isFalse);
       expect(bloc.state.isMuted, isFalse);
+      expect(bloc.state.isTrimDragging, isFalse);
       expect(bloc.state.undoStack, isEmpty);
       expect(bloc.state.redoStack, isEmpty);
       expect(bloc.state.canUndo, isFalse);
@@ -1452,6 +1453,51 @@ void main() {
       );
     });
 
+    group('ClipEditorTrimDragStarted', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'sets isTrimDragging to true',
+        build: buildBloc,
+        act: (bloc) => bloc.add(const ClipEditorTrimDragStarted()),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isTrimDragging,
+            'isTrimDragging',
+            isTrue,
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'pauses playback when drag starts while playing',
+        build: buildBloc,
+        seed: () => const ClipEditorState(isPlaying: true),
+        act: (bloc) => bloc.add(const ClipEditorTrimDragStarted()),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isTrimDragging,
+            'isTrimDragging',
+            isTrue,
+          ),
+        ],
+      );
+    });
+
+    group('ClipEditorTrimDragEnded', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'sets isTrimDragging to false',
+        build: buildBloc,
+        seed: () => const ClipEditorState(isTrimDragging: true),
+        act: (bloc) => bloc.add(const ClipEditorTrimDragEnded()),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isTrimDragging,
+            'isTrimDragging',
+            isFalse,
+          ),
+        ],
+      );
+    });
+
     // =========================================================
     // EVENT EQUALITY
     // =========================================================
@@ -1589,6 +1635,14 @@ void main() {
         expect(
           const ClipEditorSplitRequested(),
           equals(const ClipEditorSplitRequested()),
+        );
+        expect(
+          const ClipEditorTrimDragStarted(),
+          equals(const ClipEditorTrimDragStarted()),
+        );
+        expect(
+          const ClipEditorTrimDragEnded(),
+          equals(const ClipEditorTrimDragEnded()),
         );
         expect(
           const ClipEditorTrimUpdated(

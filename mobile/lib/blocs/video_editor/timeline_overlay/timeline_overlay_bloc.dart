@@ -2,6 +2,7 @@
 // ABOUTME: video editor timeline. Handles add/remove/move/trim/select/drag
 // ABOUTME: and collapse state for all three strip types.
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
@@ -19,8 +20,11 @@ class TimelineOverlayBloc
   TimelineOverlayBloc() : super(const TimelineOverlayState()) {
     on<TimelineOverlayItemAdded>(_onItemAdded);
     on<TimelineOverlayItemRemoved>(_onItemRemoved);
-    on<TimelineOverlayItemMoved>(_onItemMoved);
-    on<TimelineOverlayItemTrimmed>(_onItemTrimmed);
+    on<TimelineOverlayItemMoved>(_onItemMoved, transformer: restartable());
+    on<TimelineOverlayItemTrimmed>(
+      _onItemTrimmed,
+      transformer: restartable(),
+    );
     on<TimelineOverlayItemSelected>(_onItemSelected);
     on<TimelineOverlayDragStarted>(_onDragStarted);
     on<TimelineOverlayDragEnded>(_onDragEnded);

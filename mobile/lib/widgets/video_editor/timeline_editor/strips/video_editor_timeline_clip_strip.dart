@@ -415,7 +415,7 @@ class _VideoEditorTimelineClipStripState
     final shouldAnimate = _isReordering || _isReorderExiting;
 
     final trimExpand = widget.trimmingClipId != null
-        ? TimelineConstants.trimHandleWidth + 12.0
+        ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
         : 0.0;
 
     return HitExpandedBox(

@@ -55,6 +55,9 @@ abstract class TimelineConstants {
   /// Border width around a clip in trim mode.
   static const double trimBorderWidth = 2;
 
+  /// Extra hit-test area around each trim handle.
+  static const double trimHitAreaExtra = 12;
+
   /// Minimum trimmed duration for a clip.
   static const Duration minTrimDuration = Duration(milliseconds: 60);
 

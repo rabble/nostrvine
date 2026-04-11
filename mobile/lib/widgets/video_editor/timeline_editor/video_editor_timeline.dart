@@ -600,7 +600,7 @@ class _TimelineScrollContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trimExpand = trimmingClipId != null
-        ? TimelineConstants.trimHandleWidth + 12.0
+        ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
         : 0.0;
 
     return HitExpandedBox(
@@ -680,94 +680,115 @@ class _TimelineOverlayStrips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overlayState = context.watch<TimelineOverlayBloc>().state;
+    return BlocSelector<
+      TimelineOverlayBloc,
+      TimelineOverlayState,
+      ({
+        List<TimelineOverlayItem> items,
+        String? selectedItemId,
+        Set<TimelineOverlayType> collapsedTypes,
+      })
+    >(
+      selector: (state) => (
+        items: state.items,
+        selectedItemId: state.selectedItemId,
+        collapsedTypes: state.collapsedTypes,
+      ),
+      builder: (context, selected) {
+        final overlayState = TimelineOverlayState(
+          items: selected.items,
+          selectedItemId: selected.selectedItemId,
+          collapsedTypes: selected.collapsedTypes,
+        );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Layer strip (pink) — text, drawings, stickers.
-        if (overlayState.hasItemsOfType(TimelineOverlayType.layer))
-          Padding(
-            padding: const EdgeInsets.only(
-              top: TimelineConstants.overlayStripTopGap,
-            ),
-            child: TimelineOverlayStrip(
-              items: overlayState.itemsOfType(TimelineOverlayType.layer),
-              rowCount: overlayState.rowCountForType(
-                TimelineOverlayType.layer,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Layer strip (pink) — text, drawings, stickers.
+            if (overlayState.hasItemsOfType(TimelineOverlayType.layer))
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: TimelineConstants.overlayStripTopGap,
+                ),
+                child: TimelineOverlayStrip(
+                  items: overlayState.itemsOfType(TimelineOverlayType.layer),
+                  rowCount: overlayState.rowCountForType(
+                    TimelineOverlayType.layer,
+                  ),
+                  totalWidth: totalWidth,
+                  pixelsPerSecond: pixelsPerSecond,
+                  totalDuration: totalDuration,
+                  color: VineTheme.accentPink,
+                  isCollapsed: overlayState.isTypeCollapsed(
+                    TimelineOverlayType.layer,
+                  ),
+                  selectedItemId: overlayState.selectedItemId,
+                  onItemTapped: onItemTapped,
+                  onItemMoved: onItemMoved,
+                  onTrimChanged: onItemTrimmed,
+                  onTrimDragChanged: onTrimDragChanged,
+                  onDragStarted: onDragStarted,
+                  onDragEnded: onDragEnded,
+                ),
               ),
-              totalWidth: totalWidth,
-              pixelsPerSecond: pixelsPerSecond,
-              totalDuration: totalDuration,
-              color: VineTheme.accentPink,
-              isCollapsed: overlayState.isTypeCollapsed(
-                TimelineOverlayType.layer,
+            // Sound strip (red) — audio tracks.
+            if (overlayState.hasItemsOfType(TimelineOverlayType.sound))
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: TimelineConstants.overlayStripGap,
+                ),
+                child: TimelineOverlayStrip(
+                  items: overlayState.itemsOfType(TimelineOverlayType.sound),
+                  rowCount: overlayState.rowCountForType(
+                    TimelineOverlayType.sound,
+                  ),
+                  totalWidth: totalWidth,
+                  pixelsPerSecond: pixelsPerSecond,
+                  totalDuration: totalDuration,
+                  color: VineTheme.likeRed,
+                  isCollapsed: overlayState.isTypeCollapsed(
+                    TimelineOverlayType.sound,
+                  ),
+                  selectedItemId: overlayState.selectedItemId,
+                  onItemTapped: onItemTapped,
+                  onItemMoved: onItemMoved,
+                  onTrimChanged: onItemTrimmed,
+                  onTrimDragChanged: onTrimDragChanged,
+                  onDragStarted: onDragStarted,
+                  onDragEnded: onDragEnded,
+                ),
               ),
-              selectedItemId: overlayState.selectedItemId,
-              onItemTapped: onItemTapped,
-              onItemMoved: onItemMoved,
-              onTrimChanged: onItemTrimmed,
-              onTrimDragChanged: onTrimDragChanged,
-              onDragStarted: onDragStarted,
-              onDragEnded: onDragEnded,
-            ),
-          ),
-        // Sound strip (red) — audio tracks.
-        if (overlayState.hasItemsOfType(TimelineOverlayType.sound))
-          Padding(
-            padding: const EdgeInsets.only(
-              top: TimelineConstants.overlayStripGap,
-            ),
-            child: TimelineOverlayStrip(
-              items: overlayState.itemsOfType(TimelineOverlayType.sound),
-              rowCount: overlayState.rowCountForType(
-                TimelineOverlayType.sound,
+            // Filter strip (green) — visual effects.
+            if (overlayState.hasItemsOfType(TimelineOverlayType.filter))
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: TimelineConstants.overlayStripGap,
+                ),
+                child: TimelineOverlayStrip(
+                  items: overlayState.itemsOfType(TimelineOverlayType.filter),
+                  rowCount: overlayState.rowCountForType(
+                    TimelineOverlayType.filter,
+                  ),
+                  totalWidth: totalWidth,
+                  pixelsPerSecond: pixelsPerSecond,
+                  totalDuration: totalDuration,
+                  color: VineTheme.success,
+                  isCollapsed: overlayState.isTypeCollapsed(
+                    TimelineOverlayType.filter,
+                  ),
+                  selectedItemId: overlayState.selectedItemId,
+                  onItemTapped: onItemTapped,
+                  onItemMoved: onItemMoved,
+                  onTrimChanged: onItemTrimmed,
+                  onTrimDragChanged: onTrimDragChanged,
+                  onDragStarted: onDragStarted,
+                  onDragEnded: onDragEnded,
+                ),
               ),
-              totalWidth: totalWidth,
-              pixelsPerSecond: pixelsPerSecond,
-              totalDuration: totalDuration,
-              color: VineTheme.likeRed,
-              isCollapsed: overlayState.isTypeCollapsed(
-                TimelineOverlayType.sound,
-              ),
-              selectedItemId: overlayState.selectedItemId,
-              onItemTapped: onItemTapped,
-              onItemMoved: onItemMoved,
-              onTrimChanged: onItemTrimmed,
-              onTrimDragChanged: onTrimDragChanged,
-              onDragStarted: onDragStarted,
-              onDragEnded: onDragEnded,
-            ),
-          ),
-        // Filter strip (green) — visual effects.
-        if (overlayState.hasItemsOfType(TimelineOverlayType.filter))
-          Padding(
-            padding: const EdgeInsets.only(
-              top: TimelineConstants.overlayStripGap,
-            ),
-            child: TimelineOverlayStrip(
-              items: overlayState.itemsOfType(TimelineOverlayType.filter),
-              rowCount: overlayState.rowCountForType(
-                TimelineOverlayType.filter,
-              ),
-              totalWidth: totalWidth,
-              pixelsPerSecond: pixelsPerSecond,
-              totalDuration: totalDuration,
-              color: VineTheme.success,
-              isCollapsed: overlayState.isTypeCollapsed(
-                TimelineOverlayType.filter,
-              ),
-              selectedItemId: overlayState.selectedItemId,
-              onItemTapped: onItemTapped,
-              onItemMoved: onItemMoved,
-              onTrimChanged: onItemTrimmed,
-              onTrimDragChanged: onTrimDragChanged,
-              onDragStarted: onDragStarted,
-              onDragEnded: onDragEnded,
-            ),
-          ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

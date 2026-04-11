@@ -174,8 +174,8 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     int displayRowCount,
   ) {
     setState(() {
-      _dragDeltaX += details.offsetFromOrigin.dx - _dragDeltaX;
-      _dragDeltaY += details.offsetFromOrigin.dy - _dragDeltaY;
+      _dragDeltaX = details.offsetFromOrigin.dx;
+      _dragDeltaY = details.offsetFromOrigin.dy;
     });
   }
 
@@ -373,7 +373,7 @@ class _OverlayItemTile extends StatelessWidget {
 }
 
 /// Overlay item tile wrapped with trim handles for duration adjustment.
-class _TrimmableOverlayTile extends StatelessWidget {
+class _TrimmableOverlayTile extends StatefulWidget {
   const _TrimmableOverlayTile({
     required this.item,
     required this.width,
@@ -393,26 +393,48 @@ class _TrimmableOverlayTile extends StatelessWidget {
   final ValueChanged<bool>? onTrimDragChanged;
 
   @override
+  State<_TrimmableOverlayTile> createState() => _TrimmableOverlayTileState();
+}
+
+class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
+  bool _isDragStarted = false;
+  bool _leftAtLimit = false;
+  bool _rightAtLimit = false;
+
+  @override
   Widget build(BuildContext context) {
     return TimelineTrimHandles(
-      height: height - TimelineConstants.overlayRowGap,
-      handleColor: color,
-      onDragStart: () => onTrimDragChanged?.call(true),
-      onDragEnd: () => onTrimDragChanged?.call(false),
+      height: widget.height - TimelineConstants.overlayRowGap,
+      handleColor: widget.color,
+      onDragStart: _onDragStart,
+      onDragEnd: _onDragEnd,
       onLeftDragUpdate: _onLeftTrim,
       onRightDragUpdate: _onRightTrim,
       child: _OverlayItemTile(
-        item: item,
-        width: width - TimelineConstants.trimHandleWidth * 2,
-        height: height,
-        color: color,
+        item: widget.item,
+        width: widget.width - TimelineConstants.trimHandleWidth * 2,
+        height: widget.height,
+        color: widget.color,
       ),
     );
   }
 
+  void _onDragStart() {
+    _isDragStarted = false;
+    _leftAtLimit = false;
+    _rightAtLimit = false;
+    widget.onTrimDragChanged?.call(true);
+  }
+
+  void _onDragEnd() {
+    _isDragStarted = false;
+    widget.onTrimDragChanged?.call(false);
+  }
+
   void _onLeftTrim(double dx) {
+    final item = widget.item;
     final deltaDuration = Duration(
-      milliseconds: (dx / pixelsPerSecond * 1000).round(),
+      milliseconds: (dx / widget.pixelsPerSecond * 1000).round(),
     );
     final newTrimStart = item.trimStart + deltaDuration;
     final maxTrim =
@@ -425,22 +447,28 @@ class _TrimmableOverlayTile extends StatelessWidget {
       ),
     );
 
-    if (clamped == item.trimStart) {
-      HapticFeedback.selectionClick();
-      return;
-    }
+    final atLimit = clamped != newTrimStart;
 
-    onTrimChanged?.call(
+    if (atLimit && !_leftAtLimit) {
+      HapticFeedback.selectionClick();
+    }
+    _leftAtLimit = atLimit;
+
+    if (clamped == item.trimStart) return;
+
+    widget.onTrimChanged?.call(
       itemId: item.id,
       trimStart: clamped,
       trimEnd: item.trimEnd,
-      isStart: true,
+      isStart: !_isDragStarted,
     );
+    _isDragStarted = true;
   }
 
   void _onRightTrim(double dx) {
+    final item = widget.item;
     final deltaDuration = Duration(
-      milliseconds: (-dx / pixelsPerSecond * 1000).round(),
+      milliseconds: (-dx / widget.pixelsPerSecond * 1000).round(),
     );
     final newTrimEnd = item.trimEnd + deltaDuration;
     final maxTrim =
@@ -453,16 +481,21 @@ class _TrimmableOverlayTile extends StatelessWidget {
       ),
     );
 
-    if (clamped == item.trimEnd) {
-      HapticFeedback.selectionClick();
-      return;
-    }
+    final atLimit = clamped != newTrimEnd;
 
-    onTrimChanged?.call(
+    if (atLimit && !_rightAtLimit) {
+      HapticFeedback.selectionClick();
+    }
+    _rightAtLimit = atLimit;
+
+    if (clamped == item.trimEnd) return;
+
+    widget.onTrimChanged?.call(
       itemId: item.id,
       trimStart: item.trimStart,
       trimEnd: clamped,
-      isStart: false,
+      isStart: !_isDragStarted,
     );
+    _isDragStarted = true;
   }
 }
