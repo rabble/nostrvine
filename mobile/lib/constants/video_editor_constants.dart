@@ -25,6 +25,9 @@ class VideoEditorConstants {
   /// Maximum recording duration for videos.
   static const maxDuration = Duration(seconds: 6, milliseconds: 300);
 
+  /// Maximum number of undo steps to keep in memory.
+  static const maxUndoSteps = 30;
+
   /// Default time offset for extracting video thumbnails.
   static const defaultThumbnailExtractTime = Duration(milliseconds: 200);
 

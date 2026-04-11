@@ -38,9 +38,13 @@ class TimelineOverlayState extends Equatable {
 
   /// Number of rows used by items of [type].
   int rowCountForType(TimelineOverlayType type) {
-    final typeItems = itemsOfType(type);
-    if (typeItems.isEmpty) return 0;
-    return typeItems.map((i) => i.row).reduce((a, b) => a > b ? a : b) + 1;
+    var maxRow = -1;
+    for (final item in items) {
+      if (item.type == type && item.row > maxRow) {
+        maxRow = item.row;
+      }
+    }
+    return maxRow + 1;
   }
 
   /// Whether [type] is collapsed.

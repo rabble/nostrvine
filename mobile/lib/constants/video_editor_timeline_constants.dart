@@ -55,6 +55,9 @@ abstract class TimelineConstants {
   /// Border width around a clip in trim mode.
   static const double trimBorderWidth = 2;
 
+  /// Extra hit-test area around each trim handle.
+  static const double trimHitAreaExtra = 32;
+
   /// Minimum trimmed duration for a clip.
   static const Duration minTrimDuration = Duration(milliseconds: 60);
 
@@ -68,6 +71,21 @@ abstract class TimelineConstants {
 
   /// Vertical gap between different overlay strip sections.
   static const double overlayStripGap = 4;
+
+  /// Vertical gap between overlay rows within a strip.
+  static const double overlayRowGap = 2;
+
+  /// Horizontal padding inside overlay item tiles.
+  static const double overlayItemPadding = 6;
+
+  /// Animation duration for overlay tile state changes.
+  static const Duration overlayTileAnimDuration = Duration(milliseconds: 150);
+
+  /// Border width for dragged overlay items.
+  static const double dragBorderWidth = 1.5;
+
+  /// Shadow blur radius for dragged overlay items.
+  static const double dragShadowBlurRadius = 6;
 
   // --- Snap ---
 
