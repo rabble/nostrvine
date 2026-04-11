@@ -58,12 +58,20 @@ class ClipThumbnailManager {
       TimelineConstants.thumbnailStripHeight * devicePixelRatio,
     );
 
+    // Generate enough thumbnails to fill every slot at maximum zoom.
+    // ceil(maxPixelsPerSecond / thumbnailWidth) = ceil(600 / 48) = 13
+    final thumbsPerSecond =
+        (TimelineConstants.maxPixelsPerSecond /
+                TimelineConstants.thumbnailWidth)
+            .ceil();
+
     _subscriptions[clip.id] =
         VideoThumbnailService.generateStripThumbnails(
           videoPath: videoPath,
           clipId: clip.id,
           duration: clip.duration,
           outputSize: outputSize,
+          thumbsPerSecond: thumbsPerSecond,
         ).listen((thumbnails) {
           _notifiers[clip.id]?.value = thumbnails;
         });

@@ -488,8 +488,12 @@ class VideoThumbnailService {
     return destPath;
   }
 
-  /// Generates thumbnails for a timeline strip at ~1 per second, yielded in
-  /// batches so the UI can update progressively.
+  /// Generates thumbnails for a timeline strip, yielded in batches so the
+  /// UI can update progressively.
+  ///
+  /// [thumbsPerSecond] controls how many frames are extracted per second of
+  /// video. Pass `ceil(maxPixelsPerSecond / thumbnailWidth)` to ensure every
+  /// visual slot has a distinct frame at maximum zoom.
   ///
   /// Thumbnails are written to temporary cache files to avoid holding
   /// large byte arrays in memory. The caller is responsible for deleting
@@ -502,6 +506,7 @@ class VideoThumbnailService {
     required String clipId,
     required Duration duration,
     required Size outputSize,
+    int thumbsPerSecond = 1,
     int quality = _thumbnailQuality,
     int batchSize = 6,
   }) async* {
@@ -519,6 +524,7 @@ class VideoThumbnailService {
         clipId: clipId,
         duration: duration,
         outputSize: outputSize,
+        thumbsPerSecond: thumbsPerSecond,
         quality: quality,
         batchSize: batchSize,
       );
@@ -534,12 +540,13 @@ class VideoThumbnailService {
     required String clipId,
     required Duration duration,
     required Size outputSize,
+    required int thumbsPerSecond,
     required int quality,
     required int batchSize,
   }) async* {
     final durationMs = duration.inMilliseconds;
-    // 1 thumbnail per second, but at least 1.
-    final count = (durationMs / 1000).ceil().clamp(1, 60);
+    // Enough frames to cover every visual slot at the requested density.
+    final count = ((durationMs / 1000) * thumbsPerSecond).ceil().clamp(1, 500);
 
     final allTimestamps = List.generate(count, (i) {
       final fraction = (i + 0.5) / count;
