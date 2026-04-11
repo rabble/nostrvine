@@ -32,6 +32,7 @@ workspace:
   - packages/db_client
   - packages/divine_camera
   - packages/divine_video_player
+  - packages/follow_repository
   - packages/funnelcake_api_client
   - packages/hashtag_repository
   - packages/image_metadata_stripper
@@ -156,6 +157,9 @@ dependencies:
   nostr_apps:
 
   keycast_flutter:
+
+  # Follow Repository - Follow relationship management
+  follow_repository:
 
   # Hashtag Repository - Hashtag search data layer
   hashtag_repository:

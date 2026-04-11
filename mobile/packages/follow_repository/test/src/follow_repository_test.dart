@@ -4,19 +4,17 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockPersonalEventCacheService extends Mock
-    implements PersonalEventCacheService {}
+class _MockPersonalEventCache extends Mock implements PersonalEventCache {}
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
@@ -28,7 +26,7 @@ void main() {
   group('FollowRepository', () {
     late FollowRepository repository;
     late _MockNostrClient mockNostrClient;
-    late _MockPersonalEventCacheService mockPersonalEventCache;
+    late _MockPersonalEventCache mockPersonalEventCache;
 
     // Valid 64-character hex pubkeys for testing
     const testCurrentUserPubkey =
@@ -48,7 +46,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
 
       mockNostrClient = _MockNostrClient();
-      mockPersonalEventCache = _MockPersonalEventCacheService();
+      mockPersonalEventCache = _MockPersonalEventCache();
 
       // Default nostr client setup
       when(() => mockNostrClient.hasKeys).thenReturn(true);
@@ -1166,9 +1164,7 @@ void main() {
           );
 
           // Mock sendContactList for the merge broadcast
-          when(
-            () => mockNostrClient.sendContactList(any(), any()),
-          ).thenAnswer(
+          when(() => mockNostrClient.sendContactList(any(), any())).thenAnswer(
             (_) async => Event(
               testCurrentUserPubkey,
               3,
@@ -1209,47 +1205,44 @@ void main() {
         },
       );
 
-      test(
-        'accepts drastic reduction when remote is a subset (legitimate mass '
-        'unfollow)',
-        () async {
-          // Seed with 12 follows
-          final seededPubkeys = List.generate(
-            12,
-            (i) => i.toRadixString(16).padLeft(64, '0'),
-          );
-          SharedPreferences.setMockInitialValues({
-            'following_list_$testCurrentUserPubkey':
-                '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
-          });
+      test('accepts drastic reduction when remote is a subset (legitimate mass '
+          'unfollow)', () async {
+        // Seed with 12 follows
+        final seededPubkeys = List.generate(
+          12,
+          (i) => i.toRadixString(16).padLeft(64, '0'),
+        );
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey':
+              '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
+        });
 
-          repository = FollowRepository(
-            nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
-            indexerRelayUrls: const [],
-          );
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
+        );
 
-          await repository.initialize();
-          expect(repository.followingCount, 12);
+        await repository.initialize();
+        expect(repository.followingCount, 12);
 
-          // Remote event keeps only 3 of the original 12 — drastic but all
-          // entries are a subset of the local list (no new pubkeys), so this
-          // is a legitimate mass unfollow on another client.
-          final remoteEvent = Event(
-            testCurrentUserPubkey,
-            3,
-            seededPubkeys.take(3).map((p) => ['p', p]).toList(),
-            '',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
-          );
+        // Remote event keeps only 3 of the original 12 — drastic but all
+        // entries are a subset of the local list (no new pubkeys), so this
+        // is a legitimate mass unfollow on another client.
+        final remoteEvent = Event(
+          testCurrentUserPubkey,
+          3,
+          seededPubkeys.take(3).map((p) => ['p', p]).toList(),
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+        );
 
-          realTimeStreamController.add(remoteEvent);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+        realTimeStreamController.add(remoteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // Should accept as-is (not merge) because no new pubkeys
-          expect(repository.followingCount, 3);
-        },
-      );
+        // Should accept as-is (not merge) because no new pubkeys
+        expect(repository.followingCount, 3);
+      });
 
       test(
         'accepts remote event with slightly fewer follows (legitimate unfollow)',

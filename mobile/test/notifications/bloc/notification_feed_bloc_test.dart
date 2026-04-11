@@ -5,11 +5,11 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 
 class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
