@@ -32,6 +32,7 @@ class FollowRepository {
     IsOnlineCallback? isOnline,
     QueueOfflineFollowCallback? queueOfflineAction,
     QueryContactListCallback? queryContactList,
+    RelayFactory? relayFactory,
   }) : _nostrClient = nostrClient,
        _personalEventCache = personalEventCache,
        _funnelcakeApiClient = funnelcakeApiClient,
@@ -39,7 +40,8 @@ class FollowRepository {
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
        _indexerRelayUrls = indexerRelayUrls,
-       _queryContactList = queryContactList ?? _defaultQueryContactList;
+       _queryContactList = queryContactList ?? _defaultQueryContactList,
+       _relayFactory = relayFactory ?? _defaultRelayFactory;
 
   final NostrClient _nostrClient;
   final PersonalEventCache? _personalEventCache;
@@ -60,6 +62,13 @@ class FollowRepository {
 
   /// Callback to query a contact list from a relay event stream.
   final QueryContactListCallback _queryContactList;
+
+  /// Factory for creating relay instances (injectable for testing).
+  final RelayFactory _relayFactory;
+
+  /// Default relay factory — creates a real [RelayBase].
+  static RelayBase _defaultRelayFactory(String url, RelayStatus status) =>
+      RelayBase(url, status);
 
   /// Default implementation: listen for the first matching contact list
   /// event, with a timeout fallback.
@@ -637,7 +646,7 @@ class FollowRepository {
     String pubkey,
   ) async {
     final relayStatus = RelayStatus(indexerUrl);
-    final relay = RelayBase(indexerUrl, relayStatus);
+    final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<int>();
     final followerPubkeys = <String>{};
     final subscriptionId = 'fc_${DateTime.now().millisecondsSinceEpoch}';
@@ -839,7 +848,7 @@ class FollowRepository {
     String pubkey,
   ) async {
     final relayStatus = RelayStatus(indexerUrl);
-    final relay = RelayBase(indexerUrl, relayStatus);
+    final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<List<String>>();
     final followerPubkeys = <String>{};
     final subscriptionId = 'fr_${DateTime.now().millisecondsSinceEpoch}';
@@ -1570,7 +1579,7 @@ class FollowRepository {
     String pubkey,
   ) async {
     final relayStatus = RelayStatus(indexerUrl);
-    final relay = RelayBase(indexerUrl, relayStatus);
+    final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<Event?>();
     final subscriptionId = 'cl_${DateTime.now().millisecondsSinceEpoch}';
     Event? bestEvent;

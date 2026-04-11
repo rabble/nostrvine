@@ -20,6 +20,11 @@ typedef QueryContactListCallback =
       int fallbackTimeoutSeconds,
     });
 
+/// Factory for creating relay instances.
+///
+/// Defaults to [RelayBase]. Override in tests to inject mock relays.
+typedef RelayFactory = RelayBase Function(String url, RelayStatus status);
+
 /// Immutable follower/following counts for a pubkey.
 @immutable
 class FollowerStats {
