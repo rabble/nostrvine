@@ -2,7 +2,7 @@
 // ABOUTME: Header title uses Bricolage Grotesque font, camera button in bottom nav
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +11,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart';
@@ -341,15 +343,20 @@ class _AppShellState extends ConsumerState<AppShell> {
       orElse: () => false,
     );
 
+    // Watch the newSearch feature flag
+    final isNewSearchEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.newSearch),
+    );
+
     // Explore grid mode manages its own header (search bar + tabs)
-    // Only in debug builds until #2470 is complete; production keeps the
-    // standard title + search-icon app bar.
+    // when the newSearch feature flag is enabled.
     final isExploreGrid =
-        kDebugMode &&
+        isNewSearchEnabled &&
         pageCtxAsync.maybeWhen(
-          data: (ctx) =>
-              ctx.type == RouteType.explore && ctx.videoIndex == null,
-          orElse: () => false,
+          data: (ctx) => ctx.type == RouteType.explore
+              ? ctx.videoIndex == null
+              : currentIndex == 1,
+          orElse: () => currentIndex == 1,
         );
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
@@ -490,7 +497,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                       // Already at home with no history - let system handle exit
                     }
                   : null,
-              actions: isSearchRoute
+              actions: isSearchRoute || isNewSearchEnabled
                   ? const []
                   : [
                       DiVineAppBarAction(

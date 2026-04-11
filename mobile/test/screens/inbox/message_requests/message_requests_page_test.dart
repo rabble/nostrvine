@@ -2,10 +2,10 @@
 // ABOUTME: Verifies route constants and that it renders MessageRequestsView
 // ABOUTME: with ConversationListBloc and MessageRequestActionsCubit provided.
 
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';

@@ -439,10 +439,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       child: Column(
         children: [
           // Top area: SafeArea + search bar on surfaceBackground
-          // Search bar is debug-only until #2470 is complete
+          // Search bar shown when newSearch feature flag is enabled
           SafeArea(
             bottom: false,
-            child: kDebugMode
+            child: ref.watch(isFeatureEnabledProvider(FeatureFlag.newSearch))
                 ? Padding(
                     padding: const EdgeInsets.all(16),
                     child: DivineSearchBar(
@@ -1202,10 +1202,7 @@ class _ExploreFeedContentState extends ConsumerState<_ExploreFeedContent> {
 
     if (videos.isEmpty) {
       return Center(
-        child: Text(
-          'No videos available',
-          style: VineTheme.bodyMediumFont(),
-        ),
+        child: Text('No videos available', style: VineTheme.bodyMediumFont()),
       );
     }
 

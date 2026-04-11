@@ -12,9 +12,11 @@ import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/notification_badge.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -26,6 +28,7 @@ class _MockAppUpdateBloc extends MockBloc<AppUpdateEvent, AppUpdateState>
 
 Widget _buildSubject({
   required _MockAuthService mockAuthService,
+  required SharedPreferences sharedPreferences,
   required int unreadCount,
   int dmUnreadCount = 0,
 }) {
@@ -52,6 +55,7 @@ Widget _buildSubject({
         pushNotificationSyncProvider.overrideWithValue(null),
         blocklistSyncBridgeProvider.overrideWithValue(null),
         authServiceProvider.overrideWithValue(mockAuthService),
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         currentEnvironmentProvider.overrideWithValue(
           EnvironmentConfig.production,
         ),
@@ -68,13 +72,17 @@ Widget _buildSubject({
 
 void main() {
   late _MockAuthService mockAuthService;
+  late SharedPreferences sharedPreferences;
 
-  setUp(() {
+  setUp(() async {
     mockAuthService = _MockAuthService();
     when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
     when(() => mockAuthService.currentNpub).thenReturn(null);
     when(() => mockAuthService.isAuthenticated).thenReturn(false);
     when(() => mockAuthService.authState).thenReturn(AuthState.unauthenticated);
+
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    sharedPreferences = await SharedPreferences.getInstance();
   });
 
   group('$AppShell notification badge', () {
@@ -82,7 +90,11 @@ void main() {
       'renders $NotificationBadge on bell tab when unread count > 0',
       (tester) async {
         await tester.pumpWidget(
-          _buildSubject(mockAuthService: mockAuthService, unreadCount: 3),
+          _buildSubject(
+            mockAuthService: mockAuthService,
+            sharedPreferences: sharedPreferences,
+            unreadCount: 3,
+          ),
         );
         await tester.pump();
 
@@ -93,7 +105,11 @@ void main() {
 
     testWidgets('renders no badge when unread count is 0', (tester) async {
       await tester.pumpWidget(
-        _buildSubject(mockAuthService: mockAuthService, unreadCount: 0),
+        _buildSubject(
+          mockAuthService: mockAuthService,
+          sharedPreferences: sharedPreferences,
+          unreadCount: 0,
+        ),
       );
       await tester.pump();
 

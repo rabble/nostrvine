@@ -10,6 +10,9 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/src/dm_decryption_worker.dart';
+import 'package:dm_repository/src/dm_sync_state.dart';
+import 'package:dm_repository/src/nip17_message_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -18,11 +21,8 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
+import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
-import 'package:openvine/repositories/dm_decryption_worker.dart';
-import 'package:openvine/repositories/dm_sync_state.dart';
-import 'package:openvine/services/local_key_signer.dart';
-import 'package:openvine/services/nip17_message_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Decrypts a gift-wrapped event (kind 1059) through the NIP-17 layers
@@ -66,6 +66,7 @@ const Set<int> _supportedDmKinds = {
 /// the lifetime of this object; callers should ensure the repository is
 /// disposed when the user logs out.
 class DmRepository {
+  /// Creates a [DmRepository] with the given dependencies.
   DmRepository({
     required NostrClient nostrClient,
     required DirectMessagesDao directMessagesDao,
@@ -193,6 +194,17 @@ class DmRepository {
   /// Delay before attempting to re-subscribe after stream closure.
   static const _reconnectDelay = Duration(seconds: 2);
 
+  /// Schedule a single reconnect attempt, cancelling any pending one.
+  ///
+  /// Using a [Timer] (not `Future.delayed`) keeps the reconnect cancellable
+  /// from [stopListening] / [_resetState], preventing leaked async work from
+  /// firing after the repository has been torn down (e.g. in tests or user
+  /// switch flows).
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(_reconnectDelay, startListening);
+  }
+
   // -------------------------------------------------------------------------
   // Subscription lifecycle
   // -------------------------------------------------------------------------
@@ -215,6 +227,11 @@ class DmRepository {
     // only meant to suppress the onDone reconnect during intentional stop;
     // a new explicit startListening() should always be honored.
     _disposed = false;
+    // A pending reconnect is made stale by this call — cancel it so the
+    // timer doesn't fire later and try to re-subscribe on top of the
+    // fresh subscription we're about to establish.
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     if (_giftWrapSubscription != null || !isInitialized) return;
 
     // Count-based windowing: first open fetches a bounded backlog
@@ -257,11 +274,14 @@ class DmRepository {
           'DM subscription error: $error',
           category: LogCategory.system,
         );
-        // Reset subscription state so a subsequent startListening() can
-        // open a fresh connection instead of seeing a stale reference.
+        // Cancel the failed subscription so its onDone callback never fires
+        // after a later stopListening() call (which leaves _disposed false).
+        // Without this, the orphaned subscription's onDone would schedule a
+        // reconnect timer that leaks past the current lifecycle.
+        unawaited(_giftWrapSubscription?.cancel());
         _giftWrapSubscription = null;
         if (!_disposed) {
-          Future<void>.delayed(_reconnectDelay, startListening);
+          _scheduleReconnect();
         }
       },
       onDone: () {
@@ -274,7 +294,7 @@ class DmRepository {
             'in ${_reconnectDelay.inSeconds}s',
             category: LogCategory.system,
           );
-          _reconnectTimer = Timer(_reconnectDelay, startListening);
+          _scheduleReconnect();
         }
       },
     );
@@ -411,7 +431,7 @@ class DmRepository {
           category: LogCategory.system,
         );
       }
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to process kind 5 event: $e',
         category: LogCategory.system,
@@ -563,7 +583,7 @@ class DmRepository {
         '$conversationId',
         category: LogCategory.system,
       );
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to process gift wrap event: $e',
         category: LogCategory.system,
@@ -727,7 +747,7 @@ class DmRepository {
         'Persisted NIP-04 DM in conversation $conversationId',
         category: LogCategory.system,
       );
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to process NIP-04 event: $e',
         category: LogCategory.system,
@@ -833,7 +853,7 @@ class DmRepository {
             }),
           );
         }
-      } catch (e, stackTrace) {
+      } on Object catch (e, stackTrace) {
         Log.error(
           'Failed to persist sent message locally: $e',
           category: LogCategory.system,
@@ -867,9 +887,7 @@ class DmRepository {
         'must not be empty',
       );
     }
-    for (final pk in recipientPubkeys) {
-      validatePubkey(pk);
-    }
+    recipientPubkeys.forEach(validatePubkey);
     if (content.trim().isEmpty) {
       throw ArgumentError.value(content, 'content', 'must not be empty');
     }
@@ -1050,10 +1068,12 @@ class DmRepository {
         isGroup: conversation.isGroup,
         createdAt: conversation.createdAt,
         // Explicit nulls clear the previous preview after deletion.
-        lastMessageContent: null, // ignore: avoid_redundant_argument_values
-        lastMessageTimestamp: null, // ignore: avoid_redundant_argument_values
-        lastMessageSenderPubkey:
-            null, // ignore: avoid_redundant_argument_values
+        // ignore: avoid_redundant_argument_values, clears preview
+        lastMessageContent: null,
+        // ignore: avoid_redundant_argument_values, clears preview
+        lastMessageTimestamp: null,
+        // ignore: avoid_redundant_argument_values, clears preview
+        lastMessageSenderPubkey: null,
         currentUserHasSent: conversation.currentUserHasSent,
         ownerPubkey: conversation.ownerPubkey,
         dmProtocol: conversation.dmProtocol,
@@ -1378,7 +1398,7 @@ class DmRepository {
   ///
   /// Throws:
   ///
-  /// * [InvalidDataException] if a database constraint is violated.
+  /// * `InvalidDataException` if a database constraint is violated.
   Future<void> removeConversation(String conversationId) {
     return _conversationsDao.runInTransaction(() async {
       await _directMessagesDao.deleteConversationMessages(
@@ -1398,7 +1418,7 @@ class DmRepository {
   ///
   /// Throws:
   ///
-  /// * [InvalidDataException] if a database constraint is violated.
+  /// * `InvalidDataException` if a database constraint is violated.
   Future<void> removeConversations(List<String> conversationIds) {
     if (conversationIds.isEmpty) return Future.value();
 
@@ -1526,7 +1546,7 @@ class DmRepository {
         // Refresh preview from actual messages.
         await _refreshConversationPreview(canonicalId);
       }
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to merge duplicate conversations: $e',
         category: LogCategory.system,
@@ -1564,7 +1584,7 @@ class DmRepository {
         'Cleaned up phantom self-conversation',
         category: LogCategory.system,
       );
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to clean up self-conversation: $e',
         category: LogCategory.system,
@@ -1602,7 +1622,7 @@ class DmRepository {
           category: LogCategory.system,
         );
       }
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to backfill currentUserHasSent: $e',
         category: LogCategory.system,

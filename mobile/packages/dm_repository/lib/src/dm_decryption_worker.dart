@@ -17,6 +17,7 @@ import 'package:nostr_sdk/nip44/nip44_v2.dart';
 /// [privateKeyHex] is a raw hex string extracted from the caller's
 /// secure key container under a scoped callback.
 class DecryptBatchRequest {
+  /// Creates a batch decrypt request.
   const DecryptBatchRequest({
     required this.events,
     required this.privateKeyHex,
@@ -38,9 +39,11 @@ class DecryptBatchRequest {
 class DecryptedRumorResult {
   const DecryptedRumorResult._({this.rumor, this.error});
 
+  /// Creates a successful result containing the decrypted [rumor].
   const DecryptedRumorResult.success(Map<String, dynamic> rumor)
     : this._(rumor: rumor);
 
+  /// Creates a failure result with the given [error] description.
   const DecryptedRumorResult.failure(String error) : this._(error: error);
 
   /// Successfully decrypted rumor as JSON (null on failure).

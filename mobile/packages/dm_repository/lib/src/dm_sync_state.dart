@@ -12,7 +12,9 @@
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Persists per-pubkey DM sync boundaries in SharedPreferences.
 class DmSyncState {
+  /// Creates a [DmSyncState] backed by [_prefs].
   DmSyncState(this._prefs);
   final SharedPreferences _prefs;
 
