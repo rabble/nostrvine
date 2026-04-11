@@ -24,10 +24,6 @@ abstract class BlossomAuthProvider {
   /// Whether the current user is authenticated and can sign events.
   bool get isAuthenticated;
 
-  /// The current user's public key in npub (bech32) format, or `null`
-  /// if not authenticated.
-  String? get currentNpub;
-
   /// Creates and signs a kind-24242 Nostr event for Blossom auth.
   ///
   /// Returns `null` if signing fails or the user is not authenticated.

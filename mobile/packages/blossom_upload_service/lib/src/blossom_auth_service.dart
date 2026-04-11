@@ -216,9 +216,6 @@ class BlossomAuthService {
   /// Check if we can create auth headers (user is authenticated)
   bool get canCreateHeaders => _authProvider.isAuthenticated;
 
-  /// Get current user's public key for auth
-  String? get currentUserPubkey => _authProvider.currentNpub;
-
   /// Dispose the service and clean up resources.
   void dispose() {
     Log.debug(

@@ -108,9 +108,6 @@ class MediaAuthInterceptor {
   /// Check if we can create auth headers (user is authenticated with Nostr)
   bool get canCreateAuthHeaders => _blossomAuthService.canCreateHeaders;
 
-  /// Get current user's public key for auth
-  String? get currentUserPubkey => _blossomAuthService.currentUserPubkey;
-
   /// Returns true if adult content should be filtered from feeds entirely
   bool get shouldFilterContent =>
       _ageVerificationService.shouldHideAdultContent;

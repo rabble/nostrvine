@@ -199,10 +199,6 @@ void main() {
         const testPublicKey = _testPublicKey;
 
         when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-        when(
-          () => mockAuthProvider.currentNpub,
-        ).thenReturn(testPublicKey);
-
         // Mock the createAndSignEvent method that BlossomUploadService calls
         when(
           () => mockAuthProvider.createAndSignEvent(
@@ -297,9 +293,6 @@ void main() {
           const testPublicKey = _testPublicKey;
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
           when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
@@ -551,9 +544,6 @@ void main() {
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
           when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-          when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
               content: any(named: 'content'),
@@ -643,9 +633,6 @@ void main() {
           const proofManifest = '{"videoHash":"abc123","pgpSignature":"sig"}';
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
           when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
@@ -842,9 +829,6 @@ void main() {
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
           when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-          when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
               content: any(named: 'content'),
@@ -1000,9 +984,6 @@ void main() {
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
           when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-          when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
               content: any(named: 'content'),
@@ -1101,9 +1082,6 @@ void main() {
           const testPublicKey = _testPublicKey;
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
           when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
@@ -1222,10 +1200,6 @@ void main() {
           const testPublicKey = _testPublicKey;
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-
           // Mock the createAndSignEvent method
           when(
             () => mockAuthProvider.createAndSignEvent(
@@ -1534,10 +1508,6 @@ void main() {
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
           when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-
-          when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
               content: any(named: 'content'),
@@ -1626,10 +1596,6 @@ void main() {
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
           when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-
-          when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
               content: any(named: 'content'),
@@ -1709,10 +1675,6 @@ void main() {
           const testPublicKey = _testPublicKey;
 
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-
           when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
@@ -1833,9 +1795,6 @@ void main() {
           const testPublicKey = _testPublicKey;
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
           when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-          when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
               content: any(named: 'content'),
@@ -1923,9 +1882,6 @@ void main() {
           const testPublicKey = _testPublicKey;
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
           when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
-          when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
               content: any(named: 'content'),
@@ -2007,9 +1963,6 @@ void main() {
 
           const testPublicKey = _testPublicKey;
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
           when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),
@@ -2171,9 +2124,6 @@ void main() {
 
           const testPublicKey = _testPublicKey;
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthProvider.currentNpub,
-          ).thenReturn(testPublicKey);
           when(
             () => mockAuthProvider.createAndSignEvent(
               kind: any(named: 'kind'),

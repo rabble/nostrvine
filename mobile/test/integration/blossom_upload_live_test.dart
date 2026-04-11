@@ -21,9 +21,6 @@ class _BlossomAuthAdapter implements BlossomAuthProvider {
   bool get isAuthenticated => _authService.isAuthenticated;
 
   @override
-  String? get currentNpub => _authService.currentNpub;
-
-  @override
   Future<BlossomSignedEvent?> createAndSignEvent({
     required int kind,
     required String content,

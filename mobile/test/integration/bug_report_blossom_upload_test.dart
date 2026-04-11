@@ -26,9 +26,6 @@ class MockAuthProvider implements BlossomAuthProvider {
   bool get isAuthenticated => true;
 
   @override
-  String get currentNpub => _keychain.public;
-
-  @override
   Future<BlossomSignedEvent?> createAndSignEvent({
     required int kind,
     required String content,
