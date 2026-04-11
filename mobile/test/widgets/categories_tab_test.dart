@@ -3,8 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
-import 'package:openvine/models/video_category.dart';
 import 'package:openvine/widgets/categories_tab.dart';
 
 void main() {

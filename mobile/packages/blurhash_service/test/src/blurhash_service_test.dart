@@ -1,6 +1,7 @@
 import 'dart:io';
+
+import 'package:blurhash_service/blurhash_service.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/blurhash_service.dart';
 
 void main() {
   group('BlurhashService', () {
@@ -9,7 +10,7 @@ void main() {
       final thumbnailFile = File('test/fixtures/test_thumbnail.jpg');
       if (!thumbnailFile.existsSync()) {
         fail(
-          'Test thumbnail not found at test/fixtures/test_thumbnail.jpg. Run test/fixtures/generate_test_blurhash.dart to generate it.',
+          'Test thumbnail not found at test/fixtures/test_thumbnail.jpg.',
         );
       }
       final testBytes = await thumbnailFile.readAsBytes();
@@ -49,7 +50,9 @@ void main() {
 
     test('validates blurhash format', () {
       expect(
-        BlurhashService.decodeBlurhash('L6Pj0^jE.AyE_3t7t7R**0o#DgR4'),
+        BlurhashService.decodeBlurhash(
+          'L6Pj0^jE.AyE_3t7t7R**0o#DgR4',
+        ),
         isNotNull,
       );
       expect(BlurhashService.decodeBlurhash('invalid'), isNull);
@@ -126,7 +129,10 @@ void main() {
       final stats = cache.getStats();
 
       expect(stats, containsPair('size', 0));
-      expect(stats, containsPair('maxSize', BlurhashCache.maxCacheSize));
+      expect(
+        stats,
+        containsPair('maxSize', BlurhashCache.maxCacheSize),
+      );
     });
   });
 }

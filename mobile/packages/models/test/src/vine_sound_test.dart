@@ -1,8 +1,8 @@
 // ABOUTME: Tests for VineSound model - audio track metadata
 // ABOUTME: Validates JSON serialization and property access
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/vine_sound.dart';
+import 'package:models/models.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('VineSound', () {

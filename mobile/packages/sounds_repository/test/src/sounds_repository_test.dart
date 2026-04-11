@@ -3,12 +3,12 @@
 
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/repositories/sounds_repository.dart';
+import 'package:sounds_repository/sounds_repository.dart';
+import 'package:test/test.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

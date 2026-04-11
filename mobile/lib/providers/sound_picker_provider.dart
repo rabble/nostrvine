@@ -1,7 +1,7 @@
 // ABOUTME: Riverpod state management for sound selection in video editing
 // ABOUTME: Tracks selected sound, playback state, search query, and filtered results
 
-import 'package:openvine/models/vine_sound.dart';
+import 'package:models/models.dart' show VineSound;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sound_picker_provider.g.dart';

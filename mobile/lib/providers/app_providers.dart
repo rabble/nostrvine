@@ -5,8 +5,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
 
+import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:curation_service/curation_service.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -23,6 +25,7 @@ import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
@@ -32,7 +35,6 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/repositories/categories_repository.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
@@ -59,7 +61,6 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
@@ -95,6 +96,7 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_event_service_adapter.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
@@ -1786,9 +1788,10 @@ CurationService curationService(Ref ref) {
 
   return CurationService(
     nostrService: nostrService,
-    videoEventService: videoEventService,
+    videoEventCache: VideoEventServiceAdapter(videoEventService),
     likesRepository: likesRepository,
-    authService: authService,
+    signer: authService.requireIdentity,
+    divineTeamPubkeys: AppConstants.divineTeamPubkeys,
   );
 }
 

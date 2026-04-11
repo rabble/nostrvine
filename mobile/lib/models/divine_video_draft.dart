@@ -4,10 +4,8 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
-import 'package:models/models.dart' show AspectRatio;
-import 'package:models/models.dart' show InspiredByInfo;
-import 'package:models/models.dart' show NativeProofData;
-import 'package:openvine/models/audio_event.dart';
+import 'package:models/models.dart'
+    show AspectRatio, AudioEvent, InspiredByInfo, NativeProofData;
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/path_resolver.dart';

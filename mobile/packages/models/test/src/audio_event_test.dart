@@ -1,10 +1,9 @@
 // ABOUTME: Tests for AudioEvent model - Kind 1063 audio file metadata events
 // ABOUTME: Validates parsing from Nostr events, tag generation, and edge cases
 
-import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/models/vine_sound.dart';
+import 'package:test/test.dart';
 
 // Valid 64-character hex pubkey for testing
 const testPubkey =

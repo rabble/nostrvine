@@ -3,6 +3,7 @@ library;
 
 export 'src/actor_info.dart';
 export 'src/aspect_ratio.dart';
+export 'src/audio_event.dart';
 export 'src/bug_report_data.dart';
 export 'src/bug_report_result.dart';
 export 'src/bulk_profiles_response.dart';
@@ -38,8 +39,10 @@ export 'src/trending_hashtag.dart';
 export 'src/user_list.dart';
 export 'src/user_profile.dart';
 export 'src/video_attribution.dart';
+export 'src/video_category.dart';
 export 'src/video_editor/sticker_data.dart';
 export 'src/video_event.dart';
 export 'src/video_state.dart';
 export 'src/video_stats.dart';
 export 'src/video_views_response.dart';
+export 'src/vine_sound.dart';

@@ -3,10 +3,10 @@
 
 import 'dart:async';
 
-import 'package:models/models.dart' show NIP71VideoKinds;
+import 'package:models/models.dart'
+    show AudioEvent, NIP71VideoKinds, audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -377,7 +377,7 @@ class SoundsRepository {
           _processAndCacheEvent(event);
         }
       },
-      onError: (error) {
+      onError: (Object error) {
         Log.error(
           'Audio events subscription error: $error',
           name: 'SoundsRepository',

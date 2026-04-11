@@ -1,5 +1,6 @@
-// ABOUTME: Service for managing NIP-51 video curation sets and content discovery
-// ABOUTME: Handles fetching, caching, and filtering videos based on curation sets
+// ABOUTME: Service for managing NIP-51 video curation sets and content
+// ABOUTME: discovery. Handles fetching, caching, and filtering videos
+// ABOUTME: based on curation sets.
 
 import 'dart:async';
 import 'dart:convert';
@@ -10,52 +11,63 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/video_event_service.dart';
+import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+import 'video_event_cache.dart';
+
+/// Service for managing NIP-51 video curation sets and content
+/// discovery.
 class CurationService {
+  /// Creates a [CurationService].
+  ///
+  /// [nostrService] is used for relay communication.
+  /// [videoEventCache] provides access to the local video cache.
+  /// [likesRepository] provides like counts for sorting.
+  /// [signer] signs Nostr events for publishing.
+  /// [divineTeamPubkeys] lists the pubkeys of Divine team members
+  /// used for the "editor's picks" curation set.
   CurationService({
     required NostrClient nostrService,
-    required VideoEventService videoEventService,
+    required VideoEventCache videoEventCache,
     required LikesRepository likesRepository,
-    required AuthService authService,
+    required NostrSigner signer,
+    required List<String> divineTeamPubkeys,
   }) : _nostrService = nostrService,
-       _videoEventService = videoEventService,
+       _videoEventCache = videoEventCache,
        _likesRepository = likesRepository,
-       _authService = authService {
+       _signer = signer,
+       _divineTeamPubkeys = divineTeamPubkeys {
     _initializeWithSampleData();
-
-    // Listen for video updates and refresh curation data
-    // REFACTORED: Service no longer extends ChangeNotifier - use Riverpod ref.watch instead
   }
+
   final NostrClient _nostrService;
-  final VideoEventService _videoEventService;
+  final VideoEventCache _videoEventCache;
   final LikesRepository _likesRepository;
-  final AuthService _authService;
+  final NostrSigner _signer;
+  final List<String> _divineTeamPubkeys;
 
   final Map<String, CurationSet> _curationSets = {};
   final Map<String, List<VideoEvent>> _setVideoCache = {};
   bool _isLoading = false;
   String? _error;
-  int _lastEditorVideoCount =
-      -1; // Track video count to reduce duplicate logging
+  // Track video count to reduce duplicate logging
+  int _lastEditorVideoCount = -1;
 
   // Analytics-based trending cache
   List<VideoEvent> _analyticsTrendingVideos = [];
   DateTime? _lastTrendingFetch;
   bool _isFetchingTrending = false;
 
-  // Track video IDs that failed to fetch from relays to avoid repeated attempts
+  // Track video IDs that failed to fetch from relays to avoid
+  // repeated attempts
   final Set<String> _missingVideoIds = {};
 
   // Divine Team curation state
-  bool _hasFetchedEditorsList =
-      false; // Legacy name, now tracks Divine Team fetch
-  final List<VideoEvent> _editorPicksVideoCache =
-      []; // Dedicated cache for Divine Team videos
+  // Legacy name, now tracks Divine Team fetch
+  bool _hasFetchedEditorsList = false;
+  // Dedicated cache for Divine Team videos
+  final List<VideoEvent> _editorPicksVideoCache = [];
 
   /// Current curation sets
   List<CurationSet> get curationSets => _curationSets.values.toList();
@@ -76,7 +88,8 @@ class CurationService {
       category: LogCategory.system,
     );
     Log.debug(
-      '  VideoEventService has ${_videoEventService.discoveryVideos.length} videos',
+      '  VideoEventCache has '
+      '${_videoEventCache.discoveryVideos.length} videos',
       name: 'CurationService',
       category: LogCategory.system,
     );
@@ -94,10 +107,10 @@ class CurationService {
 
   /// Populate sample sets with real video data
   Future<void> _populateSampleSets() async {
-    final allVideos = _videoEventService.discoveryVideos;
-    // Populating curation sets silently
+    final allVideos = _videoEventCache.discoveryVideos;
 
-    // Always create Divine Team picks with default video, even if no other videos
+    // Always create Divine Team picks with default video, even
+    // if no other videos
     final editorsPicks = _selectEditorsPicksVideos(allVideos, allVideos);
     _setVideoCache[CurationSetType.editorsPicks.id] = editorsPicks;
 
@@ -120,7 +133,7 @@ class CurationService {
         return bReactions.compareTo(aReactions);
       });
 
-    // Update Divine Team with actual data (already created above with default video)
+    // Update Divine Team with actual data
     final updatedEditorsPicks = _selectEditorsPicksVideos(
       sortedByTime,
       sortedByReactions,
@@ -159,7 +172,7 @@ class CurationService {
         category: LogCategory.system,
       );
       Log.info(
-        '  Authors: ${AppConstants.divineTeamPubkeys.join(", ")}',
+        '  Authors: ${_divineTeamPubkeys.join(", ")}',
         name: 'CurationService',
         category: LogCategory.system,
       );
@@ -167,8 +180,8 @@ class CurationService {
       // Subscribe to fetch videos from Divine Team authors
       final filter = Filter(
         kinds: const [NIP71VideoKinds.addressableShortVideo],
-        authors: AppConstants.divineTeamPubkeys,
-        limit: 500, // Get all their videos
+        authors: _divineTeamPubkeys,
+        limit: 500,
       );
       final eventStream = _nostrService.subscribe([filter]);
 
@@ -187,14 +200,17 @@ class CurationService {
               receivedCount++;
 
               Log.verbose(
-                '📹 Fetched Divine Team video ($receivedCount): ${video.title ?? video.id}',
+                '📹 Fetched Divine Team video '
+                '($receivedCount): '
+                '${video.title ?? video.id}',
                 name: 'CurationService',
                 category: LogCategory.system,
               );
             }
 
-            // Also add to video event service cache for general availability
-            _videoEventService.addVideoEvent(video);
+            // Also add to video event cache for general
+            // availability
+            _videoEventCache.addVideoEvent(video);
           } catch (e) {
             Log.error(
               'Failed to parse Divine Team video event: $e',
@@ -203,7 +219,7 @@ class CurationService {
             );
           }
         },
-        onError: (error) {
+        onError: (Object error) {
           Log.error(
             'Error fetching Divine Team videos: $error',
             name: 'CurationService',
@@ -217,16 +233,17 @@ class CurationService {
         },
       );
 
-      // Wait for completion or timeout (give it 10 seconds to collect videos)
+      // Wait for completion or timeout
       await Future.any([
         completer.future,
-        Future.delayed(const Duration(seconds: 10)),
+        Future<void>.delayed(const Duration(seconds: 10)),
       ]);
 
       await streamSubscription.cancel();
 
       Log.info(
-        '✅ Fetched $receivedCount Divine Team videos from relay',
+        '✅ Fetched $receivedCount Divine Team videos '
+        'from relay',
         name: 'CurationService',
         category: LogCategory.system,
       );
@@ -247,11 +264,13 @@ class CurationService {
     List<VideoEvent> byTime,
     List<VideoEvent> byReactions,
   ) {
-    // If we don't have the Divine Team videos yet, start fetching them (async)
+    // If we don't have the Divine Team videos yet, start
+    // fetching them (async)
     if (!_hasFetchedEditorsList) {
       _fetchDivineTeamVideos();
       Log.debug(
-        '⏳ Divine Team videos not fetched yet, starting fetch in background',
+        '⏳ Divine Team videos not fetched yet, starting '
+        'fetch in background',
         name: 'CurationService',
         category: LogCategory.system,
       );
@@ -259,11 +278,12 @@ class CurationService {
     }
 
     // Return videos from the dedicated cache
-    // This cache contains all videos from Divine Team members
     final picks = List<VideoEvent>.from(_editorPicksVideoCache);
 
     // Sort by creation time (newest first)
-    picks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    picks.sort(
+      (a, b) => b.createdAt.compareTo(a.createdAt),
+    );
 
     // Only log on changes to avoid spam
     final currentCount = picks.length;
@@ -290,14 +310,17 @@ class CurationService {
     return picks;
   }
 
-  /// Get cached trending videos from analytics (returns empty list if not fetched)
+  /// Get cached trending videos from analytics (returns empty
+  /// list if not fetched)
   List<VideoEvent> get analyticsTrendingVideos => _analyticsTrendingVideos;
 
-  /// Clear the missing videos cache to allow retrying videos that might have returned
+  /// Clear the missing videos cache to allow retrying videos
+  /// that might have returned
   void clearMissingVideosCache() {
     if (_missingVideoIds.isNotEmpty) {
       Log.info(
-        '🔄 Clearing ${_missingVideoIds.length} missing video IDs from cache',
+        '🔄 Clearing ${_missingVideoIds.length} missing '
+        'video IDs from cache',
         name: 'CurationService',
         category: LogCategory.system,
       );
@@ -305,7 +328,8 @@ class CurationService {
     }
   }
 
-  /// Refresh trending videos from analytics API (call this when user visits trending)
+  /// Refresh trending videos from analytics API (call this
+  /// when user visits trending)
   Future<void> refreshTrendingFromAnalytics() async {
     await _fetchTrendingFromAnalytics();
   }
@@ -315,7 +339,8 @@ class CurationService {
     // Prevent concurrent fetches
     if (_isFetchingTrending) {
       Log.debug(
-        '📊 Already fetching trending videos, skipping duplicate request',
+        '📊 Already fetching trending videos, skipping '
+        'duplicate request',
         name: 'CurationService',
         category: LogCategory.system,
       );
@@ -335,7 +360,8 @@ class CurationService {
 
     _isFetchingTrending = true;
 
-    // Clear missing videos cache every 6 hours to allow retrying
+    // Clear missing videos cache every 6 hours to allow
+    // retrying
     if (_lastTrendingFetch != null &&
         DateTime.now().difference(_lastTrendingFetch!).inHours >= 6) {
       clearMissingVideosCache();
@@ -349,19 +375,24 @@ class CurationService {
         category: LogCategory.system,
       );
       Log.info(
-        '  Current cached count: ${_analyticsTrendingVideos.length}',
+        '  Current cached count: '
+        '${_analyticsTrendingVideos.length}',
         name: 'CurationService',
         category: LogCategory.system,
       );
       Log.info(
-        '  URL: https://api.openvine.co/analytics/trending/vines',
+        '  URL: https://api.openvine.co/analytics/'
+        'trending/vines',
         name: 'CurationService',
         category: LogCategory.system,
       );
 
       final response = await http
           .get(
-            Uri.parse('https://api.openvine.co/analytics/trending/vines'),
+            Uri.parse(
+              'https://api.openvine.co/analytics/'
+              'trending/vines',
+            ),
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'divine-Mobile/1.0',
@@ -388,7 +419,8 @@ class CurationService {
       // Log first 500 chars of response for debugging
       if (response.body.length > 500) {
         Log.info(
-          '  Body preview: ${response.body.substring(0, 500)}...',
+          '  Body preview: '
+          '${response.body.substring(0, 500)}...',
           name: 'CurationService',
           category: LogCategory.system,
         );
@@ -405,244 +437,14 @@ class CurationService {
         final vinesData = data['vines'] as List<dynamic>?;
 
         Log.info(
-          '  Vines in response: ${vinesData?.length ?? 0}',
+          '  Vines in response: '
+          '${vinesData?.length ?? 0}',
           name: 'CurationService',
           category: LogCategory.system,
         );
 
         if (vinesData != null && vinesData.isNotEmpty) {
-          final trending = <VideoEvent>[];
-          final allVideos = _videoEventService.discoveryVideos;
-          final missingEventIds = <String>[];
-
-          Log.info(
-            '  Local videos available: ${allVideos.length}',
-            name: 'CurationService',
-            category: LogCategory.system,
-          );
-
-          // First pass: collect videos we have locally and track missing ones
-          for (final vineData in vinesData) {
-            final eventId = (vineData['eventId'] as String?)?.toLowerCase();
-            final viewCount = vineData['views'] ?? 0;
-
-            if (eventId != null) {
-              // Skip videos we know are missing from relays
-              if (_missingVideoIds.contains(eventId)) {
-                Log.verbose(
-                  '  Skipping known missing video: $eventId',
-                  name: 'CurationService',
-                  category: LogCategory.system,
-                );
-                continue;
-              }
-
-              Log.verbose(
-                '  Looking for eventId: $eventId ($viewCount views)',
-                name: 'CurationService',
-                category: LogCategory.system,
-              );
-
-              // Find the video in our local cache (case-insensitive)
-              final localVideo = allVideos.firstWhere(
-                (video) => video.id.toLowerCase() == eventId,
-                orElse: () => VideoEvent(
-                  id: '',
-                  pubkey: '',
-                  createdAt: 0,
-                  content: '',
-                  timestamp: DateTime.now(),
-                ),
-              );
-
-              if (localVideo.id.isNotEmpty) {
-                trending.add(localVideo);
-                // Use verbose logging for individual videos to reduce log spam
-                Log.verbose(
-                  '✅ Found trending video: ${localVideo.title ?? localVideo.id} ($viewCount views)',
-                  name: 'CurationService',
-                  category: LogCategory.system,
-                );
-              } else {
-                Log.warning(
-                  '❌ Trending video not found locally: $eventId - will fetch from relays',
-                  name: 'CurationService',
-                  category: LogCategory.system,
-                );
-                missingEventIds.add(eventId);
-              }
-            }
-          }
-
-          // Fetch missing videos from Nostr relays
-          if (missingEventIds.isNotEmpty) {
-            Log.info(
-              '📡 Fetching ${missingEventIds.length} missing trending videos from relays...',
-              name: 'CurationService',
-              category: LogCategory.system,
-            );
-
-            try {
-              // Subscribe to fetch specific video events by ID using proper streaming
-              final filter = Filter(ids: missingEventIds);
-              final eventStream = _nostrService.subscribe([filter]);
-
-              // Collect fetched videos and process them immediately
-              final fetchedVideos = <VideoEvent>[];
-              final completer = Completer<void>();
-              late StreamSubscription<Event> streamSubscription;
-              var receivedCount = 0;
-              final targetCount = missingEventIds.length;
-
-              streamSubscription = eventStream.listen(
-                (event) {
-                  try {
-                    final video = VideoEvent.fromNostrEvent(event);
-                    fetchedVideos.add(video);
-                    receivedCount++;
-
-                    Log.info(
-                      '📹 Fetched trending video from relay ($receivedCount/$targetCount): ${video.title ?? video.id}',
-                      name: 'CurationService',
-                      category: LogCategory.system,
-                    );
-
-                    // Also add to video event service so it's cached
-                    _videoEventService.addVideoEvent(video);
-
-                    // Add to trending list immediately for progressive loading
-                    trending.add(video);
-
-                    // Complete early if we've received most videos or after reasonable batch
-                    if (receivedCount >= targetCount || receivedCount >= 10) {
-                      Log.info(
-                        '⚡ Got $receivedCount trending videos, proceeding with what we have...',
-                        name: 'CurationService',
-                        category: LogCategory.system,
-                      );
-                      streamSubscription.cancel();
-                      if (!completer.isCompleted) completer.complete();
-                    }
-                  } catch (e) {
-                    Log.error(
-                      'Failed to parse video event: $e',
-                      name: 'CurationService',
-                      category: LogCategory.system,
-                    );
-                  }
-                },
-                onError: (error) {
-                  Log.error(
-                    'Trending video fetch stream error: $error',
-                    name: 'CurationService',
-                    category: LogCategory.system,
-                  );
-                  streamSubscription.cancel();
-                  if (!completer.isCompleted) completer.complete();
-                },
-                onDone: () {
-                  Log.debug(
-                    '📡 Trending video stream closed - got what existed on relays',
-                    name: 'CurationService',
-                    category: LogCategory.system,
-                  );
-                  streamSubscription.cancel();
-                  if (!completer.isCompleted) completer.complete();
-                },
-              );
-
-              // Wait for completion or reasonable timeout (don't wait forever)
-              await Future.any([
-                completer.future,
-                Future.delayed(
-                  const Duration(seconds: 5),
-                ), // Short timeout for better UX
-              ]);
-
-              // Ensure stream is cancelled
-              await streamSubscription.cancel();
-              Log.info(
-                '✅ Fetched ${fetchedVideos.length}/${missingEventIds.length} trending videos from relays',
-                name: 'CurationService',
-                category: LogCategory.system,
-              );
-
-              // Track videos that we failed to fetch - they likely no longer exist on relays
-              final fetchedIds = fetchedVideos
-                  .map((v) => v.id.toLowerCase())
-                  .toSet();
-              final actuallyMissingIds = missingEventIds
-                  .where((id) => !fetchedIds.contains(id.toLowerCase()))
-                  .toSet();
-
-              if (actuallyMissingIds.isNotEmpty) {
-                _missingVideoIds.addAll(actuallyMissingIds);
-                Log.info(
-                  '🚫 Marking ${actuallyMissingIds.length} videos as permanently missing (total tracked: ${_missingVideoIds.length})',
-                  name: 'CurationService',
-                  category: LogCategory.system,
-                );
-              }
-            } catch (e) {
-              Log.error(
-                'Failed to fetch trending videos from relays: $e',
-                name: 'CurationService',
-                category: LogCategory.system,
-              );
-            }
-          }
-
-          if (trending.isNotEmpty) {
-            // Sort by the order from analytics API
-            final orderedTrending = <VideoEvent>[];
-            for (final vineData in vinesData) {
-              final eventId = (vineData['eventId'] as String?)?.toLowerCase();
-              if (eventId != null) {
-                final video = trending.firstWhere(
-                  (v) => v.id.toLowerCase() == eventId,
-                  orElse: () => VideoEvent(
-                    id: '',
-                    pubkey: '',
-                    createdAt: 0,
-                    content: '',
-                    timestamp: DateTime.now(),
-                  ),
-                );
-                if (video.id.isNotEmpty) {
-                  orderedTrending.add(video);
-                }
-              }
-            }
-
-            // Update the analytics trending cache
-            final previousCount = _analyticsTrendingVideos.length;
-            _analyticsTrendingVideos = orderedTrending;
-            _lastTrendingFetch = DateTime.now();
-
-            // Only log if there's a change in video count
-            if (previousCount != orderedTrending.length) {
-              Log.info(
-                '✅ Updated trending videos from analytics: ${orderedTrending.length} videos (was $previousCount)',
-                name: 'CurationService',
-                category: LogCategory.system,
-              );
-            } else {
-              Log.verbose(
-                '✅ Refreshed trending videos: ${orderedTrending.length} videos (no change)',
-                name: 'CurationService',
-                category: LogCategory.system,
-              );
-            }
-          } else {
-            Log.error(
-              '🚨 CRITICAL: No trending videos found after fetching from relays! '
-              'Analytics API returned ${vinesData.length} trending video IDs, '
-              'but none could be fetched from relays. Trending tab will be empty or show stale data. '
-              'This indicates a serious relay connectivity issue.',
-              name: 'CurationService',
-              category: LogCategory.system,
-            );
-          }
+          await _processTrendingVines(vinesData);
         } else {
           Log.warning(
             '⚠️ No vines data in analytics response',
@@ -652,7 +454,8 @@ class CurationService {
         }
       } else {
         Log.warning(
-          '❌ Analytics API returned ${response.statusCode}: ${response.body}',
+          '❌ Analytics API returned '
+          '${response.statusCode}: ${response.body}',
           name: 'CurationService',
           category: LogCategory.system,
         );
@@ -669,22 +472,301 @@ class CurationService {
     }
   }
 
+  Future<void> _processTrendingVines(
+    List<dynamic> vinesData,
+  ) async {
+    final trending = <VideoEvent>[];
+    final allVideos = _videoEventCache.discoveryVideos;
+    final missingEventIds = <String>[];
+
+    Log.info(
+      '  Local videos available: ${allVideos.length}',
+      name: 'CurationService',
+      category: LogCategory.system,
+    );
+
+    // First pass: collect videos we have locally and track
+    // missing ones
+    for (final vineData in vinesData) {
+      final eventId = (vineData['eventId'] as String?)?.toLowerCase();
+      final viewCount = vineData['views'] ?? 0;
+
+      if (eventId != null) {
+        // Skip videos we know are missing from relays
+        if (_missingVideoIds.contains(eventId)) {
+          Log.verbose(
+            '  Skipping known missing video: $eventId',
+            name: 'CurationService',
+            category: LogCategory.system,
+          );
+          continue;
+        }
+
+        Log.verbose(
+          '  Looking for eventId: $eventId '
+          '($viewCount views)',
+          name: 'CurationService',
+          category: LogCategory.system,
+        );
+
+        // Find the video in our local cache
+        // (case-insensitive)
+        final localVideo = allVideos.firstWhere(
+          (video) => video.id.toLowerCase() == eventId,
+          orElse: () => VideoEvent(
+            id: '',
+            pubkey: '',
+            createdAt: 0,
+            content: '',
+            timestamp: DateTime.now(),
+          ),
+        );
+
+        if (localVideo.id.isNotEmpty) {
+          trending.add(localVideo);
+          Log.verbose(
+            '✅ Found trending video: '
+            '${localVideo.title ?? localVideo.id} '
+            '($viewCount views)',
+            name: 'CurationService',
+            category: LogCategory.system,
+          );
+        } else {
+          Log.warning(
+            '❌ Trending video not found locally: '
+            '$eventId - will fetch from relays',
+            name: 'CurationService',
+            category: LogCategory.system,
+          );
+          missingEventIds.add(eventId);
+        }
+      }
+    }
+
+    // Fetch missing videos from Nostr relays
+    if (missingEventIds.isNotEmpty) {
+      await _fetchMissingTrendingVideos(
+        missingEventIds,
+        trending,
+      );
+    }
+
+    if (trending.isNotEmpty) {
+      _updateTrendingCache(vinesData, trending);
+    } else {
+      Log.error(
+        '🚨 CRITICAL: No trending videos found after '
+        'fetching from relays! Analytics API returned '
+        '${vinesData.length} trending video IDs, but none '
+        'could be fetched from relays. Trending tab will '
+        'be empty or show stale data. This indicates a '
+        'serious relay connectivity issue.',
+        name: 'CurationService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  Future<void> _fetchMissingTrendingVideos(
+    List<String> missingEventIds,
+    List<VideoEvent> trending,
+  ) async {
+    Log.info(
+      '📡 Fetching ${missingEventIds.length} missing '
+      'trending videos from relays...',
+      name: 'CurationService',
+      category: LogCategory.system,
+    );
+
+    try {
+      final filter = Filter(ids: missingEventIds);
+      final eventStream = _nostrService.subscribe([filter]);
+
+      final fetchedVideos = <VideoEvent>[];
+      final completer = Completer<void>();
+      late StreamSubscription<Event> streamSubscription;
+      var receivedCount = 0;
+      final targetCount = missingEventIds.length;
+
+      streamSubscription = eventStream.listen(
+        (event) {
+          try {
+            final video = VideoEvent.fromNostrEvent(event);
+            fetchedVideos.add(video);
+            receivedCount++;
+
+            Log.info(
+              '📹 Fetched trending video from relay '
+              '($receivedCount/$targetCount): '
+              '${video.title ?? video.id}',
+              name: 'CurationService',
+              category: LogCategory.system,
+            );
+
+            // Also add to video event cache
+            _videoEventCache.addVideoEvent(video);
+
+            // Add to trending list immediately
+            trending.add(video);
+
+            // Complete early if we've received most videos
+            if (receivedCount >= targetCount || receivedCount >= 10) {
+              Log.info(
+                '⚡ Got $receivedCount trending videos, '
+                'proceeding with what we have...',
+                name: 'CurationService',
+                category: LogCategory.system,
+              );
+              streamSubscription.cancel();
+              if (!completer.isCompleted) {
+                completer.complete();
+              }
+            }
+          } catch (e) {
+            Log.error(
+              'Failed to parse video event: $e',
+              name: 'CurationService',
+              category: LogCategory.system,
+            );
+          }
+        },
+        onError: (Object error) {
+          Log.error(
+            'Trending video fetch stream error: $error',
+            name: 'CurationService',
+            category: LogCategory.system,
+          );
+          streamSubscription.cancel();
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+        onDone: () {
+          Log.debug(
+            '📡 Trending video stream closed - got what '
+            'existed on relays',
+            name: 'CurationService',
+            category: LogCategory.system,
+          );
+          streamSubscription.cancel();
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      // Wait for completion or timeout
+      await Future.any([
+        completer.future,
+        Future<void>.delayed(const Duration(seconds: 5)),
+      ]);
+
+      // Ensure stream is cancelled
+      await streamSubscription.cancel();
+      Log.info(
+        '✅ Fetched ${fetchedVideos.length}/'
+        '${missingEventIds.length} trending videos '
+        'from relays',
+        name: 'CurationService',
+        category: LogCategory.system,
+      );
+
+      // Track videos that we failed to fetch
+      final fetchedIds = fetchedVideos.map((v) => v.id.toLowerCase()).toSet();
+      final actuallyMissingIds = missingEventIds
+          .where(
+            (id) => !fetchedIds.contains(id.toLowerCase()),
+          )
+          .toSet();
+
+      if (actuallyMissingIds.isNotEmpty) {
+        _missingVideoIds.addAll(actuallyMissingIds);
+        Log.info(
+          '🚫 Marking ${actuallyMissingIds.length} videos '
+          'as permanently missing (total tracked: '
+          '${_missingVideoIds.length})',
+          name: 'CurationService',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e) {
+      Log.error(
+        'Failed to fetch trending videos from relays: $e',
+        name: 'CurationService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  void _updateTrendingCache(
+    List<dynamic> vinesData,
+    List<VideoEvent> trending,
+  ) {
+    // Sort by the order from analytics API
+    final orderedTrending = <VideoEvent>[];
+    for (final vineData in vinesData) {
+      final eventId = (vineData['eventId'] as String?)?.toLowerCase();
+      if (eventId != null) {
+        final video = trending.firstWhere(
+          (v) => v.id.toLowerCase() == eventId,
+          orElse: () => VideoEvent(
+            id: '',
+            pubkey: '',
+            createdAt: 0,
+            content: '',
+            timestamp: DateTime.now(),
+          ),
+        );
+        if (video.id.isNotEmpty) {
+          orderedTrending.add(video);
+        }
+      }
+    }
+
+    // Update the analytics trending cache
+    final previousCount = _analyticsTrendingVideos.length;
+    _analyticsTrendingVideos = orderedTrending;
+    _lastTrendingFetch = DateTime.now();
+
+    // Only log if there's a change in video count
+    if (previousCount != orderedTrending.length) {
+      Log.info(
+        '✅ Updated trending videos from analytics: '
+        '${orderedTrending.length} videos '
+        '(was $previousCount)',
+        name: 'CurationService',
+        category: LogCategory.system,
+      );
+    } else {
+      Log.verbose(
+        '✅ Refreshed trending videos: '
+        '${orderedTrending.length} videos (no change)',
+        name: 'CurationService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// Get videos for a specific curation set
   List<VideoEvent> getVideosForSet(String setId) => _setVideoCache[setId] ?? [];
 
   /// Get videos for a curation set type
-  List<VideoEvent> getVideosForSetType(CurationSetType setType) =>
-      getVideosForSet(setType.id);
+  List<VideoEvent> getVideosForSetType(
+    CurationSetType setType,
+  ) => getVideosForSet(setType.id);
 
   /// Get a specific curation set
   CurationSet? getCurationSet(String setId) => _curationSets[setId];
 
   /// Get curation set by type
-  CurationSet? getCurationSetByType(CurationSetType setType) =>
-      getCurationSet(setType.id);
+  CurationSet? getCurationSetByType(
+    CurationSetType setType,
+  ) => getCurationSet(setType.id);
 
   /// Refresh curation sets from Nostr
-  Future<void> refreshCurationSets({List<String>? curatorPubkeys}) async {
+  Future<void> refreshCurationSets({
+    List<String>? curatorPubkeys,
+  }) async {
     _isLoading = true;
     _error = null;
 
@@ -702,10 +784,9 @@ class CurationService {
         limit: 500,
       );
 
-      // Use bypassLimits for one-time fetch to get all results quickly
       final eventStream = _nostrService.subscribe([filter]);
 
-      int fetchedCount = 0;
+      var fetchedCount = 0;
       final completer = Completer<void>();
 
       // Listen for events with timeout
@@ -714,7 +795,8 @@ class CurationService {
           try {
             if (event.kind != 30005) {
               Log.warning(
-                'Received unexpected event kind ${event.kind} (expected 30005)',
+                'Received unexpected event kind '
+                '${event.kind} (expected 30005)',
                 name: 'CurationService',
                 category: LogCategory.system,
               );
@@ -726,13 +808,15 @@ class CurationService {
             fetchedCount++;
 
             Log.verbose(
-              'Fetched curation set: ${curationSet.title} (${curationSet.videoIds.length} videos)',
+              'Fetched curation set: ${curationSet.title} '
+              '(${curationSet.videoIds.length} videos)',
               name: 'CurationService',
               category: LogCategory.system,
             );
           } catch (e) {
             Log.error(
-              'Failed to parse curation set from event: $e',
+              'Failed to parse curation set from event: '
+              '$e',
               name: 'CurationService',
               category: LogCategory.system,
             );
@@ -760,7 +844,8 @@ class CurationService {
         const Duration(seconds: 10),
         onTimeout: () {
           Log.debug(
-            'Curation set fetch timed out after 10s (fetched $fetchedCount sets)',
+            'Curation set fetch timed out after 10s '
+            '(fetched $fetchedCount sets)',
             name: 'CurationService',
             category: LogCategory.system,
           );
@@ -775,7 +860,8 @@ class CurationService {
         category: LogCategory.system,
       );
 
-      // If no sets were found, populate sample data as fallback
+      // If no sets were found, populate sample data as
+      // fallback
       if (fetchedCount == 0) {
         Log.debug(
           'No curation sets found, using sample data',
@@ -802,7 +888,9 @@ class CurationService {
   }
 
   /// Subscribe to curation set updates
-  Future<void> subscribeToCurationSets({List<String>? curatorPubkeys}) async {
+  Future<void> subscribeToCurationSets({
+    List<String>? curatorPubkeys,
+  }) async {
     try {
       Log.debug(
         'Subscribing to kind 30005 curation sets...',
@@ -810,29 +898,23 @@ class CurationService {
         category: LogCategory.system,
       );
 
-      // Query for video curation sets (kind 30005)
-      final filter = {
-        'kinds': [30005],
-        'limit': 500,
-      };
-
-      // If specific curators provided, filter by them
-      if (curatorPubkeys != null && curatorPubkeys.isNotEmpty) {
-        filter['authors'] = curatorPubkeys;
-      }
-
       // Subscribe to receive curation set events
       final eventStream = _nostrService.subscribe([
-        Filter(kinds: [30005], authors: curatorPubkeys, limit: 500),
+        Filter(
+          kinds: [30005],
+          authors: curatorPubkeys,
+          limit: 500,
+        ),
       ]);
 
       eventStream.listen(
         (event) {
           try {
-            // Debug: Check what kind of event we're receiving
             if (event.kind != 30005) {
               Log.warning(
-                'Received unexpected event kind ${event.kind} in curation subscription (expected 30005)',
+                'Received unexpected event kind '
+                '${event.kind} in curation subscription '
+                '(expected 30005)',
                 name: 'CurationService',
                 category: LogCategory.system,
               );
@@ -842,7 +924,9 @@ class CurationService {
             final curationSet = CurationSet.fromNostrEvent(event);
             _curationSets[curationSet.id] = curationSet;
             Log.verbose(
-              'Received curation set: ${curationSet.title} (${curationSet.videoIds.length} videos)',
+              'Received curation set: '
+              '${curationSet.title} '
+              '(${curationSet.videoIds.length} videos)',
               name: 'CurationService',
               category: LogCategory.system,
             );
@@ -851,13 +935,14 @@ class CurationService {
             _updateVideoCache(curationSet);
           } catch (e) {
             Log.error(
-              'Failed to parse curation set from event: $e',
+              'Failed to parse curation set from event: '
+              '$e',
               name: 'CurationService',
               category: LogCategory.system,
             );
           }
         },
-        onError: (error) {
+        onError: (Object error) {
           Log.error(
             'Error in curation set subscription: $error',
             name: 'CurationService',
@@ -876,7 +961,7 @@ class CurationService {
 
   /// Update video cache for a specific curation set
   void _updateVideoCache(CurationSet curationSet) {
-    final allVideos = _videoEventService.discoveryVideos;
+    final allVideos = _videoEventCache.discoveryVideos;
     final setVideos = <VideoEvent>[];
 
     // Find videos matching the curation set's video IDs
@@ -891,7 +976,8 @@ class CurationService {
 
     _setVideoCache[curationSet.id] = setVideos;
     Log.info(
-      'Updated cache for ${curationSet.id}: ${setVideos.length} videos found',
+      'Updated cache for ${curationSet.id}: '
+      '${setVideos.length} videos found',
       name: 'CurationService',
       category: LogCategory.system,
     );
@@ -900,7 +986,8 @@ class CurationService {
   /// Publish status for a curation
   final Map<String, CurationPublishStatus> _publishStatuses = {};
 
-  /// Currently publishing curations to prevent duplicate publishes
+  /// Currently publishing curations to prevent duplicate
+  /// publishes
   final Set<String> _currentlyPublishing = {};
 
   /// Build a Nostr kind 30005 event for a curation set
@@ -930,14 +1017,36 @@ class CurationService {
       tags.add(['e', videoId]);
     }
 
-    // Create and sign event via AuthService
-    final event = await _authService.createAndSignEvent(
-      kind: 30005, // NIP-51 curation set kind
-      content: description ?? title,
-      tags: tags,
-    );
+    // Create and sign event via NostrSigner
+    try {
+      final pubkey = await _signer.getPublicKey();
+      if (pubkey == null) {
+        Log.error(
+          'Cannot sign event - signer returned null '
+          'public key',
+          name: 'CurationService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
 
-    return event;
+      final unsignedEvent = Event(
+        pubkey,
+        30005, // NIP-51 curation set kind
+        tags,
+        description ?? title,
+      );
+
+      final signedEvent = await _signer.signEvent(unsignedEvent);
+      return signedEvent;
+    } catch (e) {
+      Log.error(
+        'Failed to create and sign curation event: $e',
+        name: 'CurationService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
   }
 
   /// Publish a curation set to Nostr
@@ -951,7 +1060,8 @@ class CurationService {
     // Prevent duplicate concurrent publishes
     if (_currentlyPublishing.contains(id)) {
       Log.debug(
-        'Curation $id already being published, skipping duplicate',
+        'Curation $id already being published, '
+        'skipping duplicate',
         name: 'CurationService',
         category: LogCategory.system,
       );
@@ -1003,7 +1113,9 @@ class CurationService {
           success: false,
           successCount: 0,
           totalRelays: 0,
-          errors: {'signing': 'Failed to create and sign event'},
+          errors: {
+            'signing': 'Failed to create and sign event',
+          },
         );
       }
 
@@ -1035,7 +1147,9 @@ class CurationService {
           success: false,
           successCount: 0,
           totalRelays: 0,
-          errors: {'timeout': 'Publish timed out after 5 seconds'},
+          errors: {
+            'timeout': 'Publish timed out after 5 seconds',
+          },
         );
       }
 
@@ -1070,7 +1184,8 @@ class CurationService {
         );
 
         Log.warning(
-          '❌ Failed to publish curation "$title" to relays',
+          '❌ Failed to publish curation "$title" '
+          'to relays',
           name: 'CurationService',
           category: LogCategory.system,
         );
@@ -1112,7 +1227,9 @@ class CurationService {
   }
 
   /// Get publish status for a curation
-  CurationPublishStatus getCurationPublishStatus(String curationId) {
+  CurationPublishStatus getCurationPublishStatus(
+    String curationId,
+  ) {
     return _publishStatuses[curationId] ??
         CurationPublishStatus(
           curationId: curationId,
@@ -1121,7 +1238,8 @@ class CurationService {
         );
   }
 
-  /// Retry all unpublished curations with exponential backoff
+  /// Retry all unpublished curations with exponential
+  /// backoff
   Future<void> retryUnpublishedCurations() async {
     final now = DateTime.now();
 
@@ -1130,12 +1248,15 @@ class CurationService {
       final status = entry.value;
 
       // Skip if already published or currently publishing
-      if (status.isPublished || status.isPublishing) continue;
+      if (status.isPublished || status.isPublishing) {
+        continue;
+      }
 
       // Skip if max retries reached
       if (!status.shouldRetry) {
         Log.debug(
-          'Skipping retry for $curationId: max attempts reached',
+          'Skipping retry for $curationId: '
+          'max attempts reached',
           name: 'CurationService',
           category: LogCategory.system,
         );
@@ -1148,7 +1269,8 @@ class CurationService {
 
       if (nextRetryTime == null || now.isBefore(nextRetryTime)) {
         Log.debug(
-          'Skipping retry for $curationId: backoff not elapsed',
+          'Skipping retry for $curationId: '
+          'backoff not elapsed',
           name: 'CurationService',
           category: LogCategory.system,
         );
@@ -1156,7 +1278,8 @@ class CurationService {
       }
 
       Log.info(
-        '🔄 Retrying publish for curation $curationId (attempt ${status.failedAttempts + 1})',
+        '🔄 Retrying publish for curation $curationId '
+        '(attempt ${status.failedAttempts + 1})',
         name: 'CurationService',
         category: LogCategory.system,
       );
@@ -1175,10 +1298,12 @@ class CurationService {
     }
   }
 
-  /// Get retry delay based on attempt count (exponential backoff)
+  /// Get retry delay based on attempt count (exponential
+  /// backoff)
   Duration getRetryDelay(int attemptCount) {
     // Exponential backoff: 2^n seconds
-    final seconds = 1 << attemptCount.clamp(0, 10); // Max ~17 minutes
+    // Max ~17 minutes
+    final seconds = 1 << attemptCount.clamp(0, 10);
     return Duration(seconds: seconds);
   }
 
@@ -1219,7 +1344,7 @@ class CurationService {
 
   /// Check if videos need updating and refresh cache
   void refreshIfNeeded() {
-    final currentVideoCount = _videoEventService.discoveryVideos.length;
+    final currentVideoCount = _videoEventCache.discoveryVideos.length;
     final cachedCount = _setVideoCache.values.fold<int>(
       0,
       (sum, videos) => sum + videos.length,
@@ -1231,8 +1356,8 @@ class CurationService {
     }
   }
 
+  /// Clean up resources
   void dispose() {
     // Clean up any subscriptions
-    // REFACTORED: Service no longer needs manual listener cleanup
   }
 }

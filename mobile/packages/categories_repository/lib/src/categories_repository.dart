@@ -2,14 +2,16 @@
 // ABOUTME: Owns the in-memory TTL cache for the categories list.
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
-import 'package:openvine/models/video_category.dart';
+import 'package:models/models.dart' show VideoCategory;
 
 /// Repository for fetching and caching video categories.
 ///
-/// Wraps [FunnelcakeApiClient.getCategories] and applies featured-first ordering.
-/// Results are cached in memory for [cacheDuration] (default 10 min) so that
-/// repeated screen opens do not fire redundant network requests.
+/// Wraps [FunnelcakeApiClient.getCategories] and applies
+/// featured-first ordering. Results are cached in memory for
+/// 10 minutes so repeated screen opens do not fire redundant
+/// network requests.
 class CategoriesRepository {
+  /// Creates a [CategoriesRepository].
   CategoriesRepository({
     required FunnelcakeApiClient funnelcakeApiClient,
     Duration cacheDuration = const Duration(minutes: 10),

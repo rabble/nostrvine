@@ -1,9 +1,9 @@
 // ABOUTME: AudioEvent model for NIP-94 Kind 1063 audio file metadata events
 // ABOUTME: Used for audio reuse feature - parsing audio shared for use in other videos
 
-import 'package:models/models.dart' show VideoEvent;
+import 'package:models/src/video_event.dart';
+import 'package:models/src/vine_sound.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/models/vine_sound.dart';
 
 /// Kind number for audio file metadata events (NIP-94)
 const int audioEventKind = 1063;

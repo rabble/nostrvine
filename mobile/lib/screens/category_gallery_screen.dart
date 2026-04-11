@@ -12,7 +12,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
-import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/categories/category_visuals.dart';

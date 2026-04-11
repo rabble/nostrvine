@@ -1,8 +1,9 @@
 // ABOUTME: Tests for the VideoCategory model
-// ABOUTME: Verifies JSON parsing, display name, emoji mapping, and count formatting
+// ABOUTME: Verifies JSON parsing, display name, emoji mapping,
+// ABOUTME: and count formatting
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_category.dart';
+import 'package:models/models.dart';
+import 'package:test/test.dart';
 
 void main() {
   group(VideoCategory, () {
