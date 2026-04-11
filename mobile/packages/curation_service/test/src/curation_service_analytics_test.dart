@@ -96,21 +96,16 @@ void main() {
             'description': 'Fetched video description',
           }),
           createdAt: 1234567891,
-        );
-        missingVideoEvent.id = 'test_trending_video_id';
+        )..id = 'test_trending_video_id';
 
         final streamController = StreamController<Event>();
         when(
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) {
-          Timer(
-            const Duration(milliseconds: 100),
-            () {
-              streamController
-                ..add(missingVideoEvent)
-                ..close();
-            },
-          );
+          Timer(const Duration(milliseconds: 100), () {
+            streamController.add(missingVideoEvent);
+            unawaited(streamController.close());
+          });
           return streamController.stream;
         });
 

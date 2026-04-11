@@ -1,5 +1,7 @@
-// ABOUTME: Repository for fetching and caching Kind 1063 audio events from Nostr relays.
-// ABOUTME: Provides methods to query sounds (trending, by creator, by usage count) for audio reuse.
+// ABOUTME: Repository for fetching and caching Kind 1063
+// audio events from Nostr relays.
+// ABOUTME: Provides methods to query sounds (trending,
+// by creator, by usage count) for audio reuse.
 
 import 'dart:async';
 
@@ -20,6 +22,7 @@ import 'package:unified_logger/unified_logger.dart';
 ///
 /// Exposes a stream for reactive updates to the sounds list.
 class SoundsRepository {
+  /// Creates a [SoundsRepository] with the given [nostrClient].
   SoundsRepository({required NostrClient nostrClient})
     : _nostrClient = nostrClient;
 
@@ -85,7 +88,7 @@ class SoundsRepository {
         name: 'SoundsRepository',
         category: LogCategory.system,
       );
-    } catch (e) {
+    } on Exception catch (e) {
       Log.error(
         'SoundsRepository initialization error: $e',
         name: 'SoundsRepository',
@@ -302,7 +305,7 @@ class SoundsRepository {
       );
 
       return result.count;
-    } catch (e) {
+    } on Exception catch (e) {
       Log.error(
         'Error fetching video count for audio: $e',
         name: 'SoundsRepository',
@@ -392,7 +395,7 @@ class SoundsRepository {
     try {
       final audioEvent = AudioEvent.fromNostrEvent(event);
       _cacheSound(audioEvent);
-    } catch (e) {
+    } on Exception catch (e) {
       Log.warning(
         'Failed to parse audio event: $e',
         name: 'SoundsRepository',
@@ -420,7 +423,7 @@ class SoundsRepository {
 
         _cache[audioEvent.id] = audioEvent;
         audioEvents.add(audioEvent);
-      } catch (e) {
+      } on Exception catch (e) {
         Log.warning(
           'Failed to parse audio event: $e',
           name: 'SoundsRepository',

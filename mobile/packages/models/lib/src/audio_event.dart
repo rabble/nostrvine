@@ -1,6 +1,8 @@
-// ABOUTME: AudioEvent model for NIP-94 Kind 1063 audio file metadata events
-// ABOUTME: Used for audio reuse feature - parsing audio shared for use in other videos
+// ABOUTME: AudioEvent model for NIP-94 Kind 1063 audio file
+// ABOUTME: metadata events. Used for audio reuse feature -
+// ABOUTME: parsing audio shared for use in other videos
 
+import 'package:meta/meta.dart';
 import 'package:models/src/video_event.dart';
 import 'package:models/src/vine_sound.dart';
 import 'package:nostr_sdk/event.dart';
@@ -8,18 +10,16 @@ import 'package:nostr_sdk/event.dart';
 /// Kind number for audio file metadata events (NIP-94)
 const int audioEventKind = 1063;
 
-/// Represents an audio file metadata event (Kind 1063) for the audio reuse feature.
+/// Represents an audio file metadata event (Kind 1063)
+/// for the audio reuse feature.
 ///
 /// Published when a user opts in to make their audio available for reuse.
 /// Contains metadata about the audio file including URL, MIME type, duration,
 /// and a reference to the source video (Kind 34236).
 ///
 /// See NIP-94 for the full file metadata specification.
+@immutable
 class AudioEvent {
-  /// Marker for bundled sounds to distinguish from Nostr events.
-  /// Used as ID prefix (with underscore) and as pubkey value.
-  static const bundledMarker = 'bundled';
-
   /// Creates a new AudioEvent with the specified fields.
   const AudioEvent({
     required this.id,
@@ -111,7 +111,7 @@ class AudioEvent {
   /// Create an AudioEvent from a bundled VineSound asset.
   ///
   /// Uses a special `asset://` URL scheme to indicate this is a bundled sound.
-  /// The ID is prefixed with [bundledPrefix] to distinguish from Nostr events.
+  /// The ID is prefixed with [bundledMarker] to distinguish from Nostr events.
   ///
   /// Usage:
   /// ```dart
@@ -161,6 +161,33 @@ class AudioEvent {
     );
   }
 
+  /// Deserialize from JSON for draft restoration.
+  factory AudioEvent.fromJson(Map<String, dynamic> json) {
+    return AudioEvent(
+      id: json['id'] as String,
+      pubkey: json['pubkey'] as String,
+      createdAt: json['createdAt'] as int,
+      url: json['url'] as String?,
+      mimeType: json['mimeType'] as String?,
+      sha256: json['sha256'] as String?,
+      fileSize: json['fileSize'] as int?,
+      duration: json['duration'] as double?,
+      title: json['title'] as String?,
+      source: json['source'] as String?,
+      sourceVideoReference: json['sourceVideoReference'] as String?,
+      sourceVideoRelay: json['sourceVideoRelay'] as String?,
+      startOffset: json['startOffsetMs'] != null
+          ? Duration(
+              milliseconds: json['startOffsetMs'] as int,
+            )
+          : Duration.zero,
+    );
+  }
+
+  /// Marker for bundled sounds to distinguish from Nostr events.
+  /// Used as ID prefix (with underscore) and as pubkey value.
+  static const bundledMarker = 'bundled';
+
   /// Whether this audio is derived from a video's original sound.
   bool get isOriginalSound => id.startsWith('video_');
 
@@ -209,15 +236,18 @@ class AudioEvent {
   final String? source;
 
   /// Addressable reference to source video in format "kind:pubkey:d-tag".
-  /// For OpenVine videos: "34236:<pubkey>:<vine-id>"
+  /// For OpenVine videos: `34236:<pubkey>:<vine-id>`
   final String? sourceVideoReference;
 
   /// Optional relay hint for the source video.
   final String? sourceVideoRelay;
 
   /// Start offset within the audio track.
-  /// This is the point from which the audio will start playing during video playback.
-  /// Default is [Duration.zero] (start from beginning). Only used locally, not published to Nostr.
+  ///
+  /// This is the point from which the audio will start
+  /// playing during video playback. Default is
+  /// [Duration.zero] (start from beginning). Only used
+  /// locally, not published to Nostr.
   final Duration startOffset;
 
   /// Get the kind number from the source video reference.
@@ -378,25 +408,4 @@ class AudioEvent {
     'sourceVideoRelay': ?sourceVideoRelay,
     if (startOffset != .zero) 'startOffsetMs': startOffset.inMilliseconds,
   };
-
-  /// Deserialize from JSON for draft restoration.
-  static AudioEvent fromJson(Map<String, dynamic> json) {
-    return AudioEvent(
-      id: json['id'] as String,
-      pubkey: json['pubkey'] as String,
-      createdAt: json['createdAt'] as int,
-      url: json['url'] as String?,
-      mimeType: json['mimeType'] as String?,
-      sha256: json['sha256'] as String?,
-      fileSize: json['fileSize'] as int?,
-      duration: json['duration'] as double?,
-      title: json['title'] as String?,
-      source: json['source'] as String?,
-      sourceVideoReference: json['sourceVideoReference'] as String?,
-      sourceVideoRelay: json['sourceVideoRelay'] as String?,
-      startOffset: json['startOffsetMs'] != null
-          ? Duration(milliseconds: json['startOffsetMs'] as int)
-          : Duration.zero,
-    );
-  }
 }

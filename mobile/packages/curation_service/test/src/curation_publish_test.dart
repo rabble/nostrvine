@@ -5,8 +5,10 @@
 import 'dart:async';
 
 import 'package:curation_service/curation_service.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show CurationPublishResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -200,65 +202,87 @@ void main() {
         },
       );
 
-      test('should timeout after 5 seconds', () async {
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async {
-          await Future<void>.delayed(
-            const Duration(seconds: 10),
+      test('should timeout after 5 seconds', () {
+        fakeAsync((async) {
+          when(
+            () => mockNostrService.publishEvent(any()),
+          ).thenAnswer((_) async {
+            await Future<void>.delayed(
+              const Duration(seconds: 10),
+            );
+            return _testEvent();
+          });
+
+          CurationPublishResult? result;
+          unawaited(
+            curationService
+                .publishCuration(
+                  id: 'test_curation',
+                  title: 'Test',
+                  videoIds: [],
+                )
+                .then((r) => result = r),
           );
-          return _testEvent();
+
+          // Advance past the 5-second timeout
+          async
+            ..elapse(const Duration(seconds: 6))
+            ..flushMicrotasks();
+
+          expect(result!.success, isFalse);
+          expect(result!.errors['timeout'], isNotNull);
         });
-
-        final stopwatch = Stopwatch()..start();
-        final result = await curationService.publishCuration(
-          id: 'test_curation',
-          title: 'Test',
-          videoIds: [],
-        );
-        stopwatch.stop();
-
-        expect(
-          stopwatch.elapsed.inSeconds,
-          lessThan(7),
-        );
-        expect(result.success, isFalse);
-        expect(result.errors['timeout'], isNotNull);
       });
 
       test(
         'should prevent duplicate concurrent publishes',
-        () async {
-          final completer = Completer<Event?>();
-          when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) => completer.future);
+        () {
+          fakeAsync((async) {
+            final completer = Completer<Event?>();
+            when(
+              () => mockNostrService.publishEvent(any()),
+            ).thenAnswer((_) => completer.future);
 
-          final firstPublish = curationService.publishCuration(
-            id: 'rapid_curation',
-            title: 'Test',
-            videoIds: [],
-          );
+            // Start first publish (will block on completer)
+            CurationPublishResult? firstResult;
+            unawaited(
+              curationService
+                  .publishCuration(
+                    id: 'rapid_curation',
+                    title: 'Test',
+                    videoIds: [],
+                  )
+                  .then((r) => firstResult = r),
+            );
 
-          await Future<void>.delayed(
-            const Duration(milliseconds: 10),
-          );
+            // Allow async code to start
+            async.flushMicrotasks();
 
-          final secondResult = await curationService.publishCuration(
-            id: 'rapid_curation',
-            title: 'Test',
-            videoIds: [],
-          );
+            // Second publish of same ID should be rejected
+            CurationPublishResult? secondResult;
+            unawaited(
+              curationService
+                  .publishCuration(
+                    id: 'rapid_curation',
+                    title: 'Test',
+                    videoIds: [],
+                  )
+                  .then((r) => secondResult = r),
+            );
 
-          expect(secondResult.success, isFalse);
-          expect(
-            secondResult.errors.containsKey('duplicate'),
-            isTrue,
-          );
+            async.flushMicrotasks();
 
-          completer.complete(_testEvent());
-          final firstResult = await firstPublish;
-          expect(firstResult.success, isTrue);
+            expect(secondResult!.success, isFalse);
+            expect(
+              secondResult!.errors.containsKey('duplicate'),
+              isTrue,
+            );
+
+            // Complete the first publish
+            completer.complete(_testEvent());
+            async.flushMicrotasks();
+            expect(firstResult!.success, isTrue);
+          });
         },
       );
     });
@@ -392,43 +416,47 @@ void main() {
       test(
         'should report "Publishing..." status during '
         'publish',
-        () async {
-          final completer = Completer<Event?>();
-          when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) => completer.future);
+        () {
+          fakeAsync((async) {
+            final completer = Completer<Event?>();
+            when(
+              () => mockNostrService.publishEvent(any()),
+            ).thenAnswer((_) => completer.future);
 
-          final publishFuture = curationService.publishCuration(
-            id: 'publishing_curation',
-            title: 'Test',
-            videoIds: [],
-          );
+            unawaited(
+              curationService.publishCuration(
+                id: 'publishing_curation',
+                title: 'Test',
+                videoIds: [],
+              ),
+            );
 
-          await Future<void>.delayed(
-            const Duration(milliseconds: 10),
-          );
+            // Allow async code to start
+            async.flushMicrotasks();
 
-          final status = curationService.getCurationPublishStatus(
-            'publishing_curation',
-          );
-          expect(status.isPublishing, isTrue);
-          expect(
-            status.statusText,
-            equals('Publishing...'),
-          );
+            final status = curationService.getCurationPublishStatus(
+              'publishing_curation',
+            );
+            expect(status.isPublishing, isTrue);
+            expect(
+              status.statusText,
+              equals('Publishing...'),
+            );
 
-          completer.complete(_testEvent());
-          await publishFuture;
+            // Complete the publish
+            completer.complete(_testEvent());
+            async.flushMicrotasks();
 
-          final finalStatus = curationService.getCurationPublishStatus(
-            'publishing_curation',
-          );
-          expect(finalStatus.isPublishing, isFalse);
-          expect(finalStatus.isPublished, isTrue);
-          expect(
-            finalStatus.statusText,
-            contains('Published'),
-          );
+            final finalStatus = curationService.getCurationPublishStatus(
+              'publishing_curation',
+            );
+            expect(finalStatus.isPublishing, isFalse);
+            expect(finalStatus.isPublished, isTrue);
+            expect(
+              finalStatus.statusText,
+              contains('Published'),
+            );
+          });
         },
       );
 

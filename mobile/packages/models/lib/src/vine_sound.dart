@@ -14,6 +14,20 @@ class VineSound {
     this.sourceUrl,
   });
 
+  factory VineSound.fromJson(Map<String, dynamic> json) {
+    return VineSound(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      assetPath: json['assetPath'] as String,
+      duration: Duration(milliseconds: json['durationMs'] as int),
+      artist: json['artist'] as String?,
+      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+      license: json['license'] as String?,
+      licenseUrl: json['licenseUrl'] as String?,
+      sourceUrl: json['sourceUrl'] as String?,
+    );
+  }
+
   final String id;
   final String title;
   final String assetPath;
@@ -58,20 +72,6 @@ class VineSound {
       'licenseUrl': licenseUrl,
       'sourceUrl': sourceUrl,
     };
-  }
-
-  factory VineSound.fromJson(Map<String, dynamic> json) {
-    return VineSound(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      assetPath: json['assetPath'] as String,
-      duration: Duration(milliseconds: json['durationMs'] as int),
-      artist: json['artist'] as String?,
-      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
-      license: json['license'] as String?,
-      licenseUrl: json['licenseUrl'] as String?,
-      sourceUrl: json['sourceUrl'] as String?,
-    );
   }
 
   @override

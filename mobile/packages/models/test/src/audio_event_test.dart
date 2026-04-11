@@ -7,7 +7,18 @@ import 'package:test/test.dart';
 
 // Valid 64-character hex pubkey for testing
 const testPubkey =
-    'abc123def456789012345678901234567890123456789012345678901234abcd';
+    'abc123def456789012345678901234'
+    '567890123456789012345678901234abcd';
+
+// Valid 64-character hex SHA-256 hash for testing
+const testSha256 =
+    'e3b0c44298fc1c149afbf4c8996fb924'
+    '27ae41e4649b934ca495991b7852b855';
+
+// Valid 64-character hex ID for testing
+const testHexId =
+    'abc123def456789012345678901234'
+    '567890123456789012345678901234abcd';
 
 void main() {
   group('AudioEvent', () {
@@ -20,10 +31,7 @@ void main() {
           [
             ['url', 'https://blossom.example/abc123.aac'],
             ['m', 'audio/aac'],
-            [
-              'x',
-              'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-            ],
+            ['x', testSha256],
             ['size', '98765'],
             ['duration', '6.2'],
             ['title', 'Original sound - @username'],
@@ -41,12 +49,7 @@ void main() {
         expect(audioEvent.pubkey, equals(testPubkey));
         expect(audioEvent.url, equals('https://blossom.example/abc123.aac'));
         expect(audioEvent.mimeType, equals('audio/aac'));
-        expect(
-          audioEvent.sha256,
-          equals(
-            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-          ),
-        );
+        expect(audioEvent.sha256, equals(testSha256));
         expect(audioEvent.fileSize, equals(98765));
         expect(audioEvent.duration, closeTo(6.2, 0.001));
         expect(audioEvent.title, equals('Original sound - @username'));
@@ -252,7 +255,7 @@ void main() {
 
       test('isBundled returns false for Nostr sounds', () {
         const audioEvent = AudioEvent(
-          id: 'abc123def456789012345678901234567890123456789012345678901234abcd',
+          id: testHexId,
           pubkey: testPubkey,
           createdAt: 1700000000,
           url: 'https://blossom.example/audio.aac',
@@ -276,7 +279,7 @@ void main() {
 
       test('assetPath returns null for Nostr sounds', () {
         const audioEvent = AudioEvent(
-          id: 'abc123def456789012345678901234567890123456789012345678901234abcd',
+          id: testHexId,
           pubkey: testPubkey,
           createdAt: 1700000000,
           url: 'https://blossom.example/audio.aac',
@@ -437,7 +440,7 @@ void main() {
         );
 
         // Act
-        final copy = original.copyWith(title: 'New Title', duration: 6.0);
+        final copy = original.copyWith(title: 'New Title', duration: 6);
 
         // Assert
         expect(copy.id, equals(original.id));

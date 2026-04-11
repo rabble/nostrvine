@@ -3,13 +3,13 @@
 // ABOUTME: sets to Nostr
 
 import 'package:curation_service/curation_service.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -77,8 +77,7 @@ void main() {
           30005,
           <List<String>>[],
           'test',
-        );
-        signedEvent.id = 'signed_event_id';
+        )..id = 'signed_event_id';
 
         when(
           () => mockSigner.signEvent(any()),
@@ -113,8 +112,7 @@ void main() {
           30005,
           <List<String>>[],
           'test',
-        );
-        signedEvent.id = 'event_id';
+        )..id = 'event_id';
 
         when(
           () => mockSigner.signEvent(any()),
@@ -145,8 +143,7 @@ void main() {
         30005,
         <List<String>>[],
         'test',
-      );
-      signedEvent.id = 'event_id';
+      )..id = 'event_id';
 
       when(
         () => mockSigner.signEvent(any()),
@@ -280,8 +277,7 @@ void main() {
           30005,
           <List<String>>[],
           'test',
-        );
-        signedEvent.id = 'event_id';
+        )..id = 'event_id';
 
         when(
           () => mockSigner.signEvent(any()),
@@ -318,8 +314,7 @@ void main() {
           30005,
           <List<String>>[],
           'test',
-        );
-        signedEvent.id = 'event_id';
+        )..id = 'event_id';
 
         when(
           () => mockSigner.signEvent(any()),
@@ -358,8 +353,7 @@ void main() {
           30005,
           <List<String>>[],
           'test',
-        );
-        signedEvent.id = 'published_event_id';
+        )..id = 'published_event_id';
 
         when(
           () => mockSigner.signEvent(any()),
@@ -429,8 +423,7 @@ void main() {
           30005,
           <List<String>>[],
           'test',
-        );
-        signedEvent.id = 'event_id';
+        )..id = 'event_id';
 
         when(
           () => mockSigner.signEvent(any()),

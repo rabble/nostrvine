@@ -93,21 +93,16 @@ void main() {
             'description': 'Test video description',
           }),
           createdAt: 1234567890,
-        );
-        videoEvent.id = 'test123';
+        )..id = 'test123';
 
         final streamController = StreamController<Event>();
         when(
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) {
-          Timer(
-            const Duration(milliseconds: 100),
-            () {
-              streamController
-                ..add(videoEvent)
-                ..close();
-            },
-          );
+          Timer(const Duration(milliseconds: 100), () {
+            streamController.add(videoEvent);
+            unawaited(streamController.close());
+          });
           return streamController.stream;
         });
 
@@ -121,9 +116,7 @@ void main() {
         final eventStream = mockNostrService.subscribe([filter]);
         final fetchedEvents = <Event>[];
 
-        await for (final event in eventStream) {
-          fetchedEvents.add(event);
-        }
+        await eventStream.forEach(fetchedEvents.add);
 
         expect(fetchedEvents.length, 1);
         expect(fetchedEvents[0].id, 'test123');

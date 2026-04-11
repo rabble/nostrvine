@@ -45,6 +45,11 @@ void main() {
 
       when(() => mockVideoEventCache.discoveryVideos).thenReturn([]);
 
+      // Stub subscribe so constructor initialization doesn't throw
+      when(
+        () => mockNostrService.subscribe(any()),
+      ).thenAnswer((_) => const Stream<Event>.empty());
+
       // Mock getLikeCounts to return empty counts
       when(
         () => mockLikesRepository.getLikeCounts(any()),
@@ -100,7 +105,7 @@ void main() {
           await Future<void>.delayed(
             const Duration(milliseconds: 100),
           );
-          controller.close();
+          unawaited(controller.close());
 
           await future;
 
@@ -164,7 +169,7 @@ void main() {
           await Future<void>.delayed(
             const Duration(milliseconds: 100),
           );
-          controller.close();
+          unawaited(controller.close());
 
           await future;
 
@@ -188,7 +193,7 @@ void main() {
 
           final future = curationService.refreshCurationSets();
 
-          controller.close();
+          unawaited(controller.close());
           await future;
 
           expect(
@@ -273,7 +278,7 @@ void main() {
           await Future<void>.delayed(
             const Duration(milliseconds: 100),
           );
-          controller.close();
+          unawaited(controller.close());
 
           await future;
 
@@ -306,7 +311,7 @@ void main() {
           await Future<void>.delayed(
             const Duration(milliseconds: 100),
           );
-          controller.close();
+          unawaited(controller.close());
 
           await expectLater(future, completes);
         },

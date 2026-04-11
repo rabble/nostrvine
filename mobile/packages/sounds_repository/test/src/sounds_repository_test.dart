@@ -74,8 +74,8 @@ void main() {
       repository = SoundsRepository(nostrClient: mockNostrClient);
     });
 
-    tearDown(() {
-      repository.dispose();
+    tearDown(() async {
+      await repository.dispose();
     });
 
     Event createAudioEvent({

@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:curation_service/src/video_event_cache.dart';
 import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -13,8 +14,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:unified_logger/unified_logger.dart';
-
-import 'video_event_cache.dart';
 
 /// Service for managing NIP-51 video curation sets and content
 /// discovery.
@@ -100,7 +99,7 @@ class CurationService {
     }
 
     // Populate with actual video data
-    _populateSampleSets();
+    unawaited(_populateSampleSets());
 
     _isLoading = false;
   }
@@ -211,7 +210,7 @@ class CurationService {
             // Also add to video event cache for general
             // availability
             _videoEventCache.addVideoEvent(video);
-          } catch (e) {
+          } on Exception catch (e) {
             Log.error(
               'Failed to parse Divine Team video event: $e',
               name: 'CurationService',
@@ -225,7 +224,7 @@ class CurationService {
             name: 'CurationService',
             category: LogCategory.system,
           );
-          streamSubscription.cancel();
+          unawaited(streamSubscription.cancel());
           if (!completer.isCompleted) completer.complete();
         },
         onDone: () {
@@ -249,8 +248,8 @@ class CurationService {
       );
 
       // Refresh the cache after fetching
-      _populateSampleSets();
-    } catch (e) {
+      await _populateSampleSets();
+    } on Exception catch (e) {
       Log.error(
         'Error fetching Divine Team videos: $e',
         name: 'CurationService',
@@ -267,7 +266,7 @@ class CurationService {
     // If we don't have the Divine Team videos yet, start
     // fetching them (async)
     if (!_hasFetchedEditorsList) {
-      _fetchDivineTeamVideos();
+      unawaited(_fetchDivineTeamVideos());
       Log.debug(
         '⏳ Divine Team videos not fetched yet, starting '
         'fetch in background',
@@ -278,12 +277,11 @@ class CurationService {
     }
 
     // Return videos from the dedicated cache
-    final picks = List<VideoEvent>.from(_editorPicksVideoCache);
-
-    // Sort by creation time (newest first)
-    picks.sort(
-      (a, b) => b.createdAt.compareTo(a.createdAt),
-    );
+    final picks = List<VideoEvent>.from(_editorPicksVideoCache)
+      // Sort by creation time (newest first)
+      ..sort(
+        (a, b) => b.createdAt.compareTo(a.createdAt),
+      );
 
     // Only log on changes to avoid spam
     final currentCount = picks.length;
@@ -381,7 +379,7 @@ class CurationService {
         category: LogCategory.system,
       );
       Log.info(
-        '  URL: https://api.openvine.co/analytics/'
+        '  URL: https://api.openvine.co/analytics/ '
         'trending/vines',
         name: 'CurationService',
         category: LogCategory.system,
@@ -433,7 +431,7 @@ class CurationService {
       }
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
         final vinesData = data['vines'] as List<dynamic>?;
 
         Log.info(
@@ -460,7 +458,7 @@ class CurationService {
           category: LogCategory.system,
         );
       }
-    } catch (e) {
+    } on Exception catch (e) {
       Log.error(
         '❌ Failed to fetch trending from analytics: $e',
         name: 'CurationService',
@@ -488,8 +486,9 @@ class CurationService {
     // First pass: collect videos we have locally and track
     // missing ones
     for (final vineData in vinesData) {
-      final eventId = (vineData['eventId'] as String?)?.toLowerCase();
-      final viewCount = vineData['views'] ?? 0;
+      final vine = vineData as Map<String, dynamic>;
+      final eventId = (vine['eventId'] as String?)?.toLowerCase();
+      final viewCount = vine['views'] ?? 0;
 
       if (eventId != null) {
         // Skip videos we know are missing from relays
@@ -617,12 +616,12 @@ class CurationService {
                 name: 'CurationService',
                 category: LogCategory.system,
               );
-              streamSubscription.cancel();
+              unawaited(streamSubscription.cancel());
               if (!completer.isCompleted) {
                 completer.complete();
               }
             }
-          } catch (e) {
+          } on Exception catch (e) {
             Log.error(
               'Failed to parse video event: $e',
               name: 'CurationService',
@@ -636,7 +635,7 @@ class CurationService {
             name: 'CurationService',
             category: LogCategory.system,
           );
-          streamSubscription.cancel();
+          unawaited(streamSubscription.cancel());
           if (!completer.isCompleted) {
             completer.complete();
           }
@@ -648,7 +647,7 @@ class CurationService {
             name: 'CurationService',
             category: LogCategory.system,
           );
-          streamSubscription.cancel();
+          unawaited(streamSubscription.cancel());
           if (!completer.isCompleted) {
             completer.complete();
           }
@@ -689,7 +688,7 @@ class CurationService {
           category: LogCategory.system,
         );
       }
-    } catch (e) {
+    } on Exception catch (e) {
       Log.error(
         'Failed to fetch trending videos from relays: $e',
         name: 'CurationService',
@@ -705,7 +704,8 @@ class CurationService {
     // Sort by the order from analytics API
     final orderedTrending = <VideoEvent>[];
     for (final vineData in vinesData) {
-      final eventId = (vineData['eventId'] as String?)?.toLowerCase();
+      final vine = vineData as Map<String, dynamic>;
+      final eventId = (vine['eventId'] as String?)?.toLowerCase();
       if (eventId != null) {
         final video = trending.firstWhere(
           (v) => v.id.toLowerCase() == eventId,
@@ -813,7 +813,7 @@ class CurationService {
               name: 'CurationService',
               category: LogCategory.system,
             );
-          } catch (e) {
+          } on Exception catch (e) {
             Log.error(
               'Failed to parse curation set from event: '
               '$e',
@@ -868,11 +868,11 @@ class CurationService {
           name: 'CurationService',
           category: LogCategory.system,
         );
-        _populateSampleSets();
+        await _populateSampleSets();
       }
 
       _isLoading = false;
-    } catch (e) {
+    } on Exception catch (e) {
       _error = 'Failed to refresh curation sets: $e';
       _isLoading = false;
 
@@ -883,7 +883,7 @@ class CurationService {
       );
 
       // Fallback to sample data on error
-      _populateSampleSets();
+      await _populateSampleSets();
     }
   }
 
@@ -899,58 +899,58 @@ class CurationService {
       );
 
       // Subscribe to receive curation set events
-      final eventStream = _nostrService.subscribe([
-        Filter(
-          kinds: [30005],
-          authors: curatorPubkeys,
-          limit: 500,
-        ),
-      ]);
+      _nostrService
+          .subscribe([
+            Filter(
+              kinds: [30005],
+              authors: curatorPubkeys,
+              limit: 500,
+            ),
+          ])
+          .listen(
+            (event) {
+              try {
+                if (event.kind != 30005) {
+                  Log.warning(
+                    'Received unexpected event kind '
+                    '${event.kind} in curation subscription '
+                    '(expected 30005)',
+                    name: 'CurationService',
+                    category: LogCategory.system,
+                  );
+                  return;
+                }
 
-      eventStream.listen(
-        (event) {
-          try {
-            if (event.kind != 30005) {
-              Log.warning(
-                'Received unexpected event kind '
-                '${event.kind} in curation subscription '
-                '(expected 30005)',
+                final curationSet = CurationSet.fromNostrEvent(event);
+                _curationSets[curationSet.id] = curationSet;
+                Log.verbose(
+                  'Received curation set: '
+                  '${curationSet.title} '
+                  '(${curationSet.videoIds.length} videos)',
+                  name: 'CurationService',
+                  category: LogCategory.system,
+                );
+
+                // Update the video cache for this set
+                _updateVideoCache(curationSet);
+              } on Exception catch (e) {
+                Log.error(
+                  'Failed to parse curation set from event: '
+                  '$e',
+                  name: 'CurationService',
+                  category: LogCategory.system,
+                );
+              }
+            },
+            onError: (Object error) {
+              Log.error(
+                'Error in curation set subscription: $error',
                 name: 'CurationService',
                 category: LogCategory.system,
               );
-              return;
-            }
-
-            final curationSet = CurationSet.fromNostrEvent(event);
-            _curationSets[curationSet.id] = curationSet;
-            Log.verbose(
-              'Received curation set: '
-              '${curationSet.title} '
-              '(${curationSet.videoIds.length} videos)',
-              name: 'CurationService',
-              category: LogCategory.system,
-            );
-
-            // Update the video cache for this set
-            _updateVideoCache(curationSet);
-          } catch (e) {
-            Log.error(
-              'Failed to parse curation set from event: '
-              '$e',
-              name: 'CurationService',
-              category: LogCategory.system,
-            );
-          }
-        },
-        onError: (Object error) {
-          Log.error(
-            'Error in curation set subscription: $error',
-            name: 'CurationService',
-            category: LogCategory.system,
+            },
           );
-        },
-      );
-    } catch (e) {
+    } on Exception catch (e) {
       Log.error(
         'Error subscribing to curation sets: $e',
         name: 'CurationService',
@@ -966,11 +966,9 @@ class CurationService {
 
     // Find videos matching the curation set's video IDs
     for (final videoId in curationSet.videoIds) {
-      try {
-        final video = allVideos.firstWhere((v) => v.id == videoId);
+      final video = allVideos.where((v) => v.id == videoId).firstOrNull;
+      if (video != null) {
         setVideos.add(video);
-      } catch (e) {
-        // Video not found, skip it
       }
     }
 
@@ -1039,7 +1037,7 @@ class CurationService {
 
       final signedEvent = await _signer.signEvent(unsignedEvent);
       return signedEvent;
-    } catch (e) {
+    } on Exception catch (e) {
       Log.error(
         'Failed to create and sign curation event: $e',
         name: 'CurationService',
@@ -1199,7 +1197,7 @@ class CurationService {
         errors: isSuccess ? {} : {'publish': 'Failed to publish to relays'},
         failedRelays: isSuccess ? [] : ['relays'],
       );
-    } catch (e) {
+    } on Exception catch (e) {
       Log.error(
         'Error publishing curation: $e',
         name: 'CurationService',
@@ -1332,7 +1330,7 @@ class CurationService {
       );
 
       return result.success;
-    } catch (e) {
+    } on Exception catch (e) {
       Log.error(
         'Error creating curation set: $e',
         name: 'CurationService',
@@ -1352,7 +1350,7 @@ class CurationService {
 
     // Refresh if we have new videos
     if (currentVideoCount > cachedCount) {
-      _populateSampleSets();
+      unawaited(_populateSampleSets());
     }
   }
 

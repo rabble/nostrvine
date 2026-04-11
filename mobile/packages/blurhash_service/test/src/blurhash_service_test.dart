@@ -115,8 +115,9 @@ void main() {
       final testBlurhash = BlurhashService.getDefaultVineBlurhash();
       final data = BlurhashService.decodeBlurhash(testBlurhash)!;
 
-      cache.put('key1', data);
-      cache.put('key2', data);
+      cache
+        ..put('key1', data)
+        ..put('key2', data);
       expect(cache.get('key1'), isNotNull);
       expect(cache.get('key2'), isNotNull);
 

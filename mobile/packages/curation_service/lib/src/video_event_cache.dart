@@ -3,11 +3,11 @@
 
 import 'package:models/models.dart';
 
-/// Minimal abstraction over [VideoEventService] used by
-/// [CurationService] for reading and writing discovery videos.
+/// Minimal abstraction over `VideoEventService` used by
+/// `CurationService` for reading and writing discovery videos.
 ///
 /// App-side code provides a concrete adapter that delegates to
-/// the real [VideoEventService].
+/// the real `VideoEventService`.
 abstract class VideoEventCache {
   /// All currently cached discovery videos.
   List<VideoEvent> get discoveryVideos;
