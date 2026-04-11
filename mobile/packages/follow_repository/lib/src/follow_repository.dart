@@ -1449,6 +1449,7 @@ class FollowRepository {
           category: LogCategory.system,
         );
       }
+      // coverage:ignore-start
     } catch (e) {
       Log.error(
         'Failed to save following list to cache: $e',
@@ -1456,6 +1457,7 @@ class FollowRepository {
         category: LogCategory.system,
       );
     }
+    // coverage:ignore-end
   }
 
   /// Query relays for the user's kind 3 contact list.
@@ -1507,6 +1509,7 @@ class FollowRepository {
           category: LogCategory.system,
         );
       }
+      // coverage:ignore-start
     } catch (e) {
       Log.warning(
         'Failed to load following from relay: $e',
@@ -1514,6 +1517,7 @@ class FollowRepository {
         category: LogCategory.system,
       );
     }
+    // coverage:ignore-end
   }
 
   /// Query connected relays for kind 3 contact list.

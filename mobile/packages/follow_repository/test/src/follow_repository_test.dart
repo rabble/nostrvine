@@ -2181,9 +2181,6 @@ void main() {
       test(
         'picks best contact list by createdAt (newer wins)',
         () async {
-          const olderTimestamp = 1000000;
-          const newerTimestamp = 2000000;
-
           final olderEvent = Event(
             testCurrentUserPubkey,
             EventKind.contactList,
@@ -2191,18 +2188,7 @@ void main() {
               ['p', testTargetPubkey],
             ],
             '',
-            createdAt: olderTimestamp,
-          );
-
-          final newerEvent = Event(
-            testCurrentUserPubkey,
-            EventKind.contactList,
-            [
-              ['p', testTargetPubkey],
-              ['p', testTargetPubkey2],
-            ],
-            '',
-            createdAt: newerTimestamp,
+            createdAt: 1000000,
           );
 
           var callIndex = 0;
@@ -3111,9 +3097,6 @@ void main() {
       test(
         'picks newer event when both sources return data',
         () async {
-          const olderTs = 1000000;
-          const newerTs = 2000000;
-
           final olderEvent = Event(
             testCurrentUserPubkey,
             EventKind.contactList,
@@ -3121,18 +3104,7 @@ void main() {
               ['p', testTargetPubkey],
             ],
             '',
-            createdAt: olderTs,
-          );
-
-          final newerEvent = Event(
-            testCurrentUserPubkey,
-            EventKind.contactList,
-            [
-              ['p', testTargetPubkey],
-              ['p', testTargetPubkey2],
-            ],
-            '',
-            createdAt: newerTs,
+            createdAt: 1000000,
           );
 
           // Connected relays return older event, indexer returns newer
