@@ -72,36 +72,12 @@ jobs:
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
   tests:
-    name: Tests (shard ${{ matrix.shard_number }}/${{ matrix.shard_count }})
+    name: Tests (shard ${{ matrix.shard_index }}/8)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - shard_index: 0
-            shard_number: 1
-            shard_count: 8
-          - shard_index: 1
-            shard_number: 2
-            shard_count: 8
-          - shard_index: 2
-            shard_number: 3
-            shard_count: 8
-          - shard_index: 3
-            shard_number: 4
-            shard_count: 8
-          - shard_index: 4
-            shard_number: 5
-            shard_count: 8
-          - shard_index: 5
-            shard_number: 6
-            shard_count: 8
-          - shard_index: 6
-            shard_number: 7
-            shard_count: 8
-          - shard_index: 7
-            shard_number: 8
-            shard_count: 8
+        shard_index: [0, 1, 2, 3, 4, 5, 6, 7]
     defaults:
       run:
         working-directory: mobile/
@@ -115,8 +91,15 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
-      - name: 🚀 Run Flutter test shard
-        run: scripts/ci/run_flutter_test_shard.sh ${{ matrix.shard_index }} ${{ matrix.shard_count }}
+      - name: 🚀 Run Flutter tests
+        run: |
+          mapfile -t all < <(find test -type f -name '*_test.dart' | LC_ALL=C sort)
+          selected=()
+          for i in "${!all[@]}"; do
+            (( i % 8 == ${{ matrix.shard_index }} )) && selected+=("${all[$i]}")
+          done
+          echo "Shard ${{ matrix.shard_index }}/8: ${#selected[@]} of ${#all[@]} test files"
+          flutter test --exclude-tags integration "${selected[@]}"
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}
