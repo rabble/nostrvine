@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -216,7 +217,7 @@ class _VerificationDialog extends ConsumerWidget {
       builder: (context, verificationState) {
         // Auto-close when verification completes (user is no longer anonymous)
         if (!verificationState.isPolling &&
-            verificationState.error == null &&
+            verificationState.errorCode == null &&
             !authService.isAnonymous) {
           // Use post-frame callback to avoid calling Navigator during build
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -225,7 +226,8 @@ class _VerificationDialog extends ConsumerWidget {
         }
 
         // Show error state if verification failed
-        if (verificationState.error != null) {
+        final errorCode = verificationState.errorCode;
+        if (errorCode != null) {
           return AlertDialog(
             backgroundColor: VineTheme.cardBackground,
             title: const Row(
@@ -239,7 +241,7 @@ class _VerificationDialog extends ConsumerWidget {
               ],
             ),
             content: Text(
-              verificationState.error!,
+              context.l10n.emailVerificationErrorMessage(errorCode),
               style: const TextStyle(color: VineTheme.secondaryText),
             ),
             actions: [

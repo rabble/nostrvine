@@ -2493,6 +2493,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSignInButton => 'Sign in';
 
   @override
+  String get authVerificationErrorTimeout =>
+      'Verification timed out. Please try registering again.';
+
+  @override
+  String get authVerificationErrorMissingCode =>
+      'Verification failed — missing authorization code.';
+
+  @override
+  String get authVerificationErrorPollFailed =>
+      'Verification failed. Please try again.';
+
+  @override
+  String get authVerificationErrorNetworkExchange =>
+      'Network error during sign-in. Please try again.';
+
+  @override
+  String get authVerificationErrorOAuthExchange =>
+      'Verification failed. Please try registering again.';
+
+  @override
+  String get authVerificationErrorSignInFailed =>
+      'Sign-in failed. Please try logging in manually.';
+
+  @override
+  String get authInviteErrorAlreadyUsed =>
+      'That invite code is no longer available. Go back to your invite code, join the waitlist, or contact support.';
+
+  @override
+  String get authInviteErrorInvalid =>
+      'That invite code cannot be used right now. Go back to your invite code, join the waitlist, or contact support.';
+
+  @override
+  String get authInviteErrorTemporary =>
+      'We couldn\'t confirm your invite right now. Go back to your invite code and try again, or contact support.';
+
+  @override
+  String get authInviteErrorUnknown =>
+      'We couldn\'t activate your invite. Go back to your invite code, join the waitlist, or contact support.';
+
+  @override
   String get shareSheetSave => 'Save';
 
   @override

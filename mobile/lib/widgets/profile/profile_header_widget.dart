@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
@@ -383,6 +384,10 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
           ],
         );
       case EmailVerificationStatus.failure:
+        final errorCode = state.errorCode;
+        final errorMessage = errorCode == null
+            ? context.l10n.profilePleaseTryAgain
+            : context.l10n.emailVerificationErrorMessage(errorCode);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -392,7 +397,7 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              state.error ?? context.l10n.profilePleaseTryAgain,
+              errorMessage,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

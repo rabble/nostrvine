@@ -1220,6 +1220,17 @@
   },
   "authSignInButton": "Sign in",
 
+  "authVerificationErrorTimeout": "Verification timed out. Please try registering again.",
+  "authVerificationErrorMissingCode": "Verification failed — missing authorization code.",
+  "authVerificationErrorPollFailed": "Verification failed. Please try again.",
+  "authVerificationErrorNetworkExchange": "Network error during sign-in. Please try again.",
+  "authVerificationErrorOAuthExchange": "Verification failed. Please try registering again.",
+  "authVerificationErrorSignInFailed": "Sign-in failed. Please try logging in manually.",
+  "authInviteErrorAlreadyUsed": "That invite code is no longer available. Go back to your invite code, join the waitlist, or contact support.",
+  "authInviteErrorInvalid": "That invite code cannot be used right now. Go back to your invite code, join the waitlist, or contact support.",
+  "authInviteErrorTemporary": "We couldn't confirm your invite right now. Go back to your invite code and try again, or contact support.",
+  "authInviteErrorUnknown": "We couldn't activate your invite. Go back to your invite code, join the waitlist, or contact support.",
+
   "shareSheetSave": "Save",
   "shareSheetSaveToGallery": "Save to Gallery",
   "shareSheetSaveWithWatermark": "Save with Watermark",

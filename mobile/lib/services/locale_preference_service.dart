@@ -78,10 +78,14 @@ class LocalePreferenceService {
   /// Map of supported locale codes to their native display names.
   ///
   /// Only include locales that have full (or near-full) translations.
+  /// Translations below that bar are intentionally hidden from the picker
+  /// so users aren't pushed into a half-translated UI — the fallback
+  /// plumbing for partial locales still ships via `AppLocalizations`
+  /// (see `l10n.yaml` / `MaterialApp.supportedLocales`).
+  ///
   /// Add new entries here as translations are completed.
   static const Map<String, String> supportedLocales = {
     'en': 'English',
-    'es': 'Espa\u00f1ol',
   };
 
   /// Returns the native display name for a locale code, or the code

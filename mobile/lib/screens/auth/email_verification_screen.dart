@@ -17,6 +17,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -192,7 +193,6 @@ class _EmailVerificationScreenState
       category: LogCategory.auth,
     );
 
-    final l10n = context.l10n;
     final oauth = ref.read(oauthClientProvider);
     try {
       final result = await oauth.verifyEmail(token: token);
@@ -210,9 +210,7 @@ class _EmailVerificationScreenState
           name: 'EmailVerificationScreen',
           category: LogCategory.auth,
         );
-        _cubit.emitFailure(
-          result.error ?? l10n.authVerificationLinkExpired,
-        );
+        _cubit.emitFailure(EmailVerificationError.verificationLinkExpired);
       }
     } catch (e) {
       Log.error(
@@ -220,7 +218,7 @@ class _EmailVerificationScreenState
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      _cubit.emitFailure(l10n.authVerificationConnectionError);
+      _cubit.emitFailure(EmailVerificationError.verificationConnectionError);
     }
   }
 
@@ -316,10 +314,16 @@ class _EmailVerificationScreenState
     context.go('/');
   }
 
-  void _handleInviteRecovery(String inviteCode, String? error) {
+  void _handleInviteRecovery(
+    String inviteCode,
+    EmailVerificationError? errorCode,
+  ) {
     _cubit.stopPolling();
     ref.read(pendingVerificationServiceProvider).clear();
     context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
+    final error = errorCode == null
+        ? null
+        : context.l10n.emailVerificationErrorMessage(errorCode);
     context.go(
       WelcomeScreen.inviteGatePathWithCode(inviteCode, error: error),
     );
@@ -375,14 +379,14 @@ class _EmailVerificationScreenState
                       EmailVerificationStatus.success =>
                         const _SuccessContent(),
                       EmailVerificationStatus.failure => _ErrorContent(
-                        error: state.error,
+                        errorCode: state.errorCode,
                         onStartOver: _handleStartOver,
                         onReturnToInviteGate:
                             state.showInviteGateRecovery &&
                                 state.inviteRecoveryCode != null
                             ? () => _handleInviteRecovery(
                                 state.inviteRecoveryCode!,
-                                state.error,
+                                state.errorCode,
                               )
                             : null,
                       ),
@@ -692,16 +696,20 @@ class _SuccessContent extends StatelessWidget {
 class _ErrorContent extends StatelessWidget {
   const _ErrorContent({
     required this.onStartOver,
-    required this.error,
+    required this.errorCode,
     this.onReturnToInviteGate,
   });
 
   final VoidCallback onStartOver;
-  final String? error;
+  final EmailVerificationError? errorCode;
   final VoidCallback? onReturnToInviteGate;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final message = errorCode == null
+        ? l10n.authVerificationFailed
+        : l10n.emailVerificationErrorMessage(errorCode!);
     return Column(
       children: [
         const Spacer(),
@@ -711,7 +719,7 @@ class _ErrorContent extends StatelessWidget {
         const SizedBox(height: 32),
 
         Text(
-          context.l10n.authErrorTitle,
+          l10n.authErrorTitle,
           style: const TextStyle(
             fontFamily: VineTheme.fontFamilyBricolage,
             fontSize: 28,
@@ -722,7 +730,7 @@ class _ErrorContent extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          error ?? context.l10n.authVerificationFailed,
+          message,
           style: const TextStyle(
             fontSize: 16,
             color: VineTheme.secondaryText,
@@ -739,8 +747,8 @@ class _ErrorContent extends StatelessWidget {
           child: DivineButton(
             expanded: true,
             label: onReturnToInviteGate == null
-                ? context.l10n.authStartOver
-                : context.l10n.authBackToInviteCode,
+                ? l10n.authStartOver
+                : l10n.authBackToInviteCode,
             onPressed: onReturnToInviteGate ?? onStartOver,
           ),
         ),

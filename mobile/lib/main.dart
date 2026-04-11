@@ -34,7 +34,8 @@ import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
@@ -1607,10 +1608,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               previous.status != EmailVerificationStatus.failure,
           listener: (context, state) {
             final messenger = ScaffoldMessenger.maybeOf(context);
-            if (messenger != null && state.error != null) {
+            final errorCode = state.errorCode;
+            if (messenger != null && errorCode != null) {
               messenger.showSnackBar(
                 SnackBar(
-                  content: Text(state.error!),
+                  content: Text(
+                    context.l10n.emailVerificationErrorMessage(errorCode),
+                  ),
                   backgroundColor: VineTheme.error,
                   behavior: SnackBarBehavior.floating,
                   duration: const Duration(seconds: 5),

@@ -4410,6 +4410,66 @@ abstract class AppLocalizations {
   /// **'Sign in'**
   String get authSignInButton;
 
+  /// No description provided for @authVerificationErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification timed out. Please try registering again.'**
+  String get authVerificationErrorTimeout;
+
+  /// No description provided for @authVerificationErrorMissingCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed — missing authorization code.'**
+  String get authVerificationErrorMissingCode;
+
+  /// No description provided for @authVerificationErrorPollFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed. Please try again.'**
+  String get authVerificationErrorPollFailed;
+
+  /// No description provided for @authVerificationErrorNetworkExchange.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error during sign-in. Please try again.'**
+  String get authVerificationErrorNetworkExchange;
+
+  /// No description provided for @authVerificationErrorOAuthExchange.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed. Please try registering again.'**
+  String get authVerificationErrorOAuthExchange;
+
+  /// No description provided for @authVerificationErrorSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. Please try logging in manually.'**
+  String get authVerificationErrorSignInFailed;
+
+  /// No description provided for @authInviteErrorAlreadyUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'That invite code is no longer available. Go back to your invite code, join the waitlist, or contact support.'**
+  String get authInviteErrorAlreadyUsed;
+
+  /// No description provided for @authInviteErrorInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That invite code cannot be used right now. Go back to your invite code, join the waitlist, or contact support.'**
+  String get authInviteErrorInvalid;
+
+  /// No description provided for @authInviteErrorTemporary.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm your invite right now. Go back to your invite code and try again, or contact support.'**
+  String get authInviteErrorTemporary;
+
+  /// No description provided for @authInviteErrorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t activate your invite. Go back to your invite code, join the waitlist, or contact support.'**
+  String get authInviteErrorUnknown;
+
   /// No description provided for @shareSheetSave.
   ///
   /// In en, this message translates to:

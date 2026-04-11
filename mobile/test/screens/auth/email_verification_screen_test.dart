@@ -279,7 +279,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Verification timed out',
+              errorCode: EmailVerificationError.timeout,
             ),
           ),
         );
@@ -295,7 +295,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Error',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
@@ -314,7 +314,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Error',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
@@ -330,13 +330,19 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Verification failed',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
         await tester.pump();
 
-        expect(find.text('Verification failed'), findsOneWidget);
+        // The screen should render the localized message for pollFailed.
+        // Source of truth is app_en.arb — this assertion protects the wiring
+        // between state codes and the l10n mapping.
+        expect(
+          find.text('Verification failed. Please try again.'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('renders invite recovery button when available', (
@@ -348,7 +354,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Invite problem',
+              errorCode: EmailVerificationError.inviteUnknown,
               showInviteGateRecovery: true,
               inviteRecoveryCode: 'AB12-EF34',
             ),
