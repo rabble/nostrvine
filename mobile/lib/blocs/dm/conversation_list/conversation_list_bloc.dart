@@ -5,10 +5,10 @@
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:rxdart/rxdart.dart';
 

@@ -1,12 +1,12 @@
 // ABOUTME: Unit tests for NIP17MessageService encrypted message sending
 // ABOUTME: Tests NIP-17 gift wrap creation, encryption, and broadcasting
 
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
-import 'package:openvine/services/nip17_message_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

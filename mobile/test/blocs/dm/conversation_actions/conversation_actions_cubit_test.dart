@@ -2,10 +2,10 @@
 // ABOUTME: Verifies service delegation, return values, and error handling.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';

@@ -1,5 +1,6 @@
 // ABOUTME: Service for sending encrypted NIP-17 (gift-wrapped) private messages
-// ABOUTME: Handles three-layer encryption (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
+// ABOUTME: Handles three-layer encryption
+// ABOUTME: (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
 // ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
 import 'package:models/models.dart' show NIP17SendResult;
@@ -17,6 +18,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Accepts any [NostrSigner] implementation, supporting both local key
 /// signing and remote signing (e.g. Keycast RPC, Amber).
 class NIP17MessageService {
+  /// Creates a [NIP17MessageService] with the given dependencies.
   NIP17MessageService({
     required NostrSigner signer,
     required String senderPublicKey,
@@ -122,7 +124,7 @@ class NIP17MessageService {
         if (selfWrapEvent != null) {
           await _nostrService.publishEvent(selfWrapEvent);
         }
-      } catch (e) {
+      } on Object catch (e) {
         Log.error(
           'Self-wrap failed (non-fatal): $e',
           category: LogCategory.system,
@@ -138,7 +140,7 @@ class NIP17MessageService {
         messageEventId: giftWrapEvent.id,
         recipientPubkey: recipientPubkey,
       );
-    } catch (e, stackTrace) {
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to send NIP-17 message: $e',
         category: LogCategory.system,
