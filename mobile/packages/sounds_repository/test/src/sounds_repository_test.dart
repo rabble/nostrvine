@@ -611,6 +611,101 @@ void main() {
 
         expect(repository.getSoundFromCache(testEventId1), isNull);
       });
+
+      test('handles subscription stream errors gracefully', () async {
+        await repository.initialize();
+
+        streamController.addError(Exception('Relay disconnected'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Repository should still be functional after stream error
+        expect(repository.isInitialized, isTrue);
+      });
+    });
+
+    group('error handling', () {
+      test('initialize catches error from fetchTrendingSounds', () async {
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenThrow(Exception('Network error'));
+
+        await repository.initialize();
+
+        // Should not be marked as initialized on error
+        expect(repository.isInitialized, isFalse);
+      });
+
+      test('fetchTrendingSounds rethrows on error', () async {
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => repository.fetchTrendingSounds(),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('fetchSoundsByCreator rethrows on error', () async {
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => repository.fetchSoundsByCreator(testPubkey1),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('fetchSoundById rethrows on error', () async {
+        when(
+          () => mockNostrClient.fetchEventById(testEventId1),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => repository.fetchSoundById(testEventId1),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('fetchVideosUsingSound rethrows on error', () async {
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => repository.fetchVideosUsingSound(testEventId1),
+          throwsA(isA<Exception>()),
+        );
+      });
     });
   });
 }

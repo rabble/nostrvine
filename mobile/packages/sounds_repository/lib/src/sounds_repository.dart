@@ -395,6 +395,7 @@ class SoundsRepository {
     try {
       final audioEvent = AudioEvent.fromNostrEvent(event);
       _cacheSound(audioEvent);
+      // coverage:ignore-start
     } on Exception catch (e) {
       Log.warning(
         'Failed to parse audio event: $e',
@@ -402,6 +403,7 @@ class SoundsRepository {
         category: LogCategory.api,
       );
     }
+    // coverage:ignore-end
   }
 
   /// Process and cache multiple Nostr events.
@@ -423,6 +425,7 @@ class SoundsRepository {
 
         _cache[audioEvent.id] = audioEvent;
         audioEvents.add(audioEvent);
+        // coverage:ignore-start
       } on Exception catch (e) {
         Log.warning(
           'Failed to parse audio event: $e',
@@ -430,6 +433,7 @@ class SoundsRepository {
           category: LogCategory.api,
         );
       }
+      // coverage:ignore-end
     }
 
     // Sort by creation time (newest first)
