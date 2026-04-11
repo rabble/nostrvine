@@ -17,7 +17,20 @@
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
+		<string>ar</string>
+		<string>de</string>
 		<string>es</string>
+		<string>fr</string>
+		<string>id</string>
+		<string>it</string>
+		<string>ja</string>
+		<string>ko</string>
+		<string>nl</string>
+		<string>pl</string>
+		<string>pt</string>
+		<string>ro</string>
+		<string>sv</string>
+		<string>tr</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>Divine</string>

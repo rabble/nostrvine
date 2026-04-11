@@ -77,27 +77,21 @@ class LocalePreferenceService {
 
   /// Map of supported locale codes to their native display names.
   ///
-  /// Only include locales that have full (or near-full) translations.
-  /// Translations below that bar are intentionally hidden from the picker
-  /// so users aren't pushed into a half-translated UI — the fallback
-  /// plumbing for partial locales still ships via `AppLocalizations`
-  /// (see `l10n.yaml` / `MaterialApp.supportedLocales`), so users on a
-  /// device set to a partial locale still get the translated keys that
-  /// exist and fall back to English for the rest.
+  /// Every locale that ships an ARB file is listed here. Users can pick
+  /// any of them; untranslated keys fall back to English via
+  /// `AppLocalizations` (see `l10n.yaml` / `MaterialApp.supportedLocales`).
   ///
-  /// Arabic (`ar`) and Korean (`ko`) are intentionally NOT listed here —
-  /// `app_ar.arb` and `app_ko.arb` only cover ~34–38% of strings. Re-add
-  /// them once coverage is materially higher.
-  ///
-  /// Add new entries here as translations are completed.
+  /// Add new entries here as translations are added.
   static const Map<String, String> supportedLocales = {
     'en': 'English',
+    'ar': 'العربية',
     'de': 'Deutsch',
     'es': 'Español',
     'fr': 'Français',
     'id': 'Bahasa Indonesia',
     'it': 'Italiano',
     'ja': '日本語',
+    'ko': '한국어',
     'nl': 'Nederlands',
     'pl': 'Polski',
     'pt': 'Português',

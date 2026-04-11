@@ -76,26 +76,22 @@ void main() {
     });
 
     group('supportedLocales', () {
-      test('only exposes fully translated locales in the picker', () {
-        // The picker iterates this map. Keep it intentionally narrow —
-        // only locales with near-full coverage should appear. Partial
-        // translations ship via `AppLocalizations.supportedLocales` but
-        // must stay hidden from the user-facing switcher until coverage
-        // catches up.
-        //
-        // If this list changes, double-check coverage by running
-        // `flutter gen-l10n` and reviewing the untranslated-message
-        // counts — anything below ~99% should stay out of the picker.
+      test('exposes every shipped locale in the picker', () {
+        // The picker iterates this map. Every locale that ships an ARB
+        // file belongs here; users can pick any of them and untranslated
+        // keys fall back to English through AppLocalizations.
         expect(
           LocalePreferenceService.supportedLocales.keys,
           unorderedEquals(<String>[
             'en',
+            'ar',
             'de',
             'es',
             'fr',
             'id',
             'it',
             'ja',
+            'ko',
             'nl',
             'pl',
             'pt',
@@ -105,19 +101,8 @@ void main() {
           ]),
         );
         expect(LocalePreferenceService.supportedLocales['en'], 'English');
-      });
-
-      test('partial locales are not exposed in the picker', () {
-        // app_ar.arb and app_ko.arb only cover ~34–38% of keys. Re-add
-        // once coverage is materially higher.
-        expect(
-          LocalePreferenceService.supportedLocales.keys,
-          isNot(contains('ar')),
-        );
-        expect(
-          LocalePreferenceService.supportedLocales.keys,
-          isNot(contains('ko')),
-        );
+        expect(LocalePreferenceService.supportedLocales['ar'], 'العربية');
+        expect(LocalePreferenceService.supportedLocales['ko'], '한국어');
       });
     });
 
