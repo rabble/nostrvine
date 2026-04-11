@@ -5,13 +5,12 @@
 // ABOUTME: docs/plans/2026-04-05-dm-scaling-fix-design.md.
 
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
-import 'package:openvine/repositories/dm_repository.dart';
-import 'package:openvine/services/nip17_message_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -57,19 +56,18 @@ void main() {
         // eager subscribe / queryEvents / DAO writes from initialize() will
         // break this test. See
         // docs/plans/2026-04-05-dm-scaling-fix-design.md.
-        final repository = DmRepository(
-          nostrClient: mockNostrClient,
-          messageService: mockMessageService,
-          directMessagesDao: mockDirectMessagesDao,
-          conversationsDao: mockConversationsDao,
-          // Intentionally no userPubkey/signer — initialize() provides them.
-        );
-
-        repository.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
+        final repository =
+            DmRepository(
+              nostrClient: mockNostrClient,
+              messageService: mockMessageService,
+              directMessagesDao: mockDirectMessagesDao,
+              conversationsDao: mockConversationsDao,
+              // Intentionally no userPubkey/signer — initialize() provides them.
+            )..setCredentials(
+              userPubkey: _validPubkeyA,
+              signer: LocalNostrSigner(_validPrivateKey),
+              messageService: mockMessageService,
+            );
 
         // Give any misbehaving async side-effects a chance to run.
         await Future<void>.delayed(const Duration(milliseconds: 50));

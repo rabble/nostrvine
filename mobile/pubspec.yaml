@@ -32,6 +32,7 @@ workspace:
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
+  - packages/dm_repository
   - packages/divine_video_player
   - packages/funnelcake_api_client
   - packages/hashtag_repository
@@ -107,6 +108,7 @@ dependencies:
     path: packages/divine_camera
   divine_video_player:
     path: packages/divine_video_player
+  dm_repository:
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
   image: ^4.1.7 # Image processing for GIF generation
@@ -191,6 +193,14 @@ dependencies:
   firebase_crashlytics: ^5.0.7
   firebase_analytics: ^12.1.2
   go_router: ^16.2.4
+  # Runtime splash-screen control via FlutterNativeSplash.preserve/remove.
+  # Used ONLY for the runtime API — do NOT add a flutter_native_splash:
+  # config block or run `dart run flutter_native_splash:create`. The
+  # existing platform splash assets (Android launch_background.xml with
+  # Zendesk theme inheritance, iOS LaunchScreen.storyboard, Android 12+
+  # values-v31 styles) are hand-authored and should not be regenerated.
+  # See #2749 and #2953 for context on the welcome-screen flash fix.
+  flutter_native_splash: ^2.4.7
   flutter_local_notifications: ^19.4.2
   package_info_plus: ^9.0.0
   uuid: ^4.5.1

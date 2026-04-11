@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -376,7 +377,15 @@ Future<void> _startOpenVineApp() async {
   final startTime = DateTime.now();
 
   // Ensure bindings are initialized first (required for everything)
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Keep the native splash visible until auth resolves. AuthService calls
+  // FlutterNativeSplash.remove() in its initialize() finally block once a
+  // terminal auth state is reached. The Future.delayed is a safety net for
+  // catastrophic hangs — 5s is chosen to cover slow bunker/relay reconnects.
+  // See #2749 and #2953 for the investigation.
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  Future.delayed(const Duration(seconds: 5), FlutterNativeSplash.remove);
 
   // Lock app to portrait mode only (portrait up and portrait down)
   // Skip on desktop platforms where orientation lock doesn't apply

@@ -55,6 +55,7 @@ export 'relay/web_socket_connection_manager.dart';
 // Local storage
 export 'signer/local_nostr_signer.dart';
 // Signing implementations
+export 'signer/isolate_decrypt_signer.dart';
 export 'signer/nostr_signer.dart';
 export 'signer/pubkey_only_nostr_signer.dart';
 export 'subscription.dart';
