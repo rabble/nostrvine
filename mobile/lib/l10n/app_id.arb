@@ -1,11 +1,9 @@
 {
   "@@locale": "id",
-
   "appTitle": "Divine",
   "@appTitle": {
     "description": "App title shown in task switcher"
   },
-
   "settingsTitle": "Pengaturan",
   "@settingsTitle": {
     "description": "Settings screen app bar title"
@@ -24,7 +22,7 @@
   "settingsIntegratedApps": "Aplikasi Terintegrasi",
   "settingsIntegratedAppsSubtitle": "Aplikasi pihak ketiga yang disetujui dan berjalan di dalam Divine",
   "settingsExperimentalFeatures": "Fitur Eksperimental",
-  "settingsExperimentalFeaturesSubtitle": "Penyesuaian yang bisa bermasalah\u2014coba kalau penasaran.",
+  "settingsExperimentalFeaturesSubtitle": "Penyesuaian yang bisa bermasalah—coba kalau penasaran.",
   "settingsLegal": "Legal",
   "settingsIntegrationPermissions": "Izin Integrasi",
   "settingsIntegrationPermissionsSubtitle": "Tinjau dan cabut izin integrasi yang disimpan",
@@ -82,7 +80,6 @@
   },
   "settingsAppLanguageDescription": "Pilih bahasa untuk antarmuka aplikasi",
   "settingsAppLanguageUseDeviceLanguage": "Pakai bahasa perangkat",
-
   "contentPreferencesTitle": "Preferensi Konten",
   "@contentPreferencesTitle": {
     "description": "Content preferences screen app bar title"
@@ -121,7 +118,6 @@
   "contentPreferencesAutoSelectsBest": "Pilih mikrofon terbaik secara otomatis",
   "contentPreferencesSelectAudioInput": "Pilih Masukan Audio",
   "contentPreferencesUnknownMicrophone": "Mikrofon Tidak Dikenal",
-
   "profileBlockedAccountNotAvailable": "Akun ini tidak tersedia",
   "profileErrorPrefix": "Kesalahan: {error}",
   "@profileErrorPrefix": {
@@ -402,7 +398,6 @@
   "nostrInfoLearnMoreAt": "Pelajari lebih lanjut di ",
   "nostrInfoGotIt": "Mengerti!",
   "profileTabRefreshTooltip": "Segarkan",
-
   "videoGridRefreshLabel": "Mencari video lainnya",
   "videoGridOptionsTitle": "Opsi Video",
   "videoGridEditVideo": "Ubah Video",
@@ -424,7 +419,6 @@
       }
     }
   },
-
   "exploreTabClassics": "Klasik",
   "exploreTabNew": "Baru",
   "exploreTabPopular": "Populer",
@@ -474,12 +468,10 @@
       }
     }
   },
-
   "videoPlayerLoadingVideo": "Memuat video...",
   "videoPlayerPlayVideo": "Putar video",
   "videoPlayerEditVideo": "Ubah video",
   "videoPlayerEditVideoTooltip": "Ubah video",
-
   "contentWarningLabel": "Peringatan Konten",
   "contentWarningNudity": "Ketelanjangan",
   "contentWarningSexualContent": "Konten Seksual",
@@ -519,7 +511,6 @@
   "contentWarningHideAllLikeThis": "Sembunyikan semua konten seperti ini",
   "contentWarningNoFilterYet": "Belum ada filter tersimpan untuk peringatan ini.",
   "contentWarningHiddenConfirmation": "Kami akan menyembunyikan postingan seperti ini mulai sekarang.",
-
   "videoErrorNotFound": "Video tidak ditemukan",
   "videoErrorNetwork": "Kesalahan jaringan",
   "videoErrorTimeout": "Waktu pemuatan habis",
@@ -534,12 +525,9 @@
   "videoErrorVerifyAgeBody": "Verifikasi usiamu untuk melihat video ini.",
   "videoErrorSkip": "Lewati",
   "videoErrorVerifyAgeButton": "Verifikasi usia",
-
   "videoFollowButtonFollowing": "Mengikuti",
   "videoFollowButtonFollow": "Ikuti",
-
   "audioAttributionOriginalSound": "Suara asli",
-
   "videoInspiredByAttribution": "Terinspirasi oleh @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -548,7 +536,6 @@
       }
     }
   },
-
   "videoCollaboratorWithOne": "dengan @{name}",
   "@videoCollaboratorWithOne": {
     "placeholders": {
@@ -576,9 +563,7 @@
       }
     }
   },
-
   "listAttributionFallback": "Daftar",
-
   "shareVideoLabel": "Bagikan video",
   "sharePostSharedWith": "Postingan dibagikan dengan {recipientName}",
   "@sharePostSharedWith": {
@@ -607,7 +592,6 @@
     }
   },
   "shareMessageHint": "Tambahkan pesan opsional...",
-
   "videoActionUnlike": "Batalkan suka video",
   "videoActionLike": "Suka video",
   "videoActionRemoveRepost": "Hapus repost",
@@ -616,7 +600,6 @@
   "videoActionMoreOptions": "Opsi lainnya",
   "videoActionHideSubtitles": "Sembunyikan subtitle",
   "videoActionShowSubtitles": "Tampilkan subtitle",
-
   "videoDescriptionLoops": "{count} loop",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -625,7 +608,6 @@
       }
     }
   },
-
   "metadataBadgeNotDivine": "Bukan Divine",
   "metadataBadgeHumanMade": "Buatan Manusia",
   "metadataSoundsLabel": "Suara",
@@ -641,7 +623,6 @@
   "metadataLikesLabel": "Suka",
   "metadataCommentsLabel": "Komentar",
   "metadataRepostsLabel": "Repost",
-
   "devOptionsTitle": "Opsi Pengembang",
   "@devOptionsTitle": {
     "description": "Developer options screen app bar title"
@@ -651,8 +632,12 @@
   "devOptionsPageLoadVisible": "Terlihat: {visibleMs}ms  |  Data: {dataMs}ms",
   "@devOptionsPageLoadVisible": {
     "placeholders": {
-      "visibleMs": { "type": "String" },
-      "dataMs": { "type": "String" }
+      "visibleMs": {
+        "type": "String"
+      },
+      "dataMs": {
+        "type": "String"
+      }
     }
   },
   "devOptionsSlowestScreens": "Layar Paling Lambat",
@@ -661,7 +646,9 @@
   "devOptionsSwitchEnvironmentMessage": "Ganti ke {envName}?\n\nIni akan menghapus data video yang tersimpan di cache dan menghubungkan ulang ke relay baru.",
   "@devOptionsSwitchEnvironmentMessage": {
     "placeholders": {
-      "envName": { "type": "String" }
+      "envName": {
+        "type": "String"
+      }
     }
   },
   "devOptionsCancel": "Batal",
@@ -669,16 +656,19 @@
   "devOptionsSwitchedTo": "Diganti ke {envName}",
   "@devOptionsSwitchedTo": {
     "placeholders": {
-      "envName": { "type": "String" }
+      "envName": {
+        "type": "String"
+      }
     }
   },
-  "devOptionsSwitchedFormat": "Diganti ke {formatName} \u2014 cache dibersihkan",
+  "devOptionsSwitchedFormat": "Diganti ke {formatName} — cache dibersihkan",
   "@devOptionsSwitchedFormat": {
     "placeholders": {
-      "formatName": { "type": "String" }
+      "formatName": {
+        "type": "String"
+      }
     }
   },
-
   "featureFlagTitle": "Feature Flags",
   "@featureFlagTitle": {
     "description": "Feature flags screen app bar title"
@@ -690,7 +680,7 @@
   "featureFlagClearAllCache": "Bersihkan Semua Cache",
   "featureFlagCacheInfo": "Info Cache",
   "featureFlagClearCacheTitle": "Bersihkan Semua Cache?",
-  "featureFlagClearCacheMessage": "Ini akan menghapus semua data yang tersimpan di cache termasuk:\n\u2022 Notifikasi\n\u2022 Profil pengguna\n\u2022 Bookmark\n\u2022 File sementara\n\nKamu perlu masuk lagi. Lanjutkan?",
+  "featureFlagClearCacheMessage": "Ini akan menghapus semua data yang tersimpan di cache termasuk:\n• Notifikasi\n• Profil pengguna\n• Bookmark\n• File sementara\n\nKamu perlu masuk lagi. Lanjutkan?",
   "featureFlagClearCache": "Bersihkan Cache",
   "featureFlagClearingCache": "Membersihkan cache...",
   "featureFlagSuccess": "Berhasil",
@@ -702,19 +692,20 @@
   "featureFlagTotalCacheSize": "Total ukuran cache: {size}",
   "@featureFlagTotalCacheSize": {
     "placeholders": {
-      "size": { "type": "String" }
+      "size": {
+        "type": "String"
+      }
     }
   },
-  "featureFlagCacheIncludes": "Cache mencakup:\n\u2022 Riwayat notifikasi\n\u2022 Data profil pengguna\n\u2022 Thumbnail video\n\u2022 File sementara\n\u2022 Indeks database",
-
+  "featureFlagCacheIncludes": "Cache mencakup:\n• Riwayat notifikasi\n• Data profil pengguna\n• Thumbnail video\n• File sementara\n• Indeks database",
   "relaySettingsTitle": "Relay",
   "@relaySettingsTitle": {
     "description": "Relay settings screen app bar title"
   },
   "relaySettingsInfoTitle": "Divine adalah sistem terbuka - kamu mengontrol koneksimu",
   "relaySettingsInfoDescription": "Relay ini mendistribusikan kontenmu ke seluruh jaringan Nostr yang terdesentralisasi. Kamu bisa menambah atau menghapus relay sesukamu.",
-  "relaySettingsLearnMoreNostr": "Pelajari lebih lanjut tentang Nostr \u2192",
-  "relaySettingsFindPublicRelays": "Temukan relay publik di nostr.co.uk \u2192",
+  "relaySettingsLearnMoreNostr": "Pelajari lebih lanjut tentang Nostr →",
+  "relaySettingsFindPublicRelays": "Temukan relay publik di nostr.co.uk →",
   "relaySettingsAppNotFunctional": "Aplikasi Tidak Berfungsi",
   "relaySettingsRequiresRelay": "Divine butuh minimal satu relay untuk memuat video, posting konten, dan sinkronisasi data.",
   "relaySettingsRestoreDefaultRelay": "Pulihkan Relay Bawaan",
@@ -738,7 +729,9 @@
   "relaySettingsLastError": "Kesalahan Terakhir: {error}",
   "@relaySettingsLastError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsLoadingRelayInfo": "Memuat info relay...",
@@ -750,7 +743,9 @@
   "relaySettingsRemoveRelayMessage": "Yakin mau menghapus relay ini?\n\n{relayUrl}",
   "@relaySettingsRemoveRelayMessage": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsCancel": "Batal",
@@ -758,7 +753,9 @@
   "relaySettingsRemovedRelay": "Relay dihapus: {relayUrl}",
   "@relaySettingsRemovedRelay": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToRemoveRelay": "Gagal menghapus relay",
@@ -766,7 +763,9 @@
   "relaySettingsConnectedToRelays": "Terhubung ke {count} relay!",
   "@relaySettingsConnectedToRelays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relaySettingsFailedToConnectCheck": "Gagal terhubung ke relay. Silakan cek koneksi jaringanmu.",
@@ -777,7 +776,9 @@
   "relaySettingsAddedRelay": "Relay ditambahkan: {relayUrl}",
   "@relaySettingsAddedRelay": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToAddRelay": "Gagal menambah relay. Silakan cek URL dan coba lagi.",
@@ -785,13 +786,14 @@
   "relaySettingsRestoredDefault": "Relay bawaan dipulihkan: {defaultRelay}",
   "@relaySettingsRestoredDefault": {
     "placeholders": {
-      "defaultRelay": { "type": "String" }
+      "defaultRelay": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToRestoreDefault": "Gagal memulihkan relay bawaan. Silakan cek koneksi jaringanmu.",
   "relaySettingsCouldNotOpenBrowser": "Tidak bisa membuka browser",
   "relaySettingsFailedToOpenLink": "Gagal membuka tautan",
-
   "relayDiagnosticTitle": "Diagnostik Relay",
   "@relayDiagnosticTitle": {
     "description": "Relay diagnostics screen app bar title"
@@ -800,7 +802,9 @@
   "relayDiagnosticLastRefresh": "Segar terakhir: {time}",
   "@relayDiagnosticLastRefresh": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticRelayStatus": "Status Relay",
@@ -814,15 +818,21 @@
   "relayDiagnosticRelayCount": "{count} relay",
   "@relayDiagnosticRelayCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticConnectedLabel": "Terhubung",
   "relayDiagnosticConnectedRatio": "{connected}/{total}",
   "@relayDiagnosticConnectedRatio": {
     "placeholders": {
-      "connected": { "type": "int" },
-      "total": { "type": "int" }
+      "connected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticVideoEvents": "Event Video",
@@ -830,7 +840,9 @@
   "relayDiagnosticVideosCount": "{count} video",
   "@relayDiagnosticVideosCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticDiscovery": "Penemuan",
@@ -851,41 +863,55 @@
   "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (rata-rata {avgMs}ms)",
   "@relayDiagnosticEndpointSummary": {
     "placeholders": {
-      "successCount": { "type": "int" },
-      "totalCount": { "type": "int" },
-      "avgMs": { "type": "int" }
+      "successCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      },
+      "avgMs": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticRetestAll": "Tes Ulang Semua",
   "relayDiagnosticRetrying": "Mencoba lagi...",
   "relayDiagnosticRetryConnection": "Coba Sambung Ulang",
   "relayDiagnosticTroubleshooting": "Pemecahan Masalah",
-  "relayDiagnosticTroubleshootingGuide": "\u2022 Status hijau = Terhubung dan bekerja\n\u2022 Status merah = Koneksi gagal\n\u2022 Kalau tes jaringan gagal, cek koneksi internet\n\u2022 Kalau relay dikonfigurasi tapi tidak terhubung, ketuk \"Coba Sambung Ulang\"\n\u2022 Screenshot layar ini untuk debugging",
+  "relayDiagnosticTroubleshootingGuide": "• Status hijau = Terhubung dan bekerja\n• Status merah = Koneksi gagal\n• Kalau tes jaringan gagal, cek koneksi internet\n• Kalau relay dikonfigurasi tapi tidak terhubung, ketuk \"Coba Sambung Ulang\"\n• Screenshot layar ini untuk debugging",
   "relayDiagnosticAllEndpointsHealthy": "Semua endpoint REST sehat!",
   "relayDiagnosticSomeEndpointsFailed": "Beberapa endpoint REST gagal - lihat detail di atas",
   "relayDiagnosticFoundVideoEvents": "Ditemukan {count} event video di database",
   "@relayDiagnosticFoundVideoEvents": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticQueryFailed": "Query gagal: {error}",
   "@relayDiagnosticQueryFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticConnectedToRelays": "Terhubung ke {count} relay!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticFailedToConnect": "Gagal terhubung ke relay mana pun",
   "relayDiagnosticConnectionRetryFailed": "Percobaan koneksi ulang gagal: {error}",
   "@relayDiagnosticConnectionRetryFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticConnectedAuthenticated": "Terhubung & Terautentikasi",
@@ -893,7 +919,6 @@
   "relayDiagnosticNotConnected": "Tidak terhubung",
   "relayDiagnosticNoRelaysConfigured": "Tidak ada relay yang dikonfigurasi",
   "relayDiagnosticFailed": "Gagal",
-
   "notificationSettingsTitle": "Notifikasi",
   "@notificationSettingsTitle": {
     "description": "Notification settings screen app bar title"
@@ -926,7 +951,6 @@
   "notificationSettingsResetToDefaults": "Pengaturan direset ke bawaan",
   "notificationSettingsAbout": "Tentang Notifikasi",
   "notificationSettingsAboutDescription": "Notifikasi ditenagai oleh protokol Nostr. Pembaruan real-time bergantung pada koneksimu ke relay Nostr. Beberapa notifikasi mungkin tertunda.",
-
   "safetySettingsTitle": "Keamanan & Privasi",
   "@safetySettingsTitle": {
     "description": "Safety settings screen app bar title"
@@ -952,7 +976,6 @@
   "safetySettingsUserUnblocked": "Pengguna dibuka blokirnya",
   "safetySettingsCancel": "Batal",
   "safetySettingsAdd": "Tambah",
-
   "analyticsTitle": "Analitik Kreator",
   "@analyticsTitle": {
     "description": "Creator analytics screen app bar title"
@@ -964,10 +987,12 @@
   "analyticsSignInRequired": "Masuk untuk melihat analitik kreator.",
   "analyticsViewDataUnavailable": "Data tontonan saat ini tidak tersedia dari relay untuk postingan ini. Metrik suka/komentar/repost masih akurat.",
   "analyticsViewDataTitle": "Data Tontonan",
-  "analyticsUpdatedTimestamp": "Diperbarui {time} \u2022 Skor menggunakan suka, komentar, repost, dan tontonan/loop dari Funnelcake jika tersedia.",
+  "analyticsUpdatedTimestamp": "Diperbarui {time} • Skor menggunakan suka, komentar, repost, dan tontonan/loop dari Funnelcake jika tersedia.",
   "@analyticsUpdatedTimestamp": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "analyticsVideos": "Video",
@@ -989,19 +1014,25 @@
   "analyticsViewsCount": "{count} tontonan",
   "@analyticsViewsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsCommentsCount": "{count} komentar",
   "@analyticsCommentsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsRepostsCount": "{count} repost",
   "@analyticsRepostsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsTopContent": "Konten Teratas",
@@ -1013,7 +1044,9 @@
   "analyticsInteractionsCount": "{count} interaksi",
   "@analyticsInteractionsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsPostAnalytics": "Analitik Postingan",
@@ -1026,13 +1059,17 @@
   "analyticsFollowersCount": "Pengikut: {count}",
   "@analyticsFollowersCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsFollowingCount": "Mengikuti: {count}",
   "@analyticsFollowingCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsAudiencePlaceholder": "Rincian sumber/geo/waktu audiens akan terisi saat Funnelcake menambah endpoint analitik audiens.",
@@ -1043,42 +1080,53 @@
   "analyticsDiagnosticsTotalVideos": "Total video: {count}",
   "@analyticsDiagnosticsTotalVideos": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsWithViews": "Dengan tontonan: {count}",
   "@analyticsDiagnosticsWithViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsMissingViews": "Tontonan hilang: {count}",
   "@analyticsDiagnosticsMissingViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsHydratedBulk": "Dihidrasi (massal): {count}",
   "@analyticsDiagnosticsHydratedBulk": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsHydratedViews": "Dihidrasi (/views): {count}",
   "@analyticsDiagnosticsHydratedViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsSources": "Sumber: {sources}",
   "@analyticsDiagnosticsSources": {
     "placeholders": {
-      "sources": { "type": "String" }
+      "sources": {
+        "type": "String"
+      }
     }
   },
   "analyticsDiagnosticsUseFixture": "Pakai data fixture",
   "analyticsNa": "N/A",
-
   "authCreateNewAccount": "Buat akun Divine baru",
   "authSignInDifferentAccount": "Masuk dengan akun yang berbeda",
   "authSignBackIn": "Masuk kembali",
@@ -1135,7 +1183,9 @@
   "@authWaitlistUpdatesAt": {
     "description": "Waitlist confirmation message with email",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authOk": "OK",
@@ -1147,7 +1197,9 @@
   "@authCouldNotOpenEmail": {
     "description": "Error when email client cannot be opened",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authAddInviteCode": "Tambahkan kode undanganmu",
@@ -1176,7 +1228,9 @@
   "@authWaitingForConnection": {
     "description": "Waiting indicator with elapsed seconds",
     "placeholders": {
-      "seconds": { "type": "int" }
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "authCopyUrl": "Salin URL",
@@ -1215,13 +1269,14 @@
   "@authResetLinkSentTo": {
     "description": "Confirmation message after reset link sent",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authSignInButton": "Masuk",
-
   "authVerificationErrorTimeout": "Verifikasi kedaluwarsa. Silakan coba daftar lagi.",
-  "authVerificationErrorMissingCode": "Verifikasi gagal \u2014 kode otorisasi hilang.",
+  "authVerificationErrorMissingCode": "Verifikasi gagal — kode otorisasi hilang.",
   "authVerificationErrorPollFailed": "Verifikasi gagal. Silakan coba lagi.",
   "authVerificationErrorNetworkExchange": "Kesalahan jaringan saat masuk. Silakan coba lagi.",
   "authVerificationErrorOAuthExchange": "Verifikasi gagal. Silakan coba daftar lagi.",
@@ -1230,7 +1285,6 @@
   "authInviteErrorInvalid": "Kode undangan itu tidak bisa digunakan sekarang. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
   "authInviteErrorTemporary": "Kami tidak bisa mengkonfirmasi undanganmu sekarang. Kembali ke kode undanganmu dan coba lagi, atau hubungi dukungan.",
   "authInviteErrorUnknown": "Kami tidak bisa mengaktifkan undanganmu. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
-
   "shareSheetSave": "Simpan",
   "shareSheetSaveToGallery": "Simpan ke Galeri",
   "shareSheetSaveWithWatermark": "Simpan dengan Watermark",
@@ -1242,7 +1296,6 @@
   "shareSheetEventJson": "Event JSON",
   "shareSheetEventId": "ID Event",
   "shareSheetMoreActions": "Aksi lainnya",
-
   "watermarkDownloadSavedToCameraRoll": "Disimpan ke Camera Roll",
   "watermarkDownloadShare": "Bagikan",
   "watermarkDownloadDone": "Selesai",
@@ -1258,38 +1311,60 @@
   "watermarkDownloadStageDownloadingDesc": "Mengambil video dari jaringan...",
   "watermarkDownloadStageWatermarkingDesc": "Menerapkan watermark Divine...",
   "watermarkDownloadStageSavingDesc": "Menyimpan video ber-watermark ke camera roll-mu...",
-
   "uploadProgressVideoUpload": "Unggah Video",
   "uploadProgressPause": "Jeda",
   "uploadProgressResume": "Lanjutkan",
   "uploadProgressGoBack": "Kembali",
   "uploadProgressRetryWithCount": "Coba Lagi ({count} tersisa)",
   "@uploadProgressRetryWithCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressDelete": "Hapus",
   "uploadProgressDaysAgo": "{count}h lalu",
   "@uploadProgressDaysAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressHoursAgo": "{count}j lalu",
   "@uploadProgressHoursAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressMinutesAgo": "{count}m lalu",
   "@uploadProgressMinutesAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressJustNow": "Baru saja",
   "uploadProgressUploadingPercent": "Mengunggah {percent}%",
   "@uploadProgressUploadingPercent": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressPausedPercent": "Dijeda {percent}%",
   "@uploadProgressPausedPercent": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
-
   "badgeExplanationClose": "Tutup",
   "badgeExplanationOriginalVineArchive": "Arsip Vine Asli",
   "badgeExplanationCameraProof": "Bukti Kamera",
@@ -1298,7 +1373,11 @@
   "badgeExplanationVineArchiveHistory": "Sebelum Vine ditutup pada 2017, ArchiveTeam dan Internet Archive bekerja untuk melestarikan jutaan Vine untuk anak cucu. Konten ini adalah bagian dari upaya pelestarian bersejarah itu.",
   "badgeExplanationOriginalStats": "Statistik asli: {loops} loop",
   "@badgeExplanationOriginalStats": {
-    "placeholders": { "loops": { "type": "int" } }
+    "placeholders": {
+      "loops": {
+        "type": "int"
+      }
+    }
   },
   "badgeExplanationLearnVineArchive": "Pelajari lebih lanjut tentang pelestarian arsip Vine",
   "badgeExplanationLearnProofmode": "Pelajari lebih lanjut tentang verifikasi Proofmode",
@@ -1320,11 +1399,19 @@
   "badgeExplanationCheckAiGenerated": "Cek apakah dihasilkan AI",
   "badgeExplanationAiLikelihood": "{percentage}% kemungkinan dihasilkan AI",
   "@badgeExplanationAiLikelihood": {
-    "placeholders": { "percentage": { "type": "int" } }
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
   },
   "badgeExplanationScannedBy": "Dipindai oleh: {source}",
   "@badgeExplanationScannedBy": {
-    "placeholders": { "source": { "type": "String" } }
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
   },
   "badgeExplanationVerifiedByModerator": "Diverifikasi oleh moderator manusia",
   "badgeExplanationVerificationPlatinum": "Platinum: Atestasi hardware perangkat, tanda tangan kriptografis, Kredensial Konten (C2PA), dan scan AI mengonfirmasi asal manusia.",
@@ -1333,21 +1420,28 @@
   "badgeExplanationVerificationBronze": "Perunggu: Tanda tangan metadata dasar tersedia.",
   "badgeExplanationVerificationSilverAiScan": "Perak: Scan AI mengonfirmasi video ini kemungkinan dibuat manusia.",
   "badgeExplanationNoVerification": "Tidak ada data verifikasi untuk video ini.",
-
   "shareMenuTitle": "Bagikan Video",
   "shareMenuReportAiContent": "Laporkan Konten AI",
   "shareMenuReportAiContentSubtitle": "Laporan cepat dugaan konten yang dihasilkan AI",
   "shareMenuReportingAiContent": "Melaporkan konten AI...",
   "shareMenuFailedToReportContent": "Gagal melaporkan konten: {error}",
   "@shareMenuFailedToReportContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuFailedToReportAiContent": "Gagal melaporkan konten AI: {error}",
   "@shareMenuFailedToReportAiContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuVideoStatus": "Status Video",
-  "shareMenuViewAllLists": "Lihat semua daftar \u2192",
+  "shareMenuViewAllLists": "Lihat semua daftar →",
   "shareMenuShareWith": "Bagikan Dengan",
   "shareMenuShareViaOtherApps": "Bagikan via aplikasi lain",
   "shareMenuShareViaOtherAppsSubtitle": "Bagikan via aplikasi lain atau salin tautan",
@@ -1375,13 +1469,21 @@
   "shareMenuAddToFollowSet": "Tambah ke Set Ikuti",
   "shareMenuFollowSetsAvailable": "{count} set ikuti tersedia",
   "@shareMenuFollowSetsAvailable": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "shareMenuAddedToBookmarks": "Ditambahkan ke bookmark!",
   "shareMenuFailedToAddBookmark": "Gagal menambahkan bookmark",
   "shareMenuCreatedListAndAddedVideo": "Daftar \"{name}\" dibuat dan video ditambahkan",
   "@shareMenuCreatedListAndAddedVideo": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuManageContent": "Kelola Konten",
   "shareMenuEditVideo": "Ubah Video",
@@ -1391,7 +1493,11 @@
   "shareMenuVideoInTheseLists": "Video ada di daftar ini:",
   "shareMenuVideoCount": "{count} video",
   "@shareMenuVideoCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "shareMenuClose": "Tutup",
   "shareMenuDeleteConfirmation": "Yakin mau menghapus video ini?",
@@ -1402,7 +1508,11 @@
   "shareMenuDeleteRequestSent": "Permintaan hapus berhasil dikirim",
   "shareMenuFailedToDeleteContent": "Gagal menghapus konten: {error}",
   "@shareMenuFailedToDeleteContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuFollowSetName": "Nama Set Ikuti",
   "shareMenuFollowSetNameHint": "contoh: Kreator Konten, Musisi, dll.",
@@ -1410,7 +1520,11 @@
   "shareMenuCreate": "Buat",
   "shareMenuCreatedFollowSetAndAddedCreator": "Set ikuti \"{name}\" dibuat dan kreator ditambahkan",
   "@shareMenuCreatedFollowSetAndAddedCreator": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuDone": "Selesai",
   "shareMenuEditTitle": "Judul",
@@ -1425,14 +1539,22 @@
   "shareMenuVideoUpdated": "Video berhasil diperbarui",
   "shareMenuFailedToUpdateVideo": "Gagal memperbarui video: {error}",
   "@shareMenuFailedToUpdateVideo": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuDeleteVideoQuestion": "Hapus Video?",
   "shareMenuDeleteRelayWarning": "Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.",
   "shareMenuVideoDeletionRequested": "Penghapusan video diminta",
   "shareMenuFailedToDeleteVideo": "Gagal menghapus video: {error}",
   "@shareMenuFailedToDeleteVideo": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuContentLabels": "Label konten",
   "shareMenuAddContentLabels": "Tambah label konten",
@@ -1441,7 +1563,11 @@
   "shareMenuAddCollaborator": "Tambah kolaborator",
   "shareMenuMutualFollowRequired": "Kamu perlu saling mengikuti {name} untuk menambahkannya sebagai kolaborator.",
   "@shareMenuMutualFollowRequired": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuLoading": "Memuat...",
   "shareMenuInspiredBy": "Terinspirasi oleh",
@@ -1458,26 +1584,35 @@
   "shareMenuFailedToLoadBookmarkSets": "Gagal memuat set bookmark",
   "shareMenuCreatedSetAndAddedVideo": "\"{name}\" dibuat dan video ditambahkan",
   "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuUseThisSound": "Pakai suara ini",
   "shareMenuOriginalSound": "Suara asli",
-
   "authSessionExpired": "Sesimu sudah kedaluwarsa. Silakan masuk lagi.",
   "authSignInFailed": "Gagal masuk. Silakan coba lagi.",
-
   "localeAppLanguage": "Bahasa Aplikasi",
   "localeDeviceDefault": "Bawaan perangkat",
   "localeSelectLanguage": "Pilih Bahasa",
-
   "webAuthNotSupportedSecureMode": "Autentikasi web tidak didukung dalam mode aman. Silakan pakai aplikasi seluler untuk manajemen kunci yang aman.",
   "webAuthIntegrationFailed": "Integrasi autentikasi gagal: {error}",
   "@webAuthIntegrationFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "webAuthUnexpectedError": "Kesalahan tak terduga: {error}",
   "@webAuthUnexpectedError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "webAuthEnterBunkerUri": "Silakan masukkan URI bunker",
   "webAuthConnectTitle": "Hubungkan ke Divine",
@@ -1491,13 +1626,16 @@
   "webAuthConnectToBunker": "Hubungkan ke Bunker",
   "webAuthNewToNostr": "Baru di Nostr?",
   "webAuthNostrHelp": "Pasang ekstensi browser seperti Alby atau nos2x untuk pengalaman termudah, atau pakai nsec bunker untuk penandatanganan jarak jauh yang aman.",
-
   "soundsTitle": "Suara",
   "soundsSearchHint": "Cari suara...",
   "soundsPreviewUnavailable": "Tidak bisa pratinjau suara - tidak ada audio tersedia",
   "soundsPreviewFailed": "Gagal memutar pratinjau: {error}",
   "@soundsPreviewFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "soundsFeaturedSounds": "Suara Unggulan",
   "soundsTrendingSounds": "Suara Trending",
@@ -1510,28 +1648,42 @@
   "soundsFailedToLoad": "Gagal memuat suara",
   "soundsRetry": "Coba Lagi",
   "soundsScreenLabel": "Layar suara",
-
   "profileTitle": "Profil",
   "profileRefresh": "Segarkan",
   "profileRefreshLabel": "Segarkan profil",
   "profileMoreOptions": "Opsi lainnya",
   "profileBlockedUser": "Memblokir {name}",
   "@profileBlockedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileUnblockedUser": "Membuka blokir {name}",
   "@profileUnblockedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileUnfollowedUser": "Berhenti mengikuti {name}",
   "@profileUnfollowedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileError": "Kesalahan: {error}",
   "@profileError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "notificationsTabAll": "Semua",
   "notificationsTabLikes": "Suka",
   "notificationsTabComments": "Komentar",
@@ -1543,33 +1695,47 @@
   "notificationsNoneYet": "Belum ada notifikasi",
   "notificationsNoneForType": "Tidak ada notifikasi {type}",
   "@notificationsNoneForType": {
-    "placeholders": { "type": { "type": "String" } }
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "notificationsEmptyDescription": "Saat orang berinteraksi dengan kontenmu, kamu akan melihatnya di sini",
   "notificationsLoadingType": "Memuat notifikasi {type}...",
   "@notificationsLoadingType": {
-    "placeholders": { "type": { "type": "String" } }
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "notificationsInviteSingular": "Kamu punya 1 undangan untuk dibagikan ke teman!",
   "notificationsInvitePlural": "Kamu punya {count} undangan untuk dibagikan ke teman!",
   "@notificationsInvitePlural": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "notificationsVideoNotFound": "Video tidak ditemukan",
   "notificationsVideoUnavailable": "Video tidak tersedia",
   "notificationsFromNotification": "Dari Notifikasi",
-
   "feedFailedToLoadVideos": "Gagal memuat video",
   "feedRetry": "Coba Lagi",
   "feedNoFollowedUsers": "Tidak ada pengguna yang diikuti.\nIkuti seseorang untuk melihat video mereka di sini.",
   "feedNoVideosForMode": "Tidak ada video ditemukan untuk feed {mode}.",
   "@feedNoVideosForMode": {
-    "placeholders": { "mode": { "type": "String" } }
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
   },
   "feedExploreVideos": "Jelajahi Video",
   "feedExternalVideoSlow": "Video eksternal memuat lambat",
   "feedSkip": "Lewati",
-
   "uploadWaitingToUpload": "Menunggu unggah",
   "uploadUploadingVideo": "Mengunggah video",
   "uploadProcessingVideo": "Memproses video",
@@ -1580,7 +1746,11 @@
   "uploadPaused": "Unggahan dijeda",
   "uploadPercentComplete": "{percent}% selesai",
   "@uploadPercentComplete": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "uploadQueuedMessage": "Videomu dalam antrean unggah",
   "uploadUploadingMessage": "Mengunggah ke server...",
@@ -1593,19 +1763,20 @@
   "uploadRetryButton": "COBA LAGI",
   "uploadRetryFailed": "Gagal mencoba unggah lagi: {error}",
   "@uploadRetryFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "userSearchPrompt": "Cari pengguna",
   "userSearchNoResults": "Tidak ada pengguna ditemukan",
   "userSearchFailed": "Pencarian gagal",
-
   "forgotPasswordTitle": "Reset Kata Sandi",
   "forgotPasswordDescription": "Masukkan alamat emailmu dan kami akan mengirim tautan untuk mereset kata sandimu.",
   "forgotPasswordEmailLabel": "Alamat Email",
   "forgotPasswordCancel": "Batal",
   "forgotPasswordSendLink": "Email Tautan Reset",
-
   "ageVerificationContentWarning": "Peringatan Konten",
   "ageVerificationTitle": "Verifikasi Usia",
   "ageVerificationAdultDescription": "Konten ini ditandai kemungkinan mengandung materi dewasa. Kamu harus berusia 18 tahun atau lebih untuk melihatnya.",
@@ -1614,7 +1785,6 @@
   "ageVerificationCreationQuestion": "Apakah kamu berusia 16 tahun atau lebih?",
   "ageVerificationNo": "Tidak",
   "ageVerificationYes": "Ya",
-
   "shareLinkCopied": "Tautan disalin ke clipboard",
   "shareFailedToCopy": "Gagal menyalin tautan",
   "shareVideoSubject": "Lihat video ini di Divine",
@@ -1626,7 +1796,6 @@
   "shareCopyWebLinkSubtitle": "Salin tautan web yang bisa dibagikan",
   "shareCopyNostrLink": "Salin Tautan Nostr",
   "shareCopyNostrLinkSubtitle": "Salin tautan nevent untuk klien Nostr",
-
   "navHome": "Beranda",
   "navExplore": "Jelajahi",
   "navInbox": "Kotak Masuk",
@@ -1642,7 +1811,6 @@
   "navExploreTrending": "Trending",
   "navExploreForYou": "Untukmu",
   "navExploreLists": "Daftar",
-
   "routeErrorTitle": "Kesalahan",
   "routeInvalidHashtag": "Hashtag tidak valid",
   "routeInvalidConversationId": "ID percakapan tidak valid",
@@ -1655,7 +1823,6 @@
   "routeNoVideosToDisplay": "Tidak ada video untuk ditampilkan",
   "routeInvalidProfileId": "ID profil tidak valid",
   "routeDefaultListName": "Daftar",
-
   "supportTitle": "Pusat Bantuan",
   "supportContactSupport": "Hubungi Dukungan",
   "supportContactSupportSubtitle": "Mulai percakapan atau lihat pesan sebelumnya",
@@ -1677,17 +1844,22 @@
   "supportCouldNotOpenPage": "Tidak bisa membuka {pageName}",
   "@supportCouldNotOpenPage": {
     "placeholders": {
-      "pageName": { "type": "String" }
+      "pageName": {
+        "type": "String"
+      }
     }
   },
   "supportErrorOpeningPage": "Kesalahan membuka {pageName}: {error}",
   "@supportErrorOpeningPage": {
     "placeholders": {
-      "pageName": { "type": "String" },
-      "error": { "type": "Object" }
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
     }
   },
-
   "reportTitle": "Laporkan Konten",
   "reportWhyReporting": "Kenapa kamu melaporkan konten ini?",
   "reportPolicyNotice": "Divine akan menindak laporan konten dalam 24 jam dengan menghapus konten dan mengeluarkan pengguna yang memberikan konten yang melanggar.",
@@ -1708,7 +1880,9 @@
   "reportFailed": "Gagal melaporkan konten: {error}",
   "@reportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "reportReceivedTitle": "Laporan Diterima",
@@ -1717,12 +1891,13 @@
   "reportLearnMore": "Pelajari Lebih Lanjut",
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "Tutup",
-
   "listAddToList": "Tambah ke Daftar",
   "listVideoCount": "{count} video",
   "@listVideoCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "listNewList": "Daftar Baru",
@@ -1731,13 +1906,17 @@
   "listRemovedFrom": "Dihapus dari {name}",
   "@listRemovedFrom": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listAddedTo": "Ditambahkan ke {name}",
   "@listAddedTo": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listCreateNewList": "Buat Daftar Baru",
@@ -1748,10 +1927,9 @@
   "listCancel": "Batal",
   "listCreate": "Buat",
   "listCreateFailed": "Gagal membuat daftar",
-
   "keyManagementTitle": "Kunci Nostr",
   "keyManagementWhatAreKeys": "Apa itu kunci Nostr?",
-  "keyManagementExplanation": "Identitas Nostr-mu adalah pasangan kunci kriptografis:\n\n\u2022 Kunci publikmu (npub) seperti username-mu - bagikan dengan bebas\n\u2022 Kunci privatmu (nsec) seperti kata sandimu - jaga kerahasiaannya!\n\nnsec-mu memungkinkanmu mengakses akunmu di aplikasi Nostr mana pun.",
+  "keyManagementExplanation": "Identitas Nostr-mu adalah pasangan kunci kriptografis:\n\n• Kunci publikmu (npub) seperti username-mu - bagikan dengan bebas\n• Kunci privatmu (nsec) seperti kata sandimu - jaga kerahasiaannya!\n\nnsec-mu memungkinkanmu mengakses akunmu di aplikasi Nostr mana pun.",
   "keyManagementImportTitle": "Impor Kunci yang Ada",
   "keyManagementImportSubtitle": "Sudah punya akun Nostr? Tempel kunci privatmu (nsec) untuk mengaksesnya di sini.",
   "keyManagementImportButton": "Impor Kunci",
@@ -1769,17 +1947,20 @@
   "keyManagementImportFailed": "Gagal mengimpor kunci: {error}",
   "@keyManagementImportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "keyManagementExportSuccess": "Kunci privat disalin ke clipboard!\n\nSimpan di tempat yang aman.",
   "keyManagementExportFailed": "Gagal mengekspor kunci: {error}",
   "@keyManagementExportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
-
   "saveOriginalSavedToCameraRoll": "Disimpan ke Camera Roll",
   "saveOriginalShare": "Bagikan",
   "saveOriginalDone": "Selesai",
@@ -1793,7 +1974,6 @@
   "saveOriginalSavingToCameraRoll": "Menyimpan ke Camera Roll",
   "saveOriginalFetchingVideo": "Mengambil video dari jaringan...",
   "saveOriginalSavingVideo": "Menyimpan video asli ke camera roll-mu...",
-
   "soundTitle": "Suara",
   "soundOriginalSound": "Suara asli",
   "soundVideosUsingThisSound": "Video yang memakai suara ini",
@@ -1812,21 +1992,23 @@
   "soundVideoCount": "{count} video",
   "@soundVideoCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "soundUnableToPreview": "Tidak bisa pratinjau suara - tidak ada audio tersedia",
   "soundPreviewFailed": "Gagal memutar pratinjau: {error}",
   "@soundPreviewFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "soundViewSource": "Lihat sumber",
   "soundCloseTooltip": "Tutup",
-
   "exploreNotExploreRoute": "Bukan rute jelajah",
-
   "legalTitle": "Legal",
   "legalTermsOfService": "Ketentuan Layanan",
   "legalTermsOfServiceSubtitle": "Syarat dan ketentuan penggunaan",
@@ -1842,14 +2024,121 @@
   "legalCouldNotOpenPage": "Tidak bisa membuka {pageName}",
   "@legalCouldNotOpenPage": {
     "placeholders": {
-      "pageName": { "type": "String" }
+      "pageName": {
+        "type": "String"
+      }
     }
   },
   "legalErrorOpeningPage": "Kesalahan membuka {pageName}: {error}",
   "@legalErrorOpeningPage": {
     "placeholders": {
-      "pageName": { "type": "String" },
-      "error": { "type": "Object" }
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
     }
-  }
+  },
+  "categoryAction": "Aksi",
+  "categoryAdventure": "Petualangan",
+  "categoryAnimals": "Hewan",
+  "categoryAnimation": "Animasi",
+  "categoryArchitecture": "Arsitektur",
+  "categoryArt": "Seni",
+  "categoryAutomotive": "Otomotif",
+  "categoryAwardShow": "Ajang Penghargaan",
+  "categoryAwards": "Penghargaan",
+  "categoryBaseball": "Bisbol",
+  "categoryBasketball": "Basket",
+  "categoryBeauty": "Kecantikan",
+  "categoryBeverage": "Minuman",
+  "categoryCars": "Mobil",
+  "categoryCelebration": "Perayaan",
+  "categoryCelebrities": "Selebriti",
+  "categoryCelebrity": "Selebriti",
+  "categoryCityscape": "Pemandangan Kota",
+  "categoryComedy": "Komedi",
+  "categoryConcert": "Konser",
+  "categoryCooking": "Memasak",
+  "categoryCostume": "Kostum",
+  "categoryCrafts": "Kerajinan",
+  "categoryCrime": "Kriminal",
+  "categoryCulture": "Budaya",
+  "categoryDance": "Tari",
+  "categoryDiy": "DIY",
+  "categoryDrama": "Drama",
+  "categoryEducation": "Pendidikan",
+  "categoryEmotional": "Emosional",
+  "categoryEmotions": "Emosi",
+  "categoryEntertainment": "Hiburan",
+  "categoryEvent": "Acara",
+  "categoryFamily": "Keluarga",
+  "categoryFans": "Penggemar",
+  "categoryFantasy": "Fantasi",
+  "categoryFashion": "Mode",
+  "categoryFestival": "Festival",
+  "categoryFilm": "Film",
+  "categoryFitness": "Kebugaran",
+  "categoryFood": "Makanan",
+  "categoryFootball": "Football",
+  "categoryFurniture": "Furnitur",
+  "categoryGaming": "Game",
+  "categoryGolf": "Golf",
+  "categoryGrooming": "Perawatan Diri",
+  "categoryGuitar": "Gitar",
+  "categoryHalloween": "Halloween",
+  "categoryHealth": "Kesehatan",
+  "categoryHockey": "Hoki",
+  "categoryHoliday": "Liburan",
+  "categoryHome": "Rumah",
+  "categoryHomeImprovement": "Renovasi Rumah",
+  "categoryHorror": "Horor",
+  "categoryHospital": "Rumah Sakit",
+  "categoryHumor": "Humor",
+  "categoryInteriorDesign": "Desain Interior",
+  "categoryInterview": "Wawancara",
+  "categoryKids": "Anak-anak",
+  "categoryLifestyle": "Gaya Hidup",
+  "categoryMagic": "Sulap",
+  "categoryMakeup": "Makeup",
+  "categoryMedical": "Medis",
+  "categoryMusic": "Musik",
+  "categoryMystery": "Misteri",
+  "categoryNature": "Alam",
+  "categoryNews": "Berita",
+  "categoryOutdoor": "Luar Ruang",
+  "categoryParty": "Pesta",
+  "categoryPeople": "Orang",
+  "categoryPerformance": "Pertunjukan",
+  "categoryPets": "Hewan Peliharaan",
+  "categoryPolitics": "Politik",
+  "categoryPrank": "Prank",
+  "categoryPranks": "Prank",
+  "categoryRealityShow": "Reality Show",
+  "categoryRelationship": "Hubungan",
+  "categoryRelationships": "Hubungan",
+  "categoryRomance": "Romansa",
+  "categorySchool": "Sekolah",
+  "categoryScienceFiction": "Fiksi Ilmiah",
+  "categorySelfie": "Selfie",
+  "categoryShopping": "Belanja",
+  "categorySkateboarding": "Skateboard",
+  "categorySkincare": "Perawatan Kulit",
+  "categorySoccer": "Sepak Bola",
+  "categorySocialGathering": "Pertemuan Sosial",
+  "categorySocialMedia": "Media Sosial",
+  "categorySports": "Olahraga",
+  "categoryTalkShow": "Talk Show",
+  "categoryTech": "Tek",
+  "categoryTechnology": "Teknologi",
+  "categoryTelevision": "Televisi",
+  "categoryToys": "Mainan",
+  "categoryTransportation": "Transportasi",
+  "categoryTravel": "Jalan-jalan",
+  "categoryUrban": "Urban",
+  "categoryViolence": "Kekerasan",
+  "categoryVlog": "Vlog",
+  "categoryVlogging": "Vlogging",
+  "categoryWrestling": "Gulat"
 }

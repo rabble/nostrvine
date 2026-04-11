@@ -7099,6 +7099,612 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error opening {pageName}: {error}'**
   String legalErrorOpeningPage(String pageName, Object error);
+
+  /// No description provided for @categoryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get categoryAction;
+
+  /// No description provided for @categoryAdventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Adventure'**
+  String get categoryAdventure;
+
+  /// No description provided for @categoryAnimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Animals'**
+  String get categoryAnimals;
+
+  /// No description provided for @categoryAnimation.
+  ///
+  /// In en, this message translates to:
+  /// **'Animation'**
+  String get categoryAnimation;
+
+  /// No description provided for @categoryArchitecture.
+  ///
+  /// In en, this message translates to:
+  /// **'Architecture'**
+  String get categoryArchitecture;
+
+  /// No description provided for @categoryArt.
+  ///
+  /// In en, this message translates to:
+  /// **'Art'**
+  String get categoryArt;
+
+  /// No description provided for @categoryAutomotive.
+  ///
+  /// In en, this message translates to:
+  /// **'Automotive'**
+  String get categoryAutomotive;
+
+  /// No description provided for @categoryAwardShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Award Show'**
+  String get categoryAwardShow;
+
+  /// No description provided for @categoryAwards.
+  ///
+  /// In en, this message translates to:
+  /// **'Awards'**
+  String get categoryAwards;
+
+  /// No description provided for @categoryBaseball.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseball'**
+  String get categoryBaseball;
+
+  /// No description provided for @categoryBasketball.
+  ///
+  /// In en, this message translates to:
+  /// **'Basketball'**
+  String get categoryBasketball;
+
+  /// No description provided for @categoryBeauty.
+  ///
+  /// In en, this message translates to:
+  /// **'Beauty'**
+  String get categoryBeauty;
+
+  /// No description provided for @categoryBeverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Beverage'**
+  String get categoryBeverage;
+
+  /// No description provided for @categoryCars.
+  ///
+  /// In en, this message translates to:
+  /// **'Cars'**
+  String get categoryCars;
+
+  /// No description provided for @categoryCelebration.
+  ///
+  /// In en, this message translates to:
+  /// **'Celebration'**
+  String get categoryCelebration;
+
+  /// No description provided for @categoryCelebrities.
+  ///
+  /// In en, this message translates to:
+  /// **'Celebrities'**
+  String get categoryCelebrities;
+
+  /// No description provided for @categoryCelebrity.
+  ///
+  /// In en, this message translates to:
+  /// **'Celebrity'**
+  String get categoryCelebrity;
+
+  /// No description provided for @categoryCityscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Cityscape'**
+  String get categoryCityscape;
+
+  /// No description provided for @categoryComedy.
+  ///
+  /// In en, this message translates to:
+  /// **'Comedy'**
+  String get categoryComedy;
+
+  /// No description provided for @categoryConcert.
+  ///
+  /// In en, this message translates to:
+  /// **'Concert'**
+  String get categoryConcert;
+
+  /// No description provided for @categoryCooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooking'**
+  String get categoryCooking;
+
+  /// No description provided for @categoryCostume.
+  ///
+  /// In en, this message translates to:
+  /// **'Costume'**
+  String get categoryCostume;
+
+  /// No description provided for @categoryCrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Crafts'**
+  String get categoryCrafts;
+
+  /// No description provided for @categoryCrime.
+  ///
+  /// In en, this message translates to:
+  /// **'Crime'**
+  String get categoryCrime;
+
+  /// No description provided for @categoryCulture.
+  ///
+  /// In en, this message translates to:
+  /// **'Culture'**
+  String get categoryCulture;
+
+  /// No description provided for @categoryDance.
+  ///
+  /// In en, this message translates to:
+  /// **'Dance'**
+  String get categoryDance;
+
+  /// No description provided for @categoryDiy.
+  ///
+  /// In en, this message translates to:
+  /// **'DIY'**
+  String get categoryDiy;
+
+  /// No description provided for @categoryDrama.
+  ///
+  /// In en, this message translates to:
+  /// **'Drama'**
+  String get categoryDrama;
+
+  /// No description provided for @categoryEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get categoryEducation;
+
+  /// No description provided for @categoryEmotional.
+  ///
+  /// In en, this message translates to:
+  /// **'Emotional'**
+  String get categoryEmotional;
+
+  /// No description provided for @categoryEmotions.
+  ///
+  /// In en, this message translates to:
+  /// **'Emotions'**
+  String get categoryEmotions;
+
+  /// No description provided for @categoryEntertainment.
+  ///
+  /// In en, this message translates to:
+  /// **'Entertainment'**
+  String get categoryEntertainment;
+
+  /// No description provided for @categoryEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get categoryEvent;
+
+  /// No description provided for @categoryFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get categoryFamily;
+
+  /// No description provided for @categoryFans.
+  ///
+  /// In en, this message translates to:
+  /// **'Fans'**
+  String get categoryFans;
+
+  /// No description provided for @categoryFantasy.
+  ///
+  /// In en, this message translates to:
+  /// **'Fantasy'**
+  String get categoryFantasy;
+
+  /// No description provided for @categoryFashion.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get categoryFashion;
+
+  /// No description provided for @categoryFestival.
+  ///
+  /// In en, this message translates to:
+  /// **'Festival'**
+  String get categoryFestival;
+
+  /// No description provided for @categoryFilm.
+  ///
+  /// In en, this message translates to:
+  /// **'Film'**
+  String get categoryFilm;
+
+  /// No description provided for @categoryFitness.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness'**
+  String get categoryFitness;
+
+  /// No description provided for @categoryFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get categoryFood;
+
+  /// No description provided for @categoryFootball.
+  ///
+  /// In en, this message translates to:
+  /// **'Football'**
+  String get categoryFootball;
+
+  /// No description provided for @categoryFurniture.
+  ///
+  /// In en, this message translates to:
+  /// **'Furniture'**
+  String get categoryFurniture;
+
+  /// No description provided for @categoryGaming.
+  ///
+  /// In en, this message translates to:
+  /// **'Gaming'**
+  String get categoryGaming;
+
+  /// No description provided for @categoryGolf.
+  ///
+  /// In en, this message translates to:
+  /// **'Golf'**
+  String get categoryGolf;
+
+  /// No description provided for @categoryGrooming.
+  ///
+  /// In en, this message translates to:
+  /// **'Grooming'**
+  String get categoryGrooming;
+
+  /// No description provided for @categoryGuitar.
+  ///
+  /// In en, this message translates to:
+  /// **'Guitar'**
+  String get categoryGuitar;
+
+  /// No description provided for @categoryHalloween.
+  ///
+  /// In en, this message translates to:
+  /// **'Halloween'**
+  String get categoryHalloween;
+
+  /// No description provided for @categoryHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get categoryHealth;
+
+  /// No description provided for @categoryHockey.
+  ///
+  /// In en, this message translates to:
+  /// **'Hockey'**
+  String get categoryHockey;
+
+  /// No description provided for @categoryHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Holiday'**
+  String get categoryHoliday;
+
+  /// No description provided for @categoryHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get categoryHome;
+
+  /// No description provided for @categoryHomeImprovement.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Improvement'**
+  String get categoryHomeImprovement;
+
+  /// No description provided for @categoryHorror.
+  ///
+  /// In en, this message translates to:
+  /// **'Horror'**
+  String get categoryHorror;
+
+  /// No description provided for @categoryHospital.
+  ///
+  /// In en, this message translates to:
+  /// **'Hospital'**
+  String get categoryHospital;
+
+  /// No description provided for @categoryHumor.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor'**
+  String get categoryHumor;
+
+  /// No description provided for @categoryInteriorDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Interior Design'**
+  String get categoryInteriorDesign;
+
+  /// No description provided for @categoryInterview.
+  ///
+  /// In en, this message translates to:
+  /// **'Interview'**
+  String get categoryInterview;
+
+  /// No description provided for @categoryKids.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids'**
+  String get categoryKids;
+
+  /// No description provided for @categoryLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get categoryLifestyle;
+
+  /// No description provided for @categoryMagic.
+  ///
+  /// In en, this message translates to:
+  /// **'Magic'**
+  String get categoryMagic;
+
+  /// No description provided for @categoryMakeup.
+  ///
+  /// In en, this message translates to:
+  /// **'Makeup'**
+  String get categoryMakeup;
+
+  /// No description provided for @categoryMedical.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical'**
+  String get categoryMedical;
+
+  /// No description provided for @categoryMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get categoryMusic;
+
+  /// No description provided for @categoryMystery.
+  ///
+  /// In en, this message translates to:
+  /// **'Mystery'**
+  String get categoryMystery;
+
+  /// No description provided for @categoryNature.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature'**
+  String get categoryNature;
+
+  /// No description provided for @categoryNews.
+  ///
+  /// In en, this message translates to:
+  /// **'News'**
+  String get categoryNews;
+
+  /// No description provided for @categoryOutdoor.
+  ///
+  /// In en, this message translates to:
+  /// **'Outdoor'**
+  String get categoryOutdoor;
+
+  /// No description provided for @categoryParty.
+  ///
+  /// In en, this message translates to:
+  /// **'Party'**
+  String get categoryParty;
+
+  /// No description provided for @categoryPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get categoryPeople;
+
+  /// No description provided for @categoryPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get categoryPerformance;
+
+  /// No description provided for @categoryPets.
+  ///
+  /// In en, this message translates to:
+  /// **'Pets'**
+  String get categoryPets;
+
+  /// No description provided for @categoryPolitics.
+  ///
+  /// In en, this message translates to:
+  /// **'Politics'**
+  String get categoryPolitics;
+
+  /// No description provided for @categoryPrank.
+  ///
+  /// In en, this message translates to:
+  /// **'Prank'**
+  String get categoryPrank;
+
+  /// No description provided for @categoryPranks.
+  ///
+  /// In en, this message translates to:
+  /// **'Pranks'**
+  String get categoryPranks;
+
+  /// No description provided for @categoryRealityShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Reality Show'**
+  String get categoryRealityShow;
+
+  /// No description provided for @categoryRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get categoryRelationship;
+
+  /// No description provided for @categoryRelationships.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationships'**
+  String get categoryRelationships;
+
+  /// No description provided for @categoryRomance.
+  ///
+  /// In en, this message translates to:
+  /// **'Romance'**
+  String get categoryRomance;
+
+  /// No description provided for @categorySchool.
+  ///
+  /// In en, this message translates to:
+  /// **'School'**
+  String get categorySchool;
+
+  /// No description provided for @categoryScienceFiction.
+  ///
+  /// In en, this message translates to:
+  /// **'Science Fiction'**
+  String get categoryScienceFiction;
+
+  /// No description provided for @categorySelfie.
+  ///
+  /// In en, this message translates to:
+  /// **'Selfie'**
+  String get categorySelfie;
+
+  /// No description provided for @categoryShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping'**
+  String get categoryShopping;
+
+  /// No description provided for @categorySkateboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Skateboarding'**
+  String get categorySkateboarding;
+
+  /// No description provided for @categorySkincare.
+  ///
+  /// In en, this message translates to:
+  /// **'Skincare'**
+  String get categorySkincare;
+
+  /// No description provided for @categorySoccer.
+  ///
+  /// In en, this message translates to:
+  /// **'Soccer'**
+  String get categorySoccer;
+
+  /// No description provided for @categorySocialGathering.
+  ///
+  /// In en, this message translates to:
+  /// **'Social Gathering'**
+  String get categorySocialGathering;
+
+  /// No description provided for @categorySocialMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Social Media'**
+  String get categorySocialMedia;
+
+  /// No description provided for @categorySports.
+  ///
+  /// In en, this message translates to:
+  /// **'Sports'**
+  String get categorySports;
+
+  /// No description provided for @categoryTalkShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk Show'**
+  String get categoryTalkShow;
+
+  /// No description provided for @categoryTech.
+  ///
+  /// In en, this message translates to:
+  /// **'Tech'**
+  String get categoryTech;
+
+  /// No description provided for @categoryTechnology.
+  ///
+  /// In en, this message translates to:
+  /// **'Technology'**
+  String get categoryTechnology;
+
+  /// No description provided for @categoryTelevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Television'**
+  String get categoryTelevision;
+
+  /// No description provided for @categoryToys.
+  ///
+  /// In en, this message translates to:
+  /// **'Toys'**
+  String get categoryToys;
+
+  /// No description provided for @categoryTransportation.
+  ///
+  /// In en, this message translates to:
+  /// **'Transportation'**
+  String get categoryTransportation;
+
+  /// No description provided for @categoryTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get categoryTravel;
+
+  /// No description provided for @categoryUrban.
+  ///
+  /// In en, this message translates to:
+  /// **'Urban'**
+  String get categoryUrban;
+
+  /// No description provided for @categoryViolence.
+  ///
+  /// In en, this message translates to:
+  /// **'Violence'**
+  String get categoryViolence;
+
+  /// No description provided for @categoryVlog.
+  ///
+  /// In en, this message translates to:
+  /// **'Vlog'**
+  String get categoryVlog;
+
+  /// No description provided for @categoryVlogging.
+  ///
+  /// In en, this message translates to:
+  /// **'Vlogging'**
+  String get categoryVlogging;
+
+  /// No description provided for @categoryWrestling.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrestling'**
+  String get categoryWrestling;
 }
 
 class _AppLocalizationsDelegate

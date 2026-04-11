@@ -3958,4 +3958,307 @@ class AppLocalizationsAr extends AppLocalizations {
   String legalErrorOpeningPage(String pageName, Object error) {
     return 'خطأ في فتح $pageName: $error';
   }
+
+  @override
+  String get categoryAction => 'أكشن';
+
+  @override
+  String get categoryAdventure => 'مغامرة';
+
+  @override
+  String get categoryAnimals => 'حيوانات';
+
+  @override
+  String get categoryAnimation => 'رسوم متحركة';
+
+  @override
+  String get categoryArchitecture => 'هندسة معمارية';
+
+  @override
+  String get categoryArt => 'فن';
+
+  @override
+  String get categoryAutomotive => 'سيارات';
+
+  @override
+  String get categoryAwardShow => 'حفل جوائز';
+
+  @override
+  String get categoryAwards => 'جوائز';
+
+  @override
+  String get categoryBaseball => 'بيسبول';
+
+  @override
+  String get categoryBasketball => 'كرة السلة';
+
+  @override
+  String get categoryBeauty => 'جمال';
+
+  @override
+  String get categoryBeverage => 'مشروبات';
+
+  @override
+  String get categoryCars => 'سيارات';
+
+  @override
+  String get categoryCelebration => 'احتفال';
+
+  @override
+  String get categoryCelebrities => 'مشاهير';
+
+  @override
+  String get categoryCelebrity => 'مشهور';
+
+  @override
+  String get categoryCityscape => 'مناظر المدينة';
+
+  @override
+  String get categoryComedy => 'كوميديا';
+
+  @override
+  String get categoryConcert => 'حفلة موسيقية';
+
+  @override
+  String get categoryCooking => 'طبخ';
+
+  @override
+  String get categoryCostume => 'أزياء';
+
+  @override
+  String get categoryCrafts => 'حرف يدوية';
+
+  @override
+  String get categoryCrime => 'جريمة';
+
+  @override
+  String get categoryCulture => 'ثقافة';
+
+  @override
+  String get categoryDance => 'رقص';
+
+  @override
+  String get categoryDiy => 'اصنعها بنفسك';
+
+  @override
+  String get categoryDrama => 'دراما';
+
+  @override
+  String get categoryEducation => 'تعليم';
+
+  @override
+  String get categoryEmotional => 'عاطفي';
+
+  @override
+  String get categoryEmotions => 'مشاعر';
+
+  @override
+  String get categoryEntertainment => 'ترفيه';
+
+  @override
+  String get categoryEvent => 'حدث';
+
+  @override
+  String get categoryFamily => 'عائلة';
+
+  @override
+  String get categoryFans => 'معجبون';
+
+  @override
+  String get categoryFantasy => 'خيال';
+
+  @override
+  String get categoryFashion => 'أزياء';
+
+  @override
+  String get categoryFestival => 'مهرجان';
+
+  @override
+  String get categoryFilm => 'فيلم';
+
+  @override
+  String get categoryFitness => 'لياقة';
+
+  @override
+  String get categoryFood => 'طعام';
+
+  @override
+  String get categoryFootball => 'كرة قدم';
+
+  @override
+  String get categoryFurniture => 'أثاث';
+
+  @override
+  String get categoryGaming => 'ألعاب';
+
+  @override
+  String get categoryGolf => 'غولف';
+
+  @override
+  String get categoryGrooming => 'العناية الشخصية';
+
+  @override
+  String get categoryGuitar => 'غيتار';
+
+  @override
+  String get categoryHalloween => 'هالوين';
+
+  @override
+  String get categoryHealth => 'صحة';
+
+  @override
+  String get categoryHockey => 'هوكي';
+
+  @override
+  String get categoryHoliday => 'عطلة';
+
+  @override
+  String get categoryHome => 'منزل';
+
+  @override
+  String get categoryHomeImprovement => 'تحسين المنزل';
+
+  @override
+  String get categoryHorror => 'رعب';
+
+  @override
+  String get categoryHospital => 'مستشفى';
+
+  @override
+  String get categoryHumor => 'فكاهة';
+
+  @override
+  String get categoryInteriorDesign => 'تصميم داخلي';
+
+  @override
+  String get categoryInterview => 'مقابلة';
+
+  @override
+  String get categoryKids => 'أطفال';
+
+  @override
+  String get categoryLifestyle => 'أسلوب حياة';
+
+  @override
+  String get categoryMagic => 'سحر';
+
+  @override
+  String get categoryMakeup => 'مكياج';
+
+  @override
+  String get categoryMedical => 'طبي';
+
+  @override
+  String get categoryMusic => 'موسيقى';
+
+  @override
+  String get categoryMystery => 'غموض';
+
+  @override
+  String get categoryNature => 'طبيعة';
+
+  @override
+  String get categoryNews => 'أخبار';
+
+  @override
+  String get categoryOutdoor => 'أنشطة خارجية';
+
+  @override
+  String get categoryParty => 'حفلة';
+
+  @override
+  String get categoryPeople => 'أشخاص';
+
+  @override
+  String get categoryPerformance => 'أداء';
+
+  @override
+  String get categoryPets => 'حيوانات أليفة';
+
+  @override
+  String get categoryPolitics => 'سياسة';
+
+  @override
+  String get categoryPrank => 'مقلب';
+
+  @override
+  String get categoryPranks => 'مقالب';
+
+  @override
+  String get categoryRealityShow => 'برنامج واقعي';
+
+  @override
+  String get categoryRelationship => 'علاقة';
+
+  @override
+  String get categoryRelationships => 'علاقات';
+
+  @override
+  String get categoryRomance => 'رومانسية';
+
+  @override
+  String get categorySchool => 'مدرسة';
+
+  @override
+  String get categoryScienceFiction => 'خيال علمي';
+
+  @override
+  String get categorySelfie => 'سيلفي';
+
+  @override
+  String get categoryShopping => 'تسوق';
+
+  @override
+  String get categorySkateboarding => 'تزلج على اللوح';
+
+  @override
+  String get categorySkincare => 'العناية بالبشرة';
+
+  @override
+  String get categorySoccer => 'كرة قدم';
+
+  @override
+  String get categorySocialGathering => 'تجمع اجتماعي';
+
+  @override
+  String get categorySocialMedia => 'وسائل التواصل';
+
+  @override
+  String get categorySports => 'رياضة';
+
+  @override
+  String get categoryTalkShow => 'برنامج حواري';
+
+  @override
+  String get categoryTech => 'تقنية';
+
+  @override
+  String get categoryTechnology => 'تكنولوجيا';
+
+  @override
+  String get categoryTelevision => 'تلفزيون';
+
+  @override
+  String get categoryToys => 'ألعاب';
+
+  @override
+  String get categoryTransportation => 'نقل';
+
+  @override
+  String get categoryTravel => 'سفر';
+
+  @override
+  String get categoryUrban => 'حضري';
+
+  @override
+  String get categoryViolence => 'عنف';
+
+  @override
+  String get categoryVlog => 'مدونة فيديو';
+
+  @override
+  String get categoryVlogging => 'تدوين فيديو';
+
+  @override
+  String get categoryWrestling => 'مصارعة';
 }

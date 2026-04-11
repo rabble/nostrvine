@@ -1,11 +1,9 @@
 {
   "@@locale": "nl",
-
   "appTitle": "Divine",
   "@appTitle": {
     "description": "App title shown in task switcher"
   },
-
   "settingsTitle": "Instellingen",
   "@settingsTitle": {
     "description": "Settings screen app bar title"
@@ -21,10 +19,10 @@
   "settingsBlueskyPublishing": "Bluesky-publicatie",
   "settingsBlueskyPublishingSubtitle": "Beheer crossposting naar Bluesky",
   "settingsNostrSettings": "Nostr-instellingen",
-  "settingsIntegratedApps": "Ge\u00efntegreerde apps",
+  "settingsIntegratedApps": "Geïntegreerde apps",
   "settingsIntegratedAppsSubtitle": "Goedgekeurde externe apps die binnen Divine draaien",
   "settingsExperimentalFeatures": "Experimentele functies",
-  "settingsExperimentalFeaturesSubtitle": "Tweaks die soms haperen\u2014probeer ze als je nieuwsgierig bent.",
+  "settingsExperimentalFeaturesSubtitle": "Tweaks die soms haperen—probeer ze als je nieuwsgierig bent.",
   "settingsLegal": "Juridisch",
   "settingsIntegrationPermissions": "Integratierechten",
   "settingsIntegrationPermissionsSubtitle": "Bekijk en trek onthouden integratiegoedkeuringen in",
@@ -82,7 +80,6 @@
   },
   "settingsAppLanguageDescription": "Kies de taal voor de app-interface",
   "settingsAppLanguageUseDeviceLanguage": "Gebruik apparaattaal",
-
   "contentPreferencesTitle": "Inhoudsvoorkeuren",
   "@contentPreferencesTitle": {
     "description": "Content preferences screen app bar title"
@@ -121,7 +118,6 @@
   "contentPreferencesAutoSelectsBest": "Kiest automatisch de beste microfoon",
   "contentPreferencesSelectAudioInput": "Kies audio-invoer",
   "contentPreferencesUnknownMicrophone": "Onbekende microfoon",
-
   "profileBlockedAccountNotAvailable": "Dit account is niet beschikbaar",
   "profileErrorPrefix": "Fout: {error}",
   "@profileErrorPrefix": {
@@ -162,7 +158,7 @@
   "profileEditProfile": "Profiel bewerken",
   "profileCreatorAnalytics": "Creator-statistieken",
   "profileShareProfile": "Profiel delen",
-  "profileCopyPublicKey": "Publieke sleutel kopi\u00ebren (npub)",
+  "profileCopyPublicKey": "Publieke sleutel kopiëren (npub)",
   "profileGetEmbedCode": "Embedcode ophalen",
   "profilePublicKeyCopied": "Publieke sleutel gekopieerd naar klembord",
   "profileEmbedCodeCopied": "Embedcode gekopieerd naar klembord",
@@ -289,7 +285,7 @@
   "profileCompleteYourProfile": "Maak je profiel af",
   "profileCompleteSubtitle": "Voeg je naam, bio en foto toe om te beginnen",
   "profileSetUpButton": "Instellen",
-  "profileVerifyingEmail": "E-mail verifi\u00ebren...",
+  "profileVerifyingEmail": "E-mail verifiëren...",
   "profileCheckEmailVerification": "Check {email} voor de verificatielink",
   "@profileCheckEmailVerification": {
     "placeholders": {
@@ -334,7 +330,7 @@
   "profileSetupSaveButton": "Opslaan",
   "profileSetupSavingButton": "Opslaan...",
   "profileSetupImageUrlTitle": "Afbeeldings-URL toevoegen",
-  "profileSetupPictureUploaded": "Profielfoto succesvol ge\u00fcpload!",
+  "profileSetupPictureUploaded": "Profielfoto succesvol geüpload!",
   "profileSetupImageSelectionFailed": "Afbeelding kiezen mislukt. Plak hieronder een afbeeldings-URL.",
   "profileSetupCameraAccessFailed": "Cameratoegang mislukt: {error}",
   "@profileSetupCameraAccessFailed": {
@@ -388,21 +384,20 @@
   "profileSetupNip05AddressLabel": "NIP-05-adres",
   "profileSetupProfilePicturePreview": "Voorbeeld profielfoto",
   "nostrInfoIntroBuiltOn": "DiVine is gebouwd op Nostr,",
-  "nostrInfoIntroDescription": " een censuurbestendig open protocol waarmee mensen online kunnen communiceren zonder afhankelijk te zijn van \u00e9\u00e9n bedrijf of platform. ",
+  "nostrInfoIntroDescription": " een censuurbestendig open protocol waarmee mensen online kunnen communiceren zonder afhankelijk te zijn van één bedrijf of platform. ",
   "nostrInfoIntroIdentity": "Als je je aanmeldt bij Divine krijg je een nieuwe Nostr-identiteit.",
   "nostrInfoOwnership": "Met Nostr heb je je eigen inhoud, identiteit en sociale graaf in handen, die je in veel apps kunt gebruiken. Resultaat: meer keuze, minder lock-in en een gezonder, veerkrachtiger sociaal internet.",
   "nostrInfoLingo": "Nostr-jargon:",
   "nostrInfoNpubLabel": "npub:",
   "nostrInfoNpubDescription": " Je publieke Nostr-adres. Veilig om te delen: anderen kunnen je zo vinden, volgen of berichten sturen in Nostr-apps.",
   "nostrInfoNsecLabel": "nsec:",
-  "nostrInfoNsecDescription": " Je priv\u00e9sleutel en eigendomsbewijs. Hij geeft volledige controle over je Nostr-identiteit, dus ",
+  "nostrInfoNsecDescription": " Je privésleutel en eigendomsbewijs. Hij geeft volledige controle over je Nostr-identiteit, dus ",
   "nostrInfoNsecWarning": "houd hem altijd geheim!",
   "nostrInfoUsernameLabel": "Nostr-gebruikersnaam:",
-  "nostrInfoUsernameDescription": " Een menselijk leesbare naam (zoals @naam.divine.video) die naar je npub verwijst. Het maakt je Nostr-identiteit makkelijker te herkennen en verifi\u00ebren, vergelijkbaar met een e-mailadres.",
+  "nostrInfoUsernameDescription": " Een menselijk leesbare naam (zoals @naam.divine.video) die naar je npub verwijst. Het maakt je Nostr-identiteit makkelijker te herkennen en verifiëren, vergelijkbaar met een e-mailadres.",
   "nostrInfoLearnMoreAt": "Meer info op ",
   "nostrInfoGotIt": "Begrepen!",
   "profileTabRefreshTooltip": "Vernieuwen",
-
   "videoGridRefreshLabel": "Zoeken naar meer video's",
   "videoGridOptionsTitle": "Video-opties",
   "videoGridEditVideo": "Video bewerken",
@@ -424,14 +419,13 @@
       }
     }
   },
-
   "exploreTabClassics": "Klassiekers",
   "exploreTabNew": "Nieuw",
   "exploreTabPopular": "Populair",
-  "exploreTabCategories": "Categorie\u00ebn",
+  "exploreTabCategories": "Categorieën",
   "exploreTabForYou": "Voor jou",
   "exploreTabLists": "Lijsten",
-  "exploreTabIntegratedApps": "Ge\u00efntegreerde apps",
+  "exploreTabIntegratedApps": "Geïntegreerde apps",
   "exploreNoVideosAvailable": "Geen video's beschikbaar",
   "exploreErrorPrefix": "Fout: {error}",
   "@exploreErrorPrefix": {
@@ -474,12 +468,10 @@
       }
     }
   },
-
   "videoPlayerLoadingVideo": "Video laden...",
   "videoPlayerPlayVideo": "Video afspelen",
   "videoPlayerEditVideo": "Video bewerken",
   "videoPlayerEditVideoTooltip": "Video bewerken",
-
   "contentWarningLabel": "Inhoudswaarschuwing",
   "contentWarningNudity": "Naaktheid",
   "contentWarningSexualContent": "Seksuele inhoud",
@@ -519,7 +511,6 @@
   "contentWarningHideAllLikeThis": "Verberg alle inhoud zoals deze",
   "contentWarningNoFilterYet": "Nog geen opgeslagen filter voor deze waarschuwing.",
   "contentWarningHiddenConfirmation": "Vanaf nu verbergen we posts zoals deze.",
-
   "videoErrorNotFound": "Video niet gevonden",
   "videoErrorNetwork": "Netwerkfout",
   "videoErrorTimeout": "Laden duurde te lang",
@@ -527,20 +518,17 @@
   "videoErrorUnsupportedFormat": "Niet-ondersteund videoformaat",
   "videoErrorPlayback": "Fout bij afspelen video",
   "videoErrorAgeRestricted": "Leeftijdsbeperkte inhoud",
-  "videoErrorVerifyAge": "Leeftijd verifi\u00ebren",
+  "videoErrorVerifyAge": "Leeftijd verifiëren",
   "videoErrorRetry": "Opnieuw",
   "videoErrorContentRestricted": "Inhoud beperkt",
   "videoErrorContentRestrictedBody": "Deze video is beperkt door de relay.",
   "videoErrorVerifyAgeBody": "Verifieer je leeftijd om deze video te bekijken.",
   "videoErrorSkip": "Overslaan",
-  "videoErrorVerifyAgeButton": "Leeftijd verifi\u00ebren",
-
+  "videoErrorVerifyAgeButton": "Leeftijd verifiëren",
   "videoFollowButtonFollowing": "Volgend",
   "videoFollowButtonFollow": "Volgen",
-
   "audioAttributionOriginalSound": "Origineel geluid",
-
-  "videoInspiredByAttribution": "Ge\u00efnspireerd door @{creatorName}",
+  "videoInspiredByAttribution": "Geïnspireerd door @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {
       "creatorName": {
@@ -548,7 +536,6 @@
       }
     }
   },
-
   "videoCollaboratorWithOne": "met @{name}",
   "@videoCollaboratorWithOne": {
     "placeholders": {
@@ -576,9 +563,7 @@
       }
     }
   },
-
   "listAttributionFallback": "Lijst",
-
   "shareVideoLabel": "Video delen",
   "sharePostSharedWith": "Post gedeeld met {recipientName}",
   "@sharePostSharedWith": {
@@ -607,7 +592,6 @@
     }
   },
   "shareMessageHint": "Voeg optioneel een bericht toe...",
-
   "videoActionUnlike": "Like verwijderen",
   "videoActionLike": "Video liken",
   "videoActionRemoveRepost": "Repost verwijderen",
@@ -616,7 +600,6 @@
   "videoActionMoreOptions": "Meer opties",
   "videoActionHideSubtitles": "Ondertiteling verbergen",
   "videoActionShowSubtitles": "Ondertiteling tonen",
-
   "videoDescriptionLoops": "{count} loops",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -625,7 +608,6 @@
       }
     }
   },
-
   "metadataBadgeNotDivine": "Niet Divine",
   "metadataBadgeHumanMade": "Door mensen gemaakt",
   "metadataSoundsLabel": "Geluiden",
@@ -635,13 +617,12 @@
   "metadataProofManifest": "Proof-manifest",
   "metadataCreatorLabel": "Maker",
   "metadataCollaboratorsLabel": "Samenwerkers",
-  "metadataInspiredByLabel": "Ge\u00efnspireerd door",
+  "metadataInspiredByLabel": "Geïnspireerd door",
   "metadataRepostedByLabel": "Gerepost door",
   "metadataLoopsLabel": "Loops",
   "metadataLikesLabel": "Likes",
   "metadataCommentsLabel": "Reacties",
   "metadataRepostsLabel": "Reposts",
-
   "devOptionsTitle": "Ontwikkelaarsopties",
   "@devOptionsTitle": {
     "description": "Developer options screen app bar title"
@@ -651,8 +632,12 @@
   "devOptionsPageLoadVisible": "Zichtbaar: {visibleMs}ms  |  Data: {dataMs}ms",
   "@devOptionsPageLoadVisible": {
     "placeholders": {
-      "visibleMs": { "type": "String" },
-      "dataMs": { "type": "String" }
+      "visibleMs": {
+        "type": "String"
+      },
+      "dataMs": {
+        "type": "String"
+      }
     }
   },
   "devOptionsSlowestScreens": "Traagste schermen",
@@ -661,7 +646,9 @@
   "devOptionsSwitchEnvironmentMessage": "Wisselen naar {envName}?\n\nDit wist cached videodata en verbindt opnieuw met de nieuwe relay.",
   "@devOptionsSwitchEnvironmentMessage": {
     "placeholders": {
-      "envName": { "type": "String" }
+      "envName": {
+        "type": "String"
+      }
     }
   },
   "devOptionsCancel": "Annuleren",
@@ -669,16 +656,19 @@
   "devOptionsSwitchedTo": "Gewisseld naar {envName}",
   "@devOptionsSwitchedTo": {
     "placeholders": {
-      "envName": { "type": "String" }
+      "envName": {
+        "type": "String"
+      }
     }
   },
-  "devOptionsSwitchedFormat": "Gewisseld naar {formatName} \u2014 cache gewist",
+  "devOptionsSwitchedFormat": "Gewisseld naar {formatName} — cache gewist",
   "@devOptionsSwitchedFormat": {
     "placeholders": {
-      "formatName": { "type": "String" }
+      "formatName": {
+        "type": "String"
+      }
     }
   },
-
   "featureFlagTitle": "Feature flags",
   "@featureFlagTitle": {
     "description": "Feature flags screen app bar title"
@@ -690,7 +680,7 @@
   "featureFlagClearAllCache": "Alle cache wissen",
   "featureFlagCacheInfo": "Cache-info",
   "featureFlagClearCacheTitle": "Alle cache wissen?",
-  "featureFlagClearCacheMessage": "Dit wist alle gecachte data, waaronder:\n\u2022 Meldingen\n\u2022 Gebruikersprofielen\n\u2022 Bladwijzers\n\u2022 Tijdelijke bestanden\n\nJe moet opnieuw inloggen. Doorgaan?",
+  "featureFlagClearCacheMessage": "Dit wist alle gecachte data, waaronder:\n• Meldingen\n• Gebruikersprofielen\n• Bladwijzers\n• Tijdelijke bestanden\n\nJe moet opnieuw inloggen. Doorgaan?",
   "featureFlagClearCache": "Cache wissen",
   "featureFlagClearingCache": "Cache wissen...",
   "featureFlagSuccess": "Gelukt",
@@ -702,21 +692,22 @@
   "featureFlagTotalCacheSize": "Totale cache-grootte: {size}",
   "@featureFlagTotalCacheSize": {
     "placeholders": {
-      "size": { "type": "String" }
+      "size": {
+        "type": "String"
+      }
     }
   },
-  "featureFlagCacheIncludes": "Cache bevat:\n\u2022 Meldingsgeschiedenis\n\u2022 Gebruikersprofieldata\n\u2022 Videominiaturen\n\u2022 Tijdelijke bestanden\n\u2022 Database-indexen",
-
+  "featureFlagCacheIncludes": "Cache bevat:\n• Meldingsgeschiedenis\n• Gebruikersprofieldata\n• Videominiaturen\n• Tijdelijke bestanden\n• Database-indexen",
   "relaySettingsTitle": "Relays",
   "@relaySettingsTitle": {
     "description": "Relay settings screen app bar title"
   },
-  "relaySettingsInfoTitle": "Divine is een open systeem \u2014 jij beheert je verbindingen",
+  "relaySettingsInfoTitle": "Divine is een open systeem — jij beheert je verbindingen",
   "relaySettingsInfoDescription": "Deze relays verspreiden jouw inhoud over het gedecentraliseerde Nostr-netwerk. Je kunt relays naar wens toevoegen of verwijderen.",
-  "relaySettingsLearnMoreNostr": "Meer over Nostr \u2192",
-  "relaySettingsFindPublicRelays": "Vind publieke relays op nostr.co.uk \u2192",
+  "relaySettingsLearnMoreNostr": "Meer over Nostr →",
+  "relaySettingsFindPublicRelays": "Vind publieke relays op nostr.co.uk →",
   "relaySettingsAppNotFunctional": "App niet functioneel",
-  "relaySettingsRequiresRelay": "Divine heeft minstens \u00e9\u00e9n relay nodig om video's te laden, inhoud te posten en data te synchroniseren.",
+  "relaySettingsRequiresRelay": "Divine heeft minstens één relay nodig om video's te laden, inhoud te posten en data te synchroniseren.",
   "relaySettingsRestoreDefaultRelay": "Standaardrelay herstellen",
   "relaySettingsAddCustomRelay": "Eigen relay toevoegen",
   "relaySettingsAddRelay": "Relay toevoegen",
@@ -738,7 +729,9 @@
   "relaySettingsLastError": "Laatste fout: {error}",
   "@relaySettingsLastError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsLoadingRelayInfo": "Relay-info laden...",
@@ -750,7 +743,9 @@
   "relaySettingsRemoveRelayMessage": "Weet je zeker dat je deze relay wilt verwijderen?\n\n{relayUrl}",
   "@relaySettingsRemoveRelayMessage": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsCancel": "Annuleren",
@@ -758,7 +753,9 @@
   "relaySettingsRemovedRelay": "Relay verwijderd: {relayUrl}",
   "@relaySettingsRemovedRelay": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToRemoveRelay": "Relay verwijderen mislukt",
@@ -766,7 +763,9 @@
   "relaySettingsConnectedToRelays": "Verbonden met {count} relay(s)!",
   "@relaySettingsConnectedToRelays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relaySettingsFailedToConnectCheck": "Verbinden met relays mislukt. Check je netwerkverbinding.",
@@ -777,7 +776,9 @@
   "relaySettingsAddedRelay": "Relay toegevoegd: {relayUrl}",
   "@relaySettingsAddedRelay": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToAddRelay": "Relay toevoegen mislukt. Check de URL en probeer opnieuw.",
@@ -785,13 +786,14 @@
   "relaySettingsRestoredDefault": "Standaardrelay hersteld: {defaultRelay}",
   "@relaySettingsRestoredDefault": {
     "placeholders": {
-      "defaultRelay": { "type": "String" }
+      "defaultRelay": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToRestoreDefault": "Standaardrelay herstellen mislukt. Check je netwerkverbinding.",
   "relaySettingsCouldNotOpenBrowser": "Browser openen mislukt",
   "relaySettingsFailedToOpenLink": "Link openen mislukt",
-
   "relayDiagnosticTitle": "Relay-diagnostiek",
   "@relayDiagnosticTitle": {
     "description": "Relay diagnostics screen app bar title"
@@ -800,13 +802,15 @@
   "relayDiagnosticLastRefresh": "Laatste vernieuwing: {time}",
   "@relayDiagnosticLastRefresh": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticRelayStatus": "Relay-status",
-  "relayDiagnosticInitialized": "Ge\u00efnitialiseerd",
+  "relayDiagnosticInitialized": "Geïnitialiseerd",
   "relayDiagnosticReady": "Klaar",
-  "relayDiagnosticNotInitialized": "Niet ge\u00efnitialiseerd",
+  "relayDiagnosticNotInitialized": "Niet geïnitialiseerd",
   "relayDiagnosticDatabaseEvents": "Database-events",
   "relayDiagnosticActiveSubscriptions": "Actieve abonnementen",
   "relayDiagnosticExternalRelays": "Externe relays",
@@ -814,15 +818,21 @@
   "relayDiagnosticRelayCount": "{count} relay(s)",
   "@relayDiagnosticRelayCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticConnectedLabel": "Verbonden",
   "relayDiagnosticConnectedRatio": "{connected}/{total}",
   "@relayDiagnosticConnectedRatio": {
     "placeholders": {
-      "connected": { "type": "int" },
-      "total": { "type": "int" }
+      "connected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticVideoEvents": "Video-events",
@@ -830,7 +840,9 @@
   "relayDiagnosticVideosCount": "{count} video's",
   "@relayDiagnosticVideosCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticDiscovery": "Ontdekken",
@@ -851,41 +863,55 @@
   "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (gem. {avgMs}ms)",
   "@relayDiagnosticEndpointSummary": {
     "placeholders": {
-      "successCount": { "type": "int" },
-      "totalCount": { "type": "int" },
-      "avgMs": { "type": "int" }
+      "successCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      },
+      "avgMs": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticRetestAll": "Alles opnieuw testen",
   "relayDiagnosticRetrying": "Opnieuw proberen...",
   "relayDiagnosticRetryConnection": "Verbinding opnieuw proberen",
   "relayDiagnosticTroubleshooting": "Probleemoplossing",
-  "relayDiagnosticTroubleshootingGuide": "\u2022 Groene status = verbonden en werkend\n\u2022 Rode status = verbinding mislukt\n\u2022 Als de netwerktest faalt, check je internetverbinding\n\u2022 Als relays geconfigureerd zijn maar niet verbonden, tik op \"Verbinding opnieuw proberen\"\n\u2022 Maak een screenshot van dit scherm voor debugging",
+  "relayDiagnosticTroubleshootingGuide": "• Groene status = verbonden en werkend\n• Rode status = verbinding mislukt\n• Als de netwerktest faalt, check je internetverbinding\n• Als relays geconfigureerd zijn maar niet verbonden, tik op \"Verbinding opnieuw proberen\"\n• Maak een screenshot van dit scherm voor debugging",
   "relayDiagnosticAllEndpointsHealthy": "Alle REST-endpoints gezond!",
-  "relayDiagnosticSomeEndpointsFailed": "Sommige REST-endpoints faalden \u2014 zie details hierboven",
+  "relayDiagnosticSomeEndpointsFailed": "Sommige REST-endpoints faalden — zie details hierboven",
   "relayDiagnosticFoundVideoEvents": "{count} video-events gevonden in database",
   "@relayDiagnosticFoundVideoEvents": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticQueryFailed": "Query mislukt: {error}",
   "@relayDiagnosticQueryFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticConnectedToRelays": "Verbonden met {count} relay(s)!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticFailedToConnect": "Verbinden met relays mislukt",
   "relayDiagnosticConnectionRetryFailed": "Verbinding opnieuw proberen mislukt: {error}",
   "@relayDiagnosticConnectionRetryFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticConnectedAuthenticated": "Verbonden & geauthenticeerd",
@@ -893,7 +919,6 @@
   "relayDiagnosticNotConnected": "Niet verbonden",
   "relayDiagnosticNoRelaysConfigured": "Geen relays geconfigureerd",
   "relayDiagnosticFailed": "Mislukt",
-
   "notificationSettingsTitle": "Meldingen",
   "@notificationSettingsTitle": {
     "description": "Notification settings screen app bar title"
@@ -926,7 +951,6 @@
   "notificationSettingsResetToDefaults": "Instellingen teruggezet naar standaard",
   "notificationSettingsAbout": "Over meldingen",
   "notificationSettingsAboutDescription": "Meldingen werken via het Nostr-protocol. Realtime updates hangen af van je verbinding met Nostr-relays. Sommige meldingen kunnen vertraging hebben.",
-
   "safetySettingsTitle": "Veiligheid & privacy",
   "@safetySettingsTitle": {
     "description": "Safety settings screen app bar title"
@@ -940,7 +964,7 @@
   "safetySettingsAgeConfirmation": "Ik bevestig dat ik 18 jaar of ouder ben",
   "safetySettingsAgeRequired": "Vereist om inhoud voor volwassenen te bekijken",
   "safetySettingsDivine": "Divine",
-  "safetySettingsDivineSubtitle": "Offici\u00eble moderatieservice (standaard aan)",
+  "safetySettingsDivineSubtitle": "Officiële moderatieservice (standaard aan)",
   "safetySettingsPeopleIFollow": "Mensen die ik volg",
   "safetySettingsPeopleIFollowSubtitle": "Abonneer je op labels van mensen die je volgt",
   "safetySettingsAddCustomLabeler": "Eigen labeler toevoegen",
@@ -952,7 +976,6 @@
   "safetySettingsUserUnblocked": "Gebruiker gedeblokkeerd",
   "safetySettingsCancel": "Annuleren",
   "safetySettingsAdd": "Toevoegen",
-
   "analyticsTitle": "Creator-statistieken",
   "@analyticsTitle": {
     "description": "Creator analytics screen app bar title"
@@ -964,10 +987,12 @@
   "analyticsSignInRequired": "Log in om creator-statistieken te bekijken.",
   "analyticsViewDataUnavailable": "Weergaven zijn nu niet beschikbaar vanuit de relay voor deze posts. Likes/reacties/reposts-metrics kloppen nog wel.",
   "analyticsViewDataTitle": "Weergavedata",
-  "analyticsUpdatedTimestamp": "Bijgewerkt {time} \u2022 Scores gebruiken likes, reacties, reposts en views/loops van Funnelcake als beschikbaar.",
+  "analyticsUpdatedTimestamp": "Bijgewerkt {time} • Scores gebruiken likes, reacties, reposts en views/loops van Funnelcake als beschikbaar.",
   "@analyticsUpdatedTimestamp": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "analyticsVideos": "Video's",
@@ -989,19 +1014,25 @@
   "analyticsViewsCount": "{count} weergaven",
   "@analyticsViewsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsCommentsCount": "{count} reacties",
   "@analyticsCommentsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsRepostsCount": "{count} reposts",
   "@analyticsRepostsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsTopContent": "Top-inhoud",
@@ -1013,7 +1044,9 @@
   "analyticsInteractionsCount": "{count} interacties",
   "@analyticsInteractionsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsPostAnalytics": "Post-statistieken",
@@ -1026,13 +1059,17 @@
   "analyticsFollowersCount": "Volgers: {count}",
   "@analyticsFollowersCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsFollowingCount": "Volgend: {count}",
   "@analyticsFollowingCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsAudiencePlaceholder": "Publieksbron/geo/tijd-overzichten komen zodra Funnelcake publieksanalytics-endpoints toevoegt.",
@@ -1043,42 +1080,53 @@
   "analyticsDiagnosticsTotalVideos": "Totaal video's: {count}",
   "@analyticsDiagnosticsTotalVideos": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsWithViews": "Met weergaven: {count}",
   "@analyticsDiagnosticsWithViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsMissingViews": "Zonder weergaven: {count}",
   "@analyticsDiagnosticsMissingViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsHydratedBulk": "Gehydrateerd (bulk): {count}",
   "@analyticsDiagnosticsHydratedBulk": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsHydratedViews": "Gehydrateerd (/views): {count}",
   "@analyticsDiagnosticsHydratedViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsSources": "Bronnen: {sources}",
   "@analyticsDiagnosticsSources": {
     "placeholders": {
-      "sources": { "type": "String" }
+      "sources": {
+        "type": "String"
+      }
     }
   },
   "analyticsDiagnosticsUseFixture": "Fixture-data gebruiken",
   "analyticsNa": "N.v.t.",
-
   "authCreateNewAccount": "Nieuw Divine-account aanmaken",
   "authSignInDifferentAccount": "Inloggen met een ander account",
   "authSignBackIn": "Opnieuw inloggen",
@@ -1087,7 +1135,7 @@
   "authPrivacyPolicy": "Privacybeleid",
   "authTermsAnd": ", en ",
   "authSafetyStandards": "Veiligheidsstandaarden",
-  "authAmberNotInstalled": "Amber-app is niet ge\u00efnstalleerd",
+  "authAmberNotInstalled": "Amber-app is niet geïnstalleerd",
   "authAmberConnectionFailed": "Verbinden met Amber mislukt",
   "authPasswordResetSent": "Als er een account bestaat met dat e-mailadres, is er een link verstuurd om je wachtwoord te resetten.",
   "authSignInTitle": "Inloggen",
@@ -1100,7 +1148,7 @@
   "authSignInOptionsTitle": "Inlogopties",
   "authInfoEmailPasswordTitle": "E-mail & wachtwoord",
   "authInfoEmailPasswordDescription": "Log in met je Divine-account. Als je geregistreerd bent met e-mail en wachtwoord, gebruik die dan hier.",
-  "authInfoImportNostrKeyDescription": "Heb je al een Nostr-identiteit? Importeer je nsec priv\u00e9sleutel uit een andere client.",
+  "authInfoImportNostrKeyDescription": "Heb je al een Nostr-identiteit? Importeer je nsec privésleutel uit een andere client.",
   "authInfoSignerAppTitle": "Signer-app",
   "authInfoSignerAppDescription": "Verbind met een NIP-46-compatibele remote signer zoals nsecBunker voor extra sleutelbeveiliging.",
   "authInfoAmberTitle": "Amber",
@@ -1108,34 +1156,36 @@
   "authCreateAccountTitle": "Account aanmaken",
   "authBackToInviteCode": "Terug naar invite-code",
   "authUseDivineNoBackup": "Divine gebruiken zonder back-up",
-  "authSkipConfirmTitle": "Nog \u00e9\u00e9n ding...",
+  "authSkipConfirmTitle": "Nog één ding...",
   "authSkipConfirmKeyCreated": "Je zit erin! We maken een veilige sleutel die je Divine-account aandrijft.",
   "authSkipConfirmKeyOnly": "Zonder e-mail is je sleutel de enige manier waarop Divine weet dat dit account van jou is.",
   "authSkipConfirmRecommendEmail": "Je kunt je sleutel in de app openen, maar als je niet technisch bent raden we aan nu een e-mail en wachtwoord toe te voegen. Het maakt inloggen en je account herstellen makkelijker als je dit apparaat kwijtraakt of reset.",
   "authAddEmailPassword": "E-mail & wachtwoord toevoegen",
   "authUseThisDeviceOnly": "Alleen dit apparaat gebruiken",
   "authCompleteRegistration": "Maak je registratie af",
-  "authVerifying": "Verifi\u00ebren...",
+  "authVerifying": "Verifiëren...",
   "authVerificationLinkSent": "We hebben een verificatielink gestuurd naar:",
   "authClickVerificationLink": "Klik op de link in je e-mail om\nje registratie af te ronden.",
-  "authPleaseWaitVerifying": "Even geduld terwijl we je e-mail verifi\u00ebren...",
+  "authPleaseWaitVerifying": "Even geduld terwijl we je e-mail verifiëren...",
   "authWaitingForVerification": "Wachten op verificatie",
   "authOpenEmailApp": "E-mail-app openen",
   "authWelcomeToDivine": "Welkom bij Divine!",
   "authEmailVerified": "Je e-mailadres is geverifieerd.",
   "authSigningYouIn": "Je wordt ingelogd",
   "authErrorTitle": "Oei.",
-  "authVerificationFailed": "We konden je e-mail niet verifi\u00ebren.\nProbeer het opnieuw.",
+  "authVerificationFailed": "We konden je e-mail niet verifiëren.\nProbeer het opnieuw.",
   "authStartOver": "Opnieuw beginnen",
   "authEmailVerifiedLogin": "E-mail geverifieerd! Log in om door te gaan.",
   "authVerificationLinkExpired": "Deze verificatielink is niet meer geldig.",
-  "authVerificationConnectionError": "E-mail verifi\u00ebren lukt niet. Check je verbinding en probeer opnieuw.",
+  "authVerificationConnectionError": "E-mail verifiëren lukt niet. Check je verbinding en probeer opnieuw.",
   "authWaitlistConfirmTitle": "Je staat erop!",
   "authWaitlistUpdatesAt": "We delen updates via {email}.\nZodra er meer invite-codes beschikbaar zijn, sturen we die naar je toe.",
   "@authWaitlistUpdatesAt": {
     "description": "Waitlist confirmation message with email",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authOk": "OK",
@@ -1147,7 +1197,9 @@
   "@authCouldNotOpenEmail": {
     "description": "Error when email client cannot be opened",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authAddInviteCode": "Voeg je invite-code toe",
@@ -1176,10 +1228,12 @@
   "@authWaitingForConnection": {
     "description": "Waiting indicator with elapsed seconds",
     "placeholders": {
-      "seconds": { "type": "int" }
+      "seconds": {
+        "type": "int"
+      }
     }
   },
-  "authCopyUrl": "URL kopi\u00ebren",
+  "authCopyUrl": "URL kopiëren",
   "authShare": "Delen",
   "authAddBunker": "Bunker toevoegen",
   "authCompatibleSignerApps": "Compatibele signer-apps",
@@ -1215,13 +1269,14 @@
   "@authResetLinkSentTo": {
     "description": "Confirmation message after reset link sent",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authSignInButton": "Inloggen",
-
   "authVerificationErrorTimeout": "Verificatie duurde te lang. Probeer opnieuw te registreren.",
-  "authVerificationErrorMissingCode": "Verificatie mislukt \u2014 autorisatiecode ontbreekt.",
+  "authVerificationErrorMissingCode": "Verificatie mislukt — autorisatiecode ontbreekt.",
   "authVerificationErrorPollFailed": "Verificatie mislukt. Probeer het opnieuw.",
   "authVerificationErrorNetworkExchange": "Netwerkfout tijdens inloggen. Probeer het opnieuw.",
   "authVerificationErrorOAuthExchange": "Verificatie mislukt. Probeer opnieuw te registreren.",
@@ -1230,19 +1285,17 @@
   "authInviteErrorInvalid": "Die invite-code kan nu niet worden gebruikt. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.",
   "authInviteErrorTemporary": "We konden je invite nu niet bevestigen. Ga terug naar je invite-code en probeer het opnieuw, of neem contact op met support.",
   "authInviteErrorUnknown": "We konden je invite niet activeren. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.",
-
   "shareSheetSave": "Opslaan",
   "shareSheetSaveToGallery": "Opslaan in galerij",
   "shareSheetSaveWithWatermark": "Opslaan met watermerk",
   "shareSheetSaveVideo": "Video opslaan",
   "shareSheetAddToList": "Toevoegen aan lijst",
-  "shareSheetCopy": "Kopi\u00ebren",
+  "shareSheetCopy": "Kopiëren",
   "shareSheetShareVia": "Delen via",
   "shareSheetReport": "Melden",
   "shareSheetEventJson": "Event-JSON",
   "shareSheetEventId": "Event-ID",
   "shareSheetMoreActions": "Meer acties",
-
   "watermarkDownloadSavedToCameraRoll": "Opgeslagen in camerarol",
   "watermarkDownloadShare": "Delen",
   "watermarkDownloadDone": "Klaar",
@@ -1258,38 +1311,60 @@
   "watermarkDownloadStageDownloadingDesc": "Video ophalen van het netwerk...",
   "watermarkDownloadStageWatermarkingDesc": "Het Divine-watermerk toepassen...",
   "watermarkDownloadStageSavingDesc": "De video met watermerk in je camerarol opslaan...",
-
   "uploadProgressVideoUpload": "Video-upload",
   "uploadProgressPause": "Pauzeren",
   "uploadProgressResume": "Hervatten",
   "uploadProgressGoBack": "Terug",
   "uploadProgressRetryWithCount": "Opnieuw ({count} over)",
   "@uploadProgressRetryWithCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressDelete": "Verwijderen",
   "uploadProgressDaysAgo": "{count}d geleden",
   "@uploadProgressDaysAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressHoursAgo": "{count}u geleden",
   "@uploadProgressHoursAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressMinutesAgo": "{count}m geleden",
   "@uploadProgressMinutesAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressJustNow": "Zojuist",
   "uploadProgressUploadingPercent": "Uploaden {percent}%",
   "@uploadProgressUploadingPercent": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressPausedPercent": "Gepauzeerd {percent}%",
   "@uploadProgressPausedPercent": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
-
   "badgeExplanationClose": "Sluiten",
   "badgeExplanationOriginalVineArchive": "Origineel Vine-archief",
   "badgeExplanationCameraProof": "Cameraproof",
@@ -1298,7 +1373,11 @@
   "badgeExplanationVineArchiveHistory": "Voor Vine in 2017 sloot, werkten ArchiveTeam en het Internet Archive samen om miljoenen Vines voor het nageslacht te bewaren. Deze inhoud is onderdeel van dat historische bewaarproject.",
   "badgeExplanationOriginalStats": "Originele stats: {loops} loops",
   "@badgeExplanationOriginalStats": {
-    "placeholders": { "loops": { "type": "int" } }
+    "placeholders": {
+      "loops": {
+        "type": "int"
+      }
+    }
   },
   "badgeExplanationLearnVineArchive": "Meer over het behoud van het Vine-archief",
   "badgeExplanationLearnProofmode": "Meer over Proofmode-verificatie",
@@ -1320,11 +1399,19 @@
   "badgeExplanationCheckAiGenerated": "Check of AI-gegenereerd",
   "badgeExplanationAiLikelihood": "{percentage}% kans dat het AI-gegenereerd is",
   "@badgeExplanationAiLikelihood": {
-    "placeholders": { "percentage": { "type": "int" } }
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
   },
   "badgeExplanationScannedBy": "Gescand door: {source}",
   "@badgeExplanationScannedBy": {
-    "placeholders": { "source": { "type": "String" } }
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
   },
   "badgeExplanationVerifiedByModerator": "Geverifieerd door menselijke moderator",
   "badgeExplanationVerificationPlatinum": "Platina: apparaathardware-attestatie, cryptografische handtekeningen, Content Credentials (C2PA) en AI-scan bevestigt menselijke oorsprong.",
@@ -1333,24 +1420,31 @@
   "badgeExplanationVerificationBronze": "Brons: basis-metadata-handtekeningen zijn aanwezig.",
   "badgeExplanationVerificationSilverAiScan": "Zilver: AI-scan bevestigt dat deze video waarschijnlijk door een mens is gemaakt.",
   "badgeExplanationNoVerification": "Geen verificatiedata beschikbaar voor deze video.",
-
   "shareMenuTitle": "Video delen",
   "shareMenuReportAiContent": "AI-inhoud melden",
   "shareMenuReportAiContentSubtitle": "Snel vermoedelijk AI-gegenereerde inhoud melden",
   "shareMenuReportingAiContent": "AI-inhoud melden...",
   "shareMenuFailedToReportContent": "Inhoud melden mislukt: {error}",
   "@shareMenuFailedToReportContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuFailedToReportAiContent": "AI-inhoud melden mislukt: {error}",
   "@shareMenuFailedToReportAiContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuVideoStatus": "Videostatus",
-  "shareMenuViewAllLists": "Alle lijsten bekijken \u2192",
+  "shareMenuViewAllLists": "Alle lijsten bekijken →",
   "shareMenuShareWith": "Delen met",
   "shareMenuShareViaOtherApps": "Delen via andere apps",
-  "shareMenuShareViaOtherAppsSubtitle": "Delen via andere apps of link kopi\u00ebren",
+  "shareMenuShareViaOtherAppsSubtitle": "Delen via andere apps of link kopiëren",
   "shareMenuSaveToGallery": "Opslaan in galerij",
   "shareMenuSaveOriginalSubtitle": "Originele video opslaan in camerarol",
   "shareMenuSaveWithWatermark": "Opslaan met watermerk",
@@ -1375,13 +1469,21 @@
   "shareMenuAddToFollowSet": "Toevoegen aan volgset",
   "shareMenuFollowSetsAvailable": "{count} volgsets beschikbaar",
   "@shareMenuFollowSetsAvailable": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "shareMenuAddedToBookmarks": "Toegevoegd aan bladwijzers!",
   "shareMenuFailedToAddBookmark": "Bladwijzer toevoegen mislukt",
   "shareMenuCreatedListAndAddedVideo": "Lijst \"{name}\" aangemaakt en video toegevoegd",
   "@shareMenuCreatedListAndAddedVideo": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuManageContent": "Inhoud beheren",
   "shareMenuEditVideo": "Video bewerken",
@@ -1391,7 +1493,11 @@
   "shareMenuVideoInTheseLists": "Video staat in deze lijsten:",
   "shareMenuVideoCount": "{count} video's",
   "@shareMenuVideoCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "shareMenuClose": "Sluiten",
   "shareMenuDeleteConfirmation": "Weet je zeker dat je deze video wilt verwijderen?",
@@ -1402,7 +1508,11 @@
   "shareMenuDeleteRequestSent": "Verwijderverzoek succesvol verstuurd",
   "shareMenuFailedToDeleteContent": "Inhoud verwijderen mislukt: {error}",
   "@shareMenuFailedToDeleteContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuFollowSetName": "Naam volgset",
   "shareMenuFollowSetNameHint": "Bijv. content creators, muzikanten, enz.",
@@ -1410,7 +1520,11 @@
   "shareMenuCreate": "Maken",
   "shareMenuCreatedFollowSetAndAddedCreator": "Volgset \"{name}\" aangemaakt en maker toegevoegd",
   "@shareMenuCreatedFollowSetAndAddedCreator": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuDone": "Klaar",
   "shareMenuEditTitle": "Titel",
@@ -1425,14 +1539,22 @@
   "shareMenuVideoUpdated": "Video succesvol bijgewerkt",
   "shareMenuFailedToUpdateVideo": "Video bijwerken mislukt: {error}",
   "@shareMenuFailedToUpdateVideo": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuDeleteVideoQuestion": "Video verwijderen?",
-  "shareMenuDeleteRelayWarning": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopie\u00ebn.",
+  "shareMenuDeleteRelayWarning": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
   "shareMenuVideoDeletionRequested": "Video-verwijdering aangevraagd",
   "shareMenuFailedToDeleteVideo": "Video verwijderen mislukt: {error}",
   "@shareMenuFailedToDeleteVideo": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuContentLabels": "Inhoudslabels",
   "shareMenuAddContentLabels": "Inhoudslabels toevoegen",
@@ -1441,10 +1563,14 @@
   "shareMenuAddCollaborator": "Samenwerker toevoegen",
   "shareMenuMutualFollowRequired": "Je moet {name} wederzijds volgen om diegene als samenwerker toe te voegen.",
   "@shareMenuMutualFollowRequired": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuLoading": "Laden...",
-  "shareMenuInspiredBy": "Ge\u00efnspireerd door",
+  "shareMenuInspiredBy": "Geïnspireerd door",
   "shareMenuAddInspirationCredit": "Inspiratiecredit toevoegen",
   "shareMenuCreatorCannotBeReferenced": "Naar deze maker kan niet verwezen worden.",
   "shareMenuUnknown": "Onbekend",
@@ -1458,26 +1584,35 @@
   "shareMenuFailedToLoadBookmarkSets": "Laden van bladwijzersets mislukt",
   "shareMenuCreatedSetAndAddedVideo": "\"{name}\" aangemaakt en video toegevoegd",
   "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuUseThisSound": "Dit geluid gebruiken",
   "shareMenuOriginalSound": "Origineel geluid",
-
   "authSessionExpired": "Je sessie is verlopen. Log opnieuw in.",
   "authSignInFailed": "Inloggen mislukt. Probeer het opnieuw.",
-
   "localeAppLanguage": "App-taal",
   "localeDeviceDefault": "Apparaatstandaard",
   "localeSelectLanguage": "Kies taal",
-
   "webAuthNotSupportedSecureMode": "Webauthenticatie wordt niet ondersteund in veilige modus. Gebruik de mobiele app voor veilig sleutelbeheer.",
   "webAuthIntegrationFailed": "Authenticatie-integratie mislukt: {error}",
   "@webAuthIntegrationFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "webAuthUnexpectedError": "Onverwachte fout: {error}",
   "@webAuthUnexpectedError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "webAuthEnterBunkerUri": "Voer een bunker-URI in",
   "webAuthConnectTitle": "Verbinden met Divine",
@@ -1491,13 +1626,16 @@
   "webAuthConnectToBunker": "Verbinden met Bunker",
   "webAuthNewToNostr": "Nieuw op Nostr?",
   "webAuthNostrHelp": "Installeer een browserextensie zoals Alby of nos2x voor de makkelijkste ervaring, of gebruik nsec bunker voor veilig remote signen.",
-
   "soundsTitle": "Geluiden",
   "soundsSearchHint": "Zoek geluiden...",
-  "soundsPreviewUnavailable": "Geluid voorbeluisteren lukt niet \u2014 geen audio beschikbaar",
+  "soundsPreviewUnavailable": "Geluid voorbeluisteren lukt niet — geen audio beschikbaar",
   "soundsPreviewFailed": "Voorbeluistering afspelen mislukt: {error}",
   "@soundsPreviewFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "soundsFeaturedSounds": "Uitgelichte geluiden",
   "soundsTrendingSounds": "Trending geluiden",
@@ -1510,28 +1648,42 @@
   "soundsFailedToLoad": "Laden van geluiden mislukt",
   "soundsRetry": "Opnieuw",
   "soundsScreenLabel": "Geluidenscherm",
-
   "profileTitle": "Profiel",
   "profileRefresh": "Vernieuwen",
   "profileRefreshLabel": "Profiel vernieuwen",
   "profileMoreOptions": "Meer opties",
   "profileBlockedUser": "{name} geblokkeerd",
   "@profileBlockedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileUnblockedUser": "{name} gedeblokkeerd",
   "@profileUnblockedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileUnfollowedUser": "{name} ontvolgd",
   "@profileUnfollowedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileError": "Fout: {error}",
   "@profileError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "notificationsTabAll": "Alles",
   "notificationsTabLikes": "Likes",
   "notificationsTabComments": "Reacties",
@@ -1543,33 +1695,47 @@
   "notificationsNoneYet": "Nog geen meldingen",
   "notificationsNoneForType": "Geen {type}-meldingen",
   "@notificationsNoneForType": {
-    "placeholders": { "type": { "type": "String" } }
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "notificationsEmptyDescription": "Als mensen met je inhoud interacteren, zie je het hier",
   "notificationsLoadingType": "{type}-meldingen laden...",
   "@notificationsLoadingType": {
-    "placeholders": { "type": { "type": "String" } }
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "notificationsInviteSingular": "Je hebt 1 uitnodiging om met een vriend te delen!",
   "notificationsInvitePlural": "Je hebt {count} uitnodigingen om met vrienden te delen!",
   "@notificationsInvitePlural": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "notificationsVideoNotFound": "Video niet gevonden",
   "notificationsVideoUnavailable": "Video niet beschikbaar",
   "notificationsFromNotification": "Vanuit melding",
-
   "feedFailedToLoadVideos": "Video's laden mislukt",
   "feedRetry": "Opnieuw",
   "feedNoFollowedUsers": "Geen gevolgde gebruikers.\nVolg iemand om hun video's hier te zien.",
   "feedNoVideosForMode": "Geen video's gevonden voor {mode}-feed.",
   "@feedNoVideosForMode": {
-    "placeholders": { "mode": { "type": "String" } }
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
   },
   "feedExploreVideos": "Video's verkennen",
   "feedExternalVideoSlow": "Externe video laadt traag",
   "feedSkip": "Overslaan",
-
   "uploadWaitingToUpload": "Wachten om te uploaden",
   "uploadUploadingVideo": "Video uploaden",
   "uploadProcessingVideo": "Video verwerken",
@@ -1580,32 +1746,37 @@
   "uploadPaused": "Upload gepauzeerd",
   "uploadPercentComplete": "{percent}% klaar",
   "@uploadPercentComplete": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "uploadQueuedMessage": "Je video staat in de wachtrij voor upload",
   "uploadUploadingMessage": "Uploaden naar server...",
-  "uploadProcessingMessage": "Video verwerken \u2014 dit kan een paar minuten duren",
+  "uploadProcessingMessage": "Video verwerken — dit kan een paar minuten duren",
   "uploadReadyToPublishMessage": "Video succesvol verwerkt en klaar om te publiceren",
   "uploadPublishedMessage": "Video gepubliceerd op je profiel",
-  "uploadFailedMessage": "Upload mislukt \u2014 probeer het opnieuw",
+  "uploadFailedMessage": "Upload mislukt — probeer het opnieuw",
   "uploadRetryingMessage": "Upload opnieuw proberen...",
   "uploadPausedMessage": "Upload gepauzeerd door gebruiker",
   "uploadRetryButton": "OPNIEUW",
   "uploadRetryFailed": "Upload opnieuw proberen mislukt: {error}",
   "@uploadRetryFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "userSearchPrompt": "Zoek gebruikers",
   "userSearchNoResults": "Geen gebruikers gevonden",
   "userSearchFailed": "Zoeken mislukt",
-
   "forgotPasswordTitle": "Wachtwoord resetten",
   "forgotPasswordDescription": "Voer je e-mailadres in en we sturen je een link om je wachtwoord te resetten.",
   "forgotPasswordEmailLabel": "E-mailadres",
   "forgotPasswordCancel": "Annuleren",
   "forgotPasswordSendLink": "Resetlink e-mailen",
-
   "ageVerificationContentWarning": "Inhoudswaarschuwing",
   "ageVerificationTitle": "Leeftijdsverificatie",
   "ageVerificationAdultDescription": "Deze inhoud is gemarkeerd als mogelijk materiaal voor volwassenen. Je moet 18 of ouder zijn om het te bekijken.",
@@ -1614,19 +1785,17 @@
   "ageVerificationCreationQuestion": "Ben je 16 jaar of ouder?",
   "ageVerificationNo": "Nee",
   "ageVerificationYes": "Ja",
-
   "shareLinkCopied": "Link gekopieerd naar klembord",
-  "shareFailedToCopy": "Link kopi\u00ebren mislukt",
+  "shareFailedToCopy": "Link kopiëren mislukt",
   "shareVideoSubject": "Check deze video op Divine",
   "shareFailedToShare": "Delen mislukt",
   "shareVideoTitle": "Video delen",
   "shareToApps": "Delen met apps",
   "shareToAppsSubtitle": "Delen via messaging- en social-apps",
-  "shareCopyWebLink": "Weblink kopi\u00ebren",
-  "shareCopyWebLinkSubtitle": "Deelbare weblink kopi\u00ebren",
-  "shareCopyNostrLink": "Nostr-link kopi\u00ebren",
-  "shareCopyNostrLinkSubtitle": "nevent-link kopi\u00ebren voor Nostr-clients",
-
+  "shareCopyWebLink": "Weblink kopiëren",
+  "shareCopyWebLinkSubtitle": "Deelbare weblink kopiëren",
+  "shareCopyNostrLink": "Nostr-link kopiëren",
+  "shareCopyNostrLinkSubtitle": "nevent-link kopiëren voor Nostr-clients",
   "navHome": "Home",
   "navExplore": "Ontdekken",
   "navInbox": "Inbox",
@@ -1642,7 +1811,6 @@
   "navExploreTrending": "Trending",
   "navExploreForYou": "Voor jou",
   "navExploreLists": "Lijsten",
-
   "routeErrorTitle": "Fout",
   "routeInvalidHashtag": "Ongeldige hashtag",
   "routeInvalidConversationId": "Ongeldige gesprek-ID",
@@ -1655,7 +1823,6 @@
   "routeNoVideosToDisplay": "Geen video's om weer te geven",
   "routeInvalidProfileId": "Ongeldige profiel-ID",
   "routeDefaultListName": "Lijst",
-
   "supportTitle": "Supportcentrum",
   "supportContactSupport": "Contact met support",
   "supportContactSupportSubtitle": "Start een gesprek of bekijk eerdere berichten",
@@ -1677,17 +1844,22 @@
   "supportCouldNotOpenPage": "{pageName} openen mislukt",
   "@supportCouldNotOpenPage": {
     "placeholders": {
-      "pageName": { "type": "String" }
+      "pageName": {
+        "type": "String"
+      }
     }
   },
   "supportErrorOpeningPage": "Fout bij openen van {pageName}: {error}",
   "@supportErrorOpeningPage": {
     "placeholders": {
-      "pageName": { "type": "String" },
-      "error": { "type": "Object" }
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
     }
   },
-
   "reportTitle": "Inhoud melden",
   "reportWhyReporting": "Waarom meld je deze inhoud?",
   "reportPolicyNotice": "Divine handelt binnen 24 uur op meldingen van inhoud door de inhoud te verwijderen en de gebruiker die de schendende inhoud plaatste eruit te zetten.",
@@ -1708,7 +1880,9 @@
   "reportFailed": "Inhoud melden mislukt: {error}",
   "@reportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "reportReceivedTitle": "Melding ontvangen",
@@ -1717,7 +1891,6 @@
   "reportLearnMore": "Meer info",
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "Sluiten",
-
   "listAddToList": "Toevoegen aan lijst",
   "listVideoCount": "{count} video's",
   "@listVideoCount": {
@@ -1733,13 +1906,17 @@
   "listRemovedFrom": "Verwijderd uit {name}",
   "@listRemovedFrom": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listAddedTo": "Toegevoegd aan {name}",
   "@listAddedTo": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listCreateNewList": "Nieuwe lijst maken",
@@ -1750,38 +1927,40 @@
   "listCancel": "Annuleren",
   "listCreate": "Maken",
   "listCreateFailed": "Lijst maken mislukt",
-
   "keyManagementTitle": "Nostr-sleutels",
   "keyManagementWhatAreKeys": "Wat zijn Nostr-sleutels?",
-  "keyManagementExplanation": "Je Nostr-identiteit is een cryptografisch sleutelpaar:\n\n\u2022 Je publieke sleutel (npub) is als je gebruikersnaam \u2014 deel hem gerust\n\u2022 Je priv\u00e9sleutel (nsec) is als je wachtwoord \u2014 houd hem geheim!\n\nJe nsec geeft je toegang tot je account in elke Nostr-app.",
+  "keyManagementExplanation": "Je Nostr-identiteit is een cryptografisch sleutelpaar:\n\n• Je publieke sleutel (npub) is als je gebruikersnaam — deel hem gerust\n• Je privésleutel (nsec) is als je wachtwoord — houd hem geheim!\n\nJe nsec geeft je toegang tot je account in elke Nostr-app.",
   "keyManagementImportTitle": "Bestaande sleutel importeren",
-  "keyManagementImportSubtitle": "Heb je al een Nostr-account? Plak je priv\u00e9sleutel (nsec) om er hier toegang toe te krijgen.",
+  "keyManagementImportSubtitle": "Heb je al een Nostr-account? Plak je privésleutel (nsec) om er hier toegang toe te krijgen.",
   "keyManagementImportButton": "Sleutel importeren",
   "keyManagementImportWarning": "Dit vervangt je huidige sleutel!",
   "keyManagementBackupTitle": "Maak een back-up van je sleutel",
-  "keyManagementBackupSubtitle": "Sla je priv\u00e9sleutel (nsec) op om je account in andere Nostr-apps te gebruiken.",
-  "keyManagementCopyNsec": "Mijn priv\u00e9sleutel kopi\u00ebren (nsec)",
+  "keyManagementBackupSubtitle": "Sla je privésleutel (nsec) op om je account in andere Nostr-apps te gebruiken.",
+  "keyManagementCopyNsec": "Mijn privésleutel kopiëren (nsec)",
   "keyManagementNeverShare": "Deel je nsec nooit met iemand!",
-  "keyManagementPasteKey": "Plak je priv\u00e9sleutel",
+  "keyManagementPasteKey": "Plak je privésleutel",
   "keyManagementInvalidFormat": "Ongeldig sleutelformaat. Moet beginnen met \"nsec1\"",
   "keyManagementConfirmImportTitle": "Deze sleutel importeren?",
-  "keyManagementConfirmImportBody": "Dit vervangt je huidige identiteit door de ge\u00efmporteerde.\n\nJe huidige sleutel is weg tenzij je eerst een back-up hebt gemaakt.",
+  "keyManagementConfirmImportBody": "Dit vervangt je huidige identiteit door de geïmporteerde.\n\nJe huidige sleutel is weg tenzij je eerst een back-up hebt gemaakt.",
   "keyManagementImportConfirm": "Importeren",
-  "keyManagementImportSuccess": "Sleutel succesvol ge\u00efmporteerd!",
+  "keyManagementImportSuccess": "Sleutel succesvol geïmporteerd!",
   "keyManagementImportFailed": "Sleutel importeren mislukt: {error}",
   "@keyManagementImportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
-  "keyManagementExportSuccess": "Priv\u00e9sleutel gekopieerd naar klembord!\n\nBewaar hem ergens veilig.",
+  "keyManagementExportSuccess": "Privésleutel gekopieerd naar klembord!\n\nBewaar hem ergens veilig.",
   "keyManagementExportFailed": "Sleutel exporteren mislukt: {error}",
   "@keyManagementExportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
-
   "saveOriginalSavedToCameraRoll": "Opgeslagen in camerarol",
   "saveOriginalShare": "Delen",
   "saveOriginalDone": "Klaar",
@@ -1795,7 +1974,6 @@
   "saveOriginalSavingToCameraRoll": "Opslaan in camerarol",
   "saveOriginalFetchingVideo": "Video ophalen van het netwerk...",
   "saveOriginalSavingVideo": "Originele video in je camerarol opslaan...",
-
   "soundTitle": "Geluid",
   "soundOriginalSound": "Origineel geluid",
   "soundVideosUsingThisSound": "Video's die dit geluid gebruiken",
@@ -1819,7 +1997,7 @@
       }
     }
   },
-  "soundUnableToPreview": "Geluid voorbeluisteren lukt niet \u2014 geen audio beschikbaar",
+  "soundUnableToPreview": "Geluid voorbeluisteren lukt niet — geen audio beschikbaar",
   "soundPreviewFailed": "Voorbeluistering afspelen mislukt: {error}",
   "@soundPreviewFailed": {
     "placeholders": {
@@ -1830,9 +2008,7 @@
   },
   "soundViewSource": "Bron bekijken",
   "soundCloseTooltip": "Sluiten",
-
   "exploreNotExploreRoute": "Geen explore-route",
-
   "legalTitle": "Juridisch",
   "legalTermsOfService": "Servicevoorwaarden",
   "legalTermsOfServiceSubtitle": "Gebruiksvoorwaarden en -condities",
@@ -1848,14 +2024,121 @@
   "legalCouldNotOpenPage": "{pageName} openen mislukt",
   "@legalCouldNotOpenPage": {
     "placeholders": {
-      "pageName": { "type": "String" }
+      "pageName": {
+        "type": "String"
+      }
     }
   },
   "legalErrorOpeningPage": "Fout bij openen van {pageName}: {error}",
   "@legalErrorOpeningPage": {
     "placeholders": {
-      "pageName": { "type": "String" },
-      "error": { "type": "Object" }
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
     }
-  }
+  },
+  "categoryAction": "Actie",
+  "categoryAdventure": "Avontuur",
+  "categoryAnimals": "Dieren",
+  "categoryAnimation": "Animatie",
+  "categoryArchitecture": "Architectuur",
+  "categoryArt": "Kunst",
+  "categoryAutomotive": "Auto's",
+  "categoryAwardShow": "Awardshow",
+  "categoryAwards": "Awards",
+  "categoryBaseball": "Honkbal",
+  "categoryBasketball": "Basketbal",
+  "categoryBeauty": "Beauty",
+  "categoryBeverage": "Drank",
+  "categoryCars": "Auto's",
+  "categoryCelebration": "Feest",
+  "categoryCelebrities": "Beroemdheden",
+  "categoryCelebrity": "Beroemdheid",
+  "categoryCityscape": "Stadsgezicht",
+  "categoryComedy": "Comedy",
+  "categoryConcert": "Concert",
+  "categoryCooking": "Koken",
+  "categoryCostume": "Kostuum",
+  "categoryCrafts": "Knutselen",
+  "categoryCrime": "Misdaad",
+  "categoryCulture": "Cultuur",
+  "categoryDance": "Dans",
+  "categoryDiy": "Zelf doen",
+  "categoryDrama": "Drama",
+  "categoryEducation": "Onderwijs",
+  "categoryEmotional": "Emotioneel",
+  "categoryEmotions": "Emoties",
+  "categoryEntertainment": "Entertainment",
+  "categoryEvent": "Event",
+  "categoryFamily": "Familie",
+  "categoryFans": "Fans",
+  "categoryFantasy": "Fantasy",
+  "categoryFashion": "Mode",
+  "categoryFestival": "Festival",
+  "categoryFilm": "Film",
+  "categoryFitness": "Fitness",
+  "categoryFood": "Eten",
+  "categoryFootball": "Football",
+  "categoryFurniture": "Meubels",
+  "categoryGaming": "Gaming",
+  "categoryGolf": "Golf",
+  "categoryGrooming": "Verzorging",
+  "categoryGuitar": "Gitaar",
+  "categoryHalloween": "Halloween",
+  "categoryHealth": "Gezondheid",
+  "categoryHockey": "Hockey",
+  "categoryHoliday": "Vakantie",
+  "categoryHome": "Thuis",
+  "categoryHomeImprovement": "Klussen",
+  "categoryHorror": "Horror",
+  "categoryHospital": "Ziekenhuis",
+  "categoryHumor": "Humor",
+  "categoryInteriorDesign": "Interieur",
+  "categoryInterview": "Interview",
+  "categoryKids": "Kids",
+  "categoryLifestyle": "Lifestyle",
+  "categoryMagic": "Magie",
+  "categoryMakeup": "Make-up",
+  "categoryMedical": "Medisch",
+  "categoryMusic": "Muziek",
+  "categoryMystery": "Mysterie",
+  "categoryNature": "Natuur",
+  "categoryNews": "Nieuws",
+  "categoryOutdoor": "Buiten",
+  "categoryParty": "Feest",
+  "categoryPeople": "Mensen",
+  "categoryPerformance": "Optreden",
+  "categoryPets": "Huisdieren",
+  "categoryPolitics": "Politiek",
+  "categoryPrank": "Grap",
+  "categoryPranks": "Grappen",
+  "categoryRealityShow": "Realityshow",
+  "categoryRelationship": "Relatie",
+  "categoryRelationships": "Relaties",
+  "categoryRomance": "Romantiek",
+  "categorySchool": "School",
+  "categoryScienceFiction": "Sciencefiction",
+  "categorySelfie": "Selfie",
+  "categoryShopping": "Winkelen",
+  "categorySkateboarding": "Skateboarden",
+  "categorySkincare": "Huidverzorging",
+  "categorySoccer": "Voetbal",
+  "categorySocialGathering": "Samenkomst",
+  "categorySocialMedia": "Social media",
+  "categorySports": "Sport",
+  "categoryTalkShow": "Talkshow",
+  "categoryTech": "Tech",
+  "categoryTechnology": "Technologie",
+  "categoryTelevision": "Televisie",
+  "categoryToys": "Speelgoed",
+  "categoryTransportation": "Vervoer",
+  "categoryTravel": "Reizen",
+  "categoryUrban": "Urban",
+  "categoryViolence": "Geweld",
+  "categoryVlog": "Vlog",
+  "categoryVlogging": "Vloggen",
+  "categoryWrestling": "Worstelen"
 }

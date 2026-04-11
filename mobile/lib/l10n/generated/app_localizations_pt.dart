@@ -4032,4 +4032,307 @@ class AppLocalizationsPt extends AppLocalizations {
   String legalErrorOpeningPage(String pageName, Object error) {
     return 'Erro ao abrir $pageName: $error';
   }
+
+  @override
+  String get categoryAction => 'Ação';
+
+  @override
+  String get categoryAdventure => 'Aventura';
+
+  @override
+  String get categoryAnimals => 'Animais';
+
+  @override
+  String get categoryAnimation => 'Animação';
+
+  @override
+  String get categoryArchitecture => 'Arquitetura';
+
+  @override
+  String get categoryArt => 'Arte';
+
+  @override
+  String get categoryAutomotive => 'Carros';
+
+  @override
+  String get categoryAwardShow => 'Premiação';
+
+  @override
+  String get categoryAwards => 'Prêmios';
+
+  @override
+  String get categoryBaseball => 'Beisebol';
+
+  @override
+  String get categoryBasketball => 'Basquete';
+
+  @override
+  String get categoryBeauty => 'Beleza';
+
+  @override
+  String get categoryBeverage => 'Bebidas';
+
+  @override
+  String get categoryCars => 'Carros';
+
+  @override
+  String get categoryCelebration => 'Comemoração';
+
+  @override
+  String get categoryCelebrities => 'Celebridades';
+
+  @override
+  String get categoryCelebrity => 'Celebridade';
+
+  @override
+  String get categoryCityscape => 'Paisagem urbana';
+
+  @override
+  String get categoryComedy => 'Comédia';
+
+  @override
+  String get categoryConcert => 'Show';
+
+  @override
+  String get categoryCooking => 'Culinária';
+
+  @override
+  String get categoryCostume => 'Fantasia';
+
+  @override
+  String get categoryCrafts => 'Artesanato';
+
+  @override
+  String get categoryCrime => 'Crime';
+
+  @override
+  String get categoryCulture => 'Cultura';
+
+  @override
+  String get categoryDance => 'Dança';
+
+  @override
+  String get categoryDiy => 'Faça você mesmo';
+
+  @override
+  String get categoryDrama => 'Drama';
+
+  @override
+  String get categoryEducation => 'Educação';
+
+  @override
+  String get categoryEmotional => 'Emocionante';
+
+  @override
+  String get categoryEmotions => 'Emoções';
+
+  @override
+  String get categoryEntertainment => 'Entretenimento';
+
+  @override
+  String get categoryEvent => 'Evento';
+
+  @override
+  String get categoryFamily => 'Família';
+
+  @override
+  String get categoryFans => 'Fãs';
+
+  @override
+  String get categoryFantasy => 'Fantasia';
+
+  @override
+  String get categoryFashion => 'Moda';
+
+  @override
+  String get categoryFestival => 'Festival';
+
+  @override
+  String get categoryFilm => 'Cinema';
+
+  @override
+  String get categoryFitness => 'Fitness';
+
+  @override
+  String get categoryFood => 'Comida';
+
+  @override
+  String get categoryFootball => 'Futebol americano';
+
+  @override
+  String get categoryFurniture => 'Móveis';
+
+  @override
+  String get categoryGaming => 'Games';
+
+  @override
+  String get categoryGolf => 'Golfe';
+
+  @override
+  String get categoryGrooming => 'Cuidados pessoais';
+
+  @override
+  String get categoryGuitar => 'Guitarra';
+
+  @override
+  String get categoryHalloween => 'Halloween';
+
+  @override
+  String get categoryHealth => 'Saúde';
+
+  @override
+  String get categoryHockey => 'Hóquei';
+
+  @override
+  String get categoryHoliday => 'Feriado';
+
+  @override
+  String get categoryHome => 'Casa';
+
+  @override
+  String get categoryHomeImprovement => 'Reforma';
+
+  @override
+  String get categoryHorror => 'Terror';
+
+  @override
+  String get categoryHospital => 'Hospital';
+
+  @override
+  String get categoryHumor => 'Humor';
+
+  @override
+  String get categoryInteriorDesign => 'Design de interiores';
+
+  @override
+  String get categoryInterview => 'Entrevista';
+
+  @override
+  String get categoryKids => 'Crianças';
+
+  @override
+  String get categoryLifestyle => 'Estilo de vida';
+
+  @override
+  String get categoryMagic => 'Mágica';
+
+  @override
+  String get categoryMakeup => 'Maquiagem';
+
+  @override
+  String get categoryMedical => 'Medicina';
+
+  @override
+  String get categoryMusic => 'Música';
+
+  @override
+  String get categoryMystery => 'Mistério';
+
+  @override
+  String get categoryNature => 'Natureza';
+
+  @override
+  String get categoryNews => 'Notícias';
+
+  @override
+  String get categoryOutdoor => 'Ar livre';
+
+  @override
+  String get categoryParty => 'Festa';
+
+  @override
+  String get categoryPeople => 'Pessoas';
+
+  @override
+  String get categoryPerformance => 'Performance';
+
+  @override
+  String get categoryPets => 'Pets';
+
+  @override
+  String get categoryPolitics => 'Política';
+
+  @override
+  String get categoryPrank => 'Pegadinha';
+
+  @override
+  String get categoryPranks => 'Pegadinhas';
+
+  @override
+  String get categoryRealityShow => 'Reality show';
+
+  @override
+  String get categoryRelationship => 'Relacionamento';
+
+  @override
+  String get categoryRelationships => 'Relacionamentos';
+
+  @override
+  String get categoryRomance => 'Romance';
+
+  @override
+  String get categorySchool => 'Escola';
+
+  @override
+  String get categoryScienceFiction => 'Ficção científica';
+
+  @override
+  String get categorySelfie => 'Selfie';
+
+  @override
+  String get categoryShopping => 'Compras';
+
+  @override
+  String get categorySkateboarding => 'Skate';
+
+  @override
+  String get categorySkincare => 'Cuidados com a pele';
+
+  @override
+  String get categorySoccer => 'Futebol';
+
+  @override
+  String get categorySocialGathering => 'Encontro';
+
+  @override
+  String get categorySocialMedia => 'Redes sociais';
+
+  @override
+  String get categorySports => 'Esportes';
+
+  @override
+  String get categoryTalkShow => 'Talk show';
+
+  @override
+  String get categoryTech => 'Tech';
+
+  @override
+  String get categoryTechnology => 'Tecnologia';
+
+  @override
+  String get categoryTelevision => 'Televisão';
+
+  @override
+  String get categoryToys => 'Brinquedos';
+
+  @override
+  String get categoryTransportation => 'Transporte';
+
+  @override
+  String get categoryTravel => 'Viagem';
+
+  @override
+  String get categoryUrban => 'Urbano';
+
+  @override
+  String get categoryViolence => 'Violência';
+
+  @override
+  String get categoryVlog => 'Vlog';
+
+  @override
+  String get categoryVlogging => 'Vlogging';
+
+  @override
+  String get categoryWrestling => 'Luta livre';
 }

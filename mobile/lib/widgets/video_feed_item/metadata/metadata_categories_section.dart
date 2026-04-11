@@ -4,6 +4,8 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/widgets/categories/category_visuals.dart';
 
@@ -46,7 +48,7 @@ class CategoryChip extends StatelessWidget {
           ),
           Flexible(
             child: Text(
-              category.displayName,
+              localizedCategoryName(context.l10n, category.name),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.titleSmallFont(

@@ -1,11 +1,9 @@
 {
   "@@locale": "ja",
-
   "appTitle": "Divine",
   "@appTitle": {
     "description": "App title shown in task switcher"
   },
-
   "settingsTitle": "設定",
   "@settingsTitle": {
     "description": "Settings screen app bar title"
@@ -82,7 +80,6 @@
   },
   "settingsAppLanguageDescription": "アプリのインターフェースの言語を選択してください",
   "settingsAppLanguageUseDeviceLanguage": "デバイスの言語を使用",
-
   "contentPreferencesTitle": "コンテンツ設定",
   "@contentPreferencesTitle": {
     "description": "Content preferences screen app bar title"
@@ -121,7 +118,6 @@
   "contentPreferencesAutoSelectsBest": "最適なマイクを自動的に選択します",
   "contentPreferencesSelectAudioInput": "音声入力を選択",
   "contentPreferencesUnknownMicrophone": "不明なマイク",
-
   "profileBlockedAccountNotAvailable": "このアカウントは利用できません",
   "profileErrorPrefix": "エラー: {error}",
   "@profileErrorPrefix": {
@@ -402,7 +398,6 @@
   "nostrInfoLearnMoreAt": "詳細はこちら: ",
   "nostrInfoGotIt": "了解!",
   "profileTabRefreshTooltip": "更新",
-
   "videoGridRefreshLabel": "さらに動画を検索中",
   "videoGridOptionsTitle": "動画オプション",
   "videoGridEditVideo": "動画を編集",
@@ -424,7 +419,6 @@
       }
     }
   },
-
   "exploreTabClassics": "クラシック",
   "exploreTabNew": "新着",
   "exploreTabPopular": "人気",
@@ -474,12 +468,10 @@
       }
     }
   },
-
   "videoPlayerLoadingVideo": "動画を読み込み中...",
   "videoPlayerPlayVideo": "動画を再生",
   "videoPlayerEditVideo": "動画を編集",
   "videoPlayerEditVideoTooltip": "動画を編集",
-
   "contentWarningLabel": "コンテンツ警告",
   "contentWarningNudity": "ヌード",
   "contentWarningSexualContent": "性的コンテンツ",
@@ -519,7 +511,6 @@
   "contentWarningHideAllLikeThis": "こういうコンテンツをすべて非表示",
   "contentWarningNoFilterYet": "この警告に対する保存済みフィルターはまだありません。",
   "contentWarningHiddenConfirmation": "これ以降、このような投稿は非表示にします。",
-
   "videoErrorNotFound": "動画が見つかりません",
   "videoErrorNetwork": "ネットワークエラー",
   "videoErrorTimeout": "読み込みタイムアウト",
@@ -534,12 +525,9 @@
   "videoErrorVerifyAgeBody": "この動画を見るには年齢確認が必要です。",
   "videoErrorSkip": "スキップ",
   "videoErrorVerifyAgeButton": "年齢を確認",
-
   "videoFollowButtonFollowing": "フォロー中",
   "videoFollowButtonFollow": "フォロー",
-
   "audioAttributionOriginalSound": "オリジナルサウンド",
-
   "videoInspiredByAttribution": "@{creatorName} にインスパイアされた",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -548,7 +536,6 @@
       }
     }
   },
-
   "videoCollaboratorWithOne": "@{name} と",
   "@videoCollaboratorWithOne": {
     "placeholders": {
@@ -576,9 +563,7 @@
       }
     }
   },
-
   "listAttributionFallback": "リスト",
-
   "shareVideoLabel": "動画を共有",
   "sharePostSharedWith": "{recipientName}に投稿を共有しました",
   "@sharePostSharedWith": {
@@ -607,7 +592,6 @@
     }
   },
   "shareMessageHint": "メッセージを追加 (任意)...",
-
   "videoActionUnlike": "動画のいいねを取り消す",
   "videoActionLike": "動画にいいね",
   "videoActionRemoveRepost": "リポストを取り消す",
@@ -616,7 +600,6 @@
   "videoActionMoreOptions": "その他のオプション",
   "videoActionHideSubtitles": "字幕を非表示",
   "videoActionShowSubtitles": "字幕を表示",
-
   "videoDescriptionLoops": "{count}ループ",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -625,7 +608,6 @@
       }
     }
   },
-
   "metadataBadgeNotDivine": "Divine 以外",
   "metadataBadgeHumanMade": "人間が制作",
   "metadataSoundsLabel": "サウンド",
@@ -641,7 +623,6 @@
   "metadataLikesLabel": "いいね",
   "metadataCommentsLabel": "コメント",
   "metadataRepostsLabel": "リポスト",
-
   "devOptionsTitle": "開発者オプション",
   "@devOptionsTitle": {
     "description": "Developer options screen app bar title"
@@ -651,8 +632,12 @@
   "devOptionsPageLoadVisible": "表示: {visibleMs}ms  |  データ: {dataMs}ms",
   "@devOptionsPageLoadVisible": {
     "placeholders": {
-      "visibleMs": { "type": "String" },
-      "dataMs": { "type": "String" }
+      "visibleMs": {
+        "type": "String"
+      },
+      "dataMs": {
+        "type": "String"
+      }
     }
   },
   "devOptionsSlowestScreens": "最も遅い画面",
@@ -661,7 +646,9 @@
   "devOptionsSwitchEnvironmentMessage": "{envName}に切り替えますか?\n\nキャッシュされた動画データがクリアされ、新しいリレーに再接続されます。",
   "@devOptionsSwitchEnvironmentMessage": {
     "placeholders": {
-      "envName": { "type": "String" }
+      "envName": {
+        "type": "String"
+      }
     }
   },
   "devOptionsCancel": "キャンセル",
@@ -669,16 +656,19 @@
   "devOptionsSwitchedTo": "{envName}に切り替えました",
   "@devOptionsSwitchedTo": {
     "placeholders": {
-      "envName": { "type": "String" }
+      "envName": {
+        "type": "String"
+      }
     }
   },
   "devOptionsSwitchedFormat": "{formatName}に切り替えました — キャッシュをクリアしました",
   "@devOptionsSwitchedFormat": {
     "placeholders": {
-      "formatName": { "type": "String" }
+      "formatName": {
+        "type": "String"
+      }
     }
   },
-
   "featureFlagTitle": "機能フラグ",
   "@featureFlagTitle": {
     "description": "Feature flags screen app bar title"
@@ -690,7 +680,7 @@
   "featureFlagClearAllCache": "すべてのキャッシュをクリア",
   "featureFlagCacheInfo": "キャッシュ情報",
   "featureFlagClearCacheTitle": "すべてのキャッシュをクリアしますか?",
-  "featureFlagClearCacheMessage": "次のキャッシュデータをすべてクリアします:\n\u2022 通知\n\u2022 ユーザープロフィール\n\u2022 ブックマーク\n\u2022 一時ファイル\n\n再度ログインが必要になります。続けますか?",
+  "featureFlagClearCacheMessage": "次のキャッシュデータをすべてクリアします:\n• 通知\n• ユーザープロフィール\n• ブックマーク\n• 一時ファイル\n\n再度ログインが必要になります。続けますか?",
   "featureFlagClearCache": "キャッシュをクリア",
   "featureFlagClearingCache": "キャッシュをクリア中...",
   "featureFlagSuccess": "成功",
@@ -702,19 +692,20 @@
   "featureFlagTotalCacheSize": "キャッシュ合計サイズ: {size}",
   "@featureFlagTotalCacheSize": {
     "placeholders": {
-      "size": { "type": "String" }
+      "size": {
+        "type": "String"
+      }
     }
   },
-  "featureFlagCacheIncludes": "キャッシュに含まれるもの:\n\u2022 通知履歴\n\u2022 ユーザープロフィールデータ\n\u2022 動画サムネイル\n\u2022 一時ファイル\n\u2022 データベースインデックス",
-
+  "featureFlagCacheIncludes": "キャッシュに含まれるもの:\n• 通知履歴\n• ユーザープロフィールデータ\n• 動画サムネイル\n• 一時ファイル\n• データベースインデックス",
   "relaySettingsTitle": "リレー",
   "@relaySettingsTitle": {
     "description": "Relay settings screen app bar title"
   },
   "relaySettingsInfoTitle": "Divine はオープンなシステムです——接続はあなたがコントロールできます",
   "relaySettingsInfoDescription": "これらのリレーは、あなたのコンテンツを分散型の Nostr ネットワークに配信します。リレーはお好みで追加・削除できます。",
-  "relaySettingsLearnMoreNostr": "Nostr について詳しく \u2192",
-  "relaySettingsFindPublicRelays": "nostr.co.uk でパブリックリレーを探す \u2192",
+  "relaySettingsLearnMoreNostr": "Nostr について詳しく →",
+  "relaySettingsFindPublicRelays": "nostr.co.uk でパブリックリレーを探す →",
   "relaySettingsAppNotFunctional": "アプリが動作しません",
   "relaySettingsRequiresRelay": "Divine では、動画の読み込み、コンテンツの投稿、データの同期に少なくとも1つのリレーが必要です。",
   "relaySettingsRestoreDefaultRelay": "既定のリレーを復元",
@@ -738,7 +729,9 @@
   "relaySettingsLastError": "最後のエラー: {error}",
   "@relaySettingsLastError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsLoadingRelayInfo": "リレー情報を読み込み中...",
@@ -750,7 +743,9 @@
   "relaySettingsRemoveRelayMessage": "このリレーを本当に削除しますか?\n\n{relayUrl}",
   "@relaySettingsRemoveRelayMessage": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsCancel": "キャンセル",
@@ -758,7 +753,9 @@
   "relaySettingsRemovedRelay": "リレーを削除しました: {relayUrl}",
   "@relaySettingsRemovedRelay": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToRemoveRelay": "リレーの削除に失敗しました",
@@ -766,7 +763,9 @@
   "relaySettingsConnectedToRelays": "{count}個のリレーに接続しました!",
   "@relaySettingsConnectedToRelays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relaySettingsFailedToConnectCheck": "リレーへの接続に失敗しました。ネットワーク接続を確認してください。",
@@ -777,7 +776,9 @@
   "relaySettingsAddedRelay": "リレーを追加しました: {relayUrl}",
   "@relaySettingsAddedRelay": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToAddRelay": "リレーの追加に失敗しました。URL を確認してもう一度お試しください。",
@@ -785,13 +786,14 @@
   "relaySettingsRestoredDefault": "既定のリレーを復元しました: {defaultRelay}",
   "@relaySettingsRestoredDefault": {
     "placeholders": {
-      "defaultRelay": { "type": "String" }
+      "defaultRelay": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToRestoreDefault": "既定のリレーの復元に失敗しました。ネットワーク接続を確認してください。",
   "relaySettingsCouldNotOpenBrowser": "ブラウザを開けませんでした",
   "relaySettingsFailedToOpenLink": "リンクを開けませんでした",
-
   "relayDiagnosticTitle": "リレー診断",
   "@relayDiagnosticTitle": {
     "description": "Relay diagnostics screen app bar title"
@@ -800,7 +802,9 @@
   "relayDiagnosticLastRefresh": "最終更新: {time}",
   "@relayDiagnosticLastRefresh": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticRelayStatus": "リレーの状態",
@@ -814,15 +818,21 @@
   "relayDiagnosticRelayCount": "{count}個のリレー",
   "@relayDiagnosticRelayCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticConnectedLabel": "接続済み",
   "relayDiagnosticConnectedRatio": "{connected}/{total}",
   "@relayDiagnosticConnectedRatio": {
     "placeholders": {
-      "connected": { "type": "int" },
-      "total": { "type": "int" }
+      "connected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticVideoEvents": "動画イベント",
@@ -830,7 +840,9 @@
   "relayDiagnosticVideosCount": "{count}本の動画",
   "@relayDiagnosticVideosCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticDiscovery": "発見",
@@ -851,41 +863,55 @@
   "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (平均 {avgMs}ms)",
   "@relayDiagnosticEndpointSummary": {
     "placeholders": {
-      "successCount": { "type": "int" },
-      "totalCount": { "type": "int" },
-      "avgMs": { "type": "int" }
+      "successCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      },
+      "avgMs": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticRetestAll": "すべて再テスト",
   "relayDiagnosticRetrying": "再試行中...",
   "relayDiagnosticRetryConnection": "接続を再試行",
   "relayDiagnosticTroubleshooting": "トラブルシューティング",
-  "relayDiagnosticTroubleshootingGuide": "\u2022 緑のステータス = 接続済み・動作中\n\u2022 赤のステータス = 接続に失敗\n\u2022 ネットワークテストが失敗する場合は、インターネット接続を確認してください\n\u2022 リレーが設定されているのに接続されない場合は [接続を再試行]をタップしてください\n\u2022 デバッグ用にこの画面をスクリーンショットしてください",
+  "relayDiagnosticTroubleshootingGuide": "• 緑のステータス = 接続済み・動作中\n• 赤のステータス = 接続に失敗\n• ネットワークテストが失敗する場合は、インターネット接続を確認してください\n• リレーが設定されているのに接続されない場合は [接続を再試行]をタップしてください\n• デバッグ用にこの画面をスクリーンショットしてください",
   "relayDiagnosticAllEndpointsHealthy": "すべての REST エンドポイントは正常です!",
   "relayDiagnosticSomeEndpointsFailed": "一部の REST エンドポイントが失敗しました - 上の詳細をご確認ください",
   "relayDiagnosticFoundVideoEvents": "データベースで{count}件の動画イベントが見つかりました",
   "@relayDiagnosticFoundVideoEvents": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticQueryFailed": "クエリに失敗しました: {error}",
   "@relayDiagnosticQueryFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticConnectedToRelays": "{count}個のリレーに接続しました!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticFailedToConnect": "どのリレーにも接続できませんでした",
   "relayDiagnosticConnectionRetryFailed": "接続の再試行に失敗しました: {error}",
   "@relayDiagnosticConnectionRetryFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticConnectedAuthenticated": "接続・認証済み",
@@ -893,7 +919,6 @@
   "relayDiagnosticNotConnected": "未接続",
   "relayDiagnosticNoRelaysConfigured": "リレーが設定されていません",
   "relayDiagnosticFailed": "失敗",
-
   "notificationSettingsTitle": "通知",
   "@notificationSettingsTitle": {
     "description": "Notification settings screen app bar title"
@@ -926,7 +951,6 @@
   "notificationSettingsResetToDefaults": "設定を既定値にリセットしました",
   "notificationSettingsAbout": "通知について",
   "notificationSettingsAboutDescription": "通知は Nostr プロトコルによって提供されます。リアルタイム更新は Nostr リレーへの接続状況に依存し、遅延することがあります。",
-
   "safetySettingsTitle": "安全とプライバシー",
   "@safetySettingsTitle": {
     "description": "Safety settings screen app bar title"
@@ -952,7 +976,6 @@
   "safetySettingsUserUnblocked": "ユーザーのブロックを解除しました",
   "safetySettingsCancel": "キャンセル",
   "safetySettingsAdd": "追加",
-
   "analyticsTitle": "クリエイター分析",
   "@analyticsTitle": {
     "description": "Creator analytics screen app bar title"
@@ -964,10 +987,12 @@
   "analyticsSignInRequired": "クリエイター分析を表示するにはサインインしてください。",
   "analyticsViewDataUnavailable": "これらの投稿について、現在リレーから視聴データを取得できません。いいね・コメント・リポストの数値は引き続き正確です。",
   "analyticsViewDataTitle": "視聴データ",
-  "analyticsUpdatedTimestamp": "更新 {time} \u2022 スコアは Funnelcake で利用可能な場合、いいね、コメント、リポスト、視聴/ループを使用します。",
+  "analyticsUpdatedTimestamp": "更新 {time} • スコアは Funnelcake で利用可能な場合、いいね、コメント、リポスト、視聴/ループを使用します。",
   "@analyticsUpdatedTimestamp": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "analyticsVideos": "動画",
@@ -989,19 +1014,25 @@
   "analyticsViewsCount": "{count}回視聴",
   "@analyticsViewsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsCommentsCount": "{count}件のコメント",
   "@analyticsCommentsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsRepostsCount": "{count}件のリポスト",
   "@analyticsRepostsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsTopContent": "トップコンテンツ",
@@ -1013,7 +1044,9 @@
   "analyticsInteractionsCount": "{count}件のインタラクション",
   "@analyticsInteractionsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsPostAnalytics": "投稿の分析",
@@ -1026,13 +1059,17 @@
   "analyticsFollowersCount": "フォロワー: {count}",
   "@analyticsFollowersCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsFollowingCount": "フォロー中: {count}",
   "@analyticsFollowingCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsAudiencePlaceholder": "Funnelcake がオーディエンス分析エンドポイントを追加すると、オーディエンスのソース/地域/時間帯の内訳が入ります。",
@@ -1043,42 +1080,53 @@
   "analyticsDiagnosticsTotalVideos": "動画合計: {count}",
   "@analyticsDiagnosticsTotalVideos": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsWithViews": "視聴ありの動画: {count}",
   "@analyticsDiagnosticsWithViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsMissingViews": "視聴なしの動画: {count}",
   "@analyticsDiagnosticsMissingViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsHydratedBulk": "取得済み (bulk): {count}",
   "@analyticsDiagnosticsHydratedBulk": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsHydratedViews": "取得済み (/views): {count}",
   "@analyticsDiagnosticsHydratedViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsSources": "ソース: {sources}",
   "@analyticsDiagnosticsSources": {
     "placeholders": {
-      "sources": { "type": "String" }
+      "sources": {
+        "type": "String"
+      }
     }
   },
   "analyticsDiagnosticsUseFixture": "フィクスチャデータを使用",
   "analyticsNa": "N/A",
-
   "authCreateNewAccount": "新しい Divine アカウントを作成",
   "authSignInDifferentAccount": "別のアカウントでサインイン",
   "authSignBackIn": "再度サインイン",
@@ -1135,7 +1183,9 @@
   "@authWaitlistUpdatesAt": {
     "description": "Waitlist confirmation message with email",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authOk": "OK",
@@ -1147,7 +1197,9 @@
   "@authCouldNotOpenEmail": {
     "description": "Error when email client cannot be opened",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authAddInviteCode": "招待コードを入力",
@@ -1176,7 +1228,9 @@
   "@authWaitingForConnection": {
     "description": "Waiting indicator with elapsed seconds",
     "placeholders": {
-      "seconds": { "type": "int" }
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "authCopyUrl": "URL をコピー",
@@ -1215,11 +1269,12 @@
   "@authResetLinkSentTo": {
     "description": "Confirmation message after reset link sent",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authSignInButton": "サインイン",
-
   "authVerificationErrorTimeout": "認証がタイムアウトしました。もう一度登録をお試しください。",
   "authVerificationErrorMissingCode": "認証に失敗しました — 認可コードがありません。",
   "authVerificationErrorPollFailed": "認証に失敗しました。もう一度お試しください。",
@@ -1230,7 +1285,6 @@
   "authInviteErrorInvalid": "その招待コードは今は使えません。招待コードに戻るか、ウェイトリストに参加するか、サポートにご連絡ください。",
   "authInviteErrorTemporary": "招待を今は確認できませんでした。招待コードに戻ってもう一度試すか、サポートにご連絡ください。",
   "authInviteErrorUnknown": "招待を有効にできませんでした。招待コードに戻るか、ウェイトリストに参加するか、サポートにご連絡ください。",
-
   "shareSheetSave": "保存",
   "shareSheetSaveToGallery": "ギャラリーに保存",
   "shareSheetSaveWithWatermark": "ウォーターマーク付きで保存",
@@ -1242,7 +1296,6 @@
   "shareSheetEventJson": "イベント JSON",
   "shareSheetEventId": "イベント ID",
   "shareSheetMoreActions": "その他のアクション",
-
   "watermarkDownloadSavedToCameraRoll": "カメラロールに保存しました",
   "watermarkDownloadShare": "共有",
   "watermarkDownloadDone": "完了",
@@ -1258,38 +1311,60 @@
   "watermarkDownloadStageDownloadingDesc": "ネットワークから動画を取得しています...",
   "watermarkDownloadStageWatermarkingDesc": "Divine ウォーターマークを適用しています...",
   "watermarkDownloadStageSavingDesc": "ウォーターマーク付き動画をカメラロールに保存しています...",
-
   "uploadProgressVideoUpload": "動画アップロード",
   "uploadProgressPause": "一時停止",
   "uploadProgressResume": "再開",
   "uploadProgressGoBack": "戻る",
   "uploadProgressRetryWithCount": "再試行 (残り{count}回)",
   "@uploadProgressRetryWithCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressDelete": "削除",
   "uploadProgressDaysAgo": "{count}日前",
   "@uploadProgressDaysAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressHoursAgo": "{count}時間前",
   "@uploadProgressHoursAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressMinutesAgo": "{count}分前",
   "@uploadProgressMinutesAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressJustNow": "たった今",
   "uploadProgressUploadingPercent": "アップロード中 {percent}%",
   "@uploadProgressUploadingPercent": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressPausedPercent": "一時停止 {percent}%",
   "@uploadProgressPausedPercent": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
-
   "badgeExplanationClose": "閉じる",
   "badgeExplanationOriginalVineArchive": "オリジナル Vine アーカイブ",
   "badgeExplanationCameraProof": "カメラ証明",
@@ -1298,7 +1373,11 @@
   "badgeExplanationVineArchiveHistory": "2017年に Vine がサービスを終了する前、ArchiveTeam とインターネットアーカイブは数百万もの Vine を後世のために保存する活動をしていました。このコンテンツはその歴史的な保存活動の一部です。",
   "badgeExplanationOriginalStats": "オリジナルの数値: {loops}ループ",
   "@badgeExplanationOriginalStats": {
-    "placeholders": { "loops": { "type": "int" } }
+    "placeholders": {
+      "loops": {
+        "type": "int"
+      }
+    }
   },
   "badgeExplanationLearnVineArchive": "Vine アーカイブの保存について詳しく",
   "badgeExplanationLearnProofmode": "Proofmode による認証について詳しく",
@@ -1320,11 +1399,19 @@
   "badgeExplanationCheckAiGenerated": "AI 生成かチェック",
   "badgeExplanationAiLikelihood": "AI 生成の可能性 {percentage}%",
   "@badgeExplanationAiLikelihood": {
-    "placeholders": { "percentage": { "type": "int" } }
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
   },
   "badgeExplanationScannedBy": "スキャン元: {source}",
   "@badgeExplanationScannedBy": {
-    "placeholders": { "source": { "type": "String" } }
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
   },
   "badgeExplanationVerifiedByModerator": "人間のモデレーターによって検証済み",
   "badgeExplanationVerificationPlatinum": "プラチナ: デバイスのハードウェア認証、暗号署名、コンテンツ認証 (C2PA)、AI スキャンが人間の作成であることを確認。",
@@ -1333,21 +1420,28 @@
   "badgeExplanationVerificationBronze": "ブロンズ: 基本的なメタデータ署名があります。",
   "badgeExplanationVerificationSilverAiScan": "シルバー: AI スキャンにより、この動画は人間が作成した可能性が高いと判定されています。",
   "badgeExplanationNoVerification": "この動画には利用可能な検証データがありません。",
-
   "shareMenuTitle": "動画を共有",
   "shareMenuReportAiContent": "AI コンテンツを報告",
   "shareMenuReportAiContentSubtitle": "AI 生成の疑いがあるコンテンツを素早く報告",
   "shareMenuReportingAiContent": "AI コンテンツを報告中...",
   "shareMenuFailedToReportContent": "コンテンツの報告に失敗しました: {error}",
   "@shareMenuFailedToReportContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuFailedToReportAiContent": "AI コンテンツの報告に失敗しました: {error}",
   "@shareMenuFailedToReportAiContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuVideoStatus": "動画のステータス",
-  "shareMenuViewAllLists": "すべてのリストを表示 \u2192",
+  "shareMenuViewAllLists": "すべてのリストを表示 →",
   "shareMenuShareWith": "共有相手",
   "shareMenuShareViaOtherApps": "他のアプリで共有",
   "shareMenuShareViaOtherAppsSubtitle": "他のアプリで共有またはリンクをコピー",
@@ -1375,13 +1469,21 @@
   "shareMenuAddToFollowSet": "フォローセットに追加",
   "shareMenuFollowSetsAvailable": "利用可能なフォローセット{count}個",
   "@shareMenuFollowSetsAvailable": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "shareMenuAddedToBookmarks": "ブックマークに追加しました!",
   "shareMenuFailedToAddBookmark": "ブックマークの追加に失敗しました",
   "shareMenuCreatedListAndAddedVideo": "リスト「{name}」を作成して動画を追加しました",
   "@shareMenuCreatedListAndAddedVideo": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuManageContent": "コンテンツを管理",
   "shareMenuEditVideo": "動画を編集",
@@ -1391,7 +1493,11 @@
   "shareMenuVideoInTheseLists": "この動画が入っているリスト:",
   "shareMenuVideoCount": "{count}本の動画",
   "@shareMenuVideoCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "shareMenuClose": "閉じる",
   "shareMenuDeleteConfirmation": "この動画を本当に削除しますか?",
@@ -1402,7 +1508,11 @@
   "shareMenuDeleteRequestSent": "削除リクエストを送信しました",
   "shareMenuFailedToDeleteContent": "コンテンツの削除に失敗しました: {error}",
   "@shareMenuFailedToDeleteContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuFollowSetName": "フォローセット名",
   "shareMenuFollowSetNameHint": "例: クリエイター、ミュージシャンなど",
@@ -1410,7 +1520,11 @@
   "shareMenuCreate": "作成",
   "shareMenuCreatedFollowSetAndAddedCreator": "フォローセット「{name}」を作成してクリエイターを追加しました",
   "@shareMenuCreatedFollowSetAndAddedCreator": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuDone": "完了",
   "shareMenuEditTitle": "タイトル",
@@ -1425,14 +1539,22 @@
   "shareMenuVideoUpdated": "動画を更新しました",
   "shareMenuFailedToUpdateVideo": "動画の更新に失敗しました: {error}",
   "@shareMenuFailedToUpdateVideo": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuDeleteVideoQuestion": "動画を削除しますか?",
   "shareMenuDeleteRelayWarning": "リレーに削除リクエストを送信します。注意: 一部のリレーではキャッシュされたコピーが残ることがあります。",
   "shareMenuVideoDeletionRequested": "動画の削除をリクエストしました",
   "shareMenuFailedToDeleteVideo": "動画の削除に失敗しました: {error}",
   "@shareMenuFailedToDeleteVideo": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuContentLabels": "コンテンツラベル",
   "shareMenuAddContentLabels": "コンテンツラベルを追加",
@@ -1441,7 +1563,11 @@
   "shareMenuAddCollaborator": "コラボレーターを追加",
   "shareMenuMutualFollowRequired": "コラボレーターとして追加するには、{name}と相互フォローになっている必要があります。",
   "@shareMenuMutualFollowRequired": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuLoading": "読み込み中...",
   "shareMenuInspiredBy": "インスパイア元",
@@ -1458,26 +1584,35 @@
   "shareMenuFailedToLoadBookmarkSets": "ブックマークセットの読み込みに失敗しました",
   "shareMenuCreatedSetAndAddedVideo": "「{name}」を作成して動画を追加しました",
   "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuUseThisSound": "このサウンドを使う",
   "shareMenuOriginalSound": "オリジナルサウンド",
-
   "authSessionExpired": "セッションの有効期限が切れました。再度サインインしてください。",
   "authSignInFailed": "サインインに失敗しました。もう一度お試しください。",
-
   "localeAppLanguage": "アプリの言語",
   "localeDeviceDefault": "デバイスの既定",
   "localeSelectLanguage": "言語を選択",
-
   "webAuthNotSupportedSecureMode": "セキュアモードではウェブ認証は対応していません。安全な鍵管理にはモバイルアプリをご利用ください。",
   "webAuthIntegrationFailed": "認証連携に失敗しました: {error}",
   "@webAuthIntegrationFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "webAuthUnexpectedError": "予期しないエラー: {error}",
   "@webAuthUnexpectedError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "webAuthEnterBunkerUri": "bunker URI を入力してください",
   "webAuthConnectTitle": "Divine に接続",
@@ -1491,13 +1626,16 @@
   "webAuthConnectToBunker": "Bunker に接続",
   "webAuthNewToNostr": "Nostr は初めてですか?",
   "webAuthNostrHelp": "もっとも簡単なのは Alby や nos2x のようなブラウザ拡張をインストールする方法です。安全なリモート署名なら nsec bunker を使ってください。",
-
   "soundsTitle": "サウンド",
   "soundsSearchHint": "サウンドを検索...",
   "soundsPreviewUnavailable": "サウンドをプレビューできません - 音声がありません",
   "soundsPreviewFailed": "プレビューの再生に失敗しました: {error}",
   "@soundsPreviewFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "soundsFeaturedSounds": "注目のサウンド",
   "soundsTrendingSounds": "トレンドのサウンド",
@@ -1510,28 +1648,42 @@
   "soundsFailedToLoad": "サウンドの読み込みに失敗しました",
   "soundsRetry": "再試行",
   "soundsScreenLabel": "サウンド画面",
-
   "profileTitle": "プロフィール",
   "profileRefresh": "更新",
   "profileRefreshLabel": "プロフィールを更新",
   "profileMoreOptions": "その他のオプション",
   "profileBlockedUser": "{name}をブロックしました",
   "@profileBlockedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileUnblockedUser": "{name}のブロックを解除しました",
   "@profileUnblockedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileUnfollowedUser": "{name}のフォローを解除しました",
   "@profileUnfollowedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileError": "エラー: {error}",
   "@profileError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "notificationsTabAll": "すべて",
   "notificationsTabLikes": "いいね",
   "notificationsTabComments": "コメント",
@@ -1543,33 +1695,47 @@
   "notificationsNoneYet": "通知はまだありません",
   "notificationsNoneForType": "{type}の通知はありません",
   "@notificationsNoneForType": {
-    "placeholders": { "type": { "type": "String" } }
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "notificationsEmptyDescription": "あなたのコンテンツに誰かが反応したらここに表示されます",
   "notificationsLoadingType": "{type}の通知を読み込み中...",
   "@notificationsLoadingType": {
-    "placeholders": { "type": { "type": "String" } }
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "notificationsInviteSingular": "友達に共有できる招待が1つあります!",
   "notificationsInvitePlural": "友達に共有できる招待が{count}個あります!",
   "@notificationsInvitePlural": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "notificationsVideoNotFound": "動画が見つかりません",
   "notificationsVideoUnavailable": "動画を利用できません",
   "notificationsFromNotification": "通知から",
-
   "feedFailedToLoadVideos": "動画の読み込みに失敗しました",
   "feedRetry": "再試行",
   "feedNoFollowedUsers": "フォロー中のユーザーがいません。\n誰かをフォローすると、ここに動画が表示されます。",
   "feedNoVideosForMode": "{mode}フィードの動画が見つかりません。",
   "@feedNoVideosForMode": {
-    "placeholders": { "mode": { "type": "String" } }
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
   },
   "feedExploreVideos": "動画を探す",
   "feedExternalVideoSlow": "外部動画の読み込みに時間がかかっています",
   "feedSkip": "スキップ",
-
   "uploadWaitingToUpload": "アップロードを待機中",
   "uploadUploadingVideo": "動画をアップロード中",
   "uploadProcessingVideo": "動画を処理中",
@@ -1580,7 +1746,11 @@
   "uploadPaused": "アップロード一時停止",
   "uploadPercentComplete": "{percent}% 完了",
   "@uploadPercentComplete": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "uploadQueuedMessage": "動画はアップロード待機中です",
   "uploadUploadingMessage": "サーバーにアップロード中...",
@@ -1593,19 +1763,20 @@
   "uploadRetryButton": "再試行",
   "uploadRetryFailed": "アップロードの再試行に失敗しました: {error}",
   "@uploadRetryFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "userSearchPrompt": "ユーザーを検索",
   "userSearchNoResults": "ユーザーが見つかりません",
   "userSearchFailed": "検索に失敗しました",
-
   "forgotPasswordTitle": "パスワードをリセット",
   "forgotPasswordDescription": "メールアドレスを入力してください。パスワードをリセットするリンクをお送りします。",
   "forgotPasswordEmailLabel": "メールアドレス",
   "forgotPasswordCancel": "キャンセル",
   "forgotPasswordSendLink": "リセットリンクを送信",
-
   "ageVerificationContentWarning": "コンテンツ警告",
   "ageVerificationTitle": "年齢確認",
   "ageVerificationAdultDescription": "このコンテンツは成人向け素材が含まれる可能性があるとしてフラグが立てられています。閲覧には18歳以上である必要があります。",
@@ -1614,7 +1785,6 @@
   "ageVerificationCreationQuestion": "あなたは16歳以上ですか?",
   "ageVerificationNo": "いいえ",
   "ageVerificationYes": "はい",
-
   "shareLinkCopied": "リンクをクリップボードにコピーしました",
   "shareFailedToCopy": "リンクのコピーに失敗しました",
   "shareVideoSubject": "Divine でこの動画をチェック",
@@ -1626,7 +1796,6 @@
   "shareCopyWebLinkSubtitle": "共有可能なウェブリンクをコピー",
   "shareCopyNostrLink": "Nostr リンクをコピー",
   "shareCopyNostrLinkSubtitle": "Nostr クライアント用の nevent リンクをコピー",
-
   "navHome": "ホーム",
   "navExplore": "探索",
   "navInbox": "受信箱",
@@ -1642,7 +1811,6 @@
   "navExploreTrending": "トレンド",
   "navExploreForYou": "おすすめ",
   "navExploreLists": "リスト",
-
   "routeErrorTitle": "エラー",
   "routeInvalidHashtag": "無効なハッシュタグ",
   "routeInvalidConversationId": "無効な会話 ID",
@@ -1655,7 +1823,6 @@
   "routeNoVideosToDisplay": "表示する動画がありません",
   "routeInvalidProfileId": "無効なプロフィール ID",
   "routeDefaultListName": "リスト",
-
   "supportTitle": "サポートセンター",
   "supportContactSupport": "サポートに連絡",
   "supportContactSupportSubtitle": "会話を開始したり、過去のメッセージを確認します",
@@ -1677,17 +1844,22 @@
   "supportCouldNotOpenPage": "{pageName}を開けませんでした",
   "@supportCouldNotOpenPage": {
     "placeholders": {
-      "pageName": { "type": "String" }
+      "pageName": {
+        "type": "String"
+      }
     }
   },
   "supportErrorOpeningPage": "{pageName}を開くときにエラー: {error}",
   "@supportErrorOpeningPage": {
     "placeholders": {
-      "pageName": { "type": "String" },
-      "error": { "type": "Object" }
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
     }
   },
-
   "reportTitle": "コンテンツを報告",
   "reportWhyReporting": "このコンテンツを報告する理由は何ですか?",
   "reportPolicyNotice": "Divine はコンテンツの報告に対して24時間以内に対応し、問題のあるコンテンツを削除し、違反したユーザーを排除します。",
@@ -1708,7 +1880,9 @@
   "reportFailed": "コンテンツの報告に失敗しました: {error}",
   "@reportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "reportReceivedTitle": "報告を受け付けました",
@@ -1717,12 +1891,13 @@
   "reportLearnMore": "詳細を見る",
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "閉じる",
-
   "listAddToList": "リストに追加",
   "listVideoCount": "{count}本の動画",
   "@listVideoCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "listNewList": "新しいリスト",
@@ -1731,13 +1906,17 @@
   "listRemovedFrom": "{name}から削除しました",
   "@listRemovedFrom": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listAddedTo": "{name}に追加しました",
   "@listAddedTo": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listCreateNewList": "新しいリストを作成",
@@ -1748,10 +1927,9 @@
   "listCancel": "キャンセル",
   "listCreate": "作成",
   "listCreateFailed": "リストの作成に失敗しました",
-
   "keyManagementTitle": "Nostr 鍵",
   "keyManagementWhatAreKeys": "Nostr 鍵とは?",
-  "keyManagementExplanation": "あなたの Nostr ID は暗号鍵のペアです:\n\n\u2022 公開鍵 (npub) はユーザー名のようなもの - 自由に共有できます\n\u2022 秘密鍵 (nsec) はパスワードのようなもの - 秘密にしておいてください!\n\nnsec があれば、どの Nostr アプリでもあなたのアカウントにアクセスできます。",
+  "keyManagementExplanation": "あなたの Nostr ID は暗号鍵のペアです:\n\n• 公開鍵 (npub) はユーザー名のようなもの - 自由に共有できます\n• 秘密鍵 (nsec) はパスワードのようなもの - 秘密にしておいてください!\n\nnsec があれば、どの Nostr アプリでもあなたのアカウントにアクセスできます。",
   "keyManagementImportTitle": "既存の鍵をインポート",
   "keyManagementImportSubtitle": "すでに Nostr アカウントをお持ちですか? 秘密鍵 (nsec) を貼り付けてここからアクセスできます。",
   "keyManagementImportButton": "鍵をインポート",
@@ -1769,17 +1947,20 @@
   "keyManagementImportFailed": "鍵のインポートに失敗しました: {error}",
   "@keyManagementImportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "keyManagementExportSuccess": "秘密鍵をクリップボードにコピーしました!\n\n安全な場所に保管してください。",
   "keyManagementExportFailed": "鍵のエクスポートに失敗しました: {error}",
   "@keyManagementExportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
-
   "saveOriginalSavedToCameraRoll": "カメラロールに保存しました",
   "saveOriginalShare": "共有",
   "saveOriginalDone": "完了",
@@ -1793,7 +1974,6 @@
   "saveOriginalSavingToCameraRoll": "カメラロールに保存中",
   "saveOriginalFetchingVideo": "ネットワークから動画を取得しています...",
   "saveOriginalSavingVideo": "オリジナル動画をカメラロールに保存しています...",
-
   "soundTitle": "サウンド",
   "soundOriginalSound": "オリジナルサウンド",
   "soundVideosUsingThisSound": "このサウンドを使っている動画",
@@ -1812,21 +1992,23 @@
   "soundVideoCount": "{count}本の動画",
   "@soundVideoCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "soundUnableToPreview": "サウンドをプレビューできません - 音声がありません",
   "soundPreviewFailed": "プレビューの再生に失敗しました: {error}",
   "@soundPreviewFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "soundViewSource": "元動画を見る",
   "soundCloseTooltip": "閉じる",
-
   "exploreNotExploreRoute": "探索ルートではありません",
-
   "legalTitle": "法的情報",
   "legalTermsOfService": "利用規約",
   "legalTermsOfServiceSubtitle": "ご利用条件",
@@ -1842,14 +2024,121 @@
   "legalCouldNotOpenPage": "{pageName}を開けませんでした",
   "@legalCouldNotOpenPage": {
     "placeholders": {
-      "pageName": { "type": "String" }
+      "pageName": {
+        "type": "String"
+      }
     }
   },
   "legalErrorOpeningPage": "{pageName}を開くときにエラー: {error}",
   "@legalErrorOpeningPage": {
     "placeholders": {
-      "pageName": { "type": "String" },
-      "error": { "type": "Object" }
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
     }
-  }
+  },
+  "categoryAction": "アクション",
+  "categoryAdventure": "アドベンチャー",
+  "categoryAnimals": "動物",
+  "categoryAnimation": "アニメ",
+  "categoryArchitecture": "建築",
+  "categoryArt": "アート",
+  "categoryAutomotive": "自動車",
+  "categoryAwardShow": "授賞式",
+  "categoryAwards": "アワード",
+  "categoryBaseball": "野球",
+  "categoryBasketball": "バスケ",
+  "categoryBeauty": "美容",
+  "categoryBeverage": "飲み物",
+  "categoryCars": "車",
+  "categoryCelebration": "お祝い",
+  "categoryCelebrities": "セレブ",
+  "categoryCelebrity": "セレブ",
+  "categoryCityscape": "街並み",
+  "categoryComedy": "コメディ",
+  "categoryConcert": "コンサート",
+  "categoryCooking": "料理",
+  "categoryCostume": "コスチューム",
+  "categoryCrafts": "クラフト",
+  "categoryCrime": "犯罪",
+  "categoryCulture": "文化",
+  "categoryDance": "ダンス",
+  "categoryDiy": "DIY",
+  "categoryDrama": "ドラマ",
+  "categoryEducation": "教育",
+  "categoryEmotional": "感動",
+  "categoryEmotions": "感情",
+  "categoryEntertainment": "エンタメ",
+  "categoryEvent": "イベント",
+  "categoryFamily": "家族",
+  "categoryFans": "ファン",
+  "categoryFantasy": "ファンタジー",
+  "categoryFashion": "ファッション",
+  "categoryFestival": "フェス",
+  "categoryFilm": "映画",
+  "categoryFitness": "フィットネス",
+  "categoryFood": "料理",
+  "categoryFootball": "フットボール",
+  "categoryFurniture": "家具",
+  "categoryGaming": "ゲーム",
+  "categoryGolf": "ゴルフ",
+  "categoryGrooming": "身だしなみ",
+  "categoryGuitar": "ギター",
+  "categoryHalloween": "ハロウィン",
+  "categoryHealth": "健康",
+  "categoryHockey": "ホッケー",
+  "categoryHoliday": "休日",
+  "categoryHome": "ホーム",
+  "categoryHomeImprovement": "DIYリフォーム",
+  "categoryHorror": "ホラー",
+  "categoryHospital": "病院",
+  "categoryHumor": "ユーモア",
+  "categoryInteriorDesign": "インテリア",
+  "categoryInterview": "インタビュー",
+  "categoryKids": "キッズ",
+  "categoryLifestyle": "ライフスタイル",
+  "categoryMagic": "マジック",
+  "categoryMakeup": "メイク",
+  "categoryMedical": "医療",
+  "categoryMusic": "音楽",
+  "categoryMystery": "ミステリー",
+  "categoryNature": "自然",
+  "categoryNews": "ニュース",
+  "categoryOutdoor": "アウトドア",
+  "categoryParty": "パーティー",
+  "categoryPeople": "人物",
+  "categoryPerformance": "パフォーマンス",
+  "categoryPets": "ペット",
+  "categoryPolitics": "政治",
+  "categoryPrank": "ドッキリ",
+  "categoryPranks": "ドッキリ",
+  "categoryRealityShow": "リアリティ番組",
+  "categoryRelationship": "関係",
+  "categoryRelationships": "人間関係",
+  "categoryRomance": "ロマンス",
+  "categorySchool": "学校",
+  "categoryScienceFiction": "SF",
+  "categorySelfie": "自撮り",
+  "categoryShopping": "ショッピング",
+  "categorySkateboarding": "スケボー",
+  "categorySkincare": "スキンケア",
+  "categorySoccer": "サッカー",
+  "categorySocialGathering": "集まり",
+  "categorySocialMedia": "SNS",
+  "categorySports": "スポーツ",
+  "categoryTalkShow": "トークショー",
+  "categoryTech": "テック",
+  "categoryTechnology": "テクノロジー",
+  "categoryTelevision": "テレビ",
+  "categoryToys": "おもちゃ",
+  "categoryTransportation": "交通",
+  "categoryTravel": "旅行",
+  "categoryUrban": "都市",
+  "categoryViolence": "暴力",
+  "categoryVlog": "ブイログ",
+  "categoryVlogging": "ブイログ",
+  "categoryWrestling": "プロレス"
 }

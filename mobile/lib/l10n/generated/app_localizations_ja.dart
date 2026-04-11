@@ -3833,4 +3833,307 @@ class AppLocalizationsJa extends AppLocalizations {
   String legalErrorOpeningPage(String pageName, Object error) {
     return '$pageNameを開くときにエラー: $error';
   }
+
+  @override
+  String get categoryAction => 'アクション';
+
+  @override
+  String get categoryAdventure => 'アドベンチャー';
+
+  @override
+  String get categoryAnimals => '動物';
+
+  @override
+  String get categoryAnimation => 'アニメ';
+
+  @override
+  String get categoryArchitecture => '建築';
+
+  @override
+  String get categoryArt => 'アート';
+
+  @override
+  String get categoryAutomotive => '自動車';
+
+  @override
+  String get categoryAwardShow => '授賞式';
+
+  @override
+  String get categoryAwards => 'アワード';
+
+  @override
+  String get categoryBaseball => '野球';
+
+  @override
+  String get categoryBasketball => 'バスケ';
+
+  @override
+  String get categoryBeauty => '美容';
+
+  @override
+  String get categoryBeverage => '飲み物';
+
+  @override
+  String get categoryCars => '車';
+
+  @override
+  String get categoryCelebration => 'お祝い';
+
+  @override
+  String get categoryCelebrities => 'セレブ';
+
+  @override
+  String get categoryCelebrity => 'セレブ';
+
+  @override
+  String get categoryCityscape => '街並み';
+
+  @override
+  String get categoryComedy => 'コメディ';
+
+  @override
+  String get categoryConcert => 'コンサート';
+
+  @override
+  String get categoryCooking => '料理';
+
+  @override
+  String get categoryCostume => 'コスチューム';
+
+  @override
+  String get categoryCrafts => 'クラフト';
+
+  @override
+  String get categoryCrime => '犯罪';
+
+  @override
+  String get categoryCulture => '文化';
+
+  @override
+  String get categoryDance => 'ダンス';
+
+  @override
+  String get categoryDiy => 'DIY';
+
+  @override
+  String get categoryDrama => 'ドラマ';
+
+  @override
+  String get categoryEducation => '教育';
+
+  @override
+  String get categoryEmotional => '感動';
+
+  @override
+  String get categoryEmotions => '感情';
+
+  @override
+  String get categoryEntertainment => 'エンタメ';
+
+  @override
+  String get categoryEvent => 'イベント';
+
+  @override
+  String get categoryFamily => '家族';
+
+  @override
+  String get categoryFans => 'ファン';
+
+  @override
+  String get categoryFantasy => 'ファンタジー';
+
+  @override
+  String get categoryFashion => 'ファッション';
+
+  @override
+  String get categoryFestival => 'フェス';
+
+  @override
+  String get categoryFilm => '映画';
+
+  @override
+  String get categoryFitness => 'フィットネス';
+
+  @override
+  String get categoryFood => '料理';
+
+  @override
+  String get categoryFootball => 'フットボール';
+
+  @override
+  String get categoryFurniture => '家具';
+
+  @override
+  String get categoryGaming => 'ゲーム';
+
+  @override
+  String get categoryGolf => 'ゴルフ';
+
+  @override
+  String get categoryGrooming => '身だしなみ';
+
+  @override
+  String get categoryGuitar => 'ギター';
+
+  @override
+  String get categoryHalloween => 'ハロウィン';
+
+  @override
+  String get categoryHealth => '健康';
+
+  @override
+  String get categoryHockey => 'ホッケー';
+
+  @override
+  String get categoryHoliday => '休日';
+
+  @override
+  String get categoryHome => 'ホーム';
+
+  @override
+  String get categoryHomeImprovement => 'DIYリフォーム';
+
+  @override
+  String get categoryHorror => 'ホラー';
+
+  @override
+  String get categoryHospital => '病院';
+
+  @override
+  String get categoryHumor => 'ユーモア';
+
+  @override
+  String get categoryInteriorDesign => 'インテリア';
+
+  @override
+  String get categoryInterview => 'インタビュー';
+
+  @override
+  String get categoryKids => 'キッズ';
+
+  @override
+  String get categoryLifestyle => 'ライフスタイル';
+
+  @override
+  String get categoryMagic => 'マジック';
+
+  @override
+  String get categoryMakeup => 'メイク';
+
+  @override
+  String get categoryMedical => '医療';
+
+  @override
+  String get categoryMusic => '音楽';
+
+  @override
+  String get categoryMystery => 'ミステリー';
+
+  @override
+  String get categoryNature => '自然';
+
+  @override
+  String get categoryNews => 'ニュース';
+
+  @override
+  String get categoryOutdoor => 'アウトドア';
+
+  @override
+  String get categoryParty => 'パーティー';
+
+  @override
+  String get categoryPeople => '人物';
+
+  @override
+  String get categoryPerformance => 'パフォーマンス';
+
+  @override
+  String get categoryPets => 'ペット';
+
+  @override
+  String get categoryPolitics => '政治';
+
+  @override
+  String get categoryPrank => 'ドッキリ';
+
+  @override
+  String get categoryPranks => 'ドッキリ';
+
+  @override
+  String get categoryRealityShow => 'リアリティ番組';
+
+  @override
+  String get categoryRelationship => '関係';
+
+  @override
+  String get categoryRelationships => '人間関係';
+
+  @override
+  String get categoryRomance => 'ロマンス';
+
+  @override
+  String get categorySchool => '学校';
+
+  @override
+  String get categoryScienceFiction => 'SF';
+
+  @override
+  String get categorySelfie => '自撮り';
+
+  @override
+  String get categoryShopping => 'ショッピング';
+
+  @override
+  String get categorySkateboarding => 'スケボー';
+
+  @override
+  String get categorySkincare => 'スキンケア';
+
+  @override
+  String get categorySoccer => 'サッカー';
+
+  @override
+  String get categorySocialGathering => '集まり';
+
+  @override
+  String get categorySocialMedia => 'SNS';
+
+  @override
+  String get categorySports => 'スポーツ';
+
+  @override
+  String get categoryTalkShow => 'トークショー';
+
+  @override
+  String get categoryTech => 'テック';
+
+  @override
+  String get categoryTechnology => 'テクノロジー';
+
+  @override
+  String get categoryTelevision => 'テレビ';
+
+  @override
+  String get categoryToys => 'おもちゃ';
+
+  @override
+  String get categoryTransportation => '交通';
+
+  @override
+  String get categoryTravel => '旅行';
+
+  @override
+  String get categoryUrban => '都市';
+
+  @override
+  String get categoryViolence => '暴力';
+
+  @override
+  String get categoryVlog => 'ブイログ';
+
+  @override
+  String get categoryVlogging => 'ブイログ';
+
+  @override
+  String get categoryWrestling => 'プロレス';
 }

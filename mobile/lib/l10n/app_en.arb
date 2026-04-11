@@ -1,11 +1,9 @@
 {
   "@@locale": "en",
-
   "appTitle": "Divine",
   "@appTitle": {
     "description": "App title shown in task switcher"
   },
-
   "settingsTitle": "Settings",
   "@settingsTitle": {
     "description": "Settings screen app bar title"
@@ -24,7 +22,7 @@
   "settingsIntegratedApps": "Integrated Apps",
   "settingsIntegratedAppsSubtitle": "Approved third-party apps that run inside Divine",
   "settingsExperimentalFeatures": "Experimental Features",
-  "settingsExperimentalFeaturesSubtitle": "Tweaks that may hiccup\u2014try them if you are curious.",
+  "settingsExperimentalFeaturesSubtitle": "Tweaks that may hiccup—try them if you are curious.",
   "settingsLegal": "Legal",
   "settingsIntegrationPermissions": "Integration Permissions",
   "settingsIntegrationPermissionsSubtitle": "Review and revoke remembered integration approvals",
@@ -82,7 +80,6 @@
   },
   "settingsAppLanguageDescription": "Choose the language for the app interface",
   "settingsAppLanguageUseDeviceLanguage": "Use device language",
-
   "contentPreferencesTitle": "Content Preferences",
   "@contentPreferencesTitle": {
     "description": "Content preferences screen app bar title"
@@ -121,7 +118,6 @@
   "contentPreferencesAutoSelectsBest": "Automatically selects the best microphone",
   "contentPreferencesSelectAudioInput": "Select Audio Input",
   "contentPreferencesUnknownMicrophone": "Unknown Microphone",
-
   "profileBlockedAccountNotAvailable": "This account is not available",
   "profileErrorPrefix": "Error: {error}",
   "@profileErrorPrefix": {
@@ -402,7 +398,6 @@
   "nostrInfoLearnMoreAt": "Learn more at ",
   "nostrInfoGotIt": "Got it!",
   "profileTabRefreshTooltip": "Refresh",
-
   "videoGridRefreshLabel": "Searching for more videos",
   "videoGridOptionsTitle": "Video Options",
   "videoGridEditVideo": "Edit Video",
@@ -424,7 +419,6 @@
       }
     }
   },
-
   "exploreTabClassics": "Classics",
   "exploreTabNew": "New",
   "exploreTabPopular": "Popular",
@@ -474,12 +468,10 @@
       }
     }
   },
-
   "videoPlayerLoadingVideo": "Loading video...",
   "videoPlayerPlayVideo": "Play video",
   "videoPlayerEditVideo": "Edit video",
   "videoPlayerEditVideoTooltip": "Edit video",
-
   "contentWarningLabel": "Content Warning",
   "contentWarningNudity": "Nudity",
   "contentWarningSexualContent": "Sexual Content",
@@ -519,7 +511,6 @@
   "contentWarningHideAllLikeThis": "Hide all content like this",
   "contentWarningNoFilterYet": "No saved filter for this warning yet.",
   "contentWarningHiddenConfirmation": "We'll hide posts like this from now on.",
-
   "videoErrorNotFound": "Video not found",
   "videoErrorNetwork": "Network error",
   "videoErrorTimeout": "Loading timeout",
@@ -534,12 +525,9 @@
   "videoErrorVerifyAgeBody": "Verify your age to view this video.",
   "videoErrorSkip": "Skip",
   "videoErrorVerifyAgeButton": "Verify age",
-
   "videoFollowButtonFollowing": "Following",
   "videoFollowButtonFollow": "Follow",
-
   "audioAttributionOriginalSound": "Original sound",
-
   "videoInspiredByAttribution": "Inspired by @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -548,7 +536,6 @@
       }
     }
   },
-
   "videoCollaboratorWithOne": "with @{name}",
   "@videoCollaboratorWithOne": {
     "placeholders": {
@@ -576,9 +563,7 @@
       }
     }
   },
-
   "listAttributionFallback": "List",
-
   "shareVideoLabel": "Share video",
   "sharePostSharedWith": "Post shared with {recipientName}",
   "@sharePostSharedWith": {
@@ -607,7 +592,6 @@
     }
   },
   "shareMessageHint": "Add optional message...",
-
   "videoActionUnlike": "Unlike video",
   "videoActionLike": "Like video",
   "videoActionRemoveRepost": "Remove repost",
@@ -616,7 +600,6 @@
   "videoActionMoreOptions": "More options",
   "videoActionHideSubtitles": "Hide subtitles",
   "videoActionShowSubtitles": "Show subtitles",
-
   "videoDescriptionLoops": "{count} loops",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -625,7 +608,6 @@
       }
     }
   },
-
   "metadataBadgeNotDivine": "Not Divine",
   "metadataBadgeHumanMade": "Human-Made",
   "metadataSoundsLabel": "Sounds",
@@ -641,7 +623,6 @@
   "metadataLikesLabel": "Likes",
   "metadataCommentsLabel": "Comments",
   "metadataRepostsLabel": "Reposts",
-
   "devOptionsTitle": "Developer Options",
   "@devOptionsTitle": {
     "description": "Developer options screen app bar title"
@@ -651,8 +632,12 @@
   "devOptionsPageLoadVisible": "Visible: {visibleMs}ms  |  Data: {dataMs}ms",
   "@devOptionsPageLoadVisible": {
     "placeholders": {
-      "visibleMs": { "type": "String" },
-      "dataMs": { "type": "String" }
+      "visibleMs": {
+        "type": "String"
+      },
+      "dataMs": {
+        "type": "String"
+      }
     }
   },
   "devOptionsSlowestScreens": "Slowest Screens",
@@ -661,7 +646,9 @@
   "devOptionsSwitchEnvironmentMessage": "Switch to {envName}?\n\nThis will clear cached video data and reconnect to the new relay.",
   "@devOptionsSwitchEnvironmentMessage": {
     "placeholders": {
-      "envName": { "type": "String" }
+      "envName": {
+        "type": "String"
+      }
     }
   },
   "devOptionsCancel": "Cancel",
@@ -669,16 +656,19 @@
   "devOptionsSwitchedTo": "Switched to {envName}",
   "@devOptionsSwitchedTo": {
     "placeholders": {
-      "envName": { "type": "String" }
+      "envName": {
+        "type": "String"
+      }
     }
   },
   "devOptionsSwitchedFormat": "Switched to {formatName} — cache cleared",
   "@devOptionsSwitchedFormat": {
     "placeholders": {
-      "formatName": { "type": "String" }
+      "formatName": {
+        "type": "String"
+      }
     }
   },
-
   "featureFlagTitle": "Feature Flags",
   "@featureFlagTitle": {
     "description": "Feature flags screen app bar title"
@@ -690,7 +680,7 @@
   "featureFlagClearAllCache": "Clear All Cache",
   "featureFlagCacheInfo": "Cache Info",
   "featureFlagClearCacheTitle": "Clear All Cache?",
-  "featureFlagClearCacheMessage": "This will clear all cached data including:\n\u2022 Notifications\n\u2022 User profiles\n\u2022 Bookmarks\n\u2022 Temporary files\n\nYou will need to log in again. Continue?",
+  "featureFlagClearCacheMessage": "This will clear all cached data including:\n• Notifications\n• User profiles\n• Bookmarks\n• Temporary files\n\nYou will need to log in again. Continue?",
   "featureFlagClearCache": "Clear Cache",
   "featureFlagClearingCache": "Clearing cache...",
   "featureFlagSuccess": "Success",
@@ -702,19 +692,20 @@
   "featureFlagTotalCacheSize": "Total cache size: {size}",
   "@featureFlagTotalCacheSize": {
     "placeholders": {
-      "size": { "type": "String" }
+      "size": {
+        "type": "String"
+      }
     }
   },
-  "featureFlagCacheIncludes": "Cache includes:\n\u2022 Notification history\n\u2022 User profile data\n\u2022 Video thumbnails\n\u2022 Temporary files\n\u2022 Database indexes",
-
+  "featureFlagCacheIncludes": "Cache includes:\n• Notification history\n• User profile data\n• Video thumbnails\n• Temporary files\n• Database indexes",
   "relaySettingsTitle": "Relays",
   "@relaySettingsTitle": {
     "description": "Relay settings screen app bar title"
   },
   "relaySettingsInfoTitle": "Divine is an open system - you control your connections",
   "relaySettingsInfoDescription": "These relays distribute your content across the decentralized Nostr network. You can add or remove relays as you wish.",
-  "relaySettingsLearnMoreNostr": "Learn more about Nostr \u2192",
-  "relaySettingsFindPublicRelays": "Find public relays at nostr.co.uk \u2192",
+  "relaySettingsLearnMoreNostr": "Learn more about Nostr →",
+  "relaySettingsFindPublicRelays": "Find public relays at nostr.co.uk →",
   "relaySettingsAppNotFunctional": "App Not Functional",
   "relaySettingsRequiresRelay": "Divine requires at least one relay to load videos, post content, and sync data.",
   "relaySettingsRestoreDefaultRelay": "Restore Default Relay",
@@ -738,7 +729,9 @@
   "relaySettingsLastError": "Last Error: {error}",
   "@relaySettingsLastError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsLoadingRelayInfo": "Loading relay info...",
@@ -750,7 +743,9 @@
   "relaySettingsRemoveRelayMessage": "Are you sure you want to remove this relay?\n\n{relayUrl}",
   "@relaySettingsRemoveRelayMessage": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsCancel": "Cancel",
@@ -758,7 +753,9 @@
   "relaySettingsRemovedRelay": "Removed relay: {relayUrl}",
   "@relaySettingsRemovedRelay": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToRemoveRelay": "Failed to remove relay",
@@ -766,7 +763,9 @@
   "relaySettingsConnectedToRelays": "Connected to {count} relay(s)!",
   "@relaySettingsConnectedToRelays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relaySettingsFailedToConnectCheck": "Failed to connect to relays. Please check your network connection.",
@@ -777,7 +776,9 @@
   "relaySettingsAddedRelay": "Added relay: {relayUrl}",
   "@relaySettingsAddedRelay": {
     "placeholders": {
-      "relayUrl": { "type": "String" }
+      "relayUrl": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToAddRelay": "Failed to add relay. Please check the URL and try again.",
@@ -785,13 +786,14 @@
   "relaySettingsRestoredDefault": "Restored default relay: {defaultRelay}",
   "@relaySettingsRestoredDefault": {
     "placeholders": {
-      "defaultRelay": { "type": "String" }
+      "defaultRelay": {
+        "type": "String"
+      }
     }
   },
   "relaySettingsFailedToRestoreDefault": "Failed to restore default relay. Please check your network connection.",
   "relaySettingsCouldNotOpenBrowser": "Could not open browser",
   "relaySettingsFailedToOpenLink": "Failed to open link",
-
   "relayDiagnosticTitle": "Relay Diagnostics",
   "@relayDiagnosticTitle": {
     "description": "Relay diagnostics screen app bar title"
@@ -800,7 +802,9 @@
   "relayDiagnosticLastRefresh": "Last refresh: {time}",
   "@relayDiagnosticLastRefresh": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticRelayStatus": "Relay Status",
@@ -814,15 +818,21 @@
   "relayDiagnosticRelayCount": "{count} relay(s)",
   "@relayDiagnosticRelayCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticConnectedLabel": "Connected",
   "relayDiagnosticConnectedRatio": "{connected}/{total}",
   "@relayDiagnosticConnectedRatio": {
     "placeholders": {
-      "connected": { "type": "int" },
-      "total": { "type": "int" }
+      "connected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticVideoEvents": "Video Events",
@@ -830,7 +840,9 @@
   "relayDiagnosticVideosCount": "{count} videos",
   "@relayDiagnosticVideosCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticDiscovery": "Discovery",
@@ -851,41 +863,55 @@
   "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (avg {avgMs}ms)",
   "@relayDiagnosticEndpointSummary": {
     "placeholders": {
-      "successCount": { "type": "int" },
-      "totalCount": { "type": "int" },
-      "avgMs": { "type": "int" }
+      "successCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      },
+      "avgMs": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticRetestAll": "Retest All",
   "relayDiagnosticRetrying": "Retrying...",
   "relayDiagnosticRetryConnection": "Retry Connection",
   "relayDiagnosticTroubleshooting": "Troubleshooting",
-  "relayDiagnosticTroubleshootingGuide": "\u2022 Green status = Connected and working\n\u2022 Red status = Connection failed\n\u2022 If network test fails, check internet connection\n\u2022 If relays are configured but not connected, tap \"Retry Connection\"\n\u2022 Screenshot this screen for debugging",
+  "relayDiagnosticTroubleshootingGuide": "• Green status = Connected and working\n• Red status = Connection failed\n• If network test fails, check internet connection\n• If relays are configured but not connected, tap \"Retry Connection\"\n• Screenshot this screen for debugging",
   "relayDiagnosticAllEndpointsHealthy": "All REST endpoints healthy!",
   "relayDiagnosticSomeEndpointsFailed": "Some REST endpoints failed - see details above",
   "relayDiagnosticFoundVideoEvents": "Found {count} video events in database",
   "@relayDiagnosticFoundVideoEvents": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticQueryFailed": "Query failed: {error}",
   "@relayDiagnosticQueryFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticConnectedToRelays": "Connected to {count} relay(s)!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relayDiagnosticFailedToConnect": "Failed to connect to any relays",
   "relayDiagnosticConnectionRetryFailed": "Connection retry failed: {error}",
   "@relayDiagnosticConnectionRetryFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "relayDiagnosticConnectedAuthenticated": "Connected & Authenticated",
@@ -893,7 +919,6 @@
   "relayDiagnosticNotConnected": "Not connected",
   "relayDiagnosticNoRelaysConfigured": "No relays configured",
   "relayDiagnosticFailed": "Failed",
-
   "notificationSettingsTitle": "Notifications",
   "@notificationSettingsTitle": {
     "description": "Notification settings screen app bar title"
@@ -926,7 +951,6 @@
   "notificationSettingsResetToDefaults": "Settings reset to defaults",
   "notificationSettingsAbout": "About Notifications",
   "notificationSettingsAboutDescription": "Notifications are powered by the Nostr protocol. Real-time updates depend on your connection to Nostr relays. Some notifications may have delays.",
-
   "safetySettingsTitle": "Safety & Privacy",
   "@safetySettingsTitle": {
     "description": "Safety settings screen app bar title"
@@ -952,7 +976,6 @@
   "safetySettingsUserUnblocked": "User unblocked",
   "safetySettingsCancel": "Cancel",
   "safetySettingsAdd": "Add",
-
   "analyticsTitle": "Creator Analytics",
   "@analyticsTitle": {
     "description": "Creator analytics screen app bar title"
@@ -964,10 +987,12 @@
   "analyticsSignInRequired": "Sign in to view creator analytics.",
   "analyticsViewDataUnavailable": "Views are currently unavailable from the relay for these posts. Like/comment/repost metrics are still accurate.",
   "analyticsViewDataTitle": "View Data",
-  "analyticsUpdatedTimestamp": "Updated {time} \u2022 Scores use likes, comments, reposts, and views/loops from Funnelcake when available.",
+  "analyticsUpdatedTimestamp": "Updated {time} • Scores use likes, comments, reposts, and views/loops from Funnelcake when available.",
   "@analyticsUpdatedTimestamp": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "analyticsVideos": "Videos",
@@ -989,19 +1014,25 @@
   "analyticsViewsCount": "{count} views",
   "@analyticsViewsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsCommentsCount": "{count} comments",
   "@analyticsCommentsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsRepostsCount": "{count} reposts",
   "@analyticsRepostsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsTopContent": "Top Content",
@@ -1013,7 +1044,9 @@
   "analyticsInteractionsCount": "{count} interactions",
   "@analyticsInteractionsCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsPostAnalytics": "Post Analytics",
@@ -1026,13 +1059,17 @@
   "analyticsFollowersCount": "Followers: {count}",
   "@analyticsFollowersCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsFollowingCount": "Following: {count}",
   "@analyticsFollowingCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "analyticsAudiencePlaceholder": "Audience source/geo/time breakdowns will populate as Funnelcake adds audience analytics endpoints.",
@@ -1043,42 +1080,53 @@
   "analyticsDiagnosticsTotalVideos": "Total videos: {count}",
   "@analyticsDiagnosticsTotalVideos": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsWithViews": "With views: {count}",
   "@analyticsDiagnosticsWithViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsMissingViews": "Missing views: {count}",
   "@analyticsDiagnosticsMissingViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsHydratedBulk": "Hydrated (bulk): {count}",
   "@analyticsDiagnosticsHydratedBulk": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsHydratedViews": "Hydrated (/views): {count}",
   "@analyticsDiagnosticsHydratedViews": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "analyticsDiagnosticsSources": "Sources: {sources}",
   "@analyticsDiagnosticsSources": {
     "placeholders": {
-      "sources": { "type": "String" }
+      "sources": {
+        "type": "String"
+      }
     }
   },
   "analyticsDiagnosticsUseFixture": "Use fixture data",
   "analyticsNa": "N/A",
-
   "authCreateNewAccount": "Create a new Divine account",
   "authSignInDifferentAccount": "Sign in with a different account",
   "authSignBackIn": "Sign back in",
@@ -1135,7 +1183,9 @@
   "@authWaitlistUpdatesAt": {
     "description": "Waitlist confirmation message with email",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authOk": "OK",
@@ -1147,7 +1197,9 @@
   "@authCouldNotOpenEmail": {
     "description": "Error when email client cannot be opened",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authAddInviteCode": "Add your invite code",
@@ -1176,7 +1228,9 @@
   "@authWaitingForConnection": {
     "description": "Waiting indicator with elapsed seconds",
     "placeholders": {
-      "seconds": { "type": "int" }
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "authCopyUrl": "Copy URL",
@@ -1215,11 +1269,12 @@
   "@authResetLinkSentTo": {
     "description": "Confirmation message after reset link sent",
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "authSignInButton": "Sign in",
-
   "authVerificationErrorTimeout": "Verification timed out. Please try registering again.",
   "authVerificationErrorMissingCode": "Verification failed — missing authorization code.",
   "authVerificationErrorPollFailed": "Verification failed. Please try again.",
@@ -1230,7 +1285,6 @@
   "authInviteErrorInvalid": "That invite code cannot be used right now. Go back to your invite code, join the waitlist, or contact support.",
   "authInviteErrorTemporary": "We couldn't confirm your invite right now. Go back to your invite code and try again, or contact support.",
   "authInviteErrorUnknown": "We couldn't activate your invite. Go back to your invite code, join the waitlist, or contact support.",
-
   "shareSheetSave": "Save",
   "shareSheetSaveToGallery": "Save to Gallery",
   "shareSheetSaveWithWatermark": "Save with Watermark",
@@ -1242,7 +1296,6 @@
   "shareSheetEventJson": "Event JSON",
   "shareSheetEventId": "Event ID",
   "shareSheetMoreActions": "More actions",
-
   "watermarkDownloadSavedToCameraRoll": "Saved to Camera Roll",
   "watermarkDownloadShare": "Share",
   "watermarkDownloadDone": "Done",
@@ -1258,38 +1311,60 @@
   "watermarkDownloadStageDownloadingDesc": "Fetching the video from the network...",
   "watermarkDownloadStageWatermarkingDesc": "Applying the Divine watermark...",
   "watermarkDownloadStageSavingDesc": "Saving the watermarked video to your camera roll...",
-
   "uploadProgressVideoUpload": "Video Upload",
   "uploadProgressPause": "Pause",
   "uploadProgressResume": "Resume",
   "uploadProgressGoBack": "Go Back",
   "uploadProgressRetryWithCount": "Retry ({count} left)",
   "@uploadProgressRetryWithCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressDelete": "Delete",
   "uploadProgressDaysAgo": "{count}d ago",
   "@uploadProgressDaysAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressHoursAgo": "{count}h ago",
   "@uploadProgressHoursAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressMinutesAgo": "{count}m ago",
   "@uploadProgressMinutesAgo": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressJustNow": "Just now",
   "uploadProgressUploadingPercent": "Uploading {percent}%",
   "@uploadProgressUploadingPercent": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "uploadProgressPausedPercent": "Paused {percent}%",
   "@uploadProgressPausedPercent": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
-
   "badgeExplanationClose": "Close",
   "badgeExplanationOriginalVineArchive": "Original Vine Archive",
   "badgeExplanationCameraProof": "Camera Proof",
@@ -1298,7 +1373,11 @@
   "badgeExplanationVineArchiveHistory": "Before Vine shut down in 2017, ArchiveTeam and the Internet Archive worked to preserve millions of Vines for posterity. This content is part of that historic preservation effort.",
   "badgeExplanationOriginalStats": "Original stats: {loops} loops",
   "@badgeExplanationOriginalStats": {
-    "placeholders": { "loops": { "type": "int" } }
+    "placeholders": {
+      "loops": {
+        "type": "int"
+      }
+    }
   },
   "badgeExplanationLearnVineArchive": "Learn more about the Vine archive preservation",
   "badgeExplanationLearnProofmode": "Learn more about Proofmode verification",
@@ -1320,11 +1399,19 @@
   "badgeExplanationCheckAiGenerated": "Check if AI-generated",
   "badgeExplanationAiLikelihood": "{percentage}% likelihood of being AI-generated",
   "@badgeExplanationAiLikelihood": {
-    "placeholders": { "percentage": { "type": "int" } }
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
   },
   "badgeExplanationScannedBy": "Scanned by: {source}",
   "@badgeExplanationScannedBy": {
-    "placeholders": { "source": { "type": "String" } }
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
   },
   "badgeExplanationVerifiedByModerator": "Verified by human moderator",
   "badgeExplanationVerificationPlatinum": "Platinum: Device hardware attestation, cryptographic signatures, Content Credentials (C2PA), and AI scan confirms human origin.",
@@ -1333,21 +1420,28 @@
   "badgeExplanationVerificationBronze": "Bronze: Basic metadata signatures are present.",
   "badgeExplanationVerificationSilverAiScan": "Silver: AI scan confirms this video is likely human-created.",
   "badgeExplanationNoVerification": "No verification data available for this video.",
-
   "shareMenuTitle": "Share Video",
   "shareMenuReportAiContent": "Report AI Content",
   "shareMenuReportAiContentSubtitle": "Quick report suspected AI-generated content",
   "shareMenuReportingAiContent": "Reporting AI content...",
   "shareMenuFailedToReportContent": "Failed to report content: {error}",
   "@shareMenuFailedToReportContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuFailedToReportAiContent": "Failed to report AI content: {error}",
   "@shareMenuFailedToReportAiContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuVideoStatus": "Video Status",
-  "shareMenuViewAllLists": "View all lists \u2192",
+  "shareMenuViewAllLists": "View all lists →",
   "shareMenuShareWith": "Share With",
   "shareMenuShareViaOtherApps": "Share via other apps",
   "shareMenuShareViaOtherAppsSubtitle": "Share via other apps or copy link",
@@ -1375,13 +1469,21 @@
   "shareMenuAddToFollowSet": "Add to Follow Set",
   "shareMenuFollowSetsAvailable": "{count} follow sets available",
   "@shareMenuFollowSetsAvailable": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "shareMenuAddedToBookmarks": "Added to bookmarks!",
   "shareMenuFailedToAddBookmark": "Failed to add bookmark",
   "shareMenuCreatedListAndAddedVideo": "Created list \"{name}\" and added video",
   "@shareMenuCreatedListAndAddedVideo": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuManageContent": "Manage Content",
   "shareMenuEditVideo": "Edit Video",
@@ -1391,7 +1493,11 @@
   "shareMenuVideoInTheseLists": "Video is in these lists:",
   "shareMenuVideoCount": "{count} videos",
   "@shareMenuVideoCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "shareMenuClose": "Close",
   "shareMenuDeleteConfirmation": "Are you sure you want to delete this video?",
@@ -1402,7 +1508,11 @@
   "shareMenuDeleteRequestSent": "Delete request sent successfully",
   "shareMenuFailedToDeleteContent": "Failed to delete content: {error}",
   "@shareMenuFailedToDeleteContent": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuFollowSetName": "Follow Set Name",
   "shareMenuFollowSetNameHint": "e.g., Content Creators, Musicians, etc.",
@@ -1410,7 +1520,11 @@
   "shareMenuCreate": "Create",
   "shareMenuCreatedFollowSetAndAddedCreator": "Created follow set \"{name}\" and added creator",
   "@shareMenuCreatedFollowSetAndAddedCreator": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuDone": "Done",
   "shareMenuEditTitle": "Title",
@@ -1425,14 +1539,22 @@
   "shareMenuVideoUpdated": "Video updated successfully",
   "shareMenuFailedToUpdateVideo": "Failed to update video: {error}",
   "@shareMenuFailedToUpdateVideo": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
   "shareMenuDeleteRelayWarning": "This will send a deletion request to relays. Note: Some relays may still have cached copies.",
   "shareMenuVideoDeletionRequested": "Video deletion requested",
   "shareMenuFailedToDeleteVideo": "Failed to delete video: {error}",
   "@shareMenuFailedToDeleteVideo": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuContentLabels": "Content labels",
   "shareMenuAddContentLabels": "Add content labels",
@@ -1441,7 +1563,11 @@
   "shareMenuAddCollaborator": "Add collaborator",
   "shareMenuMutualFollowRequired": "You need to mutually follow {name} to add them as a collaborator.",
   "@shareMenuMutualFollowRequired": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuLoading": "Loading...",
   "shareMenuInspiredBy": "Inspired by",
@@ -1458,26 +1584,35 @@
   "shareMenuFailedToLoadBookmarkSets": "Failed to load bookmark sets",
   "shareMenuCreatedSetAndAddedVideo": "Created \"{name}\" and added video",
   "@shareMenuCreatedSetAndAddedVideo": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareMenuUseThisSound": "Use this sound",
   "shareMenuOriginalSound": "Original sound",
-
   "authSessionExpired": "Your session has expired. Please sign in again.",
   "authSignInFailed": "Failed to sign in. Please try again.",
-
   "localeAppLanguage": "App Language",
   "localeDeviceDefault": "Device default",
   "localeSelectLanguage": "Select Language",
-
   "webAuthNotSupportedSecureMode": "Web authentication not supported in secure mode. Please use mobile app for secure key management.",
   "webAuthIntegrationFailed": "Authentication integration failed: {error}",
   "@webAuthIntegrationFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "webAuthUnexpectedError": "Unexpected error: {error}",
   "@webAuthUnexpectedError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "webAuthEnterBunkerUri": "Please enter a bunker URI",
   "webAuthConnectTitle": "Connect to Divine",
@@ -1491,13 +1626,16 @@
   "webAuthConnectToBunker": "Connect to Bunker",
   "webAuthNewToNostr": "New to Nostr?",
   "webAuthNostrHelp": "Install a browser extension like Alby or nos2x for the easiest experience, or use nsec bunker for secure remote signing.",
-
   "soundsTitle": "Sounds",
   "soundsSearchHint": "Search sounds...",
   "soundsPreviewUnavailable": "Unable to preview sound - no audio available",
   "soundsPreviewFailed": "Failed to play preview: {error}",
   "@soundsPreviewFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "soundsFeaturedSounds": "Featured Sounds",
   "soundsTrendingSounds": "Trending Sounds",
@@ -1510,29 +1648,42 @@
   "soundsFailedToLoad": "Failed to load sounds",
   "soundsRetry": "Retry",
   "soundsScreenLabel": "Sounds screen",
-
-  "profileInvalidId": "Invalid profile ID",
   "profileTitle": "Profile",
   "profileRefresh": "Refresh",
   "profileRefreshLabel": "Refresh profile",
   "profileMoreOptions": "More options",
   "profileBlockedUser": "Blocked {name}",
   "@profileBlockedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileUnblockedUser": "Unblocked {name}",
   "@profileUnblockedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileUnfollowedUser": "Unfollowed {name}",
   "@profileUnfollowedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "profileError": "Error: {error}",
   "@profileError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "notificationsTabAll": "All",
   "notificationsTabLikes": "Likes",
   "notificationsTabComments": "Comments",
@@ -1544,33 +1695,47 @@
   "notificationsNoneYet": "No notifications yet",
   "notificationsNoneForType": "No {type} notifications",
   "@notificationsNoneForType": {
-    "placeholders": { "type": { "type": "String" } }
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "notificationsEmptyDescription": "When people interact with your content, you'll see it here",
   "notificationsLoadingType": "Loading {type} notifications...",
   "@notificationsLoadingType": {
-    "placeholders": { "type": { "type": "String" } }
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "notificationsInviteSingular": "You have 1 invite to share with a friend!",
   "notificationsInvitePlural": "You have {count} invites to share with friends!",
   "@notificationsInvitePlural": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "notificationsVideoNotFound": "Video not found",
   "notificationsVideoUnavailable": "Video unavailable",
   "notificationsFromNotification": "From Notification",
-
   "feedFailedToLoadVideos": "Failed to load videos",
   "feedRetry": "Retry",
   "feedNoFollowedUsers": "No followed users.\nFollow someone to see their videos here.",
   "feedNoVideosForMode": "No videos found for {mode} feed.",
   "@feedNoVideosForMode": {
-    "placeholders": { "mode": { "type": "String" } }
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
   },
   "feedExploreVideos": "Explore Videos",
   "feedExternalVideoSlow": "External video loading slowly",
   "feedSkip": "Skip",
-
   "uploadWaitingToUpload": "Waiting to upload",
   "uploadUploadingVideo": "Uploading video",
   "uploadProcessingVideo": "Processing video",
@@ -1581,7 +1746,11 @@
   "uploadPaused": "Upload paused",
   "uploadPercentComplete": "{percent}% complete",
   "@uploadPercentComplete": {
-    "placeholders": { "percent": { "type": "int" } }
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "uploadQueuedMessage": "Your video is queued for upload",
   "uploadUploadingMessage": "Uploading to server...",
@@ -1594,19 +1763,20 @@
   "uploadRetryButton": "RETRY",
   "uploadRetryFailed": "Failed to retry upload: {error}",
   "@uploadRetryFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "userSearchPrompt": "Search for users",
   "userSearchNoResults": "No users found",
   "userSearchFailed": "Search failed",
-
   "forgotPasswordTitle": "Reset Password",
   "forgotPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
   "forgotPasswordEmailLabel": "Email Address",
   "forgotPasswordCancel": "Cancel",
   "forgotPasswordSendLink": "Email Reset Link",
-
   "ageVerificationContentWarning": "Content Warning",
   "ageVerificationTitle": "Age Verification",
   "ageVerificationAdultDescription": "This content has been flagged as potentially containing adult material. You must be 18 or older to view it.",
@@ -1615,7 +1785,6 @@
   "ageVerificationCreationQuestion": "Are you 16 years of age or older?",
   "ageVerificationNo": "No",
   "ageVerificationYes": "Yes",
-
   "shareLinkCopied": "Link copied to clipboard",
   "shareFailedToCopy": "Failed to copy link",
   "shareVideoSubject": "Check out this video on Divine",
@@ -1627,7 +1796,6 @@
   "shareCopyWebLinkSubtitle": "Copy shareable web link",
   "shareCopyNostrLink": "Copy Nostr Link",
   "shareCopyNostrLinkSubtitle": "Copy nevent link for Nostr clients",
-
   "navHome": "Home",
   "navExplore": "Explore",
   "navInbox": "Inbox",
@@ -1643,7 +1811,6 @@
   "navExploreTrending": "Trending",
   "navExploreForYou": "For You",
   "navExploreLists": "Lists",
-
   "routeErrorTitle": "Error",
   "routeInvalidHashtag": "Invalid hashtag",
   "routeInvalidConversationId": "Invalid conversation ID",
@@ -1656,7 +1823,6 @@
   "routeNoVideosToDisplay": "No videos to display",
   "routeInvalidProfileId": "Invalid profile ID",
   "routeDefaultListName": "List",
-
   "supportTitle": "Support Center",
   "supportContactSupport": "Contact Support",
   "supportContactSupportSubtitle": "Start a conversation or view past messages",
@@ -1678,17 +1844,22 @@
   "supportCouldNotOpenPage": "Could not open {pageName}",
   "@supportCouldNotOpenPage": {
     "placeholders": {
-      "pageName": { "type": "String" }
+      "pageName": {
+        "type": "String"
+      }
     }
   },
   "supportErrorOpeningPage": "Error opening {pageName}: {error}",
   "@supportErrorOpeningPage": {
     "placeholders": {
-      "pageName": { "type": "String" },
-      "error": { "type": "Object" }
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
     }
   },
-
   "reportTitle": "Report Content",
   "reportWhyReporting": "Why are you reporting this content?",
   "reportPolicyNotice": "Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.",
@@ -1709,7 +1880,9 @@
   "reportFailed": "Failed to report content: {error}",
   "@reportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "reportReceivedTitle": "Report Received",
@@ -1718,12 +1891,13 @@
   "reportLearnMore": "Learn More",
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "Close",
-
   "listAddToList": "Add to List",
   "listVideoCount": "{count} videos",
   "@listVideoCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "listNewList": "New List",
@@ -1732,13 +1906,17 @@
   "listRemovedFrom": "Removed from {name}",
   "@listRemovedFrom": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listAddedTo": "Added to {name}",
   "@listAddedTo": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listCreateNewList": "Create New List",
@@ -1749,10 +1927,9 @@
   "listCancel": "Cancel",
   "listCreate": "Create",
   "listCreateFailed": "Failed to create list",
-
   "keyManagementTitle": "Nostr Keys",
   "keyManagementWhatAreKeys": "What are Nostr keys?",
-  "keyManagementExplanation": "Your Nostr identity is a cryptographic key pair:\n\n\u2022 Your public key (npub) is like your username - share it freely\n\u2022 Your private key (nsec) is like your password - keep it secret!\n\nYour nsec lets you access your account on any Nostr app.",
+  "keyManagementExplanation": "Your Nostr identity is a cryptographic key pair:\n\n• Your public key (npub) is like your username - share it freely\n• Your private key (nsec) is like your password - keep it secret!\n\nYour nsec lets you access your account on any Nostr app.",
   "keyManagementImportTitle": "Import Existing Key",
   "keyManagementImportSubtitle": "Already have a Nostr account? Paste your private key (nsec) to access it here.",
   "keyManagementImportButton": "Import Key",
@@ -1770,17 +1947,20 @@
   "keyManagementImportFailed": "Failed to import key: {error}",
   "@keyManagementImportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "keyManagementExportSuccess": "Private key copied to clipboard!\n\nStore it somewhere safe.",
   "keyManagementExportFailed": "Failed to export key: {error}",
   "@keyManagementExportFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
-
   "saveOriginalSavedToCameraRoll": "Saved to Camera Roll",
   "saveOriginalShare": "Share",
   "saveOriginalDone": "Done",
@@ -1794,7 +1974,6 @@
   "saveOriginalSavingToCameraRoll": "Saving to Camera Roll",
   "saveOriginalFetchingVideo": "Fetching the video from the network...",
   "saveOriginalSavingVideo": "Saving the original video to your camera roll...",
-
   "soundTitle": "Sound",
   "soundOriginalSound": "Original sound",
   "soundVideosUsingThisSound": "Videos using this sound",
@@ -1813,22 +1992,23 @@
   "soundVideoCount": "{count} videos",
   "@soundVideoCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "soundUnableToPreview": "Unable to preview sound - no audio available",
   "soundPreviewFailed": "Failed to play preview: {error}",
   "@soundPreviewFailed": {
     "placeholders": {
-      "error": { "type": "Object" }
+      "error": {
+        "type": "Object"
+      }
     }
   },
   "soundViewSource": "View source",
   "soundCloseTooltip": "Close",
-
   "exploreNotExploreRoute": "Not an explore route",
-  "exploreNoVideosAvailable": "No videos available",
-
   "legalTitle": "Legal",
   "legalTermsOfService": "Terms of Service",
   "legalTermsOfServiceSubtitle": "Usage terms and conditions",
@@ -1844,14 +2024,121 @@
   "legalCouldNotOpenPage": "Could not open {pageName}",
   "@legalCouldNotOpenPage": {
     "placeholders": {
-      "pageName": { "type": "String" }
+      "pageName": {
+        "type": "String"
+      }
     }
   },
   "legalErrorOpeningPage": "Error opening {pageName}: {error}",
   "@legalErrorOpeningPage": {
     "placeholders": {
-      "pageName": { "type": "String" },
-      "error": { "type": "Object" }
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
     }
-  }
+  },
+  "categoryAction": "Action",
+  "categoryAdventure": "Adventure",
+  "categoryAnimals": "Animals",
+  "categoryAnimation": "Animation",
+  "categoryArchitecture": "Architecture",
+  "categoryArt": "Art",
+  "categoryAutomotive": "Automotive",
+  "categoryAwardShow": "Award Show",
+  "categoryAwards": "Awards",
+  "categoryBaseball": "Baseball",
+  "categoryBasketball": "Basketball",
+  "categoryBeauty": "Beauty",
+  "categoryBeverage": "Beverage",
+  "categoryCars": "Cars",
+  "categoryCelebration": "Celebration",
+  "categoryCelebrities": "Celebrities",
+  "categoryCelebrity": "Celebrity",
+  "categoryCityscape": "Cityscape",
+  "categoryComedy": "Comedy",
+  "categoryConcert": "Concert",
+  "categoryCooking": "Cooking",
+  "categoryCostume": "Costume",
+  "categoryCrafts": "Crafts",
+  "categoryCrime": "Crime",
+  "categoryCulture": "Culture",
+  "categoryDance": "Dance",
+  "categoryDiy": "DIY",
+  "categoryDrama": "Drama",
+  "categoryEducation": "Education",
+  "categoryEmotional": "Emotional",
+  "categoryEmotions": "Emotions",
+  "categoryEntertainment": "Entertainment",
+  "categoryEvent": "Event",
+  "categoryFamily": "Family",
+  "categoryFans": "Fans",
+  "categoryFantasy": "Fantasy",
+  "categoryFashion": "Style",
+  "categoryFestival": "Festival",
+  "categoryFilm": "Film",
+  "categoryFitness": "Fitness",
+  "categoryFood": "Food",
+  "categoryFootball": "Football",
+  "categoryFurniture": "Furniture",
+  "categoryGaming": "Gaming",
+  "categoryGolf": "Golf",
+  "categoryGrooming": "Grooming",
+  "categoryGuitar": "Guitar",
+  "categoryHalloween": "Halloween",
+  "categoryHealth": "Health",
+  "categoryHockey": "Hockey",
+  "categoryHoliday": "Holiday",
+  "categoryHome": "Home",
+  "categoryHomeImprovement": "Home Improvement",
+  "categoryHorror": "Horror",
+  "categoryHospital": "Hospital",
+  "categoryHumor": "Humor",
+  "categoryInteriorDesign": "Interior Design",
+  "categoryInterview": "Interview",
+  "categoryKids": "Kids",
+  "categoryLifestyle": "Lifestyle",
+  "categoryMagic": "Magic",
+  "categoryMakeup": "Makeup",
+  "categoryMedical": "Medical",
+  "categoryMusic": "Music",
+  "categoryMystery": "Mystery",
+  "categoryNature": "Nature",
+  "categoryNews": "News",
+  "categoryOutdoor": "Outdoor",
+  "categoryParty": "Party",
+  "categoryPeople": "People",
+  "categoryPerformance": "Performance",
+  "categoryPets": "Pets",
+  "categoryPolitics": "Politics",
+  "categoryPrank": "Prank",
+  "categoryPranks": "Pranks",
+  "categoryRealityShow": "Reality Show",
+  "categoryRelationship": "Relationship",
+  "categoryRelationships": "Relationships",
+  "categoryRomance": "Romance",
+  "categorySchool": "School",
+  "categoryScienceFiction": "Science Fiction",
+  "categorySelfie": "Selfie",
+  "categoryShopping": "Shopping",
+  "categorySkateboarding": "Skateboarding",
+  "categorySkincare": "Skincare",
+  "categorySoccer": "Soccer",
+  "categorySocialGathering": "Social Gathering",
+  "categorySocialMedia": "Social Media",
+  "categorySports": "Sports",
+  "categoryTalkShow": "Talk Show",
+  "categoryTech": "Tech",
+  "categoryTechnology": "Technology",
+  "categoryTelevision": "Television",
+  "categoryToys": "Toys",
+  "categoryTransportation": "Transportation",
+  "categoryTravel": "Travel",
+  "categoryUrban": "Urban",
+  "categoryViolence": "Violence",
+  "categoryVlog": "Vlog",
+  "categoryVlogging": "Vlogging",
+  "categoryWrestling": "Wrestling"
 }
