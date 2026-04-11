@@ -274,8 +274,11 @@ class DmRepository {
           'DM subscription error: $error',
           category: LogCategory.system,
         );
-        // Reset subscription state so a subsequent startListening() can
-        // open a fresh connection instead of seeing a stale reference.
+        // Cancel the failed subscription so its onDone callback never fires
+        // after a later stopListening() call (which leaves _disposed false).
+        // Without this, the orphaned subscription's onDone would schedule a
+        // reconnect timer that leaks past the current lifecycle.
+        unawaited(_giftWrapSubscription?.cancel());
         _giftWrapSubscription = null;
         if (!_disposed) {
           _scheduleReconnect();
