@@ -133,6 +133,10 @@ MockPlayerSetup createMockPlayerSetup({
   when(() => mockState.buffering).thenReturn(isBuffering);
   when(() => mockState.position).thenReturn(position);
   when(() => mockState.duration).thenReturn(duration);
+  // `completed` is read by the playback diagnostics (player_state_snapshot)
+  // added in the preload-rewind fix. Stub a default so tests that don't
+  // override it don't hit a null-safety error from mocktail.
+  when(() => mockState.completed).thenReturn(false);
   when(() => mockPlayer.state).thenReturn(mockState);
 
   // Configure streams

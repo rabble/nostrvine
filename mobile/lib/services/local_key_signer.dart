@@ -7,7 +7,7 @@ import 'package:bip340/bip340.dart' as schnorr;
 import 'package:crypto/crypto.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 const _canonicalPayloadAux =
     '00000000000000000000000000000000'

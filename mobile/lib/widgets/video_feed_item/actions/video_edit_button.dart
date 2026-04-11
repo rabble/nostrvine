@@ -9,8 +9,8 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Edit button shown only for owned videos when feature flag is enabled.
 ///

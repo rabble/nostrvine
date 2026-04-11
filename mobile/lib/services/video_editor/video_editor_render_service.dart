@@ -13,11 +13,11 @@ import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Result of normalizing clips to a target aspect ratio.
 class _NormalizationResult {

@@ -9,8 +9,8 @@ import 'package:nostr_sdk/event.dart' as nostr_sdk;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_list_service_mixin.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Reasons for content filtering/reporting.
 ///

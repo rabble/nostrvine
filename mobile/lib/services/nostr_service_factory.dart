@@ -8,7 +8,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Factory class for creating NostrClient instances
 class NostrServiceFactory {

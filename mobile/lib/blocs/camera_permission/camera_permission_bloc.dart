@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:permissions_service/permissions_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'camera_permission_event.dart';
 part 'camera_permission_state.dart';

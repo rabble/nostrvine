@@ -21,11 +21,11 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSetupScreen extends ConsumerWidget {

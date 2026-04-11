@@ -26,8 +26,8 @@ import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 final videoEditorProvider =
     NotifierProvider<VideoEditorNotifier, VideoEditorProviderState>(

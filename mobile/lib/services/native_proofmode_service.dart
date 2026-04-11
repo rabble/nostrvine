@@ -12,7 +12,7 @@ import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for generating cryptographic proof using native ProofMode libraries
 ///

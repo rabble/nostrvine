@@ -9,9 +9,9 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Comment action button with count display for video overlay.
 ///

@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   group('ThumbnailApiService Integration Tests', () {

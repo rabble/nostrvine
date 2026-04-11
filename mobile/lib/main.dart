@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -69,7 +70,6 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
@@ -77,6 +77,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// Top-level background message handler required by Firebase.
@@ -379,7 +380,15 @@ Future<void> _startOpenVineApp() async {
   final startTime = DateTime.now();
 
   // Ensure bindings are initialized first (required for everything)
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Keep the native splash visible until auth resolves. AuthService calls
+  // FlutterNativeSplash.remove() in its initialize() finally block once a
+  // terminal auth state is reached. The Future.delayed is a safety net for
+  // catastrophic hangs — 5s is chosen to cover slow bunker/relay reconnects.
+  // See #2749 and #2953 for the investigation.
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  Future.delayed(const Duration(seconds: 5), FlutterNativeSplash.remove);
 
   // Lock app to portrait mode only (portrait up and portrait down)
   // Skip on desktop platforms where orientation lock doesn't apply

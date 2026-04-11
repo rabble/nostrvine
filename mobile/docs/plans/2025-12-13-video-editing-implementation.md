@@ -489,7 +489,7 @@ Expected: FAIL - "Target of URI doesn't exist"
 
 import 'package:flutter/foundation.dart';
 import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class ClipManagerService extends ChangeNotifier {
   final List<RecordingClip> _clips = [];
@@ -1171,7 +1171,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class SegmentPreviewModal extends StatefulWidget {
   const SegmentPreviewModal({
@@ -2019,7 +2019,7 @@ Expected: FAIL - "Target of URI doesn't exist"
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:openvine/models/vine_sound.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class SoundLibraryService {
   static const String _manifestPath = 'assets/sounds/sounds_manifest.json';

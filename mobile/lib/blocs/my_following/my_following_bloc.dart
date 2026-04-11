@@ -6,7 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'my_following_event.dart';
 part 'my_following_state.dart';

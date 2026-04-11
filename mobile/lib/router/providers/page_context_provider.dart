@@ -26,6 +26,7 @@ import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -45,8 +46,8 @@ import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Route types supported by the app
 enum RouteType {
@@ -85,6 +86,7 @@ enum RouteType {
   discoverLists, // Discover public lists screen
   creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
+  originalSound, // Original sound detail screen (creator's own audio)
   contentPreferences, // Content preferences (language, audio, filters)
   appLanguage, // App language picker (UI locale override)
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
@@ -384,6 +386,16 @@ RouteContext parseRoute(String path) {
       final soundId = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.sound, soundId: soundId);
 
+    case 'original-sound':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final originalSoundPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(
+        type: RouteType.originalSound,
+        npub: originalSoundPubkey,
+      );
+
     case 'profile-view':
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
@@ -604,6 +616,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.sound:
       return SoundDetailScreen.pathForId(context.soundId ?? '');
+
+    case RouteType.originalSound:
+      return OriginalSoundDetailScreen.pathForPubkey(context.npub ?? '');
 
     case RouteType.secureAccount:
       return SecureAccountScreen.path;

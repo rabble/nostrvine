@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:openvine/features/app/startup/startup_metrics.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Maps provider types to appropriate startup phases
 class StartupPhaseMapper {

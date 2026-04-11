@@ -9,7 +9,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();

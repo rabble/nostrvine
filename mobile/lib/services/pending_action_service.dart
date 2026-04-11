@@ -7,8 +7,8 @@ import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/utils/async_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 // Re-export types from db_client for convenience
 export 'package:db_client/db_client.dart'

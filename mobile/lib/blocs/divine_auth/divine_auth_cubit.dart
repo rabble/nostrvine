@@ -9,8 +9,8 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/utils/invite_error_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'divine_auth_state.dart';
 

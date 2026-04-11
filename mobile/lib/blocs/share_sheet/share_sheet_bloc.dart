@@ -14,8 +14,8 @@ import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'share_sheet_event.dart';
 part 'share_sheet_state.dart';

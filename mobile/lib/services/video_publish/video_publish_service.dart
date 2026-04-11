@@ -14,7 +14,7 @@ import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Result of a publish operation.
 sealed class PublishResult extends Equatable {

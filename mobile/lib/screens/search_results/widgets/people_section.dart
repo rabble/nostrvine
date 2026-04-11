@@ -49,7 +49,29 @@ class PeopleSection extends StatelessWidget {
             child: SectionHeader(title: 'People', onTap: onSeeAll),
           ),
         _PeopleContent(showAll: showAll),
+        if (showAll) const _PeoplePaginationTrigger(),
       ],
+    );
+  }
+}
+
+class _PeoplePaginationTrigger extends StatelessWidget {
+  const _PeoplePaginationTrigger();
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMore = context.select(
+      (UserSearchBloc b) => b.state.hasMore,
+    );
+    final isLoadingMore = context.select(
+      (UserSearchBloc b) => b.state.isLoadingMore,
+    );
+    return SliverPaginationTrigger(
+      onLoadMore: () => context.read<UserSearchBloc>().add(
+        const UserSearchLoadMore(),
+      ),
+      hasMore: hasMore,
+      isLoadingMore: isLoadingMore,
     );
   }
 }

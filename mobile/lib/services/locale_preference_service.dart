@@ -2,8 +2,8 @@
 // ABOUTME: Separate from LanguagePreferenceService which handles Nostr content
 // tagging
 
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Persists the user's preferred app display locale to SharedPreferences.
 ///

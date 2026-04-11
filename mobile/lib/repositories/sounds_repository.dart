@@ -7,8 +7,8 @@ import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Repository for managing audio events (Kind 1063) for audio reuse.
 ///

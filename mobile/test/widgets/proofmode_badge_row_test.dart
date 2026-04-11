@@ -5,10 +5,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/log_capture_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockModerationLabelService extends Mock
     implements ModerationLabelService {}
@@ -57,7 +57,7 @@ void main() {
     when(
       () => mockVideoModerationStatusService.fetchStatus(any()),
     ).thenAnswer((_) async => null);
-    await LogCaptureService.instance.clearAllLogs();
+    await LogCaptureService().clearAllLogs();
   });
 
   Widget buildSubject(VideoEvent video) {
@@ -278,7 +278,7 @@ void main() {
         hostKey.currentState!.triggerRebuild();
         await tester.pump();
 
-        final proofModeLogs = LogCaptureService.instance
+        final proofModeLogs = LogCaptureService()
             .getRecentLogs()
             .where((entry) => entry.name == 'ProofModeBadgeRow')
             .toList();

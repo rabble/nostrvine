@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:db_client/db_client.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Routes incoming Nostr events to appropriate database tables
 ///

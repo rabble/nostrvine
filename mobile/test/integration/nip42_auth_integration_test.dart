@@ -8,7 +8,7 @@ import 'package:nostr_sdk/client_utils/keys.dart' as keys;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/main.dart' as app;
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

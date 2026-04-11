@@ -10,7 +10,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Represents a follow set (NIP-51 Kind 30000)
 class FollowSet {

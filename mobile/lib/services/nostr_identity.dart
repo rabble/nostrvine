@@ -4,7 +4,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// The current user's signing identity, coupling pubkey and signing mechanism
 /// into a single atomic value.

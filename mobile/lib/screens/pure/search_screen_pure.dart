@@ -17,11 +17,11 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/hashtag_search_view.dart';
 import 'package:openvine/widgets/user_search_view.dart';
 import 'package:rxdart/rxdart.dart' show StartWithExtension;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Pure search screen using revolutionary single-controller Riverpod architecture
 class SearchScreenPure extends ConsumerStatefulWidget {

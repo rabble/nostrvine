@@ -3,7 +3,7 @@
 
 import 'dart:io';
 import 'package:args/args.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main(List<String> args) async {
   final parser = ArgParser()

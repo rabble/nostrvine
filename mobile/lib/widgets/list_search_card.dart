@@ -171,7 +171,10 @@ class _ThumbnailCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_cardRadius),
         child: imageUrl != null
-            ? VineCachedImage(imageUrl: imageUrl!)
+            ? VineCachedImage(
+                imageUrl: imageUrl!,
+                errorWidget: (_, _, _) => const SizedBox(),
+              )
             : const SizedBox(),
       ),
     );

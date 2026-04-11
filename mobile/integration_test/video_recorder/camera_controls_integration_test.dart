@@ -7,9 +7,9 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Grant camera and microphone permissions via Patrol native automation.
 Future<void> _grantPermissions(PatrolIntegrationTester $) async {

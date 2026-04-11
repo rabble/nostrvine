@@ -153,5 +153,58 @@ void main() {
         ).called(1);
       },
     );
+
+    group('loading more indicator', () {
+      testWidgets(
+        'shows loading indicator when showAll and isLoadingMore',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            UserSearchState(
+              status: UserSearchStatus.success,
+              results: [testProfile],
+              hasMore: true,
+              isLoadingMore: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides loading indicator when showAll and not isLoadingMore',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            UserSearchState(
+              status: UserSearchStatus.success,
+              results: [testProfile],
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not show loading indicator when not showAll',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            UserSearchState(
+              status: UserSearchStatus.success,
+              results: [testProfile],
+              isLoadingMore: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+    });
   });
 }

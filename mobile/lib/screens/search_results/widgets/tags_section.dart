@@ -47,7 +47,29 @@ class TagsSection extends StatelessWidget {
             child: SectionHeader(title: 'Tags', onTap: onSeeAll),
           ),
         _TagsContent(showAll: showAll),
+        if (showAll) const _TagsPaginationTrigger(),
       ],
+    );
+  }
+}
+
+class _TagsPaginationTrigger extends StatelessWidget {
+  const _TagsPaginationTrigger();
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMore = context.select(
+      (HashtagSearchBloc b) => b.state.hasMore,
+    );
+    final isLoadingMore = context.select(
+      (HashtagSearchBloc b) => b.state.isLoadingMore,
+    );
+    return SliverPaginationTrigger(
+      onLoadMore: () => context.read<HashtagSearchBloc>().add(
+        const HashtagSearchLoadMore(),
+      ),
+      hasMore: hasMore,
+      isLoadingMore: isLoadingMore,
     );
   }
 }

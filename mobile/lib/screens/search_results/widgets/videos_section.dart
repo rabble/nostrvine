@@ -55,7 +55,29 @@ class VideosSection extends StatelessWidget {
             ),
           ),
         _VideosContent(showAll: showAll),
+        if (showAll) const _VideosPaginationTrigger(),
       ],
+    );
+  }
+}
+
+class _VideosPaginationTrigger extends StatelessWidget {
+  const _VideosPaginationTrigger();
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMore = context.select(
+      (VideoSearchBloc b) => b.state.hasMore,
+    );
+    final isLoadingMore = context.select(
+      (VideoSearchBloc b) => b.state.isLoadingMore,
+    );
+    return SliverPaginationTrigger(
+      onLoadMore: () => context.read<VideoSearchBloc>().add(
+        const VideoSearchLoadMore(),
+      ),
+      hasMore: hasMore,
+      isLoadingMore: isLoadingMore,
     );
   }
 }

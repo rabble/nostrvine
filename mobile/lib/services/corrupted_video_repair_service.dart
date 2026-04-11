@@ -8,8 +8,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Scans the current user's kind 34236 video events for corrupted imeta URLs
 /// (local file paths instead of HTTP URLs) and republishes corrected events.

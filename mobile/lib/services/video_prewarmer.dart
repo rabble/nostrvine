@@ -3,7 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Abstract interface for video prewarming
 abstract class VideoPrewarmer {
