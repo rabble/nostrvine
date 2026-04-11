@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show CurationPublishResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -240,7 +241,7 @@ void main() {
             return _testEvent();
           });
 
-          dynamic result;
+          CurationPublishResult? result;
           curationService
               .publishCuration(
                 id: 'test_curation',
@@ -253,8 +254,8 @@ void main() {
           async.elapse(const Duration(seconds: 6));
           async.flushMicrotasks();
 
-          expect(result.success, isFalse);
-          expect(result.errors['timeout'], isNotNull);
+          expect(result!.success, isFalse);
+          expect(result!.errors['timeout'], isNotNull);
         });
       });
 
@@ -266,7 +267,7 @@ void main() {
           ).thenAnswer((_) => completer.future);
 
           // Start first publish (will block on completer)
-          dynamic firstResult;
+          CurationPublishResult? firstResult;
           curationService
               .publishCuration(
                 id: 'rapid_curation',
@@ -279,7 +280,7 @@ void main() {
           async.flushMicrotasks();
 
           // Second publish of the same ID should be rejected as duplicate
-          dynamic secondResult;
+          CurationPublishResult? secondResult;
           curationService
               .publishCuration(
                 id: 'rapid_curation',
@@ -290,13 +291,13 @@ void main() {
 
           async.flushMicrotasks();
 
-          expect(secondResult.success, isFalse);
-          expect(secondResult.errors.containsKey('duplicate'), isTrue);
+          expect(secondResult!.success, isFalse);
+          expect(secondResult!.errors.containsKey('duplicate'), isTrue);
 
           // Complete the first publish
           completer.complete(_testEvent());
           async.flushMicrotasks();
-          expect(firstResult.success, isTrue);
+          expect(firstResult!.success, isTrue);
         });
       });
     });
@@ -404,10 +405,12 @@ void main() {
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) => completer.future);
 
-          curationService.publishCuration(
-            id: 'publishing_curation',
-            title: 'Test',
-            videoIds: [],
+          unawaited(
+            curationService.publishCuration(
+              id: 'publishing_curation',
+              title: 'Test',
+              videoIds: [],
+            ),
           );
 
           // Allow async code to start
