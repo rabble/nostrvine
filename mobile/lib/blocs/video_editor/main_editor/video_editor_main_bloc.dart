@@ -22,8 +22,6 @@ class VideoEditorMainBloc
     on<VideoEditorLayerOverRemoveAreaChanged>(_onLayerOverRemoveAreaChanged);
     on<VideoEditorMainOpenSubEditor>(_onOpenSubEditor);
     on<VideoEditorMainSubEditorClosed>(_onSubEditorClosed);
-    on<VideoEditorLayerAdded>(_onLayerAdded);
-    on<VideoEditorLayerRemoved>(_onLayerRemoved);
     on<VideoEditorPlaybackChanged>(_onPlaybackChanged);
     on<VideoEditorPlayerReady>(_onPlayerReady);
     on<VideoEditorExternalPauseRequested>(_onExternalPauseRequested);
@@ -48,7 +46,6 @@ class VideoEditorMainBloc
       state.copyWith(
         canUndo: event.canUndo,
         canRedo: event.canRedo,
-        layers: event.layers,
       ),
     );
   }
@@ -93,24 +90,6 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(state.copyWith(clearOpenSubEditor: true));
-  }
-
-  void _onLayerAdded(
-    VideoEditorLayerAdded event,
-    Emitter<VideoEditorMainState> emit,
-  ) {
-    emit(state.copyWith(layers: [...state.layers, event.layer]));
-  }
-
-  void _onLayerRemoved(
-    VideoEditorLayerRemoved event,
-    Emitter<VideoEditorMainState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        layers: state.layers.where((l) => l != event.layer).toList(),
-      ),
-    );
   }
 
   void _onPlaybackChanged(

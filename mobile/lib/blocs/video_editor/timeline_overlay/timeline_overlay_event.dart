@@ -8,24 +8,29 @@ sealed class TimelineOverlayEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Add a new overlay item to the timeline.
-class TimelineOverlayItemAdded extends TimelineOverlayEvent {
-  const TimelineOverlayItemAdded(this.item);
+/// Updates all item to the timeline.
+class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
+  const TimelineOverlayItemsUpdate({
+    required this.layers,
+    required this.filters,
+    required this.filterModels,
+    required this.totalVideoDuration,
+  });
 
-  final TimelineOverlayItem item;
+  final List<Layer> layers;
+  final List<FilterState> filters;
+
+  /// Parallel list to [filters] — provides the display name for each filter.
+  final List<FilterModel> filterModels;
+  final Duration totalVideoDuration;
 
   @override
-  List<Object?> get props => [item];
-}
-
-/// Remove an overlay item by id.
-class TimelineOverlayItemRemoved extends TimelineOverlayEvent {
-  const TimelineOverlayItemRemoved(this.itemId);
-
-  final String itemId;
-
-  @override
-  List<Object?> get props => [itemId];
+  List<Object?> get props => [
+    layers,
+    filters,
+    filterModels,
+    totalVideoDuration,
+  ];
 }
 
 /// Move an overlay item to a new start time and/or row.
@@ -58,28 +63,22 @@ class TimelineOverlayItemMoved extends TimelineOverlayEvent {
 class TimelineOverlayItemTrimmed extends TimelineOverlayEvent {
   const TimelineOverlayItemTrimmed({
     required this.itemId,
-    required this.trimStart,
-    required this.trimEnd,
     required this.isStart,
     this.startTime,
-    this.duration,
+    this.endTime,
   });
 
   final String itemId;
-  final Duration trimStart;
-  final Duration trimEnd;
   final bool isStart;
   final Duration? startTime;
-  final Duration? duration;
+  final Duration? endTime;
 
   @override
   List<Object?> get props => [
     itemId,
-    trimStart,
-    trimEnd,
     isStart,
     startTime,
-    duration,
+    endTime,
   ];
 }
 

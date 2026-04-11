@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_bottom_bar.dart';
@@ -40,20 +42,31 @@ class VideoEditorScaffold extends ConsumerWidget {
           return Scaffold(
             backgroundColor: VineTheme.backgroundCamera,
             resizeToAvoidBottomInset: false,
-            floatingActionButton: Semantics(
-              label: 'Add element',
-              child: isSubEditorOpen
-                  ? const SizedBox.shrink()
-                  : FloatingActionButton(
-                      backgroundColor: VineTheme.primary,
-                      onPressed: () =>
-                          VideoEditorMainActionsSheet.show(context),
-                      child: const DivineIcon(
-                        icon: .plus,
-                        color: VineTheme.onPrimary,
-                      ),
-                    ),
-            ),
+            floatingActionButton:
+                BlocSelector<TimelineOverlayBloc, TimelineOverlayState, bool>(
+                  selector: (state) => state.selectedItemId != null,
+                  builder: (context, hasSelectedOverlay) {
+                    final isClipEditing = context.select(
+                      (ClipEditorBloc b) => b.state.isEditing,
+                    );
+                    final hide =
+                        isSubEditorOpen || hasSelectedOverlay || isClipEditing;
+                    return Semantics(
+                      label: 'Add element',
+                      child: hide
+                          ? const SizedBox.shrink()
+                          : FloatingActionButton(
+                              backgroundColor: VineTheme.primary,
+                              onPressed: () =>
+                                  VideoEditorMainActionsSheet.show(context),
+                              child: const DivineIcon(
+                                icon: .plus,
+                                color: VineTheme.onPrimary,
+                              ),
+                            ),
+                    );
+                  },
+                ),
 
             body: Column(
               children: [

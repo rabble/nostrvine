@@ -39,55 +39,64 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: .stretch,
         children: [
-          Wrap(
-            alignment: .spaceEvenly,
-            spacing: 24,
-            runSpacing: 24,
+          Row(
+            spacing: 16,
+            mainAxisAlignment: .spaceAround,
             children: [
               // TODO(l10n): Replace with context.l10n when localization is added.
-              _ItemButton(
-                icon: .images,
-                label: 'Clips',
-                onTap: () {
-                  Navigator.pop(context);
-                  scope.onOpenClipsEditor();
-                },
+              Expanded(
+                child: _ItemButton(
+                  icon: .images,
+                  label: 'Clips',
+                  onTap: () {
+                    Navigator.pop(context);
+                    scope.onOpenClipsEditor();
+                  },
+                ),
               ),
               // TODO(l10n): Replace with context.l10n when localization is added.
-              _ItemButton(
-                icon: .waveform,
-                label: 'Audio',
-                onTap: () {
-                  Navigator.pop(context);
-                  scope.onOpenMusicLibrary();
-                },
+              Expanded(
+                child: _ItemButton(
+                  icon: .waveform,
+                  label: 'Audio',
+                  onTap: () {
+                    Navigator.pop(context);
+                    scope.onOpenMusicLibrary();
+                  },
+                ),
               ),
               // TODO(l10n): Replace with context.l10n when localization is added.
-              _ItemButton(
-                icon: .textAa,
-                label: 'Text',
-                onTap: () {
-                  Navigator.pop(context);
-                  scope.editor?.openTextEditor();
-                },
+              Expanded(
+                child: _ItemButton(
+                  icon: .textAa,
+                  label: 'Text',
+                  onTap: () {
+                    Navigator.pop(context);
+                    scope.editor?.openTextEditor();
+                  },
+                ),
               ),
               // TODO(l10n): Replace with context.l10n when localization is added.
-              _ItemButton(
-                icon: .scribble,
-                label: 'Draw',
-                onTap: () {
-                  Navigator.pop(context);
-                  scope.editor?.openPaintEditor();
-                },
+              Expanded(
+                child: _ItemButton(
+                  icon: .scribble,
+                  label: 'Draw',
+                  onTap: () {
+                    Navigator.pop(context);
+                    scope.editor?.openPaintEditor();
+                  },
+                ),
               ),
               // TODO(l10n): Replace with context.l10n when localization is added.
-              _ItemButton(
-                icon: .fadersHorizontal,
-                label: 'Effects',
-                onTap: () {
-                  Navigator.pop(context);
-                  scope.editor?.openFilterEditor();
-                },
+              Expanded(
+                child: _ItemButton(
+                  icon: .fadersHorizontal,
+                  label: 'Effects',
+                  onTap: () {
+                    Navigator.pop(context);
+                    scope.editor?.openFilterEditor();
+                  },
+                ),
               ),
             ],
           ),
@@ -119,24 +128,30 @@ class _ItemButton extends StatelessWidget {
           button: true,
           child: GestureDetector(
             onTap: onTap,
-            child: Container(
-              width: 72,
-              height: 72,
-              padding: const .all(12),
-              decoration: ShapeDecoration(
-                color: VineTheme.surfaceContainer,
-                shape: RoundedRectangleBorder(
-                  side: const BorderSide(
-                    width: 2,
-                    color: VineTheme.outlineMuted,
-                  ),
-                  borderRadius: .circular(24),
-                ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: 72,
+                maxHeight: 72,
               ),
-              child: Center(
-                child: DivineIcon(
-                  icon: icon,
-                  color: VineTheme.primary,
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(
+                    color: VineTheme.surfaceContainer,
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(
+                        width: 2,
+                        color: VineTheme.outlineMuted,
+                      ),
+                      borderRadius: .circular(24),
+                    ),
+                  ),
+                  child: Center(
+                    child: DivineIcon(
+                      icon: icon,
+                      color: VineTheme.primary,
+                    ),
+                  ),
                 ),
               ),
             ),

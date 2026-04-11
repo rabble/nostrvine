@@ -21,6 +21,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
+import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
@@ -342,7 +343,61 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         BlocProvider(
           create: (_) {
             final clips = ref.read(clipManagerProvider).clips;
-            return ClipEditorBloc()..add(ClipEditorInitialized(clips));
+            late final ClipEditorBloc bloc;
+            bloc = ClipEditorBloc(
+              splitExecutor:
+                  ({
+                    required sourceClip,
+                    required splitPosition,
+                    required currentClipIndex,
+                  }) async {
+                    await VideoEditorSplitService.splitClip(
+                      sourceClip: sourceClip,
+                      splitPosition: splitPosition,
+                      onClipsCreated: (startClip, endClip) {
+                        bloc.add(
+                          ClipEditorOriginalClipReplaced(
+                            sourceClipId: sourceClip.id,
+                            startClip: startClip,
+                            endClip: endClip,
+                          ),
+                        );
+                      },
+                      onThumbnailExtracted: (clip, thumbnailPath) {
+                        bloc.add(
+                          ClipEditorClipUpdated(
+                            clipId: clip.id,
+                            clip: clip.copyWith(thumbnailPath: thumbnailPath),
+                          ),
+                        );
+                      },
+                      onClipRendered: (clip, video) {
+                        // Read the current clip from BLoC state to avoid
+                        // overwriting fields updated by earlier callbacks
+                        // (e.g. thumbnailPath from onThumbnailExtracted).
+                        final current = bloc.state.clips.where(
+                          (c) => c.id == clip.id,
+                        );
+                        final base = current.isNotEmpty ? current.first : clip;
+                        bloc.add(
+                          ClipEditorClipUpdated(
+                            clipId: clip.id,
+                            clip: base.copyWith(video: video),
+                          ),
+                        );
+                        Log.debug(
+                          '\u2705 Clip rendered: ${clip.id}',
+                          name: 'VideoClipEditorScreen',
+                          category: LogCategory.video,
+                        );
+                      },
+                    );
+
+                    final notifier = ref.read(videoEditorProvider.notifier);
+                    notifier.invalidateFinalRenderedClip();
+                  },
+            )..add(ClipEditorInitialized(clips));
+            return bloc;
           },
         ),
       ],

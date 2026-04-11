@@ -2,8 +2,6 @@
 // ABOUTME: Adds draggable left/right handles around a child widget.
 // ABOUTME: Reusable for clip, layer, and audio strip trimming.
 
-import 'dart:developer' as developer;
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -28,6 +26,7 @@ class TimelineTrimHandles extends StatefulWidget {
     this.onRightDragUpdate,
     this.onDragStart,
     this.onDragEnd,
+    this.onDragPositionUpdate,
     this.handleColor = VineTheme.accentYellow,
     this.markerColor = TimelineConstants.trimHandleMarkerColor,
     this.handleWidth = TimelineConstants.trimHandleWidth,
@@ -56,6 +55,10 @@ class TimelineTrimHandles extends StatefulWidget {
 
   /// Called when a drag gesture ends on either handle.
   final VoidCallback? onDragEnd;
+
+  /// Called on every drag update with the current global finger position.
+  /// Use this to implement auto-scroll during trimming.
+  final ValueChanged<Offset>? onDragPositionUpdate;
 
   /// Background colour of the handles and border.
   final Color handleColor;
@@ -88,31 +91,20 @@ class TimelineTrimHandles extends StatefulWidget {
 
 class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
   void _onDragStart(DragStartDetails details) {
-    developer.log(
-      'TimelineTrimHandles._onDragStart pos=${details.localPosition}',
-      name: 'trim_handles',
-    );
     widget.onDragStart?.call();
   }
 
   void _onLeftDragUpdate(DragUpdateDetails details) {
-    developer.log(
-      'TimelineTrimHandles._onLeftDragUpdate dx=${details.delta.dx}',
-      name: 'trim_handles',
-    );
     widget.onLeftDragUpdate?.call(details.delta.dx);
+    widget.onDragPositionUpdate?.call(details.globalPosition);
   }
 
   void _onRightDragUpdate(DragUpdateDetails details) {
-    developer.log(
-      'TimelineTrimHandles._onRightDragUpdate dx=${details.delta.dx}',
-      name: 'trim_handles',
-    );
     widget.onRightDragUpdate?.call(details.delta.dx);
+    widget.onDragPositionUpdate?.call(details.globalPosition);
   }
 
   void _onDragEnd(DragEndDetails _) {
-    developer.log('TimelineTrimHandles._onDragEnd', name: 'trim_handles');
     widget.onDragEnd?.call();
   }
 
@@ -326,18 +318,9 @@ class _RenderExpandedHitSizedBox extends RenderConstrainedBox {
         position.dx < size.width + _expandRight &&
         position.dy >= 0 &&
         position.dy < size.height;
-    developer.log(
-      '_ExpandedHitSizedBox.hitTest pos=$position size=$size '
-      'expand=($_expandLeft, $_expandRight) inBounds=$inBounds',
-      name: 'trim_handles',
-    );
     if (inBounds) {
       final childHit =
           child?.hitTestChildren(result, position: position) ?? false;
-      developer.log(
-        '_ExpandedHitSizedBox childHit=$childHit',
-        name: 'trim_handles',
-      );
       if (childHit || hitTestSelf(position)) {
         result.add(BoxHitTestEntry(this, position));
         return true;

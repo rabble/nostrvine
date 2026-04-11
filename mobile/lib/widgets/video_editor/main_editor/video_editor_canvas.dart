@@ -16,6 +16,7 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/audio_event.dart';
@@ -200,6 +201,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   Future<void> _onSeekRequested(Duration position) async {
     if (!_isPlayerReadyNotifier.value) return;
 
+    _proVideoController.setPlayTime(position);
+
     if (_isSeeking) {
       _pendingSeekPosition = position;
       return;
@@ -235,6 +238,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     if (playerState.position != _lastReportedPosition) {
       _lastReportedPosition = playerState.position;
       bloc.add(VideoEditorPositionChanged(playerState.position));
+      _proVideoController.setPlayTime(playerState.position);
     }
 
     if (playerState.duration != _lastReportedDuration) {
@@ -416,12 +420,27 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Syncs the main-editor capabilities from the main editor to the bloc.
   void _syncMainCapabilities(VideoEditorScope scope, VideoEditorMainBloc bloc) {
     final editor = scope.editor;
+    if (editor == null) return;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       bloc.add(
         VideoEditorMainCapabilitiesChanged(
-          canUndo: editor?.canUndo ?? false,
-          canRedo: editor?.canRedo ?? false,
-          layers: editor?.activeLayers,
+          canUndo: editor.canUndo,
+          canRedo: editor.canRedo,
+          layers: editor.activeLayers,
+        ),
+      );
+
+      final videoDuration = context.read<ClipEditorBloc>().state.totalDuration;
+      final filterModels =
+          context.read<VideoEditorFilterBloc>().state.appliedFilters;
+
+      context.read<TimelineOverlayBloc>().add(
+        TimelineOverlayItemsUpdate(
+          layers: editor.activeLayers,
+          filters: editor.stateManager.activeFilters,
+          filterModels: filterModels,
+          totalVideoDuration: videoDuration,
         ),
       );
     });
@@ -668,6 +687,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 uiOverlayStyle: VideoEditorConstants.uiOverlayStyle,
                 background: VineTheme.backgroundCamera,
               ),
+              captureLayersOnDone: true,
               widgets: MainEditorWidgets(
                 appBar: (_, _) => null,
                 bottomBar: (_, _, key) => null,

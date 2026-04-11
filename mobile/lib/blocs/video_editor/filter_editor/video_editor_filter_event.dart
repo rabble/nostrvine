@@ -46,6 +46,23 @@ class VideoEditorFilterConfirmed extends VideoEditorFilterEvent {
   const VideoEditorFilterConfirmed();
 }
 
+/// Triggered when a committed filter is removed by its index.
+class VideoEditorFilterRemovedAt extends VideoEditorFilterEvent {
+  const VideoEditorFilterRemovedAt(this.index);
+
+  /// Index into [VideoEditorFilterState.appliedFilters].
+  final int index;
+
+  @override
+  List<Object?> get props => [index];
+}
+
+/// Triggered when all applied filters are removed at once (e.g. via the
+/// overlay delete button). Clears [VideoEditorFilterState.appliedFilters].
+class VideoEditorFiltersCleared extends VideoEditorFilterEvent {
+  const VideoEditorFiltersCleared();
+}
+
 /// Triggered when the filter editor is initialized.
 ///
 /// This event synchronizes the editor state with the BLoC state,

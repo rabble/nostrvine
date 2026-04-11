@@ -31,7 +31,7 @@ typedef SplitExecutor =
 ///
 /// Supports undo/redo for clip mutations.
 class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
-  ClipEditorBloc({SplitExecutor? splitExecutor})
+  ClipEditorBloc({required SplitExecutor splitExecutor})
     : _splitExecutor = splitExecutor,
       super(const ClipEditorState()) {
     // Clip data

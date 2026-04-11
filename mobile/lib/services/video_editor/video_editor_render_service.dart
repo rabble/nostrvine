@@ -685,17 +685,6 @@ class VideoEditorRenderService {
       id: '${clip.id}_normalized',
       videoSegments: [VideoSegment(video: clip.video)],
       shouldOptimizeForNetworkUse: true,
-      imageLayers: parameters?.layers.isNotEmpty == true
-          ? [
-              ImageLayer(
-                image: EditorLayerImage.memory(parameters!.image),
-              ),
-            ]
-          : null,
-      blur: parameters?.blur,
-      colorFilters: (parameters?.colorFilters ?? [])
-          .map((matrix) => ColorFilter(matrix: matrix))
-          .toList(),
       imageBytesWithCropping: true,
       transform: ExportTransform(
         x: cropParams.x,
@@ -771,17 +760,58 @@ class VideoEditorRenderService {
       shouldOptimizeForNetworkUse: true,
       audioTracks: audioTracks,
       enableAudio: originalAudioVolume > 0 || hasCustomAudio,
-      imageLayers: parameters?.layers.isNotEmpty == true
-          ? [
-              ImageLayer(
-                image: EditorLayerImage.memory(parameters!.image),
-              ),
-            ]
+      imageLayers: parameters?.capturedLayers.isNotEmpty == true
+          ? () {
+              final bodySize = parameters!.bodySize;
+              if (bodySize == null) return null;
+              final videoSize = VideoEditorConstants.quality
+                  .resolutionForAspectRatio(
+                    aspectRatio,
+                  );
+              final scale = videoSize.width / bodySize.width;
+              return [
+                for (final item in parameters.capturedLayers)
+                  ImageLayer(
+                    image: EditorLayerImage.memory(item.bytes),
+                    startTime: item.layer.startTime,
+                    endTime: item.layer.endTime,
+                    offset: Offset(
+                      (bodySize.width / 2 +
+                              item.layer.offset.dx -
+                              item.logicalSize.width / 2) *
+                          scale,
+                      (bodySize.height / 2 +
+                              item.layer.offset.dy -
+                              item.logicalSize.height / 2) *
+                          scale,
+                    ),
+                    size: Size(
+                      item.logicalSize.width * scale,
+                      item.logicalSize.height * scale,
+                    ),
+                  ),
+              ];
+            }()
           : null,
       blur: parameters?.blur,
-      colorFilters: (parameters?.colorFilters ?? [])
-          .map((matrix) => ColorFilter(matrix: matrix))
-          .toList(),
+      colorFilters: [
+        ...?parameters?.filterStates.expand(
+          (f) => f.matrices.map(
+            (matrix) => ColorFilter(
+              matrix: matrix,
+              startTime: f.startTime,
+              endTime: f.endTime,
+            ),
+          ),
+        ),
+        ...?parameters?.tuneAdjustments.map(
+          (t) => ColorFilter(
+            matrix: t.matrix,
+            startTime: t.startTime,
+            endTime: t.endTime,
+          ),
+        ),
+      ],
       imageBytesWithCropping: true,
       qualityConfig: VideoQualityConfig.custom(
         bitrate: VideoEditorConstants.quality.bitrate,

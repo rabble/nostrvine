@@ -65,7 +65,7 @@ class VideoEditorFilterBottomBar extends ConsumerWidget {
             filter: filter,
             isSelected: isSelected,
             thumbnailPath: clip.thumbnailPath ?? '',
-            activeFilters: stateManager?.activeFilters ?? [],
+            activeFilters: stateManager?.activeFilters.allMatrices ?? [],
             activeTuneAdjustments: stateManager?.activeTuneAdjustments ?? [],
             activeBlur: stateManager?.activeBlur ?? 0,
             onTap: () {

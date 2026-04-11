@@ -6,6 +6,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 part 'timeline_overlay_event.dart';
 part 'timeline_overlay_state.dart';
@@ -18,8 +19,7 @@ part 'timeline_overlay_state.dart';
 class TimelineOverlayBloc
     extends Bloc<TimelineOverlayEvent, TimelineOverlayState> {
   TimelineOverlayBloc() : super(const TimelineOverlayState()) {
-    on<TimelineOverlayItemAdded>(_onItemAdded);
-    on<TimelineOverlayItemRemoved>(_onItemRemoved);
+    on<TimelineOverlayItemsUpdate>(_onUpdateItems);
     on<TimelineOverlayItemMoved>(_onItemMoved, transformer: restartable());
     on<TimelineOverlayItemTrimmed>(
       _onItemTrimmed,
@@ -32,47 +32,59 @@ class TimelineOverlayBloc
     on<TimelineOverlayTotalDurationChanged>(_onTotalDurationChanged);
   }
 
-  void _onItemAdded(
-    TimelineOverlayItemAdded event,
+  void _onUpdateItems(
+    TimelineOverlayItemsUpdate event,
     Emitter<TimelineOverlayState> emit,
   ) {
-    final item = event.item;
-    final sameTypeItems = state.items
-        .where((i) => i.type == item.type)
-        .toList();
-    final hasOverlap = sameTypeItems.any(
-      (other) => other.row == item.row && _overlapsInTime(other, item),
-    );
-    if (!hasOverlap) {
-      emit(state.copyWith(items: [...state.items, item]));
-      return;
-    }
-    // Insert at row + 1 and push existing items down to preserve z-order.
-    final targetRow = item.row + 1;
-    final shifted = _shiftRowsDown(state.items, item.type, targetRow);
+    int filterRow = 0;
+    int layerRow = 0;
+
     emit(
       state.copyWith(
         items: [
-          ...shifted,
-          item.copyWith(row: targetRow),
+          for (var i = 0; i < event.filters.length; i++)
+            // Skip no-op FilterStates (empty matrices) that are inserted by
+            // _removeFilter to "clear" the filter in the editor history.
+            if (event.filters[i].isNotEmpty)
+              TimelineOverlayItem(
+                id: 'filter_$i',
+                type: TimelineOverlayType.filter,
+                startTime: event.filters[i].startTime ?? Duration.zero,
+                endTime: event.filters[i].endTime ?? event.totalVideoDuration,
+                // Prefer the name stored in meta (survives history
+                // export/import). Fall back to the in-memory filterModels list
+                // (available during the current session), then a generic label.
+                label:
+                    (event.filters[i].meta['name'] as String?) ??
+                    (i < event.filterModels.length
+                        ? event.filterModels[i].name
+                        : 'Filter'),
+                row: filterRow++,
+              ),
+          for (final layer in event.layers)
+            TimelineOverlayItem(
+              id: layer.id,
+              type: .layer,
+              startTime: layer.startTime ?? .zero,
+              endTime: layer.endTime ?? event.totalVideoDuration,
+              label: _labelForLayer(layer),
+              row: layerRow++,
+            ),
         ],
+        clearSelectedItemId: true,
+        clearDraggingItemId: true,
       ),
     );
   }
 
-  void _onItemRemoved(
-    TimelineOverlayItemRemoved event,
-    Emitter<TimelineOverlayState> emit,
-  ) {
-    final updated = state.items.where((i) => i.id != event.itemId).toList();
-    emit(
-      state.copyWith(
-        items: _compactRows(updated),
-        clearSelectedItemId: state.selectedItemId == event.itemId,
-        clearDraggingItemId: state.draggingItemId == event.itemId,
-      ),
-    );
-  }
+  /// Returns a human-readable label based on the layer type.
+  static String _labelForLayer(Layer layer) => switch (layer) {
+    TextLayer(:final text) => text,
+    PaintLayer() => 'Drawing',
+    EmojiLayer(:final emoji) => emoji,
+    WidgetLayer() => 'Sticker',
+    _ => 'Layer',
+  };
 
   void _onItemMoved(
     TimelineOverlayItemMoved event,
@@ -83,8 +95,11 @@ class TimelineOverlayBloc
     if (idx == -1) return;
 
     final old = items[idx];
+    final newStartTime = event.startTime ?? old.startTime;
+    final endTimeShift = newStartTime - old.startTime;
     final moved = old.copyWith(
-      startTime: event.startTime ?? old.startTime,
+      startTime: newStartTime,
+      endTime: old.endTime + endTimeShift,
       row: event.row ?? old.row,
     );
 
@@ -123,23 +138,9 @@ class TimelineOverlayBloc
 
     final item = items[idx];
 
-    // When extending, the widget provides explicit startTime / duration.
-    final newDuration = event.duration ?? item.duration;
-    var newStartTime = event.startTime ?? item.startTime;
-
-    // When start-trimming (without extending), shift startTime to keep
-    // the right edge anchored.
-    if (event.isStart && event.startTime == null) {
-      final trimDelta = event.trimStart - item.trimStart;
-      newStartTime = item.startTime + trimDelta;
-      if (newStartTime.isNegative) newStartTime = Duration.zero;
-    }
-
     final trimmed = item.copyWith(
-      startTime: newStartTime,
-      duration: newDuration,
-      trimStart: event.trimStart,
-      trimEnd: event.trimEnd,
+      startTime: event.startTime,
+      endTime: event.endTime,
     );
 
     // Check if the trimmed item now overlaps with others on the same row.
@@ -212,7 +213,7 @@ class TimelineOverlayBloc
     TimelineOverlayTotalDurationChanged event,
     Emitter<TimelineOverlayState> emit,
   ) {
-    final totalMs = event.totalDuration.inMilliseconds;
+    /* final totalMs = event.totalDuration.inMilliseconds;
     if (totalMs <= 0) return;
 
     final updated = <TimelineOverlayItem>[];
@@ -262,8 +263,8 @@ class TimelineOverlayBloc
           trimEnd: Duration(milliseconds: trimEndMs),
         ),
       );
-    }
-    emit(state.copyWith(items: updated));
+    } 
+    emit(state.copyWith(items: updated));*/
   }
 
   /// Whether two items overlap in time on the timeline.
@@ -271,12 +272,13 @@ class TimelineOverlayBloc
     TimelineOverlayItem a,
     TimelineOverlayItem b,
   ) {
-    // An item's visible range is [startTime, startTime + trimmedDuration).
+    return false;
+    /*  // An item's visible range is [startTime, startTime + trimmedDuration).
     final aStart = a.startTime.inMilliseconds;
     final aEnd = aStart + a.trimmedDuration.inMilliseconds;
     final bStart = b.startTime.inMilliseconds;
     final bEnd = bStart + b.trimmedDuration.inMilliseconds;
-    return aStart < bEnd && bStart < aEnd;
+    return aStart < bEnd && bStart < aEnd;*/
   }
 
   /// Shift all items of [type] with row >= [fromRow] down by one row.

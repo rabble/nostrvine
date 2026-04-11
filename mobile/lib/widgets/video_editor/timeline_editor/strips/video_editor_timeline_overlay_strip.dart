@@ -2,17 +2,18 @@
 // ABOUTME: Renders layer / filter / sound items in rows with long-press
 // ABOUTME: drag to reposition (time + row) and trim handles on selection.
 
-import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/timeline_snap_controller.dart';
 
 /// Vertical gap between overlay rows in logical pixels.
 const double _overlayRowGap = 6;
@@ -25,11 +26,9 @@ const double _overlayRowGap = 6;
 typedef OverlayTrimCallback =
     void Function({
       required String itemId,
-      required Duration trimStart,
-      required Duration trimEnd,
+      required Duration startTime,
+      required Duration endTime,
       required bool isStart,
-      Duration? startTime,
-      Duration? duration,
     });
 
 /// Callback reporting an item was moved to a new start time and row.
@@ -42,6 +41,13 @@ typedef OverlayMoveCallback =
       required Duration startTime,
       required int row,
       required bool insertAbove,
+    });
+
+/// Called on every drag-move frame with the live (snapped) start time.
+typedef OverlayMovingCallback =
+    void Function({
+      required String itemId,
+      required Duration startTime,
     });
 
 /// A generic strip that displays [TimelineOverlayItem]s in rows.
@@ -65,6 +71,7 @@ class TimelineOverlayStrip extends StatefulWidget {
     this.snapPointsMs,
     this.onItemTapped,
     this.onItemMoved,
+    this.onItemMoving,
     this.onTrimChanged,
     this.onTrimDragChanged,
     this.onDragStarted,
@@ -106,6 +113,10 @@ class TimelineOverlayStrip extends StatefulWidget {
   /// Called when an item is moved via drag.
   final OverlayMoveCallback? onItemMoved;
 
+  /// Called on every drag-move frame with the live snapped start time.
+  /// Use this to update the editor layer in real-time during the drag.
+  final OverlayMovingCallback? onItemMoving;
+
   /// Called when a trim handle is dragged.
   final OverlayTrimCallback? onTrimChanged;
 
@@ -126,8 +137,8 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
   /// The item currently being dragged, or `null`.
   String? _draggingId;
 
-  /// Snapped horizontal drag offset in pixels (accounts for edge snap).
-  double _snappedDragDeltaX = 0;
+  /// Snapped horizontal position (item start ms) returned by the snap controller.
+  int _snappedStartMs = 0;
 
   /// Accumulated vertical drag offset in pixels.
   double _dragDeltaY = 0;
@@ -135,8 +146,11 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
   /// The row the item was on when the drag started.
   int _dragStartRow = 0;
 
-  /// Whether the dragged item is currently snapped to an edge.
-  bool _isSnapped = false;
+  /// Snap controller for the horizontal drag (tracks left edge of item).
+  late TimelineSnapController _dragSnap;
+
+  /// Previous horizontal offset-from-origin used to compute per-frame deltas.
+  double _prevDragOffsetX = 0;
 
   /// Cumulative scroll offset added by auto-scroll during the current drag.
   double _scrollCompensationY = 0;
@@ -148,6 +162,26 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
   static const _autoScrollSpeed = 4.0;
 
   static const double _rowHeight = TimelineConstants.overlayRowHeight;
+
+  @override
+  void initState() {
+    super.initState();
+    _dragSnap = TimelineSnapController(
+      direction: SnapEdgeDirection.positive,
+      pixelsPerSecond: widget.pixelsPerSecond,
+    );
+  }
+
+  @override
+  void didUpdateWidget(TimelineOverlayStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pixelsPerSecond != widget.pixelsPerSecond) {
+      _dragSnap = TimelineSnapController(
+        direction: SnapEdgeDirection.positive,
+        pixelsPerSecond: widget.pixelsPerSecond,
+      );
+    }
+  }
 
   double get _trimExpansion => widget.selectedItemId != null
       ? TimelineConstants.trimHandleWidth + 12.0
@@ -191,12 +225,8 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
     final item = draggedItem.first;
 
-    final deltaSeconds = _snappedDragDeltaX / widget.pixelsPerSecond;
-    final maxStartMs =
-        (widget.totalDuration - item.trimmedDuration).inMilliseconds;
-    final newStartMs = (item.startTime.inMilliseconds + deltaSeconds * 1000)
-        .round()
-        .clamp(0, maxStartMs);
+    final maxStartMs = (widget.totalDuration - item.duration).inMilliseconds;
+    final newStartMs = _snappedStartMs.clamp(0, maxStartMs);
 
     final rowDelta = (_dragDeltaY / _rowHeight).round();
     final targetRow = (_dragStartRow + rowDelta).clamp(0, 999);
@@ -220,12 +250,12 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     int newStartMs,
     int targetRow,
   ) {
-    final newEndMs = newStartMs + item.trimmedDuration.inMilliseconds;
+    final newEndMs = newStartMs + item.duration.inMilliseconds;
     return widget.items.any((other) {
       if (other.id == item.id) return false;
       if (other.row != targetRow) return false;
       final otherStartMs = other.startTime.inMilliseconds;
-      final otherEndMs = otherStartMs + other.trimmedDuration.inMilliseconds;
+      final otherEndMs = otherStartMs + other.duration.inMilliseconds;
       return newStartMs < otherEndMs && otherStartMs < newEndMs;
     });
   }
@@ -265,7 +295,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
     // Layout: x position from startTime, width from trimmedDuration.
     final baseX = item.startTimeInSeconds * widget.pixelsPerSecond;
-    final itemWidth = item.trimmedDurationInSeconds * widget.pixelsPerSecond;
+    final itemWidth = item.durationInSeconds * widget.pixelsPerSecond;
 
     // Don't render if the item has zero width.
     if (itemWidth <= 0) return const SizedBox.shrink();
@@ -274,7 +304,9 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     final baseY = row * _rowHeight + _overlayRowGap / 2;
 
     // Apply drag offset to the dragged item.
-    final x = isDragging ? baseX + _snappedDragDeltaX : baseX;
+    final x = isDragging
+        ? _snappedStartMs / 1000.0 * widget.pixelsPerSecond
+        : baseX;
     final y = isDragging ? baseY + _dragDeltaY : baseY;
 
     Widget tile = _OverlayItemTile(
@@ -342,9 +374,15 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
   void _onLongPressStart(TimelineOverlayItem item) {
     HapticFeedback.mediumImpact();
+    _dragSnap.reset();
+    _dragSnap.begin(
+      item.startTime.inMilliseconds,
+      initialExcludeMs: item.startTime.inMilliseconds,
+    );
     setState(() {
       _draggingId = item.id;
-      _snappedDragDeltaX = 0;
+      _snappedStartMs = item.startTime.inMilliseconds;
+      _prevDragOffsetX = 0;
       _dragDeltaY = 0;
       _scrollCompensationY = 0;
       _dragStartRow = item.row;
@@ -361,75 +399,46 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     TimelineOverlayItem item,
     int displayRowCount,
   ) {
-    final baseX = item.startTimeInSeconds * widget.pixelsPerSecond;
-    final itemWidth = item.trimmedDurationInSeconds * widget.pixelsPerSecond;
-    final totalPx =
-        widget.totalDuration.inMilliseconds / 1000.0 * widget.pixelsPerSecond;
+    final pps = widget.pixelsPerSecond;
+    final itemDurationMs = item.duration.inMilliseconds;
+    final totalMs = widget.totalDuration.inMilliseconds;
+    final maxStartMs = totalMs - itemDurationMs;
 
-    // Clamp so the item stays within [0, totalDuration].
-    final minDx = -baseX;
-    final maxDx = totalPx - baseX - itemWidth;
-    final rawDx = details.offsetFromOrigin.dx.clamp(minDx, maxDx);
+    // Compute per-frame delta from the previous absolute offset.
+    final currentOffsetX = details.offsetFromOrigin.dx;
+    final dx = currentOffsetX - _prevDragOffsetX;
+    _prevDragOffsetX = currentOffsetX;
 
-    // Compute snapped delta.
-    final snappedDx = _computeSnappedDragDeltaX(rawDx, item);
-    final isNowSnapped = snappedDx != rawDx;
+    _dragSnap.accumulate(dx);
 
-    if (isNowSnapped && !_isSnapped) {
-      HapticFeedback.selectionClick();
+    final rawStartMs =
+        (_dragSnap.originMs + _dragSnap.effectiveAccPx / pps * 1000)
+            .round()
+            .clamp(0, maxStartMs);
+
+    // Expose both left and right edge as snap candidates.
+    Set<int>? snapPoints;
+    if (widget.snapPointsMs != null && widget.snapPointsMs!.isNotEmpty) {
+      snapPoints = {
+        ...widget.snapPointsMs!,
+        ...widget.snapPointsMs!.map((sp) => sp - itemDurationMs),
+      };
     }
+
+    final snappedStartMs = _dragSnap.update(rawStartMs, snapPoints);
 
     _handleAutoScroll(details.globalPosition);
 
+    final clampedStartMs = snappedStartMs.clamp(0, maxStartMs);
+    widget.onItemMoving?.call(
+      itemId: item.id,
+      startTime: Duration(milliseconds: clampedStartMs),
+    );
+
     setState(() {
-      _snappedDragDeltaX = snappedDx;
+      _snappedStartMs = clampedStartMs;
       _dragDeltaY = details.offsetFromOrigin.dy + _scrollCompensationY;
-      _isSnapped = isNowSnapped;
     });
-  }
-
-  /// Returns the snapped pixel delta for the dragged item.
-  ///
-  /// Checks both the left and right edges of the item against
-  /// [widget.snapPointsMs] and prefers the closer match.
-  double _computeSnappedDragDeltaX(
-    double rawDx,
-    TimelineOverlayItem item,
-  ) {
-    final snapPoints = widget.snapPointsMs;
-    if (snapPoints == null || snapPoints.isEmpty) return rawDx;
-
-    final pps = widget.pixelsPerSecond;
-    final thresholdMs = (TimelineConstants.snapDeadZonePx / pps * 1000).round();
-    final maxStartMs =
-        (widget.totalDuration - item.trimmedDuration).inMilliseconds;
-    final rawStartMs = (item.startTime.inMilliseconds + rawDx / pps * 1000)
-        .round()
-        .clamp(0, maxStartMs);
-    final rawEndMs = rawStartMs + item.trimmedDuration.inMilliseconds;
-
-    int bestStartMs = rawStartMs;
-    int bestDist = thresholdMs + 1;
-
-    for (final sp in snapPoints) {
-      final distStart = (rawStartMs - sp).abs();
-      if (distStart <= thresholdMs && distStart < bestDist) {
-        bestStartMs = sp;
-        bestDist = distStart;
-      }
-
-      final distEnd = (rawEndMs - sp).abs();
-      if (distEnd <= thresholdMs && distEnd < bestDist) {
-        bestStartMs = sp - item.trimmedDuration.inMilliseconds;
-        bestDist = distEnd;
-      }
-    }
-
-    final snappedStartMs = bestStartMs.clamp(0, maxStartMs);
-    if (snappedStartMs == rawStartMs) return rawDx;
-
-    // Back-calculate pixel delta from snapped position.
-    return (snappedStartMs - item.startTime.inMilliseconds) / 1000.0 * pps;
   }
 
   void _onLongPressEnd(TimelineOverlayItem item) {
@@ -445,12 +454,13 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       insertAbove: info.insertAbove,
     );
 
+    _dragSnap.reset();
     setState(() {
       _draggingId = null;
-      _snappedDragDeltaX = 0;
+      _snappedStartMs = 0;
+      _prevDragOffsetX = 0;
       _dragDeltaY = 0;
       _scrollCompensationY = 0;
-      _isSnapped = false;
     });
     widget.onDragEnded?.call();
   }
@@ -599,98 +609,70 @@ class _TrimmableOverlayTile extends StatefulWidget {
 }
 
 class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
+  static const _autoScrollEdge = 60.0;
+  static const _autoScrollSpeed = 6.0;
+
   /// Whether haptic feedback has already fired for the current boundary hit.
   bool _hitBoundary = false;
 
-  /// Whether haptic feedback has already fired for the current snap.
-  bool _trimSnapped = false;
+  /// Snap controllers for the left and right trim handles.
+  late TimelineSnapController _leftSnap;
+  late TimelineSnapController _rightSnap;
 
-  /// Accumulated raw pixel delta for the active trim drag.
-  double _accTrimPx = 0;
+  /// Which snap controller is active during this gesture.
+  TimelineSnapController? _activeSnap;
 
-  /// Total dead-zone pixels consumed by past snaps during this gesture.
-  /// Subtracted from [_accTrimPx] to obtain the effective position.
-  double _deadZonePx = 0;
+  @override
+  void initState() {
+    super.initState();
+    _leftSnap = TimelineSnapController(
+      direction: SnapEdgeDirection.positive,
+      pixelsPerSecond: widget.pixelsPerSecond,
+    );
+    _rightSnap = TimelineSnapController(
+      direction: SnapEdgeDirection.negative,
+      pixelsPerSecond: widget.pixelsPerSecond,
+    );
+  }
 
-  /// The snap point (visual edge ms) the handle is currently held at,
-  /// or `null` when moving freely.
-  int? _activeSnapPointMs;
-
-  /// Value of [_accTrimPx] when the current snap was caught.
-  double _snapCatchAccPx = 0;
-
-  /// The snap point we just released from. Excluded from the next
-  /// [_snapEdge] call to prevent immediate re-catch.
-  int? _lastReleasedSnapMs;
-
-  /// Origin values captured at trim-drag start.
-  int _trimStartOriginMs = 0;
-  int _trimEndOriginMs = 0;
-  int _startTimeOriginMs = 0;
-  int _durationOriginMs = 0;
+  @override
+  void didUpdateWidget(_TrimmableOverlayTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pixelsPerSecond != widget.pixelsPerSecond) {
+      _leftSnap = TimelineSnapController(
+        direction: SnapEdgeDirection.positive,
+        pixelsPerSecond: widget.pixelsPerSecond,
+      );
+      _rightSnap = TimelineSnapController(
+        direction: SnapEdgeDirection.negative,
+        pixelsPerSecond: widget.pixelsPerSecond,
+      );
+    }
+  }
 
   void _onDragStart() {
-    developer.log(
-      'OverlayTile._onDragStart item=${widget.item.id}',
-      name: 'overlay_trim',
-    );
     _hitBoundary = false;
-    _trimSnapped = false;
-    _accTrimPx = 0;
-    _deadZonePx = 0;
-    _activeSnapPointMs = null;
-    _snapCatchAccPx = 0;
-    _lastReleasedSnapMs = null;
+    _activeSnap = null;
+    _leftSnap.reset();
+    _rightSnap.reset();
     final item = widget.item;
-    _trimStartOriginMs = item.trimStart.inMilliseconds;
-    _trimEndOriginMs = item.trimEnd.inMilliseconds;
-    _startTimeOriginMs = item.startTime.inMilliseconds;
-    _durationOriginMs = item.duration.inMilliseconds;
+    _leftSnap.begin(
+      item.startTime.inMilliseconds,
+      initialExcludeMs: item.startTime.inMilliseconds,
+    );
+    _rightSnap.begin(
+      item.endTime.inMilliseconds,
+      initialExcludeMs: item.endTime.inMilliseconds,
+    );
     widget.onTrimDragChanged?.call(true);
   }
 
   void _onDragEnd() {
     _hitBoundary = false;
-    _trimSnapped = false;
-    _accTrimPx = 0;
-    _deadZonePx = 0;
-    _activeSnapPointMs = null;
-    _snapCatchAccPx = 0;
-    _lastReleasedSnapMs = null;
+    _activeSnap = null;
+    _leftSnap.reset();
+    _rightSnap.reset();
     widget.onTrimDragChanged?.call(false);
-  }
-
-  /// Finds the nearest snap point to [edgeMs] within [snapCatchPx].
-  /// Returns `null` if no snap point is close enough.
-  int? _snapEdge(int edgeMs, {int? excludeMs}) {
-    final snapPoints = widget.snapPointsMs;
-    if (snapPoints == null || snapPoints.isEmpty) return null;
-
-    final thresholdMs =
-        (TimelineConstants.snapCatchPx / widget.pixelsPerSecond * 1000).round();
-
-    int? bestSnap;
-    var bestDist = thresholdMs + 1;
-
-    for (final sp in snapPoints) {
-      if (excludeMs != null && sp == excludeMs) continue;
-      if (_lastReleasedSnapMs != null && sp == _lastReleasedSnapMs) continue;
-      final dist = (edgeMs - sp).abs();
-      if (dist <= thresholdMs && dist < bestDist) {
-        bestSnap = sp;
-        bestDist = dist;
-      }
-    }
-
-    return bestSnap;
-  }
-
-  /// Fires haptic when entering a snap zone and resets when leaving.
-  void _handleTrimSnapHaptic({required bool isSnapped}) {
-    if (isSnapped && !_trimSnapped) {
-      HapticFeedback.selectionClick();
-    }
-    _trimSnapped = isSnapped;
   }
 
   @override
@@ -704,6 +686,7 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
         onDragEnd: _onDragEnd,
         onLeftDragUpdate: _onLeftTrim,
         onRightDragUpdate: _onRightTrim,
+        onDragPositionUpdate: _handleTrimAutoScroll,
         child: _OverlayItemTile(
           item: widget.item,
           width: widget.width,
@@ -714,317 +697,134 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
     );
   }
 
-  void _onLeftTrim(double dx) {
-    developer.log(
-      'OverlayTile._onLeftTrim dx=$dx item=${widget.item.id}',
-      name: 'overlay_trim',
+  void _handleTrimAutoScroll(Offset globalPosition) {
+    final scrollable = Scrollable.maybeOf(context, axis: Axis.horizontal);
+    if (scrollable == null) return;
+
+    final renderBox = scrollable.context.findRenderObject()! as RenderBox;
+    final localX = renderBox.globalToLocal(globalPosition).dx;
+    final viewportWidth = renderBox.size.width;
+
+    double delta = 0;
+    if (localX < _autoScrollEdge) {
+      delta = -_autoScrollSpeed * (1 - localX / _autoScrollEdge);
+    } else if (localX > viewportWidth - _autoScrollEdge) {
+      delta =
+          _autoScrollSpeed * (1 - (viewportWidth - localX) / _autoScrollEdge);
+    }
+
+    if (delta == 0) return;
+
+    final pos = scrollable.position;
+    final before = pos.pixels;
+    final target = (before + delta).clamp(
+      pos.minScrollExtent,
+      pos.maxScrollExtent,
     );
-    _accTrimPx += dx;
-    final item = widget.item;
+    if (target == before) return;
+    pos.jumpTo(target);
+
+    // Sync video position to match the new scroll offset.
+    final seekMs = (target / widget.pixelsPerSecond * 1000).round();
+    context.read<VideoEditorMainBloc>().add(
+      VideoEditorSeekRequested(Duration(milliseconds: seekMs)),
+    );
+
+    // Compensate the active snap controller so the handle tracks the finger.
+    final scrolled = target - before;
+    _activeSnap?.compensateScroll(scrolled);
+  }
+
+  void _onLeftTrim(double dx) {
+    _activeSnap ??= _leftSnap;
+    _leftSnap.accumulate(dx);
+
     final pps = widget.pixelsPerSecond;
+    final effectiveDeltaMs = (_leftSnap.effectiveAccPx / pps * 1000).round();
+    final rawStartMs = _leftSnap.originMs + effectiveDeltaMs;
 
-    // --- Snap hold / release ---
-    if (_activeSnapPointMs != null) {
-      final excessPx = _accTrimPx - _snapCatchAccPx;
-      if (excessPx.abs() > TimelineConstants.snapDeadZonePx) {
-        // Release: consume the full excess so effective stays at the
-        // snap position. _lastReleasedSnapMs prevents re-catch.
-        _lastReleasedSnapMs = _activeSnapPointMs;
-        _deadZonePx += excessPx;
-        _activeSnapPointMs = null;
-        _handleTrimSnapHaptic(isSnapped: false);
-        // Fall through to emit the new free position.
-      } else {
-        // Still holding at the snap point.
-        _handleTrimSnapHaptic(isSnapped: true);
-        final snapTrimMs =
-            _trimStartOriginMs + (_activeSnapPointMs! - _startTimeOriginMs);
-        final maxTrimMs =
-            (_durationOriginMs -
-                    _trimEndOriginMs -
-                    TimelineConstants.minTrimDuration.inMilliseconds)
-                .clamp(0, _durationOriginMs);
-        final minTrimStartMs = math.max(
-          0,
-          _trimStartOriginMs - _startTimeOriginMs,
-        );
-        final clampedMs = snapTrimMs.clamp(minTrimStartMs, maxTrimMs);
-        if (clampedMs == item.trimStart.inMilliseconds) return;
-        widget.onTrimChanged?.call(
-          itemId: item.id,
-          trimStart: Duration(milliseconds: clampedMs),
-          trimEnd: item.trimEnd,
-          isStart: true,
-        );
-        return;
+    final snapPoints = widget.snapPointsMs != null
+        ? Set<int>.of(widget.snapPointsMs!)
+        : null;
+    final posMs = _leftSnap.update(rawStartMs, snapPoints);
+
+    final clampedMs =
+        posMs.clamp(
+              0,
+              math.max(
+                widget.totalDuration.inMilliseconds,
+                _rightSnap.originMs,
+              ),
+            )
+            as int;
+
+    if (clampedMs != posMs) {
+      if (!_hitBoundary) {
+        HapticFeedback.heavyImpact();
+        _hitBoundary = true;
       }
-    }
-
-    // --- Free movement ---
-    final effectiveAccPx = _accTrimPx - _deadZonePx;
-    final accDeltaMs = (effectiveAccPx / pps * 1000).round();
-    final rawTrimStartMs = _trimStartOriginMs + accDeltaMs;
-
-    if (rawTrimStartMs >= 0) {
-      final maxTrimMs =
-          (_durationOriginMs -
-                  _trimEndOriginMs -
-                  TimelineConstants.minTrimDuration.inMilliseconds)
-              .clamp(0, _durationOriginMs);
-      final minTrimStartMs = math.max(
-        0,
-        _trimStartOriginMs - _startTimeOriginMs,
-      );
-      var clampedMs = rawTrimStartMs.clamp(minTrimStartMs, maxTrimMs);
-      final wasClamped = rawTrimStartMs != clampedMs;
-
-      if (wasClamped) {
-        if (!_hitBoundary) {
-          _hitBoundary = true;
-          HapticFeedback.selectionClick();
-        }
-        if (clampedMs == item.trimStart.inMilliseconds) return;
-      } else {
-        _hitBoundary = false;
-
-        // Check for snap catch.
-        final rawVisualLeftMs = _startTimeOriginMs + accDeltaMs;
-
-        // Clear release exclusion once we've moved well past it.
-        if (_lastReleasedSnapMs != null) {
-          final distMs = (rawVisualLeftMs - _lastReleasedSnapMs!).abs();
-          final clearMs = (TimelineConstants.snapCatchPx * 3 / pps * 1000)
-              .round();
-          if (distMs > clearMs) _lastReleasedSnapMs = null;
-        }
-
-        final snappedLeftMs = _snapEdge(
-          rawVisualLeftMs,
-          excludeMs: _startTimeOriginMs,
-        );
-        if (snappedLeftMs != null && snappedLeftMs != rawVisualLeftMs) {
-          _activeSnapPointMs = snappedLeftMs;
-          _snapCatchAccPx = _accTrimPx;
-          _lastReleasedSnapMs = null;
-          // Adjust dead zone so effective maps to the snap position.
-          final snapEffAccPx =
-              (snappedLeftMs - _startTimeOriginMs) / 1000.0 * pps;
-          _deadZonePx = _accTrimPx - snapEffAccPx;
-
-          clampedMs = _trimStartOriginMs + (snappedLeftMs - _startTimeOriginMs);
-          clampedMs = clampedMs.clamp(minTrimStartMs, maxTrimMs);
-          _handleTrimSnapHaptic(isSnapped: true);
-          if (clampedMs == item.trimStart.inMilliseconds) return;
-          widget.onTrimChanged?.call(
-            itemId: item.id,
-            trimStart: Duration(milliseconds: clampedMs),
-            trimEnd: item.trimEnd,
-            isStart: true,
-          );
-          return;
-        }
-      }
-
-      _handleTrimSnapHaptic(isSnapped: false);
-      widget.onTrimChanged?.call(
-        itemId: item.id,
-        trimStart: Duration(milliseconds: clampedMs),
-        trimEnd: item.trimEnd,
-        isStart: true,
-      );
     } else {
-      // Extending left — grow duration, shift startTime earlier.
       _hitBoundary = false;
-      _handleTrimSnapHaptic(isSnapped: false);
-      final extendMs = -rawTrimStartMs;
-      final newStartMs = math.max(0, _startTimeOriginMs - extendMs);
-      final actualExtend = _startTimeOriginMs - newStartMs;
-      final totalMs = widget.totalDuration.inMilliseconds;
-      final maxDurationMs = totalMs - newStartMs + _trimEndOriginMs;
-      final newDurationMs = math.min(
-        _durationOriginMs + actualExtend,
-        maxDurationMs,
-      );
-      final effectiveExtend = newDurationMs - _durationOriginMs;
-      if (effectiveExtend <= 0 && newStartMs == 0) {
-        if (!_hitBoundary) {
-          _hitBoundary = true;
-          HapticFeedback.selectionClick();
-        }
-        return;
-      }
-      widget.onTrimChanged?.call(
-        itemId: item.id,
-        trimStart: Duration.zero,
-        trimEnd: Duration(milliseconds: _trimEndOriginMs),
-        isStart: true,
-        startTime: Duration(milliseconds: newStartMs),
-        duration: Duration(milliseconds: newDurationMs),
-      );
     }
+
+    if ((_rightSnap.originMs - clampedMs) <
+        TimelineConstants.minTrimDuration.inMilliseconds) {
+      if (!_hitBoundary) {
+        HapticFeedback.heavyImpact();
+        _hitBoundary = true;
+      }
+      return;
+    }
+
+    widget.onTrimChanged?.call(
+      itemId: widget.item.id,
+      isStart: true,
+      startTime: Duration(milliseconds: clampedMs),
+      endTime: Duration(milliseconds: _rightSnap.originMs),
+    );
   }
 
   void _onRightTrim(double dx) {
-    developer.log(
-      'OverlayTile._onRightTrim dx=$dx item=${widget.item.id}',
-      name: 'overlay_trim',
-    );
-    _accTrimPx += dx;
-    final item = widget.item;
+    _activeSnap ??= _rightSnap;
+    _rightSnap.accumulate(-dx);
+
     final pps = widget.pixelsPerSecond;
+    final effectiveDeltaMs = (-_rightSnap.effectiveAccPx / pps * 1000).round();
+    final rawEndMs = _rightSnap.originMs + effectiveDeltaMs;
 
-    // --- Snap hold / release ---
-    if (_activeSnapPointMs != null) {
-      final excessPx = _accTrimPx - _snapCatchAccPx;
-      if (excessPx.abs() > TimelineConstants.snapDeadZonePx) {
-        _lastReleasedSnapMs = _activeSnapPointMs;
-        _deadZonePx += excessPx;
-        _activeSnapPointMs = null;
-        _handleTrimSnapHaptic(isSnapped: false);
-      } else {
-        _handleTrimSnapHaptic(isSnapped: true);
-        final snapTrimEndMs =
-            _startTimeOriginMs +
-            _durationOriginMs -
-            _trimStartOriginMs -
-            _activeSnapPointMs!;
-        final maxTrimMs =
-            (_durationOriginMs -
-                    _trimStartOriginMs -
-                    TimelineConstants.minTrimDuration.inMilliseconds)
-                .clamp(0, _durationOriginMs);
-        final minTrimEndMs = math.max(
-          0,
-          _startTimeOriginMs +
-              _durationOriginMs -
-              _trimStartOriginMs -
-              widget.totalDuration.inMilliseconds,
-        );
-        final clampedMs = snapTrimEndMs.clamp(minTrimEndMs, maxTrimMs);
-        if (clampedMs == item.trimEnd.inMilliseconds) return;
-        widget.onTrimChanged?.call(
-          itemId: item.id,
-          trimStart: item.trimStart,
-          trimEnd: Duration(milliseconds: clampedMs),
-          isStart: false,
-        );
-        return;
+    final snapPoints = widget.snapPointsMs != null
+        ? Set<int>.of(widget.snapPointsMs!)
+        : null;
+    final posMs = _rightSnap.update(rawEndMs, snapPoints);
+
+    final clampedMs = posMs.clamp(
+      _leftSnap.originMs,
+      widget.totalDuration.inMilliseconds,
+    );
+
+    if (clampedMs != posMs) {
+      if (!_hitBoundary) {
+        HapticFeedback.heavyImpact();
+        _hitBoundary = true;
       }
-    }
-
-    // --- Free movement ---
-    final effectiveAccPx = _accTrimPx - _deadZonePx;
-    final accDeltaMs = (-effectiveAccPx / pps * 1000).round();
-    final rawTrimEndMs = _trimEndOriginMs + accDeltaMs;
-
-    if (rawTrimEndMs >= 0) {
-      final maxTrimMs =
-          (_durationOriginMs -
-                  _trimStartOriginMs -
-                  TimelineConstants.minTrimDuration.inMilliseconds)
-              .clamp(0, _durationOriginMs);
-      final minTrimEndMs = math.max(
-        0,
-        _startTimeOriginMs +
-            _durationOriginMs -
-            _trimStartOriginMs -
-            widget.totalDuration.inMilliseconds,
-      );
-      var clampedMs = rawTrimEndMs.clamp(minTrimEndMs, maxTrimMs);
-      final wasClamped = rawTrimEndMs != clampedMs;
-
-      if (wasClamped) {
-        if (!_hitBoundary) {
-          _hitBoundary = true;
-          HapticFeedback.selectionClick();
-        }
-        if (clampedMs == item.trimEnd.inMilliseconds) return;
-      } else {
-        _hitBoundary = false;
-
-        // Check for snap catch.
-        final rawVisualRightMs =
-            _startTimeOriginMs +
-            _durationOriginMs -
-            _trimStartOriginMs -
-            clampedMs;
-
-        // Clear release exclusion once we've moved well past it.
-        if (_lastReleasedSnapMs != null) {
-          final distMs = (rawVisualRightMs - _lastReleasedSnapMs!).abs();
-          final clearMs = (TimelineConstants.snapCatchPx * 3 / pps * 1000)
-              .round();
-          if (distMs > clearMs) _lastReleasedSnapMs = null;
-        }
-
-        final originRightMs =
-            _startTimeOriginMs +
-            _durationOriginMs -
-            _trimStartOriginMs -
-            _trimEndOriginMs;
-        final snappedRightMs = _snapEdge(
-          rawVisualRightMs,
-          excludeMs: originRightMs,
-        );
-        if (snappedRightMs != null && snappedRightMs != rawVisualRightMs) {
-          _activeSnapPointMs = snappedRightMs;
-          _snapCatchAccPx = _accTrimPx;
-          _lastReleasedSnapMs = null;
-          // Adjust dead zone so effective maps to the snap position.
-          final snapTrimEndMs =
-              _startTimeOriginMs +
-              _durationOriginMs -
-              _trimStartOriginMs -
-              snappedRightMs;
-          final snapEffAccPx =
-              -(snapTrimEndMs - _trimEndOriginMs) / 1000.0 * pps;
-          _deadZonePx = _accTrimPx - snapEffAccPx;
-
-          clampedMs = snapTrimEndMs.clamp(minTrimEndMs, maxTrimMs);
-          _handleTrimSnapHaptic(isSnapped: true);
-          if (clampedMs == item.trimEnd.inMilliseconds) return;
-          widget.onTrimChanged?.call(
-            itemId: item.id,
-            trimStart: item.trimStart,
-            trimEnd: Duration(milliseconds: clampedMs),
-            isStart: false,
-          );
-          return;
-        }
-      }
-
-      _handleTrimSnapHaptic(isSnapped: false);
-      widget.onTrimChanged?.call(
-        itemId: item.id,
-        trimStart: item.trimStart,
-        trimEnd: Duration(milliseconds: clampedMs),
-        isStart: false,
-      );
     } else {
-      // Extending right — grow duration.
       _hitBoundary = false;
-      _handleTrimSnapHaptic(isSnapped: false);
-      final extendMs = -rawTrimEndMs;
-      final newEndMs = _startTimeOriginMs + _durationOriginMs + extendMs;
-      final totalMs = widget.totalDuration.inMilliseconds;
-      final maxEndMs = totalMs + _trimStartOriginMs;
-      final clampedEndMs = newEndMs.clamp(0, maxEndMs);
-      final actualExtend =
-          clampedEndMs - _startTimeOriginMs - _durationOriginMs;
-      if (actualExtend <= 0) {
-        if (!_hitBoundary) {
-          _hitBoundary = true;
-          HapticFeedback.selectionClick();
-        }
-        return;
-      }
-      widget.onTrimChanged?.call(
-        itemId: item.id,
-        trimStart: Duration(milliseconds: _trimStartOriginMs),
-        trimEnd: Duration.zero,
-        isStart: false,
-        duration: Duration(milliseconds: _durationOriginMs + actualExtend),
-      );
     }
+
+    if ((clampedMs - _leftSnap.originMs) <
+        TimelineConstants.minTrimDuration.inMilliseconds) {
+      if (!_hitBoundary) {
+        HapticFeedback.heavyImpact();
+        _hitBoundary = true;
+      }
+      return;
+    }
+
+    widget.onTrimChanged?.call(
+      itemId: widget.item.id,
+      isStart: false,
+      startTime: Duration(milliseconds: _leftSnap.originMs),
+      endTime: Duration(milliseconds: clampedMs),
+    );
   }
 }

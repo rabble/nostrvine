@@ -11,15 +11,16 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_control_bar.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_rules_indicator.dart';
-import 'package:pro_image_editor/pro_image_editor.dart'
-    show EmojiLayer, FilterModel, PaintLayer, TextLayer, WidgetLayer;
-import 'package:pro_image_editor/pro_image_editor.dart' as pie;
+import 'package:pro_image_editor/features/filter_editor/types/filter_state.dart';
+import 'package:pro_image_editor/pro_image_editor.dart' show FilterModel;
 
 /// Interactive timeline editor for composing video clips.
 ///
@@ -59,6 +60,13 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
   double _pinchBasePps = 0;
 
   bool get _isPinching => _pointerPositions.length >= 2;
+
+  /// Accumulated [FilterState]s for all committed filters.
+  ///
+  /// The library only stores the most-recently applied filter in
+  /// [ProImageEditorState.activeFilters]; we maintain this list and
+  /// re-write it via [addHistory] so all filters stay composited.
+  List<FilterState> _committedFilterStates = [];
 
   /// Throttle timestamp — limits BLoC event frequency during scrubbing.
   /// The native seek backpressure is handled by the canvas.
@@ -146,12 +154,6 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                 context.read<TimelineOverlayBloc>().add(
                   TimelineOverlayTotalDurationChanged(state.totalDuration),
                 );
-              },
-            ),
-            BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
-              listenWhen: (prev, curr) => prev.layers != curr.layers,
-              listener: (context, state) {
-                _syncLayersToOverlay(context, state.layers, totalDuration);
               },
             ),
             BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
@@ -269,12 +271,14 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                                   onTrimDragChanged: _onTrimDragChanged,
                                   onClipTapped: _onClipTapped,
                                   onOverlayItemMoved: _onOverlayItemMoved,
+                                  onOverlayItemMoving: _onOverlayItemMoving,
                                   onOverlayItemTrimmed: _onOverlayItemTrimmed,
                                   onOverlayTrimDragChanged:
                                       _onOverlayTrimDragChanged,
                                   onOverlayItemTapped: _onOverlayItemTapped,
                                   onOverlayDragStarted: _onOverlayDragStarted,
                                   onOverlayDragEnded: _onOverlayDragEnded,
+                                  playheadPosition: _playheadPosition,
                                 ),
                               ),
                             ),
@@ -285,6 +289,11 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                         VideoEditorTimelinePlayhead(isVisible: !isReordering),
                       ],
                     ),
+                  ),
+
+                  TimelineControlsBar(
+                    isEditing: isEditing,
+                    playheadPosition: _playheadPosition,
                   ),
                 ],
               ),
@@ -363,9 +372,11 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
 
   void _onTrimDragChanged(bool isTrimming) {
     setState(() => _isTrimming = isTrimming);
+    final editor = VideoEditorScope.of(context).editor!;
     final clipEditorBloc = context.read<ClipEditorBloc>();
     if (isTrimming) {
       clipEditorBloc.add(const ClipEditorTrimDragStarted());
+      editor.addHistory();
       context.read<VideoEditorMainBloc>().add(
         const VideoEditorExternalPauseRequested(isPaused: true),
       );
@@ -415,6 +426,36 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
     required int row,
     required bool insertAbove,
   }) {
+    // Sync the new time position to the editor before updating BLoC state so
+    // the canvas reflects the move immediately.
+    final editor = VideoEditorScope.of(context).editor!;
+    final item = context.read<TimelineOverlayBloc>().state.items.firstWhere(
+      (i) => i.id == itemId,
+    );
+    final duration = item.duration;
+
+    final filterIdx = _filterIndexFromId(itemId);
+    if (filterIdx != null) {
+      editor.setFilterTimeline(
+        index: filterIdx,
+        startTime: startTime,
+        endTime: startTime + duration,
+        skipUpdateHistory: true,
+      );
+    } else {
+      final layers = editor.activeLayers;
+      final layerIdx = layers.indexWhere((l) => l.id == itemId);
+      if (layerIdx != -1) {
+        final stackIndex = editor.getLayerStackIndex(layers[layerIdx]);
+        editor.setLayerTimeline(
+          index: stackIndex,
+          startTime: startTime,
+          endTime: startTime + duration,
+          skipUpdateHistory: true,
+        );
+      }
+    }
+
     context.read<TimelineOverlayBloc>().add(
       TimelineOverlayItemMoved(
         itemId: itemId,
@@ -427,20 +468,39 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
 
   void _onOverlayItemTrimmed({
     required String itemId,
-    required Duration trimStart,
-    required Duration trimEnd,
+    required Duration startTime,
+    required Duration endTime,
     required bool isStart,
-    Duration? startTime,
-    Duration? duration,
   }) {
+    final editor = VideoEditorScope.of(context).editor!;
+
+    final filterIdx = _filterIndexFromId(itemId);
+    if (filterIdx != null) {
+      editor.setFilterTimeline(
+        index: filterIdx,
+        startTime: startTime,
+        endTime: endTime,
+        skipUpdateHistory: true,
+      );
+    } else {
+      final layer = editor.activeLayers.firstWhere(
+        (layer) => layer.id == itemId,
+      );
+      final index = editor.getLayerStackIndex(layer);
+      editor.setLayerTimeline(
+        index: index,
+        startTime: startTime,
+        endTime: endTime,
+        skipUpdateHistory: true,
+      );
+    }
+
     context.read<TimelineOverlayBloc>().add(
       TimelineOverlayItemTrimmed(
         itemId: itemId,
-        trimStart: trimStart,
-        trimEnd: trimEnd,
         isStart: isStart,
         startTime: startTime,
-        duration: duration,
+        endTime: endTime,
       ),
     );
   }
@@ -470,12 +530,54 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
   }
 
   void _onOverlayDragStarted(String itemId) {
+    // Snapshot history before the move so undo restores the original position.
+    VideoEditorScope.of(context).editor!.addHistory();
     context.read<TimelineOverlayBloc>().add(
       TimelineOverlayDragStarted(itemId),
     );
     context.read<VideoEditorMainBloc>().add(
       const VideoEditorExternalPauseRequested(isPaused: true),
     );
+  }
+
+  void _onOverlayItemMoving({
+    required String itemId,
+    required Duration startTime,
+  }) {
+    // Mirror the position live during drag so the canvas updates every frame,
+    // just like trim does via setLayerTimeline/setFilterTimeline.
+    final editor = VideoEditorScope.of(context).editor!;
+    final item = context.read<TimelineOverlayBloc>().state.items.firstWhere(
+      (i) => i.id == itemId,
+    );
+
+    final filterIdx = _filterIndexFromId(itemId);
+    if (filterIdx != null) {
+      editor.setFilterTimeline(
+        index: filterIdx,
+        startTime: startTime,
+        endTime: startTime + item.duration,
+        skipUpdateHistory: true,
+      );
+    } else {
+      final layers = editor.activeLayers;
+      final layerIdx = layers.indexWhere((l) => l.id == itemId);
+      if (layerIdx == -1) return;
+      final stackIndex = editor.getLayerStackIndex(layers[layerIdx]);
+      editor.setLayerTimeline(
+        index: stackIndex,
+        startTime: startTime,
+        endTime: startTime + item.duration,
+        skipUpdateHistory: true,
+      );
+    }
+  }
+
+  /// Returns the [FilterState] index encoded in the given overlay item [id],
+  /// or `null` if [id] does not belong to a filter item.
+  static int? _filterIndexFromId(String id) {
+    if (!id.startsWith('filter_')) return null;
+    return int.tryParse(id.substring('filter_'.length));
   }
 
   void _onOverlayDragEnded() {
@@ -580,88 +682,68 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
     _playheadPosition.value = Duration(milliseconds: ms);
   }
 
-  /// Synchronises [VideoEditorMainState.layers] with the
-  /// [TimelineOverlayBloc] by diffing IDs and dispatching add/remove events.
-  void _syncLayersToOverlay(
-    BuildContext context,
-    List<pie.Layer> layers,
-    Duration totalDuration,
-  ) {
-    final overlayBloc = context.read<TimelineOverlayBloc>();
-    final existingIds = overlayBloc.state.items
-        .where((i) => i.type == TimelineOverlayType.layer)
-        .map((i) => i.id)
-        .toSet();
-    final currentIds = layers.map((l) => l.id).toSet();
-
-    // Remove layers no longer present.
-    for (final id in existingIds.difference(currentIds)) {
-      overlayBloc.add(TimelineOverlayItemRemoved(id));
-    }
-
-    // Add new layers.
-    for (final layer in layers) {
-      if (!existingIds.contains(layer.id)) {
-        overlayBloc.add(
-          TimelineOverlayItemAdded(
-            TimelineOverlayItem(
-              id: layer.id,
-              type: TimelineOverlayType.layer,
-              startTime: Duration.zero,
-              duration: totalDuration,
-              label: _labelForLayer(layer),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
   /// Synchronises applied filters with the [TimelineOverlayBloc].
   ///
-  /// Creates one filter overlay per committed filter so stacked filters
-  /// are each visible on the timeline.
+  /// Maintains [_committedFilterStates] so that every confirmed filter is
+  /// accumulated and rendered together (multiple independent filter strips,
+  /// just like layer strips). On addition, the new [FilterState] is appended;
+  /// on removal the list is re-derived from the editor's active state.
   void _syncFilterToOverlay(
     BuildContext context,
     List<FilterModel> appliedFilters,
     Duration totalDuration,
   ) {
-    final overlayBloc = context.read<TimelineOverlayBloc>();
+    final editor = VideoEditorScope.of(context).editor;
+    if (editor == null) return;
+    // Defer one frame so that editor.stateManager.activeFilters is already
+    // updated (addHistory fires asynchronously after the filter editor closes).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final editorFilters = editor.stateManager.activeFilters;
 
-    // Remove all existing filter overlays.
-    final existingFilterIds = overlayBloc.state.items
-        .where((i) => i.type == TimelineOverlayType.filter)
-        .map((i) => i.id)
-        .toList();
-    for (final id in existingFilterIds) {
-      overlayBloc.add(TimelineOverlayItemRemoved(id));
-    }
+      if (appliedFilters.length > _committedFilterStates.length) {
+        // A new filter was confirmed. The library already wrote its FilterState
+        // into the editor history (replacing the previous entry). Accumulate
+        // the new state on top of the existing ones so all applied filters
+        // continue to render composited together.
+        final newStates = editorFilters.where((f) => f.isNotEmpty).toList();
+        // Persist the filter name in meta so it survives a history
+        // export/import (appliedFilters is in-memory only).
+        final nameOffset = _committedFilterStates.length;
+        final namedStates = [
+          for (var i = 0; i < newStates.length; i++)
+            newStates[i].copyWith(
+              meta: {
+                ...newStates[i].meta,
+                'name': (nameOffset + i) < appliedFilters.length
+                    ? appliedFilters[nameOffset + i].name
+                    : 'Filter',
+              },
+            ),
+        ];
+        _committedFilterStates = [..._committedFilterStates, ...namedStates];
+        // Write the full accumulated list back so pro_image_editor composites
+        // every filter together during render and export.
+        editor.addHistory(filters: _committedFilterStates);
+      } else {
+        // A filter was removed (one or all). _removeFilter already called
+        // addHistory with the correct remaining list; re-derive our cache from
+        // the editor state (no-op placeholders are excluded).
+        _committedFilterStates = editorFilters
+            .where((f) => f.isNotEmpty)
+            .toList();
+      }
 
-    // Add one overlay per applied filter.
-    for (var i = 0; i < appliedFilters.length; i++) {
-      overlayBloc.add(
-        TimelineOverlayItemAdded(
-          TimelineOverlayItem(
-            id: '_filter_$i',
-            type: TimelineOverlayType.filter,
-            startTime: Duration.zero,
-            duration: totalDuration,
-            row: i,
-            label: appliedFilters[i].name,
-          ),
+      context.read<TimelineOverlayBloc>().add(
+        TimelineOverlayItemsUpdate(
+          layers: editor.activeLayers,
+          filters: _committedFilterStates,
+          filterModels: appliedFilters,
+          totalVideoDuration: totalDuration,
         ),
       );
-    }
+    });
   }
-
-  /// Returns a human-readable label based on the layer type.
-  static String _labelForLayer(pie.Layer layer) => switch (layer) {
-    TextLayer(:final text) => text,
-    PaintLayer() => 'Drawing',
-    EmojiLayer(:final emoji) => emoji,
-    WidgetLayer() => 'Sticker',
-    _ => 'Layer',
-  };
 
   void _syncScrollToPosition(
     Duration position,
@@ -714,11 +796,13 @@ class _TimelineScrollContent extends StatelessWidget {
     required this.isInteracting,
     required this.onReorder,
     required this.onReorderChanged,
+    required this.playheadPosition,
     this.trimmingClipId,
     this.onTrimChanged,
     this.onTrimDragChanged,
     this.onClipTapped,
     this.onOverlayItemMoved,
+    this.onOverlayItemMoving,
     this.onOverlayItemTrimmed,
     this.onOverlayTrimDragChanged,
     this.onOverlayItemTapped,
@@ -755,11 +839,13 @@ class _TimelineScrollContent extends StatelessWidget {
   final ValueChanged<bool>? onTrimDragChanged;
   final ValueChanged<int>? onClipTapped;
   final OverlayMoveCallback? onOverlayItemMoved;
+  final OverlayMovingCallback? onOverlayItemMoving;
   final OverlayTrimCallback? onOverlayItemTrimmed;
   final ValueChanged<bool>? onOverlayTrimDragChanged;
   final ValueChanged<String>? onOverlayItemTapped;
   final ValueChanged<String>? onOverlayDragStarted;
   final VoidCallback? onOverlayDragEnded;
+  final ValueNotifier<Duration> playheadPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -836,8 +922,10 @@ class _TimelineScrollContent extends StatelessWidget {
                             pixelsPerSecond: pixelsPerSecond,
                             totalDuration: totalDuration,
                             clipEdgesMs: _clipEdgesMs(clips),
+                            playheadPosition: playheadPosition,
                             onItemTapped: onOverlayItemTapped,
                             onItemMoved: onOverlayItemMoved,
+                            onItemMoving: onOverlayItemMoving,
                             onItemTrimmed: onOverlayItemTrimmed,
                             onTrimDragChanged: onOverlayTrimDragChanged,
                             onDragStarted: onOverlayDragStarted,
@@ -883,8 +971,10 @@ class _TimelineOverlayStrips extends StatelessWidget {
     required this.pixelsPerSecond,
     required this.totalDuration,
     required this.clipEdgesMs,
+    required this.playheadPosition,
     this.onItemTapped,
     this.onItemMoved,
+    this.onItemMoving,
     this.onItemTrimmed,
     this.onTrimDragChanged,
     this.onDragStarted,
@@ -895,8 +985,10 @@ class _TimelineOverlayStrips extends StatelessWidget {
   final double pixelsPerSecond;
   final Duration totalDuration;
   final List<int> clipEdgesMs;
+  final ValueNotifier<Duration> playheadPosition;
   final ValueChanged<String>? onItemTapped;
   final OverlayMoveCallback? onItemMoved;
+  final OverlayMovingCallback? onItemMoving;
   final OverlayTrimCallback? onItemTrimmed;
   final ValueChanged<bool>? onTrimDragChanged;
   final ValueChanged<String>? onDragStarted;
@@ -930,8 +1022,8 @@ class _TimelineOverlayStrips extends StatelessWidget {
                   TimelineConstants.trimHitAreaExtra
             : 0.0;
 
-        // Build snap points from all overlay item edges + clip edges,
-        // excluding the selected item so it doesn't snap to itself.
+        // Build snap points from all overlay item edges + clip edges +
+        // playhead, excluding the selected item so it doesn't snap to itself.
         final snapSet = <int>{};
         for (final item in overlayState.items) {
           if (item.id == overlayState.selectedItemId) continue;
@@ -939,6 +1031,7 @@ class _TimelineOverlayStrips extends StatelessWidget {
           snapSet.add(item.endTime.inMilliseconds);
         }
         snapSet.addAll(clipEdgesMs);
+        snapSet.add(playheadPosition.value.inMilliseconds);
         final snapPointsMs = snapSet.toList();
 
         return HitExpandedBox(
@@ -948,47 +1041,13 @@ class _TimelineOverlayStrips extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Layer strip (pink) — text, drawings, stickers.
-              if (overlayState.hasItemsOfType(TimelineOverlayType.layer))
-                HitExpandedBox(
-                  expandLeft: trimExp,
-                  expandRight: trimExp,
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: TimelineConstants.overlayStripTopGap,
-                    ),
-                    child: TimelineOverlayStrip(
-                      items: overlayState.itemsOfType(
-                        TimelineOverlayType.layer,
-                      ),
-                      rowCount: overlayState.rowCountForType(
-                        TimelineOverlayType.layer,
-                      ),
-                      totalWidth: totalWidth,
-                      pixelsPerSecond: pixelsPerSecond,
-                      totalDuration: totalDuration,
-                      color: VineTheme.accentPink,
-                      isCollapsed: overlayState.isTypeCollapsed(
-                        TimelineOverlayType.layer,
-                      ),
-                      selectedItemId: overlayState.selectedItemId,
-                      snapPointsMs: snapPointsMs,
-                      onItemTapped: onItemTapped,
-                      onItemMoved: onItemMoved,
-                      onTrimChanged: onItemTrimmed,
-                      onTrimDragChanged: onTrimDragChanged,
-                      onDragStarted: onDragStarted,
-                      onDragEnded: onDragEnded,
-                    ),
-                  ),
-                ),
               // Sound strip (red) — audio tracks.
-              if (overlayState.hasItemsOfType(TimelineOverlayType.sound))
+              if (overlayState.hasItemsOfType(.sound))
                 HitExpandedBox(
                   expandLeft: trimExp,
                   expandRight: trimExp,
                   child: Padding(
-                    padding: const EdgeInsets.only(
+                    padding: const .only(
                       top: TimelineConstants.overlayStripGap,
                     ),
                     child: TimelineOverlayStrip(
@@ -1009,6 +1068,7 @@ class _TimelineOverlayStrips extends StatelessWidget {
                       snapPointsMs: snapPointsMs,
                       onItemTapped: onItemTapped,
                       onItemMoved: onItemMoved,
+                      onItemMoving: onItemMoving,
                       onTrimChanged: onItemTrimmed,
                       onTrimDragChanged: onTrimDragChanged,
                       onDragStarted: onDragStarted,
@@ -1017,12 +1077,12 @@ class _TimelineOverlayStrips extends StatelessWidget {
                   ),
                 ),
               // Filter strip (green) — visual effects.
-              if (overlayState.hasItemsOfType(TimelineOverlayType.filter))
+              if (overlayState.hasItemsOfType(.filter))
                 HitExpandedBox(
                   expandLeft: trimExp,
                   expandRight: trimExp,
                   child: Padding(
-                    padding: const EdgeInsets.only(
+                    padding: const .only(
                       top: TimelineConstants.overlayStripGap,
                     ),
                     child: TimelineOverlayStrip(
@@ -1043,6 +1103,42 @@ class _TimelineOverlayStrips extends StatelessWidget {
                       snapPointsMs: snapPointsMs,
                       onItemTapped: onItemTapped,
                       onItemMoved: onItemMoved,
+                      onItemMoving: onItemMoving,
+                      onTrimChanged: onItemTrimmed,
+                      onTrimDragChanged: onTrimDragChanged,
+                      onDragStarted: onDragStarted,
+                      onDragEnded: onDragEnded,
+                    ),
+                  ),
+                ),
+              // Layer strip (pink) — text, drawings, stickers.
+              if (overlayState.hasItemsOfType(.layer))
+                HitExpandedBox(
+                  expandLeft: trimExp,
+                  expandRight: trimExp,
+                  child: Padding(
+                    padding: const .only(
+                      top: TimelineConstants.overlayStripTopGap,
+                    ),
+                    child: TimelineOverlayStrip(
+                      items: overlayState.itemsOfType(
+                        TimelineOverlayType.layer,
+                      ),
+                      rowCount: overlayState.rowCountForType(
+                        TimelineOverlayType.layer,
+                      ),
+                      totalWidth: totalWidth,
+                      pixelsPerSecond: pixelsPerSecond,
+                      totalDuration: totalDuration,
+                      color: VineTheme.accentPink,
+                      isCollapsed: overlayState.isTypeCollapsed(
+                        TimelineOverlayType.layer,
+                      ),
+                      selectedItemId: overlayState.selectedItemId,
+                      snapPointsMs: snapPointsMs,
+                      onItemTapped: onItemTapped,
+                      onItemMoved: onItemMoved,
+                      onItemMoving: onItemMoving,
                       onTrimChanged: onItemTrimmed,
                       onTrimDragChanged: onTrimDragChanged,
                       onDragStarted: onDragStarted,

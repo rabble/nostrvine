@@ -8,7 +8,6 @@ class VideoEditorMainState extends Equatable {
     this.openSubEditor,
     this.isLayerInteractionActive = false,
     this.isLayerOverRemoveArea = false,
-    this.layers = const [],
     this.isPlaying = false,
     this.isPlayerReady = false,
     this.isExternalPauseRequested = false,
@@ -39,9 +38,6 @@ class VideoEditorMainState extends Equatable {
 
   /// Whether the layer is currently positioned over the remove area.
   final bool isLayerOverRemoveArea;
-
-  /// The current list of layers in the editor.
-  final List<Layer> layers;
 
   /// Whether the video is currently playing.
   final bool isPlaying;
@@ -95,7 +91,6 @@ class VideoEditorMainState extends Equatable {
     bool? isLayerInteractionActive,
     bool? isLayerOverRemoveArea,
     bool? isMuted,
-    List<Layer>? layers,
     bool? isPlaying,
     bool? isPlayerReady,
     bool? isExternalPauseRequested,
@@ -117,7 +112,6 @@ class VideoEditorMainState extends Equatable {
           isLayerInteractionActive ?? this.isLayerInteractionActive,
       isLayerOverRemoveArea:
           isLayerOverRemoveArea ?? this.isLayerOverRemoveArea,
-      layers: layers ?? this.layers,
       isPlaying: isPlaying ?? this.isPlaying,
       isPlayerReady: isPlayerReady ?? this.isPlayerReady,
       isExternalPauseRequested:
@@ -142,7 +136,6 @@ class VideoEditorMainState extends Equatable {
     openSubEditor,
     isLayerInteractionActive,
     isLayerOverRemoveArea,
-    layers,
     isPlaying,
     isPlayerReady,
     isExternalPauseRequested,
