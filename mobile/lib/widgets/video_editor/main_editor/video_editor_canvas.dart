@@ -259,7 +259,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       return;
     }
 
-    _initializePlayer(clipPaths);
+    final currentPosition = context
+        .read<VideoEditorMainBloc>()
+        .state
+        .currentPosition;
+    _initializePlayer(clipPaths, startPosition: currentPosition);
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -294,7 +298,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   }
 
   /// Initializes (or reinitializes) the native video player with [clipPaths].
-  Future<void> _initializePlayer(List<String> clipPaths) async {
+  Future<void> _initializePlayer(
+    List<String> clipPaths, {
+    Duration? startPosition,
+  }) async {
     // Dispose old player if it exists.
     await _videoPlayerSubscription?.cancel();
     await _videoPlayer?.dispose();
@@ -312,21 +319,27 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
     await _videoPlayer!.initialize();
     if (!mounted) return;
-    await _videoPlayer!.setClips([
-      for (final clip in clips)
-        if (clip.video.file?.path case final path?)
-          VideoClip(
-            uri: path,
-            start: clip.trimStart,
-            end: clip.duration - clip.trimEnd,
-          ),
-    ]);
+    await _videoPlayer!.setClips(
+      [
+        for (final clip in clips)
+          if (clip.video.file?.path case final path?)
+            VideoClip(
+              uri: path,
+              start: clip.trimStart,
+              end: clip.duration - clip.trimEnd,
+            ),
+      ],
+      startPosition: startPosition != null && startPosition > Duration.zero
+          ? startPosition
+          : null,
+    );
     if (!mounted) return;
 
     final editorState = ref.read(videoEditorProvider);
     if (clips.isEmpty) return;
     await Future.wait([
-      _videoPlayer!.seekTo(clips.first.thumbnailTimestamp),
+      if (startPosition == null || startPosition == Duration.zero)
+        _videoPlayer!.seekTo(clips.first.thumbnailTimestamp),
       _videoPlayer!.setLooping(looping: true),
       _videoPlayer!.setVolume(editorState.originalAudioVolume),
     ]);
@@ -432,8 +445,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       );
 
       final videoDuration = context.read<ClipEditorBloc>().state.totalDuration;
-      final filterModels =
-          context.read<VideoEditorFilterBloc>().state.appliedFilters;
+      final filterModels = context
+          .read<VideoEditorFilterBloc>()
+          .state
+          .appliedFilters;
 
       context.read<TimelineOverlayBloc>().add(
         TimelineOverlayItemsUpdate(
@@ -510,13 +525,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Handles the done action from the main editor.
   ///
   /// Pauses video, marks processing state, navigates to metadata screen,
-  /// and resumes video when returning. Audio sync handled by listener.
+  /// and resumes video when returning only if it was playing before.
+  /// Audio sync handled by listener.
   Future<void> _handleDone() async {
     Log.info(
       '🎬 Done pressed - navigating to metadata screen',
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
+    final wasPlaying = _videoPlayer?.state.isPlaying ?? false;
     _videoPlayer?.pause();
     // IMPORTANT: Don't start video rendering here. We must await
     // `_handleEditorComplete` which generate the layer image before we start
@@ -524,7 +541,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     // since it shows a progress spinner anyway (~200ms task).
     ref.read(videoEditorProvider.notifier).setProcessing(true);
     await context.push(VideoMetadataScreen.path);
-    if (mounted) {
+    if (mounted && wasPlaying) {
       _videoPlayer?.play();
     }
   }
@@ -580,6 +597,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       ),
       (previous, clipPaths) {
         if (listEquals(previous, clipPaths)) return;
+
+        // If only the order changed (reorder), the BlocListener below
+        // calls setClips with startPosition — no full reinit needed.
+        final prevSorted = previous != null
+            ? ([...previous]..sort())
+            : <String>[];
+        final currSorted = [...clipPaths]..sort();
+        if (listEquals(prevSorted, currSorted)) return;
+
         _onClipPathsChanged(clipPaths);
       },
     );
@@ -605,15 +631,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               return false;
             },
             listener: (context, state) {
-              _videoPlayer?.setClips([
-                for (final clip in state.clips)
-                  if (clip.video.file?.path case final path?)
-                    VideoClip(
-                      uri: path,
-                      start: clip.trimStart,
-                      end: clip.duration - clip.trimEnd,
-                    ),
-              ]);
+              final currentPosition = context
+                  .read<VideoEditorMainBloc>()
+                  .state
+                  .currentPosition;
+              _videoPlayer?.setClips(
+                [
+                  for (final clip in state.clips)
+                    if (clip.video.file?.path case final path?)
+                      VideoClip(
+                        uri: path,
+                        start: clip.trimStart,
+                        end: clip.duration - clip.trimEnd,
+                      ),
+                ],
+                startPosition: currentPosition,
+              );
             },
           ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(

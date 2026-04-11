@@ -57,6 +57,23 @@ internal class DivineVideoPlayerInstance(
     private var videoWidth = 0
     private var videoHeight = 0
 
+    /**
+     * True only during the synchronous stop→clearMediaItems→setMediaItems→prepare
+     * sequence inside [handleSetClips]. Suppresses [sendStateUpdate] so the
+     * spurious STATE_IDLE / position-0 event from [ExoPlayer.stop] is never
+     * forwarded to Dart, preventing the timeline from jumping back to 0.
+     */
+    private var isResettingPlayer = false
+
+    /**
+     * Non-zero while ExoPlayer is buffering toward an initial seek position
+     * set via [handleSetClips]. [sendStateUpdate] reports this value instead
+     * of the intermediate buffering position so the timeline stays at the
+     * target position until STATE_READY confirms the seek is complete.
+     * Cleared to 0 on the first STATE_READY after a [handleSetClips] call.
+     */
+    private var pendingGlobalStartMs: Long = 0L
+
     private val audioOverlayManager = AudioOverlayManager(context)
 
     /**
@@ -185,12 +202,34 @@ internal class DivineVideoPlayerInstance(
         clipCount = mediaItems.size
         firstFrameRendered = false
 
-        // Reset to a clean state so the player doesn't carry over
-        // the position or playWhenReady flag from a previous playlist.
+        // Resolve the optional global start position to (clipIndex, localMs)
+        // so ExoPlayer begins buffering at the right point immediately.
+        val globalStartMs = (call.argument<Number>("startPositionMs"))?.toLong() ?: 0L
+        var startIndex = 0
+        var startLocalMs = globalStartMs
+        if (globalStartMs > 0 && offsets.isNotEmpty()) {
+            for (i in offsets.indices) {
+                val nextOffset = if (i + 1 < offsets.size) offsets[i + 1] else Long.MAX_VALUE
+                if (globalStartMs < nextOffset) {
+                    startIndex = i
+                    startLocalMs = globalStartMs - offsets[i]
+                    break
+                }
+            }
+        }
+
+        // Suppress sendStateUpdate during the synchronous reset so the
+        // transient STATE_IDLE / position-0 event from stop() is never
+        // forwarded to Dart (which would jump the timeline back to 0).
+        isResettingPlayer = true
         exoPlayer.stop()
         exoPlayer.clearMediaItems()
-        exoPlayer.setMediaItems(mediaItems, /* startIndex= */ 0, /* startPositionMs= */ 0L)
+        exoPlayer.setMediaItems(mediaItems, startIndex, startLocalMs)
         exoPlayer.prepare()
+        isResettingPlayer = false
+        // While ExoPlayer buffers to the seek position, report the target
+        // position so the timeline doesn't show intermediate values.
+        pendingGlobalStartMs = globalStartMs
 
         result.success(null)
     }
@@ -362,15 +401,18 @@ internal class DivineVideoPlayerInstance(
     // -- state broadcasting --
 
     private fun sendStateUpdate() {
+        if (isResettingPlayer) return
         val exoPlayer = player ?: return
         val sink = eventSink ?: return
 
         val currentIndex = exoPlayer.currentMediaItemIndex
         val localPositionMs = exoPlayer.currentPosition
-        val globalPositionMs = if (currentIndex < clipOffsets.size) {
-            clipOffsets[currentIndex] + localPositionMs
-        } else {
-            localPositionMs
+        val globalPositionMs = when {
+            // While buffering toward an initial seek, report the target so the
+            // timeline doesn't wander through intermediate positions.
+            pendingGlobalStartMs > 0 -> pendingGlobalStartMs
+            currentIndex < clipOffsets.size -> clipOffsets[currentIndex] + localPositionMs
+            else -> localPositionMs
         }
 
         val totalDurationMs = computeTotalDuration(exoPlayer)
@@ -454,8 +496,9 @@ internal class DivineVideoPlayerInstance(
             }
             accum += durationMs
         }
-        // Only update when at least some durations are known.
-        if (accum > 0) clipOffsets = newOffsets
+        // Only update when ALL durations are known so partial data from clips
+        // that haven't buffered yet doesn't corrupt earlier clip offsets.
+        if (allResolved && accum > 0) clipOffsets = newOffsets
     }
 
     /** Returns the global buffered position in ms for the current clip. */
@@ -476,8 +519,9 @@ internal class DivineVideoPlayerInstance(
             if (playbackState == Player.STATE_ENDED && isLooping) {
                 syncAudioOverlays()
             }
-            // Complete pending seekTo when ExoPlayer finishes decoding.
             if (playbackState == Player.STATE_READY) {
+                // Seek complete — switch from reporting target to actual position.
+                pendingGlobalStartMs = 0L
                 completeSeekIfPending()
             }
             sendStateUpdate()
