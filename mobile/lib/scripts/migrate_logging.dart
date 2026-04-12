@@ -1,7 +1,7 @@
 // ABOUTME: Script to help migrate debugPrint calls to UnifiedLogger with appropriate levels
 // ABOUTME: Run this to see migration suggestions for updating logging statements
 
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   Log.info(

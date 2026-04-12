@@ -43,10 +43,27 @@ void main() {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
 
+          final scrollable = find.descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          );
+
           expect(find.byType(PeopleSection), findsOneWidget);
-          expect(find.byType(TagsSection), findsOneWidget);
-          expect(find.byType(VideosSection), findsOneWidget);
           expect(find.text('All'), findsOneWidget);
+
+          await tester.scrollUntilVisible(
+            find.byType(TagsSection),
+            200,
+            scrollable: scrollable,
+          );
+          expect(find.byType(TagsSection), findsOneWidget);
+
+          await tester.scrollUntilVisible(
+            find.byType(VideosSection),
+            200,
+            scrollable: scrollable,
+          );
+          expect(find.byType(VideosSection), findsOneWidget);
         },
       );
 

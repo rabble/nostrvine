@@ -14,8 +14,8 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
 part 'individual_video_providers.g.dart';

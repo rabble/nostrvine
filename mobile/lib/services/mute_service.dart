@@ -6,8 +6,8 @@ import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Types of content that can be muted
 enum MuteType {

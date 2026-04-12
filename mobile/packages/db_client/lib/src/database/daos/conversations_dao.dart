@@ -295,6 +295,32 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     return delete(conversations).go();
   }
 
+  /// Backfill `current_user_has_sent` for conversations where the user
+  /// has sent messages but the flag is still `false`.
+  ///
+  /// Fixes a migration gap where the column was added with DEFAULT 0
+  /// without retroactively checking existing messages. Idempotent: only
+  /// flips `false` to `true`, never `true` to `false`.
+  ///
+  /// Returns the number of conversations updated.
+  Future<int> backfillCurrentUserHasSent(String userPubkey) {
+    return customUpdate(
+      'UPDATE conversations SET current_user_has_sent = 1 '
+      'WHERE current_user_has_sent = 0 '
+      'AND (owner_pubkey = ? OR owner_pubkey IS NULL) '
+      'AND id IN (SELECT DISTINCT conversation_id '
+      'FROM direct_messages WHERE sender_pubkey = ? '
+      'AND (owner_pubkey = ? OR owner_pubkey IS NULL))',
+      variables: [
+        Variable(userPubkey),
+        Variable(userPubkey),
+        Variable(userPubkey),
+      ],
+      updates: {attachedDatabase.conversations},
+      updateKind: UpdateKind.update,
+    );
+  }
+
   /// Returns the newest `last_message_timestamp` across all conversations
   /// for the given owner, or `null` if no conversations exist.
   Future<int?> getNewestMessageTimestamp({String? ownerPubkey}) async {

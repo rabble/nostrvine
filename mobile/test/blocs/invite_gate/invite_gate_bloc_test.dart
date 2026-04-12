@@ -2,32 +2,30 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
-import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/services/api_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 
-class _MockInviteApiService extends Mock implements InviteApiService {}
+class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 void main() {
   group('InviteGateBloc', () {
-    late _MockInviteApiService mockInviteApiService;
+    late _MockInviteApiClient mockInviteApiClient;
 
     setUp(() {
-      mockInviteApiService = _MockInviteApiService();
+      mockInviteApiClient = _MockInviteApiClient();
     });
 
     InviteGateBloc buildBloc() {
-      return InviteGateBloc(inviteApiService: mockInviteApiService);
+      return InviteGateBloc(inviteApiClient: mockInviteApiClient);
     }
 
     blocTest<InviteGateBloc, InviteGateState>(
       'loads invite client config successfully',
       setUp: () {
-        when(() => mockInviteApiService.getClientConfig()).thenAnswer(
+        when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
           (_) async => const InviteClientConfig(
             mode: OnboardingMode.inviteCodeRequired,
             supportEmail: 'support@divine.video',
@@ -63,7 +61,7 @@ void main() {
       'grants access after a valid invite validation',
       setUp: () {
         when(
-          () => mockInviteApiService.validateCode('AB12-EF34'),
+          () => mockInviteApiClient.validateCode('AB12-EF34'),
         ).thenAnswer(
           (_) async => const InviteValidationResult(
             valid: true,
@@ -97,7 +95,7 @@ void main() {
       'maps used invite validations to invite code error state',
       setUp: () {
         when(
-          () => mockInviteApiService.validateCode('USED-0003'),
+          () => mockInviteApiClient.validateCode('USED-0003'),
         ).thenAnswer(
           (_) async => const InviteValidationResult(
             valid: false,
@@ -120,8 +118,10 @@ void main() {
       'surfaces validation transport errors as general errors',
       setUp: () {
         when(
-          () => mockInviteApiService.validateCode('AB12-EF34'),
-        ).thenThrow(const ApiException('Invite service unavailable'));
+          () => mockInviteApiClient.validateCode('AB12-EF34'),
+        ).thenThrow(
+          const InviteApiException('Invite service unavailable'),
+        );
       },
       build: buildBloc,
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('ab12ef34')),
@@ -136,7 +136,7 @@ void main() {
       () async {
         final completer = Completer<InviteValidationResult>();
         when(
-          () => mockInviteApiService.validateCode('AB12-EF34'),
+          () => mockInviteApiClient.validateCode('AB12-EF34'),
         ).thenAnswer((_) => completer.future);
 
         final bloc = buildBloc();
@@ -145,7 +145,7 @@ void main() {
 
         await Future<void>.delayed(Duration.zero);
 
-        verify(() => mockInviteApiService.validateCode('AB12-EF34')).called(1);
+        verify(() => mockInviteApiClient.validateCode('AB12-EF34')).called(1);
 
         completer.complete(
           const InviteValidationResult(

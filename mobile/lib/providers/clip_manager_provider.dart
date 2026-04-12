@@ -18,8 +18,8 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 final clipManagerProvider =
     NotifierProvider<ClipManagerNotifier, ClipManagerState>(

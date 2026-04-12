@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:dio/dio.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Result from video processing completion polling
 class VideoProcessingResult {

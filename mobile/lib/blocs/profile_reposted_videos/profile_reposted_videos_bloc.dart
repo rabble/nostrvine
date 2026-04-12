@@ -11,8 +11,8 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:reposts_repository/reposts_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_reposted_videos_event.dart';

@@ -143,6 +143,22 @@ void main() {
       expect(event1.hashCode, equals(event2.hashCode));
     });
 
+    test('createdAtDateTime returns UTC DateTime from Unix seconds', () {
+      const customTime = 1700000000;
+      final event = Event(
+        testPubkey,
+        EventKind.textNote,
+        [],
+        testContent,
+        createdAt: customTime,
+      );
+
+      final dt = event.createdAtDateTime;
+
+      expect(dt.isUtc, isTrue);
+      expect(dt, DateTime.utc(2023, 11, 14, 22, 13, 20));
+    });
+
     test('Invalid pubkey throws error', () {
       expect(
         () => Event('invalid_pubkey', EventKind.textNote, [], testContent),

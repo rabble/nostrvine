@@ -13,7 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class VideoClipPreview extends ConsumerStatefulWidget {
   const VideoClipPreview({

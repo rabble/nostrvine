@@ -17,8 +17,8 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/library/library.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   /// Route name for drafts path.

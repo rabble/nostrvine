@@ -1333,7 +1333,7 @@ import 'package:openvine/providers/subscription_manager_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/providers/seen_videos_provider.dart';
 import 'package:openvine/providers/profile_cache_provider.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 ```
 
 **Step 2: Add cache clearing before restart**

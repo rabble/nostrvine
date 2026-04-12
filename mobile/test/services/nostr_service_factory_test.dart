@@ -1,13 +1,14 @@
-// ABOUTME: Tests for NostrServiceFactory that creates NostrClient instances
-// ABOUTME: Validates client creation with direct key container
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
+
+class _MockNostrSigner extends Mock implements NostrSigner {}
 
 void main() {
   const testPublicKey =
@@ -15,36 +16,28 @@ void main() {
 
   group('NostrServiceFactory', () {
     group('create', () {
-      test('creates client with valid key container', () {
+      test('creates client with LocalNostrIdentity signer', () {
         final mockKeyContainer = _MockSecureKeyContainer();
         when(() => mockKeyContainer.publicKeyHex).thenReturn(testPublicKey);
+        when(() => mockKeyContainer.isDisposed).thenReturn(false);
 
-        final client = NostrServiceFactory.create(
-          keyContainer: mockKeyContainer,
-        );
+        final signer = LocalNostrIdentity(keyContainer: mockKeyContainer);
+        final client = NostrServiceFactory.create(signer: signer);
 
         expect(client, isA<NostrClient>());
         // Public key is empty before initialize() - signer is source of truth
         expect(client.publicKey, isEmpty);
       });
 
-      test('creates client with null key container (read-only mode)', () {
-        // This should NOT throw - it should create a read-only client
-        final client = NostrServiceFactory.create();
+      test('creates client with mock signer', () {
+        final mockSigner = _MockNostrSigner();
+        when(mockSigner.getPublicKey).thenAnswer((_) async => testPublicKey);
+
+        final client = NostrServiceFactory.create(signer: mockSigner);
 
         expect(client, isA<NostrClient>());
         expect(client.publicKey, isEmpty);
       });
-
-      test(
-        'creates client with empty public key when keyContainer is null',
-        () {
-          final client = NostrServiceFactory.create();
-
-          expect(client, isA<NostrClient>());
-          expect(client.publicKey, isEmpty);
-        },
-      );
     });
   });
 }

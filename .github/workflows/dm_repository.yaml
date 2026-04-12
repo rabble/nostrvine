@@ -1,0 +1,27 @@
+# ABOUTME: CI workflow for the dm_repository package.
+# ABOUTME: Runs tests, formatting, and analysis only when dm_repository files change.
+
+name: DM Repository CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/dm_repository/**"
+      - ".github/workflows/dm_repository.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/dm_repository/**"
+      - ".github/workflows/dm_repository.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/dm_repository"
+      min_coverage: 93

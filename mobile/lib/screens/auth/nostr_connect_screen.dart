@@ -12,10 +12,10 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Screen for NIP-46 client-initiated connections via nostrconnect:// URL.
 class NostrConnectScreen extends ConsumerStatefulWidget {

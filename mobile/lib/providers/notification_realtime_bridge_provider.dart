@@ -5,8 +5,8 @@ import 'dart:async';
 
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'notification_realtime_bridge_provider.g.dart';
 

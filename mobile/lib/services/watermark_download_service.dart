@@ -9,9 +9,9 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/watermark_image_generator.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Progress stages for watermark download.
 enum WatermarkDownloadStage {

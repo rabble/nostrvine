@@ -11,26 +11,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Mobile CI
+  generated-files:
+    name: Generated Files
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: mobile/
-
     steps:
       - uses: actions/checkout@v4
-
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.41.4"
           channel: "stable"
           cache: true
-
       - name: 📦 Install dependencies
         run: flutter pub get
-
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs
@@ -39,12 +35,97 @@ jobs:
             git diff --name-only
             exit 1
           fi
-
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
       - name: ✨ Check formatting
         run: dart format --output=none --set-exit-if-changed lib test integration_test
-
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
+  tests:
+    name: Tests (shard ${{ matrix.shard_index }}/8)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard_index: [0, 1, 2, 3, 4, 5, 6, 7]
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 📦 Install dependencies
+        run: flutter pub get
+      - name: 🚀 Run Flutter tests
+        run: |
+          mapfile -t all < <(find test -type f -name '*_test.dart' | LC_ALL=C sort)
+          selected=()
+          for i in "${!all[@]}"; do
+            (( i % 8 == ${{ matrix.shard_index }} )) && selected+=("${all[$i]}")
+          done
+          echo "Shard ${{ matrix.shard_index }}/8: ${#selected[@]} of ${#all[@]} test files"
+          flutter test --exclude-tags integration "${selected[@]}"
+  mobile-ci:
+    name: Mobile CI
+    if: ${{ always() }}
+    needs:
+      - generated-files
+      - format
+      - analyze
+      - tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify upstream jobs
+        env:
+          GENERATED_FILES_RESULT: ${{ needs.generated-files.result }}
+          FORMAT_RESULT: ${{ needs.format.result }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+          TESTS_RESULT: ${{ needs.tests.result }}
+        run: |
+          echo "generated-files: ${GENERATED_FILES_RESULT}"
+          echo "format: ${FORMAT_RESULT}"
+          echo "analyze: ${ANALYZE_RESULT}"
+          echo "tests: ${TESTS_RESULT}"
 
-      - name: 🚀 Run tests
-        run: flutter test --exclude-tags integration
+          if [[ "${GENERATED_FILES_RESULT}" != "success" || \
+                "${FORMAT_RESULT}" != "success" || \
+                "${ANALYZE_RESULT}" != "success" || \
+                "${TESTS_RESULT}" != "success" ]]; then
+            echo "One or more Mobile CI jobs failed."
+            exit 1
+          fi

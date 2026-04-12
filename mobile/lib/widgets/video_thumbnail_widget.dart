@@ -7,8 +7,8 @@ import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/thumbnail_api_service.dart'
     show ThumbnailSize;
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Smart thumbnail widget that displays thumbnails with blurhash fallback
 class VideoThumbnailWidget extends StatefulWidget {

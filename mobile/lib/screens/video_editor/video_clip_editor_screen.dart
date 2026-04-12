@@ -11,12 +11,12 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_clip_gallery.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_progress_bar.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_split_bar.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_top_bar.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Video editor screen for editing recorded video clips.
 class VideoClipEditorScreen extends ConsumerWidget {

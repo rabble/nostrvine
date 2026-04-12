@@ -1,13 +1,20 @@
 // ABOUTME: Widget tests for NotificationsScreen covering list rendering and tab filtering
 // ABOUTME: Tests empty state, notification sorting, tab filtering, and mark as read
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
+
+class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
+    implements InviteStatusCubit {}
 
 /// Mock notifier that returns test notifications
 class _MockRelayNotifications extends RelayNotifications {
@@ -103,12 +110,18 @@ void main() {
 
   /// Build the NotificationsScreen directly in a ProviderScope
   Widget buildScreenWidget(RelayNotifications Function() notifierFactory) {
+    final mockInviteCubit = _MockInviteStatusCubit();
+    when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
+    when(mockInviteCubit.load).thenAnswer((_) async {});
     return ProviderScope(
       overrides: [relayNotificationsProvider.overrideWith(notifierFactory)],
       child: MaterialApp(
         theme: ThemeData.dark(),
-        home: const Scaffold(
-          body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+        home: BlocProvider<InviteStatusCubit>.value(
+          value: mockInviteCubit,
+          child: const Scaffold(
+            body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+          ),
         ),
       ),
     );

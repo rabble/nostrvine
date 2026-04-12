@@ -43,4 +43,19 @@ extension CompleteParametersEquality on CompleteParameters {
       if (!listEquals(image, other.image)) 'image',
     ];
   }
+
+  /// Returns a log-friendly string representation.
+  ///
+  /// Truncates the `image` field to avoid flooding logs with raw bytes.
+  String toLogString() {
+    final map = toMap();
+    final imageValue = map['image'];
+    if (imageValue != null) {
+      final str = imageValue.toString();
+      map['image'] = str.length > 50
+          ? '${str.substring(0, 50)}… (${str.length} chars)'
+          : str;
+    }
+    return map.toString();
+  }
 }

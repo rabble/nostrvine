@@ -65,16 +65,11 @@ void main() {
       expect(find.text('Videos'), findsOneWidget);
     });
 
-    testWidgets('renders caret down icon', (tester) async {
+    testWidgets('does not render caret down icon', (tester) async {
       when(() => mockCubit.state).thenReturn(SearchResultsFilter.all);
       await tester.pumpWidget(buildSubject());
 
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is DivineIcon && w.icon == DivineIconName.caretDown,
-        ),
-        findsOneWidget,
-      );
+      expect(find.byType(DivineIcon), findsNothing);
     });
 
     testWidgets('opens bottom sheet on tap', (tester) async {

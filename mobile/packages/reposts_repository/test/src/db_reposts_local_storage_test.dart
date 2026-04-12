@@ -203,7 +203,9 @@ void main() {
         expect(result.originalAuthorPubkey, equals(testOriginalAuthorPubkey));
         expect(
           result.createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(1000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(1000 * 1000, isUtc: true),
+          ),
         );
       });
 
@@ -285,13 +287,17 @@ void main() {
         expect(result[0].repostEventId, equals(testRepostEventId));
         expect(
           result[0].createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(1000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(1000 * 1000, isUtc: true),
+          ),
         );
         expect(result[1].addressableId, equals(testAddressableId2));
         expect(result[1].repostEventId, equals(testRepostEventId2));
         expect(
           result[1].createdAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(2000 * 1000)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(2000 * 1000, isUtc: true),
+          ),
         );
 
         verify(() => mockDao.getAllReposts(testUserPubkey)).called(1);
@@ -446,6 +452,7 @@ void main() {
         const unixTimestamp = 1705322445; // 2024-01-15 12:00:45 UTC
         final expectedDateTime = DateTime.fromMillisecondsSinceEpoch(
           unixTimestamp * 1000,
+          isUtc: true,
         );
 
         final row = PersonalRepostRow(

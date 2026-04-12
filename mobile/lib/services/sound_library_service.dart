@@ -2,10 +2,11 @@
 // ABOUTME: Parses manifest JSON, provides search, and supports custom sound imports
 
 import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:openvine/models/vine_sound.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class SoundLibraryService {
   static const String _manifestPath = 'assets/sounds/sounds_manifest.json';

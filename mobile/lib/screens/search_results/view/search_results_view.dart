@@ -26,14 +26,14 @@ class SearchResultsView extends StatelessWidget {
                   .read<SearchResultsFilterCubit>()
                   .filterChanged(.people),
             ),
-            TagsSection(
-              onSeeAll: () =>
-                  context.read<SearchResultsFilterCubit>().filterChanged(.tags),
-            ),
             ListsSection(
               onSeeAll: () => context
                   .read<SearchResultsFilterCubit>()
                   .filterChanged(.lists),
+            ),
+            TagsSection(
+              onSeeAll: () =>
+                  context.read<SearchResultsFilterCubit>().filterChanged(.tags),
             ),
             VideosSection(
               onSeeAll: () => context

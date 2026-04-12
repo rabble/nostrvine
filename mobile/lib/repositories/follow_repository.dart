@@ -22,9 +22,9 @@ import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();

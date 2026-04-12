@@ -13,9 +13,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class DiscoverListsScreen extends ConsumerStatefulWidget {
   const DiscoverListsScreen({super.key});

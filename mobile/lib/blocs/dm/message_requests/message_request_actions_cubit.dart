@@ -2,8 +2,8 @@
 // ABOUTME: Used by the Message Requests inbox and preview screens.
 
 import 'package:bloc/bloc.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 
 enum MessageRequestActionsStatus { idle, processing, success, error }
 

@@ -143,7 +143,7 @@ OpenVine has a comprehensive custom bug reporting system with multiple fallback 
 // ABOUTME: Provides ticket creation and support features via native iOS/Android SDKs
 
 import 'package:flutter/services.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for interacting with Zendesk Support SDK
 class ZendeskSupportService {

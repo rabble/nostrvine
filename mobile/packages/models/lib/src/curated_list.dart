@@ -82,6 +82,7 @@ class CuratedList extends Equatable {
     this.isCollaborative = false,
     this.allowedCollaborators = const [],
     this.thumbnailEventId,
+    this.thumbnailUrls = const [],
     this.playOrder = PlayOrder.chronological,
   });
 
@@ -103,6 +104,7 @@ class CuratedList extends Equatable {
       json['allowedCollaborators'] as List? ?? [],
     ),
     thumbnailEventId: json['thumbnailEventId'] as String?,
+    thumbnailUrls: List<String>.from(json['thumbnailUrls'] as List? ?? []),
     playOrder: PlayOrderExtension.fromString(
       json['playOrder'] as String? ?? 'chronological',
     ),
@@ -154,6 +156,12 @@ class CuratedList extends Equatable {
   /// Featured video event ID used as thumbnail.
   final String? thumbnailEventId;
 
+  /// Resolved thumbnail URLs for the first videos in the list.
+  ///
+  /// Populated by the repository layer after resolving video event IDs
+  /// to their thumbnail images. Used by search cards for stacked previews.
+  final List<String> thumbnailUrls;
+
   /// How videos should be ordered during playback.
   final PlayOrder playOrder;
 
@@ -173,6 +181,7 @@ class CuratedList extends Equatable {
     bool? isCollaborative,
     List<String>? allowedCollaborators,
     String? thumbnailEventId,
+    List<String>? thumbnailUrls,
     PlayOrder? playOrder,
   }) => CuratedList(
     id: id ?? this.id,
@@ -189,6 +198,7 @@ class CuratedList extends Equatable {
     isCollaborative: isCollaborative ?? this.isCollaborative,
     allowedCollaborators: allowedCollaborators ?? this.allowedCollaborators,
     thumbnailEventId: thumbnailEventId ?? this.thumbnailEventId,
+    thumbnailUrls: thumbnailUrls ?? this.thumbnailUrls,
     playOrder: playOrder ?? this.playOrder,
   );
 
@@ -208,6 +218,7 @@ class CuratedList extends Equatable {
     'isCollaborative': isCollaborative,
     'allowedCollaborators': allowedCollaborators,
     'thumbnailEventId': thumbnailEventId,
+    'thumbnailUrls': thumbnailUrls,
     'playOrder': playOrder.value,
   };
 
@@ -227,6 +238,7 @@ class CuratedList extends Equatable {
     isCollaborative,
     allowedCollaborators,
     thumbnailEventId,
+    thumbnailUrls,
     playOrder,
   ];
 }

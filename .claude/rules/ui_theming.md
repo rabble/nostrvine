@@ -201,6 +201,25 @@ Icon(Icons.search, color: VineTheme.lightText)
 
 ---
 
+## Typography
+
+### Use VineTheme Font Methods
+Use `VineTheme` font methods (e.g. `titleMediumFont()`, `bodyMediumFont()`) instead of raw `TextStyle` constructors. VineTheme methods apply the correct font family, weight, line height, and letter spacing from the design system.
+
+**Good:**
+```dart
+Text('Display name', style: VineTheme.titleMediumFont())
+Text('Secondary info', style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText))
+```
+
+**Bad:**
+```dart
+Text('Display name', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))
+Text('Secondary info', style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14))
+```
+
+---
+
 ## Widget Structure
 
 ### Page/View Pattern

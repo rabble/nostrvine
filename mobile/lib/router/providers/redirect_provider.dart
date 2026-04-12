@@ -6,8 +6,8 @@ import 'dart:convert';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod/src/providers/provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Checks if the current user has any following in cache.
 ///

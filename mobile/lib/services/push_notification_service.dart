@@ -11,7 +11,7 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/notification_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Manages FCM push notification registration and lifecycle via Nostr events.
 ///
