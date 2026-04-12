@@ -2,8 +2,6 @@
 // ABOUTME: Used by the clip strip, overlay strips, and overlay scroll wrapper
 // ABOUTME: to let trim handles positioned outside layout bounds receive touches.
 
-import 'dart:developer' as developer;
-
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -72,11 +70,6 @@ class RenderHitExpandedBox extends RenderProxyBox {
         position.dx < size.width + _expandRight &&
         position.dy >= 0 &&
         position.dy < size.height;
-    developer.log(
-      'HitExpandedBox.hitTest pos=$position size=$size '
-      'expand=($_expandLeft, $_expandRight) inBounds=$inBounds',
-      name: 'hit_expanded',
-    );
     if (inBounds) {
       if (size.contains(position)) {
         if (hitTestChildren(result, position: position) ||
@@ -88,15 +81,7 @@ class RenderHitExpandedBox extends RenderProxyBox {
         // Expanded margin — recursively bypass size.contains on
         // intermediate single-child render nodes so the touch reaches
         // the trim handles inside the Stack.
-        developer.log(
-          'HitExpandedBox → expanded margin, using _hitTestDeep',
-          name: 'hit_expanded',
-        );
         final childHit = _hitTestDeep(result, position, child);
-        developer.log(
-          'HitExpandedBox → _hitTestDeep returned $childHit',
-          name: 'hit_expanded',
-        );
         if (childHit || hitTestSelf(position)) {
           result.add(BoxHitTestEntry(this, position));
           return true;
@@ -126,11 +111,7 @@ class RenderHitExpandedBox extends RenderProxyBox {
     RenderBox? node,
   ) {
     if (node == null) return false;
-    developer.log(
-      '_hitTestDeep node=${node.runtimeType} pos=$position '
-      'size=${node.size}',
-      name: 'hit_expanded',
-    );
+
     if (node is RenderHitExpandedBox) {
       return node.hitTest(result, position: position);
     }

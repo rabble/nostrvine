@@ -69,41 +69,28 @@ class TimelineOverlayPositionedItem extends StatelessWidget {
     final x = isDragging ? snappedStartMs / 1000.0 * pixelsPerSecond : baseX;
     final y = isDragging ? baseY + dragDeltaY : baseY;
 
-    Widget tile = TimelineOverlayItemTile(
-      item: item,
-      width: itemWidth,
-      height: rowHeight,
-      color: color,
-      isDragging: isDragging,
-    );
-
     if (isSelected && !isDragging) {
-      tile = _TrimmableOverlayTile(
-        item: item,
-        width: itemWidth,
-        height: rowHeight,
-        color: color,
-        pixelsPerSecond: pixelsPerSecond,
-        totalDuration: totalDuration,
-        onTrimChanged: onTrimChanged,
-        onTrimDragChanged: onTrimDragChanged,
-        trimExpansion: trimExpansion,
-        snapPointsMs: snapPointsMs,
-      );
-
       return Positioned(
         left: x - trimExpansion,
         top: y,
         width: itemWidth + trimExpansion * 2,
-        child: Semantics(
-          label: item.label,
-          hint: 'Long press to drag',
-          child: GestureDetector(
-            onTap: onTap,
-            onLongPressStart: (_) => onLongPressStart(),
-            onLongPressMoveUpdate: onLongPressMoveUpdate,
-            onLongPressEnd: (_) => onLongPressEnd(),
-            child: tile,
+        child: _OverlayItemGestureWrapper(
+          semanticLabel: item.label,
+          onTap: onTap,
+          onLongPressStart: onLongPressStart,
+          onLongPressMoveUpdate: onLongPressMoveUpdate,
+          onLongPressEnd: onLongPressEnd,
+          child: _TrimmableOverlayTile(
+            item: item,
+            width: itemWidth,
+            height: rowHeight,
+            color: color,
+            pixelsPerSecond: pixelsPerSecond,
+            totalDuration: totalDuration,
+            onTrimChanged: onTrimChanged,
+            onTrimDragChanged: onTrimDragChanged,
+            trimExpansion: trimExpansion,
+            snapPointsMs: snapPointsMs,
           ),
         ),
       );
@@ -112,16 +99,52 @@ class TimelineOverlayPositionedItem extends StatelessWidget {
     return Positioned(
       left: x,
       top: y,
-      child: Semantics(
-        label: item.label,
-        hint: 'Long press to drag',
-        child: GestureDetector(
-          onTap: onTap,
-          onLongPressStart: (_) => onLongPressStart(),
-          onLongPressMoveUpdate: onLongPressMoveUpdate,
-          onLongPressEnd: (_) => onLongPressEnd(),
-          child: tile,
+      child: _OverlayItemGestureWrapper(
+        semanticLabel: item.label,
+        onTap: onTap,
+        onLongPressStart: onLongPressStart,
+        onLongPressMoveUpdate: onLongPressMoveUpdate,
+        onLongPressEnd: onLongPressEnd,
+        child: TimelineOverlayItemTile(
+          item: item,
+          width: itemWidth,
+          height: rowHeight,
+          color: color,
+          isDragging: isDragging,
         ),
+      ),
+    );
+  }
+}
+
+class _OverlayItemGestureWrapper extends StatelessWidget {
+  const _OverlayItemGestureWrapper({
+    required this.semanticLabel,
+    required this.onTap,
+    required this.onLongPressStart,
+    required this.onLongPressMoveUpdate,
+    required this.onLongPressEnd,
+    required this.child,
+  });
+
+  final String semanticLabel;
+  final VoidCallback onTap;
+  final VoidCallback onLongPressStart;
+  final ValueChanged<LongPressMoveUpdateDetails> onLongPressMoveUpdate;
+  final VoidCallback onLongPressEnd;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticLabel,
+      hint: 'Long press to drag',
+      child: GestureDetector(
+        onTap: onTap,
+        onLongPressStart: (_) => onLongPressStart(),
+        onLongPressMoveUpdate: onLongPressMoveUpdate,
+        onLongPressEnd: (_) => onLongPressEnd(),
+        child: child,
       ),
     );
   }
