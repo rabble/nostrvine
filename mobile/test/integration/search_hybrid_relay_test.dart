@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for hybrid local+remote search using real Nostr relays
 // ABOUTME: Tests immediate local results followed by remote NIP-50 search
 
+@Tags(['integration'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';

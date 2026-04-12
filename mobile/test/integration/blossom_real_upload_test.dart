@@ -1,6 +1,7 @@
 // ABOUTME: Live integration test for Blossom upload with REAL auth
 // ABOUTME: Tests streaming upload to server with generated throwaway keys
 
+@Tags(['integration'])
 import 'dart:convert';
 import 'dart:io';
 
@@ -11,7 +12,8 @@ import 'package:nostr_sdk/event.dart';
 import 'package:openvine/utils/hash_util.dart';
 
 void main() {
-  group('Blossom Real Upload Test', () {
+  // TODO(backend): Migrate to backend. #2527
+  group('Blossom Real Upload Test', skip: true, () {
     const serverUrl = 'https://media.divine.video';
 
     test('LIVE: Upload with real Nostr auth', () async {

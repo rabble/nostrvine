@@ -1,6 +1,7 @@
 // ABOUTME: Real integration test for video event publishing and retrieval via Nostr
 // ABOUTME: Uses real relay connections instead of mocking, tests actual network integration
 
+@Tags(['integration'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/subscription_manager.dart';

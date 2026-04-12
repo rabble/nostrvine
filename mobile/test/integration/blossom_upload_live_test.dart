@@ -1,6 +1,7 @@
 // ABOUTME: Live integration test for Blossom uploads using real staging server
 // ABOUTME: Tests actual authentication and file upload with real Nostr keys
 
+@Tags(['integration'])
 import 'dart:io';
 import 'dart:typed_data';
 

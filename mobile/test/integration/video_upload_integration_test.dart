@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for video upload using real app services
 // ABOUTME: Tests the actual upload flow by calling app functions directly
 
+@Tags(['integration'])
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,6 +1,7 @@
 // ABOUTME: Live integration test for Blossom upload against cf-stream-service-prod.protestnet.workers.dev
 // ABOUTME: Tests actual upload with real server to verify complete flow works
 
+@Tags(['integration'])
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,7 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/utils/hash_util.dart';
 
 void main() {
-  group('Blossom Live Server Upload', () {
+  // TODO(backend): Migrate to backend. #2527
+  group('Blossom Live Server Upload', skip: true, () {
     test('LIVE: Upload to cf-stream-service-prod.protestnet.workers.dev', () async {
       // Create a minimal test video file
       final testFile = File('test_live_upload.mp4');

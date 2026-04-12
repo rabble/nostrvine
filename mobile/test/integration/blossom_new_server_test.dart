@@ -1,6 +1,7 @@
 // ABOUTME: Live integration test for streaming upload to media.divine.video Blossom server
 // ABOUTME: Tests streaming upload functionality for video uploads
 
+@Tags(['integration'])
 import 'dart:convert';
 import 'dart:io';
 

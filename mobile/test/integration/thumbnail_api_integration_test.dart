@@ -1,6 +1,7 @@
 // ABOUTME: Integration tests for ThumbnailApiService that hit real OpenVine API servers
 // ABOUTME: Tests actual network calls, server responses, and end-to-end thumbnail generation
 
+@Tags(['integration'])
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +9,8 @@ import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 void main() {
-  group('ThumbnailApiService Integration Tests', () {
+  // TODO(backend): Migrate to backend. #2527
+  group('ThumbnailApiService Integration Tests', skip: true, () {
     // Test configuration
     const testVideoId =
         'test-video-12345'; // Use a real video ID from your test data

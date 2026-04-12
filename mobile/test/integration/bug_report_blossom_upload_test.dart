@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for bug report upload to Blossom server
 // ABOUTME: Tests end-to-end flow: collect diagnostics → upload to Blossom → send NIP-17 DM
 
+@Tags(['integration'])
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';

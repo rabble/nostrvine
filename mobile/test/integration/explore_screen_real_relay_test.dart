@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for ExploreScreen displaying real video events from relay
 // ABOUTME: Tests the complete flow from relay connection to UI rendering
 
+@Tags(['integration'])
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
