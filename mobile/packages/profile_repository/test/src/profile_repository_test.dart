@@ -793,8 +793,8 @@ void main() {
 
         test('handles uncaught Error without hanging', () async {
           // Throw an Error (not Exception) so it escapes
-          // _fetchFromConnectedRelays' catch and hits the
-          // Completer's catchError safety net.
+          // _fetchFromConnectedRelays' catch; the safe() wrapper's
+          // on Object clause handles it.
           when(
             () => mockNostrClient.fetchProfile(testPubkey),
           ).thenThrow(StateError('unexpected'));
