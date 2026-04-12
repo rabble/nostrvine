@@ -48,6 +48,11 @@ const _kBunkerInfoKey = 'bunker_info';
 const _kAmberPubkeyKey = 'amber_pubkey';
 const _kAmberPackageKey = 'amber_package';
 
+// Keys for Keycast OAuth persistence
+const _kKeycastRefreshTokenKey = 'keycast_refresh_token';
+const _kKeycastAuthHandleKey = 'keycast_auth_handle';
+String _keycastSessionKey(String pubkeyHex) => 'keycast_session_$pubkeyHex';
+
 /// Authentication state for the user
 enum AuthState {
   /// User is not authenticated (no keys stored)
@@ -297,15 +302,13 @@ class AuthService implements BackgroundAwareService {
   /// OR when RPC is fully ready. False for pubkey-only identities that
   /// are still waiting for RPC warmup.
   bool get canPublishNostrWritesNow {
-    final identity = _currentIdentity;
-    if (identity == null) return false;
-    // Local signing is always available if we have a private key.
-    if (identity is LocalNostrIdentity) return true;
-    if (identity is KeycastNostrIdentity) return true;
-    // Amber and Bunker identities can always sign via their remote signer.
-    if (identity is AmberNostrIdentity) return true;
-    if (identity is BunkerNostrIdentity) return true;
-    return false;
+    return switch (_currentIdentity) {
+      null => false,
+      LocalNostrIdentity() => true,
+      KeycastNostrIdentity() => true,
+      AmberNostrIdentity() => true,
+      BunkerNostrIdentity() => true,
+    };
   }
 
   /// True when a divineOAuth user's session expired and refresh failed.
@@ -405,9 +408,7 @@ class AuthService implements BackgroundAwareService {
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          await KeycastSession.clear(_flutterSecureStorage);
-          await _flutterSecureStorage?.delete(key: 'keycast_refresh_token');
-          await _flutterSecureStorage?.delete(key: 'keycast_auth_handle');
+          await _clearKeycastSessionAndTokens();
           session = null;
         } else {
           // Ambiguous: neither (or both, impossible since diverged)
@@ -421,9 +422,7 @@ class AuthService implements BackgroundAwareService {
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          await KeycastSession.clear(_flutterSecureStorage);
-          await _flutterSecureStorage?.delete(key: 'keycast_refresh_token');
-          await _flutterSecureStorage?.delete(key: 'keycast_auth_handle');
+          await _clearKeycastSessionAndTokens();
           session = null;
         }
       }
@@ -1380,7 +1379,7 @@ class AuthService implements BackgroundAwareService {
       final archiveOauth = oauthSession != null && oauthOwnerMatches;
       if (archiveOauth) {
         await _flutterSecureStorage.write(
-          key: 'keycast_session_$pubkeyHex',
+          key: _keycastSessionKey(pubkeyHex),
           value: jsonEncode(oauthSession.toJson()),
         );
       } else if (oauthSession != null) {
@@ -1466,7 +1465,7 @@ class AuthService implements BackgroundAwareService {
 
         case AuthenticationSource.divineOAuth:
           final sessionJson = await _flutterSecureStorage.read(
-            key: 'keycast_session_$pubkeyHex',
+            key: _keycastSessionKey(pubkeyHex),
           );
           Log.debug(
             '_restoreSignerInfo: OAuth session archive lookup — '
@@ -1497,7 +1496,7 @@ class AuthService implements BackgroundAwareService {
                 category: LogCategory.auth,
               );
               await _flutterSecureStorage.delete(
-                key: 'keycast_session_$pubkeyHex',
+                key: _keycastSessionKey(pubkeyHex),
               );
             } else {
               await session.save(_flutterSecureStorage);
@@ -1508,13 +1507,13 @@ class AuthService implements BackgroundAwareService {
               // expired restored sessions can never be refreshed.
               if (session.refreshToken != null) {
                 await _flutterSecureStorage.write(
-                  key: 'keycast_refresh_token',
+                  key: _kKeycastRefreshTokenKey,
                   value: session.refreshToken,
                 );
               }
               if (session.authorizationHandle != null) {
                 await _flutterSecureStorage.write(
-                  key: 'keycast_auth_handle',
+                  key: _kKeycastAuthHandleKey,
                   value: session.authorizationHandle,
                 );
               }
@@ -1569,7 +1568,7 @@ class AuthService implements BackgroundAwareService {
         key: '${_kAmberPackageKey}_$pubkeyHex',
       );
       await _flutterSecureStorage.delete(key: '${_kBunkerInfoKey}_$pubkeyHex');
-      await _flutterSecureStorage.delete(key: 'keycast_session_$pubkeyHex');
+      await _flutterSecureStorage.delete(key: _keycastSessionKey(pubkeyHex));
     } catch (e) {
       Log.warning(
         '_clearArchivedSignerInfo: failed for $pubkeyHex: $e',
@@ -1831,6 +1830,16 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
     }
+  }
+
+  /// Clears the global Keycast session, refresh token, and auth handle.
+  ///
+  /// Used when a stale or ambiguous OAuth session must be discarded
+  /// (e.g., during initialization tiebreaker branches).
+  Future<void> _clearKeycastSessionAndTokens() async {
+    await KeycastSession.clear(_flutterSecureStorage);
+    await _flutterSecureStorage?.delete(key: _kKeycastRefreshTokenKey);
+    await _flutterSecureStorage?.delete(key: _kKeycastAuthHandleKey);
   }
 
   /// Sets up the auth URL callback for bunker operations that require user

@@ -19,8 +19,7 @@ bool _isNonCriticalAsyncError(String message) {
       message.contains('WebSocketException') ||
       message.contains('WebSocketChannelException') ||
       message.contains('Relay rejected event') ||
-      message.contains('firebase_messaging') ||
-      message.contains('FirebaseException');
+      message.contains('A request for permissions is already running');
 }
 
 /// Suppress non-critical errors that don't affect E2E test flow.

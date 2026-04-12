@@ -373,6 +373,24 @@ class SecureKeyStorage {
         '📱 Imported key for: ${_maskKey(keyContainer.npub)}',
       );
 
+      // Save current identity before overwriting PRIMARY (prevents data loss)
+      try {
+        final currentContainer = await getKeyContainer();
+        if (currentContainer != null &&
+            currentContainer.npub != keyContainer.npub) {
+          await storeIdentityKeyContainer(
+            currentContainer.npub,
+            currentContainer,
+          );
+          _log.fine(
+            '📱 Archived previous identity: '
+            '${_maskKey(currentContainer.npub)}',
+          );
+        }
+      } on Exception catch (e) {
+        _log.warning('Could not archive current identity before import: $e');
+      }
+
       // Store in platform-specific secure storage
       final result = await _platformStorage.storeKey(
         keyId: _primaryKeyId,
