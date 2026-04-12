@@ -317,14 +317,13 @@ class _ClipContainer extends StatelessWidget {
 
   int get _thumbnailCount {
     final natural = (contentWidth / TimelineConstants.thumbnailWidth).ceil();
-    // Never render more slots than available distinct thumbnails — extra
-    // slots would just repeat the same image without adding information.
-    final maxMeaningful = stripThumbnails.isEmpty ? 1 : stripThumbnails.length;
-    return natural.clamp(1, maxMeaningful);
+    // Keep visual slot count independent from loading progress so the strip
+    // does not collapse to a single slot while thumbnails are still streaming in.
+    return natural.clamp(1, 1000);
   }
 
   /// Maps a visual slot index to the nearest available [StripThumbnail] path.
-  ///aw
+  ///
   /// Slots map across the full clip duration so thumbnails stay at fixed
   /// positions regardless of trimming.
   String? _thumbnailForSlot(int slotIndex, int slotCount) {
@@ -371,7 +370,7 @@ class _ClipContainer extends StatelessWidget {
             TimelineConstants.thumbnailWidth,
             displayWidth / count,
           )
-        : TimelineConstants.thumbnailWidth.toDouble();
+        : TimelineConstants.thumbnailWidth;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

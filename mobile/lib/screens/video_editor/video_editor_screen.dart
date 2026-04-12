@@ -16,12 +16,15 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
@@ -327,7 +330,39 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   Future<void> _openMusicLibrary() async {
-    // TODO(hm21): implement music library
+    // If no sound selected, show selection sheet first
+
+    final result = await VineBottomSheet.show<AudioEvent>(
+      context: context,
+      maxChildSize: 1,
+      initialChildSize: 1,
+      minChildSize: 0.8,
+      buildScrollBody: (scrollController) =>
+          AudioSelectionBottomSheet(scrollController: scrollController),
+    );
+
+    if (!context.mounted) return;
+
+    // Open timing screen and wait for result
+    final timingResult = await Navigator.of(context).push<AudioTimingResult>(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: VineTheme.transparent,
+        pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(
+          sound: result!,
+        ),
+      ),
+    );
+
+    // Handle timing screen result
+    if (timingResult != null) {
+      switch (timingResult) {
+        case AudioTimingConfirmed(:final sound):
+        /*    onSoundChanged(sound); */
+        case AudioTimingDeleted():
+        /*     onSoundChanged(null); */
+      }
+    }
   }
 
   @override

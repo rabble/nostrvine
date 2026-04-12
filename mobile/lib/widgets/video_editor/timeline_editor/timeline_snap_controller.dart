@@ -60,6 +60,12 @@ class TimelineSnapController {
   /// The snap point that was just released — excluded for a small cool-down.
   int? _releasedSnapMs;
 
+  /// Accumulator value at the moment a snap was released.
+  ///
+  /// Used to add a short re-acquire hysteresis so nearby snap points do not
+  /// immediately re-lock and cause left/right tugging in dense snap clusters.
+  double? _releaseAcc;
+
   /// Whether we are currently snapped (for haptic edge detection).
   bool _wasSnapped = false;
 
@@ -82,6 +88,7 @@ class TimelineSnapController {
     _lockedSnapMs = null;
     _catchAcc = 0;
     _releasedSnapMs = initialExcludeMs;
+    _releaseAcc = null;
     _wasSnapped = false;
   }
 
@@ -144,6 +151,7 @@ class TimelineSnapController {
               _acc - (originMs - _lockedSnapMs!) / 1000.0 * pixelsPerSecond;
         }
         _releasedSnapMs = _lockedSnapMs;
+        _releaseAcc = _acc;
         _lockedSnapMs = null;
         _fireHaptic(isSnapped: false);
         return _releasedSnapMs!;
@@ -154,10 +162,21 @@ class TimelineSnapController {
     }
 
     // --- Not currently locked ---
+    // Brief hysteresis window after release: require additional finger travel
+    // before allowing a new lock, preventing jitter between nearby snap points.
+    if (_releaseAcc != null) {
+      final movedSinceReleasePx = (_acc - _releaseAcc!).abs();
+      if (movedSinceReleasePx < TimelineConstants.snapDeadZonePx) {
+        _fireHaptic(isSnapped: false);
+        return rawEdgeMs;
+      }
+    }
+
     final nearest = _findNearest(rawEdgeMs, snapPoints);
     if (nearest != null) {
       _lockedSnapMs = nearest;
       _catchAcc = _acc;
+      _releaseAcc = null;
       _fireHaptic(isSnapped: true);
       return nearest;
     }
@@ -168,6 +187,7 @@ class TimelineSnapController {
           (_releasedSnapMs! - rawEdgeMs).abs() / 1000.0 * pixelsPerSecond;
       if (distPx > TimelineConstants.snapCatchPx * 2) {
         _releasedSnapMs = null;
+        _releaseAcc = null;
       }
     }
 
@@ -182,6 +202,7 @@ class TimelineSnapController {
     _lockedSnapMs = null;
     _catchAcc = 0;
     _releasedSnapMs = null;
+    _releaseAcc = null;
     _wasSnapped = false;
   }
 
