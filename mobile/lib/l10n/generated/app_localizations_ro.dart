@@ -4580,4 +4580,187 @@ class AppLocalizationsRo extends AppLocalizations {
   String keyImportError(String error) {
     return 'Eroare: $error';
   }
+
+  @override
+  String get timeNow => 'acum';
+
+  @override
+  String timeShortMinutes(int count) {
+    return '${count}min';
+  }
+
+  @override
+  String timeShortHours(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String timeShortDays(int count) {
+    return '${count}z';
+  }
+
+  @override
+  String timeShortWeeks(int count) {
+    return '${count}săpt';
+  }
+
+  @override
+  String timeShortMonths(int count) {
+    return '${count}lu';
+  }
+
+  @override
+  String timeShortYears(int count) {
+    return '${count}a';
+  }
+
+  @override
+  String get timeVerboseNow => 'Acum';
+
+  @override
+  String timeAgo(String time) {
+    return 'acum $time';
+  }
+
+  @override
+  String get timeToday => 'Astăzi';
+
+  @override
+  String get timeYesterday => 'Ieri';
+
+  @override
+  String get timeJustNow => 'chiar acum';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return 'acum ${count}min';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return 'acum ${count}h';
+  }
+
+  @override
+  String timeDaysAgo(int count) {
+    return 'acum ${count}z';
+  }
+
+  @override
+  String get draftTimeJustNow => 'Chiar acum';
+
+  @override
+  String get contentLabelNudity => 'Nuditate';
+
+  @override
+  String get contentLabelSexualContent => 'Conținut sexual';
+
+  @override
+  String get contentLabelPornography => 'Pornografie';
+
+  @override
+  String get contentLabelGraphicMedia => 'Conținut grafic';
+
+  @override
+  String get contentLabelViolence => 'Violență';
+
+  @override
+  String get contentLabelSelfHarm => 'Automutilare/Suicid';
+
+  @override
+  String get contentLabelDrugUse => 'Consum de droguri';
+
+  @override
+  String get contentLabelAlcohol => 'Alcool';
+
+  @override
+  String get contentLabelTobacco => 'Tutun/Fumat';
+
+  @override
+  String get contentLabelGambling => 'Jocuri de noroc';
+
+  @override
+  String get contentLabelProfanity => 'Limbaj vulgar';
+
+  @override
+  String get contentLabelHateSpeech => 'Discurs instigator la ură';
+
+  @override
+  String get contentLabelHarassment => 'Hărțuire';
+
+  @override
+  String get contentLabelFlashingLights => 'Lumini intermitente';
+
+  @override
+  String get contentLabelAiGenerated => 'Generat de AI';
+
+  @override
+  String get contentLabelDeepfake => 'Deepfake';
+
+  @override
+  String get contentLabelSpam => 'Spam';
+
+  @override
+  String get contentLabelScam => 'Înșelăciune/Fraudă';
+
+  @override
+  String get contentLabelSpoiler => 'Spoiler';
+
+  @override
+  String get contentLabelMisleading => 'Înșelător';
+
+  @override
+  String get contentLabelSensitiveContent => 'Conținut sensibil';
+
+  @override
+  String notificationLikedYourVideo(String actorName) {
+    return '$actorName a apreciat videoclipul tău';
+  }
+
+  @override
+  String notificationCommentedOnYourVideo(String actorName) {
+    return '$actorName a comentat la videoclipul tău';
+  }
+
+  @override
+  String notificationStartedFollowing(String actorName) {
+    return '$actorName a început să te urmărească';
+  }
+
+  @override
+  String notificationMentionedYou(String actorName) {
+    return '$actorName te-a menționat';
+  }
+
+  @override
+  String notificationRepostedYourVideo(String actorName) {
+    return '$actorName a redistribuit videoclipul tău';
+  }
+
+  @override
+  String get draftUntitled => 'Fără titlu';
+
+  @override
+  String get contentWarningNone => 'Niciunul';
+
+  @override
+  String get textBackgroundNone => 'Niciunul';
+
+  @override
+  String get textBackgroundSolid => 'Opac';
+
+  @override
+  String get textBackgroundHighlight => 'Evidențiere';
+
+  @override
+  String get textBackgroundTransparent => 'Transparent';
+
+  @override
+  String get textAlignLeft => 'Stânga';
+
+  @override
+  String get textAlignRight => 'Dreapta';
+
+  @override
+  String get textAlignCenter => 'Centru';
 }

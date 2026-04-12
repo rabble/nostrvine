@@ -558,7 +558,9 @@ class _ProfileSetupScreenViewState
 
                               // Display Name
                               Padding(
-                                padding: const EdgeInsets.only(left: 16),
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 16,
+                                ),
                                 child: Text(
                                   context.l10n.profileSetupDisplayNameLabel,
                                   style: VineTheme.labelMediumFont(
@@ -720,7 +722,9 @@ class _ProfileSetupScreenViewState
 
                               // Public key (npub) - read-only
                               Padding(
-                                padding: const EdgeInsets.only(left: 16),
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 16,
+                                ),
                                 child: Text(
                                   'Public key (npub)',
                                   style: VineTheme.labelMediumFont(
@@ -911,7 +915,9 @@ class _ProfileSetupScreenViewState
 
                               // Profile Color (optional)
                               Padding(
-                                padding: const EdgeInsets.only(left: 16),
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 16,
+                                ),
                                 child: Text(
                                   'Profile Color (Optional)',
                                   style: VineTheme.labelMediumFont(
@@ -2070,7 +2076,7 @@ class _ExternalNip05Section extends StatelessWidget {
             if (isExternal) ...[
               const SizedBox(height: 4),
               Padding(
-                padding: const EdgeInsets.only(left: 16),
+                padding: const EdgeInsetsDirectional.only(start: 16),
                 child: Text(
                   'NIP-05 Address',
                   style: VineTheme.labelMediumFont(

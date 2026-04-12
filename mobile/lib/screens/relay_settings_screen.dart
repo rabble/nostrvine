@@ -1,6 +1,7 @@
 // ABOUTME: Screen for managing Nostr relay connections and settings
 // ABOUTME: Allows users to add, remove, and configure external relay preferences
 
+import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -607,14 +608,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     );
   }
 
-  String _formatCount(int count) {
-    if (count >= 1000000) {
-      return '${(count / 1000000).toStringAsFixed(1)}M';
-    } else if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}K';
-    }
-    return count.toString();
-  }
+  String _formatCount(int count) => CountFormatter.formatCompact(count);
 
   String _formatDuration(Duration duration) {
     if (duration.inDays > 0) {

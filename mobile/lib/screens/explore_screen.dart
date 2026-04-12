@@ -477,7 +477,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                               controller: _tabController,
                               isScrollable: true,
                               tabAlignment: TabAlignment.start,
-                              padding: const EdgeInsets.only(left: 16),
+                              padding: const EdgeInsetsDirectional.only(
+                                start: 16,
+                              ),
                               indicatorColor: VineTheme.tabIndicatorGreen,
                               indicatorWeight: 4,
                               indicatorSize: TabBarIndicatorSize.tab,

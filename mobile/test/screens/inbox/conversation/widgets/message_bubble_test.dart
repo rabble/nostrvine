@@ -101,7 +101,10 @@ void main() {
 
         final align = tester.widget<Align>(find.byType(Align));
 
-        expect(align.alignment, equals(Alignment.centerRight));
+        expect(
+          align.alignment,
+          equals(AlignmentDirectional.centerEnd),
+        );
       });
 
       testWidgets('aligns left for received messages', (tester) async {
@@ -121,7 +124,10 @@ void main() {
 
         final align = tester.widget<Align>(find.byType(Align));
 
-        expect(align.alignment, equals(Alignment.centerLeft));
+        expect(
+          align.alignment,
+          equals(AlignmentDirectional.centerStart),
+        );
       });
     });
 

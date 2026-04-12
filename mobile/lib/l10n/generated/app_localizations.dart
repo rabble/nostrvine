@@ -7945,6 +7945,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error: {error}'**
   String keyImportError(String error);
+
+  /// Relative time label for less than one minute ago (short form)
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get timeNow;
+
+  /// Short relative time in minutes, e.g. 3m
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m'**
+  String timeShortMinutes(int count);
+
+  /// Short relative time in hours, e.g. 2h
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h'**
+  String timeShortHours(int count);
+
+  /// Short relative time in days, e.g. 3d
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d'**
+  String timeShortDays(int count);
+
+  /// Short relative time in weeks, e.g. 2w
+  ///
+  /// In en, this message translates to:
+  /// **'{count}w'**
+  String timeShortWeeks(int count);
+
+  /// Short relative time in months, e.g. 1mo
+  ///
+  /// In en, this message translates to:
+  /// **'{count}mo'**
+  String timeShortMonths(int count);
+
+  /// Short relative time in years, e.g. 1y
+  ///
+  /// In en, this message translates to:
+  /// **'{count}y'**
+  String timeShortYears(int count);
+
+  /// Verbose relative time label for less than one minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get timeVerboseNow;
+
+  /// Verbose relative time with ago suffix, e.g. 3m ago
+  ///
+  /// In en, this message translates to:
+  /// **'{time} ago'**
+  String timeAgo(String time);
+
+  /// Date label for today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get timeToday;
+
+  /// Date label for yesterday
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get timeYesterday;
+
+  /// Verbose relative time for less than one minute (lowercase)
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get timeJustNow;
+
+  /// Relative time in minutes with ago suffix
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m ago'**
+  String timeMinutesAgo(int count);
+
+  /// Relative time in hours with ago suffix
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
+  String timeHoursAgo(int count);
+
+  /// Relative time in days with ago suffix
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d ago'**
+  String timeDaysAgo(int count);
+
+  /// Draft age label for less than one minute (capitalized)
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get draftTimeJustNow;
+
+  /// No description provided for @contentLabelNudity.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudity'**
+  String get contentLabelNudity;
+
+  /// No description provided for @contentLabelSexualContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sexual Content'**
+  String get contentLabelSexualContent;
+
+  /// No description provided for @contentLabelPornography.
+  ///
+  /// In en, this message translates to:
+  /// **'Pornography'**
+  String get contentLabelPornography;
+
+  /// No description provided for @contentLabelGraphicMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Graphic Media'**
+  String get contentLabelGraphicMedia;
+
+  /// No description provided for @contentLabelViolence.
+  ///
+  /// In en, this message translates to:
+  /// **'Violence'**
+  String get contentLabelViolence;
+
+  /// No description provided for @contentLabelSelfHarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-Harm/Suicide'**
+  String get contentLabelSelfHarm;
+
+  /// No description provided for @contentLabelDrugUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug Use'**
+  String get contentLabelDrugUse;
+
+  /// No description provided for @contentLabelAlcohol.
+  ///
+  /// In en, this message translates to:
+  /// **'Alcohol'**
+  String get contentLabelAlcohol;
+
+  /// No description provided for @contentLabelTobacco.
+  ///
+  /// In en, this message translates to:
+  /// **'Tobacco/Smoking'**
+  String get contentLabelTobacco;
+
+  /// No description provided for @contentLabelGambling.
+  ///
+  /// In en, this message translates to:
+  /// **'Gambling'**
+  String get contentLabelGambling;
+
+  /// No description provided for @contentLabelProfanity.
+  ///
+  /// In en, this message translates to:
+  /// **'Profanity'**
+  String get contentLabelProfanity;
+
+  /// No description provided for @contentLabelHateSpeech.
+  ///
+  /// In en, this message translates to:
+  /// **'Hate Speech'**
+  String get contentLabelHateSpeech;
+
+  /// No description provided for @contentLabelHarassment.
+  ///
+  /// In en, this message translates to:
+  /// **'Harassment'**
+  String get contentLabelHarassment;
+
+  /// No description provided for @contentLabelFlashingLights.
+  ///
+  /// In en, this message translates to:
+  /// **'Flashing Lights'**
+  String get contentLabelFlashingLights;
+
+  /// No description provided for @contentLabelAiGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-Generated'**
+  String get contentLabelAiGenerated;
+
+  /// No description provided for @contentLabelDeepfake.
+  ///
+  /// In en, this message translates to:
+  /// **'Deepfake'**
+  String get contentLabelDeepfake;
+
+  /// No description provided for @contentLabelSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Spam'**
+  String get contentLabelSpam;
+
+  /// No description provided for @contentLabelScam.
+  ///
+  /// In en, this message translates to:
+  /// **'Scam/Fraud'**
+  String get contentLabelScam;
+
+  /// No description provided for @contentLabelSpoiler.
+  ///
+  /// In en, this message translates to:
+  /// **'Spoiler'**
+  String get contentLabelSpoiler;
+
+  /// No description provided for @contentLabelMisleading.
+  ///
+  /// In en, this message translates to:
+  /// **'Misleading'**
+  String get contentLabelMisleading;
+
+  /// No description provided for @contentLabelSensitiveContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive Content'**
+  String get contentLabelSensitiveContent;
+
+  /// No description provided for @notificationLikedYourVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} liked your video'**
+  String notificationLikedYourVideo(String actorName);
+
+  /// No description provided for @notificationCommentedOnYourVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} commented on your video'**
+  String notificationCommentedOnYourVideo(String actorName);
+
+  /// No description provided for @notificationStartedFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} started following you'**
+  String notificationStartedFollowing(String actorName);
+
+  /// No description provided for @notificationMentionedYou.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} mentioned you'**
+  String notificationMentionedYou(String actorName);
+
+  /// No description provided for @notificationRepostedYourVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} reposted your video'**
+  String notificationRepostedYourVideo(String actorName);
+
+  /// No description provided for @draftUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get draftUntitled;
+
+  /// No description provided for @contentWarningNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get contentWarningNone;
+
+  /// No description provided for @textBackgroundNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get textBackgroundNone;
+
+  /// No description provided for @textBackgroundSolid.
+  ///
+  /// In en, this message translates to:
+  /// **'Solid'**
+  String get textBackgroundSolid;
+
+  /// No description provided for @textBackgroundHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight'**
+  String get textBackgroundHighlight;
+
+  /// No description provided for @textBackgroundTransparent.
+  ///
+  /// In en, this message translates to:
+  /// **'Transparent'**
+  String get textBackgroundTransparent;
+
+  /// No description provided for @textAlignLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get textAlignLeft;
+
+  /// No description provided for @textAlignRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get textAlignRight;
+
+  /// No description provided for @textAlignCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Center'**
+  String get textAlignCenter;
 }
 
 class _AppLocalizationsDelegate

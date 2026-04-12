@@ -193,7 +193,7 @@ class ClipSelectionHeader extends StatelessWidget {
                   ),
                   Expanded(
                     child: Align(
-                      alignment: Alignment.centerRight,
+                      alignment: AlignmentDirectional.centerEnd,
                       child: _AddClipButton(
                         onTap: selectedClipIds.isNotEmpty
                             ? onCreate
@@ -280,7 +280,7 @@ class _AddClipButton extends StatelessWidget {
         child: Opacity(
           opacity: enable ? 1 : 0.32,
           child: Container(
-            margin: const EdgeInsets.only(right: 16),
+            margin: const EdgeInsetsDirectional.only(end: 16),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: ShapeDecoration(
               color: VineTheme.tabIndicatorGreen,

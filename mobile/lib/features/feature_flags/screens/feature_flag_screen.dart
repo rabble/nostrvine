@@ -72,7 +72,7 @@ class FeatureFlagScreen extends ConsumerWidget {
                       children: [
                         if (hasUserOverride)
                           Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
+                            padding: const EdgeInsetsDirectional.only(end: 8),
                             child: Icon(
                               Icons.edit,
                               size: 16,

@@ -1194,7 +1194,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
           ),
           const SizedBox(height: 4),
           Padding(
-            padding: const EdgeInsets.only(left: 28),
+            padding: const EdgeInsetsDirectional.only(start: 28),
             child: Text(
               isConnected
                   ? (isAuthenticated

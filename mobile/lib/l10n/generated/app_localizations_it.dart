@@ -4493,4 +4493,187 @@ class AppLocalizationsIt extends AppLocalizations {
   String keyImportError(String error) {
     return 'Errore: $error';
   }
+
+  @override
+  String get timeNow => 'ora';
+
+  @override
+  String timeShortMinutes(int count) {
+    return '${count}min';
+  }
+
+  @override
+  String timeShortHours(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String timeShortDays(int count) {
+    return '${count}g';
+  }
+
+  @override
+  String timeShortWeeks(int count) {
+    return '${count}set';
+  }
+
+  @override
+  String timeShortMonths(int count) {
+    return '${count}me';
+  }
+
+  @override
+  String timeShortYears(int count) {
+    return '${count}a';
+  }
+
+  @override
+  String get timeVerboseNow => 'Ora';
+
+  @override
+  String timeAgo(String time) {
+    return '$time fa';
+  }
+
+  @override
+  String get timeToday => 'Oggi';
+
+  @override
+  String get timeYesterday => 'Ieri';
+
+  @override
+  String get timeJustNow => 'adesso';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '${count}min fa';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '${count}h fa';
+  }
+
+  @override
+  String timeDaysAgo(int count) {
+    return '${count}g fa';
+  }
+
+  @override
+  String get draftTimeJustNow => 'Adesso';
+
+  @override
+  String get contentLabelNudity => 'Nudità';
+
+  @override
+  String get contentLabelSexualContent => 'Contenuto sessuale';
+
+  @override
+  String get contentLabelPornography => 'Pornografia';
+
+  @override
+  String get contentLabelGraphicMedia => 'Contenuto esplicito';
+
+  @override
+  String get contentLabelViolence => 'Violenza';
+
+  @override
+  String get contentLabelSelfHarm => 'Autolesionismo/Suicidio';
+
+  @override
+  String get contentLabelDrugUse => 'Uso di droghe';
+
+  @override
+  String get contentLabelAlcohol => 'Alcol';
+
+  @override
+  String get contentLabelTobacco => 'Tabacco/Fumo';
+
+  @override
+  String get contentLabelGambling => 'Gioco d\'azzardo';
+
+  @override
+  String get contentLabelProfanity => 'Linguaggio volgare';
+
+  @override
+  String get contentLabelHateSpeech => 'Incitamento all\'odio';
+
+  @override
+  String get contentLabelHarassment => 'Molestie';
+
+  @override
+  String get contentLabelFlashingLights => 'Luci lampeggianti';
+
+  @override
+  String get contentLabelAiGenerated => 'Generato dall\'IA';
+
+  @override
+  String get contentLabelDeepfake => 'Deepfake';
+
+  @override
+  String get contentLabelSpam => 'Spam';
+
+  @override
+  String get contentLabelScam => 'Truffa/Frode';
+
+  @override
+  String get contentLabelSpoiler => 'Spoiler';
+
+  @override
+  String get contentLabelMisleading => 'Fuorviante';
+
+  @override
+  String get contentLabelSensitiveContent => 'Contenuto sensibile';
+
+  @override
+  String notificationLikedYourVideo(String actorName) {
+    return '$actorName ha messo like al tuo video';
+  }
+
+  @override
+  String notificationCommentedOnYourVideo(String actorName) {
+    return '$actorName ha commentato il tuo video';
+  }
+
+  @override
+  String notificationStartedFollowing(String actorName) {
+    return '$actorName ha iniziato a seguirti';
+  }
+
+  @override
+  String notificationMentionedYou(String actorName) {
+    return '$actorName ti ha menzionato';
+  }
+
+  @override
+  String notificationRepostedYourVideo(String actorName) {
+    return '$actorName ha ricondiviso il tuo video';
+  }
+
+  @override
+  String get draftUntitled => 'Senza titolo';
+
+  @override
+  String get contentWarningNone => 'Nessuno';
+
+  @override
+  String get textBackgroundNone => 'Nessuno';
+
+  @override
+  String get textBackgroundSolid => 'Pieno';
+
+  @override
+  String get textBackgroundHighlight => 'Evidenziato';
+
+  @override
+  String get textBackgroundTransparent => 'Trasparente';
+
+  @override
+  String get textAlignLeft => 'Sinistra';
+
+  @override
+  String get textAlignRight => 'Destra';
+
+  @override
+  String get textAlignCenter => 'Centro';
 }

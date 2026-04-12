@@ -262,7 +262,12 @@ class DraftListTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       minTileHeight: enableShrink ? null : 72,
-      contentPadding: EdgeInsets.fromLTRB(enableShrink ? 0 : 16, 0, 10, 0),
+      contentPadding: EdgeInsetsDirectional.fromSTEB(
+        enableShrink ? 0 : 16,
+        0,
+        10,
+        0,
+      ),
       leading: Container(
         width: 40,
         height: 40,
@@ -288,13 +293,13 @@ class DraftListTile extends StatelessWidget {
               ),
       ),
       title: Text(
-        draft.title.isEmpty ? 'Untitled' : draft.title,
+        draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
         style: VineTheme.titleSmallFont(),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        DateFormat('EEEE, MMM d yyyy h:mm a').format(draft.lastModified),
+        DateFormat.yMMMEd().add_jm().format(draft.lastModified),
         style: VineTheme.bodySmallFont(),
       ),
       trailing: onOpenMore == null

@@ -171,8 +171,8 @@ class _CategoryTile extends StatelessWidget {
                   ),
                 ),
                 if (visuals.assetPath != null)
-                  Positioned(
-                    right: 18,
+                  PositionedDirectional(
+                    end: 18,
                     top: 0,
                     bottom: 0,
                     child: IgnorePointer(

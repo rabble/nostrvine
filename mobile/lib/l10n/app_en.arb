@@ -2273,5 +2273,165 @@
         "type": "String"
       }
     }
-  }
+  },
+
+  "timeNow": "now",
+  "@timeNow": {
+    "description": "Relative time label for less than one minute ago (short form)"
+  },
+  "timeShortMinutes": "{count}m",
+  "@timeShortMinutes": {
+    "description": "Short relative time in minutes, e.g. 3m",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeShortHours": "{count}h",
+  "@timeShortHours": {
+    "description": "Short relative time in hours, e.g. 2h",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeShortDays": "{count}d",
+  "@timeShortDays": {
+    "description": "Short relative time in days, e.g. 3d",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeShortWeeks": "{count}w",
+  "@timeShortWeeks": {
+    "description": "Short relative time in weeks, e.g. 2w",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeShortMonths": "{count}mo",
+  "@timeShortMonths": {
+    "description": "Short relative time in months, e.g. 1mo",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeShortYears": "{count}y",
+  "@timeShortYears": {
+    "description": "Short relative time in years, e.g. 1y",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeVerboseNow": "Now",
+  "@timeVerboseNow": {
+    "description": "Verbose relative time label for less than one minute ago"
+  },
+  "timeAgo": "{time} ago",
+  "@timeAgo": {
+    "description": "Verbose relative time with ago suffix, e.g. 3m ago",
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "timeToday": "Today",
+  "@timeToday": {
+    "description": "Date label for today"
+  },
+  "timeYesterday": "Yesterday",
+  "@timeYesterday": {
+    "description": "Date label for yesterday"
+  },
+  "timeJustNow": "just now",
+  "@timeJustNow": {
+    "description": "Verbose relative time for less than one minute (lowercase)"
+  },
+  "timeMinutesAgo": "{count}m ago",
+  "@timeMinutesAgo": {
+    "description": "Relative time in minutes with ago suffix",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeHoursAgo": "{count}h ago",
+  "@timeHoursAgo": {
+    "description": "Relative time in hours with ago suffix",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timeDaysAgo": "{count}d ago",
+  "@timeDaysAgo": {
+    "description": "Relative time in days with ago suffix",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "draftTimeJustNow": "Just now",
+  "@draftTimeJustNow": {
+    "description": "Draft age label for less than one minute (capitalized)"
+  },
+
+  "contentLabelNudity": "Nudity",
+  "contentLabelSexualContent": "Sexual Content",
+  "contentLabelPornography": "Pornography",
+  "contentLabelGraphicMedia": "Graphic Media",
+  "contentLabelViolence": "Violence",
+  "contentLabelSelfHarm": "Self-Harm/Suicide",
+  "contentLabelDrugUse": "Drug Use",
+  "contentLabelAlcohol": "Alcohol",
+  "contentLabelTobacco": "Tobacco/Smoking",
+  "contentLabelGambling": "Gambling",
+  "contentLabelProfanity": "Profanity",
+  "contentLabelHateSpeech": "Hate Speech",
+  "contentLabelHarassment": "Harassment",
+  "contentLabelFlashingLights": "Flashing Lights",
+  "contentLabelAiGenerated": "AI-Generated",
+  "contentLabelDeepfake": "Deepfake",
+  "contentLabelSpam": "Spam",
+  "contentLabelScam": "Scam/Fraud",
+  "contentLabelSpoiler": "Spoiler",
+  "contentLabelMisleading": "Misleading",
+  "contentLabelSensitiveContent": "Sensitive Content",
+
+  "notificationLikedYourVideo": "{actorName} liked your video",
+  "@notificationLikedYourVideo": {
+    "placeholders": {
+      "actorName": { "type": "String" }
+    }
+  },
+  "notificationCommentedOnYourVideo": "{actorName} commented on your video",
+  "@notificationCommentedOnYourVideo": {
+    "placeholders": {
+      "actorName": { "type": "String" }
+    }
+  },
+  "notificationStartedFollowing": "{actorName} started following you",
+  "@notificationStartedFollowing": {
+    "placeholders": {
+      "actorName": { "type": "String" }
+    }
+  },
+  "notificationMentionedYou": "{actorName} mentioned you",
+  "@notificationMentionedYou": {
+    "placeholders": {
+      "actorName": { "type": "String" }
+    }
+  },
+  "notificationRepostedYourVideo": "{actorName} reposted your video",
+  "@notificationRepostedYourVideo": {
+    "placeholders": {
+      "actorName": { "type": "String" }
+    }
+  },
+
+  "searchSomethingWentWrong": "Something went wrong",
+  "searchTryAgain": "Try again",
+  "draftUntitled": "Untitled",
+  "contentWarningNone": "None",
+  "textBackgroundNone": "None",
+  "textBackgroundSolid": "Solid",
+  "textBackgroundHighlight": "Highlight",
+  "textBackgroundTransparent": "Transparent",
+  "textAlignLeft": "Left",
+  "textAlignRight": "Right",
+  "textAlignCenter": "Center"
 }

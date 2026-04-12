@@ -289,7 +289,7 @@ class _InviteCodeEntryPage extends StatelessWidget {
                             children: [
                               const SizedBox(height: 16),
                               Align(
-                                alignment: Alignment.centerLeft,
+                                alignment: AlignmentDirectional.centerStart,
                                 child: RoundedIconButton(
                                   onPressed: onBack,
                                   icon: const Icon(
@@ -457,7 +457,7 @@ class _InviteCodeInput extends StatelessWidget {
         if (hasError) ...[
           const SizedBox(height: 6),
           Padding(
-            padding: const EdgeInsets.only(left: 20),
+            padding: const EdgeInsetsDirectional.only(start: 20),
             child: Text(
               errorText!,
               style: const TextStyle(color: VineTheme.error, fontSize: 12),

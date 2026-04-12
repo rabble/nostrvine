@@ -4439,4 +4439,187 @@ class AppLocalizationsSv extends AppLocalizations {
   String keyImportError(String error) {
     return 'Fel: $error';
   }
+
+  @override
+  String get timeNow => 'nu';
+
+  @override
+  String timeShortMinutes(int count) {
+    return '${count}min';
+  }
+
+  @override
+  String timeShortHours(int count) {
+    return '${count}t';
+  }
+
+  @override
+  String timeShortDays(int count) {
+    return '${count}d';
+  }
+
+  @override
+  String timeShortWeeks(int count) {
+    return '${count}v';
+  }
+
+  @override
+  String timeShortMonths(int count) {
+    return '${count}må';
+  }
+
+  @override
+  String timeShortYears(int count) {
+    return '$countå';
+  }
+
+  @override
+  String get timeVerboseNow => 'Nu';
+
+  @override
+  String timeAgo(String time) {
+    return '$time sedan';
+  }
+
+  @override
+  String get timeToday => 'Idag';
+
+  @override
+  String get timeYesterday => 'Igår';
+
+  @override
+  String get timeJustNow => 'nyss';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '${count}min sedan';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '${count}t sedan';
+  }
+
+  @override
+  String timeDaysAgo(int count) {
+    return '${count}d sedan';
+  }
+
+  @override
+  String get draftTimeJustNow => 'Nyss';
+
+  @override
+  String get contentLabelNudity => 'Nakenhet';
+
+  @override
+  String get contentLabelSexualContent => 'Sexuellt innehåll';
+
+  @override
+  String get contentLabelPornography => 'Pornografi';
+
+  @override
+  String get contentLabelGraphicMedia => 'Grafiskt innehåll';
+
+  @override
+  String get contentLabelViolence => 'Våld';
+
+  @override
+  String get contentLabelSelfHarm => 'Självskada/Självmord';
+
+  @override
+  String get contentLabelDrugUse => 'Droganvändning';
+
+  @override
+  String get contentLabelAlcohol => 'Alkohol';
+
+  @override
+  String get contentLabelTobacco => 'Tobak/Rökning';
+
+  @override
+  String get contentLabelGambling => 'Spelande';
+
+  @override
+  String get contentLabelProfanity => 'Svordomar';
+
+  @override
+  String get contentLabelHateSpeech => 'Hatretorik';
+
+  @override
+  String get contentLabelHarassment => 'Trakasserier';
+
+  @override
+  String get contentLabelFlashingLights => 'Blinkande ljus';
+
+  @override
+  String get contentLabelAiGenerated => 'AI-genererat';
+
+  @override
+  String get contentLabelDeepfake => 'Deepfake';
+
+  @override
+  String get contentLabelSpam => 'Spam';
+
+  @override
+  String get contentLabelScam => 'Bedrägeri';
+
+  @override
+  String get contentLabelSpoiler => 'Spoiler';
+
+  @override
+  String get contentLabelMisleading => 'Vilseledande';
+
+  @override
+  String get contentLabelSensitiveContent => 'Känsligt innehåll';
+
+  @override
+  String notificationLikedYourVideo(String actorName) {
+    return '$actorName gillade din video';
+  }
+
+  @override
+  String notificationCommentedOnYourVideo(String actorName) {
+    return '$actorName kommenterade din video';
+  }
+
+  @override
+  String notificationStartedFollowing(String actorName) {
+    return '$actorName började följa dig';
+  }
+
+  @override
+  String notificationMentionedYou(String actorName) {
+    return '$actorName nämnde dig';
+  }
+
+  @override
+  String notificationRepostedYourVideo(String actorName) {
+    return '$actorName delade din video';
+  }
+
+  @override
+  String get draftUntitled => 'Namnlös';
+
+  @override
+  String get contentWarningNone => 'Ingen';
+
+  @override
+  String get textBackgroundNone => 'Ingen';
+
+  @override
+  String get textBackgroundSolid => 'Heltäckande';
+
+  @override
+  String get textBackgroundHighlight => 'Markering';
+
+  @override
+  String get textBackgroundTransparent => 'Transparent';
+
+  @override
+  String get textAlignLeft => 'Vänster';
+
+  @override
+  String get textAlignRight => 'Höger';
+
+  @override
+  String get textAlignCenter => 'Centrera';
 }

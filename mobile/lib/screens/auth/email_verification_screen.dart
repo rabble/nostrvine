@@ -351,7 +351,7 @@ class _EmailVerificationScreenState
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: _CloseButton(
                         onPressed:
                             state.status == EmailVerificationStatus.failure

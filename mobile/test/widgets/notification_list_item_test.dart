@@ -347,18 +347,27 @@ void main() {
         );
       });
 
-      testWidgets('renders plain text when actor name is null', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          actorName: null,
-          message: 'Someone liked your video',
-        );
+      testWidgets(
+        'renders l10n message with fallback name when actor name is null',
+        (
+          WidgetTester tester,
+        ) async {
+          final notification = makeNotification(
+            actorName: null,
+            message: 'Someone liked your video',
+          );
 
-        await tester.pumpWidget(buildTestWidget(notification: notification));
+          await tester.pumpWidget(buildTestWidget(notification: notification));
 
-        expect(find.text('Someone liked your video'), findsOneWidget);
-      });
+          // When actorName is null, the code uses
+          // UserProfile.defaultDisplayNameFor(actorPubkey) as fallback
+          final fallbackName = UserProfile.defaultDisplayNameFor(testPubkey);
+          expect(
+            find.text('$fallbackName liked your video'),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('video thumbnail', () {

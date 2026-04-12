@@ -181,8 +181,8 @@ class _MessagesContent extends ConsumerWidget {
             ],
           ),
           // FAB positioned bottom-right
-          Positioned(
-            right: 16,
+          PositionedDirectional(
+            end: 16,
             bottom: 16,
             child: InboxFab(
               onPressed: () => _onNewConversation(context, ref),

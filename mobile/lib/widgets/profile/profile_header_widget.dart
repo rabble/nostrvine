@@ -137,7 +137,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 : null,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 0, 16),
+            padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 0, 16),
             child: Column(
               children: [
                 // Setup profile banner for new users with default names
@@ -600,7 +600,7 @@ class _ProfileNameAndBio extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -695,7 +695,7 @@ class _UniqueIdentifier extends ConsumerWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsetsDirectional.only(start: 8),
               child: GestureDetector(
                 onTap: () {
                   // Only use NIP-05 subdomain when verification passed

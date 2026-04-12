@@ -192,7 +192,7 @@ void main() {
         buildSubject(child: MetadataStatsRow(video: video)),
       );
 
-      expect(find.text('1.5k'), findsOneWidget); // originalLoops
+      expect(find.text('1.5K'), findsOneWidget); // originalLoops
       expect(find.text('250'), findsOneWidget); // likeCount
       expect(find.text('42'), findsOneWidget); // commentCount
       expect(find.text('15'), findsOneWidget); // repostCount

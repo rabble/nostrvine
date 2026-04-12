@@ -501,9 +501,9 @@ class _VideoItem extends StatelessWidget {
                 child: _VideoInfoSection(video: video, index: index),
               ),
               if (isInSubscribedList)
-                Positioned(
+                PositionedDirectional(
                   top: 6,
-                  left: 6,
+                  start: 6,
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(

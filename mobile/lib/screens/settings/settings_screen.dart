@@ -560,7 +560,7 @@ class _VersionTile extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: Text(
                 _appVersion.isEmpty
                     ? context.l10n.settingsVersionEmpty

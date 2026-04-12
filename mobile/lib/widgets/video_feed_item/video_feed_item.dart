@@ -1432,9 +1432,9 @@ class VideoOverlayActions extends ConsumerWidget {
                   contentWarningLabels: video.contentWarningLabels,
                   warnLabels: video.warnLabels,
                 ))
-              Positioned(
+              PositionedDirectional(
                 top: safeAreaTop + topOffset + 56,
-                left: 16,
+                start: 16,
                 child: GestureDetector(
                   onTap: () => _showContentWarningDetails(
                     context,
@@ -1449,9 +1449,9 @@ class VideoOverlayActions extends ConsumerWidget {
               ),
             // ProofMode and Vine badges in upper right corner (tappable)
             if (!isPreviewMode)
-              Positioned(
+              PositionedDirectional(
                 top: safeAreaTop + topOffset,
-                right: 16,
+                end: 16,
                 child: GestureDetector(
                   onTap: () {
                     _showBadgeExplanationModal(context, ref, video, isActive);
@@ -1533,8 +1533,8 @@ class VideoOverlayActions extends ConsumerWidget {
                                     onTap: navigateToProfile,
                                   ),
                                   // Follow button positioned at bottom-right of avatar
-                                  Positioned(
-                                    left: 31,
+                                  PositionedDirectional(
+                                    start: 31,
                                     top: 31,
                                     child: VideoFollowButton(
                                       pubkey: video.pubkey,
@@ -1694,9 +1694,9 @@ class VideoOverlayActions extends ConsumerWidget {
               ),
             ),
             // Action buttons at bottom right
-            Positioned(
+            PositionedDirectional(
               bottom: bottomOffset - 6,
-              right: 16,
+              end: 16,
               child: AnimatedOpacity(
                 opacity: isActive ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),
@@ -2035,7 +2035,7 @@ class _Nip05Badge extends ConsumerWidget {
     if (!isVerified) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsetsDirectional.only(start: 4),
       child: Container(
         padding: const EdgeInsets.all(2),
         decoration: const BoxDecoration(

@@ -4429,4 +4429,187 @@ class AppLocalizationsTr extends AppLocalizations {
   String keyImportError(String error) {
     return 'Hata: $error';
   }
+
+  @override
+  String get timeNow => 'şimdi';
+
+  @override
+  String timeShortMinutes(int count) {
+    return '${count}dk';
+  }
+
+  @override
+  String timeShortHours(int count) {
+    return '${count}sa';
+  }
+
+  @override
+  String timeShortDays(int count) {
+    return '${count}g';
+  }
+
+  @override
+  String timeShortWeeks(int count) {
+    return '${count}hf';
+  }
+
+  @override
+  String timeShortMonths(int count) {
+    return '${count}ay';
+  }
+
+  @override
+  String timeShortYears(int count) {
+    return '${count}yıl';
+  }
+
+  @override
+  String get timeVerboseNow => 'Şimdi';
+
+  @override
+  String timeAgo(String time) {
+    return '$time önce';
+  }
+
+  @override
+  String get timeToday => 'Bugün';
+
+  @override
+  String get timeYesterday => 'Dün';
+
+  @override
+  String get timeJustNow => 'az önce';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '${count}dk önce';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '${count}sa önce';
+  }
+
+  @override
+  String timeDaysAgo(int count) {
+    return '${count}g önce';
+  }
+
+  @override
+  String get draftTimeJustNow => 'Az önce';
+
+  @override
+  String get contentLabelNudity => 'Çıplaklık';
+
+  @override
+  String get contentLabelSexualContent => 'Cinsel İçerik';
+
+  @override
+  String get contentLabelPornography => 'Pornografi';
+
+  @override
+  String get contentLabelGraphicMedia => 'Rahatsız Edici İçerik';
+
+  @override
+  String get contentLabelViolence => 'Şiddet';
+
+  @override
+  String get contentLabelSelfHarm => 'Kendine Zarar Verme/İntihar';
+
+  @override
+  String get contentLabelDrugUse => 'Uyuşturucu Kullanımı';
+
+  @override
+  String get contentLabelAlcohol => 'Alkol';
+
+  @override
+  String get contentLabelTobacco => 'Tütün/Sigara';
+
+  @override
+  String get contentLabelGambling => 'Kumar';
+
+  @override
+  String get contentLabelProfanity => 'Küfür';
+
+  @override
+  String get contentLabelHateSpeech => 'Nefret Söylemi';
+
+  @override
+  String get contentLabelHarassment => 'Taciz';
+
+  @override
+  String get contentLabelFlashingLights => 'Yanıp Sönen Işıklar';
+
+  @override
+  String get contentLabelAiGenerated => 'Yapay Zekâ Üretimi';
+
+  @override
+  String get contentLabelDeepfake => 'Deepfake';
+
+  @override
+  String get contentLabelSpam => 'Spam';
+
+  @override
+  String get contentLabelScam => 'Dolandırıcılık';
+
+  @override
+  String get contentLabelSpoiler => 'Spoiler';
+
+  @override
+  String get contentLabelMisleading => 'Yanıltıcı';
+
+  @override
+  String get contentLabelSensitiveContent => 'Hassas İçerik';
+
+  @override
+  String notificationLikedYourVideo(String actorName) {
+    return '$actorName videonu beğendi';
+  }
+
+  @override
+  String notificationCommentedOnYourVideo(String actorName) {
+    return '$actorName videona yorum yaptı';
+  }
+
+  @override
+  String notificationStartedFollowing(String actorName) {
+    return '$actorName seni takip etmeye başladı';
+  }
+
+  @override
+  String notificationMentionedYou(String actorName) {
+    return '$actorName senden bahsetti';
+  }
+
+  @override
+  String notificationRepostedYourVideo(String actorName) {
+    return '$actorName videonu paylaştı';
+  }
+
+  @override
+  String get draftUntitled => 'Başlıksız';
+
+  @override
+  String get contentWarningNone => 'Yok';
+
+  @override
+  String get textBackgroundNone => 'Yok';
+
+  @override
+  String get textBackgroundSolid => 'Opak';
+
+  @override
+  String get textBackgroundHighlight => 'Vurgulama';
+
+  @override
+  String get textBackgroundTransparent => 'Saydam';
+
+  @override
+  String get textAlignLeft => 'Sol';
+
+  @override
+  String get textAlignRight => 'Sağ';
+
+  @override
+  String get textAlignCenter => 'Ortala';
 }

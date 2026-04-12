@@ -191,7 +191,7 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
                     widget.state.inviteRecoveryCode != null) ...[
                   const SizedBox(height: 12),
                   Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: TextButton(
                       onPressed: isDisabled ? null : _returnToInviteGate,
                       child: Text(context.l10n.authBackToInviteCode),

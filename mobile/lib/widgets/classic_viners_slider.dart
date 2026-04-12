@@ -76,7 +76,7 @@ class _VinersLoadingPlaceholder extends StatelessWidget {
       itemCount: 5,
       itemBuilder: (context, index) {
         return Padding(
-          padding: const EdgeInsets.only(right: 12),
+          padding: const EdgeInsetsDirectional.only(end: 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -153,7 +153,7 @@ class _VinerAvatar extends ConsumerWidget {
         child: GestureDetector(
           onTap: () => _onTap(context, avatarUrl),
           child: Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsetsDirectional.only(end: 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

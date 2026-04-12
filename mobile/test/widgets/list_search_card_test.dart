@@ -113,7 +113,7 @@ void main() {
           ),
         );
 
-        expect(find.text('9.1k'), findsOneWidget);
+        expect(find.text('9.1K'), findsOneWidget);
       });
     });
 

@@ -4261,185 +4261,185 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get timeNow => 'now';
+  String get timeNow => '今';
 
   @override
   String timeShortMinutes(int count) {
-    return '${count}m';
+    return '$count分';
   }
 
   @override
   String timeShortHours(int count) {
-    return '${count}h';
+    return '$count時間';
   }
 
   @override
   String timeShortDays(int count) {
-    return '${count}d';
+    return '$count日';
   }
 
   @override
   String timeShortWeeks(int count) {
-    return '${count}w';
+    return '$count週';
   }
 
   @override
   String timeShortMonths(int count) {
-    return '${count}mo';
+    return '$countヶ月';
   }
 
   @override
   String timeShortYears(int count) {
-    return '${count}y';
+    return '$count年';
   }
 
   @override
-  String get timeVerboseNow => 'Now';
+  String get timeVerboseNow => '今';
 
   @override
   String timeAgo(String time) {
-    return '$time ago';
+    return '$time前';
   }
 
   @override
-  String get timeToday => 'Today';
+  String get timeToday => '今日';
 
   @override
-  String get timeYesterday => 'Yesterday';
+  String get timeYesterday => '昨日';
 
   @override
-  String get timeJustNow => 'just now';
+  String get timeJustNow => 'たった今';
 
   @override
   String timeMinutesAgo(int count) {
-    return '${count}m ago';
+    return '$count分前';
   }
 
   @override
   String timeHoursAgo(int count) {
-    return '${count}h ago';
+    return '$count時間前';
   }
 
   @override
   String timeDaysAgo(int count) {
-    return '${count}d ago';
+    return '$count日前';
   }
 
   @override
-  String get draftTimeJustNow => 'Just now';
+  String get draftTimeJustNow => 'たった今';
 
   @override
-  String get contentLabelNudity => 'Nudity';
+  String get contentLabelNudity => 'ヌード';
 
   @override
-  String get contentLabelSexualContent => 'Sexual Content';
+  String get contentLabelSexualContent => '性的な内容';
 
   @override
-  String get contentLabelPornography => 'Pornography';
+  String get contentLabelPornography => 'ポルノ';
 
   @override
-  String get contentLabelGraphicMedia => 'Graphic Media';
+  String get contentLabelGraphicMedia => '過激なメディア';
 
   @override
-  String get contentLabelViolence => 'Violence';
+  String get contentLabelViolence => '暴力';
 
   @override
-  String get contentLabelSelfHarm => 'Self-Harm/Suicide';
+  String get contentLabelSelfHarm => '自傷行為/自殺';
 
   @override
-  String get contentLabelDrugUse => 'Drug Use';
+  String get contentLabelDrugUse => '薬物使用';
 
   @override
-  String get contentLabelAlcohol => 'Alcohol';
+  String get contentLabelAlcohol => 'アルコール';
 
   @override
-  String get contentLabelTobacco => 'Tobacco/Smoking';
+  String get contentLabelTobacco => 'タバコ/喫煙';
 
   @override
-  String get contentLabelGambling => 'Gambling';
+  String get contentLabelGambling => 'ギャンブル';
 
   @override
-  String get contentLabelProfanity => 'Profanity';
+  String get contentLabelProfanity => '不適切な言葉';
 
   @override
-  String get contentLabelHateSpeech => 'Hate Speech';
+  String get contentLabelHateSpeech => 'ヘイトスピーチ';
 
   @override
-  String get contentLabelHarassment => 'Harassment';
+  String get contentLabelHarassment => 'ハラスメント';
 
   @override
-  String get contentLabelFlashingLights => 'Flashing Lights';
+  String get contentLabelFlashingLights => '点滅する光';
 
   @override
-  String get contentLabelAiGenerated => 'AI-Generated';
+  String get contentLabelAiGenerated => 'AI生成';
 
   @override
-  String get contentLabelDeepfake => 'Deepfake';
+  String get contentLabelDeepfake => 'ディープフェイク';
 
   @override
-  String get contentLabelSpam => 'Spam';
+  String get contentLabelSpam => 'スパム';
 
   @override
-  String get contentLabelScam => 'Scam/Fraud';
+  String get contentLabelScam => '詐欺';
 
   @override
-  String get contentLabelSpoiler => 'Spoiler';
+  String get contentLabelSpoiler => 'ネタバレ';
 
   @override
-  String get contentLabelMisleading => 'Misleading';
+  String get contentLabelMisleading => '誤解を招く内容';
 
   @override
-  String get contentLabelSensitiveContent => 'Sensitive Content';
+  String get contentLabelSensitiveContent => 'センシティブな内容';
 
   @override
   String notificationLikedYourVideo(String actorName) {
-    return '$actorName liked your video';
+    return '$actorNameさんがあなたの動画にいいねしました';
   }
 
   @override
   String notificationCommentedOnYourVideo(String actorName) {
-    return '$actorName commented on your video';
+    return '$actorNameさんがあなたの動画にコメントしました';
   }
 
   @override
   String notificationStartedFollowing(String actorName) {
-    return '$actorName started following you';
+    return '$actorNameさんがあなたをフォローしました';
   }
 
   @override
   String notificationMentionedYou(String actorName) {
-    return '$actorName mentioned you';
+    return '$actorNameさんがあなたをメンションしました';
   }
 
   @override
   String notificationRepostedYourVideo(String actorName) {
-    return '$actorName reposted your video';
+    return '$actorNameさんがあなたの動画をリポストしました';
   }
 
   @override
-  String get draftUntitled => 'Untitled';
+  String get draftUntitled => '無題';
 
   @override
-  String get contentWarningNone => 'None';
+  String get contentWarningNone => 'なし';
 
   @override
-  String get textBackgroundNone => 'None';
+  String get textBackgroundNone => 'なし';
 
   @override
-  String get textBackgroundSolid => 'Solid';
+  String get textBackgroundSolid => '塗りつぶし';
 
   @override
-  String get textBackgroundHighlight => 'Highlight';
+  String get textBackgroundHighlight => 'ハイライト';
 
   @override
-  String get textBackgroundTransparent => 'Transparent';
+  String get textBackgroundTransparent => '透明';
 
   @override
-  String get textAlignLeft => 'Left';
+  String get textAlignLeft => '左';
 
   @override
-  String get textAlignRight => 'Right';
+  String get textAlignRight => '右';
 
   @override
-  String get textAlignCenter => 'Center';
+  String get textAlignCenter => '中央';
 }

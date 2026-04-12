@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -394,7 +395,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                       InkWell(
                         onTap: () => _showAllListsDialog(listsContaining),
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 26),
+                          padding: const EdgeInsetsDirectional.only(start: 26),
                           child: Text(
                             context.l10n.shareMenuViewAllLists,
                             style: const TextStyle(
@@ -1918,7 +1919,11 @@ class _EditContentLabelsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayText = selectedLabels.isEmpty
         ? context.l10n.shareMenuAddContentLabels
-        : selectedLabels.map((label) => label.displayName).join(', ');
+        : selectedLabels
+              .map(
+                (label) => localizedContentLabelName(context.l10n, label),
+              )
+              .join(', ');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2042,7 +2047,10 @@ class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
                       value: _selected.contains(label),
                       onChanged: (_) => _toggle(label),
                       title: Text(
-                        label.displayName,
+                        localizedContentLabelName(
+                          context.l10n,
+                          label,
+                        ),
                         style: const TextStyle(color: VineTheme.whiteText),
                       ),
                       activeColor: VineTheme.vineGreen,

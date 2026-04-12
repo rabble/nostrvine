@@ -85,7 +85,7 @@ class _HashtagChipList extends StatelessWidget {
         itemBuilder: (context, index) {
           if (index == 0) {
             return Padding(
-              padding: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsetsDirectional.only(end: 10),
               child: Center(
                 child: Text(
                   context.l10n.trendingTitle,
@@ -140,7 +140,7 @@ class _HashtagChip extends StatelessWidget {
     final color = _accentColors[colorIndex % _accentColors.length];
 
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsetsDirectional.only(end: 8),
       child: Semantics(
         label: 'View videos tagged $hashtag',
         button: true,

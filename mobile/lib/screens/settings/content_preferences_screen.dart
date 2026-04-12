@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
@@ -344,7 +345,11 @@ class _AccountContentLabelsTileState
       ),
       subtitle: Text(
         _accountLabels.isNotEmpty
-            ? _accountLabels.map((l) => l.displayName).join(', ')
+            ? _accountLabels
+                  .map(
+                    (l) => localizedContentLabelName(context.l10n, l),
+                  )
+                  .join(', ')
             : context.l10n.contentPreferencesAccountLabelsEmpty,
         style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       ),
@@ -452,7 +457,10 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                     value: isChecked,
                     onChanged: (_) => _toggle(label),
                     title: Text(
-                      label.displayName,
+                      localizedContentLabelName(
+                        context.l10n,
+                        label,
+                      ),
                       style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 15,

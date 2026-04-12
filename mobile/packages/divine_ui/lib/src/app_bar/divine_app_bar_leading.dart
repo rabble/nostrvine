@@ -141,9 +141,9 @@ class _LeadingIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: Padding(
-        padding: EdgeInsets.only(left: style.horizontalPadding),
+        padding: EdgeInsetsDirectional.only(start: style.horizontalPadding),
         child: DiVineAppBarIconButton(
           icon: icon,
           onPressed: onPressed,

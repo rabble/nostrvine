@@ -80,7 +80,7 @@ void main() {
       testWidgets('formats large counts compactly', (tester) async {
         await tester.pumpWidget(buildSubject(count: 1500));
 
-        expect(find.text('1.5k'), findsOneWidget);
+        expect(find.text('1.5K'), findsOneWidget);
       });
     });
 

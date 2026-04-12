@@ -164,9 +164,9 @@ class VideoMetricsDebugInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!kDebugMode) return const SizedBox.shrink();
 
-    return Positioned(
+    return PositionedDirectional(
       bottom: 100,
-      left: 10,
+      start: 10,
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(

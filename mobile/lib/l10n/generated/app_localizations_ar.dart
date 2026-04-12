@@ -4401,4 +4401,187 @@ class AppLocalizationsAr extends AppLocalizations {
   String keyImportError(String error) {
     return 'خطأ: $error';
   }
+
+  @override
+  String get timeNow => 'الآن';
+
+  @override
+  String timeShortMinutes(int count) {
+    return '$count د';
+  }
+
+  @override
+  String timeShortHours(int count) {
+    return '$count س';
+  }
+
+  @override
+  String timeShortDays(int count) {
+    return '$count ي';
+  }
+
+  @override
+  String timeShortWeeks(int count) {
+    return '$count أ';
+  }
+
+  @override
+  String timeShortMonths(int count) {
+    return '$count ش';
+  }
+
+  @override
+  String timeShortYears(int count) {
+    return '$count سن';
+  }
+
+  @override
+  String get timeVerboseNow => 'الآن';
+
+  @override
+  String timeAgo(String time) {
+    return 'منذ $time';
+  }
+
+  @override
+  String get timeToday => 'اليوم';
+
+  @override
+  String get timeYesterday => 'أمس';
+
+  @override
+  String get timeJustNow => 'الآن';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return 'منذ $count د';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return 'منذ $count س';
+  }
+
+  @override
+  String timeDaysAgo(int count) {
+    return 'منذ $count ي';
+  }
+
+  @override
+  String get draftTimeJustNow => 'الآن';
+
+  @override
+  String get contentLabelNudity => 'عُري';
+
+  @override
+  String get contentLabelSexualContent => 'محتوى جنسي';
+
+  @override
+  String get contentLabelPornography => 'إباحية';
+
+  @override
+  String get contentLabelGraphicMedia => 'محتوى صادم';
+
+  @override
+  String get contentLabelViolence => 'عنف';
+
+  @override
+  String get contentLabelSelfHarm => 'إيذاء النفس/انتحار';
+
+  @override
+  String get contentLabelDrugUse => 'تعاطي المخدرات';
+
+  @override
+  String get contentLabelAlcohol => 'كحول';
+
+  @override
+  String get contentLabelTobacco => 'تبغ/تدخين';
+
+  @override
+  String get contentLabelGambling => 'قمار';
+
+  @override
+  String get contentLabelProfanity => 'ألفاظ بذيئة';
+
+  @override
+  String get contentLabelHateSpeech => 'خطاب كراهية';
+
+  @override
+  String get contentLabelHarassment => 'تحرّش';
+
+  @override
+  String get contentLabelFlashingLights => 'أضواء وامضة';
+
+  @override
+  String get contentLabelAiGenerated => 'محتوى مُولّد بالذكاء الاصطناعي';
+
+  @override
+  String get contentLabelDeepfake => 'Deepfake';
+
+  @override
+  String get contentLabelSpam => 'بريد مزعج';
+
+  @override
+  String get contentLabelScam => 'احتيال';
+
+  @override
+  String get contentLabelSpoiler => 'حرق أحداث';
+
+  @override
+  String get contentLabelMisleading => 'مُضلِّل';
+
+  @override
+  String get contentLabelSensitiveContent => 'محتوى حسّاس';
+
+  @override
+  String notificationLikedYourVideo(String actorName) {
+    return '$actorName أعجب بفيديوك';
+  }
+
+  @override
+  String notificationCommentedOnYourVideo(String actorName) {
+    return '$actorName علّق على فيديوك';
+  }
+
+  @override
+  String notificationStartedFollowing(String actorName) {
+    return '$actorName بدأ بمتابعتك';
+  }
+
+  @override
+  String notificationMentionedYou(String actorName) {
+    return '$actorName أشار إليك';
+  }
+
+  @override
+  String notificationRepostedYourVideo(String actorName) {
+    return '$actorName أعاد نشر فيديوك';
+  }
+
+  @override
+  String get draftUntitled => 'بدون عنوان';
+
+  @override
+  String get contentWarningNone => 'بلا';
+
+  @override
+  String get textBackgroundNone => 'بلا';
+
+  @override
+  String get textBackgroundSolid => 'مُصمَت';
+
+  @override
+  String get textBackgroundHighlight => 'تمييز';
+
+  @override
+  String get textBackgroundTransparent => 'شفاف';
+
+  @override
+  String get textAlignLeft => 'يسار';
+
+  @override
+  String get textAlignRight => 'يمين';
+
+  @override
+  String get textAlignCenter => 'وسط';
 }

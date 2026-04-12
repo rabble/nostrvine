@@ -4274,4 +4274,187 @@ class AppLocalizationsKo extends AppLocalizations {
   String keyImportError(String error) {
     return '오류: $error';
   }
+
+  @override
+  String get timeNow => '지금';
+
+  @override
+  String timeShortMinutes(int count) {
+    return '$count분';
+  }
+
+  @override
+  String timeShortHours(int count) {
+    return '$count시간';
+  }
+
+  @override
+  String timeShortDays(int count) {
+    return '$count일';
+  }
+
+  @override
+  String timeShortWeeks(int count) {
+    return '$count주';
+  }
+
+  @override
+  String timeShortMonths(int count) {
+    return '$count개월';
+  }
+
+  @override
+  String timeShortYears(int count) {
+    return '$count년';
+  }
+
+  @override
+  String get timeVerboseNow => '지금';
+
+  @override
+  String timeAgo(String time) {
+    return '$time 전';
+  }
+
+  @override
+  String get timeToday => '오늘';
+
+  @override
+  String get timeYesterday => '어제';
+
+  @override
+  String get timeJustNow => '방금';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '$count분 전';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '$count시간 전';
+  }
+
+  @override
+  String timeDaysAgo(int count) {
+    return '$count일 전';
+  }
+
+  @override
+  String get draftTimeJustNow => '방금';
+
+  @override
+  String get contentLabelNudity => '노출';
+
+  @override
+  String get contentLabelSexualContent => '성적 콘텐츠';
+
+  @override
+  String get contentLabelPornography => '포르노';
+
+  @override
+  String get contentLabelGraphicMedia => '자극적인 미디어';
+
+  @override
+  String get contentLabelViolence => '폭력';
+
+  @override
+  String get contentLabelSelfHarm => '자해/자살';
+
+  @override
+  String get contentLabelDrugUse => '약물 사용';
+
+  @override
+  String get contentLabelAlcohol => '음주';
+
+  @override
+  String get contentLabelTobacco => '담배/흡연';
+
+  @override
+  String get contentLabelGambling => '도박';
+
+  @override
+  String get contentLabelProfanity => '욕설';
+
+  @override
+  String get contentLabelHateSpeech => '혐오 발언';
+
+  @override
+  String get contentLabelHarassment => '괴롭힘';
+
+  @override
+  String get contentLabelFlashingLights => '번쩍이는 빛';
+
+  @override
+  String get contentLabelAiGenerated => 'AI 생성';
+
+  @override
+  String get contentLabelDeepfake => '딥페이크';
+
+  @override
+  String get contentLabelSpam => '스팸';
+
+  @override
+  String get contentLabelScam => '사기/사기';
+
+  @override
+  String get contentLabelSpoiler => '스포일러';
+
+  @override
+  String get contentLabelMisleading => '오해의 소지';
+
+  @override
+  String get contentLabelSensitiveContent => '민감한 콘텐츠';
+
+  @override
+  String notificationLikedYourVideo(String actorName) {
+    return '$actorName님이 회원님의 동영상을 좋아해요';
+  }
+
+  @override
+  String notificationCommentedOnYourVideo(String actorName) {
+    return '$actorName님이 회원님의 동영상에 댓글을 남겼어요';
+  }
+
+  @override
+  String notificationStartedFollowing(String actorName) {
+    return '$actorName님이 회원님을 팔로우하기 시작했어요';
+  }
+
+  @override
+  String notificationMentionedYou(String actorName) {
+    return '$actorName님이 회원님을 언급했어요';
+  }
+
+  @override
+  String notificationRepostedYourVideo(String actorName) {
+    return '$actorName님이 회원님의 동영상을 리포스트했어요';
+  }
+
+  @override
+  String get draftUntitled => '제목 없음';
+
+  @override
+  String get contentWarningNone => '없음';
+
+  @override
+  String get textBackgroundNone => '없음';
+
+  @override
+  String get textBackgroundSolid => '불투명';
+
+  @override
+  String get textBackgroundHighlight => '하이라이트';
+
+  @override
+  String get textBackgroundTransparent => '투명';
+
+  @override
+  String get textAlignLeft => '왼쪽';
+
+  @override
+  String get textAlignRight => '오른쪽';
+
+  @override
+  String get textAlignCenter => '가운데';
 }

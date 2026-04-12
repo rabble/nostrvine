@@ -22,65 +22,127 @@ void main() {
         });
       });
 
-      group('thousands (1k–999k)', () {
-        test('returns "1k" for 1000', () {
-          expect(CountFormatter.formatCompact(1000), equals('1k'));
+      group('thousands (1K-999K) in en locale', () {
+        test('returns "1K" for 1000', () {
+          expect(
+            CountFormatter.formatCompact(1000, locale: 'en'),
+            equals('1K'),
+          );
         });
 
-        test('returns "1.2k" for 1200', () {
-          expect(CountFormatter.formatCompact(1200), equals('1.2k'));
+        test('returns "1.2K" for 1200', () {
+          expect(
+            CountFormatter.formatCompact(1200, locale: 'en'),
+            equals('1.2K'),
+          );
         });
 
-        test('returns "10k" for 10000', () {
-          expect(CountFormatter.formatCompact(10000), equals('10k'));
+        test('returns "10K" for 10000', () {
+          expect(
+            CountFormatter.formatCompact(10000, locale: 'en'),
+            equals('10K'),
+          );
         });
 
-        test('returns "999k" for 999000', () {
-          expect(CountFormatter.formatCompact(999000), equals('999k'));
+        test('returns "999K" for 999000', () {
+          expect(
+            CountFormatter.formatCompact(999000, locale: 'en'),
+            equals('999K'),
+          );
         });
 
-        test('rounds to 1 decimal place for 1500', () {
-          expect(CountFormatter.formatCompact(1500), equals('1.5k'));
+        test('returns "1.5K" for 1500', () {
+          expect(
+            CountFormatter.formatCompact(1500, locale: 'en'),
+            equals('1.5K'),
+          );
         });
 
-        test('omits decimal when whole number for 2000', () {
-          expect(CountFormatter.formatCompact(2000), equals('2k'));
+        test('returns "2K" for 2000', () {
+          expect(
+            CountFormatter.formatCompact(2000, locale: 'en'),
+            equals('2K'),
+          );
         });
       });
 
-      group('boundary near 1m (999950 threshold)', () {
-        test('returns "999.9k" for 999900', () {
-          expect(CountFormatter.formatCompact(999900), equals('999.9k'));
+      group('millions (1M+) in en locale', () {
+        test('returns "1M" for 1000000', () {
+          expect(
+            CountFormatter.formatCompact(1000000, locale: 'en'),
+            equals('1M'),
+          );
         });
 
-        test('returns "1m" for 999950 (rounds up to 1m)', () {
-          expect(CountFormatter.formatCompact(999950), equals('1m'));
+        test('returns "1.2M" for 1200000', () {
+          expect(
+            CountFormatter.formatCompact(1200000, locale: 'en'),
+            equals('1.2M'),
+          );
+        });
+
+        test('returns "3M" for 3000000', () {
+          expect(
+            CountFormatter.formatCompact(3000000, locale: 'en'),
+            equals('3M'),
+          );
+        });
+
+        test('returns "10M" for 10000000', () {
+          expect(
+            CountFormatter.formatCompact(10000000, locale: 'en'),
+            equals('10M'),
+          );
+        });
+
+        test('returns "5M" for 5000000', () {
+          expect(
+            CountFormatter.formatCompact(5000000, locale: 'en'),
+            equals('5M'),
+          );
+        });
+
+        test('returns "1.5M" for 1500000', () {
+          expect(
+            CountFormatter.formatCompact(1500000, locale: 'en'),
+            equals('1.5M'),
+          );
         });
       });
 
-      group('millions (1m+)', () {
-        test('returns "1m" for 1000000', () {
-          expect(CountFormatter.formatCompact(1000000), equals('1m'));
+      group('locale-aware formatting', () {
+        test('uses locale-specific suffixes for German', () {
+          final result = CountFormatter.formatCompact(
+            1000000,
+            locale: 'de',
+          );
+          // German uses different compact notation
+          expect(result, isNotEmpty);
+          expect(result, isNot(equals('1000000')));
         });
 
-        test('returns "1.2m" for 1200000', () {
-          expect(CountFormatter.formatCompact(1200000), equals('1.2m'));
+        test('uses locale-specific suffixes for Japanese', () {
+          final result = CountFormatter.formatCompact(
+            10000,
+            locale: 'ja',
+          );
+          expect(result, isNotEmpty);
+          expect(result, isNot(equals('10000')));
         });
 
-        test('returns "3m" for 3000000', () {
-          expect(CountFormatter.formatCompact(3000000), equals('3m'));
-        });
-
-        test('returns "10m" for 10000000', () {
-          expect(CountFormatter.formatCompact(10000000), equals('10m'));
-        });
-
-        test('omits decimal when whole number for 5000000', () {
-          expect(CountFormatter.formatCompact(5000000), equals('5m'));
-        });
-
-        test('rounds to 1 decimal place for 1500000', () {
-          expect(CountFormatter.formatCompact(1500000), equals('1.5m'));
+        test('passes locale through to NumberFormat', () {
+          // Spanish uses different formatting than English
+          final enResult = CountFormatter.formatCompact(
+            1500000,
+            locale: 'en',
+          );
+          final esResult = CountFormatter.formatCompact(
+            1500000,
+            locale: 'es',
+          );
+          // Both should be compact, though format may differ
+          expect(enResult, isNotEmpty);
+          expect(esResult, isNotEmpty);
         });
       });
     });

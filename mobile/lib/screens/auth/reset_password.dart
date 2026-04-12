@@ -161,7 +161,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
               // Samoyed sticker
               const Align(
-                alignment: Alignment.centerRight,
+                alignment: AlignmentDirectional.centerEnd,
                 child: DivineSticker(
                   sticker: DivineStickerName.samoyedDog,
                   size: 160,

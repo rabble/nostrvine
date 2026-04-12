@@ -7,9 +7,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_analytics_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -243,7 +245,7 @@ class _CreatorAnalyticsScreenState
                 const SizedBox(height: 12),
                 Text(
                   context.l10n.analyticsUpdatedTimestamp(
-                    _formatLastUpdated(data.fetchedAt),
+                    _formatLastUpdated(context.l10n, data.fetchedAt),
                   ),
                   style: VineTheme.bodySmallFont(
                     color: VineTheme.onSurfaceMuted,
@@ -460,7 +462,7 @@ class _KpiGrid extends StatelessWidget {
           label: context.l10n.analyticsEngagement,
           value: summary.engagementRate == null
               ? context.l10n.analyticsNa
-              : '${(summary.engagementRate! * 100).toStringAsFixed(1)}%',
+              : '${NumberFormat.decimalPattern().format(summary.engagementRate! * 100)}%',
           icon: Icons.trending_up,
         ),
         _KpiCard(
@@ -474,7 +476,9 @@ class _KpiGrid extends StatelessWidget {
           label: context.l10n.analyticsAvgPerPost,
           value: summary.videoCount == 0
               ? '0'
-              : summary.averageInteractionsPerVideo.toStringAsFixed(1),
+              : NumberFormat.decimalPattern().format(
+                  summary.averageInteractionsPerVideo,
+                ),
           icon: Icons.stacked_bar_chart,
         ),
       ],
@@ -1353,10 +1357,8 @@ class _DailyInteractionPoint {
   final DateTime day;
   final int interactions;
 
-  String get axisLabel {
-    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return '${dayLabels[day.weekday - 1]} ${day.month}/${day.day}';
-  }
+  String get axisLabel =>
+      '${DateFormat.E().format(day)} ${DateFormat.Md().format(day)}';
 }
 
 DateTime _videoTimestamp(VideoEvent video) {
@@ -1375,10 +1377,10 @@ String _dayKey(DateTime day) {
   return '${day.year}-$month-$date';
 }
 
-String _formatLastUpdated(DateTime updatedAt) {
+String _formatLastUpdated(
+  AppLocalizations l10n,
+  DateTime updatedAt,
+) {
   final diff = DateTime.now().difference(updatedAt);
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  return '${diff.inDays}d ago';
+  return LocalizedTimeFormatter.formatDurationAgo(l10n, diff);
 }

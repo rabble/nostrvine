@@ -233,9 +233,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           trafficSource: ViewTrafficSource.search,
         ),
         // Back button overlay to exit video mode
-        Positioned(
+        PositionedDirectional(
           top: 50,
-          left: 16,
+          start: 16,
           child: SafeArea(
             child: IconButton(
               icon: Container(
