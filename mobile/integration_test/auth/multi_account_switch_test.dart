@@ -42,6 +42,7 @@ void main() {
 
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -178,6 +179,7 @@ void main() {
 
         logPhase('Phase 4: Signing works for A');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
@@ -192,6 +194,7 @@ void main() {
 
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -298,6 +301,7 @@ void main() {
 
         logPhase('Phase 4: Signing works for B after reinitialize');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

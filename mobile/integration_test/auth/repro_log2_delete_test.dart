@@ -97,6 +97,7 @@ void main() {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         // Pre-register B so we can login without polling
         final pubkeyB = await _registerAndVerifyViaApi(emailB, password);
@@ -255,6 +256,7 @@ void main() {
 
         logPhase('Phase 5 complete: signing works');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
@@ -272,6 +274,7 @@ void main() {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         // Use unique emails for this test case
         final emailA2 = 'log2-rst-a-$ts@test.divine.video';
@@ -423,6 +426,7 @@ void main() {
 
         logPhase('Phase 4b complete: signing works after restart');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
@@ -447,6 +451,7 @@ void main() {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -550,6 +555,7 @@ void main() {
 
         logPhase('Phase 5 complete: signing works');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
