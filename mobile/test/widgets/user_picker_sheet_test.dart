@@ -534,6 +534,81 @@ void main() {
         expect(find.byType(SvgPicture), findsNWidgets(2));
       });
     });
+
+    group('null profileRepository', () {
+      testWidgets(
+        'shows error state for allUsers mode when profileRepository is null',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                profileRepositoryProvider.overrideWithValue(null),
+                followRepositoryProvider.overrideWithValue(
+                  _createMockFollowRepository(),
+                ),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: UserPickerSheet(
+                    filterMode: UserPickerFilterMode.allUsers,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(
+              'User search is unavailable. Please try again later.',
+            ),
+            findsOneWidget,
+          );
+          // Should not show the search field
+          expect(find.byType(TextField), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows error state for mutualFollowsOnly mode '
+        'when profileRepository is null',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                profileRepositoryProvider.overrideWithValue(null),
+                followRepositoryProvider.overrideWithValue(
+                  _createMockFollowRepository(),
+                ),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: UserPickerSheet(
+                    filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(
+              'User search is unavailable. Please try again later.',
+            ),
+            findsOneWidget,
+          );
+          // Should not show the search field
+          expect(find.byType(TextField), findsNothing);
+        },
+      );
+    });
   });
 
   group(UserPickerFilterMode, () {
