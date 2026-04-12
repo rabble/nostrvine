@@ -2140,5 +2140,111 @@
   "categoryViolence": "Violență",
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vlogging",
-  "categoryWrestling": "Wrestling"
+  "categoryWrestling": "Wrestling",
+  "blossomFailedToSaveSettings": "Nu s-au putut salva setările: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "Nu s-a putut actualiza setarea de crosspost",
+  "cameraAgeRestriction": "Trebuie să ai cel puțin 16 ani pentru a crea conținut",
+  "categoriesCouldNotLoadCategories": "Nu s-au putut încărca categoriile",
+  "categoryGalleryCouldNotLoadVideos": "Nu s-au putut încărca videoclipurile",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "Anulează",
+  "commonDelete": "Șterge",
+  "commonRetry": "Reîncearcă",
+  "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Video {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Titlu: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "Anulează",
+  "followersFailedToLoadList": "Nu s-a putut încărca lista de urmăritori",
+  "followingFailedToLoadList": "Nu s-a putut încărca lista de urmăriți",
+  "inboxBlockedUser": "{displayName} a fost blocat(ă)",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Conversație eliminată",
+  "inboxReportedUser": "{displayName} a fost raportat(ă)",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "{displayName} a fost deblocat(ă)",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "Invită prieteni",
+  "keyImportError": "Eroare: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "Șterge",
+  "notificationFollowBack": "Urmărește înapoi",
+  "profileSetupUploadSuccess": "Fotografia de profil a fost încărcată cu succes!",
+  "proofmodeCheckAiGenerated": "Verifică dacă este generat de AI",
+  "reportDialogCancel": "Anulează",
+  "reportDialogReport": "Raportează",
+  "routerInvalidCreator": "Creator invalid",
+  "routerInvalidHashtagRoute": "Rută hashtag invalidă",
+  "searchFindCuratedVideoLists": "Găsește liste de videoclipuri selectate",
+  "searchForLists": "Caută liste",
+  "searchSomethingWentWrong": "Ceva nu a mers bine",
+  "searchTryAgain": "Încearcă din nou",
+  "trendingTitle": "În tendințe",
+  "videoEditorLayers": "Straturi",
+  "videoEditorStickers": "Stickere",
+  "videoMetadataContentWarnings": "Avertismente de conținut",
+  "videoMetadataExpiration": "Expirare",
+  "videoMetadataTags": "Etichete"
 }

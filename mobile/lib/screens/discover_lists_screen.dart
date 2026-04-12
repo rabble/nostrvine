@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -359,7 +360,9 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update subscription: $e'),
+            content: Text(
+              context.l10n.discoverListsFailedToUpdateSubscription('$e'),
+            ),
             backgroundColor: VineTheme.likeRed,
           ),
         );
@@ -433,7 +436,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
             ElevatedButton.icon(
               onPressed: _streamPublicLists,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
                 foregroundColor: VineTheme.backgroundColor,

@@ -2140,5 +2140,111 @@
   "categoryViolence": "Şiddet",
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vlog",
-  "categoryWrestling": "Güreş"
+  "categoryWrestling": "Güreş",
+  "blossomFailedToSaveSettings": "Ayarlar kaydedilemedi: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "Çapraz gönderi ayarı güncellenemedi",
+  "cameraAgeRestriction": "İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın",
+  "categoriesCouldNotLoadCategories": "Kategoriler yüklenemedi",
+  "categoryGalleryCouldNotLoadVideos": "Videolar yüklenemedi",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "İptal",
+  "commonDelete": "Sil",
+  "commonRetry": "Tekrar dene",
+  "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Video {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Başlık: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "İptal",
+  "followersFailedToLoadList": "Takipçi listesi yüklenemedi",
+  "followingFailedToLoadList": "Takip edilen listesi yüklenemedi",
+  "inboxBlockedUser": "{displayName} engellendi",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Sohbet kaldırıldı",
+  "inboxReportedUser": "{displayName} bildirildi",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "{displayName} engeli kaldırıldı",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "Arkadaşları Davet Et",
+  "keyImportError": "Hata: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "Sil",
+  "notificationFollowBack": "Geri takip et",
+  "profileSetupUploadSuccess": "Profil fotoğrafı başarıyla yüklendi!",
+  "proofmodeCheckAiGenerated": "Yapay zeka ile oluşturulup oluşturulmadığını kontrol et",
+  "reportDialogCancel": "İptal",
+  "reportDialogReport": "Bildir",
+  "routerInvalidCreator": "Geçersiz içerik üretici",
+  "routerInvalidHashtagRoute": "Geçersiz hashtag rotası",
+  "searchFindCuratedVideoLists": "Küratörlü video listelerini bul",
+  "searchForLists": "Liste ara",
+  "searchSomethingWentWrong": "Bir şeyler ters gitti",
+  "searchTryAgain": "Tekrar dene",
+  "trendingTitle": "Gündemde",
+  "videoEditorLayers": "Katmanlar",
+  "videoEditorStickers": "Çıkartmalar",
+  "videoMetadataContentWarnings": "İçerik Uyarıları",
+  "videoMetadataExpiration": "Son Kullanma",
+  "videoMetadataTags": "Etiketler"
 }

@@ -2140,5 +2140,111 @@
   "categoryViolence": "Violencia",
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vlogging",
-  "categoryWrestling": "Lucha libre"
+  "categoryWrestling": "Lucha libre",
+  "blossomFailedToSaveSettings": "No se pudieron guardar los ajustes: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "No se pudo actualizar la configuración de crosspost",
+  "cameraAgeRestriction": "Tenés que tener 16 años o más para crear contenido",
+  "categoriesCouldNotLoadCategories": "No se pudieron cargar las categorías",
+  "categoryGalleryCouldNotLoadVideos": "No se pudieron cargar los videos",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "Cancelar",
+  "commonDelete": "Eliminar",
+  "commonRetry": "Reintentar",
+  "discoverListsFailedToUpdateSubscription": "No se pudo actualizar la suscripción: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Video {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Título: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "Cancelar",
+  "followersFailedToLoadList": "No se pudo cargar la lista de seguidores",
+  "followingFailedToLoadList": "No se pudo cargar la lista de seguidos",
+  "inboxBlockedUser": "Bloqueaste a {displayName}",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Conversación eliminada",
+  "inboxReportedUser": "Reportaste a {displayName}",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "Desbloqueaste a {displayName}",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "Invitar amigos",
+  "keyImportError": "Error: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "Eliminar",
+  "notificationFollowBack": "Seguir de vuelta",
+  "profileSetupUploadSuccess": "¡Foto de perfil subida con éxito!",
+  "proofmodeCheckAiGenerated": "Verificar si fue generado por IA",
+  "reportDialogCancel": "Cancelar",
+  "reportDialogReport": "Reportar",
+  "routerInvalidCreator": "Creador no válido",
+  "routerInvalidHashtagRoute": "Ruta de hashtag no válida",
+  "searchFindCuratedVideoLists": "Encontrá listas de videos curadas",
+  "searchForLists": "Buscar listas",
+  "searchSomethingWentWrong": "Algo salió mal",
+  "searchTryAgain": "Reintentar",
+  "trendingTitle": "Tendencias",
+  "videoEditorLayers": "Capas",
+  "videoEditorStickers": "Stickers",
+  "videoMetadataContentWarnings": "Advertencias de contenido",
+  "videoMetadataExpiration": "Vencimiento",
+  "videoMetadataTags": "Etiquetas"
 }

@@ -1429,5 +1429,111 @@
   "categoryViolence": "폭력",
   "categoryVlog": "브이로그",
   "categoryVlogging": "브이로깅",
-  "categoryWrestling": "레슬링"
+  "categoryWrestling": "레슬링",
+  "blossomFailedToSaveSettings": "설정 저장에 실패했어요: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "크로스포스트 설정 업데이트에 실패했어요",
+  "cameraAgeRestriction": "콘텐츠를 만들려면 16세 이상이어야 해요",
+  "categoriesCouldNotLoadCategories": "카테고리를 불러올 수 없었어요",
+  "categoryGalleryCouldNotLoadVideos": "동영상을 불러올 수 없었어요",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "취소",
+  "commonDelete": "삭제",
+  "commonRetry": "다시 시도",
+  "discoverListsFailedToUpdateSubscription": "구독 업데이트에 실패했어요: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "동영상 {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "제목: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "취소",
+  "followersFailedToLoadList": "팔로워 목록을 불러오지 못했어요",
+  "followingFailedToLoadList": "팔로잉 목록을 불러오지 못했어요",
+  "inboxBlockedUser": "{displayName}을(를) 차단했어요",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "대화를 삭제했어요",
+  "inboxReportedUser": "{displayName}을(를) 신고했어요",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "{displayName}의 차단을 해제했어요",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "친구 초대",
+  "keyImportError": "오류: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "삭제",
+  "notificationFollowBack": "맞팔로우",
+  "profileSetupUploadSuccess": "프로필 사진이 성공적으로 업로드되었어요!",
+  "proofmodeCheckAiGenerated": "AI 생성 여부 확인",
+  "reportDialogCancel": "취소",
+  "reportDialogReport": "신고",
+  "routerInvalidCreator": "유효하지 않은 크리에이터",
+  "routerInvalidHashtagRoute": "유효하지 않은 해시태그 경로",
+  "searchFindCuratedVideoLists": "큐레이션된 동영상 목록 찾기",
+  "searchForLists": "목록 검색",
+  "searchSomethingWentWrong": "문제가 발생했어요",
+  "searchTryAgain": "다시 시도",
+  "trendingTitle": "트렌딩",
+  "videoEditorLayers": "레이어",
+  "videoEditorStickers": "스티커",
+  "videoMetadataContentWarnings": "콘텐츠 경고",
+  "videoMetadataExpiration": "만료",
+  "videoMetadataTags": "태그"
 }

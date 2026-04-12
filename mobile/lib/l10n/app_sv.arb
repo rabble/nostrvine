@@ -2140,5 +2140,111 @@
   "categoryViolence": "Våld",
   "categoryVlog": "Vlogg",
   "categoryVlogging": "Vloggning",
-  "categoryWrestling": "Brottning"
+  "categoryWrestling": "Brottning",
+  "blossomFailedToSaveSettings": "Kunde inte spara inställningarna: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "Kunde inte uppdatera crosspost-inställningen",
+  "cameraAgeRestriction": "Du måste vara 16 år eller äldre för att skapa innehåll",
+  "categoriesCouldNotLoadCategories": "Kunde inte ladda kategorier",
+  "categoryGalleryCouldNotLoadVideos": "Kunde inte ladda videor",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "Avbryt",
+  "commonDelete": "Radera",
+  "commonRetry": "Försök igen",
+  "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Video {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Titel: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "Avbryt",
+  "followersFailedToLoadList": "Kunde inte ladda följarlistan",
+  "followingFailedToLoadList": "Kunde inte ladda följer-listan",
+  "inboxBlockedUser": "{displayName} blockerad",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Konversation borttagen",
+  "inboxReportedUser": "{displayName} rapporterad",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "{displayName} avblockerad",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "Bjud in vänner",
+  "keyImportError": "Fel: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "Radera",
+  "notificationFollowBack": "Följ tillbaka",
+  "profileSetupUploadSuccess": "Profilbilden laddades upp!",
+  "proofmodeCheckAiGenerated": "Kontrollera om AI-genererat",
+  "reportDialogCancel": "Avbryt",
+  "reportDialogReport": "Rapportera",
+  "routerInvalidCreator": "Ogiltig skapare",
+  "routerInvalidHashtagRoute": "Ogiltig hashtagrutt",
+  "searchFindCuratedVideoLists": "Hitta kurerade videolistor",
+  "searchForLists": "Sök efter listor",
+  "searchSomethingWentWrong": "Något gick fel",
+  "searchTryAgain": "Försök igen",
+  "trendingTitle": "Trendande",
+  "videoEditorLayers": "Lager",
+  "videoEditorStickers": "Klistermärken",
+  "videoMetadataContentWarnings": "Innehållsvarningar",
+  "videoMetadataExpiration": "Utgångsdatum",
+  "videoMetadataTags": "Taggar"
 }

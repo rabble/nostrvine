@@ -2140,5 +2140,111 @@
   "categoryViolence": "Kekerasan",
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vlogging",
-  "categoryWrestling": "Gulat"
+  "categoryWrestling": "Gulat",
+  "blossomFailedToSaveSettings": "Gagal menyimpan pengaturan: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "Gagal memperbarui pengaturan crosspost",
+  "cameraAgeRestriction": "Kamu harus berusia 16 tahun atau lebih untuk membuat konten",
+  "categoriesCouldNotLoadCategories": "Tidak dapat memuat kategori",
+  "categoryGalleryCouldNotLoadVideos": "Tidak dapat memuat video",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "Batal",
+  "commonDelete": "Hapus",
+  "commonRetry": "Coba lagi",
+  "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Video {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Judul: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "Batal",
+  "followersFailedToLoadList": "Gagal memuat daftar pengikut",
+  "followingFailedToLoadList": "Gagal memuat daftar mengikuti",
+  "inboxBlockedUser": "{displayName} diblokir",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Percakapan dihapus",
+  "inboxReportedUser": "{displayName} dilaporkan",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "{displayName} tidak diblokir lagi",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "Undang Teman",
+  "keyImportError": "Error: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "Hapus",
+  "notificationFollowBack": "Ikuti balik",
+  "profileSetupUploadSuccess": "Foto profil berhasil diunggah!",
+  "proofmodeCheckAiGenerated": "Periksa apakah dibuat oleh AI",
+  "reportDialogCancel": "Batal",
+  "reportDialogReport": "Laporkan",
+  "routerInvalidCreator": "Kreator tidak valid",
+  "routerInvalidHashtagRoute": "Rute hashtag tidak valid",
+  "searchFindCuratedVideoLists": "Temukan daftar video pilihan",
+  "searchForLists": "Cari daftar",
+  "searchSomethingWentWrong": "Terjadi kesalahan",
+  "searchTryAgain": "Coba lagi",
+  "trendingTitle": "Trending",
+  "videoEditorLayers": "Lapisan",
+  "videoEditorStickers": "Stiker",
+  "videoMetadataContentWarnings": "Peringatan Konten",
+  "videoMetadataExpiration": "Kedaluwarsa",
+  "videoMetadataTags": "Tag"
 }

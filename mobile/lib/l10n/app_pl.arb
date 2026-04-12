@@ -2140,5 +2140,111 @@
   "categoryViolence": "Przemoc",
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vlogowanie",
-  "categoryWrestling": "Wrestling"
+  "categoryWrestling": "Wrestling",
+  "blossomFailedToSaveSettings": "Nie udało się zapisać ustawień: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "Nie udało się zaktualizować ustawienia crosspostu",
+  "cameraAgeRestriction": "Musisz mieć co najmniej 16 lat, aby tworzyć treści",
+  "categoriesCouldNotLoadCategories": "Nie udało się załadować kategorii",
+  "categoryGalleryCouldNotLoadVideos": "Nie udało się załadować filmów",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "Anuluj",
+  "commonDelete": "Usuń",
+  "commonRetry": "Ponów",
+  "discoverListsFailedToUpdateSubscription": "Nie udało się zaktualizować subskrypcji: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Film {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Tytuł: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "Anuluj",
+  "followersFailedToLoadList": "Nie udało się załadować listy obserwujących",
+  "followingFailedToLoadList": "Nie udało się załadować listy obserwowanych",
+  "inboxBlockedUser": "Zablokowano {displayName}",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Usunięto rozmowę",
+  "inboxReportedUser": "Zgłoszono {displayName}",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "Odblokowano {displayName}",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "Zaproś znajomych",
+  "keyImportError": "Błąd: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "Usuń",
+  "notificationFollowBack": "Zaobserwuj",
+  "profileSetupUploadSuccess": "Zdjęcie profilowe przesłane pomyślnie!",
+  "proofmodeCheckAiGenerated": "Sprawdź, czy wygenerowane przez AI",
+  "reportDialogCancel": "Anuluj",
+  "reportDialogReport": "Zgłoś",
+  "routerInvalidCreator": "Nieprawidłowy twórca",
+  "routerInvalidHashtagRoute": "Nieprawidłowa ścieżka hashtagu",
+  "searchFindCuratedVideoLists": "Znajdź wyselekcjonowane listy filmów",
+  "searchForLists": "Szukaj list",
+  "searchSomethingWentWrong": "Coś poszło nie tak",
+  "searchTryAgain": "Spróbuj ponownie",
+  "trendingTitle": "Na czasie",
+  "videoEditorLayers": "Warstwy",
+  "videoEditorStickers": "Naklejki",
+  "videoMetadataContentWarnings": "Ostrzeżenia o treści",
+  "videoMetadataExpiration": "Wygaśnięcie",
+  "videoMetadataTags": "Tagi"
 }

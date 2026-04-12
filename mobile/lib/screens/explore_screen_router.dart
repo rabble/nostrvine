@@ -108,12 +108,19 @@ class _ExploreScreenRouterState extends ConsumerState<ExploreScreenRouter>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Video ${index + 1}/${videos.length}',
+                        context.l10n.exploreVideoCounter(
+                          index + 1,
+                          videos.length,
+                        ),
                         style: const TextStyle(fontSize: 24),
                       ),
                       const SizedBox(height: 16),
-                      Text('ID: ${video.id}'),
-                      Text('Title: ${video.title ?? video.content}'),
+                      Text(context.l10n.exploreVideoId(video.id)),
+                      Text(
+                        context.l10n.exploreVideoTitle(
+                          video.title ?? video.content,
+                        ),
+                      ),
                     ],
                   ),
                 );

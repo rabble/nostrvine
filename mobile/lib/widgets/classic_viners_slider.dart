@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -36,7 +37,10 @@ class ClassicVinersSlider extends ConsumerWidget {
               children: [
                 const Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
                 const SizedBox(width: 8),
-                Text('OG Viners', style: VineTheme.titleSmallFont()),
+                Text(
+                  context.l10n.classicVinersTitle,
+                  style: VineTheme.titleSmallFont(),
+                ),
               ],
             ),
           ),

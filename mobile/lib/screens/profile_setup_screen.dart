@@ -1259,8 +1259,8 @@ class _ProfileSetupScreenViewState
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile picture uploaded successfully!'),
+            SnackBar(
+              content: Text(context.l10n.profileSetupUploadSuccess),
               backgroundColor: VineTheme.success,
             ),
           );
@@ -1815,7 +1815,7 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
                     color: VineTheme.whiteText,
                   ),
                 )
-              : const Text('Send request'),
+              : Text(context.l10n.profileSetupSendRequest),
         ),
       ],
     );

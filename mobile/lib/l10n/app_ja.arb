@@ -2140,5 +2140,111 @@
   "categoryViolence": "暴力",
   "categoryVlog": "ブイログ",
   "categoryVlogging": "ブイログ",
-  "categoryWrestling": "プロレス"
+  "categoryWrestling": "プロレス",
+  "blossomFailedToSaveSettings": "設定の保存に失敗しました: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "クロスポスト設定の更新に失敗しました",
+  "cameraAgeRestriction": "コンテンツを作成するには16歳以上である必要があります",
+  "categoriesCouldNotLoadCategories": "カテゴリを読み込めませんでした",
+  "categoryGalleryCouldNotLoadVideos": "動画を読み込めませんでした",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "キャンセル",
+  "commonDelete": "削除",
+  "commonRetry": "再試行",
+  "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新に失敗しました: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "動画 {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "タイトル: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "キャンセル",
+  "followersFailedToLoadList": "フォロワーリストの読み込みに失敗しました",
+  "followingFailedToLoadList": "フォロー中リストの読み込みに失敗しました",
+  "inboxBlockedUser": "{displayName}をブロックしました",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "会話を削除しました",
+  "inboxReportedUser": "{displayName}を報告しました",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "{displayName}のブロックを解除しました",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "友達を招待",
+  "keyImportError": "エラー: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "削除",
+  "notificationFollowBack": "フォローバック",
+  "profileSetupUploadSuccess": "プロフィール写真のアップロードに成功しました！",
+  "proofmodeCheckAiGenerated": "AI生成かどうかを確認",
+  "reportDialogCancel": "キャンセル",
+  "reportDialogReport": "報告",
+  "routerInvalidCreator": "無効なクリエイター",
+  "routerInvalidHashtagRoute": "無効なハッシュタグルート",
+  "searchFindCuratedVideoLists": "キュレーションされた動画リストを探す",
+  "searchForLists": "リストを検索",
+  "searchSomethingWentWrong": "問題が発生しました",
+  "searchTryAgain": "再試行",
+  "trendingTitle": "トレンド",
+  "videoEditorLayers": "レイヤー",
+  "videoEditorStickers": "ステッカー",
+  "videoMetadataContentWarnings": "コンテンツ警告",
+  "videoMetadataExpiration": "有効期限",
+  "videoMetadataTags": "タグ"
 }

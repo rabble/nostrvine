@@ -2140,5 +2140,111 @@
   "categoryViolence": "عنف",
   "categoryVlog": "مدونة فيديو",
   "categoryVlogging": "تدوين فيديو",
-  "categoryWrestling": "مصارعة"
+  "categoryWrestling": "مصارعة",
+  "blossomFailedToSaveSettings": "فشل حفظ الإعدادات: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "فشل تحديث إعداد النشر المتقاطع",
+  "cameraAgeRestriction": "يجب أن يكون عمرك 16 عامًا أو أكثر لإنشاء محتوى",
+  "categoriesCouldNotLoadCategories": "تعذّر تحميل الفئات",
+  "categoryGalleryCouldNotLoadVideos": "تعذّر تحميل الفيديوهات",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "إلغاء",
+  "commonDelete": "حذف",
+  "commonRetry": "إعادة المحاولة",
+  "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "فيديو {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "المعرّف: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "العنوان: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "إلغاء",
+  "followersFailedToLoadList": "فشل تحميل قائمة المتابعين",
+  "followingFailedToLoadList": "فشل تحميل قائمة المتابَعين",
+  "inboxBlockedUser": "تم حظر {displayName}",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "تمت إزالة المحادثة",
+  "inboxReportedUser": "تم الإبلاغ عن {displayName}",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "تم إلغاء حظر {displayName}",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "دعوة الأصدقاء",
+  "keyImportError": "خطأ: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "حذف",
+  "notificationFollowBack": "متابعة بالمقابل",
+  "profileSetupUploadSuccess": "تم رفع صورة الملف الشخصي بنجاح!",
+  "proofmodeCheckAiGenerated": "التحقق إذا كان مُنشأً بالذكاء الاصطناعي",
+  "reportDialogCancel": "إلغاء",
+  "reportDialogReport": "إبلاغ",
+  "routerInvalidCreator": "منشئ غير صالح",
+  "routerInvalidHashtagRoute": "مسار هاشتاغ غير صالح",
+  "searchFindCuratedVideoLists": "ابحث عن قوائم فيديو مختارة",
+  "searchForLists": "البحث عن قوائم",
+  "searchSomethingWentWrong": "حدث خطأ ما",
+  "searchTryAgain": "حاول مجددًا",
+  "trendingTitle": "الرائج",
+  "videoEditorLayers": "الطبقات",
+  "videoEditorStickers": "الملصقات",
+  "videoMetadataContentWarnings": "تحذيرات المحتوى",
+  "videoMetadataExpiration": "انتهاء الصلاحية",
+  "videoMetadataTags": "الوسوم"
 }

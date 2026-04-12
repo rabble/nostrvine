@@ -2140,5 +2140,138 @@
   "categoryViolence": "Violence",
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vlogging",
-  "categoryWrestling": "Wrestling"
+  "categoryWrestling": "Wrestling",
+
+  "profileSetupUploadSuccess": "Profile picture uploaded successfully!",
+  "profileSetupSendRequest": "Send request",
+
+  "inboxReportedUser": "Reported {displayName}",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxBlockedUser": "Blocked {displayName}",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "Unblocked {displayName}",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Removed conversation",
+
+  "reportDialogCancel": "Cancel",
+  "reportDialogReport": "Report",
+
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Title: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Video {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreNoVideosAvailable": "No videos available",
+
+  "discoverListsFailedToUpdateSubscription": "Failed to update subscription: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "commonRetry": "Retry",
+  "commonDelete": "Delete",
+  "commonCancel": "Cancel",
+
+  "videoMetadataTags": "Tags",
+  "videoMetadataExpiration": "Expiration",
+  "videoMetadataContentWarnings": "Content Warnings",
+
+  "videoEditorLayers": "Layers",
+  "videoEditorStickers": "Stickers",
+
+  "trendingTitle": "Trending",
+
+  "proofmodeCheckAiGenerated": "Check if AI-generated",
+
+  "libraryDeleteConfirm": "Delete",
+
+  "routerInvalidCreator": "Invalid creator",
+  "routerInvalidHashtagRoute": "Invalid hashtag route",
+
+  "categoryGalleryCouldNotLoadVideos": "Could not load videos",
+  "categoriesCouldNotLoadCategories": "Could not load categories",
+
+  "notificationFollowBack": "Follow back",
+
+  "followingFailedToLoadList": "Failed to load following list",
+  "followersFailedToLoadList": "Failed to load followers list",
+
+  "classicVinersTitle": "OG Viners",
+
+  "blossomFailedToSaveSettings": "Failed to save settings: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "blueskyFailedToUpdateCrosspost": "Failed to update crosspost setting",
+
+  "invitesTitle": "Invite Friends",
+
+  "searchSomethingWentWrong": "Something went wrong",
+  "searchTryAgain": "Try again",
+  "searchForLists": "Search for lists",
+  "searchFindCuratedVideoLists": "Find curated video lists",
+
+  "contentWarningViewAnyway": "View Anyway",
+
+  "cameraAgeRestriction": "You must be 16 or older to create content",
+
+  "featureRequestCancel": "Cancel",
+
+  "keyImportError": "Error: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }
