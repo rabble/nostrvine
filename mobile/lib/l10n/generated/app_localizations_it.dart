@@ -4349,4 +4349,148 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'Wrestling';
+
+  @override
+  String get profileSetupUploadSuccess => 'Foto profilo caricata con successo!';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayName segnalato/a';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayName bloccato/a';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayName sbloccato/a';
+  }
+
+  @override
+  String get inboxRemovedConversation => 'Conversazione rimossa';
+
+  @override
+  String get reportDialogCancel => 'Annulla';
+
+  @override
+  String get reportDialogReport => 'Segnala';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'Titolo: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return 'Video $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'Impossibile aggiornare l\'abbonamento: $error';
+  }
+
+  @override
+  String get commonRetry => 'Riprova';
+
+  @override
+  String get commonDelete => 'Elimina';
+
+  @override
+  String get commonCancel => 'Annulla';
+
+  @override
+  String get videoMetadataTags => 'Tag';
+
+  @override
+  String get videoMetadataExpiration => 'Scadenza';
+
+  @override
+  String get videoMetadataContentWarnings => 'Avvisi sui contenuti';
+
+  @override
+  String get videoEditorLayers => 'Livelli';
+
+  @override
+  String get videoEditorStickers => 'Sticker';
+
+  @override
+  String get trendingTitle => 'Di tendenza';
+
+  @override
+  String get proofmodeCheckAiGenerated => 'Verifica se generato dall\'IA';
+
+  @override
+  String get libraryDeleteConfirm => 'Elimina';
+
+  @override
+  String get routerInvalidCreator => 'Creatore non valido';
+
+  @override
+  String get routerInvalidHashtagRoute => 'Percorso hashtag non valido';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos =>
+      'Impossibile caricare i video';
+
+  @override
+  String get categoriesCouldNotLoadCategories =>
+      'Impossibile caricare le categorie';
+
+  @override
+  String get notificationFollowBack => 'Segui a tua volta';
+
+  @override
+  String get followingFailedToLoadList =>
+      'Impossibile caricare la lista dei seguiti';
+
+  @override
+  String get followersFailedToLoadList =>
+      'Impossibile caricare la lista dei follower';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return 'Impossibile salvare le impostazioni: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost =>
+      'Impossibile aggiornare l\'impostazione di crosspost';
+
+  @override
+  String get invitesTitle => 'Invita amici';
+
+  @override
+  String get searchSomethingWentWrong => 'Qualcosa è andato storto';
+
+  @override
+  String get searchTryAgain => 'Riprova';
+
+  @override
+  String get searchForLists => 'Cerca liste';
+
+  @override
+  String get searchFindCuratedVideoLists => 'Trova liste di video curate';
+
+  @override
+  String get cameraAgeRestriction =>
+      'Devi avere almeno 16 anni per creare contenuti';
+
+  @override
+  String get featureRequestCancel => 'Annulla';
+
+  @override
+  String keyImportError(String error) {
+    return 'Errore: $error';
+  }
 }

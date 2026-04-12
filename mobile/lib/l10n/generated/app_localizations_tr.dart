@@ -4287,4 +4287,146 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'Güreş';
+
+  @override
+  String get profileSetupUploadSuccess =>
+      'Profil fotoğrafı başarıyla yüklendi!';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayName bildirildi';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayName engellendi';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayName engeli kaldırıldı';
+  }
+
+  @override
+  String get inboxRemovedConversation => 'Sohbet kaldırıldı';
+
+  @override
+  String get reportDialogCancel => 'İptal';
+
+  @override
+  String get reportDialogReport => 'Bildir';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'Başlık: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return 'Video $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'Abonelik güncellenemedi: $error';
+  }
+
+  @override
+  String get commonRetry => 'Tekrar dene';
+
+  @override
+  String get commonDelete => 'Sil';
+
+  @override
+  String get commonCancel => 'İptal';
+
+  @override
+  String get videoMetadataTags => 'Etiketler';
+
+  @override
+  String get videoMetadataExpiration => 'Son Kullanma';
+
+  @override
+  String get videoMetadataContentWarnings => 'İçerik Uyarıları';
+
+  @override
+  String get videoEditorLayers => 'Katmanlar';
+
+  @override
+  String get videoEditorStickers => 'Çıkartmalar';
+
+  @override
+  String get trendingTitle => 'Gündemde';
+
+  @override
+  String get proofmodeCheckAiGenerated =>
+      'Yapay zeka ile oluşturulup oluşturulmadığını kontrol et';
+
+  @override
+  String get libraryDeleteConfirm => 'Sil';
+
+  @override
+  String get routerInvalidCreator => 'Geçersiz içerik üretici';
+
+  @override
+  String get routerInvalidHashtagRoute => 'Geçersiz hashtag rotası';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos => 'Videolar yüklenemedi';
+
+  @override
+  String get categoriesCouldNotLoadCategories => 'Kategoriler yüklenemedi';
+
+  @override
+  String get notificationFollowBack => 'Geri takip et';
+
+  @override
+  String get followingFailedToLoadList => 'Takip edilen listesi yüklenemedi';
+
+  @override
+  String get followersFailedToLoadList => 'Takipçi listesi yüklenemedi';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return 'Ayarlar kaydedilemedi: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost =>
+      'Çapraz gönderi ayarı güncellenemedi';
+
+  @override
+  String get invitesTitle => 'Arkadaşları Davet Et';
+
+  @override
+  String get searchSomethingWentWrong => 'Bir şeyler ters gitti';
+
+  @override
+  String get searchTryAgain => 'Tekrar dene';
+
+  @override
+  String get searchForLists => 'Liste ara';
+
+  @override
+  String get searchFindCuratedVideoLists => 'Küratörlü video listelerini bul';
+
+  @override
+  String get cameraAgeRestriction =>
+      'İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın';
+
+  @override
+  String get featureRequestCancel => 'İptal';
+
+  @override
+  String keyImportError(String error) {
+    return 'Hata: $error';
+  }
 }

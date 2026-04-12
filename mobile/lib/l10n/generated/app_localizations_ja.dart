@@ -4136,4 +4136,142 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'プロレス';
+
+  @override
+  String get profileSetupUploadSuccess => 'プロフィール写真のアップロードに成功しました！';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayNameを報告しました';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayNameをブロックしました';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayNameのブロックを解除しました';
+  }
+
+  @override
+  String get inboxRemovedConversation => '会話を削除しました';
+
+  @override
+  String get reportDialogCancel => 'キャンセル';
+
+  @override
+  String get reportDialogReport => '報告';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'タイトル: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return '動画 $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'サブスクリプションの更新に失敗しました: $error';
+  }
+
+  @override
+  String get commonRetry => '再試行';
+
+  @override
+  String get commonDelete => '削除';
+
+  @override
+  String get commonCancel => 'キャンセル';
+
+  @override
+  String get videoMetadataTags => 'タグ';
+
+  @override
+  String get videoMetadataExpiration => '有効期限';
+
+  @override
+  String get videoMetadataContentWarnings => 'コンテンツ警告';
+
+  @override
+  String get videoEditorLayers => 'レイヤー';
+
+  @override
+  String get videoEditorStickers => 'ステッカー';
+
+  @override
+  String get trendingTitle => 'トレンド';
+
+  @override
+  String get proofmodeCheckAiGenerated => 'AI生成かどうかを確認';
+
+  @override
+  String get libraryDeleteConfirm => '削除';
+
+  @override
+  String get routerInvalidCreator => '無効なクリエイター';
+
+  @override
+  String get routerInvalidHashtagRoute => '無効なハッシュタグルート';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos => '動画を読み込めませんでした';
+
+  @override
+  String get categoriesCouldNotLoadCategories => 'カテゴリを読み込めませんでした';
+
+  @override
+  String get notificationFollowBack => 'フォローバック';
+
+  @override
+  String get followingFailedToLoadList => 'フォロー中リストの読み込みに失敗しました';
+
+  @override
+  String get followersFailedToLoadList => 'フォロワーリストの読み込みに失敗しました';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return '設定の保存に失敗しました: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost => 'クロスポスト設定の更新に失敗しました';
+
+  @override
+  String get invitesTitle => '友達を招待';
+
+  @override
+  String get searchSomethingWentWrong => '問題が発生しました';
+
+  @override
+  String get searchTryAgain => '再試行';
+
+  @override
+  String get searchForLists => 'リストを検索';
+
+  @override
+  String get searchFindCuratedVideoLists => 'キュレーションされた動画リストを探す';
+
+  @override
+  String get cameraAgeRestriction => 'コンテンツを作成するには16歳以上である必要があります';
+
+  @override
+  String get featureRequestCancel => 'キャンセル';
+
+  @override
+  String keyImportError(String error) {
+    return 'エラー: $error';
+  }
 }

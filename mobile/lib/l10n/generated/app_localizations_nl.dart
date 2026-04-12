@@ -922,7 +922,7 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count nieuwe video\'s',
+      other: '$count nieuwe video\'\'s',
       one: '1 nieuwe video',
     );
     return '$_temp0';
@@ -933,7 +933,7 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count nieuwe video\'s',
+      other: '$count nieuwe video\'\'s',
       one: '1 nieuwe video',
     );
     return '$_temp0 laden';
@@ -4320,4 +4320,146 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'Worstelen';
+
+  @override
+  String get profileSetupUploadSuccess => 'Profielfoto succesvol geüpload!';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayName gerapporteerd';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayName geblokkeerd';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayName gedeblokkeerd';
+  }
+
+  @override
+  String get inboxRemovedConversation => 'Gesprek verwijderd';
+
+  @override
+  String get reportDialogCancel => 'Annuleren';
+
+  @override
+  String get reportDialogReport => 'Rapporteren';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'Titel: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return 'Video $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'Abonnement bijwerken mislukt: $error';
+  }
+
+  @override
+  String get commonRetry => 'Opnieuw proberen';
+
+  @override
+  String get commonDelete => 'Verwijderen';
+
+  @override
+  String get commonCancel => 'Annuleren';
+
+  @override
+  String get videoMetadataTags => 'Tags';
+
+  @override
+  String get videoMetadataExpiration => 'Vervaldatum';
+
+  @override
+  String get videoMetadataContentWarnings => 'Inhoudswaarschuwingen';
+
+  @override
+  String get videoEditorLayers => 'Lagen';
+
+  @override
+  String get videoEditorStickers => 'Stickers';
+
+  @override
+  String get trendingTitle => 'Trending';
+
+  @override
+  String get proofmodeCheckAiGenerated => 'Controleren of AI-gegenereerd';
+
+  @override
+  String get libraryDeleteConfirm => 'Verwijderen';
+
+  @override
+  String get routerInvalidCreator => 'Ongeldige maker';
+
+  @override
+  String get routerInvalidHashtagRoute => 'Ongeldige hashtagroute';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos =>
+      'Video\'s konden niet worden geladen';
+
+  @override
+  String get categoriesCouldNotLoadCategories =>
+      'Categorieën konden niet worden geladen';
+
+  @override
+  String get notificationFollowBack => 'Terugvolgen';
+
+  @override
+  String get followingFailedToLoadList => 'Volglijst kon niet worden geladen';
+
+  @override
+  String get followersFailedToLoadList => 'Volgerlijst kon niet worden geladen';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return 'Instellingen opslaan mislukt: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost =>
+      'Crosspost-instelling bijwerken mislukt';
+
+  @override
+  String get invitesTitle => 'Vrienden uitnodigen';
+
+  @override
+  String get searchSomethingWentWrong => 'Er ging iets mis';
+
+  @override
+  String get searchTryAgain => 'Opnieuw proberen';
+
+  @override
+  String get searchForLists => 'Zoek naar lijsten';
+
+  @override
+  String get searchFindCuratedVideoLists => 'Vind samengestelde videolijsten';
+
+  @override
+  String get cameraAgeRestriction =>
+      'Je moet 16 jaar of ouder zijn om content te maken';
+
+  @override
+  String get featureRequestCancel => 'Annuleren';
+
+  @override
+  String keyImportError(String error) {
+    return 'Fout: $error';
+  }
 }

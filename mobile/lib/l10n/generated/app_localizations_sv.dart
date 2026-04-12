@@ -4299,4 +4299,144 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'Brottning';
+
+  @override
+  String get profileSetupUploadSuccess => 'Profilbilden laddades upp!';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayName rapporterad';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayName blockerad';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayName avblockerad';
+  }
+
+  @override
+  String get inboxRemovedConversation => 'Konversation borttagen';
+
+  @override
+  String get reportDialogCancel => 'Avbryt';
+
+  @override
+  String get reportDialogReport => 'Rapportera';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'Titel: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return 'Video $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'Kunde inte uppdatera prenumerationen: $error';
+  }
+
+  @override
+  String get commonRetry => 'Försök igen';
+
+  @override
+  String get commonDelete => 'Radera';
+
+  @override
+  String get commonCancel => 'Avbryt';
+
+  @override
+  String get videoMetadataTags => 'Taggar';
+
+  @override
+  String get videoMetadataExpiration => 'Utgångsdatum';
+
+  @override
+  String get videoMetadataContentWarnings => 'Innehållsvarningar';
+
+  @override
+  String get videoEditorLayers => 'Lager';
+
+  @override
+  String get videoEditorStickers => 'Klistermärken';
+
+  @override
+  String get trendingTitle => 'Trendande';
+
+  @override
+  String get proofmodeCheckAiGenerated => 'Kontrollera om AI-genererat';
+
+  @override
+  String get libraryDeleteConfirm => 'Radera';
+
+  @override
+  String get routerInvalidCreator => 'Ogiltig skapare';
+
+  @override
+  String get routerInvalidHashtagRoute => 'Ogiltig hashtagrutt';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos => 'Kunde inte ladda videor';
+
+  @override
+  String get categoriesCouldNotLoadCategories => 'Kunde inte ladda kategorier';
+
+  @override
+  String get notificationFollowBack => 'Följ tillbaka';
+
+  @override
+  String get followingFailedToLoadList => 'Kunde inte ladda följer-listan';
+
+  @override
+  String get followersFailedToLoadList => 'Kunde inte ladda följarlistan';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return 'Kunde inte spara inställningarna: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost =>
+      'Kunde inte uppdatera crosspost-inställningen';
+
+  @override
+  String get invitesTitle => 'Bjud in vänner';
+
+  @override
+  String get searchSomethingWentWrong => 'Något gick fel';
+
+  @override
+  String get searchTryAgain => 'Försök igen';
+
+  @override
+  String get searchForLists => 'Sök efter listor';
+
+  @override
+  String get searchFindCuratedVideoLists => 'Hitta kurerade videolistor';
+
+  @override
+  String get cameraAgeRestriction =>
+      'Du måste vara 16 år eller äldre för att skapa innehåll';
+
+  @override
+  String get featureRequestCancel => 'Avbryt';
+
+  @override
+  String keyImportError(String error) {
+    return 'Fel: $error';
+  }
 }

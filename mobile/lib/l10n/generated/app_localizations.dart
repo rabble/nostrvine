@@ -7705,6 +7705,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wrestling'**
   String get categoryWrestling;
+
+  /// No description provided for @profileSetupUploadSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile picture uploaded successfully!'**
+  String get profileSetupUploadSuccess;
+
+  /// No description provided for @inboxReportedUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported {displayName}'**
+  String inboxReportedUser(String displayName);
+
+  /// No description provided for @inboxBlockedUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked {displayName}'**
+  String inboxBlockedUser(String displayName);
+
+  /// No description provided for @inboxUnblockedUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblocked {displayName}'**
+  String inboxUnblockedUser(String displayName);
+
+  /// No description provided for @inboxRemovedConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed conversation'**
+  String get inboxRemovedConversation;
+
+  /// No description provided for @reportDialogCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get reportDialogCancel;
+
+  /// No description provided for @reportDialogReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportDialogReport;
+
+  /// No description provided for @exploreVideoId.
+  ///
+  /// In en, this message translates to:
+  /// **'ID: {id}'**
+  String exploreVideoId(String id);
+
+  /// No description provided for @exploreVideoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title: {title}'**
+  String exploreVideoTitle(String title);
+
+  /// No description provided for @exploreVideoCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Video {current}/{total}'**
+  String exploreVideoCounter(int current, int total);
+
+  /// No description provided for @discoverListsFailedToUpdateSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update subscription: {error}'**
+  String discoverListsFailedToUpdateSubscription(String error);
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get commonRetry;
+
+  /// No description provided for @commonDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get commonDelete;
+
+  /// No description provided for @commonCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get commonCancel;
+
+  /// No description provided for @videoMetadataTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get videoMetadataTags;
+
+  /// No description provided for @videoMetadataExpiration.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiration'**
+  String get videoMetadataExpiration;
+
+  /// No description provided for @videoMetadataContentWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Warnings'**
+  String get videoMetadataContentWarnings;
+
+  /// No description provided for @videoEditorLayers.
+  ///
+  /// In en, this message translates to:
+  /// **'Layers'**
+  String get videoEditorLayers;
+
+  /// No description provided for @videoEditorStickers.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers'**
+  String get videoEditorStickers;
+
+  /// No description provided for @trendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trending'**
+  String get trendingTitle;
+
+  /// No description provided for @proofmodeCheckAiGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Check if AI-generated'**
+  String get proofmodeCheckAiGenerated;
+
+  /// No description provided for @libraryDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get libraryDeleteConfirm;
+
+  /// No description provided for @routerInvalidCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid creator'**
+  String get routerInvalidCreator;
+
+  /// No description provided for @routerInvalidHashtagRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid hashtag route'**
+  String get routerInvalidHashtagRoute;
+
+  /// No description provided for @categoryGalleryCouldNotLoadVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load videos'**
+  String get categoryGalleryCouldNotLoadVideos;
+
+  /// No description provided for @categoriesCouldNotLoadCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load categories'**
+  String get categoriesCouldNotLoadCategories;
+
+  /// No description provided for @notificationFollowBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow back'**
+  String get notificationFollowBack;
+
+  /// No description provided for @followingFailedToLoadList.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load following list'**
+  String get followingFailedToLoadList;
+
+  /// No description provided for @followersFailedToLoadList.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load followers list'**
+  String get followersFailedToLoadList;
+
+  /// No description provided for @classicVinersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'OG Viners'**
+  String get classicVinersTitle;
+
+  /// No description provided for @blossomFailedToSaveSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save settings: {error}'**
+  String blossomFailedToSaveSettings(String error);
+
+  /// No description provided for @blueskyFailedToUpdateCrosspost.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update crosspost setting'**
+  String get blueskyFailedToUpdateCrosspost;
+
+  /// No description provided for @invitesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite Friends'**
+  String get invitesTitle;
+
+  /// No description provided for @searchSomethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get searchSomethingWentWrong;
+
+  /// No description provided for @searchTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get searchTryAgain;
+
+  /// No description provided for @searchForLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for lists'**
+  String get searchForLists;
+
+  /// No description provided for @searchFindCuratedVideoLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Find curated video lists'**
+  String get searchFindCuratedVideoLists;
+
+  /// No description provided for @cameraAgeRestriction.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be 16 or older to create content'**
+  String get cameraAgeRestriction;
+
+  /// No description provided for @featureRequestCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get featureRequestCancel;
+
+  /// No description provided for @keyImportError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String keyImportError(String error);
 }
 
 class _AppLocalizationsDelegate

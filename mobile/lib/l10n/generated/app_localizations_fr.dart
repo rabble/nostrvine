@@ -131,7 +131,7 @@ class AppLocalizationsFr extends AppLocalizations {
       other: 'les',
       one: 'le',
     );
-    return 'Tu as $count $_temp0 non enregistré$_temp1. Changer de compte va garder $_temp2, mais tu voudras peut-être $_temp3 publier ou relire d\'abord.';
+    return 'Tu as $count $_temp0 non enregistré$_temp1. Changer de compte va garder $_temp2, mais tu voudras peut-être $_temp3 publier ou relire d\'\'abord.';
   }
 
   @override
@@ -4362,4 +4362,150 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'Catch';
+
+  @override
+  String get profileSetupUploadSuccess =>
+      'Photo de profil importée avec succès !';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayName signalé(e)';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayName bloqué(e)';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayName débloqué(e)';
+  }
+
+  @override
+  String get inboxRemovedConversation => 'Conversation supprimée';
+
+  @override
+  String get reportDialogCancel => 'Annuler';
+
+  @override
+  String get reportDialogReport => 'Signaler';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID : $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'Titre : $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return 'Vidéo $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'Impossible de mettre à jour l\'abonnement : $error';
+  }
+
+  @override
+  String get commonRetry => 'Réessayer';
+
+  @override
+  String get commonDelete => 'Supprimer';
+
+  @override
+  String get commonCancel => 'Annuler';
+
+  @override
+  String get videoMetadataTags => 'Tags';
+
+  @override
+  String get videoMetadataExpiration => 'Expiration';
+
+  @override
+  String get videoMetadataContentWarnings => 'Avertissements de contenu';
+
+  @override
+  String get videoEditorLayers => 'Calques';
+
+  @override
+  String get videoEditorStickers => 'Stickers';
+
+  @override
+  String get trendingTitle => 'Tendances';
+
+  @override
+  String get proofmodeCheckAiGenerated => 'Vérifier si généré par IA';
+
+  @override
+  String get libraryDeleteConfirm => 'Supprimer';
+
+  @override
+  String get routerInvalidCreator => 'Créateur non valide';
+
+  @override
+  String get routerInvalidHashtagRoute => 'Route de hashtag non valide';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos =>
+      'Impossible de charger les vidéos';
+
+  @override
+  String get categoriesCouldNotLoadCategories =>
+      'Impossible de charger les catégories';
+
+  @override
+  String get notificationFollowBack => 'Suivre en retour';
+
+  @override
+  String get followingFailedToLoadList =>
+      'Impossible de charger la liste des abonnements';
+
+  @override
+  String get followersFailedToLoadList =>
+      'Impossible de charger la liste des abonnés';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return 'Impossible de sauvegarder les paramètres : $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost =>
+      'Impossible de mettre à jour le paramètre de crosspost';
+
+  @override
+  String get invitesTitle => 'Inviter des amis';
+
+  @override
+  String get searchSomethingWentWrong => 'Quelque chose s\'est mal passé';
+
+  @override
+  String get searchTryAgain => 'Réessayer';
+
+  @override
+  String get searchForLists => 'Rechercher des listes';
+
+  @override
+  String get searchFindCuratedVideoLists =>
+      'Trouve des listes de vidéos sélectionnées';
+
+  @override
+  String get cameraAgeRestriction =>
+      'Tu dois avoir 16 ans ou plus pour créer du contenu';
+
+  @override
+  String get featureRequestCancel => 'Annuler';
+
+  @override
+  String keyImportError(String error) {
+    return 'Erreur : $error';
+  }
 }

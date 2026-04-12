@@ -4434,4 +4434,150 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'Wrestling';
+
+  @override
+  String get profileSetupUploadSuccess =>
+      'Fotografia de profil a fost încărcată cu succes!';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayName a fost raportat(ă)';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayName a fost blocat(ă)';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayName a fost deblocat(ă)';
+  }
+
+  @override
+  String get inboxRemovedConversation => 'Conversație eliminată';
+
+  @override
+  String get reportDialogCancel => 'Anulează';
+
+  @override
+  String get reportDialogReport => 'Raportează';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'Titlu: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return 'Video $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'Nu s-a putut actualiza abonamentul: $error';
+  }
+
+  @override
+  String get commonRetry => 'Reîncearcă';
+
+  @override
+  String get commonDelete => 'Șterge';
+
+  @override
+  String get commonCancel => 'Anulează';
+
+  @override
+  String get videoMetadataTags => 'Etichete';
+
+  @override
+  String get videoMetadataExpiration => 'Expirare';
+
+  @override
+  String get videoMetadataContentWarnings => 'Avertismente de conținut';
+
+  @override
+  String get videoEditorLayers => 'Straturi';
+
+  @override
+  String get videoEditorStickers => 'Stickere';
+
+  @override
+  String get trendingTitle => 'În tendințe';
+
+  @override
+  String get proofmodeCheckAiGenerated => 'Verifică dacă este generat de AI';
+
+  @override
+  String get libraryDeleteConfirm => 'Șterge';
+
+  @override
+  String get routerInvalidCreator => 'Creator invalid';
+
+  @override
+  String get routerInvalidHashtagRoute => 'Rută hashtag invalidă';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos =>
+      'Nu s-au putut încărca videoclipurile';
+
+  @override
+  String get categoriesCouldNotLoadCategories =>
+      'Nu s-au putut încărca categoriile';
+
+  @override
+  String get notificationFollowBack => 'Urmărește înapoi';
+
+  @override
+  String get followingFailedToLoadList =>
+      'Nu s-a putut încărca lista de urmăriți';
+
+  @override
+  String get followersFailedToLoadList =>
+      'Nu s-a putut încărca lista de urmăritori';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return 'Nu s-au putut salva setările: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost =>
+      'Nu s-a putut actualiza setarea de crosspost';
+
+  @override
+  String get invitesTitle => 'Invită prieteni';
+
+  @override
+  String get searchSomethingWentWrong => 'Ceva nu a mers bine';
+
+  @override
+  String get searchTryAgain => 'Încearcă din nou';
+
+  @override
+  String get searchForLists => 'Caută liste';
+
+  @override
+  String get searchFindCuratedVideoLists =>
+      'Găsește liste de videoclipuri selectate';
+
+  @override
+  String get cameraAgeRestriction =>
+      'Trebuie să ai cel puțin 16 ani pentru a crea conținut';
+
+  @override
+  String get featureRequestCancel => 'Anulează';
+
+  @override
+  String keyImportError(String error) {
+    return 'Eroare: $error';
+  }
 }

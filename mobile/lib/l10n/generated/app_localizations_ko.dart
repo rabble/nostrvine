@@ -4136,4 +4136,142 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get categoryWrestling => '레슬링';
+
+  @override
+  String get profileSetupUploadSuccess => '프로필 사진이 성공적으로 업로드되었어요!';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayName을(를) 신고했어요';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayName을(를) 차단했어요';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayName의 차단을 해제했어요';
+  }
+
+  @override
+  String get inboxRemovedConversation => '대화를 삭제했어요';
+
+  @override
+  String get reportDialogCancel => '취소';
+
+  @override
+  String get reportDialogReport => '신고';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return '제목: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return '동영상 $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return '구독 업데이트에 실패했어요: $error';
+  }
+
+  @override
+  String get commonRetry => '다시 시도';
+
+  @override
+  String get commonDelete => '삭제';
+
+  @override
+  String get commonCancel => '취소';
+
+  @override
+  String get videoMetadataTags => '태그';
+
+  @override
+  String get videoMetadataExpiration => '만료';
+
+  @override
+  String get videoMetadataContentWarnings => '콘텐츠 경고';
+
+  @override
+  String get videoEditorLayers => '레이어';
+
+  @override
+  String get videoEditorStickers => '스티커';
+
+  @override
+  String get trendingTitle => '트렌딩';
+
+  @override
+  String get proofmodeCheckAiGenerated => 'AI 생성 여부 확인';
+
+  @override
+  String get libraryDeleteConfirm => '삭제';
+
+  @override
+  String get routerInvalidCreator => '유효하지 않은 크리에이터';
+
+  @override
+  String get routerInvalidHashtagRoute => '유효하지 않은 해시태그 경로';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos => '동영상을 불러올 수 없었어요';
+
+  @override
+  String get categoriesCouldNotLoadCategories => '카테고리를 불러올 수 없었어요';
+
+  @override
+  String get notificationFollowBack => '맞팔로우';
+
+  @override
+  String get followingFailedToLoadList => '팔로잉 목록을 불러오지 못했어요';
+
+  @override
+  String get followersFailedToLoadList => '팔로워 목록을 불러오지 못했어요';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return '설정 저장에 실패했어요: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost => '크로스포스트 설정 업데이트에 실패했어요';
+
+  @override
+  String get invitesTitle => '친구 초대';
+
+  @override
+  String get searchSomethingWentWrong => '문제가 발생했어요';
+
+  @override
+  String get searchTryAgain => '다시 시도';
+
+  @override
+  String get searchForLists => '목록 검색';
+
+  @override
+  String get searchFindCuratedVideoLists => '큐레이션된 동영상 목록 찾기';
+
+  @override
+  String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';
+
+  @override
+  String get featureRequestCancel => '취소';
+
+  @override
+  String keyImportError(String error) {
+    return '오류: $error';
+  }
 }

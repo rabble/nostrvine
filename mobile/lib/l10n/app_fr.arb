@@ -53,7 +53,7 @@
   "settingsSwitchAccount": "Changer de compte",
   "settingsAddAnotherAccount": "Ajouter un autre compte",
   "settingsUnsavedDraftsTitle": "Brouillons non enregistrés",
-  "settingsUnsavedDraftsMessage": "Tu as {count} {count, plural, one{brouillon} other{brouillons}} non enregistré{count, plural, one{} other{s}}. Changer de compte va garder {count, plural, one{ton brouillon} other{tes brouillons}}, mais tu voudras peut-être {count, plural, one{le} other{les}} publier ou relire d'abord.",
+  "settingsUnsavedDraftsMessage": "Tu as {count} {count, plural, one{brouillon} other{brouillons}} non enregistré{count, plural, one{} other{s}}. Changer de compte va garder {count, plural, one{ton brouillon} other{tes brouillons}}, mais tu voudras peut-être {count, plural, one{le} other{les}} publier ou relire d''abord.",
   "@settingsUnsavedDraftsMessage": {
     "placeholders": {
       "count": {
@@ -2140,5 +2140,111 @@
   "categoryViolence": "Violence",
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vlogging",
-  "categoryWrestling": "Catch"
+  "categoryWrestling": "Catch",
+  "blossomFailedToSaveSettings": "Impossible de sauvegarder les paramètres : {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "Impossible de mettre à jour le paramètre de crosspost",
+  "cameraAgeRestriction": "Tu dois avoir 16 ans ou plus pour créer du contenu",
+  "categoriesCouldNotLoadCategories": "Impossible de charger les catégories",
+  "categoryGalleryCouldNotLoadVideos": "Impossible de charger les vidéos",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "Annuler",
+  "commonDelete": "Supprimer",
+  "commonRetry": "Réessayer",
+  "discoverListsFailedToUpdateSubscription": "Impossible de mettre à jour l'abonnement : {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Vidéo {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID : {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Titre : {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "Annuler",
+  "followersFailedToLoadList": "Impossible de charger la liste des abonnés",
+  "followingFailedToLoadList": "Impossible de charger la liste des abonnements",
+  "inboxBlockedUser": "{displayName} bloqué(e)",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Conversation supprimée",
+  "inboxReportedUser": "{displayName} signalé(e)",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "{displayName} débloqué(e)",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "Inviter des amis",
+  "keyImportError": "Erreur : {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "Supprimer",
+  "notificationFollowBack": "Suivre en retour",
+  "profileSetupUploadSuccess": "Photo de profil importée avec succès !",
+  "proofmodeCheckAiGenerated": "Vérifier si généré par IA",
+  "reportDialogCancel": "Annuler",
+  "reportDialogReport": "Signaler",
+  "routerInvalidCreator": "Créateur non valide",
+  "routerInvalidHashtagRoute": "Route de hashtag non valide",
+  "searchFindCuratedVideoLists": "Trouve des listes de vidéos sélectionnées",
+  "searchForLists": "Rechercher des listes",
+  "searchSomethingWentWrong": "Quelque chose s'est mal passé",
+  "searchTryAgain": "Réessayer",
+  "trendingTitle": "Tendances",
+  "videoEditorLayers": "Calques",
+  "videoEditorStickers": "Stickers",
+  "videoMetadataContentWarnings": "Avertissements de contenu",
+  "videoMetadataExpiration": "Expiration",
+  "videoMetadataTags": "Tags"
 }

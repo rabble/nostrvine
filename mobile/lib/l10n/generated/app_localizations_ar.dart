@@ -4261,4 +4261,144 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'مصارعة';
+
+  @override
+  String get profileSetupUploadSuccess => 'تم رفع صورة الملف الشخصي بنجاح!';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return 'تم الإبلاغ عن $displayName';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return 'تم حظر $displayName';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return 'تم إلغاء حظر $displayName';
+  }
+
+  @override
+  String get inboxRemovedConversation => 'تمت إزالة المحادثة';
+
+  @override
+  String get reportDialogCancel => 'إلغاء';
+
+  @override
+  String get reportDialogReport => 'إبلاغ';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'المعرّف: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'العنوان: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return 'فيديو $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'فشل تحديث الاشتراك: $error';
+  }
+
+  @override
+  String get commonRetry => 'إعادة المحاولة';
+
+  @override
+  String get commonDelete => 'حذف';
+
+  @override
+  String get commonCancel => 'إلغاء';
+
+  @override
+  String get videoMetadataTags => 'الوسوم';
+
+  @override
+  String get videoMetadataExpiration => 'انتهاء الصلاحية';
+
+  @override
+  String get videoMetadataContentWarnings => 'تحذيرات المحتوى';
+
+  @override
+  String get videoEditorLayers => 'الطبقات';
+
+  @override
+  String get videoEditorStickers => 'الملصقات';
+
+  @override
+  String get trendingTitle => 'الرائج';
+
+  @override
+  String get proofmodeCheckAiGenerated =>
+      'التحقق إذا كان مُنشأً بالذكاء الاصطناعي';
+
+  @override
+  String get libraryDeleteConfirm => 'حذف';
+
+  @override
+  String get routerInvalidCreator => 'منشئ غير صالح';
+
+  @override
+  String get routerInvalidHashtagRoute => 'مسار هاشتاغ غير صالح';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos => 'تعذّر تحميل الفيديوهات';
+
+  @override
+  String get categoriesCouldNotLoadCategories => 'تعذّر تحميل الفئات';
+
+  @override
+  String get notificationFollowBack => 'متابعة بالمقابل';
+
+  @override
+  String get followingFailedToLoadList => 'فشل تحميل قائمة المتابَعين';
+
+  @override
+  String get followersFailedToLoadList => 'فشل تحميل قائمة المتابعين';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return 'فشل حفظ الإعدادات: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost => 'فشل تحديث إعداد النشر المتقاطع';
+
+  @override
+  String get invitesTitle => 'دعوة الأصدقاء';
+
+  @override
+  String get searchSomethingWentWrong => 'حدث خطأ ما';
+
+  @override
+  String get searchTryAgain => 'حاول مجددًا';
+
+  @override
+  String get searchForLists => 'البحث عن قوائم';
+
+  @override
+  String get searchFindCuratedVideoLists => 'ابحث عن قوائم فيديو مختارة';
+
+  @override
+  String get cameraAgeRestriction =>
+      'يجب أن يكون عمرك 16 عامًا أو أكثر لإنشاء محتوى';
+
+  @override
+  String get featureRequestCancel => 'إلغاء';
+
+  @override
+  String keyImportError(String error) {
+    return 'خطأ: $error';
+  }
 }

@@ -4280,4 +4280,144 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get categoryWrestling => 'Gulat';
+
+  @override
+  String get profileSetupUploadSuccess => 'Foto profil berhasil diunggah!';
+
+  @override
+  String inboxReportedUser(String displayName) {
+    return '$displayName dilaporkan';
+  }
+
+  @override
+  String inboxBlockedUser(String displayName) {
+    return '$displayName diblokir';
+  }
+
+  @override
+  String inboxUnblockedUser(String displayName) {
+    return '$displayName tidak diblokir lagi';
+  }
+
+  @override
+  String get inboxRemovedConversation => 'Percakapan dihapus';
+
+  @override
+  String get reportDialogCancel => 'Batal';
+
+  @override
+  String get reportDialogReport => 'Laporkan';
+
+  @override
+  String exploreVideoId(String id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String exploreVideoTitle(String title) {
+    return 'Judul: $title';
+  }
+
+  @override
+  String exploreVideoCounter(int current, int total) {
+    return 'Video $current/$total';
+  }
+
+  @override
+  String discoverListsFailedToUpdateSubscription(String error) {
+    return 'Gagal memperbarui langganan: $error';
+  }
+
+  @override
+  String get commonRetry => 'Coba lagi';
+
+  @override
+  String get commonDelete => 'Hapus';
+
+  @override
+  String get commonCancel => 'Batal';
+
+  @override
+  String get videoMetadataTags => 'Tag';
+
+  @override
+  String get videoMetadataExpiration => 'Kedaluwarsa';
+
+  @override
+  String get videoMetadataContentWarnings => 'Peringatan Konten';
+
+  @override
+  String get videoEditorLayers => 'Lapisan';
+
+  @override
+  String get videoEditorStickers => 'Stiker';
+
+  @override
+  String get trendingTitle => 'Trending';
+
+  @override
+  String get proofmodeCheckAiGenerated => 'Periksa apakah dibuat oleh AI';
+
+  @override
+  String get libraryDeleteConfirm => 'Hapus';
+
+  @override
+  String get routerInvalidCreator => 'Kreator tidak valid';
+
+  @override
+  String get routerInvalidHashtagRoute => 'Rute hashtag tidak valid';
+
+  @override
+  String get categoryGalleryCouldNotLoadVideos => 'Tidak dapat memuat video';
+
+  @override
+  String get categoriesCouldNotLoadCategories => 'Tidak dapat memuat kategori';
+
+  @override
+  String get notificationFollowBack => 'Ikuti balik';
+
+  @override
+  String get followingFailedToLoadList => 'Gagal memuat daftar mengikuti';
+
+  @override
+  String get followersFailedToLoadList => 'Gagal memuat daftar pengikut';
+
+  @override
+  String get classicVinersTitle => 'OG Viners';
+
+  @override
+  String blossomFailedToSaveSettings(String error) {
+    return 'Gagal menyimpan pengaturan: $error';
+  }
+
+  @override
+  String get blueskyFailedToUpdateCrosspost =>
+      'Gagal memperbarui pengaturan crosspost';
+
+  @override
+  String get invitesTitle => 'Undang Teman';
+
+  @override
+  String get searchSomethingWentWrong => 'Terjadi kesalahan';
+
+  @override
+  String get searchTryAgain => 'Coba lagi';
+
+  @override
+  String get searchForLists => 'Cari daftar';
+
+  @override
+  String get searchFindCuratedVideoLists => 'Temukan daftar video pilihan';
+
+  @override
+  String get cameraAgeRestriction =>
+      'Kamu harus berusia 16 tahun atau lebih untuk membuat konten';
+
+  @override
+  String get featureRequestCancel => 'Batal';
+
+  @override
+  String keyImportError(String error) {
+    return 'Error: $error';
+  }
 }

@@ -452,7 +452,7 @@
       }
     }
   },
-  "exploreNewVideosCount": "{count, plural, one{1 nieuwe video} other{{count} nieuwe video's}}",
+  "exploreNewVideosCount": "{count, plural, one{1 nieuwe video} other{{count} nieuwe video''s}}",
   "@exploreNewVideosCount": {
     "placeholders": {
       "count": {
@@ -460,7 +460,7 @@
       }
     }
   },
-  "exploreLoadNewVideosLabel": "{count, plural, one{1 nieuwe video} other{{count} nieuwe video's}} laden",
+  "exploreLoadNewVideosLabel": "{count, plural, one{1 nieuwe video} other{{count} nieuwe video''s}} laden",
   "@exploreLoadNewVideosLabel": {
     "placeholders": {
       "count": {
@@ -2140,5 +2140,111 @@
   "categoryViolence": "Geweld",
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vloggen",
-  "categoryWrestling": "Worstelen"
+  "categoryWrestling": "Worstelen",
+  "blossomFailedToSaveSettings": "Instellingen opslaan mislukt: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "Crosspost-instelling bijwerken mislukt",
+  "cameraAgeRestriction": "Je moet 16 jaar of ouder zijn om content te maken",
+  "categoriesCouldNotLoadCategories": "Categorieën konden niet worden geladen",
+  "categoryGalleryCouldNotLoadVideos": "Video's konden niet worden geladen",
+  "classicVinersTitle": "OG Viners",
+  "commonCancel": "Annuleren",
+  "commonDelete": "Verwijderen",
+  "commonRetry": "Opnieuw proberen",
+  "discoverListsFailedToUpdateSubscription": "Abonnement bijwerken mislukt: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Video {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Titel: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestCancel": "Annuleren",
+  "followersFailedToLoadList": "Volgerlijst kon niet worden geladen",
+  "followingFailedToLoadList": "Volglijst kon niet worden geladen",
+  "inboxBlockedUser": "{displayName} geblokkeerd",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Gesprek verwijderd",
+  "inboxReportedUser": "{displayName} gerapporteerd",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "{displayName} gedeblokkeerd",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesTitle": "Vrienden uitnodigen",
+  "keyImportError": "Fout: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteConfirm": "Verwijderen",
+  "notificationFollowBack": "Terugvolgen",
+  "profileSetupUploadSuccess": "Profielfoto succesvol geüpload!",
+  "proofmodeCheckAiGenerated": "Controleren of AI-gegenereerd",
+  "reportDialogCancel": "Annuleren",
+  "reportDialogReport": "Rapporteren",
+  "routerInvalidCreator": "Ongeldige maker",
+  "routerInvalidHashtagRoute": "Ongeldige hashtagroute",
+  "searchFindCuratedVideoLists": "Vind samengestelde videolijsten",
+  "searchForLists": "Zoek naar lijsten",
+  "searchSomethingWentWrong": "Er ging iets mis",
+  "searchTryAgain": "Opnieuw proberen",
+  "trendingTitle": "Trending",
+  "videoEditorLayers": "Lagen",
+  "videoEditorStickers": "Stickers",
+  "videoMetadataContentWarnings": "Inhoudswaarschuwingen",
+  "videoMetadataExpiration": "Vervaldatum",
+  "videoMetadataTags": "Tags"
 }
