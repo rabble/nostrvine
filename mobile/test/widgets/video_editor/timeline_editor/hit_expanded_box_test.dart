@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/utils/hit_expanded_box.dart';
 
 /// Builds a [HitExpandedBox] at a fixed position with a child [Stack]
 /// that has a tappable handle positioned outside the main content's

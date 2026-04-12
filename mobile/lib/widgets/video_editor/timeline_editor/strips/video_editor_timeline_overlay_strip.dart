@@ -2,21 +2,15 @@
 // ABOUTME: Renders layer / filter / sound items in rows with long-press
 // ABOUTME: drag to reposition (time + row) and trim handles on selection.
 
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_drop_indicator_line.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_positioned_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/timeline_snap_controller.dart';
-
-/// Vertical gap between overlay rows in logical pixels.
-const double _overlayRowGap = 6;
 
 /// Callback reporting a trim / resize change for an overlay item.
 ///
@@ -192,27 +186,40 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     if (widget.items.isEmpty) return const SizedBox.shrink();
 
     final displayRowCount = widget.isCollapsed ? 1 : widget.rowCount;
-    final trimExp = _trimExpansion;
+    final dropIndicatorLineY = _dropIndicatorLineY();
 
-    return HitExpandedBox(
-      expandLeft: trimExp,
-      expandRight: trimExp,
-      child: SizedBox(
-        width: widget.totalWidth,
-        height: displayRowCount * _rowHeight,
-        child: HitExpandedBox(
-          expandLeft: trimExp,
-          expandRight: trimExp,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Drop indicator line — only visible during drag.
-              if (_draggingId != null) _buildDropIndicator(),
-              for (final item in widget.items)
-                _buildItem(item, displayRowCount),
-            ],
-          ),
-        ),
+    return SizedBox(
+      width: widget.totalWidth,
+      height: displayRowCount * _rowHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Drop indicator line — only visible during drag.
+          if (dropIndicatorLineY != null)
+            TimelineDropIndicatorLine(lineY: dropIndicatorLineY),
+          for (final item in widget.items)
+            TimelineOverlayPositionedItem(
+              item: item,
+              isDragging: _draggingId == item.id,
+              isSelected: widget.selectedItemId == item.id,
+              snappedStartMs: _snappedStartMs,
+              dragDeltaY: _dragDeltaY,
+              rowHeight: _rowHeight,
+              pixelsPerSecond: widget.pixelsPerSecond,
+              totalDuration: widget.totalDuration,
+              color: widget.color,
+              isCollapsed: widget.isCollapsed,
+              trimExpansion: _trimExpansion,
+              snapPointsMs: widget.snapPointsMs,
+              onTrimChanged: widget.onTrimChanged,
+              onTrimDragChanged: widget.onTrimDragChanged,
+              onTap: () => widget.onItemTapped?.call(item.id),
+              onLongPressStart: () => _onLongPressStart(item),
+              onLongPressMoveUpdate: (details) =>
+                  _onLongPressMoveUpdate(details, item, displayRowCount),
+              onLongPressEnd: () => _onLongPressEnd(item),
+            ),
+        ],
       ),
     );
   }
@@ -260,114 +267,24 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     });
   }
 
-  /// Builds a horizontal indicator line showing where the dragged item
-  /// will land. Only appears when the dragged item would overlap an
-  /// existing item on the target row.
-  Widget _buildDropIndicator() {
+  double? _dropIndicatorLineY() {
     final info = _dragTargetInfo();
-    if (info == null) return const SizedBox.shrink();
+    if (info == null) return null;
+    if (_draggingId == null) return null;
 
-    final item = widget.items.firstWhere((i) => i.id == _draggingId);
+    final matchingItems = widget.items.where((i) => i.id == _draggingId);
+    if (matchingItems.isEmpty) return null;
+
+    final item = matchingItems.first;
     if (!_wouldOverlapAt(item, info.newStartMs, info.targetRow)) {
-      return const SizedBox.shrink();
+      return null;
     }
 
     // Above: line at the top of the target row.
     // Below: line at the bottom of the target row.
-    final lineY = info.insertAbove
+    return info.insertAbove
         ? info.targetRow * _rowHeight
         : (info.targetRow + 1) * _rowHeight;
-
-    return Positioned(
-      left: 0,
-      right: 0,
-      top: lineY - 0.5,
-      child: const ColoredBox(
-        color: Colors.white54,
-        child: SizedBox(height: 1),
-      ),
-    );
-  }
-
-  Widget _buildItem(TimelineOverlayItem item, int displayRowCount) {
-    final isDragging = _draggingId == item.id;
-    final isSelected = widget.selectedItemId == item.id;
-
-    // Layout: x position from startTime, width from trimmedDuration.
-    final baseX = item.startTimeInSeconds * widget.pixelsPerSecond;
-    final itemWidth = item.durationInSeconds * widget.pixelsPerSecond;
-
-    // Don't render if the item has zero width.
-    if (itemWidth <= 0) return const SizedBox.shrink();
-
-    final row = widget.isCollapsed ? 0 : item.row;
-    final baseY = row * _rowHeight + _overlayRowGap / 2;
-
-    // Apply drag offset to the dragged item.
-    final x = isDragging
-        ? _snappedStartMs / 1000.0 * widget.pixelsPerSecond
-        : baseX;
-    final y = isDragging ? baseY + _dragDeltaY : baseY;
-
-    Widget tile = _OverlayItemTile(
-      item: item,
-      width: itemWidth,
-      height: _rowHeight,
-      color: widget.color,
-      isDragging: isDragging,
-    );
-
-    // Wrap selected (non-dragging) items with trim handles.
-    if (isSelected && !isDragging) {
-      final trimExp = _trimExpansion;
-      tile = _TrimmableOverlayTile(
-        item: item,
-        width: itemWidth,
-        height: _rowHeight,
-        color: widget.color,
-        pixelsPerSecond: widget.pixelsPerSecond,
-        totalDuration: widget.totalDuration,
-        onTrimChanged: widget.onTrimChanged,
-        onTrimDragChanged: widget.onTrimDragChanged,
-        trimExpansion: trimExp,
-        snapPointsMs: widget.snapPointsMs,
-      );
-
-      return Positioned(
-        left: x - trimExp,
-        top: y,
-        width: itemWidth + trimExp * 2,
-        child: Semantics(
-          label: item.label,
-          hint: 'Long press to drag',
-          child: GestureDetector(
-            onTap: () => widget.onItemTapped?.call(item.id),
-            onLongPressStart: (_) => _onLongPressStart(item),
-            onLongPressMoveUpdate: (details) =>
-                _onLongPressMoveUpdate(details, item, displayRowCount),
-            onLongPressEnd: (_) => _onLongPressEnd(item),
-            child: tile,
-          ),
-        ),
-      );
-    }
-
-    return Positioned(
-      left: x,
-      top: y,
-      child: Semantics(
-        label: item.label,
-        hint: 'Long press to drag',
-        child: GestureDetector(
-          onTap: () => widget.onItemTapped?.call(item.id),
-          onLongPressStart: (_) => _onLongPressStart(item),
-          onLongPressMoveUpdate: (details) =>
-              _onLongPressMoveUpdate(details, item, displayRowCount),
-          onLongPressEnd: (_) => _onLongPressEnd(item),
-          child: tile,
-        ),
-      ),
-    );
   }
 
   // -- Long-press drag callbacks -------------------------------------------
@@ -501,330 +418,5 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     // Accumulate scroll compensation so the next setState keeps the
     // item under the finger.
     _scrollCompensationY += target - before;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Tile widgets
-// ---------------------------------------------------------------------------
-
-/// Visual representation of a single overlay item.
-class _OverlayItemTile extends StatelessWidget {
-  const _OverlayItemTile({
-    required this.item,
-    required this.width,
-    required this.height,
-    required this.color,
-    this.isDragging = false,
-  });
-
-  final TimelineOverlayItem item;
-  final double width;
-  final double height;
-  final Color color;
-  final bool isDragging;
-
-  @override
-  Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
-    final radius = BorderRadius.circular(
-      TimelineConstants.thumbnailRadius,
-    );
-    final animDuration = reduceMotion
-        ? Duration.zero
-        : const Duration(milliseconds: 150);
-    return SizedBox(
-      width: width,
-      height: height - _overlayRowGap,
-      child: AnimatedContainer(
-        duration: animDuration,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: isDragging ? 0.85 : 0.7),
-          borderRadius: radius,
-          boxShadow: isDragging
-              ? const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        foregroundDecoration: isDragging
-            ? BoxDecoration(
-                borderRadius: radius,
-                border: Border.all(color: Colors.white, width: 1.5),
-              )
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              item.label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Overlay item tile wrapped with trim handles for duration adjustment.
-class _TrimmableOverlayTile extends StatefulWidget {
-  const _TrimmableOverlayTile({
-    required this.item,
-    required this.width,
-    required this.height,
-    required this.color,
-    required this.pixelsPerSecond,
-    required this.totalDuration,
-    this.onTrimChanged,
-    this.onTrimDragChanged,
-    this.trimExpansion = 0,
-    this.snapPointsMs,
-  });
-
-  final TimelineOverlayItem item;
-  final double width;
-  final double height;
-  final Color color;
-  final double pixelsPerSecond;
-  final Duration totalDuration;
-  final OverlayTrimCallback? onTrimChanged;
-  final ValueChanged<bool>? onTrimDragChanged;
-  final double trimExpansion;
-  final List<int>? snapPointsMs;
-
-  @override
-  State<_TrimmableOverlayTile> createState() => _TrimmableOverlayTileState();
-}
-
-class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
-  static const _autoScrollEdge = 60.0;
-  static const _autoScrollSpeed = 6.0;
-
-  /// Whether haptic feedback has already fired for the current boundary hit.
-  bool _hitBoundary = false;
-
-  /// Snap controllers for the left and right trim handles.
-  late TimelineSnapController _leftSnap;
-  late TimelineSnapController _rightSnap;
-
-  /// Which snap controller is active during this gesture.
-  TimelineSnapController? _activeSnap;
-
-  @override
-  void initState() {
-    super.initState();
-    _leftSnap = TimelineSnapController(
-      direction: SnapEdgeDirection.positive,
-      pixelsPerSecond: widget.pixelsPerSecond,
-    );
-    _rightSnap = TimelineSnapController(
-      direction: SnapEdgeDirection.negative,
-      pixelsPerSecond: widget.pixelsPerSecond,
-    );
-  }
-
-  @override
-  void didUpdateWidget(_TrimmableOverlayTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.pixelsPerSecond != widget.pixelsPerSecond) {
-      _leftSnap = TimelineSnapController(
-        direction: SnapEdgeDirection.positive,
-        pixelsPerSecond: widget.pixelsPerSecond,
-      );
-      _rightSnap = TimelineSnapController(
-        direction: SnapEdgeDirection.negative,
-        pixelsPerSecond: widget.pixelsPerSecond,
-      );
-    }
-  }
-
-  void _onDragStart() {
-    _hitBoundary = false;
-    _activeSnap = null;
-    _leftSnap.reset();
-    _rightSnap.reset();
-    final item = widget.item;
-    _leftSnap.begin(
-      item.startTime.inMilliseconds,
-      initialExcludeMs: item.startTime.inMilliseconds,
-    );
-    _rightSnap.begin(
-      item.endTime.inMilliseconds,
-      initialExcludeMs: item.endTime.inMilliseconds,
-    );
-    widget.onTrimDragChanged?.call(true);
-  }
-
-  void _onDragEnd() {
-    _hitBoundary = false;
-    _activeSnap = null;
-    _leftSnap.reset();
-    _rightSnap.reset();
-    widget.onTrimDragChanged?.call(false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: widget.trimExpansion),
-      child: TimelineTrimHandles(
-        height: widget.height - _overlayRowGap,
-        handleColor: widget.color,
-        onDragStart: _onDragStart,
-        onDragEnd: _onDragEnd,
-        onLeftDragUpdate: _onLeftTrim,
-        onRightDragUpdate: _onRightTrim,
-        onDragPositionUpdate: _handleTrimAutoScroll,
-        child: _OverlayItemTile(
-          item: widget.item,
-          width: widget.width,
-          height: widget.height,
-          color: widget.color,
-        ),
-      ),
-    );
-  }
-
-  void _handleTrimAutoScroll(Offset globalPosition) {
-    final scrollable = Scrollable.maybeOf(context, axis: Axis.horizontal);
-    if (scrollable == null) return;
-
-    final renderBox = scrollable.context.findRenderObject()! as RenderBox;
-    final localX = renderBox.globalToLocal(globalPosition).dx;
-    final viewportWidth = renderBox.size.width;
-
-    double delta = 0;
-    if (localX < _autoScrollEdge) {
-      delta = -_autoScrollSpeed * (1 - localX / _autoScrollEdge);
-    } else if (localX > viewportWidth - _autoScrollEdge) {
-      delta =
-          _autoScrollSpeed * (1 - (viewportWidth - localX) / _autoScrollEdge);
-    }
-
-    if (delta == 0) return;
-
-    final pos = scrollable.position;
-    final before = pos.pixels;
-    final target = (before + delta).clamp(
-      pos.minScrollExtent,
-      pos.maxScrollExtent,
-    );
-    if (target == before) return;
-    pos.jumpTo(target);
-
-    // Sync video position to match the new scroll offset.
-    final seekMs = (target / widget.pixelsPerSecond * 1000).round();
-    context.read<VideoEditorMainBloc>().add(
-      VideoEditorSeekRequested(Duration(milliseconds: seekMs)),
-    );
-
-    // Compensate the active snap controller so the handle tracks the finger.
-    final scrolled = target - before;
-    _activeSnap?.compensateScroll(scrolled);
-  }
-
-  void _onLeftTrim(double dx) {
-    _activeSnap ??= _leftSnap;
-    _leftSnap.accumulate(dx);
-
-    final pps = widget.pixelsPerSecond;
-    final effectiveDeltaMs = (_leftSnap.effectiveAccPx / pps * 1000).round();
-    final rawStartMs = _leftSnap.originMs + effectiveDeltaMs;
-
-    final snapPoints = widget.snapPointsMs != null
-        ? Set<int>.of(widget.snapPointsMs!)
-        : null;
-    final posMs = _leftSnap.update(rawStartMs, snapPoints);
-
-    final clampedMs =
-        posMs.clamp(
-              0,
-              math.max(
-                widget.totalDuration.inMilliseconds,
-                _rightSnap.originMs,
-              ),
-            )
-            as int;
-
-    if (clampedMs != posMs) {
-      if (!_hitBoundary) {
-        HapticFeedback.heavyImpact();
-        _hitBoundary = true;
-      }
-    } else {
-      _hitBoundary = false;
-    }
-
-    if ((_rightSnap.originMs - clampedMs) <
-        TimelineConstants.minTrimDuration.inMilliseconds) {
-      if (!_hitBoundary) {
-        HapticFeedback.heavyImpact();
-        _hitBoundary = true;
-      }
-      return;
-    }
-
-    widget.onTrimChanged?.call(
-      itemId: widget.item.id,
-      isStart: true,
-      startTime: Duration(milliseconds: clampedMs),
-      endTime: Duration(milliseconds: _rightSnap.originMs),
-    );
-  }
-
-  void _onRightTrim(double dx) {
-    _activeSnap ??= _rightSnap;
-    _rightSnap.accumulate(-dx);
-
-    final pps = widget.pixelsPerSecond;
-    final effectiveDeltaMs = (-_rightSnap.effectiveAccPx / pps * 1000).round();
-    final rawEndMs = _rightSnap.originMs + effectiveDeltaMs;
-
-    final snapPoints = widget.snapPointsMs != null
-        ? Set<int>.of(widget.snapPointsMs!)
-        : null;
-    final posMs = _rightSnap.update(rawEndMs, snapPoints);
-
-    final clampedMs = posMs.clamp(
-      _leftSnap.originMs,
-      widget.totalDuration.inMilliseconds,
-    );
-
-    if (clampedMs != posMs) {
-      if (!_hitBoundary) {
-        HapticFeedback.heavyImpact();
-        _hitBoundary = true;
-      }
-    } else {
-      _hitBoundary = false;
-    }
-
-    if ((clampedMs - _leftSnap.originMs) <
-        TimelineConstants.minTrimDuration.inMilliseconds) {
-      if (!_hitBoundary) {
-        HapticFeedback.heavyImpact();
-        _hitBoundary = true;
-      }
-      return;
-    }
-
-    widget.onTrimChanged?.call(
-      itemId: widget.item.id,
-      isStart: false,
-      startTime: Duration(milliseconds: _leftSnap.originMs),
-      endTime: Duration(milliseconds: clampedMs),
-    );
   }
 }

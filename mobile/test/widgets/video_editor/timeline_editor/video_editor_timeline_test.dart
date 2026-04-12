@@ -40,7 +40,7 @@ class _MockVideoEditorFilterBloc
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group(VideoEditorTimeline, () {
+  group(VideoEditorTimelineScaffold, () {
     late _MockVideoEditorMainBloc mockMainBloc;
     late _MockClipEditorBloc mockClipBloc;
     late _MockTimelineOverlayBloc mockOverlayBloc;
@@ -117,7 +117,7 @@ void main() {
                   ),
                 ],
 
-                child: const VideoEditorTimeline(),
+                child: const VideoEditorTimelineScaffold(),
               ),
             ),
           ),
@@ -151,7 +151,7 @@ void main() {
           buildWidget(clipState: ClipEditorState(clips: clips)),
         );
 
-        expect(find.byType(VideoEditorTimeline), findsOneWidget);
+        expect(find.byType(VideoEditorTimelineScaffold), findsOneWidget);
       });
 
       testWidgets('renders $VideoEditorTimelineHeader', (tester) async {

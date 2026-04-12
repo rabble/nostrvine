@@ -6,19 +6,14 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_control_bar.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_rules_indicator.dart';
 import 'package:pro_image_editor/features/filter_editor/types/filter_state.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' show FilterModel;
 
@@ -28,15 +23,16 @@ import 'package:pro_image_editor/pro_image_editor.dart' show FilterModel;
 /// strips, and a fixed-center playhead. Reads playback position and
 /// duration from [VideoEditorMainBloc] and clip data from
 /// [ClipEditorBloc].
-class VideoEditorTimeline extends ConsumerStatefulWidget {
-  const VideoEditorTimeline({super.key});
+class VideoEditorTimelineScaffold extends ConsumerStatefulWidget {
+  const VideoEditorTimelineScaffold({super.key});
 
   @override
-  ConsumerState<VideoEditorTimeline> createState() =>
+  ConsumerState<VideoEditorTimelineScaffold> createState() =>
       _VideoEditorTimelineState();
 }
 
-class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
+class _VideoEditorTimelineState
+    extends ConsumerState<VideoEditorTimelineScaffold> {
   late final ScrollController _scrollController;
   bool _isUserScrolling = false;
 
@@ -199,11 +195,11 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                     ),
                   ),
 
+                  /// Interactive body and playhead
                   Expanded(
                     child: Stack(
                       fit: .expand,
                       children: [
-                        // Scrollable timeline content.
                         ValueListenableBuilder<Duration>(
                           valueListenable: _playheadPosition,
                           builder: (context, position, child) {
@@ -254,7 +250,7 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                                     : const ClampingScrollPhysics(),
                                 clipBehavior: .none,
                                 padding: .symmetric(horizontal: halfScreen),
-                                child: _TimelineScrollContent(
+                                child: VideoEditorTimelineBody(
                                   isReordering: isReordering,
                                   totalDuration: totalDuration,
                                   pixelsPerSecond: _pixelsPerSecond,
@@ -291,6 +287,7 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
                     ),
                   ),
 
+                  /// Bottom controls like edit and delete
                   TimelineControlsBar(
                     isEditing: isEditing,
                     playheadPosition: _playheadPosition,
@@ -303,6 +300,8 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
       },
     );
   }
+
+  /// FIXME(hm21): Use a service
 
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollStartNotification &&
@@ -782,394 +781,4 @@ class _VideoEditorTimelineState extends ConsumerState<VideoEditorTimeline> {
       VideoEditorSeekRequested(position),
     );
   }
-}
-
-class _TimelineScrollContent extends StatelessWidget {
-  const _TimelineScrollContent({
-    required this.isReordering,
-    required this.totalDuration,
-    required this.pixelsPerSecond,
-    required this.scrollController,
-    required this.scrollPadding,
-    required this.clips,
-    required this.totalWidth,
-    required this.isInteracting,
-    required this.onReorder,
-    required this.onReorderChanged,
-    required this.playheadPosition,
-    this.trimmingClipId,
-    this.onTrimChanged,
-    this.onTrimDragChanged,
-    this.onClipTapped,
-    this.onOverlayItemMoved,
-    this.onOverlayItemMoving,
-    this.onOverlayItemTrimmed,
-    this.onOverlayTrimDragChanged,
-    this.onOverlayItemTapped,
-    this.onOverlayDragStarted,
-    this.onOverlayDragEnded,
-  });
-
-  final bool isReordering;
-  final Duration totalDuration;
-  final double pixelsPerSecond;
-  final ScrollController scrollController;
-  final double scrollPadding;
-  final List<DivineVideoClip> clips;
-  final double totalWidth;
-  final bool isInteracting;
-
-  /// Computes cumulative clip-boundary positions in milliseconds.
-  /// Each clip edge (start of first clip + end of each clip) creates a
-  /// potential snap target for overlay items.
-  static List<int> _clipEdgesMs(List<DivineVideoClip> clips) {
-    final edges = <int>[0];
-    var runningMs = 0;
-    for (final clip in clips) {
-      runningMs += clip.trimmedDuration.inMilliseconds;
-      edges.add(runningMs);
-    }
-    return edges;
-  }
-
-  final ValueChanged<List<DivineVideoClip>>? onReorder;
-  final ValueChanged<bool>? onReorderChanged;
-  final String? trimmingClipId;
-  final ClipTrimCallback? onTrimChanged;
-  final ValueChanged<bool>? onTrimDragChanged;
-  final ValueChanged<int>? onClipTapped;
-  final OverlayMoveCallback? onOverlayItemMoved;
-  final OverlayMovingCallback? onOverlayItemMoving;
-  final OverlayTrimCallback? onOverlayItemTrimmed;
-  final ValueChanged<bool>? onOverlayTrimDragChanged;
-  final ValueChanged<String>? onOverlayItemTapped;
-  final ValueChanged<String>? onOverlayDragStarted;
-  final VoidCallback? onOverlayDragEnded;
-  final ValueNotifier<Duration> playheadPosition;
-
-  @override
-  Widget build(BuildContext context) {
-    final clipTrimExpand = trimmingClipId != null
-        ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
-        : 0.0;
-
-    // Also expand for overlay trim handles when an overlay item is selected.
-    final overlaySelectedId = context.select(
-      (TimelineOverlayBloc b) => b.state.selectedItemId,
-    );
-    final overlayTrimExpand = overlaySelectedId != null
-        ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
-        : 0.0;
-
-    final trimExpand = clipTrimExpand > overlayTrimExpand
-        ? clipTrimExpand
-        : overlayTrimExpand;
-
-    return HitExpandedBox(
-      expandLeft: trimExpand,
-      expandRight: trimExpand,
-      child: Stack(
-        fit: StackFit.passthrough,
-        clipBehavior: .none,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedOpacity(
-                opacity: isReordering ? 0.0 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: VideoEditorTimelineRulesIndicator(
-                  totalDuration: totalDuration,
-                  pixelsPerSecond: pixelsPerSecond,
-                  scrollController: scrollController,
-                  scrollPadding: scrollPadding,
-                ),
-              ),
-              const SizedBox(height: 4),
-              VideoEditorTimelineClipStrip(
-                clips: clips,
-                totalWidth: totalWidth,
-                pixelsPerSecond: pixelsPerSecond,
-                scrollController: scrollController,
-                isInteracting: isInteracting,
-                onReorder: onReorder,
-                onReorderChanged: onReorderChanged,
-                trimmingClipId: trimmingClipId,
-                onTrimChanged: onTrimChanged,
-                onTrimDragChanged: onTrimDragChanged,
-                onClipTapped: onClipTapped,
-              ),
-              Expanded(
-                child: HitExpandedBox(
-                  expandLeft: trimExpand,
-                  expandRight: trimExpand,
-                  child: AnimatedOpacity(
-                    opacity: isReordering ? 0.0 : 1.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: ClipRect(
-                      clipper: const _VerticalOnlyClipper(),
-                      child: SingleChildScrollView(
-                        clipBehavior: Clip.none,
-                        padding: .only(
-                          top: 4,
-                          bottom: 80 + MediaQuery.paddingOf(context).bottom,
-                        ),
-                        child: IgnorePointer(
-                          ignoring: isReordering,
-                          child: _TimelineOverlayStrips(
-                            totalWidth: totalWidth,
-                            pixelsPerSecond: pixelsPerSecond,
-                            totalDuration: totalDuration,
-                            clipEdgesMs: _clipEdgesMs(clips),
-                            playheadPosition: playheadPosition,
-                            onItemTapped: onOverlayItemTapped,
-                            onItemMoved: onOverlayItemMoved,
-                            onItemMoving: onOverlayItemMoving,
-                            onItemTrimmed: onOverlayItemTrimmed,
-                            onTrimDragChanged: onOverlayTrimDragChanged,
-                            onDragStarted: onOverlayDragStarted,
-                            onDragEnded: onOverlayDragEnded,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // Semi-transparent overlay from 6.3s to the end.
-          if (!isReordering)
-            Positioned(
-              left:
-                  VideoEditorConstants.maxDuration.inMilliseconds /
-                  1000 *
-                  pixelsPerSecond,
-              top: 0,
-              bottom: 0,
-              right: -200,
-              child: IgnorePointer(
-                child: ColoredBox(
-                  color: VineTheme.surfaceContainerHigh.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Watches [TimelineOverlayBloc] and renders layer / sound / filter strips.
-///
-/// Extracted into its own widget so that overlay state changes only rebuild
-/// the overlay strips — not the clip strip or ruler.
-class _TimelineOverlayStrips extends StatelessWidget {
-  const _TimelineOverlayStrips({
-    required this.totalWidth,
-    required this.pixelsPerSecond,
-    required this.totalDuration,
-    required this.clipEdgesMs,
-    required this.playheadPosition,
-    this.onItemTapped,
-    this.onItemMoved,
-    this.onItemMoving,
-    this.onItemTrimmed,
-    this.onTrimDragChanged,
-    this.onDragStarted,
-    this.onDragEnded,
-  });
-
-  final double totalWidth;
-  final double pixelsPerSecond;
-  final Duration totalDuration;
-  final List<int> clipEdgesMs;
-  final ValueNotifier<Duration> playheadPosition;
-  final ValueChanged<String>? onItemTapped;
-  final OverlayMoveCallback? onItemMoved;
-  final OverlayMovingCallback? onItemMoving;
-  final OverlayTrimCallback? onItemTrimmed;
-  final ValueChanged<bool>? onTrimDragChanged;
-  final ValueChanged<String>? onDragStarted;
-  final VoidCallback? onDragEnded;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocSelector<
-      TimelineOverlayBloc,
-      TimelineOverlayState,
-      ({
-        List<TimelineOverlayItem> items,
-        String? selectedItemId,
-        Set<TimelineOverlayType> collapsedTypes,
-      })
-    >(
-      selector: (state) => (
-        items: state.items,
-        selectedItemId: state.selectedItemId,
-        collapsedTypes: state.collapsedTypes,
-      ),
-      builder: (context, selected) {
-        final overlayState = TimelineOverlayState(
-          items: selected.items,
-          selectedItemId: selected.selectedItemId,
-          collapsedTypes: selected.collapsedTypes,
-        );
-
-        final trimExp = overlayState.selectedItemId != null
-            ? TimelineConstants.trimHandleWidth +
-                  TimelineConstants.trimHitAreaExtra
-            : 0.0;
-
-        // Build snap points from all overlay item edges + clip edges +
-        // playhead, excluding the selected item so it doesn't snap to itself.
-        final snapSet = <int>{};
-        for (final item in overlayState.items) {
-          if (item.id == overlayState.selectedItemId) continue;
-          snapSet.add(item.startTime.inMilliseconds);
-          snapSet.add(item.endTime.inMilliseconds);
-        }
-        snapSet.addAll(clipEdgesMs);
-        snapSet.add(playheadPosition.value.inMilliseconds);
-        final snapPointsMs = snapSet.toList();
-
-        return HitExpandedBox(
-          expandLeft: trimExp,
-          expandRight: trimExp,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Sound strip (red) — audio tracks.
-              if (overlayState.hasItemsOfType(.sound))
-                HitExpandedBox(
-                  expandLeft: trimExp,
-                  expandRight: trimExp,
-                  child: Padding(
-                    padding: const .only(
-                      top: TimelineConstants.overlayStripGap,
-                    ),
-                    child: TimelineOverlayStrip(
-                      items: overlayState.itemsOfType(
-                        TimelineOverlayType.sound,
-                      ),
-                      rowCount: overlayState.rowCountForType(
-                        TimelineOverlayType.sound,
-                      ),
-                      totalWidth: totalWidth,
-                      pixelsPerSecond: pixelsPerSecond,
-                      totalDuration: totalDuration,
-                      color: VineTheme.likeRed,
-                      isCollapsed: overlayState.isTypeCollapsed(
-                        TimelineOverlayType.sound,
-                      ),
-                      selectedItemId: overlayState.selectedItemId,
-                      snapPointsMs: snapPointsMs,
-                      onItemTapped: onItemTapped,
-                      onItemMoved: onItemMoved,
-                      onItemMoving: onItemMoving,
-                      onTrimChanged: onItemTrimmed,
-                      onTrimDragChanged: onTrimDragChanged,
-                      onDragStarted: onDragStarted,
-                      onDragEnded: onDragEnded,
-                    ),
-                  ),
-                ),
-              // Filter strip (green) — visual effects.
-              if (overlayState.hasItemsOfType(.filter))
-                HitExpandedBox(
-                  expandLeft: trimExp,
-                  expandRight: trimExp,
-                  child: Padding(
-                    padding: const .only(
-                      top: TimelineConstants.overlayStripGap,
-                    ),
-                    child: TimelineOverlayStrip(
-                      items: overlayState.itemsOfType(
-                        TimelineOverlayType.filter,
-                      ),
-                      rowCount: overlayState.rowCountForType(
-                        TimelineOverlayType.filter,
-                      ),
-                      totalWidth: totalWidth,
-                      pixelsPerSecond: pixelsPerSecond,
-                      totalDuration: totalDuration,
-                      color: VineTheme.success,
-                      isCollapsed: overlayState.isTypeCollapsed(
-                        TimelineOverlayType.filter,
-                      ),
-                      selectedItemId: overlayState.selectedItemId,
-                      snapPointsMs: snapPointsMs,
-                      onItemTapped: onItemTapped,
-                      onItemMoved: onItemMoved,
-                      onItemMoving: onItemMoving,
-                      onTrimChanged: onItemTrimmed,
-                      onTrimDragChanged: onTrimDragChanged,
-                      onDragStarted: onDragStarted,
-                      onDragEnded: onDragEnded,
-                    ),
-                  ),
-                ),
-              // Layer strip (pink) — text, drawings, stickers.
-              if (overlayState.hasItemsOfType(.layer))
-                HitExpandedBox(
-                  expandLeft: trimExp,
-                  expandRight: trimExp,
-                  child: Padding(
-                    padding: const .only(
-                      top: TimelineConstants.overlayStripTopGap,
-                    ),
-                    child: TimelineOverlayStrip(
-                      items: overlayState.itemsOfType(
-                        TimelineOverlayType.layer,
-                      ),
-                      rowCount: overlayState.rowCountForType(
-                        TimelineOverlayType.layer,
-                      ),
-                      totalWidth: totalWidth,
-                      pixelsPerSecond: pixelsPerSecond,
-                      totalDuration: totalDuration,
-                      color: VineTheme.accentPink,
-                      isCollapsed: overlayState.isTypeCollapsed(
-                        TimelineOverlayType.layer,
-                      ),
-                      selectedItemId: overlayState.selectedItemId,
-                      snapPointsMs: snapPointsMs,
-                      onItemTapped: onItemTapped,
-                      onItemMoved: onItemMoved,
-                      onItemMoving: onItemMoving,
-                      onTrimChanged: onItemTrimmed,
-                      onTrimDragChanged: onTrimDragChanged,
-                      onDragStarted: onDragStarted,
-                      onDragEnded: onDragEnded,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Clips only vertically (to the widget's height) while allowing
-/// horizontal overflow to remain visible — needed so overlay trim
-/// handles can extend beyond the timeline's horizontal bounds.
-class _VerticalOnlyClipper extends CustomClipper<Rect> {
-  const _VerticalOnlyClipper();
-
-  static const _horizontalOverflow = 10000.0;
-
-  @override
-  Rect getClip(Size size) => Rect.fromLTWH(
-    -_horizontalOverflow,
-    0,
-    size.width + _horizontalOverflow * 2,
-    size.height,
-  );
-
-  @override
-  bool shouldReclip(covariant _VerticalOnlyClipper oldClipper) => false;
 }

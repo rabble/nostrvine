@@ -113,7 +113,7 @@ class _TimelineSectionState extends State<_TimelineSection> {
                 offstage: hideTimeline,
                 child: const Padding(
                   padding: .only(top: 12),
-                  child: VideoEditorTimeline(),
+                  child: VideoEditorTimelineScaffold(),
                 ),
               ),
               if (isSubEditorTimelineHidden) const _BottomActions(),

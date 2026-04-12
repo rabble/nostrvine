@@ -16,35 +16,33 @@ class VideoEditorTimelineHeader extends StatelessWidget {
   /// Notifier driven by the scroll offset of the timeline.
   final ValueNotifier<Duration> playheadPosition;
 
+  static const _padding = EdgeInsets.symmetric(horizontal: 16);
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
-          padding: const .symmetric(horizontal: 16),
+          padding: _padding,
           scrollDirection: .horizontal,
           child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: constraints.maxWidth - 32),
+            constraints: BoxConstraints(
+              minWidth: constraints.maxWidth - _padding.horizontal,
+            ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: .spaceBetween,
               spacing: 8,
               children: [
                 const Row(
                   spacing: 8,
-                  children: [
-                    _PlayPauseButton(),
-                    _MuteButton(),
-                  ],
+                  children: [_PlayPauseButton(), _MuteButton()],
                 ),
 
                 _TimeDisplay(playheadPosition: playheadPosition),
 
                 const Row(
                   spacing: 8,
-                  children: [
-                    _UndoButton(),
-                    _RedoButton(),
-                  ],
+                  children: [_UndoButton(), _RedoButton()],
                 ),
               ],
             ),

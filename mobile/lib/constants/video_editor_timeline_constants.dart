@@ -73,7 +73,7 @@ abstract class TimelineConstants {
   static const double overlayStripGap = 4;
 
   /// Vertical gap between overlay rows within a strip.
-  static const double overlayRowGap = 2;
+  static const double overlayRowGap = 6;
 
   /// Horizontal padding inside overlay item tiles.
   static const double overlayItemPadding = 6;

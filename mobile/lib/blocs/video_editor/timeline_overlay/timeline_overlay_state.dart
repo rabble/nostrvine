@@ -21,36 +21,6 @@ class TimelineOverlayState extends Equatable {
   /// Strip types that are in collapsed view.
   final Set<TimelineOverlayType> collapsedTypes;
 
-  /// Whether any item of [type] exists.
-  bool hasItemsOfType(TimelineOverlayType type) =>
-      items.any((i) => i.type == type);
-
-  /// Items filtered by type, sorted by row then start time.
-  List<TimelineOverlayItem> itemsOfType(TimelineOverlayType type) {
-    final filtered = items.where((i) => i.type == type).toList()
-      ..sort((a, b) {
-        final rowCmp = a.row.compareTo(b.row);
-        if (rowCmp != 0) return rowCmp;
-        return a.startTime.compareTo(b.startTime);
-      });
-    return filtered;
-  }
-
-  /// Number of rows used by items of [type].
-  int rowCountForType(TimelineOverlayType type) {
-    var maxRow = -1;
-    for (final item in items) {
-      if (item.type == type && item.row > maxRow) {
-        maxRow = item.row;
-      }
-    }
-    return maxRow + 1;
-  }
-
-  /// Whether [type] is collapsed.
-  bool isTypeCollapsed(TimelineOverlayType type) =>
-      collapsedTypes.contains(type);
-
   TimelineOverlayState copyWith({
     List<TimelineOverlayItem>? items,
     String? selectedItemId,
