@@ -801,6 +801,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: LibraryScreen.clipsRouteName,
         builder: (_, _) => const LibraryScreen(initialTabIndex: 1),
       ),
+      GoRoute(
+        path: LibraryScreen.soundsPath,
+        name: LibraryScreen.soundsRouteName,
+        builder: (_, _) => const LibraryScreen(initialTabIndex: 2),
+      ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(
         path: FollowersScreenRouter.path,

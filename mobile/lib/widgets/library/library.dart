@@ -4,3 +4,4 @@
 export 'clips_tab.dart';
 export 'drafts_tab.dart';
 export 'empty_library_state.dart';
+export 'sounds_tab.dart';
