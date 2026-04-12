@@ -72,9 +72,9 @@ class _SharedAudioSection extends ConsumerWidget {
   }
 }
 
-/// Display-only section showing "Original sound - @creator" for videos
-/// without shared audio. Not tappable — original sounds don't have a
-/// separate detail page.
+/// Section showing "Original sound - @creator" for videos without shared
+/// audio. Tapping navigates to [SoundDetailScreen] where the user can
+/// preview and select the sound for recording.
 class _OriginalSoundSection extends ConsumerWidget {
   const _OriginalSoundSection({required this.video});
 
@@ -93,39 +93,76 @@ class _OriginalSoundSection extends ConsumerWidget {
     return MetadataSection(
       label: 'Sounds',
       child: Semantics(
-        label: 'Original sound by $creatorName.',
-        child: Row(
-          spacing: 16,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.waveform,
-              color: VineTheme.onSurfaceVariant,
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Original sound',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                  Text(
-                    creatorName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: VineTheme.bodyMediumFont(
-                      color: VineTheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+        button: true,
+        label: 'Original sound by $creatorName. Tap to use this sound.',
+        child: GestureDetector(
+          onTap: () => _navigateToSoundDetail(context, creatorName),
+          child: Row(
+            spacing: 16,
+            children: [
+              const DivineIcon(
+                icon: DivineIconName.waveform,
+                color: VineTheme.onSurfaceVariant,
               ),
-            ),
-          ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Original sound',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.titleMediumFont(),
+                    ),
+                    Text(
+                      creatorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.bodyMediumFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: VineTheme.onSurfaceVariant,
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  void _navigateToSoundDetail(BuildContext context, String creatorName) {
+    Log.info(
+      'Navigating to original sound detail for video: ${video.id}',
+      name: 'MetadataSoundsSection',
+      category: LogCategory.ui,
+    );
+
+    final syntheticAudio = AudioEvent.fromVideoOriginalSound(
+      video,
+      creatorName: creatorName,
+    );
+
+    // Dismiss the sheet first, then navigate from the root navigator
+    // context.
+    final hostContext = Navigator.of(context, rootNavigator: true).context;
+    Navigator.of(context).pop();
+    Future<void>.delayed(Duration.zero).then((_) {
+      if (!hostContext.mounted) return;
+      hostContext.pushWithVideoPause(
+        SoundDetailScreen.pathForId(syntheticAudio.id),
+        extra: <String, dynamic>{
+          'sound': syntheticAudio,
+          'sourceVideo': video,
+        },
+      );
+    });
   }
 }
 

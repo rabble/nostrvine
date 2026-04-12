@@ -142,13 +142,13 @@ void main() {
         expect(find.text('Jake Lara'), findsOneWidget);
       });
 
-      testWidgets('does not show chevron (display-only)', (tester) async {
+      testWidgets('shows chevron (tappable to use sound)', (tester) async {
         final video = createVideoWithoutAudio();
 
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.chevron_right), findsNothing);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       });
 
       testWidgets('falls back to original sound when audio event is null', (
