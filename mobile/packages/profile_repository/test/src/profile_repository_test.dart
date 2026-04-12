@@ -606,17 +606,9 @@ void main() {
             (_) async => {
               '_noProfile': true,
               'pubkey': testPubkey,
-              'social': {
-                'follower_count': 12,
-                'following_count': 7,
-              },
-              'stats': {
-                'video_count': 3,
-              },
-              'engagement': {
-                'total_reactions': 42,
-                'total_loops': 12.6,
-              },
+              'social': {'follower_count': 12, 'following_count': 7},
+              'stats': {'video_count': 3},
+              'engagement': {'total_reactions': 42, 'total_loops': 12.6},
             },
           );
 
@@ -837,39 +829,75 @@ void main() {
           expect(result!.displayName, equals('Test User'));
         });
 
-        test(
-          'returns first result without waiting for slower sources',
-          () async {
-            // Connected relay returns immediately
-            when(
-              () => mockNostrClient.fetchProfile(testPubkey),
-            ).thenAnswer((_) async => mockProfileEvent);
-            // Indexer also has a result but connected relay wins
-            final indexerEvent = MockEvent();
-            when(() => indexerEvent.kind).thenReturn(0);
-            when(() => indexerEvent.pubkey).thenReturn(testPubkey);
-            when(() => indexerEvent.createdAt).thenReturn(1704153600);
-            when(() => indexerEvent.id).thenReturn('idx_$testEventId');
-            when(
-              () => indexerEvent.content,
-            ).thenReturn(jsonEncode({'display_name': 'Indexer Name'}));
-            when(
-              () => mockNostrClient.queryEvents(
-                any(),
-                tempRelays: any(named: 'tempRelays'),
-                useCache: any(named: 'useCache'),
-              ),
-            ).thenAnswer((_) async => [indexerEvent]);
+        test('picks newer indexer profile over older relay profile', () async {
+          // Connected relay returns older event (createdAt = 1704067200)
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => mockProfileEvent);
+          // Indexer returns newer event (createdAt = 1704153600)
+          final indexerEvent = MockEvent();
+          when(() => indexerEvent.kind).thenReturn(0);
+          when(() => indexerEvent.pubkey).thenReturn(testPubkey);
+          when(() => indexerEvent.createdAt).thenReturn(1704153600);
+          when(() => indexerEvent.id).thenReturn('idx_$testEventId');
+          when(
+            () => indexerEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Indexer Name'}));
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [indexerEvent]);
 
-            final result = await profileRepository.fetchFreshProfile(
-              pubkey: testPubkey,
-            );
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
 
-            // First-result-wins: connected relay completes first
-            expect(result, isNotNull);
-            expect(result!.displayName, equals('Test User'));
-          },
-        );
+          // Newest-wins: indexer has a later createdAt
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Indexer Name'));
+        });
+
+        test('picks newer relay profile over older indexer profile', () async {
+          // Connected relay returns newer event (createdAt = 1704153600)
+          final newerRelayEvent = MockEvent();
+          when(() => newerRelayEvent.kind).thenReturn(0);
+          when(() => newerRelayEvent.pubkey).thenReturn(testPubkey);
+          when(() => newerRelayEvent.createdAt).thenReturn(1704153600);
+          when(() => newerRelayEvent.id).thenReturn('new_$testEventId');
+          when(
+            () => newerRelayEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Relay Name'}));
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => newerRelayEvent);
+          // Indexer returns older event (createdAt = 1704067200)
+          final indexerEvent = MockEvent();
+          when(() => indexerEvent.kind).thenReturn(0);
+          when(() => indexerEvent.pubkey).thenReturn(testPubkey);
+          when(() => indexerEvent.createdAt).thenReturn(1704067200);
+          when(() => indexerEvent.id).thenReturn('idx_$testEventId');
+          when(
+            () => indexerEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Old Indexer'}));
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [indexerEvent]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          // Newest-wins: relay has a later createdAt
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Relay Name'));
+        });
       });
     });
 

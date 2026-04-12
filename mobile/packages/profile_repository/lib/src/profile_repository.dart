@@ -250,8 +250,7 @@ class ProfileRepository {
   /// Strategy:
   /// 1. Funnelcake REST API (fast, broad coverage)
   /// 2. Connected relays and indexer relays —
-  ///    both fired **in parallel**, first result wins
-  ///    to minimise latency
+  ///    both fired **in parallel**, newest by `createdAt` wins
   ///
   /// Skips all fetches if the pubkey is confirmed missing.
   /// Deduplicates concurrent calls for the same pubkey —
@@ -305,7 +304,7 @@ class ProfileRepository {
     }
 
     // Step 2: Fire connected relays and indexer relays concurrently.
-    // The first source to return a profile wins.
+    // The newest profile by createdAt wins.
     final profile = await _fetchFromRelaysParallel(pubkey);
     if (profile != null) {
       _knownCached.add(pubkey);
@@ -323,43 +322,31 @@ class ProfileRepository {
   }
 
   /// Queries connected relays and indexer relays in parallel for a
-  /// kind 0 profile event. Returns as soon as the first source
-  /// finds a profile (first-result-wins) to minimise latency.
+  /// kind 0 profile event. Waits for all sources to complete and
+  /// picks the newest profile by `createdAt` timestamp.
   /// Falls back to null only when every source completes without
   /// a result.
   Future<UserProfile?> _fetchFromRelaysParallel(String pubkey) async {
-    final completer = Completer<UserProfile?>();
-    final futures = <Future<UserProfile?>>[
-      _fetchFromConnectedRelays(pubkey),
-      _fetchFromIndexerRelays(pubkey),
-    ];
-
-    var remaining = futures.length;
-
-    void onDone() {
-      remaining--;
-      if (remaining == 0 && !completer.isCompleted) {
-        completer.complete(null);
+    Future<UserProfile?> safe(Future<UserProfile?> f) async {
+      try {
+        return await f;
+      } on Object {
+        return null;
       }
     }
 
-    for (final future in futures) {
-      unawaited(
-        future
-            .then((result) {
-              if (result != null && !completer.isCompleted) {
-                completer.complete(result);
-              } else {
-                onDone();
-              }
-            })
-            .catchError((_) {
-              onDone();
-            }),
-      );
-    }
+    final results = await Future.wait([
+      safe(_fetchFromConnectedRelays(pubkey)),
+      safe(_fetchFromIndexerRelays(pubkey)),
+    ]);
 
-    return completer.future;
+    final candidates = results.whereType<UserProfile>().toList();
+    if (candidates.isEmpty) return null;
+    if (candidates.length == 1) return candidates.first;
+
+    return candidates.reduce(
+      (a, b) => b.createdAt.isAfter(a.createdAt) ? b : a,
+    );
   }
 
   Future<UserProfile?> _fetchFromConnectedRelays(String pubkey) async {
