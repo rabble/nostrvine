@@ -191,11 +191,7 @@ class _VideoPlayerWidget extends StatelessWidget {
     return Center(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // For vertical videos (9:16), expand to fill the available space.
-          // For other ratios (e.g., square), maintain their intrinsic aspect.
-          final aspectRatio = clip.targetAspectRatio.useFullScreen
-              ? constraints.biggest.aspectRatio
-              : clip.targetAspectRatio.value;
+          final aspectRatio = clip.targetAspectRatio.value;
 
           return AspectRatio(
             aspectRatio: aspectRatio,

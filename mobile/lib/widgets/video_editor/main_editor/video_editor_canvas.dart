@@ -338,18 +338,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     final editorState = ref.read(videoEditorProvider);
     if (clips.isEmpty) return;
     await Future.wait([
-      if (startPosition == null || startPosition == Duration.zero)
-        _videoPlayer!.seekTo(clips.first.thumbnailTimestamp),
       _videoPlayer!.setLooping(looping: true),
       _videoPlayer!.setVolume(editorState.originalAudioVolume),
     ]);
     if (!mounted) return;
 
-    final mainState = context.read<VideoEditorMainBloc>().state;
-    if (!mainState.isExternalPauseRequested) {
-      await _videoPlayer!.play();
-    }
-    if (!mounted) return;
     _isPlayerReadyNotifier.value = true;
 
     // Notify BLoC that player is ready
@@ -710,8 +703,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               captureImageByteFormat: .rawStraightRgba,
               customPixelRatio: max(
                 1,
-                VideoEditorConstants.quality.resolution.width /
-                    widget.renderSize.width,
+                max(
+                  VideoEditorConstants.quality.resolution.height /
+                      widget.renderSize.height,
+                  VideoEditorConstants.quality.resolution.width /
+                      widget.renderSize.width,
+                ),
               ),
             ),
             mainEditor: MainEditorConfigs(

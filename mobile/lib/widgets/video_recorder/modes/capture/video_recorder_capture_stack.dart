@@ -28,7 +28,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
         elevation: 0,
         behavior: .floating,
         margin: .fromLTRB(16, 0, 16, 68),
-        content: DivineSnackbarContainer(label: 'Clip removed'),
+        content: DivineSnackbarContainer(label: 'Clip unselected'),
       ),
     );
   }

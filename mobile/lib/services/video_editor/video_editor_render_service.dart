@@ -338,9 +338,7 @@ class VideoEditorRenderService {
       );
 
       if (proofData != null) {
-        result.add(
-          clip.copyWith(proofManifestJson: jsonEncode(proofData)),
-        );
+        result.add(clip.copyWith(proofManifestJson: jsonEncode(proofData)));
         Log.info(
           '✅ Backfilled proof for clip ${clip.id}',
           name: _logName,
@@ -753,6 +751,15 @@ class VideoEditorRenderService {
         .map((s) => s.copyWith(volume: originalAudioVolume))
         .toList();
 
+    Size? renderResolution;
+    if (parameters?.capturedLayers.isNotEmpty == true &&
+        volumeSegments.isNotEmpty) {
+      final metadata = await ProVideoEditor.instance.getMetadata(
+        volumeSegments.first.video,
+      );
+      renderResolution = metadata.resolution;
+    }
+
     final task = VideoRenderData(
       id: taskId,
       videoSegments: volumeSegments,
@@ -764,8 +771,9 @@ class VideoEditorRenderService {
           ? () {
               final bodySize = parameters!.bodySize;
               if (bodySize == null) return null;
-              final videoSize = VideoEditorConstants.quality
-                  .resolutionForAspectRatio(
+              final videoSize =
+                  renderResolution ??
+                  VideoEditorConstants.quality.resolutionForAspectRatio(
                     aspectRatio,
                   );
               final scale = videoSize.width / bodySize.width;
