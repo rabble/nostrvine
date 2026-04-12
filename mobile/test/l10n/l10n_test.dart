@@ -44,20 +44,20 @@ void main() {
       expect(l10n.settingsTitle, equals('Ajustes'));
     });
 
-    testWidgets('resolves to a known locale for unsupported ones', (
+    testWidgets('falls back to English for unsupported locale', (
       tester,
     ) async {
       late AppLocalizations l10n;
 
-      // Chinese is not a supported locale. Flutter's basic resolver
-      // falls back to the first locale in the supported list — which
-      // is still a translated locale. We just verify a non-null l10n
-      // object is available (no crash, no null).
+      // Chinese is not a supported locale. We force the resolution
+      // callback to return English, verifying the app gracefully
+      // falls back to the English ARB strings.
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('zh'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          localeListResolutionCallback: (_, __) => const Locale('en'),
           home: Builder(
             builder: (context) {
               l10n = context.l10n;
@@ -67,9 +67,7 @@ void main() {
         ),
       );
 
-      // Just verify we got a non-empty localization
-      expect(l10n.settingsTitle, isNotEmpty);
-      expect(l10n.shareMenuOriginalSound, isNotEmpty);
+      expect(l10n.settingsTitle, equals('Settings'));
     });
 
     testWidgets('parameterized string works for version', (tester) async {

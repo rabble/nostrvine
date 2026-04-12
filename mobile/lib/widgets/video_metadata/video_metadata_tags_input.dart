@@ -153,8 +153,12 @@ class _VideoMetadataTagsInputState
               Row(
                 mainAxisAlignment: .spaceBetween,
                 children: [
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  Flexible(child: Text('Tags', style: labelStyle)),
+                  Flexible(
+                    child: Text(
+                      context.l10n.videoMetadataTags,
+                      style: labelStyle,
+                    ),
+                  ),
                   if (VideoEditorConstants.enableTagLimit)
                     Text(
                       '${tags.length}/${VideoEditorConstants.tagLimit}',
