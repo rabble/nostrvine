@@ -13,7 +13,11 @@ import 'package:profile_repository/profile_repository.dart';
 
 class MockNostrClient extends Mock implements NostrClient {}
 
-class MockEvent extends Mock implements Event {}
+class MockEvent extends Mock implements Event {
+  @override
+  DateTime get createdAtDateTime =>
+      DateTime.fromMillisecondsSinceEpoch(createdAt * 1000, isUtc: true);
+}
 
 class MockUserProfilesDao extends Mock implements UserProfilesDao {}
 
