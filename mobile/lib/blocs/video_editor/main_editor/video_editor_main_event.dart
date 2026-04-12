@@ -176,3 +176,8 @@ class VideoEditorReorderingChanged extends VideoEditorMainEvent {
   @override
   List<Object?> get props => [isReordering];
 }
+
+/// Triggered when the timeline visibility should be toggled.
+class VideoEditorTimelineVisibilityToggled extends VideoEditorMainEvent {
+  const VideoEditorTimelineVisibilityToggled();
+}

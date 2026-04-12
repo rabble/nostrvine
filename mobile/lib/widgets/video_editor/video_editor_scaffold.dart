@@ -36,59 +36,29 @@ class VideoEditorScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: VideoEditorConstants.uiOverlayStyle,
-      child: BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
-        selector: (state) => state.isSubEditorOpen,
-        builder: (context, isSubEditorOpen) {
-          return Scaffold(
-            backgroundColor: VineTheme.backgroundCamera,
-            resizeToAvoidBottomInset: false,
-            floatingActionButton:
-                BlocSelector<TimelineOverlayBloc, TimelineOverlayState, bool>(
-                  selector: (state) => state.selectedItemId != null,
-                  builder: (context, hasSelectedOverlay) {
-                    final isClipEditing = context.select(
-                      (ClipEditorBloc b) => b.state.isEditing,
-                    );
-                    final hide =
-                        isSubEditorOpen || hasSelectedOverlay || isClipEditing;
-                    return Semantics(
-                      label: 'Add element',
-                      child: hide
-                          ? const SizedBox.shrink()
-                          : FloatingActionButton(
-                              backgroundColor: VineTheme.primary,
-                              onPressed: () =>
-                                  VideoEditorMainActionsSheet.show(context),
-                              child: const DivineIcon(
-                                icon: .plus,
-                                color: VineTheme.onPrimary,
-                              ),
-                            ),
-                    );
-                  },
-                ),
+      child: Scaffold(
+        backgroundColor: VineTheme.backgroundCamera,
+        resizeToAvoidBottomInset: false,
+        floatingActionButton: const _AddElementFab(),
+        body: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                fit: .expand,
+                clipBehavior: .none,
+                children: [
+                  if (isLoading)
+                    const BrandedLoadingScaffold()
+                  else
+                    const VideoEditorCanvas(),
 
-            body: Column(
-              children: [
-                Expanded(
-                  child: Stack(
-                    fit: .expand,
-                    clipBehavior: .none,
-                    children: [
-                      if (isLoading)
-                        const BrandedLoadingScaffold()
-                      else
-                        const VideoEditorCanvas(),
-
-                      const _OverlayControls(),
-                    ],
-                  ),
-                ),
-                const _TimelineSection(),
-              ],
+                  const _OverlayControls(),
+                ],
+              ),
             ),
-          );
-        },
+            const _TimelineSection(),
+          ],
+        ),
       ),
     );
   }
@@ -110,11 +80,18 @@ class _TimelineSectionState extends State<_TimelineSection> {
     return BlocSelector<
       VideoEditorMainBloc,
       VideoEditorMainState,
-      SubEditorType?
+      ({SubEditorType? openSubEditor, bool isTimelineHiddenByUser})
     >(
-      selector: (state) => state.openSubEditor,
-      builder: (context, openSubEditor) {
-        final hideTimeline = openSubEditor == .draw || openSubEditor == .filter;
+      selector: (state) => (
+        openSubEditor: state.openSubEditor,
+        isTimelineHiddenByUser: state.isTimelineHiddenByUser,
+      ),
+      builder: (context, selection) {
+        final isSubEditorTimelineHidden =
+            selection.openSubEditor == .draw ||
+            selection.openSubEditor == .filter;
+        final hideTimeline =
+            isSubEditorTimelineHidden || selection.isTimelineHiddenByUser;
 
         // Enable animation only after the first actual transition.
         if (_lastHideTimeline != null && _lastHideTimeline != hideTimeline) {
@@ -128,6 +105,7 @@ class _TimelineSectionState extends State<_TimelineSection> {
           alignment: .bottomCenter,
           child: Column(
             mainAxisSize: .min,
+            crossAxisAlignment: .stretch,
             children: [
               // Keep timeline always in tree to preserve thumbnail cache.
               // Offstage hides without unmounting.
@@ -138,7 +116,7 @@ class _TimelineSectionState extends State<_TimelineSection> {
                   child: VideoEditorTimeline(),
                 ),
               ),
-              if (hideTimeline) const _BottomActions(),
+              if (isSubEditorTimelineHidden) const _BottomActions(),
             ],
           ),
         );
@@ -152,31 +130,30 @@ class _OverlayControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
-      child: BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
-        buildWhen: (previous, current) =>
-            previous.isLayerInteractionActive !=
-                current.isLayerInteractionActive ||
-            previous.openSubEditor != current.openSubEditor,
-        builder: (context, state) => switch (state) {
-          _ when state.isLayerInteractionActive => const SizedBox(),
-          // Text-Editor
-          VideoEditorMainState(openSubEditor: .text) => const SizedBox.shrink(),
-          // Draw-Editor
-          VideoEditorMainState(openSubEditor: .draw) =>
-            const VideoEditorDrawOverlayControls(
-              key: ValueKey('Draw-Overlay-Controls'),
-            ),
-          // Filter-Editor
-          VideoEditorMainState(openSubEditor: .filter) =>
-            const VideoEditorFilterOverlayControls(
-              key: ValueKey('Filter-Overlay-Controls'),
-            ),
-          // Fallback
-          _ => const VideoEditorMainOverlayActions(),
-        },
-      ),
+    return BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
+      buildWhen: (previous, current) =>
+          previous.isLayerInteractionActive !=
+              current.isLayerInteractionActive ||
+          previous.openSubEditor != current.openSubEditor,
+      builder: (context, state) => switch (state) {
+        _ when state.isLayerInteractionActive => const SizedBox(),
+        // Text-Editor
+        VideoEditorMainState(openSubEditor: .text) => const SizedBox.shrink(),
+        // Draw-Editor
+        VideoEditorMainState(openSubEditor: .draw) => const Padding(
+          key: ValueKey('Draw-Overlay-Controls'),
+          padding: .only(bottom: VideoEditorConstants.bottomBarHeight),
+          child: VideoEditorDrawOverlayControls(),
+        ),
+        // Filter-Editor
+        VideoEditorMainState(openSubEditor: .filter) => const Padding(
+          key: ValueKey('Filter-Overlay-Controls'),
+          padding: .only(bottom: VideoEditorConstants.bottomBarHeight),
+          child: VideoEditorFilterOverlayControls(),
+        ),
+        // Fallback
+        _ => const VideoEditorMainOverlayActions(),
+      },
     );
   }
 }
@@ -191,34 +168,68 @@ class _BottomActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final systemNavigationBarHeight = MediaQuery.viewPaddingOf(context).bottom;
+    final openSubEditor = context.select(
+      (VideoEditorMainBloc b) => b.state.openSubEditor,
+    );
+
     return SizedBox(
       height: systemNavigationBarHeight + VideoEditorConstants.bottomBarHeight,
-      child:
-          BlocSelector<
-            VideoEditorMainBloc,
-            VideoEditorMainState,
-            SubEditorType?
-          >(
-            selector: (state) => state.openSubEditor,
-            builder: (context, openSubEditor) {
-              return switch (openSubEditor) {
-                // Draw-Bar
-                SubEditorType.draw => const VideoEditorDrawBottomBar(
-                  key: ValueKey('Draw-Editor-Bottom-Bar'),
-                ),
-                // Filter-Bar
-                SubEditorType.filter => Padding(
-                  padding: .only(bottom: systemNavigationBarHeight),
-                  child: const VideoEditorFilterBottomBar(
-                    key: ValueKey('Filter-Editor-Bottom-Bar'),
-                  ),
-                ),
-                // Fallback — should not happen since _BottomActions is only
-                // rendered for draw/filter, but handle gracefully.
-                _ => const SizedBox.shrink(),
-              };
-            },
+      child: switch (openSubEditor) {
+        // Draw-Bar
+        SubEditorType.draw => const VideoEditorDrawBottomBar(
+          key: ValueKey('Draw-Editor-Bottom-Bar'),
+        ),
+        // Filter-Bar
+        SubEditorType.filter => Padding(
+          padding: .only(bottom: systemNavigationBarHeight),
+          child: const VideoEditorFilterBottomBar(
+            key: ValueKey('Filter-Editor-Bottom-Bar'),
           ),
+        ),
+        // Fallback — should not happen since _BottomActions is only
+        // rendered for draw/filter, but handle gracefully.
+        _ => const SizedBox.shrink(),
+      },
+    );
+  }
+}
+
+class _AddElementFab extends StatelessWidget {
+  const _AddElementFab();
+
+  @override
+  Widget build(BuildContext context) {
+    final (:isSubEditorOpen, :isTimelineHiddenByUser) = context.select(
+      (VideoEditorMainBloc b) => (
+        isSubEditorOpen: b.state.isSubEditorOpen,
+        isTimelineHiddenByUser: b.state.isTimelineHiddenByUser,
+      ),
+    );
+    final hasSelectedOverlay = context.select(
+      (TimelineOverlayBloc b) => b.state.selectedItemId != null,
+    );
+    final isClipEditing = context.select(
+      (ClipEditorBloc b) => b.state.isEditing,
+    );
+
+    if (isSubEditorOpen ||
+        hasSelectedOverlay ||
+        isClipEditing ||
+        isTimelineHiddenByUser) {
+      return const SizedBox.shrink();
+    }
+
+    return Semantics(
+      label: 'Add element',
+      button: true,
+      child: FloatingActionButton(
+        backgroundColor: VineTheme.primary,
+        onPressed: () => VideoEditorMainActionsSheet.show(context),
+        child: const DivineIcon(
+          icon: .plus,
+          color: VineTheme.onPrimary,
+        ),
+      ),
     );
   }
 }

@@ -341,7 +341,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
           AudioSelectionBottomSheet(scrollController: scrollController),
     );
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     // Open timing screen and wait for result
     final timingResult = await Navigator.of(context).push<AudioTimingResult>(

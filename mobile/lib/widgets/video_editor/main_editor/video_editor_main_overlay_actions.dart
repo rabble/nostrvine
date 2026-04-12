@@ -1,6 +1,7 @@
 // ABOUTME: Top overlay actions for the video editor with close and done buttons.
 // ABOUTME: Hides when the music sub-editor is open.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,7 @@ class VideoEditorMainOverlayActions extends StatelessWidget {
           fit: .expand,
           children: [
             Align(alignment: .topCenter, child: _TopActions()),
+            Align(alignment: .bottomCenter, child: _BottomActions()),
           ],
         ),
       ),
@@ -59,6 +61,38 @@ class _TopActions extends StatelessWidget {
         }
       },
       onDone: () => scope.editor?.doneEditing(),
+    );
+  }
+}
+
+class _BottomActions extends StatelessWidget {
+  const _BottomActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final isTimelineHiddenByUser = context.select(
+      (VideoEditorMainBloc b) => b.state.isTimelineHiddenByUser,
+    );
+
+    return Semantics(
+      label: isTimelineHiddenByUser ? 'Show timeline' : 'Hide timeline',
+      button: true,
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 240),
+        padding: .only(
+          bottom: isTimelineHiddenByUser
+              ? MediaQuery.viewPaddingOf(context).bottom + 12
+              : 8,
+        ),
+        child: DivineIconButton(
+          icon: isTimelineHiddenByUser ? .caretUp : .caretDown,
+          onPressed: () => context.read<VideoEditorMainBloc>().add(
+            const VideoEditorTimelineVisibilityToggled(),
+          ),
+          size: .small,
+          type: .ghostSecondary,
+        ),
+      ),
     );
   }
 }

@@ -35,6 +35,7 @@ class VideoEditorMainBloc
     on<VideoEditorDurationChanged>(_onDurationChanged);
     on<VideoEditorMuteToggled>(_onMuteToggled);
     on<VideoEditorReorderingChanged>(_onReorderingChanged);
+    on<VideoEditorTimelineVisibilityToggled>(_onTimelineVisibilityToggled);
   }
 
   /// Updates undo/redo/subEditor state based on editor capabilities.
@@ -175,5 +176,16 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(state.copyWith(isReordering: event.isReordering));
+  }
+
+  void _onTimelineVisibilityToggled(
+    VideoEditorTimelineVisibilityToggled event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        isTimelineHiddenByUser: !state.isTimelineHiddenByUser,
+      ),
+    );
   }
 }
