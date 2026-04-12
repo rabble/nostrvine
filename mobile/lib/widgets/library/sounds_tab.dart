@@ -1,6 +1,8 @@
 // ABOUTME: Sounds tab for the Library screen.
 // ABOUTME: Browse bundled and trending Nostr sounds with search and preview.
 
+import 'dart:developer' as developer;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +12,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 import 'package:sound_service/sound_service.dart';
@@ -81,10 +82,10 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       }
       await audioService.play();
     } catch (e) {
-      Log.error(
+      developer.log(
         'Failed to preview sound: $e',
         name: 'SoundsTab',
-        category: LogCategory.ui,
+        level: 1000,
       );
     } finally {
       if (mounted) {
