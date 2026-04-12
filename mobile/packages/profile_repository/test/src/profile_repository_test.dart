@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 // Hide Drift table class to avoid collision with ProfileStats domain model.
@@ -57,6 +58,7 @@ void main() {
     });
 
     setUp(() {
+      UserProfile? storedProfile;
       mockNostrClient = MockNostrClient();
       mockProfileEvent = MockEvent();
       mockUserProfilesDao = MockUserProfilesDao();
@@ -101,10 +103,18 @@ void main() {
       ).thenAnswer((_) async => mockProfileEvent);
       when(
         () => mockUserProfilesDao.getProfile(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((invocation) async {
+        final pubkey = invocation.positionalArguments.first as String;
+        if (storedProfile?.pubkey == pubkey) {
+          return storedProfile;
+        }
+        return null;
+      });
       when(
         () => mockUserProfilesDao.upsertProfile(any()),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((invocation) async {
+        storedProfile = invocation.positionalArguments.first as UserProfile;
+      });
     });
 
     /// Helper to create a current profile with given content
@@ -814,26 +824,36 @@ void main() {
         });
 
         test('returns relay result when indexer is slower', () async {
+          final relayCompleter = Completer<Event?>();
+          final indexerCompleter = Completer<List<Event>>();
           when(
             () => mockNostrClient.fetchProfile(testPubkey),
-          ).thenAnswer((_) async => mockProfileEvent);
+          ).thenAnswer((_) => relayCompleter.future);
           when(
             () => mockNostrClient.queryEvents(
               any(),
               tempRelays: any(named: 'tempRelays'),
               useCache: any(named: 'useCache'),
             ),
-          ).thenAnswer((_) async => <Event>[]);
+          ).thenAnswer((_) => indexerCompleter.future);
 
-          final result = await profileRepository.fetchFreshProfile(
+          final fetchFuture = profileRepository.fetchFreshProfile(
             pubkey: testPubkey,
+          );
+          relayCompleter.complete(mockProfileEvent);
+
+          final result = await fetchFuture.timeout(
+            const Duration(milliseconds: 50),
           );
 
           expect(result, isNotNull);
           expect(result!.displayName, equals('Test User'));
+
+          indexerCompleter.complete(<Event>[]);
         });
 
-        test('picks newer indexer profile over older relay profile', () async {
+        test('upgrades cached profile when slower indexer is newer', () async {
+          final indexerCompleter = Completer<List<Event>>();
           // Connected relay returns older event (createdAt = 1704067200)
           when(
             () => mockNostrClient.fetchProfile(testPubkey),
@@ -853,16 +873,94 @@ void main() {
               tempRelays: any(named: 'tempRelays'),
               useCache: any(named: 'useCache'),
             ),
-          ).thenAnswer((_) async => [indexerEvent]);
+          ).thenAnswer((_) => indexerCompleter.future);
 
-          final result = await profileRepository.fetchFreshProfile(
+          final fetchFuture = profileRepository.fetchFreshProfile(
             pubkey: testPubkey,
           );
+          final firstResult = await fetchFuture.timeout(
+            const Duration(milliseconds: 50),
+          );
 
-          // Newest-wins: indexer has a later createdAt
-          expect(result, isNotNull);
-          expect(result!.displayName, equals('Indexer Name'));
+          expect(firstResult, isNotNull);
+          expect(firstResult!.displayName, equals('Test User'));
+          verify(
+            () => mockUserProfilesDao.upsertProfile(
+              any(
+                that: isA<UserProfile>().having(
+                  (profile) => profile.displayName,
+                  'displayName',
+                  equals('Test User'),
+                ),
+              ),
+            ),
+          ).called(1);
+
+          indexerCompleter.complete([indexerEvent]);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockUserProfilesDao.upsertProfile(
+              any(
+                that: isA<UserProfile>().having(
+                  (profile) => profile.displayName,
+                  'displayName',
+                  equals('Indexer Name'),
+                ),
+              ),
+            ),
+          ).called(1);
         });
+
+        test(
+          'keeps cached relay profile when slower indexer is older',
+          () async {
+          final indexerCompleter = Completer<List<Event>>();
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => mockProfileEvent);
+          final indexerEvent = MockEvent();
+          when(() => indexerEvent.kind).thenReturn(0);
+          when(() => indexerEvent.pubkey).thenReturn(testPubkey);
+          when(() => indexerEvent.createdAt).thenReturn(1703977200);
+          when(() => indexerEvent.id).thenReturn('idx_old_$testEventId');
+          when(
+            () => indexerEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Old Indexer'}));
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) => indexerCompleter.future);
+
+          final fetchFuture = profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+          final firstResult = await fetchFuture.timeout(
+            const Duration(milliseconds: 50),
+          );
+
+          expect(firstResult, isNotNull);
+          expect(firstResult!.displayName, equals('Test User'));
+
+          indexerCompleter.complete([indexerEvent]);
+          await Future<void>.delayed(Duration.zero);
+
+          verifyNever(
+            () => mockUserProfilesDao.upsertProfile(
+              any(
+                that: isA<UserProfile>().having(
+                  (profile) => profile.displayName,
+                  'displayName',
+                  equals('Old Indexer'),
+                ),
+              ),
+            ),
+          );
+          },
+        );
 
         test('picks newer relay profile over older indexer profile', () async {
           // Connected relay returns newer event (createdAt = 1704153600)
@@ -898,7 +996,6 @@ void main() {
             pubkey: testPubkey,
           );
 
-          // Newest-wins: relay has a later createdAt
           expect(result, isNotNull);
           expect(result!.displayName, equals('Relay Name'));
         });
