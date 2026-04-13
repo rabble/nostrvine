@@ -18,7 +18,7 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/extensions/aspect_ratio_extensions.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -438,17 +438,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       );
 
       final videoDuration = context.read<ClipEditorBloc>().state.totalDuration;
-      final filterModels = context
-          .read<VideoEditorFilterBloc>()
-          .state
-          .appliedFilters;
 
       context.read<TimelineOverlayBloc>().add(
         TimelineOverlayItemsUpdate(
           layers: editor.activeLayers,
           filters: editor.stateManager.activeFilters,
-          filterModels: filterModels,
           totalVideoDuration: videoDuration,
+          audioTracks: editor.stateManager.audioTracks,
         ),
       );
     });
@@ -986,49 +982,24 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final useFullSize = targetAspectRatio.useFullScreenForSize(bodySize);
-
-    // Calculate the scale factor that FittedBox.cover applies
-    final scale = max(
-      bodySize.width / renderSize.width,
-      bodySize.height / renderSize.height,
+    // Contain mode: the visible area is targetAspectRatio fitted in renderSize
+    final containSize = Size(
+      renderSize.height * targetAspectRatio.value,
+      renderSize.height,
+    );
+    final containRadius = Radius.circular(
+      VideoEditorConstants.canvasRadius * containSize.width / bodySize.width,
     );
 
-    // Size in renderSize coordinates that equals bodySize after scaling
-    final size = bodySize / scale;
-    final radius = Radius.circular(VideoEditorConstants.canvasRadius / scale);
-
-    if (useFullSize) {
-      // Cover mode: show the visible portion of bodySize
-      return Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.vertical(bottom: radius),
-          child: SizedBox.fromSize(
-            size: size,
-            child: VideoEditorThumbnail(contentSize: size),
-          ),
+    return Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.all(containRadius),
+        child: SizedBox.fromSize(
+          size: containSize,
+          child: VideoEditorThumbnail(contentSize: containSize),
         ),
-      );
-    } else {
-      // Contain mode: the visible area is targetAspectRatio fitted in renderSize
-      final containSize = Size(
-        renderSize.height * targetAspectRatio.value,
-        renderSize.height,
-      );
-      final containRadius = Radius.circular(
-        VideoEditorConstants.canvasRadius * containSize.width / bodySize.width,
-      );
-
-      return Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.all(containRadius),
-          child: SizedBox.fromSize(
-            size: containSize,
-            child: VideoEditorThumbnail(contentSize: containSize),
-          ),
-        ),
-      );
-    }
+      ),
+    );
   }
 }
 
@@ -1048,10 +1019,6 @@ class _CanvasFitter extends ConsumerWidget {
     return LayoutBuilder(
       builder: (_, constraints) {
         final bodySize = constraints.biggest;
-
-        final useFullSize = clip.targetAspectRatio.useFullScreenForSize(
-          bodySize,
-        );
 
         // Height is constrained by maxWidth or maxHeight,
         // depending on which dimension is reached first
@@ -1075,34 +1042,29 @@ class _CanvasFitter extends ConsumerWidget {
           ),
         );
 
-        if (useFullSize) {
-          // Cover mode: fill entire bodySize with the original aspect ratio
-          return FittedBox(fit: BoxFit.cover, child: child);
+        // Contain mode: fit targetAspectRatio within bodySize,
+        // then cover that area with the original aspect ratio
+        final Size targetSize;
+        if (bodySize.aspectRatio > clip.targetAspectRatio.value) {
+          // Body is wider, height is limiting
+          targetSize = Size(
+            bodySize.height * clip.targetAspectRatio.value,
+            bodySize.height,
+          );
         } else {
-          // Contain mode: fit targetAspectRatio within bodySize,
-          // then cover that area with the original aspect ratio
-          final Size targetSize;
-          if (bodySize.aspectRatio > clip.targetAspectRatio.value) {
-            // Body is wider, height is limiting
-            targetSize = Size(
-              bodySize.height * clip.targetAspectRatio.value,
-              bodySize.height,
-            );
-          } else {
-            // Body is narrower, width is limiting
-            targetSize = Size(
-              bodySize.width,
-              bodySize.width / clip.targetAspectRatio.value,
-            );
-          }
-
-          return Center(
-            child: SizedBox.fromSize(
-              size: targetSize,
-              child: FittedBox(fit: BoxFit.cover, child: child),
-            ),
+          // Body is narrower, width is limiting
+          targetSize = Size(
+            bodySize.width,
+            bodySize.width / clip.targetAspectRatio.value,
           );
         }
+
+        return Center(
+          child: SizedBox.fromSize(
+            size: targetSize,
+            child: FittedBox(fit: BoxFit.cover, child: child),
+          ),
+        );
       },
     );
   }

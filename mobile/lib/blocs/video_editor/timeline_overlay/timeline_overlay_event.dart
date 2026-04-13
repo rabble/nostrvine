@@ -13,22 +13,21 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
   const TimelineOverlayItemsUpdate({
     required this.layers,
     required this.filters,
-    required this.filterModels,
+    required this.audioTracks,
     required this.totalVideoDuration,
   });
 
   final List<Layer> layers;
   final List<FilterState> filters;
+  final List<AudioTrack> audioTracks;
 
-  /// Parallel list to [filters] — provides the display name for each filter.
-  final List<FilterModel> filterModels;
   final Duration totalVideoDuration;
 
   @override
   List<Object?> get props => [
     layers,
     filters,
-    filterModels,
+    audioTracks,
     totalVideoDuration,
   ];
 }

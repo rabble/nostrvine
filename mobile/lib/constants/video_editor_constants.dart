@@ -16,6 +16,9 @@ class VideoEditorConstants {
   /// Prefix key used to identify drafts being published in storage.
   static String publishPrefixId = 'draft_publish';
 
+  /// Unique history key for audio items.
+  static const String audioStateHistoryKey = 'audio';
+
   /// Maximum number of tags allowed per video.
   static int tagLimit = 1 << 30; // ~1 billion
 

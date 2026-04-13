@@ -17,12 +17,12 @@ import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.da
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
-import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
@@ -342,9 +342,19 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
           AudioSelectionBottomSheet(scrollController: scrollController),
     );
 
-    if (!mounted || result == null) return;
+    final editor = _editorKey.currentState;
 
-    // handle result
+    if (!mounted || editor == null || result == null) return;
+
+    editor.addHistory(
+      meta: {
+        VideoEditorConstants.audioStateHistoryKey: [
+          // Preserve existing audio tracks from the current history entry.
+          ...editor.stateManager.audioTracks,
+          result.toJson(),
+        ],
+      },
+    );
   }
 
   @override

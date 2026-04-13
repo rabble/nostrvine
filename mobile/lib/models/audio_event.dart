@@ -35,6 +35,7 @@ class AudioEvent {
     this.sourceVideoReference,
     this.sourceVideoRelay,
     this.startOffset = Duration.zero,
+    this.volume = 1.0,
   });
 
   /// Parse an AudioEvent from a Nostr Event.
@@ -220,6 +221,9 @@ class AudioEvent {
   /// Default is [Duration.zero] (start from beginning). Only used locally, not published to Nostr.
   final Duration startOffset;
 
+  /// Volume of the audio track (0.0 silent, 1.0 full).
+  final double volume;
+
   /// Get the kind number from the source video reference.
   /// Returns null if no source video reference is set.
   int? get sourceVideoKind {
@@ -324,6 +328,7 @@ class AudioEvent {
     String? sourceVideoReference,
     String? sourceVideoRelay,
     Duration? startOffset,
+    double? volume,
   }) {
     return AudioEvent(
       id: id ?? this.id,
@@ -339,6 +344,7 @@ class AudioEvent {
       sourceVideoReference: sourceVideoReference ?? this.sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay ?? this.sourceVideoRelay,
       startOffset: startOffset ?? this.startOffset,
+      volume: volume ?? this.volume,
     );
   }
 
@@ -377,6 +383,7 @@ class AudioEvent {
     'sourceVideoReference': ?sourceVideoReference,
     'sourceVideoRelay': ?sourceVideoRelay,
     if (startOffset != .zero) 'startOffsetMs': startOffset.inMilliseconds,
+    if (volume != 1.0) 'volume': volume,
   };
 
   /// Deserialize from JSON for draft restoration.
@@ -397,6 +404,7 @@ class AudioEvent {
       startOffset: json['startOffsetMs'] != null
           ? Duration(milliseconds: json['startOffsetMs'] as int)
           : Duration.zero,
+      volume: (json['volume'] as num?)?.toDouble() ?? 1.0,
     );
   }
 }

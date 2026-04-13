@@ -131,7 +131,7 @@ class _FilterOverlayControls extends StatelessWidget {
     // (empty matrices) is non-empty as a list, so it takes priority and
     // causes the rendered filter to be a no-op (no colour transformation).
     final newFilters = currentFilters.isEmpty
-        ? [const FilterState()]
+        ? [const FilterState(name: 'none')]
         : currentFilters;
     editor.addHistory(filters: newFilters);
 

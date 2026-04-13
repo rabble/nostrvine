@@ -32,11 +32,11 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// Path for clips route.
   static const clipsPath = '/clips';
 
-  /// Route name for clips-only path (no Sounds tab).
-  static const clipsOnlyRouteName = 'clipsOnly';
+  /// Route name for clips path without Sounds tab.
+  static const clipsNoSoundRouteName = 'clipsNoSound';
 
-  /// Path for clips-only route (no Sounds tab).
-  static const clipsOnlyPath = '/clips-only';
+  /// Path for clips route without Sounds tab.
+  static const clipsNoSoundPath = '/clips-no-sound';
 
   /// Route name for sounds path.
   static const soundsRouteName = 'sounds';

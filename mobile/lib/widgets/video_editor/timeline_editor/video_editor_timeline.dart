@@ -7,6 +7,7 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -700,8 +701,8 @@ class _VideoEditorTimelineState
         TimelineOverlayItemsUpdate(
           layers: editor.activeLayers,
           filters: _committedFilterStates,
-          filterModels: appliedFilters,
           totalVideoDuration: totalDuration,
+          audioTracks: editor.stateManager.audioTracks,
         ),
       );
     });

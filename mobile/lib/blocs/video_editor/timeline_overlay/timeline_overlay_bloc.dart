@@ -38,27 +38,30 @@ class TimelineOverlayBloc
   ) {
     int filterRow = 0;
     int layerRow = 0;
+    int soundRow = 0;
 
     emit(
       state.copyWith(
         items: [
+          for (final track in event.audioTracks)
+            TimelineOverlayItem(
+              id: track.id,
+              type: .sound,
+              startTime: track.startTime ?? .zero,
+              endTime: (track.startTime ?? .zero) + track.duration,
+              label: track.title,
+              row: soundRow++,
+            ),
           for (var i = 0; i < event.filters.length; i++)
             // Skip no-op FilterStates (empty matrices) that are inserted by
             // _removeFilter to "clear" the filter in the editor history.
             if (event.filters[i].isNotEmpty)
               TimelineOverlayItem(
-                id: 'filter_$i',
+                id: 'filter_${event.filters[i].name}_$i',
                 type: TimelineOverlayType.filter,
                 startTime: event.filters[i].startTime ?? Duration.zero,
                 endTime: event.filters[i].endTime ?? event.totalVideoDuration,
-                // Prefer the name stored in meta (survives history
-                // export/import). Fall back to the in-memory filterModels list
-                // (available during the current session), then a generic label.
-                label:
-                    (event.filters[i].meta['name'] as String?) ??
-                    (i < event.filterModels.length
-                        ? event.filterModels[i].name
-                        : 'Filter'),
+                label: event.filters[i].name,
                 row: filterRow++,
               ),
           for (final layer in event.layers)
