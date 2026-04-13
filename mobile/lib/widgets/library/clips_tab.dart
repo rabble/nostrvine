@@ -92,7 +92,7 @@ class ClipsTab extends StatelessWidget {
           return EmptyLibraryState(
             icon: DivineIconName.filmSlate,
             // TODO(l10n): Replace with context.l10n when localization is added.
-            title: kIsWeb ? 'No clips in the browser' : 'No Clips Yet',
+            title: kIsWeb ? 'No Clips in the browser' : 'No Clips Yet',
             // TODO(l10n): Replace with context.l10n when localization is added.
             subtitle: kIsWeb
                 ? 'Recorded clips live in the mobile app. '

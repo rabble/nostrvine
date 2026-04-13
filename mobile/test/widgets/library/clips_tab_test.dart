@@ -78,6 +78,17 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
+      testWidgets('friendly error and retry when error state', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          const ClipsLibraryState(status: ClipsLibraryStatus.error),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.text("Couldn't load clips"), findsOneWidget);
+        expect(find.text('Try again'), findsOneWidget);
+      });
+
       testWidgets('$EmptyLibraryState when no clips', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const ClipsLibraryState(

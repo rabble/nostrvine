@@ -133,6 +133,20 @@ void main() {
     });
 
     group('empty state', () {
+      testWidgets(
+        'drafts tab does not show path_provider plugin errors after load',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+          await tester.pumpAndSettle();
+
+          expect(find.textContaining('MissingPluginException'), findsNothing);
+          expect(
+            find.textContaining('getApplicationDocumentsDirectory'),
+            findsNothing,
+          );
+        },
+      );
+
       testWidgets('shows $EmptyLibraryState when no drafts', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();

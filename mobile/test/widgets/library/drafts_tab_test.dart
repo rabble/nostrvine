@@ -77,14 +77,16 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('error message when error state', (tester) async {
+      testWidgets('friendly error and retry when error state', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const DraftsLibraryError(message: 'Failed to load drafts'),
         );
 
         await tester.pumpWidget(buildWidget());
 
-        expect(find.text('Failed to load drafts'), findsOneWidget);
+        expect(find.text("Couldn't load drafts"), findsOneWidget);
+        expect(find.text('Try again'), findsOneWidget);
+        expect(find.text('Failed to load drafts'), findsNothing);
       });
 
       testWidgets('$EmptyLibraryState when no drafts', (tester) async {
